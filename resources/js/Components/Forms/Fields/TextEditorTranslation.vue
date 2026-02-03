@@ -12,6 +12,7 @@ import { faLanguage } from "@far"
 import { faMale } from "@fas"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import Toggle from "@/Components/Pure/Toggle.vue"
 
 interface Language {
   code: string
@@ -27,7 +28,13 @@ const props = defineProps<{
     disable?: boolean
     language_from?: string
     language_to?: string
+    show_follow_master?: boolean
+    follow_master?: boolean
     languages: Record<string, Language>
+  }
+  updateRoute: {
+    name: string
+    parameters: []
   }
 }>()
 
@@ -55,6 +62,32 @@ const isDisabled = computed(() =>
 
 const langLabel = computed(() => languagesTo.value.code)
 
+const isLoadingFollowMaster = ref(false);
+
+const capitalizeFirstLetter = (text: string) => {
+  if (text.length === 0) {
+    return "";
+  }
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+const changeValue = (async () => {
+  props.fieldData.follow_master = !props.fieldData.follow_master;
+  isLoadingFollowMaster.value = true;
+  await axios.patch(route(props.updateRoute.name, props.updateRoute.parameters), {
+      ["follow_master_"+props.fieldName]: props.fieldData.follow_master
+  }).finally(() => {
+    isLoadingFollowMaster.value = false;
+    let textDisplay = props.fieldData.follow_master ? 
+      trans(':_fieldname will follow master', {_fieldname: capitalizeFirstLetter(props.fieldName)}) 
+      : trans(':_fieldname stops following master', {_fieldname: capitalizeFirstLetter(props.fieldName)});
+    notify({
+      title: trans('Success'),
+      text: textDisplay,
+      type: 'success'
+    })
+  });
+})
 
 const generateTranslateAI = async () => {
   if (isDisabled.value) return
@@ -97,13 +130,24 @@ const generateTranslateAI = async () => {
   <div class="space-y-3">
     <div class="space-y-2">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-
+        <div  v-if="fieldData.show_follow_master" class="px-3 py-1 flex col-span-2 items-end justify-items-center align-middle w-full">
+          <span class="align-middle h-full w-full text-end mr-3 font-semibold">
+            {{ trans('Follow Master') }}
+          </span>
+          <Toggle
+            v-tooltip="trans('Turning this option on would make it so that this item will follow its master counterpart')"
+            :modelValue="fieldData.follow_master"
+            @update:modelValue="changeValue()"
+            :loading="isLoadingFollowMaster"
+          >
+          </Toggle>
+        </div>
         <div class="p-3 rounded-md border bg-white flex gap-3 items-start">
 
           <!-- Icon -->
           <div class="h-6 w-6 flex items-center justify-center
            rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
-            <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="trans('master data of ') + props.fieldName"
+            <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
               class="h-3.5 w-3.5" />
           </div>
 

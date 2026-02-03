@@ -22,7 +22,7 @@ import Notification from "@/Components/Utils/Notification.vue"
 import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import {
 	faPoll,
-	faPhotoVideo,
+	faPhotoVideo, faQuestionCircle,
 	faBrowser,
 	faMegaphone,
 	faAllergies,
@@ -73,7 +73,7 @@ import {
 	faCheckDouble,
 	faSmile,
 	faMailBulk,
-	faShare,
+	faShare, faUndoAlt,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import {
@@ -101,7 +101,7 @@ library.add(
 	faAtomAlt,
 	faOctopusDeploy,
 	faPoll,
-	faPhotoVideo,
+	faPhotoVideo, faQuestionCircle,
 	faBrowser,
 	faMegaphone,
 	faAllergies,
@@ -164,7 +164,7 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk,
-	faShare
+	faShare, faUndoAlt
 )
 
 provide("layout", useLayoutStore())
@@ -585,5 +585,14 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 	@media (min-width: 640px) {
 		width: 500px !important;
 	}
+}
+
+
+.background-primary {
+    background-color: var(--theme-color-4);
+}
+
+.text-primary {
+    color: var(--theme-color-4);
 }
 </style>

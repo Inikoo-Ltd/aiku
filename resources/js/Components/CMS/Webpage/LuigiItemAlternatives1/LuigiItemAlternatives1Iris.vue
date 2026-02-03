@@ -17,9 +17,11 @@ import { Autoplay, Navigation, Pagination } from 'swiper/modules'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
-import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
+import RecommendationSlideLastSeen from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
+import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
+
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
@@ -45,7 +47,8 @@ const slidesPerView = computed(() => {
 
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProducts = ref<ProductHit[] | null>()
+const listProductsFromLuigi = ref<ProductHit[] | null>()
+const listProducts= ref<ProductHit[] | null>()
 const isLoadingFetch = ref(false)
 
 const listLoadingProducts = ref<Record<string, string>>({})
@@ -54,6 +57,46 @@ const isProductLoading = (productId: string) => {
 }
 
 const isFetched = ref(false)
+// const luigiFetchRecommenders = async () => {
+//     try {
+//         isLoadingFetch.value = true
+//         const response = await axios.post(
+//             `https://live.luigisbox.tech/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
+//             [
+//                 {
+//                     "blacklisted_item_ids": [],
+//                     "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
+//                     "recommendation_type": "item_detail_alternatives",
+//                     "recommender_client_identifier": "item_detail_alternatives",
+//                     "size": 25,
+//                     "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
+//                     "recommendation_context": {},
+//                     // "hit_fields": ["url", "title"]
+//                 }
+//             ],
+//             {
+//                 headers: {
+//                     'Content-Type': 'application/json;charset=utf-8'
+//                 }
+//             }
+//         )
+//         if (response.status !== 200) {
+//             console.error('Error fetching recommenders:', response.statusText)
+//         }
+
+//         console.log('LIA1:', response.data)
+//         // RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
+
+//         listProductsFromLuigi.value = response.data[0].hits
+//     } catch (error: any) {
+//         console.error('Error on fetching recommendations:', error)
+//     } finally {
+//         // isFetched.value = true
+//     }
+//     // isLoadingFetch.value = false
+// }
+
+
 const fetchRecommenders = async () => {
     try {
         isLoadingFetch.value = true
@@ -84,7 +127,8 @@ const fetchRecommenders = async () => {
         console.log('LIA1:', response.data)
         RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
-        listProducts.value = response.data[0].hits
+        listProductsFromLuigi.value = response.data[0].hits
+        fetchRecommendersToGetProducts()
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
@@ -93,36 +137,84 @@ const fetchRecommenders = async () => {
     isLoadingFetch.value = false
 }
 
+/*  const fetchRecommenders = async () => {
+    try {
+        isLoadingFetch.value = true
+
+        const response = await axios.post(
+            route('iris.json.luigi.product_recommendation'),
+            {
+                luigi_identity: '',
+                recommendation_type : 'item_detail_alternatives',
+                recommender_client_identifier : 'item_detail_alternatives',
+                cookies_lb: Cookies.get('_lb') ?? null,
+            }
+        )
+        listProductsFromLuigi.value = response.data
+    } catch (error: any) {
+        console.error('Error on fetching recommendations:', error)
+    } finally {
+        isFetched.value = true
+        isLoadingFetch.value = false
+    }
+}
+ */
+
+const fetchRecommendersToGetProducts = async () => {
+    const productListid = listProductsFromLuigi.value?.map((item) => item.attributes.product_id[0])
+    if (productListid?.length) {
+        try {
+            isLoadingFetch.value = true
+
+            const response = await axios.get(
+                route('iris.json.luigi.product_details'),
+                {
+                    params: {
+                        product_ids: productListid?.join(',')
+                    }
+                }
+            )
+            listProducts.value = response.data.data
+        } catch (error: any) {
+            console.error('Error on fetching recommendations:', error)
+        } finally {
+            isFetched.value = true
+            isLoadingFetch.value = false
+        }
+    }
+}
+
+
 onMounted(() => {
     fetchRecommenders()
+    window.luigiItemAlternatives = fetchRecommenders
 })
+
 </script>
 
 <template>
-    <div aria-type="luigi-item-alternatives-1-iris" class="w-full pb-6" :style="{
+    <div aria-type="luigi-item-alternatives-1-iris" class="w-full pb-6 px-4" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
     }">
-        <template v-if="!isFetched || listProducts?.length">
+        <template v-if="!isFetched || listProductsFromLuigi?.length">
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-3xl font-semibold">
-                    <!-- <div v-html="fieldValue.title"></div> -->
                     <div>
                         <p style="text-align: center">{{ trans("You may also like") }}</p>
                     </div>
                 </div>
             </div>
             
-            <div class="py-4">
+            <div class="py-4 px-3 md:px-12">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"
                     :pagination="{ clickable: true }"
                     :modules="[Autoplay]"
                     class="w-full"
-                    xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
                     spaceBetween="12"
                     autoHeight
                 >
@@ -135,12 +227,18 @@ onMounted(() => {
                         <SwiperSlide
                             v-for="(product, index) in listProducts"
                             :key="index"
-                            class="w-full cursor-grab relative !grid h-full min-h-full"
+                            class="w-full cursor-grab relative !grid  min-h-full"
                         >
-                            <RecommendationSlideIris
+                            <RecommendationSlideLastSeen
                                 :product
                                 :isProductLoading
                             />
+
+                           <!--  <RecommendationSlideIris
+                                :product
+                                :isProductLoading
+                            /> -->
+ 
                         </SwiperSlide>
                     </template>
                 </Swiper>

@@ -23,10 +23,17 @@ library.add(faLongArrowRight, faPlus, faMinus)
 const product = defineModel<ProductResource>('product', { required: true })
 
 
-const props = defineProps<{
+const props = withDefaults(
+  defineProps<{
     customerData: any
     buttonStyle?: any
-}>()
+    classContainer?: string
+  }>(),
+  {
+    classContainer: 'flex items-center gap-2 relative' // default string
+  }
+)
+
 
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -194,7 +201,7 @@ const debouncedSync = debounce(() => {
 const incrementQty = () => {
     const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
 
-    if (current >= customer.value.stock && !product.value.is_on_demand) {
+    if (current >= customer.value.stock) {
         showWarning()
         return
     }
@@ -229,7 +236,7 @@ watch(
 </script>
 
 <template>
-    <div class="qty-root">
+    <div :class="props.classContainer">
         <div class="qty-control">
             <button class="qty-btn" :disabled="isLoadingSubmitQuantityProduct" @click="decrementQty">
                 <FontAwesomeIcon icon="fas fa-minus" />
@@ -245,9 +252,19 @@ watch(
 
         <ConditionIcon class="qty-status" :state="status" />
 
-        <Button v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" class="qty-add-btn"
-            icon="fas fa-plus" :label="trans('Add to basket')" type="primary" size="lg"
-            :loading="isLoadingSubmitQuantityProduct" @click="onAddToBasket(product, 1)" />
+        <slot name="qty-add-button" :data="{product,customer,onAddToBasket,isLoadingSubmitQuantityProduct}">
+             <Button 
+                v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" 
+                class="qty-add-btn"
+                icon="fas fa-plus" 
+                :label="trans('Add to basket')" 
+                type="primary" 
+                size="lg"
+                :loading="isLoadingSubmitQuantityProduct" 
+                @click="onAddToBasket(product, 1)" 
+            />
+        </slot>
+       
 
         <div v-if="customer.quantity_ordered" class="qty-info">
             <span class="qty-info-label">
@@ -287,9 +304,9 @@ input[type='number'] {
 }
 
 
-.qty-root {
-  @apply flex items-center gap-2 relative;
-}
+/* .qty-root {
+  @apply  props. classContainer flex items-center gap-2 relative;
+} */
 
 .qty-control {
   @apply flex items-center border border-gray-200 rounded-lg overflow-hidden min-w-28 max-w-32;

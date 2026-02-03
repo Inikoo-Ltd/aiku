@@ -176,8 +176,39 @@ const onClickFilterOutOfStock = (query: string) => {
         }
     )
 }
+
+const onClickFilterForSale = (query: string) => {
+    let xx: string | null = 'true'
+    if (compTableFilterForSale.value === query) {
+        xx = null
+    } else {
+        xx = query
+    }
+
+    router.reload(
+        {
+            data: {[`${props.tab}_filter[is_for_sale]`]: xx},  // Sent to url parameter (?tab=showcase, ?tab=menu)
+            // only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+            onStart: () => {
+                isLoadingTable.value = query || null
+            },
+            onSuccess: () => {
+            },
+            onFinish: (e) => {
+                isLoadingTable.value = null
+            },
+            onError: (e) => {
+            }
+        }
+    )
+}
+
 const compTableFilterPlatformStatus = computed(() => {
     return layout.currentQuery?.[`${props.tab}_filter`]?.platform_status
+})
+
+const compTableFilterForSale = computed(() => {
+    return layout.currentQuery?.[`${props.tab}_filter`]?.is_for_sale
 })
 
 const onClickFilterPlatformStatus = (query: string) => {
@@ -496,23 +527,38 @@ onMounted(() => {
                 iconRight="fal fa-exclamation-triangle"
                 :loading="isLoadingTable == 'out-of-stock'"
             />
+            -->
+            <Button
+                @click="onClickFilterForSale('true')"
+                v-tooltip="trans('Only show products that are for sale')"
+                :label="trans('Only For Sale')"
+                size="xs"
+				class="whitespace-nowrap"
+                :key="compTableFilterForSale"
+                :type="compTableFilterForSale ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-times"
+                :loading="isLoadingTable == 'is-for-sale'"
+            />
             <Button
                 @click="onClickFilterOutOfStock('discontinued')"
                 v-tooltip="trans('Filter the product that discontinued')"
                 label="Discontinued"
+				class="whitespace-nowrap"
                 size="xs"
                 :key="compTableFilterStatus"
                 :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
                 :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
                 iconRight="fal fa-times"
                 :loading="isLoadingTable == 'discontinued'"
-            /> -->
+            />
             <Button @click="onClickFilterPlatformStatus('true')"
-                    v-tooltip="trans('Filter the product that not connected yet to :platform', { platform: props.platform_data.name })"
-                    label="Not connected" size="xs" :key="compTableFilterPlatformStatus"
-                    :type="compTableFilterPlatformStatus === 'true' ? 'secondary' : 'tertiary'"
-                    :icon="compTableFilterPlatformStatus === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
-                    iconRight="fal fa-handshake-slash" :loading="isLoadingTable == 'not-connected'"/>
+                v-tooltip="trans('Filter the product that not connected yet to :platform', { platform: props.platform_data.name })"
+				class="whitespace-nowrap"
+                label="Not connected" size="xs" :key="compTableFilterPlatformStatus"
+                :type="compTableFilterPlatformStatus === 'true' ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterPlatformStatus === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-handshake-slash" :loading="isLoadingTable == 'not-connected'"/>
 
         </template>
 
@@ -847,6 +893,9 @@ onMounted(() => {
                                                 </div>
                                                 <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
                                                      class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
+                                                </div>
+                                                <div v-if="item.sku_list" v-tooltip="trans('SKU')" class="w-fit text-xxs text-slate-600 italic">
+                                                        {{ item.sku_list.join('; ') }}
                                                 </div>
                                             </div>
                                             <!-- <div v-if="!item.no_price" xclick="() => selectProduct(item)"

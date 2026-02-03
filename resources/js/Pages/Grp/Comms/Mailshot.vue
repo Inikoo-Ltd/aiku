@@ -4,7 +4,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import type { Component } from "vue";
 import EmailPreview from "@/Components/Showcases/Org/Mailshot/EmailPreview.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
@@ -49,6 +49,20 @@ const props = defineProps<{
 
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const TAB_HIDE_RULES: Record<string, string[]> = {
+    in_process: ["recipients", "dispatched_emails"],
+    ready: ["recipients", "dispatched_emails"],
+}
+const filteredTabs = computed(() => {
+    const hiddenTabs = TAB_HIDE_RULES[props.status ?? ""] ?? []
+
+    return Object.fromEntries(
+        Object.entries(props.tabs.navigation).filter(
+            ([key]) => !hiddenTabs.includes(key)
+        )
+    )
+})
+
 
 // Computed property to check if buttons should be shown
 const shouldShowButtons = computed(() => {
@@ -332,8 +346,16 @@ const handleCancelSchedule = async () => {
         })
 }
 
+watch(
+    filteredTabs,
+    (tabs) => {
+        if (!tabs[currentTab.value]) {
+            currentTab.value = Object.keys(tabs)[0]
+        }
+    },
+    { immediate: true }
+)
 </script>
-
 
 <template>
 
@@ -408,6 +430,6 @@ const handleCancelSchedule = async () => {
             </div>
         </div>
     </Popover>
-    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    <Tabs :current="currentTab" :navigation="filteredTabs" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>

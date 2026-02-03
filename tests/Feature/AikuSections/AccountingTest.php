@@ -1218,7 +1218,7 @@ test('UI show invoice in Organisation', function () {
                     ->has('current')
                     ->has('navigation')
             )
-            ->has('order_summary', 3)
+            ->has('order_summary', 4)
             ->has('invoiceExportOptions')
             ->has(
                 'box_stats',
@@ -1276,7 +1276,7 @@ test('UI show invoice in Shop', function () {
                     ->has('current')
                     ->has('navigation')
             )
-            ->has('order_summary', 3)
+            ->has('order_summary', 4)
             ->has('invoiceExportOptions')
             ->has(
                 'box_stats',

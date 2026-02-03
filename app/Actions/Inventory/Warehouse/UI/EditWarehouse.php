@@ -64,8 +64,8 @@ class EditWarehouse extends OrgAction
         ];
 
         $currentSection = 'properties';
-        if ($request->has('section') && Arr::has($sections, $request->get('section'))) {
-            $currentSection = $request->get('section');
+        if ($request->has('section') && Arr::has($sections, $request->input('section'))) {
+            $currentSection = $request->input('section');
         }
 
         return Inertia::render(

@@ -31,7 +31,7 @@ class SetWebUserLocale
 
 
         if (!$locale) {
-            $locale = $request->get('website')->shop->language->code;
+            $locale = $request->input('website')->shop->language->code;
         }
 
 

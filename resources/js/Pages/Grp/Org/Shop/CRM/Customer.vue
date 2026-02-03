@@ -26,14 +26,19 @@ import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart } from "@fal"
+import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle } from "@fal"
 import { routeType } from "@/types/route"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import Icon from "@/Components/Icon.vue"
+import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
+import { useForm } from "@inertiajs/vue3"
+import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 
-library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart)
+library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle)
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 
@@ -53,6 +58,8 @@ const props = defineProps<{
         }
     }
     orders?: {}
+    sales_channels: Array<{ id: number, name: string, code: string, type: string, icon: string }>
+    can_add_order: boolean
     products?: {}
     dispatched_emails?: {}
     web_users?: {}
@@ -69,8 +76,20 @@ const props = defineProps<{
 
 let currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
+const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-
+const orderForm = useForm({
+    sales_channel_id: null as number | null
+})
+const submitOrder = () => {
+    const customerId = props.updateRoute.parameters.customer
+    orderForm.post(route('grp.models.customer.submitted_order.store', { customer: customerId }), {
+        onSuccess: () => {
+            isOrderModalOpen.value = false
+            orderForm.reset()
+        }
+    })
+}
 const component = computed(() => {
     const components: Component = {
         showcase: CustomerShowcase,
@@ -99,6 +118,8 @@ const component = computed(() => {
         <template #other>
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
+            <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
+                icon="plus" />
         </template>
     </PageHeading>
 
@@ -126,4 +147,16 @@ const component = computed(() => {
         label: 'Upload your file',
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
+
+    <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false">
+        <div class="p-6 relative">
+            <LoadingOverlay :is-loading="orderForm.processing" position="absolute" />
+            <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
+            <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.')}}</p>
+            <div class="mt-6">
+                <SelectableCardGrid :options="sales_channels" :model-value="orderForm.sales_channel_id"
+                    @update:model-value="(val) => { orderForm.sales_channel_id = val; submitOrder() }" />
+            </div>
+        </div>
+    </Modal>
 </template>

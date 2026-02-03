@@ -181,7 +181,7 @@ task('deploy:flush-varnish', function () {
     if ($shouldFlush) {
         writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
         try {
-            artisan('varnish', ['skipIfNoEnv', 'showOutput'])();
+            artisan('varnish:restart 10', ['skipIfNoEnv', 'showOutput'])();
             writeln('Varnish cache flush command executed.');
         } catch (\Throwable $e) {
             writeln('Error flushing Varnish cache: '.$e->getMessage());
@@ -248,6 +248,7 @@ set('shared_files', [
     '.env',
     '.env.testing',
     '.user.ini',
+    'restart_varnish.sh'
 ]);
 desc('Deploys your project');
 task('deploy', [

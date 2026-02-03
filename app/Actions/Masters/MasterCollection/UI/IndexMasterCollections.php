@@ -313,7 +313,7 @@ class IndexMasterCollections extends OrgAction
         ->table($this->tableStructure(prefix: MasterCollectionsTabsEnum::SALES->value, sales: true));
     }
 
-    public function getBreadcrumbs(MasterShop|MasterProductCategory|Group $parent, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(MasterShop|MasterProductCategory|Group $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\Ordering\Order\WithOrdersSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -41,6 +42,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
 
 class IndexOrders extends OrgAction
 {
@@ -108,7 +110,7 @@ class IndexOrders extends OrgAction
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
-        $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
+        $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')->where('shops.state', ShopStateEnum::OPEN);
 
         if ($this->bucket == 'creating' || $this->bucket == OrdersBacklogTabsEnum::IN_BASKET->value) {
             $query->where('orders.state', OrderStateEnum::CREATING);
@@ -174,6 +176,8 @@ class IndexOrders extends OrgAction
                 'orders.slug',
                 'orders.reference',
                 'orders.date',
+                'orders.submitted_at',
+                'orders.dispatched_at',
                 'orders.state',
                 'orders.created_at',
                 'orders.updated_at',
@@ -270,7 +274,23 @@ class IndexOrders extends OrgAction
 
             $table->column(key: 'state', label: '', type: 'icon');
             $table->column(key: 'reference', label: __('Reference'), sortable: true);
-            $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
+
+            if ($bucket == 'dispatched' || $bucket == 'dispatched_today') {
+                $table->column(key: 'dispatched_at', label: __('Dispatched'), sortable: true, type: 'date_hm');
+            } elseif (!in_array(
+                $bucket,
+                [
+                    'in_basket',
+                    'creating',
+                    'all'
+                ]
+            )) {
+                $table->column(key: 'submitted_at', label: __('Submitted'), sortable: true, type: 'date_hm');
+            } else {
+                $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
+            }
+
+
             if ($parent instanceof Shop || $parent instanceof Organisation || $parent instanceof Group) {
                 $table->column(key: 'customer_name', label: __('Customer'), sortable: true);
             }
@@ -293,8 +313,10 @@ class IndexOrders extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
     {
+        $customerId    = null;
         $navigation    = OrdersTabsEnum::navigation();
         $subNavigation = null;
+        $shop          = null;
         if ($this->parent instanceof CustomerClient) {
             unset($navigation[OrdersTabsEnum::STATS->value]);
             $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerSalesChannel);
@@ -359,42 +381,26 @@ class IndexOrders extends OrgAction
             $afterTitle = [
                 'label' => __('Orders')
             ];
-
-            if ($this->shop->type == ShopTypeEnum::B2B) {
-                $actions = [
-                    [
-                        'type'        => 'button',
-                        'style'       => 'create',
-                        'label'       => 'Add order',
-                        'key'         => 'add_order',
-                        'fullLoading' => true,
-                        'route'       => [
-                            'method'     => 'post',
-                            'name'       => 'grp.models.customer.submitted_order.store',
-                            'parameters' => [
-                                'customer' => $this->parent->id
-                            ]
-                        ]
-                    ],
-                ];
-            }
+            $customerId = $this->parent->id;
         }
 
         if ($this->parent instanceof Shop) {
             $shop = $this->parent;
         } else {
-            $shop = $this->parent->shop;
+            $shop = $this->parent->shop ?? null;
         }
 
         return Inertia::render(
             'Ordering/Orders',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'    => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('orders'),
-                'pageHead'    => [
+                'title'          => __('orders'),
+                'sales_channels' => GetSalesChannelOptions::make()->getOptions($shop),
+                'can_add_order'  => $shop?->type  == ShopTypeEnum::B2B,
+                'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
@@ -403,9 +409,14 @@ class IndexOrders extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
-                'data'        => OrderResource::collection($orders),
-
-                'tabs' => [
+                'data'           => OrderResource::collection($orders),
+                'submitRoute'    => $customerId ? [
+                    'name'       => 'grp.models.customer.submitted_order.store',
+                    'parameters' => [
+                        'customer' => $customerId
+                    ]
+                ] : null,
+                'tabs'           => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],

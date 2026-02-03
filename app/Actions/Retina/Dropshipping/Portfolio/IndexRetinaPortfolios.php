@@ -89,7 +89,8 @@ class IndexRetinaPortfolios extends RetinaAction
             );
 
         return $query->defaultSort('-portfolios.id')
-            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter()])
+            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter(), $this->getForSaleFilter()])
+            // ->ddRawSql()
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -97,10 +98,7 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getStateFilter(): AllowedFilter
     {
         return AllowedFilter::callback('status', function ($query, $value) {
-            $query->whereHas('item', function ($subQuery) use ($value) {
-                $subQuery->where('item_type', 'Product')
-                    ->whereIn('status', (array)$value);
-            });
+            $query->where('products.status', $value);
         });
     }
 
@@ -108,7 +106,14 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         return AllowedFilter::callback('platform_status', function ($query, $value) {
             $query->where('platform_status', $value)
-                ->orWhere('product_state', $value);
+                ->orWhere('products.state', $value);
+        });
+    }
+
+    public function getForSaleFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('is_for_sale', function ($query, $value) {
+            $query->where('products.is_for_sale', true);
         });
     }
 
@@ -382,6 +387,14 @@ class IndexRetinaPortfolios extends RetinaAction
                             'type'                 => 'portfolio_csv'
                         ]
                     ],
+
+                    'extended_properties' => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
+                            'type'                 => 'portfolio_csv_extended_properties'
+                        ]
+                    ],
                     'json'   => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [
@@ -420,7 +433,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'product_count' => $this->customerSalesChannel->number_portfolios,
 
-                'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel)),
+                'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, 'logs')),
 
                 'count_product_not_synced' => $countProductsNotSync,
                 'platform_user_id'         => $platformUser?->id,
@@ -436,8 +449,9 @@ class IndexRetinaPortfolios extends RetinaAction
                     'cust_country' => $this->customer->deliveryAddress->country->name
                 ],
             ]
-        )->table($this->tableStructure(prefix: 'products'))
-            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
+        )
+        ->table($this->tableStructure(prefix: 'products'))
+        ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): \Closure

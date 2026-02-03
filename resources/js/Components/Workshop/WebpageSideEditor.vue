@@ -202,6 +202,7 @@ const duplicateBlock = (block: Daum) => {
 }
 
 const onClickBlock = (index) => {
+	console.log(index)
 	if (openedBlockSideEditor.value === index) changeTab(2)
 	else {
 		openedBlockSideEditor.value = index
@@ -235,7 +236,7 @@ defineExpose({
 
 const editingIndex = ref<number | null>(null)
 const renameValue = ref("")
-const MAX_RENAME_LENGTH = 20
+const MAX_RENAME_LENGTH = 35
 
 const onRenameBlock = () => {
 	if (!contextMenu.value.block) return
@@ -253,24 +254,32 @@ const onRenameBlock = () => {
 }
 
 const saveRename = (index: number) => {
-	const block = props.webpage.layout.web_blocks[index]
-	if (!block) return
+  const block = props.webpage.layout.web_blocks[index]
+  if (!block) return
 
-	const value = renameValue.value.trim()
+  const value = renameValue.value.trim()
 
-	const fieldValue = (block.web_block.layout.data.fieldValue ??= {})
+  const fieldValue = (block.web_block.layout.data.fieldValue ??= {})
 
-	fieldValue.blocks ??= {}
+  if (
+    !fieldValue.blocks ||
+    Array.isArray(fieldValue.blocks) ||
+    typeof fieldValue.blocks !== 'object'
+  ) {
+    fieldValue.blocks = {}
+  }
 
-	if (!value) {
-		delete fieldValue.blocks.name
-	} else {
-		fieldValue.blocks.name = value
-	}
+  if (!value) {
+    delete fieldValue.blocks.name
+  } else {
+    fieldValue.blocks.name = value
+  }
 
-	sendBlockUpdate(block)
-	editingIndex.value = null
+  console.log(block)
+  sendBlockUpdate(block)
+  editingIndex.value = null
 }
+
 
 const cancelRename = () => {
 	editingIndex.value = null
@@ -364,9 +373,10 @@ const cancelRename = () => {
 													? 'cursor-pointer hover:bg-gray-100'
 													: 'cursor-not-allowed',
 											]">
+										
 											<button
 												class="flex items-center gap-2 w-full"
-												@click="() => onClickBlock(index)"
+												@click.stop="onClickBlock(index)"
 												:disabled="
 													!getEditPermissions(
 														element.web_block.layout.data
@@ -378,34 +388,26 @@ const cancelRename = () => {
 
 												<!-- block Display Name -->
 												<div
-													class="max-w-[240px] overflow-x-auto whitespace-nowrap scrollbar-thin"
-													@click.stop>
+													class="max-w-[240px] xoverflow-x-auto whitespace-nowrap scrollbar-thin">
 													<input
 														v-if="editingIndex === index"
 														v-model="renameValue"
 														:maxlength="MAX_RENAME_LENGTH"
-														class="text-sm font-medium border rounded px-1 py-0.5 w-full"
+														class="text-sm font-medium border rounded px-1 py-0.5 w-full text-gray-700"
 														autofocus
 														@keydown.enter.prevent="saveRename(index)"
 														@keydown.esc.prevent="cancelRename"
-														@blur="saveRename(index)" />
+														@blur="saveRename(index)" 
+														@click.stop/>
 
-													<span v-else class="text-sm font-medium">
-														<span class="text-sm font-medium">
-															<template
-																v-if="
-																	element.web_block.layout.data
-																		.fieldValue?.blocks?.name
-																">
-																{{
-																	element.web_block.layout.data
-																		.fieldValue.blocks.name
-																}}
-															</template>
-															<template v-else>
-																{{ element.name }}
-															</template>
-														</span>
+													<span v-else class="text-sm font-medium whitespace-pre-wrap text-left inline-block">
+														<template
+															v-if="element.web_block.layout.data.fieldValue?.blocks?.name">
+															{{element.web_block.layout.data.fieldValue.blocks.name}}
+														</template>
+														<template v-else>
+															{{ element.name }}
+														</template>
 													</span>
 												</div>
 

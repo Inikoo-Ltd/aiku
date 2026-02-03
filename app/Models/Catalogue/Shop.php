@@ -28,6 +28,7 @@ use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
+use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
@@ -95,6 +96,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Ordering\SalesChannel;
 
 /**
  * App\Models\Catalogue\Shop
@@ -173,6 +175,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read ShippingZoneSchema|null $discountShippingZoneSchema
  * @property-read \App\Models\Catalogue\ShopDiscountsStats|null $discountsStats
  * @property-read \App\Models\Catalogue\ShopDropshippingStat|null $dropshippingStats
+ * @property-read LaravelCollection<int, EmailTemplate> $emailTemplates
  * @property-read LaravelCollection<int, InvoiceTransactionHasFeedback> $feedbackBridges
  * @property-read Fulfilment|null $fulfilment
  * @property-read Group $group
@@ -218,6 +221,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, Role> $roles
+ * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\Catalogue\ShopSalesIntervals|null $salesIntervals
  * @property-read SenderEmail|null $senderEmail
  * @property-read \App\Models\Helpers\Media|null $seoImage
@@ -467,6 +471,11 @@ class Shop extends Model implements HasMedia, Auditable
         $paymentAccountShop = $this->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
 
         return $paymentAccountShop ? $paymentAccountShop->paymentAccount : null;
+    }
+
+    public function salesChannels(): BelongsToMany
+    {
+        return $this->belongsToMany(SalesChannel::class, 'shop_has_sales_channels')->withTimestamps();
     }
 
     public function outboxes(): HasMany
@@ -755,5 +764,10 @@ class Shop extends Model implements HasMedia, Auditable
     public function shippingCountries(): HasMany
     {
         return $this->hasMany(ShippingCountry::class);
+    }
+
+    public function emailTemplates(): HasMany
+    {
+        return $this->hasMany(EmailTemplate::class);
     }
 }

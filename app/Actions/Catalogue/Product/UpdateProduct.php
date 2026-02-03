@@ -83,7 +83,6 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-
         // todo: remove this after total aurora migration
         if (!$this->strict) {
             $orgStocks = null;
@@ -113,6 +112,13 @@ class UpdateProduct extends OrgAction
             }
         } elseif (Arr::has($modelData, 'trade_units')) {
             $product = SyncProductTradeUnits::run($product, Arr::pull($modelData, 'trade_units'));
+
+            if ($product->shop->type == ShopTypeEnum::EXTERNAL) {
+                // This is needed for external shop. Since it has no master, so is_single_trade_unit & image never get properly hydrated
+                $product->update(['is_single_trade_unit' => $product->tradeUnits()->count() == 1]);
+                CloneProductImagesFromTradeUnits::run($product);
+            }
+
         }
 
 
@@ -287,7 +293,6 @@ class UpdateProduct extends OrgAction
             ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60 * 15);
         }
 
-
         $fieldsUsedInWebpages = array_merge(
             $fieldsUsedInLuigi,
             $this->getDangerousGoodsFieldNames(),
@@ -320,6 +325,8 @@ class UpdateProduct extends OrgAction
                     'master_asset_id' => $product->master_product_id
                 ]
             );
+            //todo create an action to add this product to a existing variant as minion or a leader (check master product to see id applicable)
+
         }
 
         if (Arr::has($changed, 'price')) {
@@ -439,6 +446,8 @@ class UpdateProduct extends OrgAction
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_master'     => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
+            'has_live_webpage'             => ['sometimes', 'boolean'],
+            'marketplace_id'               => ['sometimes'],
         ];
 
 

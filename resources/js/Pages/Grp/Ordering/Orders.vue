@@ -16,17 +16,27 @@ import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom } from "@fal"
+import { faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle } from "@fal"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import TableLastOrders from "@/Components/Tables/Grp/Org/Ordering/TableLastOrders.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import Select from '@/Components/Forms/Fields/Select.vue'
+import { useForm } from "@inertiajs/vue3"
+import { routeType } from "@/types/route"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Icon from "@/Components/Icon.vue"
+import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
+import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 
 
-library.add(faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom)
+library.add(faTags, faTasksAlt, faChartPie, faFluxCapacitor, faSyncAlt, faArrowFromBottom, faQuestionCircle)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
+    sales_channels: Array<{ id: number, name: string, code: string, type: string, icon: icon }>
+    can_add_order: boolean
     tabs: {
         current: string
         navigation: {}
@@ -45,12 +55,25 @@ const props = defineProps<{
         label: string
         date_key: string
     }[]
+    submitRoute: routeType
 
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
+const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-
+const orderForm = useForm({
+    sales_channel_id: null as number | null
+})
+const submitOrder = () => {
+    const customerId = props.submitRoute.parameters.customer
+    orderForm.post(route(props.submitRoute.name, { customer: customerId }), {
+        onSuccess: () => {
+            isOrderModalOpen.value = false
+            orderForm.reset()
+        }
+    })
+}
 const component = computed(() => {
     const components: any = {
         orders: TableOrders,
@@ -72,7 +95,24 @@ const component = computed(() => {
 <template>
 
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #other>
+            <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
+                icon="plus" />
+        </template>
+    </PageHeading>
+
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
+    <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false">
+            <div class="p-6 relative">
+            <LoadingOverlay :is-loading="orderForm.processing" position="absolute" />
+            <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>
+            <p class="mt-1 text-sm text-gray-600">{{ capitalize('Please select a sales channel to create a new order.')}}</p>
+            <div class="mt-6">
+                <SelectableCardGrid :options="sales_channels" :model-value="orderForm.sales_channel_id"
+                    @update:model-value="(val) => { orderForm.sales_channel_id = val; submitOrder() }" />
+            </div>
+        </div>
+        </Modal>
 </template>

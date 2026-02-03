@@ -35,7 +35,7 @@ class GetIrisBasketTransactionsInCollection extends IrisAction
                     ->where('transactions.order_id', '=', $basket->id)
                     ->whereNull('transactions.deleted_at');
             });
-            $query->selectRaw('products.id,array_agg(transactions.quantity_ordered) as quantity_ordered')->groupBy('products.id');
+            $query->selectRaw('products.id,array_agg(transactions.id) as transaction_ids, array_agg(transactions.quantity_ordered) as quantity_ordered')->groupBy('products.id');
         } else {
             $query->selectRaw('products.id')->groupBy('products.id');
         }
@@ -44,13 +44,16 @@ class GetIrisBasketTransactionsInCollection extends IrisAction
         foreach ($query->get() as $data) {
             if ($basket) {
                 $quantityOrdered = json_decode(str_replace(['{', '}'], ['', ''], $data->quantity_ordered), true);
+                $transactionIds = $data->transaction_ids ? json_decode(str_replace(['{', '}'], ['', ''], $data->transaction_ids), true) : null;
             } else {
                 $quantityOrdered = 0;
+                $transactionIds = null;
             }
 
             $productsData[$data->id] = [
                 'quantity_ordered'     => $quantityOrdered ?? 0,
-                'quantity_ordered_new' => 0
+                'quantity_ordered_new' => null,
+                'transactions_id' =>  $transactionIds,
             ];
         }
 

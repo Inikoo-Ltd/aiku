@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 
-import { useForm } from '@inertiajs/vue3'
+import { router, useForm } from '@inertiajs/vue3'
 import { routeType } from '@/types/route'
 import { ref, computed, watch } from 'vue'
 import axios from 'axios'
@@ -37,6 +37,7 @@ const props = defineProps<{
         noSaveButton?: boolean  // Button: save
         updateRoute?: routeType
         isWithRefreshFieldForm?: boolean
+        revisit_after_save?: boolean
     }
     args: {
         updateRoute: routeType
@@ -62,14 +63,34 @@ const submit = () => {
         const confirmed = confirm(props.fieldData.confirmation.description)
 
         if (confirmed) {
-            form.post(route(updateRoute.name, updateRoute.parameters), { preserveScroll: true })
+            form.post(
+                route(updateRoute.name, updateRoute.parameters), 
+                { 
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        if(props.fieldData.revisit_after_save){
+                            router.reload()
+                        }
+                    }
+                }
+            )
         } else {
             return
         }
     }
 
     else {
-        form.post(route(updateRoute.name, updateRoute.parameters), { preserveScroll: true })
+        form.post(
+            route(updateRoute.name, updateRoute.parameters), 
+            { 
+                preserveScroll: true,
+                onSuccess: () => {
+                    if(props.fieldData.revisit_after_save){
+                        router.reload()
+                    }
+                }
+            }
+        )
     }
 
 

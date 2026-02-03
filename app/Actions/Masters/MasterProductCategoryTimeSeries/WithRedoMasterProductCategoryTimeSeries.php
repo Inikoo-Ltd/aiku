@@ -19,7 +19,7 @@ use Throwable;
 
 trait WithRedoMasterProductCategoryTimeSeries
 {
-    public function handle(MasterProductCategory $masterProductCategory, array $frequencies, Command $command = null, bool $async = true): void
+    public function handle(MasterProductCategory $masterProductCategory, array $frequencies, ?Command $command = null, bool $async = true): void
     {
         $type = MasterProductCategoryTypeEnum::from($this->restriction);
 
@@ -29,21 +29,17 @@ trait WithRedoMasterProductCategoryTimeSeries
             return;
         }
 
-
         $from = null;
 
-        $firstInvoicedDate = DB::table('invoice_transactions')->where("master_{$this->restriction}_id", $masterProductCategory->id)->min('date');
-
+        $firstInvoicedDate = DB::table('invoice_transactions')->where("master_{$this->restriction}_id", $masterProductCategory->id)->whereNull('deleted_at')->min('date');
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $masterProductCategory->created_at)) {
             $masterProductCategory->update(['created_at' => $firstInvoicedDate]);
         }
 
-
         if ($masterProductCategory->created_at) {
             $from = $masterProductCategory->created_at->toDateString();
         }
-
 
         if ($masterProductCategory->status) {
             $to = now()->toDateString();
@@ -52,6 +48,7 @@ trait WithRedoMasterProductCategoryTimeSeries
 
             $lastInvoicedDate = DB::table('invoice_transactions')
                 ->where("master_{$this->restriction}_id", $masterProductCategory->id)
+                ->whereNull('deleted_at')
                 ->max('date');
 
             if (!$to && !$lastInvoicedDate) {
@@ -73,7 +70,6 @@ trait WithRedoMasterProductCategoryTimeSeries
 
             $to = $to->toDateString();
         }
-
 
         if ($from != null && $to != null) {
             foreach ($frequencies as $frequency) {

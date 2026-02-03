@@ -178,7 +178,8 @@ trait IsOrder
             [
                 'label'       => __('Charges'),
                 'information' => '',
-                'price_total' => $order->charges_amount
+                'price_total' => $order->charges_amount,
+                'slot_name'   => 'charges',
             ],
             [
                 'label'       => __('Shipping'),
@@ -206,7 +207,11 @@ trait IsOrder
                 [
                     'label'       => __('Net'),
                     'information' => '',
-                    'price_total' => $order->net_amount
+                    'price_total' => $order->net_amount,
+                    'styleField'    => [
+                        'background' => '#000000CC',
+                        'color' => '#fff',
+                    ],
                 ],
                 [
                     'label'       => __('Tax').' ('.$taxCategory->name.')',
@@ -218,7 +223,11 @@ trait IsOrder
         $orderSummary[] = [
             [
                 'label'       => __('Total'),
-                'price_total' => $order->total_amount
+                'price_total' => $order->total_amount,
+                'styleField'    => [
+                    'background' => '#000',
+                    'color' => '#fff',
+                ],
             ],
         ];
 

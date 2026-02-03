@@ -22,6 +22,8 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use WithTimeSeriesRecordsGeneration;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $masterAssetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$masterAssetId:$frequency->value:$from:$to";
@@ -33,16 +35,15 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
         $to   .= ' 23:59:59';
 
         $masterAsset = MasterAsset::find($masterAssetId);
+
         if (!$masterAsset) {
             return;
         }
 
-        $timeSeries = MasterAssetTimeSeries::where('master_asset_id', $masterAsset->id)
-            ->where('frequency', $frequency->value)->first();
+        $timeSeries = MasterAssetTimeSeries::where('master_asset_id', $masterAsset->id)->where('frequency', $frequency->value)->first();
+
         if (!$timeSeries) {
-            $timeSeries = $masterAsset->timeSeries()->create([
-                'frequency' => $frequency,
-            ]);
+            $timeSeries = $masterAsset->timeSeries()->create(['frequency' => $frequency]);
         }
 
         $this->processTimeSeries($timeSeries, $from, $to);
@@ -53,9 +54,10 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(MasterAssetTimeSeries $timeSeries, string $from, string $to): void
     {
         $results = DB::table('invoice_transactions')
+            ->where('master_asset_id', $timeSeries->master_asset_id)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
-            ->where('master_asset_id', $timeSeries->master_asset_id);
+            ->whereNull('deleted_at');
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
@@ -117,7 +119,6 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
             )->groupBy(DB::raw('CAST(date AS DATE)'));
         }
 
-
         $results = $results->get();
 
         foreach ($results as $result) {
@@ -143,7 +144,6 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
                 $period     = $result->year;
             }
 
-
             $timeSeries->records()->updateOrCreate(
                 [
                     'master_asset_time_series_id' => $timeSeries->id,
@@ -160,11 +160,8 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
                     'invoices'           => $result->invoices,
                     'refunds'            => $result->refunds,
                     'orders'             => $result->orders,
-
                 ]
             );
         }
     }
-
-
 }

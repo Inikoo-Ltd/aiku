@@ -18,7 +18,7 @@ class RepairOrphanCollectionWebpages
     use AsAction;
 
 
-    public function handle(bool $forceDelete = false, bool $dryRun = false, Command $command = null): int
+    public function handle(bool $forceDelete = false, bool $dryRun = false, ?Command $command = null): int
     {
         $deleted = 0;
         $scanned = 0;

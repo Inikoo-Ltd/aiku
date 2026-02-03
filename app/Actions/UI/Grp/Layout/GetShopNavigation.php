@@ -33,7 +33,7 @@ class GetShopNavigation
 
             'topMenu' => [
                 'subSections' => [
-                     $shop->type !== ShopTypeEnum::EXTERNAL ? [
+                    $shop->type !== ShopTypeEnum::EXTERNAL ? [
                         "label"   => __("Comms"),
                         "tooltip" => __("Email communications"),
                         "icon"    => ["fal", "fa-satellite-dish"],
@@ -85,7 +85,7 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        [
+                        $shop->type !== ShopTypeEnum::EXTERNAL ? [
                             "label" => __("Departments"),
                             "tooltip" => __("Departments"),
                             "icon" => ["fal", "fa-folder-tree"],
@@ -94,8 +94,8 @@ class GetShopNavigation
                                 "name" => "grp.org.shops.show.catalogue.departments.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                        ],
-                        [
+                        ] : null,
+                        $shop->type !== ShopTypeEnum::EXTERNAL ? [
                             "label" => __("Families"),
                             "tooltip" => __("Families"),
                             "icon" => ["fal", "fa-folder"],
@@ -104,7 +104,7 @@ class GetShopNavigation
                                 "name" => "grp.org.shops.show.catalogue.families.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                        ],
+                        ] : null,
                         [
                             "label" => __("Products"),
                             "tooltip" => __("Products"),
@@ -115,7 +115,7 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        [
+                        $shop->type !== ShopTypeEnum::EXTERNAL ? [
                             "label" => __("Collections"),
                             "tooltip" => __("Collections"),
                             "icon" => ["fal", "fa-album-collection"],
@@ -124,7 +124,7 @@ class GetShopNavigation
                                 "name" => "grp.org.shops.show.catalogue.collections.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
-                        ],
+                        ] : null,
                     ],
                 ],
             ];
@@ -267,6 +267,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.marketing.mailshots.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.marketing.mailshots.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Templates"),
+                            "tooltip" => __("Templates"),
+                            "icon"    => ["fal", "fa-layer-group"],
+                            'root'    => 'grp.org.shops.show.marketing.templates.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.templates.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

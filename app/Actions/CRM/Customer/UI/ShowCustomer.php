@@ -40,6 +40,7 @@ use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
 
 class ShowCustomer extends OrgAction
 {
@@ -115,6 +116,8 @@ class ShowCustomer extends OrgAction
                     'previous' => $this->getPrevious($customer, $request),
                     'next'     => $this->getNext($customer, $request),
                 ],
+                'sales_channels' => GetSalesChannelOptions::make()->getOptions($customer->shop),
+                'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
                 'pageHead'         => [
                     'title'         => $customer->name,
                     'icon'          => [
@@ -139,20 +142,6 @@ class ShowCustomer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ],
-                        $this->shop->type == ShopTypeEnum::B2B ? [
-                            'key'         => 'add_order',
-                            'type'        => 'button',
-                            'style'       => 'create',
-                            'label'       => __('Add order'),
-                            'fullLoading' => true,
-                            'route'       => [
-                                'method'     => 'post',
-                                'name'       => 'grp.models.customer.submitted_order.store',
-                                'parameters' => [
-                                    'customer' => $customer->id
-                                ]
-                            ]
-                        ] : [],
                     ],
                     'subNavigation' => $subNavigation,
                 ],
@@ -266,7 +255,7 @@ class ShowCustomer extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (Customer $customer, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (Customer $customer, array $routeParameters, ?string $suffix = null) {
             return [
                 [
 

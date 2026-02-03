@@ -225,7 +225,7 @@ const idxSlideLoading = ref<number | null>(null)
             </div>
           </component>
 
-          <div class="flex justify-center mt-2">
+          <div v-if="fieldValue.value.caption?.use_caption" class="flex justify-center mt-2">
             <div v-if="fieldValue.value.caption?.use_caption">
               <span v-if="image.caption" :style="getStyles(fieldValue.value.caption?.properties, screenType)">
                 {{ image.caption }}

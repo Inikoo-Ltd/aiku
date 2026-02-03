@@ -10,6 +10,7 @@
 namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\OrgAction;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 
 class DispatchOrderFromDeliveryNote extends OrgAction
@@ -17,18 +18,18 @@ class DispatchOrderFromDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, DeliveryNote $deliveryNote): Order
     {
-        return DispatchOrder::make()->action($order);
+        return DispatchOrder::make()->action($order, $deliveryNote);
     }
 
 
     /**
      * @throws \Throwable
      */
-    public function action(Order $order): Order
+    public function action(Order $order, DeliveryNote $deliveryNote): Order
     {
-        return $this->handle($order);
+        return $this->handle($order, $deliveryNote);
     }
 
 

@@ -19,6 +19,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\OfferResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
@@ -33,6 +34,8 @@ class UpdateOffer extends OrgAction
 
     public function handle(Offer $offer, array $modelData): Offer
     {
+        // dd($offer);
+        $newTriggerData = null;
         if (isset($modelData['trigger_data_item_quantity'])) {
             $newTriggerData = array_merge(
                 $offer->trigger_data,
@@ -42,6 +45,101 @@ class UpdateOffer extends OrgAction
             $modelData['trigger_data'] = $newTriggerData;
         }
 
+        // Section: edit Discount
+        if (isset($modelData['edit_offer_discount'])) {
+            $editOfferDiscount = $modelData['edit_offer_discount'];
+
+            // Set percentage_off to allowance_signature
+            if (!empty($editOfferDiscount['percentage_off'])) {
+                $percentage_off = ((float) $editOfferDiscount['percentage_off']) / 100; // Convert 25 → 0.25
+
+                $signature = trim((string) $offer['allowance_signature']);
+
+                // Try to replace existing percentage_off
+                $newSignature = preg_replace(
+                    '/(percentage_off:)[0-9.]+/',
+                    '${1}' . $percentage_off,
+                    $signature,
+                    -1,
+                    $count
+                );
+
+                // If percentage_off does not exist, append it
+                if ($count === 0) {
+                    // Remove trailing colon if any
+                    $signature = rtrim($signature, ':');
+
+                    if ($signature === '') {
+                        // Signature is empty → don't prefix with colon
+                        $newSignature = 'percentage_off:' . $percentage_off;
+                    } else {
+                        $newSignature = $signature . ':percentage_off:' . $percentage_off;
+                    }
+                }
+
+                unset($modelData['edit_offer_discount']);
+                $modelData['allowance_signature'] = $newSignature;
+            }
+        }
+
+        // Section: edit Trigger
+        if (isset($modelData['edit_offer_trigger'])) {
+            $editOffer = $modelData['edit_offer_trigger'];
+
+            // Set to trigger_data.item_quantity
+            if (isset($editOffer['trigger_item_quantity']) && $editOffer['trigger_item_quantity'] !== '') {
+                $triggerData = $newTriggerData;
+
+                // Make sure it is an array
+                if (!is_array($triggerData)) {
+                    $triggerData = [];
+                }
+
+                // Set or update item_quantity
+                $triggerData['item_quantity'] = (int) $editOffer['trigger_item_quantity'];
+
+                // Assign back (Laravel will re-encode it to JSON automatically)
+                $newTriggerData = $triggerData;
+            }
+
+            // Set to trigger_data.min_amount
+            if (isset($editOffer['trigger_min_amount']) && $editOffer['trigger_min_amount'] !== '') {
+                $triggerData = $newTriggerData;
+
+                // Make sure it is an array
+                if (!is_array($triggerData)) {
+                    $triggerData = [];
+                }
+
+                // Set or update min_amount
+                $triggerData['min_amount'] = (int) $editOffer['trigger_min_amount'];
+
+                // Assign back (Laravel will re-encode it to JSON automatically)
+                $newTriggerData = $triggerData;
+            }
+
+            // Set to trigger_data.order_number
+            if (isset($editOffer['trigger_order_number']) && $editOffer['trigger_order_number'] !== '') {
+                $triggerData = $newTriggerData;
+
+                // Make sure it is an array
+                if (!is_array($triggerData)) {
+                    $triggerData = [];
+                }
+
+                // Set or update order_number
+                $triggerData['order_number'] = (int) $editOffer['trigger_order_number'];
+
+                // Assign back (Laravel will re-encode it to JSON automatically)
+                $newTriggerData = $triggerData;
+            }
+
+            // Remove edit_offer_trigger from modelData
+            $modelData['trigger_data'] = $newTriggerData;
+            unset($modelData['edit_offer_trigger']);
+        }
+        // dd($modelData);
+
         $offer = $this->update($offer, $modelData);
 
         if ($offer->wasChanged(['name'])) {
@@ -50,6 +148,10 @@ class UpdateOffer extends OrgAction
 
         if ($offer->wasChanged(['code', 'name'])) {
             OfferRecordSearch::dispatch($offer)->delay($this->hydratorsDelay);
+        }
+
+        if ($offer->wasChanged(['label']) && $this->offer->trigger instanceof ProductCategory) {
+            UpdateProductCategoryOffersData::run($offer);
         }
 
         if ($offer->wasChanged(['state', 'status'])) {
@@ -102,6 +204,8 @@ class UpdateOffer extends OrgAction
             'trigger_data_item_quantity' => ['sometimes', 'integer'],
             'start_at'                   => ['sometimes', 'date'],
             'end_at'                     => ['sometimes', 'nullable', 'date'],
+            'edit_offer_trigger'         => ['sometimes', 'nullable'],
+            'edit_offer_discount'         => ['sometimes', 'nullable']
         ];
 
         if (!$this->strict) {

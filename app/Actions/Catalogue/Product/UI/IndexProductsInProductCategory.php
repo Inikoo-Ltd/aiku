@@ -383,7 +383,7 @@ class IndexProductsInProductCategory extends OrgAction
     }
 
 
-    public function getBreadcrumbs(ProductCategory $productCategory, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(ProductCategory $productCategory, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [

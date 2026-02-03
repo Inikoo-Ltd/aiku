@@ -66,10 +66,26 @@ class EditSubDepartment extends OrgAction
         }
         $languages = [$subDepartment->shop->language_id => LanguageResource::make($subDepartment->shop->language)->resolve()];
 
+        $warning = [];
+        $forceFollowMasterSubDepartment = data_get($subDepartment->shop->settings, 'catalog.sub_department_follow_master');
+
+        if ($subDepartment->masterProductCategory && $forceFollowMasterSubDepartment) {
+            $warning = [
+                'warning'     => [
+                    'type'  => 'warning',
+                    'title' => 'Warning',
+                    // 'text'  => __('Changing name or description may affect master sub department .'), // Isn't true anymore. Not neccessarily the case. Turned off
+                    'text'  => __('This shop has enabled the Sub Department force follow master setting. Updates made on master will overwrite local changes'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle'],
+                ]
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('Sub-department'),
+                ...$warning,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $subDepartment,
                     $request->route()->getName(),
@@ -99,7 +115,6 @@ class EditSubDepartment extends OrgAction
                         ]
                     ]
                 ],
-
                 'formData' => [
                     'blueprint' => array_filter(
                         [

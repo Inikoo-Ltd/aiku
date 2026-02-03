@@ -101,6 +101,7 @@ const props = withDefaults(
 		attachments: {
 
 		}
+		noTradeUnit?: boolean
 		publicAttachment: array<any>
 		properties?: {
 			country_of_origin?: { code: string; name: string }
@@ -150,7 +151,7 @@ library.add(
 					</div>
 
 					<!-- Section: Weight marketing -->
-					<div class="flex justify-between flex-wrap gap-1">
+					<div class="flex justify-between flex-wrap gap-1" v-if="!noTradeUnit">
 						<dt class="text-gray-500">{{ trans("Weight") }} <span
 								class="text-xs font-light text-gray-500">({{ trans('Marketing') }})</span></dt>
 						<dd class="font-medium">
@@ -159,7 +160,7 @@ library.add(
 					</div>
 
 					<!-- Section: Weight shipping -->
-					<div class="flex justify-between flex-wrap gap-1">
+					<div class="flex justify-between flex-wrap gap-1" v-if="!noTradeUnit">
 						<dt class="text-gray-500">{{ trans("Weight") }} <span
 								class="text-xs font-light text-gray-500">({{ trans('Shipping') }})</span></dt>
 						<dd class="font-medium">
@@ -168,7 +169,7 @@ library.add(
 					</div>
 
 					<!-- Section: Marketing Dimensions -->
-					<div class="flex justify-between flex-wrap gap-1">
+					<div class="flex justify-between flex-wrap gap-1" v-if="!noTradeUnit">
 						<dt class="text-gray-500">{{ trans("Dimensions") }}</dt>
 						<dd class="font-medium">
 							{{ data?.marketing_dimensions }}
@@ -176,7 +177,7 @@ library.add(
 					</div>
 
 					<!-- Section: Barcode -->
-					<div class="flex justify-between flex-wrap gap-1">
+					<div class="flex justify-between flex-wrap gap-1" v-if="!noTradeUnit">
 						<dt class="text-gray-500">{{ trans("Barcode") }}
 							<FontAwesomeIcon :icon="faBarcode" />
 						</dt>
@@ -186,7 +187,7 @@ library.add(
 					</div>
 
 					<!-- Section: Picking -->
-					<div class="flex justify-between flex-wrap gap-0.5" v-if="!hide?.includes('picking')">
+					<div class="flex justify-between flex-wrap gap-0.5" v-if="!hide?.includes('picking') && !noTradeUnit">
 						<dt class="text-gray-500">{{ trans("Picking") }}</dt>
 						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
 							<template v-if="data?.picking_factor?.length">
@@ -231,7 +232,7 @@ library.add(
 						</dd>
 					</div>
 				</div>
-				<ProductResource :attachments="attachments" :publicAttachment :data :gpsr :properties />
+				<ProductResource :attachments="attachments" :publicAttachment :data :gpsr :properties v-if="!noTradeUnit"/>
 			</dl>
 		</div>
 	</div>

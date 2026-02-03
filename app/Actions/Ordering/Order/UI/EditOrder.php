@@ -22,6 +22,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
 
 class EditOrder extends OrgAction
 {
@@ -80,6 +81,7 @@ class EditOrder extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
+                            'label'  => __('Reference'),
                             'title'  => __('id'),
                             'fields' => [
                                 'reference' => [
@@ -88,6 +90,19 @@ class EditOrder extends OrgAction
                                     'value' => $order->reference
                                 ],
                             ]
+                        ],
+                        [
+                            'label'  => __('Sales Channel'),
+                            'title'  => __('Sales Channel'),
+                            'fields' => [
+                                'sales_channel_id' => [
+                                    'type'  => 'select',
+                                    'label' => __('Sales Channel'),
+                                    'placeholder' => __('Select sales channel'),
+                                    'options'  => GetSalesChannelOptions::make()->getStandardOptions($order->shop ?? null),
+                                    'value' => $order->sales_channel_id,
+                                ],
+                            ],
                         ]
                     ],
                     'args' => [

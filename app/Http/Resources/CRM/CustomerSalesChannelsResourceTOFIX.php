@@ -51,6 +51,7 @@ class CustomerSalesChannelsResourceTOFIX extends JsonResource
             'number_orders'                       => $this->number_orders,
             'type'                                => $this->type,
             'status'                              => $this->status,
+            'platform_status'                     => $this->platform_status,
             'amount'                              => $this->total_amount,
             'platform_code'                       => $platform?->code,
             'platform_name'                       => $platform?->name,

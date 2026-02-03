@@ -55,8 +55,6 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
         </div>
 
-        <div>
-            <Coupon :first_order_bonus="data?.offers" :currency_code="data.currency_code" />
-        </div>
+
     </div>
 </template>

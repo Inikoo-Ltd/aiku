@@ -122,7 +122,7 @@ const responsiveOptions = computed(() => {
 })
 
 
-
+console.log(props)
 
 </script>
 

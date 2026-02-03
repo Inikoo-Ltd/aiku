@@ -23,7 +23,7 @@ class ShowUpload
 
     private bool $asAction = false;
 
-    public function handle(Upload $upload, string $prefix = null): Upload
+    public function handle(Upload $upload, ?string $prefix = null): Upload
     {
         return $upload;
     }

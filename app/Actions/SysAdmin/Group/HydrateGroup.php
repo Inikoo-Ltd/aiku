@@ -56,6 +56,8 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletDeliveries;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePallets;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePickedBays;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePickingTrolleys;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePostRooms;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductsWithNoFamily;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
@@ -244,6 +246,10 @@ class HydrateGroup extends HydrateModel
 
         GroupHydrateMasterFamiliesWithNoDepartment::run($group);
         GroupHydrateInvoiceCategories::dispatch($group);
+
+        GroupHydratePickingTrolleys::run($group);
+        GroupHydratePickedBays::run($group);
+
     }
 
 }

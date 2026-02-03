@@ -81,7 +81,7 @@ class GetShippingDeliveryNoteData
 
         $cashOnDelivery = null;
         if ($deliveryNote->is_cash_on_delivery) {
-            $order          = $deliveryNote->order;
+            $order = $deliveryNote->orders->first();
             $cashOnDelivery = [
                 'amount'   => $order->total_amount,
                 'currency' => $order->currency->code

@@ -167,9 +167,9 @@ class ShowOutboxWorkshop extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-        $headCrumb = function (Email $email, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (Email $email, array $routeParameters, ?string $suffix = null) {
             return [
                 [
                     'type' => 'simple',

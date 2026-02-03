@@ -19,6 +19,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
 import Icon from "@/Components/Icon.vue"
+import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -317,7 +318,7 @@ const updateCollection = async (e: Event) => {
 
                 <template v-if="!boxStats?.is_collection">
                     <div class="font-semibold xmb-2 text-base">
-                        {{  }}
+                        {{ trans("Shipping") }}
                     </div>
 
                     <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
@@ -325,14 +326,14 @@ const updateCollection = async (e: Event) => {
                             <div v-if="boxStats.customer_client" class="mb-3">
                                 <div class="xtext-xs text-gray-600 leading-snug">
                                     <div>
-                                        <strong>Name:</strong>
+                                        <strong>{{ trans("Name") }}:</strong>
                                         {{ boxStats.customer_client.contact_name || boxStats.customer_client.name }}
                                     </div>
                                     <div v-if="boxStats.customer_client.email">
-                                        <strong>Email:</strong> {{ boxStats.customer_client.email }}
+                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.customer_client.email }}
                                     </div>
                                     <div v-if="boxStats.customer_client.phone">
-                                        <strong>Phone:</strong> {{ boxStats.customer_client.phone }}
+                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.customer_client.phone }}
                                     </div>
                                 </div>
                             </div>
@@ -349,6 +350,12 @@ const updateCollection = async (e: Event) => {
 
                 </template>
                 <div v-else class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
+
+                <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-gray-800 bg-gray-200 border border-gray-300 rounded-md">
+                    <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" />
+                    {{ trans('Cash on Delivery') }}
+                </div>
+
             </div>
         </BoxStatPallet>
 
@@ -370,8 +377,8 @@ const updateCollection = async (e: Event) => {
                                 {{ boxStats?.picker?.contact_name }}
                             </dd>
                         </dl>
-                        <div class="mt-2 border-t border-gray-300 w-full" />
                     </div>
+                    <div class="mt-2 border-t border-gray-300 w-full" />
 
                     <!-- Current State -->
                     <dl xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -413,14 +420,14 @@ const updateCollection = async (e: Event) => {
                     <!-- Section: Parcels -->
                     <div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
                         class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
-                        <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='mt-1 text-gray-400'
+                        <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
                             fixed-width aria-hidden='true' />
-                        <div class=" group w-full">
+                        <div class=" group w-full pl-px">
                             <div class="leading-4 xtext-base flex justify-between w-full py-1">
-                                <div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
+                                <div class="text-gray-500">{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
                                 <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
-                                <template v-if="!(boxStats?.shipments?.length > 1) && deliveryNote?.state === 'packed'">
+                                <template v-if="!(boxStats?.shipments?.length >= 1) && deliveryNote?.state === 'packed'">
                                     <div v-if="boxStats?.parcels?.length"
                                         @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
                                         class="cursor-pointer text-gray-400 hover:text-gray-600">
@@ -439,6 +446,10 @@ const updateCollection = async (e: Event) => {
                                         <LoadingIcon />
                                     </div>
                                 </template>
+
+                                <div v-else-if="deliveryNote?.state === 'packed'" class="text-xs text-gray-400 italic" v-tooltip="trans('Remove shipment to edit parcels')">
+                                    {{ trans("Not editable") }}
+                                </div>
                             </div>
 
                             <ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">

@@ -63,9 +63,8 @@ class SendEmailDeliveryChannel
                 return;
             }
 
-            //todo this is wrong
-            $unsubscribeUrl = $recipient->dispatchedEmail->ulid;
-            // route('org.unsubscribe.mailshot.show', $recipient->dispatchedEmail->ulid);
+            // Send redirect URL
+            $unsubscribeUrl = route('grp.redirect_unsubscribe', $recipient->dispatchedEmail->uuid);
 
             $this->sendEmailWithMergeTags(
                 $recipient->dispatchedEmail,
@@ -134,5 +133,4 @@ class SendEmailDeliveryChannel
 
         return 0;
     }
-
 }

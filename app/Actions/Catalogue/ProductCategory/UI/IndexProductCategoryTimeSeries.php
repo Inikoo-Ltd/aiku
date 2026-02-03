@@ -21,7 +21,7 @@ class IndexProductCategoryTimeSeries extends OrgAction
 {
     public function handle(ProductCategory $productCategory, string|null $prefix): LengthAwarePaginator
     {
-        $frequency = request()->get('frequency', TimeSeriesFrequencyEnum::DAILY->value);
+        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::DAILY->value);
         $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
 
         if ($prefix) {

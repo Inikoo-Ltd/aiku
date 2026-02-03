@@ -223,8 +223,12 @@ class ShowOrder extends OrgAction
                     'tooltip' => __('Edit the order reference'),
                     'label'   => __('Edit'),
                     'route'   => [
-                        'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                        'parameters' => array_values($request->route()->originalParameters())
+                        'name'       => 'grp.org.shops.show.ordering.orders.edit',
+                        'parameters' => [
+                            'organisation' => $order->organisation->slug,
+                            'shop'         => $order->shop->slug,
+                            'order'        => $order->slug
+                        ]
                     ]
                 ]
             ];
@@ -359,6 +363,12 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
+                    'update_discount'            => [
+                        'name'       => 'grp.models.order.discount.update',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
                     'delivery_note'              => $deliveryNoteRoute
                 ],
 
@@ -374,8 +384,7 @@ class ShowOrder extends OrgAction
 
                 'payments_data'     => $paymentsData,
                 'payments_accounts' => $paymentAccountData,
-
-
+                'state'             => $order->state->value,
                 'proforma_invoice' => [
                     'check_list'         => [
                         [
@@ -783,11 +792,11 @@ class ShowOrder extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation' => $this->organisation->slug,
-                        'shop'         => $order->shop->slug,
-                        'customer'     => $this->parent->customer->slug,
-                        'customerSalesChannel'  => $this->parent->platform->slug,
-                        'order'        => $order->slug
+                        'organisation'         => $this->organisation->slug,
+                        'shop'                 => $order->shop->slug,
+                        'customer'             => $this->parent->customer->slug,
+                        'customerSalesChannel' => $this->parent->platform->slug,
+                        'order'                => $order->slug
                     ]
 
                 ]

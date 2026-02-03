@@ -17,6 +17,7 @@ use App\Models\CRM\Customer;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailOngoingRun;
 use App\Models\Comms\Mailshot;
+use Sentry;
 
 trait WithSendCustomerOutboxEmail
 {
@@ -33,9 +34,17 @@ trait WithSendCustomerOutboxEmail
         ?string $passwordToken = null,
         ?string $invoiceUrl = null,
         EmailOngoingRun|EmailBulkRun|Mailshot|null $parent = null
-    ): DispatchedEmail {
+    ): DispatchedEmail|null {
         /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', $code->value)->first();
+
+        $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
+        if ($emailHtmlBody === null) {
+            Sentry::captureMessage('Email live snapshot not found for outbox code: ' . $code->value.' outobox id: '.$outbox->id.'');
+            return null;
+        }
+
+
 
         $recipient = $customer;
         $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $recipient, [
@@ -46,7 +55,6 @@ trait WithSendCustomerOutboxEmail
         ]);
         $dispatchedEmail->refresh();
 
-        $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
 
         return $this->sendEmailWithMergeTags(
             $dispatchedEmail,

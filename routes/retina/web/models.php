@@ -66,6 +66,7 @@ use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderEligibleGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
@@ -126,6 +127,7 @@ use App\Actions\Retina\Fulfilment\StoredItem\AttachRetinaStoredItemToReturn;
 use App\Actions\Retina\Fulfilment\StoredItem\StoreRetinaStoredItem;
 use App\Actions\Retina\Fulfilment\StoredItem\SyncRetinaStoredItemToPallet;
 use App\Actions\Retina\Fulfilment\StoredItem\UpdateRetinaStoredItem;
+use App\Actions\Retina\Fulfilment\StoredItems\ImportRetinaStoredItem;
 use App\Actions\Retina\Media\AttachRetinaAttachmentToModel;
 use App\Actions\Retina\Media\DetachRetinaAttachmentFromModel;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
@@ -227,6 +229,7 @@ Route::name('pallet.')->prefix('pallet/{pallet:id}')->group(function () {
 
 Route::post('stored-items', StoreRetinaStoredItem::class)->name('stored-items.store');
 Route::patch('stored-items/{storedItem:id}', UpdateRetinaStoredItem::class)->name('stored-items.update');
+Route::post('stored-items/bulk-edit/import', ImportRetinaStoredItem::class)->name('stored-items.bulk_edit.import');
 
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::patch('update', UpdateRetinaCustomer::class)->name('update');
@@ -246,6 +249,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('/', UpdateRetinaOrder::class)->name('update');
+    Route::patch('update-eligible-gift', UpdateRetinaOrderEligibleGift::class)->name('update_eligible_gift');
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');

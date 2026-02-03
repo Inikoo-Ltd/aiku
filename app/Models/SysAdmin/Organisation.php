@@ -10,6 +10,7 @@ namespace App\Models\SysAdmin;
 
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
@@ -71,6 +72,8 @@ use App\Models\HumanResources\Workplace;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
+use App\Models\Inventory\PickedBay;
+use App\Models\Inventory\PickingTrolley;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Ordering\Adjustment;
@@ -93,6 +96,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -141,6 +145,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property array<array-key, mixed> $opening_hours
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
+ * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
  * @property-read LaravelCollection<int, Adjustment> $adjustments
@@ -215,6 +220,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, PaymentAccount> $paymentAccounts
  * @property-read LaravelCollection<int, PaymentServiceProvider> $paymentServiceProviders
  * @property-read LaravelCollection<int, Payment> $payments
+ * @property-read LaravelCollection<int, PickedBay> $pickedBays
+ * @property-read LaravelCollection<int, PickingTrolley> $pickingTrolleys
  * @property-read LaravelCollection<int, Picking> $pickings
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read \App\Models\SysAdmin\OrganisationProcurementStats|null $procurementStats
@@ -462,6 +469,16 @@ class Organisation extends Model implements HasMedia, Auditable
     public function shops(): HasMany
     {
         return $this->hasMany(Shop::class);
+    }
+
+    public function activeShops(): HasMany
+    {
+        return $this->hasMany(Shop::class)->where('state', ShopStateEnum::OPEN);
+    }
+
+    public function orderFromActiveShops(): Builder
+    {
+        return Order::whereIn('shop_id', $this->activeShops()->get()->pluck('id'));
     }
 
     public function productions(): HasMany
@@ -890,5 +907,15 @@ class Organisation extends Model implements HasMedia, Auditable
     public function holidays(): HasMany
     {
         return $this->hasMany(Holiday::class);
+    }
+
+    public function pickingTrolleys(): HasMany
+    {
+        return $this->hasMany(PickingTrolley::class);
+    }
+
+    public function pickedBays(): HasMany
+    {
+        return $this->hasMany(PickedBay::class);
     }
 }

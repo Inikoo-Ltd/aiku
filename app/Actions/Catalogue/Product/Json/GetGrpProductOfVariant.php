@@ -10,9 +10,9 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
+use App\Http\Resources\Web\ProductOfVariantResource;
 use App\Models\Catalogue\Variant;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Web\WebBlockProductResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class GetGrpProductOfVariant extends OrgAction
@@ -23,7 +23,7 @@ class GetGrpProductOfVariant extends OrgAction
             'products' => $variant->allProduct
                 ->map(
                     fn ($product) =>
-                    WebBlockProductResource::make($product)
+                    ProductOfVariantResource::make($product)
                         ->toArray(request())
                 )
                 ->values()
@@ -33,7 +33,7 @@ class GetGrpProductOfVariant extends OrgAction
 
     public function asController(Variant $variant, ActionRequest $request): array
     {
-        $this->initialisation($request);
+        $this->initialisation($variant->organisation, $request);
 
         return $this->handle($variant);
     }

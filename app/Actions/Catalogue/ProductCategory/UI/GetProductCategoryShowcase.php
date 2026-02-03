@@ -8,9 +8,11 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;
+use App\Http\Resources\Catalogue\OfferResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -181,9 +183,10 @@ class GetProductCategoryShowcase
             ],
         ];
 
-
+        $offer = IndexOffers::make()->getFirstInProductCategory($productCategory, 'Category Quantity Ordered Order Interval');
 
         $data['has_webpage'] = (bool)$productCategory->webpage;
+        $data['gr_offer_data'] = $offer ? OfferResource::make($offer) : null;
         return $data;
     }
 }

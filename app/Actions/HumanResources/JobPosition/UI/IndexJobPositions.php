@@ -37,7 +37,7 @@ class IndexJobPositions extends OrgAction
 
     private Group|Employee|Organisation $parent;
 
-    public function handle(Group|Organisation|Employee $parent, string $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Employee $parent, ?string $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);

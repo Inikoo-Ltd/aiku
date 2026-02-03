@@ -6,7 +6,9 @@ import {
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
-    faFolderDownload,faQuoteLeft
+    faFolderDownload,faQuoteLeft,
+    faSync,
+    faSearch
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -15,7 +17,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import Breadcrumb from 'primevue/breadcrumb'
 import Message from 'primevue/message'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { FontAwesomeIcon, FontAwesomeLayers } from '@fortawesome/vue-fontawesome'
 import type { PageHeadingTypes } from '@/types/PageHeading'
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
@@ -36,6 +38,9 @@ import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import { trans } from "laravel-vue-i18n"
 import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { faMagnifyingGlass, faMagnifyingGlassArrowRight } from '@fortawesome/free-solid-svg-icons'
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 
 
 library.add(
@@ -58,7 +63,8 @@ library.add(
     faPaperclip,
     faFolderTree,
     faFolderDownload,
-    faQuoteLeft
+    faQuoteLeft,
+    faMagnifyingGlass
 )
 
 const props = defineProps<{
@@ -81,9 +87,18 @@ const props = defineProps<{
     stocks?: {}
     images?: {}
     attachments?: {}
+    luigi_data: {
+        webpage_id: string
+        last_reindexed: string
+        luigisbox_tracker_id: string
+        luigisbox_private_key: string
+        luigisbox_lbx_code: string
+    }
     master : boolean
     mini_breadcrumbs? : any[]
     masterRoute?: routeType
+    is_external_shop?: boolean
+    product_state?: boolean
     taxonomy: {
         department?: {
             name: string
@@ -138,6 +153,9 @@ const component = computed(() => {
 
 // Warning flag
 const showMissingTaxonomyMessage = computed(() => {
+    if(props.is_external_shop) {
+        return false
+    }
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
 
@@ -163,6 +181,20 @@ const showMissingTaxonomyMessage = computed(() => {
             </Link>
         </template>
 
+        <template #button-reindex>
+            <ButtonWithLink
+                method="post"
+                :style="'edit'"
+                :routeTarget="{name: 'grp.models.webpage_luigi.reindex', parameters: { webpage: luigi_data.webpage_id }}"
+            >
+                <template #icon>
+                    <FontAwesomeIcon :icon="faSearch"/>
+                </template>
+                <template #label>
+                    {{ trans('Reindex') }}
+                </template>
+            </ButtonWithLink>
+        </template>
         <template #other>
         </template>
     </PageHeading>

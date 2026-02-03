@@ -36,7 +36,7 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
         $platformUser = $customerSalesChannel->user;
 
         $shippingService = Arr::pull($modelData, 'shipping_service');
-        $shippingPrice = (string) Arr::pull($modelData, 'shipping_price');
+        $shippingPrice = (string) Arr::pull($modelData, 'shipping_price', 0);
         $shippingDispatchTime = (string) Arr::pull($modelData, 'shipping_max_dispatch_time');
 
         if (Arr::has($modelData, 'is_vat_adjustment')) {
@@ -51,12 +51,12 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             $shippingServiceData = $platformUser->getServicesWithCarrierInfo()[$shippingService];
             data_set($modelData, 'settings.shipping', $shippingServiceData);
         }
-        if ($shippingPrice) {
-            data_set($modelData, 'settings.shipping.price', $shippingPrice);
-        }
+
         if ($shippingDispatchTime) {
             data_set($modelData, 'settings.shipping.max_dispatch_time', $shippingDispatchTime);
         }
+
+        data_set($modelData, 'settings.shipping.price', $shippingPrice);
 
         $returnAccepted = Arr::pull($modelData, 'return_accepted');
         $returnPayer = Arr::pull($modelData, 'return_payer');
@@ -146,7 +146,7 @@ class UpdateEbayCustomerSalesChannel extends OrgAction
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
             'name'              => ['sometimes', 'string', 'max:255'],
             'shipping_service'              => ['sometimes', 'string', 'max:255'],
-            'shipping_price'              => ['sometimes', 'string', 'max:255'],
+            'shipping_price'              => ['sometimes', 'string', 'min:0'],
             'shipping_max_dispatch_time'              => ['sometimes', 'string', 'max:255'],
 
             'return_policy_id' => ['sometimes', 'string'],

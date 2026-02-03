@@ -35,6 +35,8 @@ class EmailTemplateResource extends JsonResource
             'title'           => $emailTemplate->name,
             'image'           => $image ? GetPictureSources::run($image) : null,
             'image_thumbnail' => $imageThumbnail ? GetPictureSources::run($imageThumbnail) : null,
+            'created_at'      => $emailTemplate->created_at,
+            'shop_name'       => $emailTemplate->shop_name ?? '',
         ];
     }
 }

@@ -33,6 +33,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Ordering\SalesChannel;
 
 class UpdateShop extends OrgAction
 {
@@ -77,6 +78,26 @@ class UpdateShop extends OrgAction
                 imageData: $imageData,
                 scope: 'avatar'
             );
+        }
+
+        if (Arr::has($modelData, 'collection_follow_master')) {
+            data_set($modelData, 'settings.catalog.collection_follow_master', Arr::pull($modelData, 'collection_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'department_follow_master')) {
+            data_set($modelData, 'settings.catalog.department_follow_master', Arr::pull($modelData, 'department_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'sub_department_follow_master')) {
+            data_set($modelData, 'settings.catalog.sub_department_follow_master', Arr::pull($modelData, 'sub_department_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'family_follow_master')) {
+            data_set($modelData, 'settings.catalog.family_follow_master', Arr::pull($modelData, 'family_follow_master'));
+        }
+
+        if (Arr::has($modelData, 'product_follow_master')) {
+            data_set($modelData, 'settings.catalog.product_follow_master', Arr::pull($modelData, 'product_follow_master'));
         }
 
         foreach ($modelData as $key => $value) {
@@ -139,6 +160,28 @@ class UpdateShop extends OrgAction
                 strict: false,
                 audit: true
             );
+        }
+
+        $currentChannelIds = $shop->salesChannels()->allRelatedIds()->toArray();
+        $hasChannelUpdates = false;
+        $keys = array_keys($modelData);
+        foreach ($keys as $key) {
+            if (str_starts_with($key, 'sales_channel_')) {
+                $hasChannelUpdates = true;
+                $channelId = (int) str_replace('sales_channel_', '', $key);
+                $isActive = $modelData[$key];
+                if ($isActive === true) {
+                    if (!in_array($channelId, $currentChannelIds)) {
+                        $currentChannelIds[] = $channelId;
+                    }
+                } else {
+                    $currentChannelIds = array_diff($currentChannelIds, [$channelId]);
+                }
+                unset($modelData[$key]);
+            }
+        }
+        if ($hasChannelUpdates) {
+            $shop->salesChannels()->sync(array_values($currentChannelIds));
         }
 
         if (Arr::exists($modelData, 'collection_address')) {
@@ -316,8 +359,18 @@ class UpdateShop extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
-            'colour'                       => ['sometimes', 'string'],
+            'colour'                        => ['sometimes', 'string'],
+            'collection_follow_master'      => ['sometimes', 'boolean'],
+            'department_follow_master'      => ['sometimes', 'boolean'],
+            'sub_department_follow_master'  => ['sometimes', 'boolean'],
+            'family_follow_master'          => ['sometimes', 'boolean'],
+            'product_follow_master'         => ['sometimes', 'boolean'],
         ];
+
+        $channelIds = SalesChannel::pluck('id');
+        foreach ($channelIds as $id) {
+            $rules['sales_channel_' . $id] = ['sometimes', 'boolean'];
+        }
 
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);

@@ -16,6 +16,13 @@ if (!function_exists('group')) {
     }
 }
 
+if (!function_exists('escapeSQLSearch')) {
+    function escapeSQLSearch(string $value): string
+    {
+        return preg_quote($value, '/');
+    }
+}
+
 if (!function_exists('getFieldWebpageData')) {
     function getFieldWebpageData(Webpage $webpage): ?array
     {
@@ -127,7 +134,7 @@ if (!function_exists('cleanUtf8')) {
 
 
 if (!function_exists('percentage')) {
-    function percentage($quantity, $total, int $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false): string
+    function percentage($quantity, $total, int|null $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false): string
     {
         $locale_info = localeconv();
 

@@ -47,7 +47,7 @@ class UpdateProfile extends OrgAction
                 data_set($modelData, 'google2fa_secret', data_get($twoFa, 'secretKey'));
             } else {
                 // Remove from DB if it is false
-                data_set($modelData, 'google2fa_secret', '');
+                data_set($modelData, 'google2fa_secret', null);
             }
         }
 
@@ -105,5 +105,12 @@ class UpdateProfile extends OrgAction
         return $this->handle($request->user(), $this->validatedData);
     }
 
+    public function asAction(User $user, array $modelData): User
+    {
+        $this->asAction = true;
+        $this->initialisationFromGroup(app('group'), $modelData);
+
+        return $this->handle($user, $this->validatedData);
+    }
 
 }

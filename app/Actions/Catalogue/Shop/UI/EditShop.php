@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
@@ -25,6 +26,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Ordering\SalesChannel;
 
 class EditShop extends OrgAction
 {
@@ -103,6 +105,22 @@ class EditShop extends OrgAction
             __('Shopify Keys'),
             __('Wix Keys'),
         ];
+        $salesChannels = SalesChannel::orderBy('id', 'asc')->get();
+        $salesChannelFields = [];
+        foreach ($salesChannels as $channel) {
+
+            if ($channel->type == SalesChannelTypeEnum::WEBSITE || $channel->type == SalesChannelTypeEnum::NA) {
+                continue;
+            }
+
+            $typeLabel = $channel->type->labels()[$channel->type->value] ?? $channel->type->value;
+            $salesChannelFields['sales_channel_' . $channel->id] = [
+                'label'       => $channel->name,
+                'type'        => 'toggle',
+                'value'       => $shop->salesChannels->contains($channel->id),
+                'information' => __('Enable the :name sales channel. Active means it is available for this shop; inactive means it is not available for this shop.', ['name' => $channel->name]),
+            ];
+        }
 
         $formData = [
             'blueprint' => [
@@ -195,6 +213,47 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
+                $shop->masterShop ? [
+                    'label'  => __('Catalogue'),
+                    'icon'   => 'fal fa-books',
+                    'fields' => [
+                        'collection_follow_master' => [
+                            'label'         => 'Collection Content Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.collection_follow_master', false),
+                            'information'   => __('This would force all Collections under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'department_follow_master' => [
+                            'label'         => 'Department Content Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.department_follow_master', false),
+                            'information'   => __('This would force all Departments under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'sub_department_follow_master' => [
+                            'label'         => 'Sub Department Content Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.sub_department_follow_master', false),
+                            'information'   => __('This would force all Sub Departments under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'family_follow_master' => [
+                            'label'         => 'Family Content Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.family_follow_master', false),
+                            'information'   => __('This would force all Families under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                        'product_follow_master' => [
+                            'label'         => 'Product Content Follow Master',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'catalog.product_follow_master', false),
+                            'information'   => __('This would force all Products under this shop to follow any updates done on master'),
+                            'warningText'   => __('Changing this would determine whether or not local changes will be overwritten when the master is updated. Are you sure you want to change it?')
+                        ],
+                    ]
+                ] : [],
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
@@ -445,6 +504,11 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-life-ring',
                     'fields' => $helpPortalFields,
                 ],
+                [
+                    'label'  => __('Sales Channels'),
+                    'icon'   => 'fal fa-shopping-cart',
+                    'fields' => $salesChannelFields,
+                ]
             ],
             'args' => [
                 'updateRoute' => [

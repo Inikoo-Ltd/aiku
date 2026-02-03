@@ -462,7 +462,7 @@ test('delete product', function ($product) {
 
     expect($shop->stats->number_products)->toBe(2)
         ->and($product->stats->number_product_variants)->toBe(2)
-        ->and($shop->group->catalogueStats->number_assets)->toBe(2)
+        ->and($shop->group->catalogueStats->number_assets)->toBe(4)
         ->and($shop->group->catalogueStats->number_products)->toBe(2)
         ->and($shop->organisation->catalogueStats->number_products)->toBe(2);
 
@@ -470,7 +470,7 @@ test('delete product', function ($product) {
     $shop->refresh();
 
     expect($shop->stats->number_products)->toBe(1)
-        ->and($shop->group->catalogueStats->number_assets)->toBe(1)
+        ->and($shop->group->catalogueStats->number_assets)->toBe(3)
         ->and($shop->group->catalogueStats->number_products)->toBe(1)
         ->and($shop->organisation->catalogueStats->number_products)->toBe(1);
 
@@ -495,14 +495,14 @@ test('create service', function (Shop $shop) {
     expect($service)->toBeInstanceOf(Service::class)
         ->and($asset)->toBeInstanceOf(Asset::class)
         ->and($service->asset->stats->number_historic_assets)->toBe(1)
-        ->and($group->catalogueStats->number_assets)->toBe(2)
+        ->and($group->catalogueStats->number_assets)->toBe(4)
         ->and($group->catalogueStats->number_products)->toBe(1)
         ->and($group->catalogueStats->number_services)->toBe(1)
         ->and($group->catalogueStats->number_assets_type_product)->toBe(1)
         ->and($group->catalogueStats->number_assets_type_service)->toBe(1)
         ->and($organisation->catalogueStats->number_products)->toBe(1)
         ->and($organisation->catalogueStats->number_assets_type_service)->toBe(1)
-        ->and($shop->stats->number_assets)->toBe(2)
+        ->and($shop->stats->number_assets)->toBe(3)
         ->and($shop->stats->number_products)->toBe(1)
         ->and($shop->stats->number_assets_type_product)->toBe(1)
         ->and($shop->stats->number_assets_type_service)->toBe(1);
@@ -579,9 +579,9 @@ test('create charge', function ($shop) {
     );
     $shop->refresh();
     expect($charge)->toBeInstanceOf(Charge::class)
-        ->and($shop->stats->number_assets_type_charge)->toBe(1)
-        ->and($shop->organisation->catalogueStats->number_assets_type_charge)->toBe(1)
-        ->and($shop->group->catalogueStats->number_assets_type_charge)->toBe(1);
+        ->and($shop->stats->number_assets_type_charge)->toBe(2)
+        ->and($shop->organisation->catalogueStats->number_assets_type_charge)->toBe(3)
+        ->and($shop->group->catalogueStats->number_assets_type_charge)->toBe(3);
 
 
     return $charge;
@@ -603,9 +603,9 @@ test('update charge', function ($charge) {
         ->and($updatedCharge->name)->toBe('Charge1')
         ->and($updatedCharge->state)->toBe(ChargeStateEnum::ACTIVE)
         ->and($updatedCharge->status)->toBeTrue()
-        ->and($updatedCharge->shop->stats->number_assets_type_charge)->toBe(1)
-        ->and($updatedCharge->organisation->catalogueStats->number_assets_type_charge)->toBe(1)
-        ->and($updatedCharge->group->catalogueStats->number_assets_type_charge)->toBe(1);
+        ->and($updatedCharge->shop->stats->number_assets_type_charge)->toBe(2)
+        ->and($updatedCharge->organisation->catalogueStats->number_assets_type_charge)->toBe(3)
+        ->and($updatedCharge->group->catalogueStats->number_assets_type_charge)->toBe(3);
 
 
     return $updatedCharge;

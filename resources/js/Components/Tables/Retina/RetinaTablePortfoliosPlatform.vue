@@ -513,6 +513,35 @@ if (props.platform_data?.type === 'ebay') {
     }
 }
 
+const onClickFilterForSale = (query: string) => {
+    let xx: string | null = 'true'
+    if (compTableFilterForSale.value === query) {
+        xx = null
+    } else {
+        xx = query
+    }
+
+    router.reload(
+        {
+            data: {[`${props.tab}_filter[is_for_sale]`]: xx},  // Sent to url parameter (?tab=showcase, ?tab=menu)
+            // only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+            onStart: () => {
+                isLoadingTable.value = query || null
+            },
+            onSuccess: () => {
+            },
+            onFinish: (e) => {
+                isLoadingTable.value = null
+            },
+            onError: (e) => {
+            }
+        }
+    )
+}
+
+const compTableFilterForSale = computed(() => {
+    return layout.currentQuery?.[`${props.tab}_filter`]?.is_for_sale
+})
 </script>
 
 <template>
@@ -587,18 +616,32 @@ if (props.platform_data?.type === 'ebay') {
 
 
         <template #add-on-button>
-            <Button @click="onClickFilterOutOfStock('out-of-stock')"
-                    v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
-                    :key="compTableFilterStatus"
-                    :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
-                    :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
-                    iconRight="fal fa-exclamation-triangle" :loading="isLoadingTable == 'out-of-stock'"/>
+            <Button
+                @click="onClickFilterForSale('true')"
+                v-tooltip="trans('Only show products that are for sale')"
+                :label="trans('Only For Sale')"
+                size="xs"
+				class="whitespace-nowrap"
+                :key="compTableFilterForSale"
+                :type="compTableFilterForSale ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-times"
+                :loading="isLoadingTable == 'discontinued'"
+            />
             <Button @click="onClickFilterOutOfStock('discontinued')"
                     v-tooltip="trans('Filter the product that discontinued')" label="Discontinued" size="xs"
+				    class="whitespace-nowrap"
                     :key="compTableFilterStatus"
                     :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
                     :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
                     iconRight="fal fa-times" :loading="isLoadingTable == 'discontinued'"/>
+            <Button @click="onClickFilterOutOfStock('out-of-stock')"
+                    v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
+				    class="whitespace-nowrap"
+                    :key="compTableFilterStatus"
+                    :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
+                    :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
+                    iconRight="fal fa-exclamation-triangle" :loading="isLoadingTable == 'out-of-stock'"/>
         </template>
 
         <template #cell(image)="{ item: product }">
@@ -1036,58 +1079,34 @@ if (props.platform_data?.type === 'ebay') {
         </div>
     </Modal>
 
-    <Modal :isOpen="isOpenModalEditProduct" width="w-full max-w-2xl h-full max-h-[570px]" @close="isOpenModalEditProduct = false">
-
+    <Modal :isOpen="isOpenModalEditProduct" width="w-full max-w-2xl h-full" @close="isOpenModalEditProduct = false">
+        <div class="max-h-[570px] overflow-auto">
             <div class="text-xl font-semibold text-center">
                 {{ trans("Edit Product") }}
             </div>
 
             <div class="mb-3">
                 <label for="edit-product-title" class="block text-sm font-semibold">{{ trans("Title") }}</label>
-                    <InputText
-                        v-model="selectedEditProduct.name"
-                        fluid
-                        inputId="edit-product-title"
-                        size="small"
-                        :disabled="isLoadingSubmitErrorTitle"
-                    />
+                <InputText v-model="selectedEditProduct.name" fluid inputId="edit-product-title" size="small"
+                    :disabled="isLoadingSubmitErrorTitle" />
             </div>
 
             <div class="mb-3">
                 <label for="edit-product-rrp" class="block text-sm font-semibold">{{ trans("Selling Price") }}</label>
-                <InputNumber
-                    :modelValue="selectedEditProduct?.customer_price"
-                    inputId="edit-product-rrp"
-                    mode="currency"
-                    fluid
-                    size="small"
-                    :currency="layout?.iris?.currency?.code"
-                    :locale="layout.locale"
-                    :disabled="true"
-                />
+                <InputNumber :modelValue="selectedEditProduct?.customer_price" inputId="edit-product-rrp"
+                    mode="currency" fluid size="small" :currency="layout?.iris?.currency?.code" :locale="layout.locale"
+                    :disabled="true" />
                 <div class="mt-2 flex flex-row gap-2">
-                    <Button
-                        v-for="percent in [20, 40, 60, 80, 100]"
-                        :key="'p'+percent"
+                    <Button v-for="percent in [20, 40, 60, 80, 100]" :key="'p' + percent"
                         @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.basePrice || 0, percent, 'percent'))"
-                        :label="`+${percent}%`"
-                        size="xs"
-                        type="tertiary"
-                        :style="'white-w-outline'"
-                    />
-                    <Button
-                        v-for="amount in [2, 4, 6, 8, 10]"
-                        :key="'a'+amount"
+                        :label="`+${percent}%`" size="xs" type="tertiary" :style="'white-w-outline'" />
+                    <Button v-for="amount in [2, 4, 6, 8, 10]" :key="'a' + amount"
                         @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.basePrice || 0, amount, 'fixed'))"
-                        :label="`+${amount}`"
-                        size="xs"
-                        type="tertiary"
-                        :style="'white-w-outline'"
-                    />
+                        :label="`+${amount}`" size="xs" type="tertiary" :style="'white-w-outline'" />
                 </div>
             </div>
 
-<!--            <div v-if="platform_data.type === 'ebay'">
+            <!--            <div v-if="platform_data.type === 'ebay'">
                 <div class="mb-3" v-for="(aspect, key) in selectedEditProduct.portfolio_data?.product?.aspects">
                     <label :for="'edit-product-'+key" class="block text-sm font-semibold">{{ trans(key) }}</label>
                     <InputText
@@ -1102,36 +1121,29 @@ if (props.platform_data?.type === 'ebay') {
                 </div>
             </div>-->
             <div class="mb-3">
-                <label for="edit-product-description" class="block text-sm font-semibold">{{ trans("Description") }}</label>
+                <label for="edit-product-description" class="block text-sm font-semibold">{{ trans("Description")}}</label>
                 <Editor2
-                    v-model="selectedEditProduct.description"
-                    class="w-full"
+                    v-model="selectedEditProduct.description" 
+                    class="w-full" 
                     :placeholder="trans('Enter text')"
+                    :toogle="['heading', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'query', 'fontFamily', 'orderedList', 'blockquote' , 'divider' , 'alignLeft' , 'alignRight' , 'link' , 'alignCenter' , 'undo', 'redo' , 'highlight' , 'color' , 'clear', 'video' , 'table' ]"
                 >
                     <template #editor-content="{ editor }">
-                        <div class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-gray-400">
+                        <div
+                            class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-gray-400">
                             <EditorContent :editor="editor" class="focus:outline-none" />
                         </div>
                     </template>
                 </Editor2>
             </div>
             <div class="mt-3 flex gap-2">
-                <Button
-                    type="tertiary"
-                    :style="'white-w-outline'"
+                <Button type="tertiary" :style="'white-w-outline'"
                     @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'draft')"
-                    :label="trans('Save as Draft')"
-                    full
-                    :loading="isLoadingSubmitErrorTitle"
-                />
-                <Button
-                    @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'publish')"
-                    :label="trans('Save & Upload')"
-                    full
-                    :loading="isLoadingSubmitErrorTitle"
-                />
+                    :label="trans('Save as Draft')" full :loading="isLoadingSubmitErrorTitle" />
+                <Button @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'publish')"
+                    :label="trans('Save & Upload')" full :loading="isLoadingSubmitErrorTitle" />
             </div>
-
+        </div>
     </Modal>
 
 </template>

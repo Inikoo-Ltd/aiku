@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\Search\MasterCollectionRecordSearch;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
@@ -32,8 +33,15 @@ class DeleteMasterCollection extends GrpAction
     public function handle(MasterCollection $masterCollection, bool $forceDelete = false): void
     {
         DB::transaction(function () use ($masterCollection, $forceDelete) {
-            DB::table('collections')->where('master_collection_id', $masterCollection->id)
-                ->update(['master_collection_id' => null]);
+            // No need to detach, will delete children collections
+            // DB::table('collections')->where('master_collection_id', $masterCollection->id)
+            //     ->update(['master_collection_id' => null]);
+
+            $masterCollection
+                ->childrenCollections
+                ->each(function ($collection) {
+                    DeleteCollection::make()->action($collection);
+                });
 
             if ($forceDelete) {
                 DB::table('model_has_master_collections')->where('master_collection_id', $masterCollection->id)->delete();

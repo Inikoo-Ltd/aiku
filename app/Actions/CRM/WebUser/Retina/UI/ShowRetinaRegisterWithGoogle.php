@@ -40,6 +40,7 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
                 'countriesAddressData' => GetAddressData::run(),
                 'requiresPhoneNumber' => Arr::get($this->shop->settings, 'registration.require_phone_number', false),
                 'polls'                => $pollsResource,
+                'registration_settings' => Arr::get($this->shop->settings, 'registration', []),
                 'registerRoute'        => [
                     'name'       => 'retina.register_from_google.store',
                 ],

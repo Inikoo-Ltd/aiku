@@ -336,7 +336,18 @@ class Website extends Model implements Auditable, HasMedia
     {
         $scheme = app()->environment('production') ? 'https' : 'http';
 
-        return $scheme.'://'.$this->domain;
+
+        if (app()->environment('local')) {
+            if ($this->shop->type == ShopTypeEnum::DROPSHIPPING) {
+                return 'https://ds.test';
+            } elseif ($this->shop->type == ShopTypeEnum::FULFILMENT) {
+                return 'https://fulfilment.test';
+            } elseif ($this->shop->type == ShopTypeEnum::B2B) {
+                return 'https://ecom.test';
+            }
+        }
+
+        return $scheme . '://' . $this->domain;
     }
 
     public function webBlocks(): MorphMany

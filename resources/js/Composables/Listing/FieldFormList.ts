@@ -67,9 +67,12 @@ import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
 import TagsCustomer from "@/Components/Forms/Fields/TagsCustomer.vue";
 import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue";
 import FileUpload from '@/Components/Forms/Fields/FileUpload.vue'
-import InputTwin from '@/Components/Forms/Fields/InputTwin.vue'
+import InputJsonByForm from '@/Components/Forms/Fields/InputJsonByForm.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
+import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
+import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
+import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -138,10 +141,13 @@ export const componentsList: { [key: string]: Component } = {
     'tags-customer': TagsCustomer,
     'retina-tags-customer': RetinaTagsCustomer,
     'email_subscriptions': WrapperEmailSubscribetion,
-    'input_twin': InputTwin,
+    'set_json_by_form': InputJsonByForm,
     'list-selector-trade-unit': ListSelectorTradeUnit,
     'file_upload': FileUpload,
-    'input-variant' : VariantsField
+    'input-variant' : VariantsField,
+    'editOffer' : EditOffer,
+    'offer_fields'  : OfferFields,
+    'vol_discount' : InputVolDiscount
 }
 
 export const getComponent = (componentName: string) => {

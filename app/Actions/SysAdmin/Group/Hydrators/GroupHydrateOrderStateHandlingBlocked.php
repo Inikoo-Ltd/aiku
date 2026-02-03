@@ -35,8 +35,8 @@ class GroupHydrateOrderStateHandlingBlocked implements ShouldBeUnique
         }
         $stats = [
 
-            'number_orders_state_handling_blocked'              => $group->orders()->where('state', OrderStateEnum::HANDLING_BLOCKED)->count(),
-            'orders_state_handling_blocked_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::HANDLING_BLOCKED)->sum('grp_net_amount'),
+            'number_orders_state_handling_blocked'              => $group->orderFromActiveShops()->where('state', OrderStateEnum::HANDLING_BLOCKED)->count(),
+            'orders_state_handling_blocked_amount_grp_currency' => $group->orderFromActiveShops()->where('state', OrderStateEnum::HANDLING_BLOCKED)->sum('grp_net_amount'),
 
 
         ];

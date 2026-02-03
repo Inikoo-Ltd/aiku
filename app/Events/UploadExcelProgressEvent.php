@@ -36,8 +36,13 @@ class UploadExcelProgressEvent implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
+        $eventName = 'grp.personal.' . $this->user->id;
+        if (isset($this->data->web_user_id)) {
+            $eventName = 'retina.personal.' . $this->data->web_user_id;
+        }
+
         return [
-            new PrivateChannel('grp.personal.' . $this->user->id)
+            new PrivateChannel($eventName)
         ];
     }
 

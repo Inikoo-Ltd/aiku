@@ -114,6 +114,7 @@ class FindShopifyProductVariant
             $products = [];
             foreach ($body['data']['products']['edges'] as $edge) {
                 $product = $edge['node'];
+                $shopifyVariants   = data_get($product, 'variants.edges');
 
                 $products[] = [
                     'id'           => $product['id'],
@@ -122,7 +123,8 @@ class FindShopifyProductVariant
                     'vendor'       => $product['vendor'],
                     'images'       => array_map(function ($imageEdge) {
                         return $imageEdge['node'];
-                    }, $product['images']['edges'] ?? [])
+                    }, $product['images']['edges'] ?? []),
+                    'sku_list'          => collect($shopifyVariants)->pluck('node.sku')
                 ];
 
             }

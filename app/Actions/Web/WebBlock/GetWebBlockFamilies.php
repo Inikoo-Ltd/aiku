@@ -31,7 +31,7 @@ class GetWebBlockFamilies
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', 'ProductCategory');
                 })
-                ->select(['product_categories.code', 'product_categories.web_images', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->select(['product_categories.code', 'product_categories.web_images','product_categories.offers_data', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where(function ($query) use ($webpage) {
                     if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
@@ -56,6 +56,7 @@ class GetWebBlockFamilies
                 ->whereNotNull('webpages.id')
                 ->where('webpages.state', WebpageStateEnum::LIVE->value)
                 ->whereNull('product_categories.deleted_at')
+                ->whereNull('webpages.deleted_at')
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
             $families = DB::table('product_categories')
@@ -67,13 +68,14 @@ class GetWebBlockFamilies
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
-                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'webpages.url', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images','product_categories.offers_data', 'webpages.url', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)
                 ->whereNull('product_categories.deleted_at')
+                ->whereNull('webpages.deleted_at')
                 ->get();
         } else {
             return $webBlock;

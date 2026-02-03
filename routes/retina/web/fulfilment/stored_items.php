@@ -7,12 +7,15 @@
  */
 
 use App\Actions\Retina\Fulfilment\StoredItem\UI\ShowRetinaStoredItem;
+use App\Actions\Retina\Fulfilment\StoredItems\ExportRetinaStoredItem;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
 use App\Actions\Retina\Fulfilment\StoredItemsAudit\UI\IndexRetinaStoredItemsAudits;
 use App\Actions\Retina\Fulfilment\StoredItemsAudit\UI\ShowRetinaStoredItemAudit;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/app/fulfilment/itemised-storage/skus');
+
+Route::get('export-stored-items', ExportRetinaStoredItem::class)->name('stored_items.export');
 
 Route::get('skus', IndexRetinaStoredItems::class)->name('stored_items.index');
 Route::get('skus/{storedItem}', ShowRetinaStoredItem::class)->name('stored_items.show');

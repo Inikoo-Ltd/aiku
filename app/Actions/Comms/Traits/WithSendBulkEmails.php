@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
 
 trait WithSendBulkEmails
 {
-    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, string $unsubscribeUrl = null, string $passwordToken = null, string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null): DispatchedEmail
+    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null): DispatchedEmail
     {
         $html = $emailHtmlBody;
 
@@ -57,7 +57,7 @@ trait WithSendBulkEmails
         );
     }
 
-    private function replaceMergeTags($placeholder, $dispatchedEmail, $unsubscribeUrl = null, $passwordToken = null, $invoiceUrl = null, array $additionalData = []): ?string
+    private function replaceMergeTags($placeholder, $dispatchedEmail, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = []): ?string
     {
         $originalPlaceholder = $placeholder;
         $placeholder         = Str::kebab(trim($placeholder));
@@ -118,6 +118,10 @@ trait WithSendBulkEmails
             'platform' => Arr::get($additionalData, 'platform'),
             'balance' => Arr::get($additionalData, 'balance'),
             'products' => Arr::get($additionalData, 'products'),
+            'payment-reason' => Arr::get($additionalData, 'payment_reason'),
+            'payment-note' => Arr::get($additionalData, 'payment_note'),
+            'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
+            'preview-amount' => Arr::get($additionalData, 'preview_amount'),
 
             default => $originalPlaceholder,
         };

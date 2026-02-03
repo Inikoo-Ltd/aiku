@@ -52,7 +52,7 @@ class IndexStoredItems extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('slug', $value)
-                ->orWhereWith('reference', $value);
+                    ->orWhereWith('reference', $value);
             });
         });
 
@@ -90,7 +90,7 @@ class IndexStoredItems extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
 
@@ -100,13 +100,13 @@ class IndexStoredItems extends OrgAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'FulfilmentCustomer' => [
-                            'title'       => __("No stored items found"),
-                            'count'       => $parent->number_stored_items,
+                            'title' => __("No stored items found"),
+                            'count' => $parent->number_stored_items,
                             'description' => __("No items stored in this customer")
                         ],
                         'Group' => [
-                            'title'       => __("No stored items found"),
-                            'count'       => $parent->fulfilmentStats->number_stored_items,
+                            'title' => __("No stored items found"),
+                            'count' => $parent->fulfilmentStats->number_stored_items,
                             'description' => __("No items stored in this group")
                         ],
                         default => []
@@ -136,20 +136,20 @@ class IndexStoredItems extends OrgAction
     public function htmlResponse(LengthAwarePaginator $storedItems, ActionRequest $request): Response
     {
         $subNavigation = [];
-        $actions       = [];
-        $icon          = ['fal', 'fa-narwhal'];
-        $title         = __("Customer's SKUs");
-        $afterTitle    = null;
-        $iconRight     = null;
+        $actions = [];
+        $icon = ['fal', 'fa-narwhal'];
+        $title = __("Customer's SKUs");
+        $afterTitle = null;
+        $iconRight = null;
 
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-            $icon          = ['fal', 'fa-user'];
-            $title         = $this->parent->customer->name;
-            $iconRight     = [
+            $icon = ['fal', 'fa-user'];
+            $title = $this->parent->customer->name;
+            $iconRight = [
                 'icon' => 'fal fa-narwhal',
             ];
-            $afterTitle    = [
+            $afterTitle = [
 
                 'label' => __("Customer's SKUs")
             ];
@@ -161,22 +161,22 @@ class IndexStoredItems extends OrgAction
 
                     if ($openStoredItemAudit) {
                         $actions[] = [
-                            'type'    => 'button',
-                            'style'   => 'secondary',
+                            'type' => 'button',
+                            'style' => 'secondary',
                             'tooltip' => __("Continue customer's SKUs audit"),
-                            'label'   => __("Continue customer's SKUs audit"),
-                            'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.show',
+                            'label' => __("Continue customer's SKUs audit"),
+                            'route' => [
+                                'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.show',
                                 'parameters' => array_merge($request->route()->originalParameters(), ['storedItemAudit' => $openStoredItemAudit->slug])
                             ]
                         ];
                     } else {
                         $actions[] = [
-                            'type'    => 'button',
+                            'type' => 'button',
                             'tooltip' => __("Start customer's SKUs audit"),
-                            'label'   => __("Start customer's SKUs audit"),
-                            'route'   => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.create',
+                            'label' => __("Start customer's SKUs audit"),
+                            'route' => [
+                                'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.create',
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ];
@@ -185,11 +185,23 @@ class IndexStoredItems extends OrgAction
                 }
 
                 $actions[] = [
-                    'type'    => 'button',
+                    'type' => 'button',
                     'style' => 'create',
                     'tooltip' => __("Create SKU"),
-                    'label'   => __("Create SKU"),
-                    'key'    => 'create_sku',
+                    'label' => __("Create SKU"),
+                    'key' => 'create_sku',
+                    'route' => [
+                        'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.create',
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ];
+
+                $actions[] = [
+                    'type' => 'button',
+                    'style' => 'edit',
+                    'tooltip' => __("Bulk Edit SKU"),
+                    'label' => __("Bulk Edit SKU"),
+                    'key' => 'edit_sku',
                     'route' => [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.create',
                         'parameters' => $request->route()->originalParameters()
@@ -201,23 +213,33 @@ class IndexStoredItems extends OrgAction
         return Inertia::render(
             'Org/Fulfilment/StoredItems',
             [
-                'breadcrumbs'                                       => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'                                             => __("Customer's SKUs"),
-                'pageHead'                                          => [
-                    'title'         => $title,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
+                'title' => __("Customer's SKUs"),
+                'pageHead' => [
+                    'title' => $title,
+                    'afterTitle' => $afterTitle,
+                    'iconRight' => $iconRight,
+                    'icon' => $icon,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $actions
+                    'actions' => $actions
                 ],
-                'tabs'                                              => [
-                    'current'    => $this->tab,
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => StoredItemsInWarehouseTabsEnum::navigation(),
                 ],
+
+                'bulk_edit_upload' => [
+                    'title' => [
+                        'label' => __("Bulk Edit Customer's SKU"),
+                        'information' => __('The list of column file: stored_items')
+                    ],
+                    'progressDescription'   => __('Editing stored item'),
+                    'upload_spreadsheet' => $this->buildUploadSpreadsheetConfig($this->parent)
+                ],
+
                 StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value => $this->tab == StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value ?
                     fn () => StoredItemsInWarehouseResource::collection($storedItems)
                     : Inertia::lazy(fn () => StoredItemsInWarehouseResource::collection($storedItems)),
@@ -273,11 +295,11 @@ class IndexStoredItems extends OrgAction
         $headCrumb = function (array $routeParameters) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __("Customer's SKUs"),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
 
                 ]
@@ -290,7 +312,7 @@ class IndexStoredItems extends OrgAction
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
+                        'name' => $routeName,
                         'parameters' => $routeParameters
                     ]
                 )
@@ -299,19 +321,55 @@ class IndexStoredItems extends OrgAction
                 ShowFulfilmentCustomer::make()->getBreadcrumbs($routeParameters),
                 [
                     [
-                        'type'   => 'simple',
+                        'type' => 'simple',
                         'simple' => [
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-items.index',
+                                'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __("Customer's SKUs"),
-                            'icon'  => 'fal fa-bars',
+                            'icon' => 'fal fa-bars',
                         ],
 
                     ]
                 ]
             ),
         };
+    }
+
+
+    protected function buildUploadSpreadsheetConfig(FulfilmentCustomer|Group $customer): array
+    {
+        if ($customer instanceof Group) {
+            return [];
+        }
+
+        $downloadRoute = 'grp.org.fulfilments.show.crm.customers.show.stored-items.export';
+
+        return [
+            'event'           => 'action-progress',
+            'channel'         => 'grp.personal.'.$this->organisation->id,
+            'required_fields' => ['reference_do_not_modify', 'name'],
+            'template'        => [
+                'label' => 'Download template (.xlsx)',
+            ],
+            'route'           => [
+                'upload'   => [
+                    'name'       => 'grp.models.fulfilment-customer.stored-items.bulk_edit.import',
+                    'parameters' => [
+                        'fulfilmentCustomer' => $customer->id
+                    ]
+                ],
+                'download' => [
+                    'name'       => $downloadRoute,
+                    'parameters' => [
+                        'organisation'       => $customer->organisation->slug,
+                        'fulfilment'         => $customer->fulfilment->slug,
+                        'fulfilmentCustomer' => $customer->slug,
+                        'type'               => 'xlsx'
+                    ]
+                ],
+            ],
+        ];
     }
 }

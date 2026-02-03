@@ -12,6 +12,7 @@ use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -87,11 +88,11 @@ class ShowIrisWebpage
         }
 
         if (config('iris.cache.webpage_path.ttl') == 0) {
-            $webpageID = $this->getWebpageID($request->get('website'), $path);
+            $webpageID = $this->getWebpageID($request->input('website'), $path);
         } else {
-            $key       = config('iris.cache.webpage_path.prefix').'_'.$request->get('website')->id.'_'.$path;
+            $key       = config('iris.cache.webpage_path.prefix').'_'.$request->input('website')->id.'_'.$path;
             $webpageID = cache()->remember($key, config('iris.cache.webpage_path.ttl'), function () use ($request, $path) {
-                return $this->getWebpageID($request->get('website'), $path);
+                return $this->getWebpageID($request->input('website'), $path);
             });
         }
 
@@ -104,7 +105,7 @@ class ShowIrisWebpage
         if (config('iris.cache.webpage.ttl') == 0) {
             $canonicalUrl = $this->getCanonicalUrl($webpageID);
         } else {
-            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_canonicals_'.$webpageID;
+            $key = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_canonicals_'.$webpageID;
 
             $canonicalUrl = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID) {
                 return $this->getCanonicalUrl($webpageID);
@@ -116,9 +117,8 @@ class ShowIrisWebpage
             // Use current URL without query parameters for canonical comparison
             $currentUrl = rtrim($request->url(), '/');
 
-            // Normalize canonical URL to current environment and strip any query parameters
-            $canonNoQuery    = explode('?', $canonicalUrl, 2)[0];
-            $normalizedCanon = $this->getEnvironmentUrl(rtrim($canonNoQuery, '/'));
+
+            $normalizedCanon = $this->getEnvironmentUrl($canonicalUrl);
 
             if ($normalizedCanon !== $currentUrl) {
                 return $this->getEnvironmentUrl($canonicalUrl);
@@ -128,7 +128,7 @@ class ShowIrisWebpage
         if (config('iris.cache.webpage.ttl') == 0) {
             $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
         } else {
-            $key         = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
+            $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
             $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths, $loggedIn) {
                 return $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
             });
@@ -145,9 +145,11 @@ class ShowIrisWebpage
     public function getEnvironmentUrl($url)
     {
         $environment = app()->environment();
-        $website     = request()->website ?? null;
-
+        if ($environment == 'production') {
+            return $url;
+        }
         if ($environment === 'local') {
+            $website  = request()->website ?? null;
             $shopType = $website?->shop?->type ?? null;
 
             $localDomain = match ($shopType) {
@@ -157,34 +159,35 @@ class ShowIrisWebpage
             };
 
             return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
-        } elseif ($environment == 'staging') {
+        }
+        if ($environment == 'staging') {
             return replaceUrlSubdomain($url, 'canary');
         }
 
         return $url;
     }
 
-    public function asController(ActionRequest $request, string $path = null): string|array
+    public function asController(ActionRequest $request, ?string $path = null): string|array
     {
         return $this->handle($path, [], $request);
     }
 
-    public function deep1(ActionRequest $request, string $parentPath1, string $path): string|array
+    public function deep1(ActionRequest $request, string $parentPath1, ?string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1], $request);
     }
 
-    public function deep2(ActionRequest $request, string $parentPath1, string $parentPath2, string $path = null): string|array
+    public function deep2(ActionRequest $request, string $parentPath1, string $parentPath2, ?string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2], $request);
     }
 
-    public function deep3(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $path = null): string|array
+    public function deep3(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, ?string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3], $request);
     }
 
-    public function deep4(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $parentPath4, string $path = null): string|array
+    public function deep4(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $parentPath4, ?string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3, $parentPath4], $request);
     }
@@ -282,8 +285,9 @@ class ShowIrisWebpage
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'label' => $this->getBreadcrumbLabel($parentWebpage),
-                            'url'   => $this->getEnvironmentUrl($parentWebpage->canonical_url)
+                            'short_label' => $this->getBreadcrumbShortLabel($parentWebpage),
+                            'label'       => $this->getBreadcrumbLabel($parentWebpage),
+                            'url'         => $this->getEnvironmentUrl($parentWebpage->canonical_url)
                         ]
 
                     ];
@@ -294,8 +298,9 @@ class ShowIrisWebpage
             $breadcrumbs[] = [
                 'type'   => 'simple',
                 'simple' => [
-                    'label' => $this->getBreadcrumbLabel($webpage),
-                    'url'   => $this->getEnvironmentUrl($webpage->canonical_url)
+                    'short_label' => $this->getBreadcrumbShortLabel($webpage),
+                    'label'       => $this->getBreadcrumbLabel($webpage),
+                    'url'         => $this->getEnvironmentUrl($webpage->canonical_url)
                 ]
 
             ];
@@ -306,6 +311,27 @@ class ShowIrisWebpage
         }
 
         return $breadcrumbs;
+    }
+
+    public function getBreadcrumbShortLabel(Webpage $webpage): string
+    {
+        if ($webpage->model_type == 'Product') {
+            /** @var Product $product */
+            $product = $webpage->model;
+            if ($product) {
+                return $product->code;
+            }
+        } elseif ($webpage->model_type == 'ProductCategory') {
+            /** @var ProductCategory $productCategory */
+            $productCategory = $webpage->model;
+            if ($productCategory) {
+                return $productCategory->code;
+            }
+        }
+
+        $label = $webpage->code;
+
+        return $label ?? '';
     }
 
     public function getBreadcrumbLabel(Webpage $webpage): string

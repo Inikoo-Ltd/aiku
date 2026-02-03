@@ -15,8 +15,8 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome, faImage, faSparkles, faSignIn, faMedal } from '@fal'
-import { faMedal as fasMedal } from '@fas'
+import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faMedal } from '@fal'
+import { faMedal as fasMedal, faCircle } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -30,7 +30,7 @@ import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
 
-library.add(faHome, faImage, faSparkles, faSignIn, faExclamationTriangle, faMedal, fasMedal, fadMedal, faWhatsapp)
+library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
 
@@ -312,6 +312,14 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
 // INI-562: live chat
 iframe#launcher {
     bottom: 30px !important;
+}
+
+.background-primary {
+    background-color: var(--theme-color-4);
+}
+
+.text-primary {
+    color: var(--theme-color-4);
 }
 
 </style>

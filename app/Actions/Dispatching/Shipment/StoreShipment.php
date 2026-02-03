@@ -87,7 +87,6 @@ class StoreShipment extends OrgAction
             data_set($modelData, 'tracking_urls', []);
         }
 
-
         /** @var Shipment $shipment */
         $shipment = $shipper->shipments()->create($modelData);
         $shipment->refresh();

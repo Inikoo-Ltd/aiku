@@ -10,6 +10,7 @@ import { Image } from "../Image"
 export interface LastOrderedProduct {
     id: number
     slug: string
+    canonical_url: string
     asset_id: number
     historic_id: number
     code: string

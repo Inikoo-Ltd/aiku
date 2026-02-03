@@ -24,7 +24,7 @@ class HandleIrisInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $website = $request->get('website');
+        $website  = $request->input('website');
         $outBoxes = $website?->shop?->outboxes()
             ?->whereIn('code', [OutboxCodeEnum::OOS_NOTIFICATION])
             ->select('id', 'code', 'state')
@@ -40,26 +40,26 @@ class HandleIrisInertiaRequests extends Middleware
 
         $firstLoadOnlyProps = [];
 
-
         if (!$request->inertia() || Session::get('reloadLayout')) {
             $websiteTheme = Arr::get($website->published_layout, 'theme');
 
             $firstLoadOnlyProps = [
                 'webpage_id'  => $website->id,
-                'currency'    => $request->get('currency_data'),
+                'currency'    => $request->input('currency_data'),
                 'environment' => app()->environment(),
                 'ziggy'       => function () use ($request) {
-                    return array_merge((new Ziggy('iris'))->toArray(), [
+                    return array_merge(new Ziggy('iris')->toArray(), [
                         'location' => $request->url()
                     ]);
                 },
 
-                'use_chat'    => $website->settings['enable_chat'] ?? false,
-                'iris'        => $this->getIrisData($website),
-                "retina" => [
-                    "type" => $request->get('shop_type'),
+                'use_chat' => $website->settings['enable_chat'] ?? false,
+                'iris'     => $this->getIrisData($website),
+                "retina"   => [
+                    "type" => $request->input('shop_type'),
+                    "organisation" => $website->organisation->slug,
                 ],
-                "layout" => [
+                "layout"   => [
                     "app_theme" => Arr::get($websiteTheme, 'color'),
                 ],
                 'outboxes' => $outBoxes
@@ -78,11 +78,11 @@ class HandleIrisInertiaRequests extends Middleware
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'flash'  => [
+                'flash' => [
                     'notification' => fn () => $request->session()->get('notification'),
                     'modal'        => fn () => $request->session()->get('modal')
                 ],
-                'ziggy'  => [
+                'ziggy' => [
                     'location' => $request->url(),
                 ],
 

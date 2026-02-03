@@ -12,6 +12,7 @@ import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vu
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { trans } from 'laravel-vue-i18n';
 import { faExternalLink } from '@far';
+import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 
 library.add(faAlbumCollection);
 
@@ -81,6 +82,20 @@ const navigateTo = () => {
     }
     router.visit(targetRoute);
 }
+
+function offerRoute(offer: {}) {
+    switch (route().current()) {
+        case "grp.org.shops.show.catalogue.families.show":
+            return route(
+                "grp.org.shops.show.discounts.offers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    offer.slug])
+        default:
+            return ""
+    }
+}
 </script>
 
 <template>
@@ -124,9 +139,19 @@ const navigateTo = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.family.data"  />
             </div>
-            <div class="col-span-1 md:col-span-2 lg:col-span-4">
-                <!-- Spacing / Content area -->
+
+            <div class="col-span-1 md:col-span-2 lg:col-span-4 offer">
+                <template v-if="data.gr_offer_data">
+                    <div class="mb-1">
+                        {{ trans("Active Gold Reward offer") }}:
+                        <Link :href="offerRoute(data.gr_offer_data)" class="secondaryLink">
+                            {{ data.gr_offer_data?.label }}
+                        </Link>
+                    </div>
+                    <FamilyOfferLabelDiscount :offer="data.gr_offer_data" />
+                </template>
             </div>
+
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
                 <!-- Sales Analytics Compact -->
                 <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
@@ -140,3 +165,13 @@ const navigateTo = () => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.offer :deep(.background-primary) {
+    background-color: #ff862f;
+}
+
+.offer :deep(.text-primary) {
+    color:#ff862f;
+}
+</style>

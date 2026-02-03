@@ -21,7 +21,6 @@ class RedoProductTimeSeries
 {
     use WithHydrateCommand;
 
-
     public string $commandSignature = 'products:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
 
     public function __construct()
@@ -29,15 +28,14 @@ class RedoProductTimeSeries
         $this->model = Product::class;
     }
 
-    public function handle(Product $product, array $frequencies, Command $command = null, bool $async = true): void
+    public function handle(Product $product, array $frequencies, bool $async = true): void
     {
-        $from              = null;
-        $firstInvoicedDate = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->min('date');
+        $from = null;
+        $firstInvoicedDate = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->min('date');
 
         if ($firstInvoicedDate && ($firstInvoicedDate < $product->created_at)) {
             $product->update(['created_at' => $firstInvoicedDate]);
         }
-
 
         if ($product->created_at) {
             $from = $product->created_at->toDateString();
@@ -50,10 +48,11 @@ class RedoProductTimeSeries
         if ($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) {
             $to = now()->toDateString();
         } elseif ($product->state == ProductStateEnum::DISCONTINUED) {
-            $to               = $product->discontinued_at;
+            $to = $product->discontinued_at;
 
             $lastInvoicedDate = DB::table('invoice_transactions')
                 ->where('asset_id', $product->asset_id)
+                ->whereNull('deleted_at')
                 ->max('date');
 
             if (!$to && !$lastInvoicedDate) {
@@ -77,10 +76,13 @@ class RedoProductTimeSeries
         } else {
             $to = DB::table('invoice_transactions')
                 ->where('asset_id', $product->asset_id)
+                ->whereNull('deleted_at')
                 ->max('date');
+
             if (!$to) {
                 return;
             }
+
             $to = Carbon::parse($to);
 
             $to = $to->toDateString();
@@ -139,7 +141,7 @@ class RedoProductTimeSeries
                     }
 
                     try {
-                        $this->handle($instance, $frequencies, $command, $command->option('async'));
+                        $this->handle($instance, $frequencies, $command->option('async'));
                     } catch (Throwable $e) {
                         $command->error($e->getMessage());
                     }
@@ -153,6 +155,4 @@ class RedoProductTimeSeries
 
         return 0;
     }
-
-
 }

@@ -1,0 +1,101 @@
+{
+	"slug": "column-layout-4",
+	"code": "column-layout-4",
+	"name": "Column Layout 4",
+	"scope": "webpage",
+	"category": "column",
+	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
+	"icon": ["fal", "rectangle-wide"],
+	"is_in_test" : false,
+	"data": {
+		"fieldValue": {
+			"container": {
+                "column_1" : null,
+                "column_2" : null,
+				"column_3" : null,
+				"column_4" : null,
+				"properties": {
+					"background": {
+						"type": "color",
+                        "color": "#FFFFFF",
+						"image": {
+							"original": null
+						}
+					},
+                    "justifyContent" : "center",
+					"dimension": {
+						"height": {
+							"value": 100,
+							"unit": "%"
+						},
+						"width": {
+							"value": 100,
+							"unit": "%"
+						}
+					},
+					"padding": {
+						"unit": "px",
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"margin": {
+						"unit": "px",
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"border": {
+						"color": "#000000",
+						"unit": "px",
+						"rounded": {
+							"unit": "px",
+							"topright": {
+								"value": 0
+							},
+							"topleft": {
+								"value": 0
+							},
+							"bottomright": {
+								"value": 0
+							},
+							"bottomleft": {
+								"value": 0
+							}
+						},
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					}
+				}
+			}
+		}
+	}
+}

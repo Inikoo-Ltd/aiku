@@ -137,3 +137,25 @@
     src: url('/assets/Fonts/Source_Sans_Pro/SourceSansPro-900.ttf');
     font-display: swap;
 }
+
+
+/* Conneqt */
+@font-face {
+    font-family: 'Conneqt';
+    src: url('/assets/Fonts/Conneqt/Conneqt Regular.ttf');
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Conneqt';
+    src: url('/assets/Fonts/Conneqt/Conneqt Black.ttf');
+    font-weight: 500;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Conneqt';
+    src: url('/assets/Fonts/Conneqt/Conneqt Bold.ttf');
+    font-weight: 600;
+    font-display: swap;
+}
+

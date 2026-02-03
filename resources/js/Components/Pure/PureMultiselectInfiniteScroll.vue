@@ -28,6 +28,7 @@ const props = defineProps<{
     isLoading?: boolean
     placeholder?: string
     labelProp?: string
+    labelAdditionalProp?: string
     noOptionsText?: string
     initOptions?: {}[]
     valueProp?: string
@@ -35,6 +36,7 @@ const props = defineProps<{
     clearOnSelect? : boolean,
     clearOnBlur? : boolean
     clearOnFocus? :boolean
+    optionFunc?: () => boolean
 }>()
 const emits = defineEmits<{
     (e: 'optionsList', value: any[]): void
@@ -59,8 +61,7 @@ const getUrlFetch = (additionalParams: {}) => {
 const optionsList = ref<any[]>([])
 const optionsMeta = ref<Meta | null>(null)
 const optionsLinks = ref<Links | null>(null)
-const fetchProductList = async (url?: string, ccc) => {
-    // console.log('ewqewqewq', ccc)
+const fetchProductList = async (url) => {
     isComponentLoading.value = 'fetchProduct'
 
     const urlToFetch = url || route(props.fetchRoute.name, props.fetchRoute.parameters)
@@ -70,9 +71,16 @@ const fetchProductList = async (url?: string, ccc) => {
         
         
         if (xxx?.data?.data) {
-            optionsList.value = [...optionsList.value, ...xxx?.data?.data]
-            optionsMeta.value = xxx?.data.meta || null
-            optionsLinks.value = xxx?.data.links || null
+            const raw = xxx.data.data
+
+            // Apply filter function if provided
+            const filtered = typeof props.optionFunc === 'function'
+                ? raw.filter((item) => props.optionFunc(item))
+                : raw
+
+            optionsList.value = [...optionsList.value, ...filtered]
+            optionsMeta.value = xxx?.data?.meta || null
+            optionsLinks.value = xxx?.data?.links || null
         } else {
             optionsList.value = xxx?.data
         }
@@ -180,8 +188,8 @@ defineExpose({
             <!-- {{ $attrs }} -->
             <slot name="singlelabel" :value>
                 <div class="w-full text-left pl-4 leading-4 truncate mr-2">{{ value[labelProp || 'name'] }} <span
-                        v-if="value.code"
-                        class="text-sm text-gray-400">({{ value.code }})</span></div>
+                        v-if="labelAdditionalProp || value.code"
+                        class="text-sm text-gray-400">({{ value[labelAdditionalProp || 'code'] }})</span></div>
             </slot>
         </template>
 
@@ -195,8 +203,8 @@ defineExpose({
 
         <template #option="{ option, isSelected, isPointed }">
             <slot name="option" :option :isSelected :isPointed>
-                <div class="">{{ option[labelProp || 'name'] }} <span v-if="option.code" class="text-sm"
-                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span>
+                <div class="">{{ option[labelProp || 'name'] }} <span v-if="labelAdditionalProp ?? option.code" class="text-sm"
+                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option[labelAdditionalProp || 'code'] }})</span>
                 </div>
             </slot>
         </template>

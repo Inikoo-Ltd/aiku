@@ -14,7 +14,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
+use Illuminate\Contracts\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderShippingEngineAsAuto extends OrgAction
@@ -40,6 +42,17 @@ class UpdateOrderShippingEngineAsAuto extends OrgAction
         return $order;
     }
 
+
+    public function afterValidator(Validator $validator): void
+    {
+        if (in_array($this->order->state, [
+            OrderStateEnum::DISPATCHED,
+            OrderStateEnum::FINALISED,
+            OrderStateEnum::CANCELLED
+        ])) {
+            $validator->errors()->add('message', __('Shipping can not be changed once order is dispatched or finalised.'));
+        }
+    }
 
     public function asController(Order $order, ActionRequest $request): Order
     {

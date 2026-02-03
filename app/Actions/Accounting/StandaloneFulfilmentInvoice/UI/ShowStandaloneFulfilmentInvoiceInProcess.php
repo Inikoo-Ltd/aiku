@@ -249,7 +249,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
-        $headCrumb = function (Invoice $invoice, array $routeParameters, string $suffix = null, $suffixIndex = '') {
+        $headCrumb = function (Invoice $invoice, array $routeParameters, ?string $suffix = null, $suffixIndex = '') {
             return [
                 [
 

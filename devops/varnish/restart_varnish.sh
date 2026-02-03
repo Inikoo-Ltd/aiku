@@ -5,14 +5,14 @@
 #
 
 echo "Restarting Varnish..."
-cp /etc/haproxy/haproxy_no_varnish.cfg /etc/haproxy/haproxy.cfg
-systemctl restart haproxy.service
-systemctl restart varnish
-cp /etc/haproxy/haproxy_varnish.cfg /etc/haproxy/haproxy.cfg
-systemctl restart haproxy.service
+sudo cp /etc/haproxy/haproxy_no_varnish.cfg /etc/haproxy/haproxy.cfg
+sudo systemctl restart haproxy.service
+sudo systemctl restart varnish
+sudo cp /etc/haproxy/haproxy_varnish.cfg /etc/haproxy/haproxy.cfg
+sudo systemctl restart haproxy.service
 echo "Done."
-echo "warming base cache...";
-./cache_warmer.sh warming_base.txt WEBSITE_DOMAIN &
-wait
-echo "warming families cache...";
-./cache_warmer.sh warming_families WEBSITE_DOMAIN &
+#echo "warming base cache...";
+#./cache_warmer.sh warming_base.txt WEBSITE_DOMAIN &
+#wait
+#echo "warming families cache...";
+#./cache_warmer.sh warming_families WEBSITE_DOMAIN &

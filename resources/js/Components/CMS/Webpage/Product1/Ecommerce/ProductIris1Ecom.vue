@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch } from "vue"
+import { ref, inject, computed, watch, onMounted, nextTick } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus, faChevronCircleLeft, faChevronCircleRight } from "@fas"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
@@ -26,6 +26,17 @@ import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
+import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
+import ProductPrices2 from "../ProductPrices2.vue"
+import { Popover } from "primevue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
+import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
+
+import { Navigation, Thumbs } from 'swiper/modules'
+// import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
+import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+import { getBestOffer } from "@/Composables/useOffers"
 
 
 
@@ -53,13 +64,44 @@ interface ProductResource {
 
 const props = withDefaults(
     defineProps<{
-        fieldValue: any
+        fieldValue: {
+            product: {   // WebBlockProductResource
+                discounted_price: number
+                discounted_price_per_unit: number
+                discounted_profit: number
+                discounted_profit_per_unit: number
+                discounted_margin: number
+
+                offers_data: {
+                    number_offers: 1
+                    offers: {
+                        state: string
+                        type: string
+                        label: string
+                        allowances: {
+                            class: string
+                            type: string
+                            label: string
+                            percentage_off: string
+                        }[]
+                        triggers_labels: string[]
+                        max_percentage_discount: string
+                    }[]
+                    best_percentage_off: {
+                        percentage_off: string
+                        offer_id: number
+                    }
+                }
+            }
+        }
         webpageData?: any
         blockData?: object
         screenType: "mobile" | "tablet" | "desktop"
         validImages: object
-        customerData: any
-        product: ProductResource
+        customerData: {  // \Json\GetIrisProductEcomOrdering  (no cache)
+
+        }
+        product: ProductResource  // Catalogue\GetProductDetail (no cache)
         isLoadingRemindBackInStock: boolean
         isLoadingFavourite: boolean
         videoSetup: { url: string }
@@ -67,6 +109,8 @@ const props = withDefaults(
     }>(),
     {}
 )
+
+const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
     (e: "setFavorite", value: any[]): void
@@ -98,6 +142,46 @@ watch(
     },
     { deep: true }
 )
+
+
+const _popoverProfit = ref(null)
+
+// console.log('fdsfds', props.fieldValue.product)
+/* const getBestOffer = (offerId: string) => {
+    if (!offerId) {
+        return
+    }
+
+    return product.value?.offers_data?.offers?.[offerId] 
+} */
+
+const bestOffer = computed(() => {
+  return getBestOffer(props.product?.offers_data)
+})
+
+
+const variantPrevEl = ref<HTMLElement | null>(null)
+const variantNextEl = ref<HTMLElement | null>(null)
+
+const varinatNavigation = ref({
+  prevEl: null as HTMLElement | null,
+  nextEl: null as HTMLElement | null,
+})
+
+watch([variantPrevEl, variantNextEl], () => {
+  if (variantPrevEl.value && variantNextEl.value) {
+    varinatNavigation.value = {
+      prevEl: variantPrevEl.value,
+      nextEl: variantNextEl.value,
+    }
+  }
+})
+
+onMounted(async () => {
+  await nextTick()
+  varinatNavigation.value.prevEl = variantPrevEl.value
+  varinatNavigation.value.nextEl = variantNextEl.value
+})
 
 
 
@@ -134,7 +218,7 @@ watch(
             <div class="col-span-5 self-start">
                 
                 
-                <div class="relative flex justify-between items-start mb-4">
+                <div class="relative flex justify-between items-start mb-4 gap-x-3">
                     <div class="w-full">
                         <h1 class="text-3xl font-bold">
                             <span v-if="product.units > 1">{{ product.units }}x</span>
@@ -176,7 +260,7 @@ watch(
                     </div>
 
                     <!-- FAVOURITE -->
-                    <div v-if="layout?.retina?.type !== 'dropshipping' && layout?.iris?.is_logged_in">
+                    <div v-if="layout?.iris?.is_logged_in">
                         <LoadingIcon v-if="isLoadingFavourite" class="text-gray-500 text-2xl" />
                         <div v-else class="cursor-pointer text-2xl" @click="
                             customerData?.is_favourite
@@ -190,16 +274,78 @@ watch(
                 </div>       
 
                 <!-- PRICE -->
-                <ProductPrices
+                <!-- <ProductPrices
                     :field-value="fieldValue"
                     :key="product.code"
                     :offers_data="customerData?.offers_data"
                     :offer_net_amount_per_quantity="customerData?.offer_net_amount_per_quantity"
                     :offer_price_per_unit="customerData?.offer_price_per_unit"
+                /> -->
+
+                <ProductPrices2
+                    v-if="layout?.iris?.is_logged_in"
+                    :field-value="fieldValue"
+                    :product="product"
+                    :key="product.code"
                 />
 
-                <!-- ADD TO CART -->
-                <div class="flex gap-2 mb-6">
+                <!-- Section: Member/Non Member label, Profit -->
+                <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in">
+                    <template v-if="product.offers_data?.number_offers > 0">
+                        <div class="flex flex-col w-fit offers">
+                            <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
+                                <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" :offer="bestOffer" />
+                                <NonMemberPriceLabel v-else :product />
+                            </template>
+            
+                            <!-- <AvailableVolOfferLabel
+                                v-if="
+                                    (product.stock && !product.is_coming_soon)  // same as button add to basket conditions
+                                    && !layout?.user?.gr_data?.customer_is_gr"
+                                :offer="bestOffer(product.offers_data?.best_percentage_off?.offer_id)"
+                            /> -->
+                            
+                             <DiscountByType 
+                                v-if="(product.stock  && !product.is_coming_soon && !layout?.user?.gr_data?.customer_is_gr &&  bestOffer?.type === 'Category Quantity Ordered Order Interval')" 
+                                :template="'products_triggers_label'"
+                                :offers_data="product?.offers_data" 
+                            />
+
+
+                            <DiscountByType 
+                                v-if="(product.stock  && !product.is_coming_soon && bestOffer?.type != 'Category Quantity Ordered Order Interval')" 
+                                :template="'max_discount'"
+                                :offers_data="product?.offers_data" 
+                            />
+                        </div>
+                        <div />
+                    </template>
+                    <div v-else />
+
+                    
+                    <!-- Section: Profit and the popover -->
+                    <div class="flex justify-between items-end">
+                        <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
+                        <span class="text-green-500 ml-1 font-bold">
+                            {{ layout?.user?.gr_data?.customer_is_gr ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
+                        </span>
+                        <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
+                            class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
+                        >
+                            <FontAwesomeIcon icon="fal fa-plus-circle" class="" fixed-width aria-hidden="true" />
+                        </span>
+                        
+                        <!-- Popover: Question circle GR member -->
+                        <Popover ref="_popoverProfit" :style="{width: '550px'}" class="py-1 px-2">
+                            <ProfitCalculationList :product="fieldValue.product" />
+                        </Popover>
+                    </div>
+
+                </div>
+
+                
+                <!-- Section: ADD TO CART -->
+                <div class="mt-4 flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">
                         <EcomAddToBasketv2 
                             v-if="product.stock"  
@@ -220,11 +366,25 @@ watch(
                     </LinkIris>
                 </div>
 
+                
                 <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md mb-4">
-                    <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
-                        640: { slidesPerView: 4.5 },
-                        1024: { slidesPerView: 4 }
-                    }">
+                    <Swiper :modules="[Navigation]" :navigation="varinatNavigation" :space-between="6"
+                        :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
+                            640: { slidesPerView: 4.5 },
+                            1024: { slidesPerView: 4 }
+                        }">
+
+                        <div class="absolute inset-0 pointer-events-none z-50">
+                            <div ref="variantPrevEl"
+                                class="absolute left-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleLeft" />
+                            </div>
+
+                            <div ref="variantNextEl"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
+                                <FontAwesomeIcon :icon="faChevronCircleRight" />
+                            </div>
+                        </div>
 
                         <SwiperSlide v-for="item in listProducts" :key="item.id">
                             <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
@@ -290,139 +450,268 @@ watch(
     </div>
 
     <!-- MOBILE -->
-    <div v-else class="block sm:hidden px-4 py-6 text-gray-800">
-        <h1 class="text-xl font-bold mb-2">
-            <span v-if="product.units > 1">{{ product.units }}x</span>
-            {{ product.name }}
-        </h1>
+<div v-else class="block sm:hidden px-4 py-6 text-gray-800">
 
-        <ImageProducts :images="validImages" :video="videoSetup?.url" />
+    <!-- TITLE -->
+    <h1 class="text-xl font-bold mb-3">
+        <span v-if="product.units > 1">{{ product.units }}x</span>
+        {{ product.name }}
+    </h1>
 
-        <!-- Section: Stock info, coming soon label -->
-        <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-4">
-            <!-- Stock info -->
-            <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" class="w-full text-center" />
-            <div v-else class="flex items-center gap-2 text-sm">
-                <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                    :class="product?.stock ? 'text-green-600' : 'text-red-600'" />
-                <span>
-                    {{ product?.stock
+    <!-- MEDIA -->
+    <ImageProducts :images="validImages" :video="videoSetup?.url" />
+
+    <!-- STOCK + FAVOURITE -->
+    <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between mt-4">
+        <LabelComingSoon
+            v-if="product.status === 'coming-soon'"
+            :product="product"
+            class="w-full text-center"
+        />
+
+        <div v-else class="flex items-center gap-2 text-sm">
+            <FontAwesomeIcon
+                :icon="faCircle"
+                class="text-[10px]"
+                :class="product.stock ? 'text-green-600' : 'text-red-600'"
+            />
+            <span>
+                {{
+                    product.stock >= 250
                         ? trans("Unlimited quantity available")
-                        : (product.stock > 0 ? trans("In stock") + ` (${product.stock} ` + trans("available") + `)` :
-                            trans("Out Of Stock"))
-                    }}
+                        : product.stock > 0
+                            ? `${trans("In stock")} (${product.stock} ${trans("available")})`
+                            : trans("Out Of Stock")
+                }}
+            </span>
+        </div>
+
+        <FontAwesomeIcon
+            v-if="layout?.retina?.type !== 'dropshipping'"
+            :icon="product?.is_favourite ? fasHeart : faHeart"
+            class="text-xl cursor-pointer transition-colors"
+            :class="product?.is_favourite
+                ? 'text-red-500'
+                : 'text-gray-400 hover:text-red-500'"
+            @click="
+                product?.is_favourite
+                    ? onUnselectFavourite(product)
+                    : onAddFavourite(product)
+            "
+        />
+    </div>
+
+    <!-- PRICE / OFFERS / PROFIT -->
+    <div v-if="layout?.iris?.is_logged_in" class="mt-3 space-y-2">
+
+        <ProductPrices2
+            :field-value="fieldValue"
+            :product="product"
+            :key="product.code"
+        />
+
+        <div class="flex justify-between items-start">
+
+            <!-- OFFERS -->
+            <div v-if="product.offers_data?.number_offers > 0" class="flex flex-col gap-1 offers">
+                <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
+                    <MemberPriceLabel
+                        v-if="layout?.user?.gr_data?.customer_is_gr"
+                        :offer="bestOffer"
+                    />
+                    <NonMemberPriceLabel v-else :product />
+                </template>
+
+                <DiscountByType
+                    v-if="
+                        product.stock &&
+                        !product.is_coming_soon &&
+                        !layout?.user?.gr_data?.customer_is_gr &&
+                        bestOffer?.type === 'Category Quantity Ordered Order Interval'
+                    "
+                    template="products_triggers_label"
+                    :offers_data="product?.offers_data"
+                />
+
+                <DiscountByType
+                    v-if="
+                        product.stock &&
+                        !product.is_coming_soon &&
+                        bestOffer?.type !== 'Category Quantity Ordered Order Interval'
+                    "
+                    template="max_discount"
+                    :offers_data="product?.offers_data"
+                />
+            </div>
+
+            <!-- PROFIT -->
+            <div class="flex items-end text-sm">
+                <span @click="_popoverProfit?.toggle">
+                    {{ trans("Profit") }}
+                </span>:
+                <span class="ml-1 font-bold text-green-500">
+                   {{ layout?.user?.gr_data?.customer_is_gr ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
                 </span>
+
+                <span
+                    class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
+                    @mouseenter="_popoverProfit?.show"
+                    @mouseleave="_popoverProfit?.hide"
+                >
+                    <FontAwesomeIcon icon="fal fa-plus-circle" />
+                </span>
+
+                <Popover ref="_popoverProfit" :style="{ width: '550px' }">
+                    <ProfitCalculationList :product="fieldValue.product" />
+                </Popover>
             </div>
 
-            <FontAwesomeIcon v-if="layout?.iris?.is_logged_in && layout?.retina?.type !== 'dropshipping'"
-                :icon="product?.is_favourite ? fasHeart : faHeart"
-                class="text-xl cursor-pointer transition-colors duration-300"
-                :class="product?.is_favourite ? 'text-red-500' : 'text-gray-400 hover:text-red-500'" @click="
-                    product?.is_favourite
-                        ? onUnselectFavourite(product)
-                        : onAddFavourite(product)
-                    " />
         </div>
+    </div>
 
-        <!-- Section: Price, unit info, favourite icon -->
-        <div class="md:flex md:justify-between items-start gap-4 mt-2">
-            <ProductPrices v-if="layout?.iris?.is_logged_in" :field-value="fieldValue" />
+    <!-- TAGS -->
+    <div class="flex flex-wrap gap-2 mt-4 text-xs text-gray-500">
+        <div
+            v-for="(tag, index) in product.tags"
+            :key="index"
+            class="flex items-center gap-1"
+        >
+            <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" />
+            <Image
+                v-else
+                :src="tag.image"
+                :alt="`Tag ${index}`"
+                class="w-[15px] h-[15px] object-cover"
+            />
+            <span>{{ tag.name }}</span>
         </div>
+    </div>
 
-        <!-- Section: Mobile Tags -->
-        <div class="flex flex-wrap gap-2 mt-4">
-            <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in product.tags"
-                :key="index">
-                <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
-                <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`" class="w-[15px] h-[15px] object-cover" />
-                <span>{{ tag.name }}</span>
-            </div>
-        </div>
+    <!-- BACK IN STOCK -->
+    <button
+        v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
+        class="mt-3 inline-flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-1.5 text-sm"
+        @click="
+            customerData?.back_in_stock
+                ? onUnselectBackInStock(product)
+                : onAddBackInStock(product)
+        "
+    >
+        <LoadingIcon v-if="isLoadingRemindBackInStock" />
+        <FontAwesomeIcon
+            v-else
+            :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+            :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'"
+        />
+        <span>
+            {{ customerData?.back_in_stock ? trans("Notified") : trans("Remind me") }}
+        </span>
+    </button>
 
-        <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'"
-            v-tooltip="customerData.is_back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
-            @click="() => customerData.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
-            class="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
-            <LoadingIcon v-if="isLoadingRemindBackInStock" />
-            <FontAwesomeIcon v-else :icon="customerData.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                :class="[customerData.back_in_stock ? 'text-green-600' : 'text-gray-600']" />
-            <span>{{ customerData.back_in_stock ? trans("Notified") : trans("Remind me") }}</span>
-        </button>
+    <!-- ADD TO CART -->
+    <div class="mt-5 space-y-2">
+        <EcomAddToBasketv2
+            v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
+            v-model:product="product"
+            :customerData="customerData"
+            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+        />
 
-        <!-- ADD TO CART -->
-        <div class="mt-6 flex flex-col gap-2">
-            <EcomAddToBasketv2 
-                v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
-                   v-model:product="product"  :customerData="customerData"
-                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+        <Button
+            v-else-if="layout?.iris?.is_logged_in"
+            :label="product.status_label ?? trans('Out of stock')"
+            type="tertiary"
+            disabled
+            full
+        />
 
-            <Button v-else-if="layout?.iris?.is_logged_in" :label="product.status_label ?? trans('Out of stock')"
-                type="tertiary" disabled full />
+        <LinkIris
+            v-else
+            :href="urlLoginWithRedirect()"
+            class="block w-full text-center border rounded px-3 py-2 text-sm text-gray-600"
+        >
+            {{ trans("Login or Register for Wholesale Prices") }}
+        </LinkIris>
+    </div>
 
+    <!-- VARIANTS -->
+    <div v-if="listProducts?.length" class="bg-white shadow-sm p-1 rounded-md my-5">
+        <Swiper
+            :modules="[Navigation]"
+            :navigation="varinatNavigation"
+            :slides-per-view="3.2"
+            :space-between="6"
+        >
+            <SwiperSlide v-for="item in listProducts" :key="item.id">
+                <button
+                    @click="onSelectProduct(item)"
+                    :disabled="item.code === product.code"
+                    class="w-full rounded-lg border overflow-hidden"
+                    :class="item.code === product.code
+                        ? 'ring-1 primary'
+                        : 'border-gray-200'"
+                >
+                    <div class="aspect-square bg-gray-50 relative">
+                        <Image
+                            v-if="item?.web_images?.main?.original"
+                            :src="item.web_images.main.original"
+                            class="absolute inset-0 object-contain"
+                        />
+                        <FontAwesomeIcon
+                            v-else
+                            :icon="faImage"
+                            class="absolute inset-0 m-auto text-gray-300"
+                        />
+                    </div>
 
-            <LinkIris v-else :href="urlLoginWithRedirect()"
-                :style="getStyles(fieldValue?.button?.properties, screenType)"
-                class="block text-center border text-sm px-3 py-2 rounded text-gray-600 w-full">
-                {{ trans("Login or Register for Wholesale Prices") }}
-            </LinkIris>
-        </div>
+                    <div class="p-1">
+                        <span class="block text-[11px] bg-gray-100 rounded px-2 py-0.5 truncate">
+                            {{ item.variant_label }}
+                        </span>
+                    </div>
+                </button>
+            </SwiperSlide>
+        </Swiper>
+    </div>
 
+    <!-- DESCRIPTION -->
+    <div class="mt-4 text-xs">
+        <div v-html="product.description" />
+        <div v-html="product.description_extra" class="prose prose-sm mt-2" />
+    </div>
 
-          <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md my-4">
-                    <Swiper :space-between="6" :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
-                        640: { slidesPerView: 4.5 },
-                        1024: { slidesPerView: 4 }
-                    }">
+    <!-- CONTENT + PAYMENT -->
+    <div class="mt-5 space-y-4">
+        <ProductContentsIris
+            :product="product"
+            :setting="fieldValue.setting"
+            :styleData="fieldValue?.information_style"
+        />
 
-                        <SwiperSlide v-for="item in listProducts" :key="item.id">
-                            <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
-                                'relative w-full rounded-lg border transition overflow-hidden flex flex-col',
-                                item.code === product.code
-                                    ? 'ring-1 primary'
-                                    : 'border-gray-200 hover:border-gray-300'
-                            ]">
-                                <!-- IMAGE FULL AREA -->
-                                <div class="relative w-full aspect-square bg-gray-50">
-                                    <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
-                                        :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
-                                    <FontAwesomeIcon v-else :icon="faImage"
-                                        class="absolute inset-0 m-auto text-gray-300 text-xl" />
-                                </div>
+        <InformationSideProduct
+            v-if="fieldValue?.information?.length"
+            :informations="fieldValue.information"
+            :styleData="fieldValue?.information_style"
+        />
 
-                                <!-- VARIANT LABEL -->
-                                <div class="p-1">
-                                    <span :class="[
-                                        'block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700'
-                                    ]">
-                                        {{ item.variant_label }}
-                                    </span>
-                                </div>
-                            </button>
-                        </SwiperSlide>
-                    </Swiper>
-                </div>
-
-        <!-- DESCRIPTION -->
-        <div class="mt-4 text-xs font-medium py-3">
-            <div v-html="product.description" />
-            <div class="text-xs text-gray-700 my-1">
-                <div class="prose prose-sm text-gray-700 max-w-none" v-html="product.description_extra" />
-            </div>
-        </div>
-
-        <!-- CONTENTS -->
-        <div class="mt-4">
-            <ProductContentsIris :product="product" :setting="fieldValue.setting" :styleData="fieldValue?.information_style" />
-            <div v-if="fieldValue.setting?.information" class="mt-2">
-                <InformationSideProduct v-if="fieldValue?.information?.length" :informations="fieldValue.information" :styleData="fieldValue?.information_style" />
-            </div>
-            <h2 class="text-base font-semibold mb-2">{{ trans("Secure Payments") }}:</h2>
+        <div v-if="fieldValue.paymentData?.length">
+            <h2 class="text-base font-semibold mb-2">
+                {{ trans("Secure Payments") }}:
+            </h2>
             <div class="flex flex-wrap gap-4">
-                <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
-                    class="h-4 px-1" />
+                <img
+                    v-for="logo in fieldValue.paymentData"
+                    :key="logo.code"
+                    :src="logo.image"
+                    class="h-4"
+                />
             </div>
         </div>
     </div>
+
+</div>
+
+
 </template>
 
 <style lang="scss" scoped>
@@ -430,4 +719,12 @@ watch(
   color: var(--theme-color-4) !important;
   border: 2px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
 }
+
+.offers :deep(.offer-max-discount) {
+  @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center
+    rounded-sm px-1 py-0.5 text-sm
+    sm:px-1.5 sm:py-1 sm:text-sm
+    md:px-2 md:py-1;
+}
+
 </style>

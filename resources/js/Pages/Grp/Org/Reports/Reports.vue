@@ -13,7 +13,10 @@ import { capitalize } from "@/Composables/capitalize";
 import { ref, onMounted, onUnmounted } from "vue";
 import {
     faFileExport,
+    faFileImport,
     faFileInvoice,
+    faDolly,
+    faBoxOpen,
 } from "@fal";
 import { faAngleDown, faAngleUp } from "@far";
 import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue";
@@ -29,7 +32,10 @@ library.add(
     faAngleDown,
     faAngleUp,
     faFileExport,
+    faFileImport,
     faFileInvoice,
+    faDolly,
+    faBoxOpen,
 );
 
 const isFilterVisible = ref(false);

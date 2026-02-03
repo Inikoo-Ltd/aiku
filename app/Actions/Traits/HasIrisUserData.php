@@ -132,6 +132,7 @@ trait HasIrisUserData
                 'cart_amount'          => $cartAmount, // order total amount (including shipping, tax, etc.)
                 'cart_products_amount' => $cardItemsAmountAfterDiscount,  // order total items amount after discount
             ],
+            'gr_data'      => $grData,
             // 'traffic_source_cookies' => CaptureTrafficSource::run(),
             'offer_meters' => $offerMeters,
             'offer_data'   => $offerData,

@@ -12,19 +12,25 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithVarnishBan;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Process;
 
 class BreakAllWebsitesVarnishCache extends OrgAction
 {
     use WithVarnishBan;
 
-    public function handle(Command $command = null): array
+    public function handle(?Command $command = null): array
     {
-        return $this->sendVarnishBanHttp(
-            [
-                'x-ban-all' => 'all'
-            ],
-            $command
-        );
+        $result = Process::timeout(1800)->run('./restart_varnish.sh');
+
+        if ($command) {
+            if ($result->successful()) {
+                $command->info("All websites cache cleared");
+            } else {
+                $command->error("Failed to restart varnish");
+            }
+        }
+
+        return [];
     }
 
     public function asController(ActionRequest $request): array
@@ -37,13 +43,16 @@ class BreakAllWebsitesVarnishCache extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'varnish';
+        return 'varnish:restart {delay?}';
     }
 
     public function asCommand(Command $command): int
     {
-        $this->handle();
-        $command->info("All websites cache cleared");
+        if ($delay = $command->argument('delay')) {
+            sleep((int) $delay);
+        }
+
+        $this->handle($command);
 
         return 0;
     }

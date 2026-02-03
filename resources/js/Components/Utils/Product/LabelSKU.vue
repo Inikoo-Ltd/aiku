@@ -3,7 +3,7 @@ import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue';
 import { Link } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n'
 import Modal from "@/Components/Utils/Modal.vue"
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps<{
     product: {
@@ -23,6 +23,8 @@ const props = defineProps<{
             fraction_denominator: number
         } | null
     }[]
+    hideUnit?: boolean
+    disableClick?: boolean
     routeFunction?: Function
     keyPicking?: string
 }>()
@@ -31,13 +33,41 @@ const key = props.keyPicking ?? 'pick_fractional'
 
 
 const isOpenModal = ref(false)
+
+const textTooltip = computed(() => {
+    if(props.disableClick) {
+        return ''
+    }
+    return props.trade_units.length > 1  ? trans('Click to view all trade units detail') : ''
+})
+
+const openModal = () => {
+    if(props.disableClick) {
+        return;
+    }
+    if(props.trade_units.length >= 1) {
+        isOpenModal.value = true
+    };
+}
+
+const getAdditionalClass = () => {
+    let multiTradeUnit = props.trade_units.length >= 1
+    let className = multiTradeUnit ? 'border-green-600' : 'border-red-600';
+
+    if(!props.disableClick && multiTradeUnit) {
+        className += ' hover:cursor-pointer hover:opacity-80';
+    }
+
+    return className;
+}
 </script>
 
 <template>
     <div
-        v-tooltip="trade_units.length > 1 ? trans('Click to view all trade units detail') : ''"
-        class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer me-2 flex border-green-600"
-        @click="isOpenModal = true"
+        v-tooltip="textTooltip"
+        class="border border-solid py-1 px-3 rounded-md me-2 flex"
+        :class="getAdditionalClass()"
+        @click="openModal"
     >
         <div v-if="trade_units.length == 1" class="text-teal-600 whitespace-nowrap w-full">
             <span class=""> &#8623; SKU </span>
@@ -45,11 +75,18 @@ const isOpenModal = ref(false)
                 <FractionDisplay v-if="trade_units[0][key]" :fractionData="trade_units[0][key]" />
             </span>
         </div>
-        <div v-else class="text-teal-600 whitespace-nowrap w-full">
-            <span class="">Multi Trade Units</span>
+        <div v-else-if="trade_units.length > 1" class="text-teal-600 whitespace-nowrap w-full">
+            <span class="">{{ trans('Multi Trade Units') }}</span>
+        </div>
+        <div v-else class="text-red-500 whitespace-nowrap w-full">
+            <span class="">{{ trans('No Trade Units') }}</span>
         </div>
 
-        <div class="border-s border-green-600 text-gray-700 whitespace-nowrap font-bold ms-2 ps-2">
+        <div 
+            v-if="!hideUnit"
+            class="border-s text-gray-700 whitespace-nowrap font-bold ms-2 ps-2"
+            :class="trade_units.length >= 1 ? 'border-green-600' : 'border-red-600'"
+        >
             {{ product.units + " " + product.unit }}
         </div>
 

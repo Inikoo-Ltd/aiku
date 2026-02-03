@@ -9,13 +9,16 @@
 namespace App\Actions\Comms\Unsubscribe;
 
 use App\Actions\Comms\DispatchedEmail\UpdateDispatchedEmail;
+use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\CRM\Prospect\UpdateProspectEmailUnsubscribed;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
-use App\Enums\Comms\DispatchedEmailEvent\DispatchedEmailEventTypeEnum;
-use App\Http\Resources\Mail\DispatchedEmailsResource;
+use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Comms\DispatchedEmail;
+use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\CRM\Customer;
 
 class UnsubscribeMailshot
 {
@@ -27,24 +30,45 @@ class UnsubscribeMailshot
             return $dispatchedEmail;
         }
 
-        $recipient = $dispatchedEmail->mailshotRecipient->recipient;
+        $recipient = $dispatchedEmail->recipient;
+        $parent = $dispatchedEmail->parent;
+
         if (class_basename($recipient) == 'Prospect') {
             UpdateProspectEmailUnsubscribed::run($recipient, now());
+        }
+
+        if (class_basename($recipient) == class_basename(Customer::class)) {
+
+            if (class_basename($parent) == class_basename(Mailshot::class)) {
+
+                $modelData = match ($parent->type) {
+                    MailshotTypeEnum::NEWSLETTER => [
+                        'is_subscribed_to_newsletter' => false,
+                    ],
+                    MailshotTypeEnum::MARKETING => [
+                        'is_subscribed_to_marketing' => false,
+                    ],
+                    default => []
+                };
+
+                $customerComms = $recipient->comms;
+                UpdateCustomerComms::run($customerComms, $modelData, false);
+            }
         }
 
         UpdateDispatchedEmail::run(
             $dispatchedEmail,
             [
                 'state'           => DispatchedEmailStateEnum::UNSUBSCRIBED,
-                'date'            => now(),
-                'is_unsubscribed' => true
+                'provoked_unsubscribe' => true
 
             ]
         );
 
         $eventData = [
-            'type' => DispatchedEmailEventTypeEnum::UNSUBSCRIBE,
-            'date' => now(),
+            'type' => EmailTrackingEventTypeEnum::UNSUBSCRIBED,
+            'group_id' => $dispatchedEmail->group_id,
+            'organisation_id' => $dispatchedEmail->organisation_id,
             'data' => [
                 'ipAddress' => $request->ip(),
                 'userAgent' => $request->userAgent()
@@ -52,10 +76,11 @@ class UnsubscribeMailshot
         ];
 
 
-        $dispatchedEmail->events()->create($eventData);
+        $dispatchedEmail->emailTrackingEvents()->create($eventData);
 
+        $dispatchedEmail->refresh();
 
-        return $this->update($dispatchedEmail, ['state' => DispatchedEmailStateEnum::UNSUBSCRIBED]);
+        return $dispatchedEmail;
     }
 
     public function asController(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
@@ -65,7 +90,12 @@ class UnsubscribeMailshot
 
     public function jsonResponse(DispatchedEmail $dispatchedEmail): array
     {
-        return DispatchedEmailsResource::make($dispatchedEmail)->getArray();
+        return [
+            'api_response_status' => 200,
+            'api_response_data' => [
+                'recipient_email' => $dispatchedEmail->emailAddress?->email,
+                'recipient_name' => $dispatchedEmail->getName(),
+            ]
+        ];
     }
-
 }

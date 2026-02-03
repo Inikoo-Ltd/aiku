@@ -28,6 +28,28 @@ enum ProductStateEnum: string
     case DISCONTINUING = 'discontinuing'; // Product has been discontinued, but stock still exists on warehouse
     case DISCONTINUED  = 'discontinued'; // Product has been discontinued completely (Will not be used anymore)
 
+    public static function asOption(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $case) => [
+                $case->value => [
+                    'label' => $case->label(),
+                    'id'    => $case->value,
+                ]
+            ])
+            ->all();
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::IN_PROCESS    => __('In Process'),
+            self::ACTIVE        => __('Active'),
+            self::DISCONTINUING => __('Discontinuing'),
+            self::DISCONTINUED  => __('Discontinued'),
+            default             => __('Unknown'),
+        };
+    }
 
     public static function labels($bucket = null): array
     {

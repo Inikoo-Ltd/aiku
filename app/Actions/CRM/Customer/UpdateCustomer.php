@@ -13,9 +13,11 @@ use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
@@ -162,6 +164,7 @@ class UpdateCustomer extends OrgAction
                 DeleteTaxNumber::run($customer->taxNumber);
             }
         }
+
         if (Arr::hasAny($modelData, ['contact_name', 'company_name'])) {
             $contact_name = Arr::exists($modelData, 'contact_name') ? Arr::get($modelData, 'contact_name') : $customer->contact_name;
             $company_name = Arr::exists($modelData, 'company_name') ? Arr::get($modelData, 'company_name') : $customer->company_name;
@@ -187,6 +190,26 @@ class UpdateCustomer extends OrgAction
 
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
 
+        if (Arr::has($changes, 'tax_number')) {
+            // Recalculate customer orders VAT Charges | INI-875
+            // Will only update the VAT Charges for orders that has status creating. Changeable if Dimitar wants it
+            $customer->orders()
+                ->where('state', OrderStateEnum::CREATING)
+                ->with(['organisation', 'billingAddress', 'deliveryAddress'])
+                ->each(function ($order) use ($customer) {
+                    $order->update([
+                        'tax_category_id' => GetTaxCategory::run(
+                            country: $order->organisation->country,
+                            taxNumber: $customer->taxNumber,
+                            billingAddress: $order->billingAddress,
+                            deliveryAddress: $order->deliveryAddress,
+                            isRe: $customer->is_re,
+                        )->id,
+                    ]);
+                    CalculateOrderTotalAmounts::run($order, false, false);
+                });
+        }
+
         if (Arr::hasAny($changes, ['contact_name', 'email'])) {
             $rootWebUser = $customer->webUsers->where('is_root', true)->first();
             if ($rootWebUser) {
@@ -198,7 +221,6 @@ class UpdateCustomer extends OrgAction
                 );
             }
         }
-
 
         if (Arr::has($changes, 'state')) {
             GroupHydrateCustomers::dispatch($customer->group);

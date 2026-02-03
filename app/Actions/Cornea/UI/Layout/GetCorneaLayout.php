@@ -16,9 +16,9 @@ class GetCorneaLayout
 {
     use AsAction;
 
-    public function handle($request, ?SupplierUser $SupplierUser): array
+    public function handle($request, ?SupplierUser $supplierUser): array
     {
-        $supplier    = $request->get('website');
+        $supplier    = $request->input('website');
 
 
         return [

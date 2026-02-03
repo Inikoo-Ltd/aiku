@@ -3,8 +3,8 @@
 namespace App\Actions\Web\Website;
 
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
-use App\Http\Resources\Web\WebBlockProductResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
+use App\Http\Resources\Web\WebpageProductWorkshopResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
@@ -22,7 +22,7 @@ class GetWebsiteWorkshopProduct
         $layout = Arr::get($website->unpublishedProductSnapshot, 'layout.product', []);
 
         if ($layout) {
-            data_set($layout, 'data.fieldValue.product', WebBlockProductResource::make($product)->toArray(request()));
+            data_set($layout, 'data.fieldValue.product', WebpageProductWorkshopResource::make($product)->toArray(request()));
         }
 
         $propsValue = [

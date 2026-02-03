@@ -53,8 +53,6 @@ Route::prefix('clients')->as('clients.')->group(function () {
     Route::delete('{customerClient:id}', DisableApiCustomerClient::class)->name('delete');
 
 });
-
-
 Route::prefix('sku')->as('sku.')->group(function () {
     Route::get('', GetSKUs::class)->name('index');
 });

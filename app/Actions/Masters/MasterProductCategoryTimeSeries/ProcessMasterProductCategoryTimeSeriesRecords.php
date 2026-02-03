@@ -9,7 +9,6 @@
 namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 
 use App\Actions\Masters\MasterProductCategoryTimeSeries\Hydrators\MasterProductCategoryTimeSeriesHydrateNumberRecords;
-use App\Actions\Traits\WithTimeSeriesRecordsGeneration;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterProductCategoryTimeSeries;
@@ -21,7 +20,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
-    use WithTimeSeriesRecordsGeneration;
+
+    public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $masterProductCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -30,17 +30,17 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $masterProductCategoryId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-
         $from .= ' 00:00:00';
-        $to .= ' 23:59:59';
+        $to   .= ' 23:59:59';
 
         $masterProductCategory = MasterProductCategory::find($masterProductCategoryId);
+
         if (!$masterProductCategory) {
             return;
         }
 
-        $timeSeries = MasterProductCategoryTimeSeries::where('master_product_category_id', $masterProductCategoryId)
-            ->where('frequency', $frequency->value)->first();
+        $timeSeries = MasterProductCategoryTimeSeries::where('master_product_category_id', $masterProductCategoryId)->where('frequency', $frequency->value)->first();
+
         if (!$timeSeries) {
             $timeSeries = $masterProductCategory->timeSeries()->create([
                 'frequency' => $frequency,
@@ -62,9 +62,10 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
         };
 
         $results = DB::table('invoice_transactions')
+            ->where($categoryColumn, $timeSeries->master_product_category_id)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
-            ->where($categoryColumn, $timeSeries->master_product_category_id);
+            ->whereNull('deleted_at');
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
@@ -126,7 +127,6 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
             )->groupBy(DB::raw('CAST(date AS DATE)'));
         }
 
-
         $results = $results->get();
 
         foreach ($results as $result) {
@@ -152,7 +152,6 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                 $period     = $result->year;
             }
 
-
             $timeSeries->records()->updateOrCreate(
                 [
                     'master_product_category_time_series_id' => $timeSeries->id,
@@ -174,11 +173,8 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                     'invoices'           => $result->invoices,
                     'refunds'            => $result->refunds,
                     'orders'             => $result->orders,
-
                 ]
             );
         }
     }
-
-
 }

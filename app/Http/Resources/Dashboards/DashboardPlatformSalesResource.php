@@ -2,171 +2,157 @@
 
 namespace App\Http\Resources\Dashboards;
 
-use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
-use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
 use App\Enums\UI\CRM\PlatformTabsEnum;
-use App\Models\Dropshipping\PlatformSalesIntervals;
-use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardPlatformSalesResource extends JsonResource
 {
-    use WithDashboardIntervalValues;
+    use WithDashboardIntervalValuesFromArray;
 
     public function toArray($request): array
     {
+        $data = (array) $this->resource;
+
         $columns = [
             'label' => [
-                'formatted_value' => $this->resource->name,
+                'formatted_value' => $data['name'] ?? $data['code'] ?? 'Unknown',
                 'align'           => 'left',
-                'icon'            => $this->resource->slug
+                'icon'            => $data['slug'] ?? 'unknown',
             ],
             'label_minified' => [
-                'formatted_value' => $this->resource->name,
+                'formatted_value' => $data['slug'] ?? $data['code'] ?? 'Unknown',
                 'align'           => 'left',
-                'icon'            => $this->resource->slug
-            ],
-            'sales_percentage' => $this->getSalesPercentageIntervals()
+                'icon'            => $data['slug'] ?? 'unknown',
+            ]
         ];
 
         $columns = array_merge(
             $columns,
-            $this->getDashboardTableColumn($this, 'new_customer_client'),
-            $this->getDashboardTableColumn($this, 'new_customer_client_minified'),
-            $this->getDashboardTableColumn($this, 'sales_grp_currency'),
-            $this->getDashboardTableColumn($this, 'sales_grp_currency_minified'),
-            $this->getDashboardTableColumn($this, 'sales_grp_currency_delta')
+            $this->getDashboardColumnsFromArray($data, [
+                'customer_clients',
+                'customer_clients_minified',
+                'sales_grp_currency',
+                'sales_grp_currency_minified',
+                'sales_grp_currency_delta',
+                'sales_percentage'
+            ])
         );
 
-        if ($this->isShopContext()) {
-            $routeTargets = [
-                'invoices' => [
-                    'route_target' => [
-                        'name' => 'grp.org.shops.show.crm.platforms.show',
-                        'parameters' => [
-                            'organisation' => $this->resource->organisation_slug,
-                            'shop'         => $this->resource->shop_slug,
-                            'platform'     => $this->resource->slug,
-                            'tab'          => PlatformTabsEnum::SHOWCASE->value
-                        ],
-                        'key_date_filter' => 'between[date]'
-                    ],
-                ],
-                'new_channels' => [
-                    'route_target' => [
-                        'name' => 'grp.org.shops.show.crm.platforms.show',
-                        'parameters' => [
-                            'organisation' => $this->resource->organisation_slug,
-                            'shop'         => $this->resource->shop_slug,
-                            'platform'     => $this->resource->slug,
-                            'tab'          => PlatformTabsEnum::CHANNELS->value
-                        ],
-                        'key_date_filter' => 'between[created_at]'
-                    ],
-                ],
-                'new_customers' => [
-                    'route_target' => [
-                        'name' => 'grp.org.shops.show.crm.platforms.show',
-                        'parameters' => [
-                            'organisation' => $this->resource->organisation_slug,
-                            'shop'         => $this->resource->shop_slug,
-                            'platform'     => $this->resource->slug,
-                            'tab'          => PlatformTabsEnum::CUSTOMERS->value
-                        ],
-                        'key_date_filter' => 'between[registered_at]'
-                    ],
-                ],
-                'new_portfolios' => [
-                    'route_target' => [
-                        'name' => 'grp.org.shops.show.crm.platforms.show',
-                        'parameters' => [
-                            'organisation' => $this->resource->organisation_slug,
-                            'shop'         => $this->resource->shop_slug,
-                            'platform'     => $this->resource->slug,
-                            'tab'          => PlatformTabsEnum::PRODUCTS->value
-                        ],
-                        'key_date_filter' => 'between[created_at]'
-                    ],
-                ],
-            ];
+        if ($this->isShopContext($data)) {
+            $routeTargets = $this->buildRouteTargets($data);
 
             $columns = array_merge(
                 $columns,
-                $this->getDashboardTableColumn($this, 'invoices', $routeTargets['invoices']),
-                $this->getDashboardTableColumn($this, 'invoices_minified', $routeTargets['invoices']),
-                $this->getDashboardTableColumn($this, 'invoices_delta'),
-                $this->getDashboardTableColumn($this, 'new_channels', $routeTargets['new_channels']),
-                $this->getDashboardTableColumn($this, 'new_channels_minified', $routeTargets['new_channels']),
-                $this->getDashboardTableColumn($this, 'new_customers', $routeTargets['new_customers']),
-                $this->getDashboardTableColumn($this, 'new_customers_minified', $routeTargets['new_customers']),
-                $this->getDashboardTableColumn($this, 'new_portfolios', $routeTargets['new_portfolios']),
-                $this->getDashboardTableColumn($this, 'new_portfolios_minified', $routeTargets['new_portfolios']),
-                $this->getDashboardTableColumn($this, 'sales'),
-                $this->getDashboardTableColumn($this, 'sales_minified'),
-                $this->getDashboardTableColumn($this, 'sales_delta'),
-                $this->getDashboardTableColumn($this, 'sales_org_currency'),
-                $this->getDashboardTableColumn($this, 'sales_org_currency_minified'),
-                $this->getDashboardTableColumn($this, 'sales_org_currency_delta'),
+                $this->getDashboardColumnsFromArray($data, [
+                    'invoices' => $routeTargets['invoices'],
+                    'invoices_minified' => $routeTargets['invoices'],
+                    'invoices_delta',
+                    'channels' => $routeTargets['channels'],
+                    'channels_minified' => $routeTargets['channels'],
+                    'customers' => $routeTargets['customers'],
+                    'customers_minified' => $routeTargets['customers'],
+                    'portfolios' => $routeTargets['portfolios'],
+                    'portfolios_minified' => $routeTargets['portfolios'],
+                    // 'sales',
+                    // 'sales_minified',
+                    // 'sales_delta',
+                    // 'sales_org_currency',
+                    // 'sales_org_currency_minified',
+                    // 'sales_org_currency_delta',
+                ])
             );
         } else {
             $columns = array_merge(
                 $columns,
-                $this->getDashboardTableColumn($this, 'invoices'),
-                $this->getDashboardTableColumn($this, 'invoices_minified'),
-                $this->getDashboardTableColumn($this, 'invoices_delta'),
-                $this->getDashboardTableColumn($this, 'new_channels'),
-                $this->getDashboardTableColumn($this, 'new_channels_minified'),
-                $this->getDashboardTableColumn($this, 'new_customers'),
-                $this->getDashboardTableColumn($this, 'new_customers_minified'),
-                $this->getDashboardTableColumn($this, 'new_portfolios'),
-                $this->getDashboardTableColumn($this, 'new_portfolios_minified')
+                $this->getDashboardColumnsFromArray($data, [
+                    'invoices',
+                    'invoices_minified',
+                    'invoices_delta',
+                    'channels',
+                    'channels_minified',
+                    'customers',
+                    'customers_minified',
+                    'portfolios',
+                    'portfolios_minified',
+                    // 'sales_org_currency',
+                    // 'sales_org_currency_minified',
+                    // 'sales_org_currency_delta',
+                ])
             );
         }
 
+        $columns['sales'] = $columns['sales_grp_currency'];
+        $columns['sales_minified'] = $columns['sales_grp_currency_minified'];
+        $columns['sales_delta'] = $columns['sales_grp_currency_delta'];
+        $columns['sales_org_currency'] = $columns['sales_grp_currency'];
+        $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
+        $columns['sales_org_currency_delta'] = $columns['sales_grp_currency_delta'];
+
         return [
-            'slug'    => $this->resource->slug,
-            'state'   => 'active',
-            'columns' => $columns
+            'slug'    => $data['slug'] ?? 'unknown',
+            'state'   => $data['state'] ?? 'active',
+            'columns' => $columns,
+            'colour'  => null
         ];
     }
 
-    private function getSalesPercentageIntervals(): array
+    private function isShopContext(array $data): bool
     {
-        $isShopContext = $this->isShopContext();
-
-        if ($isShopContext) {
-            $models = PlatformShopSalesIntervals::where('shop_id', $this->resource->shop_id)->get();
-            $totalPerInterval = $this->sumIntervalValues($models, 'sales');
-            $currentPlatformSales = $this->sumIntervalValues([$this->resource], 'sales');
-        } else {
-            $models = PlatformSalesIntervals::all();
-            $totalPerInterval = $this->sumIntervalValues($models, 'sales_grp_currency');
-            $currentPlatformSales = $this->sumIntervalValues([$this->resource], 'sales_grp_currency');
-        }
-
-        $result = [];
-
-        foreach (DateIntervalEnum::cases() as $interval) {
-            $key = $isShopContext
-                ? 'sales_' . $interval->value
-                : 'sales_grp_currency_' . $interval->value;
-
-            $total = $totalPerInterval[$key] ?? 0;
-            $value = $currentPlatformSales[$key] ?? 0;
-            $percentage = $total > 0 ? ($value / $total) * 100 : 0;
-
-            $result[$interval->value] = [
-                'raw_value'       => $percentage,
-                'formatted_value' => number_format($percentage, 2) . '%',
-                'align'           => 'right',
-            ];
-        }
-
-        return $result;
+        return !empty($data['shop_id']);
     }
 
-    private function isShopContext(): bool
+    private function buildRouteTargets(array $data): array
     {
-        return !empty($this->resource->shop_id);
+        return [
+            'invoices' => [
+                'route_target' => [
+                    'name' => 'grp.org.shops.show.crm.platforms.show',
+                    'parameters' => [
+                        'organisation' => $data['organisation_slug'],
+                        'shop'         => $data['shop_slug'],
+                        'platform'     => $data['slug'],
+                        'tab'          => PlatformTabsEnum::SHOWCASE->value
+                    ],
+                    'key_date_filter' => 'between[date]'
+                ],
+            ],
+            'channels' => [
+                'route_target' => [
+                    'name' => 'grp.org.shops.show.crm.platforms.show',
+                    'parameters' => [
+                        'organisation' => $data['organisation_slug'],
+                        'shop'         => $data['shop_slug'],
+                        'platform'     => $data['slug'],
+                        'tab'          => PlatformTabsEnum::CHANNELS->value
+                    ],
+                    'key_date_filter' => 'between[created_at]'
+                ],
+            ],
+            'customers' => [
+                'route_target' => [
+                    'name' => 'grp.org.shops.show.crm.platforms.show',
+                    'parameters' => [
+                        'organisation' => $data['organisation_slug'],
+                        'shop'         => $data['shop_slug'],
+                        'platform'     => $data['slug'],
+                        'tab'          => PlatformTabsEnum::CUSTOMERS->value
+                    ],
+                    'key_date_filter' => 'between[registered_at]'
+                ],
+            ],
+            'portfolios' => [
+                'route_target' => [
+                    'name' => 'grp.org.shops.show.crm.platforms.show',
+                    'parameters' => [
+                        'organisation' => $data['organisation_slug'],
+                        'shop'         => $data['shop_slug'],
+                        'platform'     => $data['slug'],
+                        'tab'          => PlatformTabsEnum::PRODUCTS->value
+                    ],
+                    'key_date_filter' => 'between[created_at]'
+                ],
+            ],
+        ];
     }
 }

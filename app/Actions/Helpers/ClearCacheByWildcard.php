@@ -20,7 +20,7 @@ class ClearCacheByWildcard
     /**
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function handle(string $pattern, Command $command = null): void
+    public function handle(string $pattern, ?Command $command = null): void
     {
 
         $keys = GetRedisKeysByPattern::run($pattern, 'cache');

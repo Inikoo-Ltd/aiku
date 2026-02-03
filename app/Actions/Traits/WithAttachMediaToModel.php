@@ -28,7 +28,7 @@ use stdClass;
 
 trait WithAttachMediaToModel
 {
-    protected function attachMediaToModel(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|Announcement|MasterCollection|Collection $model, Media $media, string $scope = 'default', string $subScope = null, $data = null): Group|Organisation|Shop|User|Website|Webuser|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|Announcement|MasterCollection|Collection
+    protected function attachMediaToModel(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|Announcement|MasterCollection|Collection $model, Media $media, string $scope = 'default', ?string $subScope = null, $data = null): Group|Organisation|Shop|User|Website|Webuser|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory|Announcement|MasterCollection|Collection
     {
 
 

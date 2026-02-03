@@ -1,30 +1,45 @@
 <script setup lang="ts">
 import { ref, inject, computed } from 'vue'
-import { faCube, faLink } from "@fal"
-import { faStar, faCircle } from "@fas"
+import { faCube, faLink, faInfoCircle } from "@fal"
+import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { trans } from 'laravel-vue-i18n'
-import Button from '@/Components/Elements/Buttons/Button.vue'
+/* import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
+import FamilyOfferLabelGR from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelGR.vue' */
+import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import { getBestOffer } from '@/Composables/useOffers'
 
-library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
+library.add(faCube, faLink, faInfoCircle, faStar, faCircle, faBadgePercent, faChevronCircleLeft, faChevronCircleRight)
 
 const props = defineProps<{
   fieldValue: {
-    family: {
+    family: {  // WebBlockFamilyResource.
       name: string
       description_title?: string
       description?: string
       description_extra?: string
-      images: { source: string }[]
+      images: { 
+        png: string
+        avif: string
+        webp: string
+        original: string
+       }
       active_offers: {
 
       }[]
       offers_data?: {
-        vol_gr: {
-            volume: number
-            discount: number
+        [key: string]: {
+          state: string
+          duration: string
+          label: string
+          allowances: {
+            class: string  // 'discount'
+            type: string   // 'percentage_off'
+            label: string  // '5.0%'
+          }[]
+          note: string
         }
       }
     }
@@ -40,72 +55,68 @@ const toggleShowExtra = () => {
 }
 
 const layout: any = inject("layout", {})
-console.log('ssss',props)
 
-const promoData = computed(() => {
-  const vol = props.fieldValue?.family?.offers_data?.vol_gr
-  if (!vol?.volume || !vol?.discount) return null
-
-  return {
-    title: trans("Special Volume Deal"),
-    headline: trans(`Buy ${vol.volume} items, get ${vol.discount}% OFF`),
-    description: trans(`Perfect for bulk buyers. Save more when you purchase ${vol.volume} or more items.`),
-    cta: trans("Start Saving Now")
-  }
+const bestOffer = computed(() => {
+  return getBestOffer(props.fieldValue?.family?.offers_data)
 })
+
+const _popoverInfoCircle = ref<InstanceType<any> | null>(null)
+const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
+
 </script>
 
 <template>
-
-  <div id="family-1">
-    <!-- <pre>{{ props.fieldValue?.family?.active_offers }}</pre> -->
-        <section v-if="promoData && layout.iris.is_logged_in"
-            class="relative mx-[10px]  sm:mx-[50px] mt-6 overflow-hidden rounded-md p-6 shadow-md"
-            aria-label="Colorful Volume Promotion">
-            <!-- Gradient Background -->
-            <div class="absolute inset-0 bg-gradient-to-br from-pink-400 via-purple-400 to-indigo-400 opacity-90"></div>
-
-            <!-- Decorative Blurs -->
-            <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-yellow-300 opacity-30 blur-3xl"></div>
-            <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-cyan-300 opacity-30 blur-3xl"></div>
-
-            <!-- Content -->
-            <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-white">
-
-                <div>
-                    <p class="text-xs uppercase tracking-wide font-semibold opacity-90 mb-1">
-                        {{ promoData.title }}
-                    </p>
-
-                    <h2 class="text-xl font-bold leading-tight">
-                        {{ promoData.headline }}
-                    </h2>
-
-                    <p class="text-sm mt-1 max-w-[520px] opacity-90">
-                        {{ promoData.description }}
-                    </p>
-                </div>
-
-                <a href="#list-products-ecom-iris" class="flex-shrink-0">
-                    <Button :label="promoData.cta">
-                    </Button>
-                </a>
-
-            </div>
-        </section>
-
-  
-
+  <div id="family-1-iris">
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="Family Description Section">
+      
+        <!-- Section: listing Offers -->
+        <div class="hidden">
+          <pre><span class="bg-yellow-400">layout?.user?.gr_data?.customer_is_gr</span>: {{ layout?.user?.gr_data?.customer_is_gr }}</pre>
+          <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.family?.offers_data }}</pre>
+        </div>
+         
+        <!-- Offer: list offers -->
+        <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
+            class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
+        >
 
-      <!-- Description Title (SEO: Heading) -->
-      <h1 v-if="fieldValue.family.name" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
-        {{ fieldValue.family.name }}
-      </h1>
+            <!-- <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
+                <FamilyOfferLabelGR 
+                  v-if="offer.type == 'Category Quantity Ordered Order Interval'" 
+                />
 
-      <!-- Main Description -->
-      <div v-if="fieldValue.family.description" :style="{ marginTop: 0 }" v-html="fieldValue.family.description"></div>
+                <FamilyOfferLabelDiscount
+                    :offer="offer"
+                />
+            </template> -->
+
+                <DiscountByType 
+                   :offers_data="fieldValue?.family?.offers_data"
+                   :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr'  : 'max_discount'"
+                />
+
+                <DiscountByType
+                    v-if="!layout?.user?.gr_data?.customer_is_gr && bestOffer.type == 'Category Quantity Ordered Order Interval'"
+                   :offers_data="fieldValue?.family?.offers_data"
+                   :template="'triggers_labels'"
+                />
+            
+        </div>
+
+        <!-- Description Title (SEO: Heading) -->
+        <h1 v-if="fieldValue.family.name" class="text-[1.5rem] leading-[2rem] font-semibold">
+            {{ fieldValue.family.name }}
+        </h1>
+
+        <!-- Main Description -->
+        <div
+            v-if="fieldValue.family.description"
+            id="description-family-1-iris"
+            xstyle="{ marginTop: 0 }"
+            v-html="fieldValue.family.description"
+            class="mt-6 text-justify"
+        />
 
       <!-- Read More Extra Description -->
       <div v-if="fieldValue.family.description_extra" class="rounded-lg">
@@ -124,8 +135,29 @@ const promoData = computed(() => {
 
 </template>
 
-<style>
+<style scoped>
   html {
     scroll-behavior: smooth;
   }
+
+    #description-family-1-iris h1 {
+        font-size: 1.5rem;
+        line-height: 2rem;
+        font-weight: 600;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    #description-family-1-iris p {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+.offers :deep(.offer-max-discount) {
+  @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center
+    rounded-sm px-1 py-0.5 text-xl
+    sm:px-1.5 sm:py-1 sm:text-xl
+    md:px-2 md:py-1;
+}
+
 </style>

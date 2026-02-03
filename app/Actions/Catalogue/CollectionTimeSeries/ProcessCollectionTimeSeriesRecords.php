@@ -34,16 +34,15 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
         $to   .= ' 23:59:59';
 
         $collection = Collection::find($collectionId);
+
         if (!$collection) {
             return;
         }
 
-        $timeSeries = CollectionTimeSeries::where('collection_id', $collection->id)
-            ->where('frequency', $frequency->value)->first();
+        $timeSeries = CollectionTimeSeries::where('collection_id', $collection->id)->where('frequency', $frequency->value)->first();
+
         if (!$timeSeries) {
-            $timeSeries = $collection->timeSeries()->create([
-                'frequency' => $frequency,
-            ]);
+            $timeSeries = $collection->timeSeries()->create(['frequency' => $frequency]);
         }
 
         $this->processTimeSeries($timeSeries, $from, $to);
@@ -53,13 +52,13 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(CollectionTimeSeries $timeSeries, string $from, string $to): void
     {
-
         $assetsIDs = $timeSeries->collection->products->pluck('id')->unique()->toArray();
 
         $results = DB::table('invoice_transactions')
+            ->whereIn('asset_id', $assetsIDs)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
-            ->whereIn('asset_id', $assetsIDs);
+            ->whereNull('deleted_at');
 
         if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
             $results->select(
@@ -121,7 +120,6 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
             )->groupBy(DB::raw('CAST(date AS DATE)'));
         }
 
-
         $results = $results->get();
 
         foreach ($results as $result) {
@@ -147,7 +145,6 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
                 $period     = $result->year;
             }
 
-
             $timeSeries->records()->updateOrCreate(
                 [
                     'collection_time_series_id' => $timeSeries->id,
@@ -164,11 +161,8 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
                     'invoices'           => $result->invoices,
                     'refunds'            => $result->refunds,
                     'orders'             => $result->orders,
-
                 ]
             );
         }
     }
-
-
 }

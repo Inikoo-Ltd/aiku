@@ -20,7 +20,7 @@ class IndexMasterAssetTimeSeries extends OrgAction
 {
     public function handle(MasterAsset $masterAsset, string|null $prefix): LengthAwarePaginator
     {
-        $frequency = request()->get('frequency', TimeSeriesFrequencyEnum::DAILY->value);
+        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::DAILY->value);
         $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
 
         if ($prefix) {

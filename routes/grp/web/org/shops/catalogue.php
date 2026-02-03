@@ -34,6 +34,7 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\Variant\ShowVariant;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +46,9 @@ Route::prefix('products')->as('products.')
         Route::prefix('all')->as('all_products.')->group(function () {
             Route::get('', IndexProductsInCatalogue::class)->name('index');
             Route::get('create', CreateProduct::class)->name('create');
+
+            Route::get('faire-products', GetFaireProducts::class)->name('faire_products.index');
+
             Route::prefix('{product}')->group(function () {
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
