@@ -100,7 +100,8 @@ const waitEchoReady = (callback: Function) => {
 }
 
 const notifiedMessages = new Set<string>()
-
+const myAgentId = layout.user?.id
+const myAgentShop = layout.user?.agent_shops ?? []
 
 onMounted(() => {
 
@@ -111,6 +112,10 @@ onMounted(() => {
             const msg = e.message
             if (!msg) return
             if (msg.sender_type === "agent") return
+            if (msg.shop_id && Array.isArray(myAgentShop) && !myAgentShop.includes(msg.shop_id)) {
+                return
+            }
+            if (msg.assigned_user_id && myAgentId && msg.assigned_user_id !== myAgentId) return
 
             const senderDisplay =
                 msg.sender_name?.trim() ||
