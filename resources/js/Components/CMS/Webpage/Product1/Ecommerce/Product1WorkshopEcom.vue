@@ -18,6 +18,7 @@ import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faCube, faLink, faFileDownload)
 

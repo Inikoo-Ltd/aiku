@@ -15,7 +15,6 @@ import { inject } from 'vue'
 
 const props = defineProps<{
     product: LastOrderedProduct
-    isProductLoading: (productId: string) => boolean
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -23,7 +22,7 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <div class="flex w-full px-4 py-3 rounded border border-transparent hover:border-black/10">
+    <div id="recommendation-customer-recently-bought-slide-iris" class="flex w-full px-4 py-3 rounded border border-transparent hover:border-black/10">
         <div class="w-full flex flex-col">
             <!-- Image -->
             <component :is="product.canonical_url ? Link : 'div'"
@@ -61,16 +60,5 @@ const locale = inject('locale', aikuLocaleStructure)
                 </div>
             </div>
         </div>
-        
-        <!-- Add to Basket Button -->
-        <!-- <div v-if="layout.retina.type === 'b2b' && product.id">
-            <Button @click="() => false"
-                disabled
-                :label="isProductLoading(product.id) ? trans('Adding...') :
-                    trans('Add to Basket')"
-                class="w-full justify-center"
-                :loading="isProductLoading(product.id)"
-            />
-        </div> -->
     </div>
 </template>

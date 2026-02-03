@@ -47,16 +47,11 @@ const slidesPerView = computed(() => {
     }[props.screenType] ?? 5
 })
 
-const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
 const listProducts = ref<LastOrderedProduct[] | null>()
 const isLoadingFetch = ref(false)
 
-const listLoadingProducts = ref<Record<string, string>>({})
-const isProductLoading = (productId: string) => {
-    return listLoadingProducts.value?.[`recommender-${productId}`] === 'loading'
-}
 
 const isFetched = ref(false)
 const fetchRecommenders = async () => {
@@ -91,7 +86,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :style="{
+    <div id="recommendation-customer-recently-bought-1-iris" class="w-full pb-6 px-4" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
@@ -128,7 +123,6 @@ onMounted(() => {
                         >
                             <RecommendationCustomerRecentlyBoughtSlideIris
                                 :product
-                                :isProductLoading
                             />
                         </SwiperSlide>
                     </template>
