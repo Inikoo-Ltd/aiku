@@ -181,13 +181,6 @@ task('deploy:flush-varnish', function () {
     if ($shouldFlush) {
         writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
         run('cd {{release_path}} && pwd && ./restart_varnish.sh 10');
-
-//        try {
-//            artisan('varnish:restart 10', ['skipIfNoEnv', 'showOutput'])();
-//            writeln('Varnish cache flush command executed.');
-//        } catch (\Throwable $e) {
-//            writeln('Error flushing Varnish cache: '.$e->getMessage());
-//        }
     } else {
         writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
     }
