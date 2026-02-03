@@ -19,15 +19,20 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import axios from "axios"
-import { Link } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import RecommendationSlideWorkshop from "@/Components/Iris/Recommendations/RecommendationSlideWorkshop.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
+import { notify } from "@kyvg/vue3-notification"
+import RecommendationCRBSlideIris from "@/Components/Iris/Recommendations/RecommendationCRBSlideIris.vue"
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
-    modelValue: any
+    modelValue: {
+        family: {   // GetWebBlockRecommendationsCRB
+            id: number
+            slug: string
+            name: string
+        }
+    }
     webpageData?: any
     blockData?: {}
     indexBlock?: number
@@ -51,28 +56,35 @@ const slidesPerView = computed(() => {
 })
 
 
-const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
-console.log('lala', layout)
 
 const listProducts = ref<ProductHit[] | null>()
 const isLoadingFetch = ref(false)
 const fetchRecommenders = async () => {
-    if (route().has('iris.json.product_category.last-ordered-products.index')) {
+    if (route().has('grp.json.product_category.last-ordered-products.index') && props.modelValue?.family?.id) {
         try {
             isLoadingFetch.value = true
             const response = await axios.get(
-                route('iris.json.product_category.last-ordered-products.index', { productCategory: 8279 })
+                route('grp.json.product_category.last-ordered-products.index', {
+                    productCategory: props.modelValue?.family?.id,
+                })
             )
             if (response.status !== 200) {
                 console.error('Error fetching recommenders:', response.statusText)
             }
-            console.log('Response axios:', response.data)
-            listProducts.value = response.data
+            listProducts.value = response.data.data
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         }
         isLoadingFetch.value = false
+    } else {
+        setTimeout(() => {
+            notify({
+                title: trans("Something went wrong"),
+                text: "Recommendation CRB is not set properly. Reach developers to fix.",
+                type: "error",
+            })
+        }, 500)
     }
 }
 
@@ -82,14 +94,15 @@ onMounted(()=> {
 </script>
 
 <template>
-    <div id="luigi-trends-1-workshop" class="w-full pb-6" :style="{
+    <div id="recommendation-customer-recently-bought-1-workshop" class="w-full pb-6" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType),
         width: 'auto'
     }">
         <!-- Title -->
         <div class="px-4 py-6 pb-2 text-3xl font-semibold">
-            <EditorV2
+            <p style="text-align: center">{{ trans("Customers Recently Bought") }}</p>
+            <!-- <EditorV2
                 v-model="modelValue.title"
                 @focus="() => {
                     sendMessageToParent('activeBlock', indexBlock)
@@ -98,7 +111,7 @@ onMounted(()=> {
                     name: webpageData.images_upload_route.name,
                     parameters: { modelHasWebBlocks: blockData?.id }
                 }"
-            />
+            /> -->
         </div>
 
         <div class="py-4">
@@ -117,9 +130,9 @@ onMounted(()=> {
                     <SwiperSlide
                         v-for="(product, index) in listProducts"
                         :key="index"
-                        class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded !grid h-full min-h-full"
+                        class="p-[1px] w-full cursor-grab relative !grid h-full min-h-full"
                     >
-                        <RecommendationSlideWorkshop
+                        <RecommendationCRBSlideIris
                             :product
                         />
                     </SwiperSlide>

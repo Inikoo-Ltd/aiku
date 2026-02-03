@@ -1,3 +1,4 @@
+import { trans } from "laravel-vue-i18n";
 
 export default {
 	blueprint: [
@@ -9,6 +10,8 @@ export default {
 					key: ["video_setup"],
 					label: "Settings",
 					type: "video-settings",
+					information : trans('Please use embed url'),
+					useIn: ["desktop", "tablet", "mobile"],
 				},
 			],
 		},

@@ -140,12 +140,12 @@ const formProducts = useForm({
 	quantity_ordered: 0,
 })
 
-const notifySuccessProduct = () => {
-	notify({
-		title: trans("Success!"),
-		text: trans("Product successfully added or updated."),
-		type: "success",
-	})
+const notifySuccessProduct = (abc: string) => {
+	// notify({
+	// 	title: trans("Success!"),
+	// 	text: abc + trans("Product successfully axxxdded or updated."),
+	// 	type: "success",
+	// })
 }
 
 const notifyFailedProduct = () => {
@@ -186,7 +186,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 									notifyFailedProduct()
 								},
 								onSuccess: () => {
-									notifySuccessProduct()
+									notifySuccessProduct('xxxx')
 								}
 							}
 						)
@@ -209,7 +209,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 								notifyFailedProduct()
 							},
 							onSuccess: () => {
-								notifySuccessProduct()
+								notifySuccessProduct('yyyyy')
 							}
 						}
 					)
@@ -237,7 +237,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 								notifyFailedProduct()
 							},
 							onSuccess: () => {
-								notifySuccessProduct()
+								notifySuccessProduct('gggg')
 							}
 						}
 					)

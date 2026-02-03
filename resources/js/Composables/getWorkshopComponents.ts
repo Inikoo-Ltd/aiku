@@ -57,7 +57,7 @@ import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTre
 import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'
 import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Workshop.vue'
 
-import RecommendationCustomerRecentlyBought1Workshop from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Workshop.vue'
+import RecommendationCRB1Workshop from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCRB1Workshop.vue'
 import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'
 import TimelineWorkshop2 from '@/Components/CMS/Webpage/Step2/Step2Workshop.vue'
 import ListProductWorkshop from '@/Components/CMS/Webpage/Products/Dropshipping/ListProductsWorkshop.vue'
@@ -117,7 +117,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'luigi-trends-1' : LuigiTrends1Workshop,
         'luigi-last-seen-1' : LuigiLastSeen1Workshop,
         'luigi-item-alternatives-1' : LuigiItemAlternatives1Workshop,
-        'recommendation-customer-recently-bought-1': RecommendationCustomerRecentlyBought1Workshop,
+        'recommendation-customer-recently-bought-1': RecommendationCRB1Workshop,
 
         "cta-image-background" : CtaImageBackroundWorkshop,
         'banner': WowsbarBanner,

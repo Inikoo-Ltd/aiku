@@ -1,24 +1,25 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 06-12-2024-10h-47m
- * github: https://github.com/KirinZero0
- * copyright 2024
+ * author Louis Perez
+ * created on 03-02-2026-09h-57m
+ * github: https://github.com/louis-perez
+ * copyright 2026
 */
 
 namespace App\Actions\Catalogue\Product\Json;
 
-use App\Actions\IrisAction;
+use App\Actions\OrgAction;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Http\Resources\Catalogue\LastOrderedProductsResource;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetIrisLastOrderedProducts extends IrisAction
+class GetLastOrderedProducts extends OrgAction
 {
     public function handle(ProductCategory $productCategory): \Illuminate\Support\Collection
     {
@@ -60,7 +61,7 @@ class GetIrisLastOrderedProducts extends IrisAction
             ->where('products.family_id', $productCategory->id)
             ->where('products.is_for_sale', true)
             ->orderBy('latest_tx.submitted_at', 'desc')
-            ->limit(15)
+            ->limit(10)
             ->select([
                 'products.*',
                 'webpages.canonical_url',
@@ -71,7 +72,6 @@ class GetIrisLastOrderedProducts extends IrisAction
                 'addresses.country_code as customer_country_code',
             ])
             ->get();
-
     }
 
     public function jsonResponse($products): AnonymousResourceCollection
@@ -81,7 +81,7 @@ class GetIrisLastOrderedProducts extends IrisAction
 
     public function asController(ProductCategory $productCategory, ActionRequest $request): \Illuminate\Support\Collection
     {
-        $this->initialisation($request);
+        $this->initialisation($productCategory->organisation, $request);
 
         return $this->handle(productCategory: $productCategory);
     }

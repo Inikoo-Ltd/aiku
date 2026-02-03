@@ -69,6 +69,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
  * @property array<array-key, mixed>|null $web_images
+ * @property bool $has_gr_vol_discount
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group

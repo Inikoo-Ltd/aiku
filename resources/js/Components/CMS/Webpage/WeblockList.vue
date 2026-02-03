@@ -94,11 +94,11 @@ onMounted(() => {
 					:key="tab"
 					class="h-full overflow-y-auto p-6"
 				>
-					<div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 justify-items-center">
+					<div class="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 justify-items-center">
 						<div
 							v-for="block in filteredBlocks(tab === 'all' ? allData : categorizedData[tab])"
 							:key="block.id"
-							class="relative h-36 w-52 border rounded-xl cursor-pointer bg-white shadow-sm hover:shadow-md hover:scale-[1.02] transition-transform"
+							class="flex flex-col relative min-h-36 w-full md:w-52 border rounded-xl cursor-pointer bg-white shadow-sm hover:shadow-md hover:scale-[1.02] transition-transform"
 							@click="onPickBlock(block)"
 						>
 							<!-- Beta Label -->
@@ -109,7 +109,7 @@ onMounted(() => {
 								Beta Test
 							</div>
 
-							<div class="h-3/4 flex items-center justify-center bg-gray-100 text-sm text-gray-400">
+							<div class="min-h-32 flex items-center justify-center bg-gray-100 text-sm text-gray-400">
 								<Image
 									v-if="block.screenshot"
 									:src="block.screenshot"
@@ -123,7 +123,7 @@ onMounted(() => {
 								/>
 							</div>
 
-							<div class="h-1/4 flex items-center justify-center text-sm font-semibold px-2 truncate">
+							<div class="min-h-1/4 h-auto flex items-center justify-center text-sm font-semibold px-2 truncate text-wrap text-center">
 								{{ block.name }}
 							</div>
 						</div>
