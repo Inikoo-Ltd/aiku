@@ -121,7 +121,7 @@ watch(
 )
 
 const idxSlideLoading = ref<number | null>(null)
-
+console.log(props)
 </script>
 
 <template>

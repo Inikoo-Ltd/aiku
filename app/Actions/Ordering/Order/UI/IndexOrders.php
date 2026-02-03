@@ -316,6 +316,7 @@ class IndexOrders extends OrgAction
         $customerId    = null;
         $navigation    = OrdersTabsEnum::navigation();
         $subNavigation = null;
+        $shop          = null;
         if ($this->parent instanceof CustomerClient) {
             unset($navigation[OrdersTabsEnum::STATS->value]);
             $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerSalesChannel);
@@ -386,7 +387,7 @@ class IndexOrders extends OrgAction
         if ($this->parent instanceof Shop) {
             $shop = $this->parent;
         } else {
-            $shop = $this->parent->shop;
+            $shop = $this->parent->shop ?? null;
         }
 
         return Inertia::render(
@@ -397,8 +398,8 @@ class IndexOrders extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'title'          => __('orders'),
-                'sales_channels' => GetSalesChannelOptions::make()->getOptions(),
-                'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
+                'sales_channels' => GetSalesChannelOptions::make()->getOptions($shop),
+                'can_add_order'  => $shop?->type  == ShopTypeEnum::B2B,
                 'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,

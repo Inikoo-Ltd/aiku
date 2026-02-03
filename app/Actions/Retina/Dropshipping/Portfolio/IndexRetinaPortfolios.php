@@ -387,6 +387,14 @@ class IndexRetinaPortfolios extends RetinaAction
                             'type'                 => 'portfolio_csv'
                         ]
                     ],
+
+                    'extended_properties' => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
+                            'type'                 => 'portfolio_csv_extended_properties'
+                        ]
+                    ],
                     'json'   => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
                         'parameters' => [

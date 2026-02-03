@@ -15,7 +15,6 @@ import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
 
 const props = defineProps<{
     product: ProductHit
-    isProductLoading: (productId: string) => boolean
     isLoadingProductRealData: boolean
 }>()
 
@@ -29,18 +28,20 @@ const isLoadingVisit = ref(false)
 
 <template>
     <div class="relative flex flex-col h-full p-3 rounded bg-white">
-<!-- <pre>{{ product }}</pre> -->
-        <!-- IMAGE -->
+        <!-- Section: Image -->
         <div class="mb-3 flex justify-center">
-            <component :is="product.attributes.web_url[0] ? LinkIris : 'div'" :href="product.attributes.web_url[0]"
+            <component
+                :is="product.attributes.web_url[0] ? LinkIris : 'div'"
+                :href="product.attributes.web_url[0]"
                 class="w-full max-w-[220px] aspect-square flex items-center justify-center"
-                @success="() => SelectItemCollector(product)" @start="() => isLoadingVisit = true"
+                @success="() => SelectItemCollector(product)"
+                @start="() => isLoadingVisit = true"
                 @finish="() => isLoadingVisit = false">
                 <img :src="product.attributes.image_link" :alt="product.attributes.title" class="object-contain w-full h-full" />
             </component>
         </div>
 
-        <!-- TITLE -->
+        <!-- Section: Title -->
         <span class="mb-1 text-[11px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em]" :title="product.attributes.title">
             <component :is="product.attributes.web_url[0] ? LinkIris : 'div'" :href="product.iris_attributes?.url" class="hover:underline"
                 @success="() => SelectItemCollector(product)" @start="() => isLoadingVisit = true"
@@ -49,12 +50,12 @@ const isLoadingVisit = ref(false)
             </component>
         </span>
 
-        <!-- CODE -->
+        <!-- Section: Code -->
         <div class="text-xs text-gray-400 mb-2">
             {{ product.attributes.product_code[0] }}
         </div>
 
-        <!-- STOCK -->
+        <!-- Section: Stock -->
         <div v-if="isLoadingProductRealData" class="mb-3">
             <div class="h-4 w-20 skeleton" />
         </div>
@@ -74,9 +75,9 @@ const isLoadingVisit = ref(false)
 
     </div>
 
-    <!-- PRICES (KEEP COMPONENTS) -->
+    <!-- Section: Prices -->
     <div v-if="isLoadingProductRealData">
-        <div class="h-40 md:h-24 w-full skeleton">
+        <div class="h-40 md:h-32 w-full skeleton">
 
         </div>
     </div>

@@ -46,6 +46,10 @@ trait WithSendSubscribersOutboxEmail
         foreach ($subscribedUsers as $subscribedUser) {
             $recipient = $subscribedUser->user ?: $subscribedUser;
 
+            if (!$recipient->email && !$recipient->external_email) {
+                continue;
+            }
+
             /** @var DispatchedEmail $dispatchedEmail */
             $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
                 'is_test'       => false,

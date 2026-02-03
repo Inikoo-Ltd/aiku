@@ -8,9 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
-use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
-use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
@@ -19,7 +17,6 @@ use Exception;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 
 class CreateMailshot extends OrgAction
 {
@@ -31,7 +28,6 @@ class CreateMailshot extends OrgAction
 
         if ($parent instanceof Shop) {
             $outbox = $parent->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();
-
         } else {
             $outbox = $parent;
         }
@@ -46,64 +42,18 @@ class CreateMailshot extends OrgAction
                     'required'    => true,
                     'value'       => '',
                 ],
-                'type' => [
-                    'type'     => 'select',
-                    'label'    => __('Type'),
-                    'required' => true,
-                    'options'  => Options::forEnum(MailshotTypeEnum::class)->reject(fn ($option) => $option->value === MailshotTypeEnum::NEWSLETTER->value),
-                ],
-                'recipient_type' => [
-                    'type'        => 'radio',
-                    'label'       => __('Recipient Type'),
-                    'required'    => true,
-                    'value'       => 'query',
-                    'options'     => [
-                        [
-                            "label" => "Query",
-                            "value" => "query"
-                        ],
-                        [
-                            "label" => "custom",
-                            "value" => "custom"
-                        ],
-                        [
-                            "label" => "Prospect",
-                            "value" => "prospect"
-                        ],
-                    ]
-                ],
-            ]
-        ];
-
-
-
-        $fields[] = [
-            'title'  => '',
-            'fields' => [
+                // add default value all customers
                 'recipients_recipe' => [
-                    'type'        => 'mailshotRecipient',
-                    'label'       => __('recipients'),
+                    'type'        => 'input',
+                    'label'       => __('recipients recipe'),
+                    'placeholder' => __('Email recipients recipe'),
                     'required'    => true,
-                    'options'     => [
-                        'query'                  => IndexProspects::run(parent:$parent, prefix: null, scope: 'all'),
-                        'custom_prospects_query' => '',
+                    'hidden'      => true,
+                    'value'       => [
+                        'all_customers' => [
+                            'value' => true
+                        ]
                     ],
-                    'full'      => true,
-                    'value'     => [
-                            'query'                     => null,
-                            'custom_prospects_query'    => [
-                                "tags" => [
-                                    "tag_ids" => null,
-                                    "logic" => 'all',
-                                    "negative_tag_ids" => null
-                                ],
-                                "last_contact" => [
-                                    "use_contact" => false,
-                                    "interval" => null
-                                ]
-                            ],
-                            'prospects' => null,
-                    ]
                 ],
             ]
         ];
@@ -122,6 +72,7 @@ class CreateMailshot extends OrgAction
                 ],
                 'formData' => [
                     'fullLayout' => true,
+                    'submitLabel' => __('Continue'),
                     'blueprint'  =>
                         [
                             [
@@ -132,9 +83,10 @@ class CreateMailshot extends OrgAction
                     'route' => [
                         'name'       => 'grp.models.outbox.mailshot.store',
                         'parameters' => [
-                            'outbox'         => $outbox->id,
+                            'outbox' => $outbox->id,
                         ]
-                    ]
+                    ],
+
                 ],
 
             ]
@@ -174,5 +126,4 @@ class CreateMailshot extends OrgAction
             ]
         );
     }
-
 }

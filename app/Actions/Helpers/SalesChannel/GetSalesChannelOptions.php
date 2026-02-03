@@ -2,9 +2,9 @@
 
 namespace App\Actions\Helpers\SalesChannel;
 
-use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Ordering\SalesChannel;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Models\Catalogue\Shop;
 
 class GetSalesChannelOptions
 {
@@ -30,32 +30,39 @@ class GetSalesChannelOptions
         return $this->handle(SalesChannel::all());
     }
 
-    public function getStandardOptions(): array
+    public function getStandardOptions(?Shop $shop = null): array
     {
-        return $this->handle(
-            SalesChannel::whereIn('type', [
-                SalesChannelTypeEnum::WEBSITE,
-                SalesChannelTypeEnum::PHONE,
-                SalesChannelTypeEnum::SHOWROOM,
-                SalesChannelTypeEnum::EMAIL,
-                SalesChannelTypeEnum::OTHER,
-                SalesChannelTypeEnum::MARKETPLACE,
-            ])->get(['id', 'name', 'code'])
-        );
+        if ($shop) {
+            $salesChannels = $shop->salesChannels()->get();
+        } else {
+            $salesChannels = SalesChannel::where('is_seeded', true)->get();
+        }
+
+        return $this->handle($salesChannels);
     }
 
-    public function getOptions(): array
+    /**
+     * Get detailed options specifically formatted for the UI (Vue component).
+     *
+     * @param Shop|null $shop
+     * @return array
+     */
+    public function getOptions(?Shop $shop = null): array
     {
-        return SalesChannel::whereIn('type', [
-            SalesChannelTypeEnum::WEBSITE,
-            SalesChannelTypeEnum::PHONE,
-            SalesChannelTypeEnum::SHOWROOM,
-            SalesChannelTypeEnum::EMAIL,
-            SalesChannelTypeEnum::OTHER,
-            SalesChannelTypeEnum::MARKETPLACE,
-        ])
-            ->orderBy('id', 'asc')
-            ->get(['id', 'name', 'code', 'type'])
+        if ($shop) {
+            $query = $shop->salesChannels();
+        } else {
+            $query = SalesChannel::where('is_seeded', true);
+        }
+
+        return $query
+            ->orderBy('sales_channels.id', 'asc')
+            ->get([
+                'sales_channels.id',
+                'sales_channels.name',
+                'sales_channels.code',
+                'sales_channels.type',
+            ])
             ->map(fn ($channel) => [
                 'id'   => $channel->id,
                 'name' => $channel->name,

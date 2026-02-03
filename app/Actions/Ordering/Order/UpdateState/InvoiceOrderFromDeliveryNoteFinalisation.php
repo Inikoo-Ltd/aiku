@@ -15,21 +15,17 @@ use App\Models\Ordering\Order;
 class InvoiceOrderFromDeliveryNoteFinalisation extends OrgAction
 {
     /**
-     * @throws \Illuminate\Validation\ValidationException
      * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function handle(Order $order): Order
     {
-
         return FinaliseOrder::make()->action($order, true);
-
-
     }
 
-
     /**
-     * @throws \Illuminate\Validation\ValidationException
      * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function action(Order $order): Order
     {

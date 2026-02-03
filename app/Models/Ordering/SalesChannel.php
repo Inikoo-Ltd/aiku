@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Catalogue\Shop;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -38,6 +40,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $sources
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops
  * @property-read \App\Models\Ordering\SalesChannelStats|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel newQuery()
@@ -97,5 +100,9 @@ class SalesChannel extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(SalesChannelStats::class);
+    }
+    public function shops(): BelongsToMany
+    {
+        return $this->belongsToMany(Shop::class, 'shop_has_sales_channels')->withTimestamps();
     }
 }

@@ -14,7 +14,7 @@ use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
-use App\Actions\Dispatching\DeliveryNote\SetDeliveryNoteStateAsPacked;
+use App\Actions\Dispatching\DeliveryNote\FinishPackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
@@ -420,7 +420,7 @@ test('Set Delivery Note state to Packed', function (Picking $picking) {
     $deliveryNote     = $picking->deliveryNote;
     $deliveryNoteItem = $picking->deliveryNoteItem;
 
-    $packedDeliveryNote = SetDeliveryNoteStateAsPacked::make()->action($deliveryNote, $this->user);
+    $packedDeliveryNote = FinishPackDeliveryNote::make()->action($deliveryNote, $this->user);
 
     $packedDeliveryNote->refresh();
     $deliveryNoteItem->refresh();

@@ -70,7 +70,7 @@ class ShowMasterShop extends GrpAction
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => 'Edit',
+                            'label' => __('Edit'),
                             'route' => [
                                 'name'       => "grp.masters.master_shops.edit",
                                 'parameters' => $request->route()->originalParameters()

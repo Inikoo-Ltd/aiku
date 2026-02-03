@@ -12,16 +12,17 @@ import type { Links, Meta } from "@/types/Table"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
-
-import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle } from "@fal"
-import { faShieldAlt, faStar } from "@fas"
+import DatePicker from '@vuepic/vue-datepicker'
+import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt } from "@fal"
+import { faShieldAlt, faStar, faHighlighter, faPennant } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { trans } from "laravel-vue-i18n"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
+import { computed, inject, ref } from "vue"
 
 library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle)
 
@@ -31,6 +32,7 @@ defineProps<{
         links: Links
         meta: Meta
     },
+    showMarkerFeature?: boolean
     tab?: string
 }>()
 
@@ -122,10 +124,57 @@ const generateRouteDeliveryNote = (id: string) => {
     })
 }
 
+const initialDate = localStorage.getItem('markerDate');
+const markerDate = ref(initialDate ? new Date(initialDate) : new Date());
+
+const toDateOnly = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+const getDateLocaleString = (date: Date) => {
+    return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    })
+}
+
+const isValidMark = computed(() => {
+    return toDateOnly(markerDate.value) < toDateOnly(new Date())
+});
+
+const isBeforeMark = (dateString: string) => {
+    return toDateOnly(new Date(dateString)) < toDateOnly(markerDate.value)
+}
+
+const setNewMarkerDate = (newVal: Date) => {
+    markerDate.value = newVal;
+    localStorage.setItem('markerDate', markerDate.value.toDateString())
+}
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #add-on-button-in-before>
+            <DatePicker
+                v-tooltip="isValidMark ? trans('Order before :_selectedDate will be marked', {_selectedDate: getDateLocaleString(markerDate)}) : trans('Nothing is marked')"
+                @update:modelValue="(newVal: Date) => { setNewMarkerDate(newVal ?? new Date()) }"
+                :modelValue="markerDate"
+                :selectText="trans('Select')"
+                :enableTimePicker="false"
+                :clearable="isValidMark"
+            >
+                <template #dp-input>
+                    <span class="h-9 rounded flex justify-center items-center border border-gray-300 hover:bg-gray-300 text-gray-600 hover:cursor-pointer" :class="isValidMark ? 'ps-3 pe-10 ' : 'px-3'">
+                        <FontAwesomeLayers class="mr-5">
+                            <FontAwesomeIcon :icon="faCalendarAlt"/>
+                            <FontAwesomeIcon :icon="faHighlighter" style="right: -16px; bottom: -8px" class="text-red-500"/>
+                        </FontAwesomeLayers>
+                        {{ isValidMark ? getDateLocaleString(markerDate) : '-' }}
+                    </span>
+                </template>
+            </DatePicker>
+        </template>
 
         <template #cell(organisation_code)="{ item: order }">
             <Link :href="organisationRoute(order)" class="secondaryLink">
@@ -159,9 +208,15 @@ const generateRouteDeliveryNote = (id: string) => {
       </span>
         </template>
 
-        <template #cell(reference)="{ item: order }">
+        <template #cell(reference)="{ item: order }">            
             <div class="flex gap-2 flex-wrap items-center">
                 <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
+                    <FontAwesomeIcon 
+                        v-if="isValidMark && isBeforeMark(order['date'])"
+                        v-tooltip="trans('Order created at :_dateCreated', {_dateCreated: getDateLocaleString(new Date(order['date']))})"
+                        :icon="faPennant"
+                        class="mr-1 text-red-500"
+                    />
                     {{ order["reference"] }}
                 </Link>
 

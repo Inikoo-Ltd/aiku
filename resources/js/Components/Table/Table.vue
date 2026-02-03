@@ -741,7 +741,7 @@ const isLoading = ref<string | boolean>(false)
                     </div>
 
                     <!-- Filter Group -->
-                    <div class="flex flex-row justify-end items-center flex-nowrap gap-x-2">
+                    <div class="grid grid-cols-1 nowrap md:flex md:flex-row justify-end items-center flex-nowrap gap-x-2 gap-y-1">
 
 
                         <slot name="add-on-button-in-before">

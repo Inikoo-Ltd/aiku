@@ -10,8 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
-use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
-use App\Actions\Dispatching\Picking\DeletePicking;
+use App\Actions\Dispatching\Packing\DeletePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\OrgAction;
@@ -24,7 +23,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 
-class UnpackDeliveryNotePackedState extends OrgAction
+class UnpackDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
@@ -45,12 +44,16 @@ class UnpackDeliveryNotePackedState extends OrgAction
         data_set($modelData, 'parcels', []);
 
         foreach ($deliveryNote->deliveryNoteItems as $item) {
-            UpdateDeliveryNoteItem::make()->action($item, [
-                'state' => DeliveryNoteItemStateEnum::HANDLING->value
+            $item->update([
+                'state'           => DeliveryNoteItemStateEnum::HANDLING->value,
+                'is_packed'       => false,
+                'end_packing'     => null,
+                'quantity_packed' => 0
+
             ]);
 
-            foreach ($item->pickings as $picking) {
-                DeletePicking::run($picking);
+            foreach ($item->packings as $packing) {
+                DeletePacking::run($packing);
             }
 
             CalculateDeliveryNoteItemTotalPicked::run($item);
