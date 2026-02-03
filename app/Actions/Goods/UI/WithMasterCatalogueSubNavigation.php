@@ -115,7 +115,7 @@ trait WithMasterCatalogueSubNavigation
                 ]
             ],
 
-            [
+            app()->environment('local') ? [
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_gr.index',
                     'parameters' => [
@@ -127,7 +127,7 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Gold Reward')
                 ],
                 'align'    => 'right',
-            ],
+            ] : [],
 
         ];
     }
