@@ -98,9 +98,16 @@ class UpdateMasterProductCategory extends OrgAction
             ]);
         }
 
-        if (Arr::has($modelData, 'vol_gr')) {
-            $modelData['vol_gr']                = $modelData['vol_gr'][0];
+        if (Arr::has($modelData, 'offers_data')) {
+            $offersData = $modelData['offers_data'];
+
+            if (isset($offersData['volume_discount'])) {
+                data_set($modelData, 'has_gr_vol_discount', true);
+            } else {
+                data_set($modelData, 'has_gr_vol_discount', false);
+            }
         }
+
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
@@ -208,7 +215,7 @@ class UpdateMasterProductCategory extends OrgAction
             'description_title_i8n'    => ['sometimes', 'array'],
             'description_i8n'          => ['sometimes', 'array'],
             'description_extra_i8n'    => ['sometimes', 'array'],
-            'vol_gr'                   => ['sometimes', 'array'],
+            'offers_data'              => ['sometimes', 'array'],
             'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
         ];
 

@@ -50,6 +50,16 @@ function familyRoute(masterFamily: MasterFamily) {
                 masterDepartment: (route().params as RouteParams).masterDepartment,
                 masterFamily: masterFamily.slug
             });
+    } else if (route().current() == "grp.masters.master_shops.show.master_gr.index") {
+        return route(
+            "grp.masters.master_shops.show.master_families.show",
+            {
+                masterShop: (route().params as RouteParams).masterShop,
+                masterFamily: masterFamily.slug,
+                _query: {
+                    'elements[status]': 'active'
+                }
+            });
     } else if (route().current() == "grp.masters.master_shops.show.master_families.index") {
         return route(
             "grp.masters.master_shops.show.master_families.show",

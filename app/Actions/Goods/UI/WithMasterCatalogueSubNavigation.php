@@ -115,6 +115,19 @@ trait WithMasterCatalogueSubNavigation
                 ]
             ],
 
+            [
+                'route'    => [
+                    'name'       => 'grp.masters.master_shops.show.master_gr.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-medal'],
+                    'tooltip' => __('Gold Reward')
+                ],
+                'align'    => 'right',
+            ],
 
         ];
     }
