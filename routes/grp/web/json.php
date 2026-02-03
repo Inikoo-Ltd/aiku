@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Collection\Json\GetCollectionsForWorkshop;
 use App\Actions\Catalogue\Collection\Json\GetWebpagesInCollection;
 use App\Actions\Catalogue\Product\Json\GetGrpProductOfVariant;
+use App\Actions\Catalogue\Product\Json\GetLastOrderedProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderCharges;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
@@ -251,3 +252,5 @@ Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name(
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
 
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');
+Route::get('product-category/{productCategory:id}/last-ordered-products', GetLastOrderedProducts::class)->name('product_category.last-ordered-products.index');
+
