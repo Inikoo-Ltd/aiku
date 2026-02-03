@@ -5,6 +5,7 @@ import { getStyles } from "@/Composables/styles"
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
+import { trans } from "laravel-vue-i18n"
 
 // Swiper
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -16,7 +17,7 @@ import { Autoplay } from 'swiper/modules'
 // Font Awesome
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import RecommendationCustomerRecentlyBoughtSlideIris from "@/Components/Iris/Recommendations/RecommendationCustomerRecentlyBoughtSlideIris.vue"
+import RecommendationCRBSlideIris from "@/Components/Iris/Recommendations/RecommendationCRBSlideIris.vue"
 import { LastOrderedProduct } from "@/types/Resource/LastOrderedProductsResource"
 library.add(faChevronLeft, faChevronRight)
 
@@ -55,22 +56,15 @@ const isLoadingFetch = ref(false)
 
 const isFetched = ref(false)
 const fetchRecommenders = async () => {
-    console.log('qqqqqqq')
     if (route().has('iris.json.product_category.last-ordered-products.index')) {
-        // console.log('wwwwwwwwwwww')
         try {
             isLoadingFetch.value = true
-            
             const response = await axios.get(
                 route('iris.json.product_category.last-ordered-products.index', { productCategory: props.fieldValue.family.id })
             )
-            
-            
+
             listProducts.value = response.data.data
-    
-            
             console.log('Final listProducts value:', listProducts.value)
-            
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         } finally {
@@ -95,7 +89,8 @@ onMounted(() => {
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-xl md:text-3xl font-semibold">
-                    <div v-html="fieldValue.title"></div>
+                    <!-- <div v-html="fieldValue.title"></div> -->
+                    <p style="text-align: center">{{ trans("Customers Recently Bought") }}</p>
                 </div>
             </div>
             
@@ -121,7 +116,7 @@ onMounted(() => {
                             :key="index"
                             class="p-[1px] w-full cursor-grab relative !grid h-full min-h-full"
                         >
-                            <RecommendationCustomerRecentlyBoughtSlideIris
+                            <RecommendationCRBSlideIris
                                 :product
                             />
                         </SwiperSlide>

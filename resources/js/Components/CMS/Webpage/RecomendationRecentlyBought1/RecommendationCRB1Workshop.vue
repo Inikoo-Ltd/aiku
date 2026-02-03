@@ -22,7 +22,7 @@ import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { notify } from "@kyvg/vue3-notification"
-import RecommendationCustomerRecentlyBoughtSlideIris from "@/Components/Iris/Recommendations/RecommendationCustomerRecentlyBoughtSlideIris.vue"
+import RecommendationCRBSlideIris from "@/Components/Iris/Recommendations/RecommendationCRBSlideIris.vue"
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
@@ -101,7 +101,8 @@ onMounted(()=> {
     }">
         <!-- Title -->
         <div class="px-4 py-6 pb-2 text-3xl font-semibold">
-            <EditorV2
+            <p style="text-align: center">{{ trans("Customers Recently Bought") }}</p>
+            <!-- <EditorV2
                 v-model="modelValue.title"
                 @focus="() => {
                     sendMessageToParent('activeBlock', indexBlock)
@@ -110,7 +111,7 @@ onMounted(()=> {
                     name: webpageData.images_upload_route.name,
                     parameters: { modelHasWebBlocks: blockData?.id }
                 }"
-            />
+            /> -->
         </div>
 
         <div class="py-4">
@@ -131,7 +132,7 @@ onMounted(()=> {
                         :key="index"
                         class="p-[1px] w-full cursor-grab relative !grid h-full min-h-full"
                     >
-                        <RecommendationCustomerRecentlyBoughtSlideIris
+                        <RecommendationCRBSlideIris
                             :product
                         />
                     </SwiperSlide>
