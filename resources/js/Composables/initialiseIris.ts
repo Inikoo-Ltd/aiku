@@ -17,7 +17,7 @@ export const initialiseIrisApp = () => {
     const layout = useIrisLayoutStore()
     const locale = useLocaleStore()
 
-    console.log('Init Iris: ', usePage().props)
+    // console.log('Init Iris: ', usePage().props)
 
     router.on('navigate', (event) => {
         // To see Vue filename in the console (component.vue)

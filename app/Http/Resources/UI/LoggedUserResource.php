@@ -22,11 +22,23 @@ class LoggedUserResource extends JsonResource
         /** @var User $user */
         $user = $this;
 
+        $isAgent = false;
+        $agentShops = [];
+
+        if ($user->chatAgent) {
+            $shopAssignments = $user->chatAgent->shopAssignments;
+            if ($shopAssignments && $shopAssignments->isNotEmpty()) {
+                $isAgent = true;
+                $agentShops = $shopAssignments->pluck('shop_id')->unique()->values()->toArray();
+            }
+        }
+
         return [
             'id'       => $user->id,
             'username' => $user->username,
             'email'    => $user->email,
-            'is_agent' => $user->chatAgent ? true : false,
+            'is_agent'    => $isAgent,
+            'agent_shops' => $agentShops,
             'settings' => [
                 'timezones' => Arr::get($user->settings, 'timezones'),
                 'app_theme' => Arr::get($user->settings, 'app_theme'),
