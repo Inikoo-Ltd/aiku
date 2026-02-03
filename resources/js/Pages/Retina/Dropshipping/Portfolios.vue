@@ -778,6 +778,12 @@ const layout = inject("layout", layoutStructure)
 			<ButtonWithLink
 				v-if="routes?.syncAllRoute && !customer_sales_channel?.ban_stock_update_until"
 				:routeTarget="routes?.syncAllRoute"
+				@success="data =>
+					notify({
+						title: trans('Your product was successfully fetched and still processed in background.'),
+						text: trans('Please wait for a few minutes to the products added'),
+						type: 'success',
+					})"
 				isWithError
 				:label="'Fetch Products'"
 				icon="fas fa-sync-alt"
