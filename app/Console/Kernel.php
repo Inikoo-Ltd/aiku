@@ -8,6 +8,7 @@
 
 namespace App\Console;
 
+use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
@@ -483,6 +484,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunNewsletterScheduled',
                 ),
                 name: 'RunNewsletterScheduled',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunMailshotScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunMailshotScheduled',
+                ),
+                name: 'RunMailshotScheduled',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
