@@ -1,72 +1,116 @@
 <script setup lang="ts">
-import { faCube, faLink, faImage, faVideo } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue";
-import { getStyles } from "@/Composables/styles";
-import { sendMessageToParent } from "@/Composables/Workshop";
-import Blueprint from "@/Components/CMS/Webpage/CtaVideo1/Blueprint";
-import { onMounted, watch } from "vue";
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import { inject } from "vue"
+import { computed, inject, watch } from "vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCube, faLink, faImage, faVideo } from "@fortawesome/free-solid-svg-icons"
 
-library.add(faCube, faLink, faImage, faVideo);
+import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+
+import { getStyles } from "@/Composables/styles"
+import { sendMessageToParent } from "@/Composables/Workshop"
+import Blueprint from "@/Components/CMS/Webpage/CtaVideo1/Blueprint"
+
+library.add(faCube, faLink, faImage, faVideo)
+
+
+type ScreenType = "mobile" | "tablet" | "desktop"
+
+type ResponsiveVideoConfig = {
+	by_url?: boolean
+	source?: string | null
+	embed_code?: string | null
+	properties?: any
+	container?: any
+	attributes?: any
+}
+
+type VideoSetup = ResponsiveVideoConfig & {
+	mobile?: ResponsiveVideoConfig
+	tablet?: ResponsiveVideoConfig
+	desktop?: ResponsiveVideoConfig
+}
 
 const props = defineProps<{
 	modelValue: {
-		container?: any;
-		text?: string;
-		text_block?: any;
+		container?: any
+		text?: string
+		text_block?: any
 		button?: {
-			text: string;
-			container?: any;
-		};
+			text: string
+			show?: boolean
+			container?: any
+		}
 		video: {
-			video_setup: {
-				by_url: boolean;
-				source: string | null;
-				embed_code: string | null;
-				properties?: any;
-				container?: any;
-				attributes?: any;
-			};
-		};
-	};
-	indexBlock?: Number
-	webpageData?: any;
-	blockData?: Object;
-	screenType: "mobile" | "tablet" | "desktop";
-}>();
+			video_setup: VideoSetup
+		}
+	}
+	indexBlock?: number
+	webpageData?: any
+	blockData?: any
+	screenType: ScreenType
+}>()
 
 const emits = defineEmits<{
-	(e: "update:modelValue", value: string): void;
-	(e: "autoSave"): void;
-}>();
+	(e: "autoSave"): void
+}>()
 
+
+/* -------------------------------------------------------------------------- */
 
 const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
-onMounted(() => {
-	watch(
-		() => props.modelValue.video?.video_setup?.embed_code,
-		(code) => {
-			if (
-				code &&
-				!document.querySelector('script[src*="player.vimeo.com/api/player.js"]')
-			) {
-				const script = document.createElement("script");
-				script.src = "https://player.vimeo.com/api/player.js";
-				script.async = true;
-				document.body.appendChild(script);
-			}
-		},
-		{ immediate: true }
-	);
-});
+/* -------------------------------------------------------------------------- */
+/*                            Helpers / Computed                              */
+/* -------------------------------------------------------------------------- */
+
+const videoSetup = computed(() => props.modelValue?.video?.video_setup)
+
+const resolvedVideoConfig = computed<ResponsiveVideoConfig | null>(() => {
+	const setup = videoSetup.value
+	if (!setup) return null
+
+	return (
+		setup[props.screenType] ??
+		setup.desktop ??
+		setup
+	)
+})
+
+const isVideoByUrl = computed(() => {
+	return resolvedVideoConfig.value?.by_url === true
+})
+
+const videoSource = computed(() => {
+	return resolvedVideoConfig.value?.source || null
+})
+
+const videoEmbedCode = computed(() => {
+	return resolvedVideoConfig.value?.embed_code || null
+})
+
+
+
+watch(
+	() => videoEmbedCode.value,
+	(code) => {
+		if (
+			code &&
+			!document.querySelector('script[src*="player.vimeo.com/api/player.js"]')
+		) {
+			const script = document.createElement("script")
+			script.src = "https://player.vimeo.com/api/player.js"
+			script.async = true
+			document.body.appendChild(script)
+		}
+	},
+	{ immediate: true }
+)
 
 
 </script>
+
 
 <template>
 	<div id="cta-video-1">
@@ -82,16 +126,26 @@ onMounted(() => {
 				<div class="w-full flex justify-center items-center min-h-[200px]"
 					:style="getStyles(modelValue?.video?.video_setup?.container?.properties, screenType)">
 
-					<template v-if="modelValue?.video?.video_setup?.by_url && modelValue?.video?.video_setup?.source">
-						<video class="w-full h-auto" controls :src="modelValue?.video?.video_setup?.source"
+					<template v-if="isVideoByUrl && videoSource">
+						<!-- <video 
+							class="w-full h-auto" 
+							controls 
+							:src="modelValue?.video?.video_setup?.source"
 							v-bind="modelValue.video.video_setup.attributes"
-							:style="getStyles(modelValue.video.video_setup?.properties, screenType)"></video>
+							:style="getStyles(modelValue.video.video_setup?.properties, screenType)">
+						</video> -->
+
+						<iframe class="w-full aspect-video" :src="videoSource" frameborder="0" allowfullscreen />
 					</template>
 
 					<template
-						v-else-if="!modelValue?.video?.video_setup?.by_url && modelValue?.video?.video_setup?.embed_code">
-						<div class="w-full h-auto" v-html="modelValue?.video?.video_setup?.embed_code"
-							:style="getStyles(modelValue.video.video_setup?.properties, screenType)"></div>
+						v-else-if="!isVideoByUrl && videoEmbedCode">
+						<div 
+							class="w-full h-auto" 
+							v-html="videoEmbedCode"
+							:style="getStyles(modelValue.video.video_setup?.properties, screenType)"
+						>
+					    </div>
 					</template>
 
 					<template v-else>

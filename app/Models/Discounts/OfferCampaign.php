@@ -55,9 +55,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Discounts\OfferCampaignStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferCampaignTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferCampaignTimeSeries> $timeSeries
  * @method static \Database\Factories\Discounts\OfferCampaignFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign newQuery()

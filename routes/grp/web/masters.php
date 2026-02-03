@@ -206,6 +206,10 @@ Route::name("master_shops")->prefix('master-shops')
                 });
             });
 
+            Route::prefix('master-gr')->as('.master_gr.')->group(function () {
+                Route::get('', [IndexMasterFamilies::class, 'inMasterGR'])->name('index');
+            });
+
             Route::prefix('master-sub-departments')->as('.master_sub_departments.')->group(function () {
                 Route::get('', IndexMasterSubDepartments::class)->name('index');
                 Route::get('/master-sub-departments/create', CreateMasterSubDepartment::class)->name('create');

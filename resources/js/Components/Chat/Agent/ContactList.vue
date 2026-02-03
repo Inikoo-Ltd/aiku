@@ -99,14 +99,41 @@ const waitEchoReady = (callback: Function) => {
     }, 300)
 }
 
+const notifiedMessages = new Set<string>()
+const myAgentId = layout.user?.id
+const myAgentShop = layout.user?.agent_shops ?? []
+
 onMounted(() => {
+
     waitEchoReady(() => {
         window.Echo.join("chat-list").listen(".chatlist", (e: any) => {
-            console.log("🔥 chat-list update:", e)
+            const msg = e.message
+            if (!msg) return
+            if (msg.sender_type === "agent") return
+            if (msg.shop_id && Array.isArray(myAgentShop) && !myAgentShop.includes(msg.shop_id)) {
+                return
+            }
+            if (msg.assigned_user_id && myAgentId && msg.assigned_user_id !== myAgentId) return
+
+            const senderDisplay =
+                msg.sender_name?.trim() ||
+                (msg.sender_type === "guest" ? "Guest" : "User")
+
+            const duplicate = `${msg.sender_name}-${msg.text}`
+
+            if (notifiedMessages.has(duplicate)) return
+
+            if (Notification.permission === "granted") {
+                new Notification(senderDisplay, {
+                    body: msg.text ?? "New message",
+                    tag: duplicate
+                })
+
+                notifiedMessages.add(duplicate)
+            }
             reloadContacts()
         })
     })
-    reloadContacts()
 })
 
 const formatTime = (timestamp: string) => {
@@ -228,7 +255,6 @@ const assignToSelf = async (ulid: string) => {
 }
 
 const handleClickContact = async (c: Contact) => {
-    console.log(c)
     errorPerContact.value[c.ulid] = ""
 
     if (activeTab.value === "waiting") {

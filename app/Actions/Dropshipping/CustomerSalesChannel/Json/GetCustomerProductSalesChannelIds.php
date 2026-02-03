@@ -25,7 +25,8 @@ class GetCustomerProductSalesChannelIds extends OrgAction
         $queryBuilder->join('portfolios', function ($join) use ($product) {
             $join->on('customer_sales_channels.id', '=', 'portfolios.customer_sales_channel_id')
                 ->where('portfolios.item_type', '=', 'Product')
-                ->where('portfolios.item_id', '=', $product->id);
+                ->where('portfolios.item_id', '=', $product->id)
+                ->where('portfolios.status', true); // Patch. Do not remove. Otherwise user can't re-add certain items that they previously deleted back to their channel.
         });
 
         $queryBuilder

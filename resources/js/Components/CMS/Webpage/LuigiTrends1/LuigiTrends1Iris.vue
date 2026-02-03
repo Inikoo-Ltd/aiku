@@ -132,7 +132,7 @@ const fetchProductData = async () => {
             nextTick()
 
 
-            console.log('wwwwwwwww', listProductsFromLuigi.value)
+            // console.log('wwwwwwwww', listProductsFromLuigi.value)
             // listProducts.value = response.data.data
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)

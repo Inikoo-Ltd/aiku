@@ -116,7 +116,7 @@ class ShowCustomer extends OrgAction
                     'previous' => $this->getPrevious($customer, $request),
                     'next'     => $this->getNext($customer, $request),
                 ],
-                'sales_channels' => GetSalesChannelOptions::make()->getOptions(),
+                'sales_channels' => GetSalesChannelOptions::make()->getOptions($customer->shop),
                 'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
                 'pageHead'         => [
                     'title'         => $customer->name,

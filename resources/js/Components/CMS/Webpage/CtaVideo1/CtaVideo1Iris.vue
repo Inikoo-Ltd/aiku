@@ -5,11 +5,31 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getStyles } from "@/Composables/styles";
 import { sendMessageToParent } from "@/Composables/Workshop";
 import Blueprint from "@/Components/CMS/Webpage/Cta1/Blueprint";
-import { onMounted, watch, inject } from "vue";
+import { watch, inject, computed} from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 
 
 library.add(faCube, faLink, faImage, faVideo);
+
+
+
+type ScreenType = "mobile" | "tablet" | "desktop"
+
+type ResponsiveVideoConfig = {
+	by_url?: boolean
+	source?: string | null
+	embed_code?: string | null
+	properties?: any
+	container?: any
+	attributes?: any
+}
+
+type VideoSetup = ResponsiveVideoConfig & {
+	mobile?: ResponsiveVideoConfig
+	tablet?: ResponsiveVideoConfig
+	desktop?: ResponsiveVideoConfig
+}
+
 
 const props = defineProps<{
 	fieldValue: {
@@ -21,39 +41,58 @@ const props = defineProps<{
 			container?: any;
 		};
 		video: {
-			video_setup: {
-				by_url: boolean;
-				source: string | null;
-				embed_code: string | null;
-				properties?: any;
-				container?: any;
-				attributes?: any;
-			};
+			video_setup: VideoSetup
 		};
 	};
 	webpageData?: any;
 	blockData?: Object;
-	screenType: "mobile" | "tablet" | "desktop";
+	screenType: ScreenType;
 }>();
 
 
-onMounted(() => {
-	watch(
-		() => props.fieldValue.video?.video_setup?.embed_code,
-		(code) => {
-			if (
-				code &&
-				!document.querySelector('script[src*="player.vimeo.com/api/player.js"]')
-			) {
-				const script = document.createElement("script");
-				script.src = "https://player.vimeo.com/api/player.js";
-				script.async = true;
-				document.body.appendChild(script);
-			}
-		},
-		{ immediate: true }
-	);
-});
+const videoSetup = computed(() => props.fieldValue?.video?.video_setup)
+
+const resolvedVideoConfig = computed<ResponsiveVideoConfig | null>(() => {
+	const setup = videoSetup.value
+	if (!setup) return null
+
+	return (
+		setup[props.screenType] ??
+		setup.desktop ??
+		setup
+	)
+})
+
+const isVideoByUrl = computed(() => {
+	return resolvedVideoConfig.value?.by_url === true
+})
+
+const videoSource = computed(() => {
+	return resolvedVideoConfig.value?.source || null
+})
+
+const videoEmbedCode = computed(() => {
+	return resolvedVideoConfig.value?.embed_code || null
+})
+
+
+
+watch(
+	() => videoEmbedCode.value,
+	(code) => {
+		if (
+			code &&
+			!document.querySelector('script[src*="player.vimeo.com/api/player.js"]')
+		) {
+			const script = document.createElement("script")
+			script.src = "https://player.vimeo.com/api/player.js"
+			script.async = true
+			document.body.appendChild(script)
+		}
+	},
+	{ immediate: true }
+)
+
 
 const layout: any = inject("layout", {})
 </script>
@@ -72,15 +111,16 @@ const layout: any = inject("layout", {})
 						:style="getStyles(fieldValue?.video?.video_setup?.container?.properties, screenType)">
 
 						<template
-							v-if="fieldValue?.video?.video_setup?.by_url && fieldValue?.video?.video_setup?.source">
-							<video class="w-full h-auto" controls :src="fieldValue?.video?.video_setup?.source"
+							v-if="isVideoByUrl && videoSource">
+							<!-- <video class="w-full h-auto" controls :src="videoSource"
 								v-bind="fieldValue.video.video_setup.attributes"
-								:style="getStyles(fieldValue.video.video_setup?.properties, screenType)"></video>
+								:style="getStyles(fieldValue.video.video_setup?.properties, screenType)"></video> -->
+								<iframe class="w-full aspect-video" :src="videoSource" frameborder="0" allowfullscreen />
 						</template>
 
 						<template
-							v-else-if="!fieldValue?.video?.video_setup?.by_url && fieldValue?.video?.video_setup?.embed_code">
-							<div class="w-full h-auto" v-html="fieldValue?.video?.video_setup?.embed_code"
+							v-else-if="!isVideoByUrl && videoEmbedCode">
+							<div class="w-full h-auto" v-html="videoEmbedCode"
 								:style="getStyles(fieldValue.video.video_setup?.properties, screenType)"></div>
 						</template>
 

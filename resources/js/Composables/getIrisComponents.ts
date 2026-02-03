@@ -22,7 +22,7 @@ import AnnouncementPromo3 from '@/Components/Websites/Announcement/Templates/Pro
 import RenderDropshippingProduct from "@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"
 import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"
 
-import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
+import RecommendationCRB1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCRB1Iris.vue'
 import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
 
 
@@ -157,7 +157,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"luigi-trends-1": LuigiTrends1Iris,
 		"luigi-last-seen-1": LuigiLastSeen1Iris,
 		"luigi-item-alternatives-1": LuigiItemAlternatives1Iris,
-		"recommendation-customer-recently-bought-1": RecommendationCustomerRecentlyBought1Iris,
+		"recommendation-customer-recently-bought-1": RecommendationCRB1Iris,
 
 		"cta-image-background": CtaImageBackroundIris,
 		banner: WowsbarBannerIris,

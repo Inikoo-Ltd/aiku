@@ -15,7 +15,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue"
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue"
-import { InputNumber, InputText, Message, Popover } from "primevue"
+import { ColorPickerStyle, InputNumber, InputText, Message, Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSyncAlt, faHandPointer, faBan } from "@fas"
 import { useFormatTime, useTimeCountdown } from "@/Composables/useFormatTime"
@@ -136,6 +136,7 @@ const isOpenModalDownloadImages = ref(false)
 const isOpenModalSuspended = ref(false)
 const isTestConnectionSuccess = ref(false)
 const isOpenModalCloneProgress = ref(false)
+const isOpenModalFetchProgress = ref(false)
 const cloneProgressData = ref({
 	data: {
 		number_success: 0,
@@ -192,11 +193,11 @@ const onUploadToShopify = () => {
 	)
 }
 
-const downloadUrl = (type: string, addParams: string = "") => {
+const downloadUrl = (type: string, extraParams: Record<string, unknown> = {}) => {
 	if (props.download_route?.[type]?.name) {
 		return route(props.download_route[type].name, {
 			...props.download_route[type].parameters,
-			...{ ids: addParams },
+			...extraParams,
 		})
 	} else {
 		return ""
@@ -205,6 +206,7 @@ const downloadUrl = (type: string, addParams: string = "") => {
 
 const _popover = ref()
 const _clone_popover = ref()
+const _export_popover = ref()
 
 // Method: Platform reconnect
 const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
@@ -490,6 +492,7 @@ const codeString = ref<string | null>(null)
 const isSocketActive = ref(false)
 
 let channel: any = null
+let fetchChannel: any = null
 const isModalReadyDownloadImages = ref(false)
 const isModalDownloadImages = ref(false)
 const stateDownloadImagesReady = ref<string | null>(null)
@@ -506,6 +509,10 @@ const initSocketListener = () => {
 
 	if (channel) {
 		channel.stopListening(socketAction)
+	}
+
+	if (fetchChannel) {
+		fetchChannel.stopListening(socketAction)
 	}
 
 	channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
@@ -528,6 +535,19 @@ const initSocketListener = () => {
 	})
 }
 
+const initSocketFetchListener = () => {
+	fetchChannel = window.Echo.private(`shopify.${props.platform_user_id}.fetch-product`).listen(".shopify-fetch-progress", (eventData: any) => {
+		cloneProgressData.value = {
+			data: eventData,
+			done: eventData.number_success,
+			total: eventData.number_total
+		}
+		// stop listening after this event
+		fetchChannel.stopListening(".shopify-fetch-progress")
+		isSocketActive.value = false
+	})
+}
+
 watch(
 	() => props.download_portfolio_customer_sales_channel_url,
 	() => {
@@ -546,6 +566,8 @@ watch(
 
 // === STORAGE & SOCKET SYNC ===
 onMounted(() => {
+	initSocketFetchListener()
+
 	const storedCode = sessionStorage.getItem("download_code")
 	if (storedCode) {
 		codeString.value = storedCode
@@ -655,8 +677,8 @@ const bulkUpdatePriceData = ref({})
 const calculateAdjustedPrice = (amount, type) => {
 	bulkUpdatePriceData.value = {
 		amount: amount,
-		type: type
-	};
+		type: type,
+	}
 }
 
 const submitBulkEditPrice = async (type) => {
@@ -669,7 +691,7 @@ const submitBulkEditPrice = async (type) => {
 		const response = await axios({
 			method: "post",
 			url,
-			data: data
+			data: data,
 		})
 
 		debReloadPage()
@@ -678,18 +700,19 @@ const submitBulkEditPrice = async (type) => {
 		modalBulkEditPrice.value = false
 
 		notify({
-			title: trans('Your edits was successfully submitted and still processed in background.'),
-			text: trans('Please wait for a few minutes to update the product'),
-			type: 'success',
+			title: trans(
+				"Your edits was successfully submitted and still processed in background."
+			),
+			text: trans("Please wait for a few minutes to update the product"),
+			type: "success",
 		})
-
 	} catch (error: any) {
 		onFailedEditCheckmark(error)
 	} finally {
 		loadingAction.value = []
 	}
 
-	loadingAction.value = [];
+	loadingAction.value = []
 }
 
 // Watch for changes to the creation date
@@ -703,6 +726,88 @@ onBeforeUnmount(() => {
 		clearInterval(countdownInterval.value)
 	}
 })
+
+// add the Extended Properties for Products
+const productStates = [
+	{
+		key: "in_process",
+		label: "In Process",
+	},
+	{
+		key: "active",
+		label: "Active",
+	},
+	{
+		key: "discontinuing",
+		label: "Discontinuing",
+	},
+	{
+		key: "discontinued",
+		label: "discontinued",
+	},
+]
+
+const showExtendedPicker = ref(false)
+const isDownloadingExtendedProperties = ref(false)
+const extendedColumns = [
+	{ key: "product_code", label: "Product code" },
+	{ key: "product_user_reference", label: "Product user reference" },
+	{ key: "product_name", label: "Product name" },
+	{ key: "materials_ingredients", label: "Materials/Ingredients" },
+	{ key: "unit_dimensions", label: "Unit dimensions" },
+	{ key: "unit_net_weight", label: "Unit net weight" },
+	{ key: "package_weight_shipping", label: "Package weight (shipping)" },
+	{ key: "country_of_origin", label: "Country of origin" },
+	{ key: "tariff_code", label: "Tariff code" },
+	{ key: "duty_rate", label: "Duty rate" },
+	{ key: "hts_us", label: "HTS US" },
+	{ key: "data_updated", label: "Data updated" },
+]
+const selectedExtendedColumns = ref<string[]>([])
+const excludedColumns = computed(() => {
+	return extendedColumns.filter((col) => !selectedExtendedColumns.value.includes(col.key))
+})
+const allSelected = computed(() => {
+	return selectedExtendedColumns.value.length === extendedColumns.length
+})
+
+function toggleSelectAll() {
+	if (allSelected.value) {
+		selectedExtendedColumns.value = []
+	} else {
+		selectedExtendedColumns.value = extendedColumns.map((c) => c.key)
+	}
+}
+
+const onDownloadExtendedProperties = () => {
+	if (!selectedExtendedColumns.value.length) {
+		notify({
+			title: trans("Select at least one column"),
+			type: "warn",
+		})
+		return
+	}
+
+	const url = downloadUrl("extended_properties", {
+		columns: selectedExtendedColumns.value,
+		product_states: selectedProductStates.value,
+	})
+
+	if (!url) {
+		notify({
+			title: trans("No route defined"),
+			type: "error",
+		})
+		return
+	}
+
+	const urlString = typeof url === "string" ? url : url.toString()
+	isDownloadingExtendedProperties.value = true
+	window.open(urlString, "_blank", "noopener")
+	setTimeout(() => {
+		isDownloadingExtendedProperties.value = false
+	}, 400)
+}
 
 const layout = inject("layout", layoutStructure)
 </script>
@@ -729,6 +834,80 @@ const layout = inject("layout", layoutStructure)
 				<a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
 					<Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
 				</a>
+				<Button
+					@click="(e) => _export_popover?.toggle(e)"
+					v-tooltip="trans('Open other export options')"
+					:icon="faEllipsisV"
+					class="!px-2 border-l-0 border-r-0 rounded-none h-full"
+					type="tertiary" />
+				<Popover ref="_export_popover">
+					<div class="w-64 relative">
+						<div class="text-sm mb-2">
+							{{ trans("Select Columns that you need to export") }}:
+						</div>
+						<div class="flex flex-col gap-y-2">
+							<div class="mt-3 border-t pt-2 space-y-2 text-sm">
+								<div class="font-medium">
+									{{ trans("Selected Columns") }}
+								</div>
+
+								<label
+									v-for="col in extendedColumns.filter((c) =>
+										selectedExtendedColumns.includes(c.key)
+									)"
+									:key="col.key"
+									class="flex items-center gap-2 cursor-pointer">
+									<input
+										type="checkbox"
+										:value="col.key"
+										v-model="selectedExtendedColumns" />
+									{{ trans(col.label) }}
+								</label>
+							</div>
+						</div>
+						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
+							<div class="font-medium">
+								{{ trans("Excluded Columns") }}
+							</div>
+
+							<label
+								v-for="col in excludedColumns"
+								:key="col.key"
+								class="flex items-center gap-2 cursor-pointer opacity-70">
+								<input
+									type="checkbox"
+									:value="col.key"
+									v-model="selectedExtendedColumns" />
+								{{ trans(col.label) }}
+							</label>
+						</div>
+						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
+							<div class="font-medium">
+								{{ trans("Product State") }}
+							</div>
+
+							<label
+								v-for="state in productStates"
+								:key="state.key"
+								class="flex items-center gap-2 cursor-pointer opacity-70">
+								<input
+									type="checkbox"
+									:value="state.key"
+									v-model="selectedProductStates" />
+								{{ trans(state.label) }}
+							</label>
+						</div>
+						<div class="mt-3 border-t pt-2 px-0 space-y-2 text-sm">
+							<Button
+								:loading="isDownloadingExtendedProperties"
+								:disabled="isDownloadingExtendedProperties"
+								type="primary"
+								class="w-full !px-3 !py-2 !justify-center"
+								@click="onDownloadExtendedProperties"
+								:label="trans('Export Extended Properties')" />
+						</div>
+					</div>
+				</Popover>
 
 				<a
 					v-if="!linkDownloadImages"
@@ -778,6 +957,18 @@ const layout = inject("layout", layoutStructure)
 			<ButtonWithLink
 				v-if="routes?.syncAllRoute && !customer_sales_channel?.ban_stock_update_until"
 				:routeTarget="routes?.syncAllRoute"
+				@success="
+					() => {
+						isOpenModalFetchProgress = true
+						notify({
+							title: trans(
+								'Your product was successfully fetched and still processed in background.'
+							),
+							text: trans('Please wait for a few minutes to the products added'),
+							type: 'success',
+						})
+					}
+				"
 				isWithError
 				:label="'Fetch Products'"
 				icon="fas fa-sync-alt"
@@ -1249,7 +1440,7 @@ const layout = inject("layout", layoutStructure)
 		</div>
 	</Modal>
 
-<!-- Modal: Bulk Edit Price -->
+	<!-- Modal: Bulk Edit Price -->
 	<Modal
 		:isOpen="modalBulkEditPrice"
 		width="w-full max-w-2xl h-full max-h-[570px]"
@@ -1266,33 +1457,27 @@ const layout = inject("layout", layoutStructure)
 				<Button
 					v-for="percent in [20, 40, 60, 80, 100]"
 					:key="'p' + percent"
-					@click="
-						calculateAdjustedPrice(
-								percent,
-								'percent'
-							)"
+					@click="calculateAdjustedPrice(percent, 'percent')"
 					:label="`+${percent}%`"
 					size="xs"
-					:disabled="bulkUpdatePriceData.type === 'percent' && bulkUpdatePriceData.amount === percent"
+					:disabled="
+						bulkUpdatePriceData.type === 'percent' &&
+						bulkUpdatePriceData.amount === percent
+					"
 					:type="'tertiary'" />
 				<Button
 					v-for="amount in [2, 4, 6, 8, 10]"
 					:key="'a' + amount"
-					@click="
-						calculateAdjustedPrice(
-								amount,
-								'fixed'
-							)"
+					@click="calculateAdjustedPrice(amount, 'fixed')"
 					:label="`+${amount}`"
 					size="xs"
-					:disabled="bulkUpdatePriceData.type === 'fixed' && bulkUpdatePriceData.amount === amount"
+					:disabled="
+						bulkUpdatePriceData.type === 'fixed' &&
+						bulkUpdatePriceData.amount === amount
+					"
 					:type="'tertiary'" />
 				<Button
-					@click="
-						calculateAdjustedPrice(
-								0,
-								'reset'
-							)"
+					@click="calculateAdjustedPrice(0, 'reset')"
 					:label="trans('Reset')"
 					:tooltip="trans('Reset to the original selling price')"
 					size="xs"
@@ -1386,6 +1571,248 @@ const layout = inject("layout", layoutStructure)
 										channel: cloneSourceChannelName,
 									})
 								}}
+							</template>
+						</div>
+
+						<!-- Percentage Display -->
+						<div v-if="cloneProgressData.total > 0" class="mt-4">
+							<div
+								class="text-4xl font-bold tabular-nums transition-all duration-300"
+								:class="
+									cloneProgressData.done >= cloneProgressData.total
+										? cloneProgressData.data.number_fails > 0
+											? 'text-yellow-500'
+											: 'text-green-500'
+										: 'text-gray-700'
+								">
+								{{
+									Math.round(
+										(cloneProgressData.done / cloneProgressData.total) * 100
+									)
+								}}%
+							</div>
+							<div class="text-sm text-gray-500 mt-1">
+								{{ cloneProgressData.done }} / {{ cloneProgressData.total }}
+								{{ trans("products") }}
+							</div>
+						</div>
+
+						<!-- Progress Bar -->
+						<div class="mt-4 px-4">
+							<PureProgressBar
+								v-if="cloneProgressData.total > 0"
+								:progressBars="cloneProgressData" />
+							<div
+								v-else
+								class="flex items-center justify-center gap-2 text-gray-500">
+								<FontAwesomeIcon
+									icon="fas fa-spinner"
+									class="animate-spin"
+									aria-hidden="true" />
+								<span>{{ trans("Preparing...") }}</span>
+							</div>
+						</div>
+
+						<div
+							v-if="
+								cloneProgressData.done >= cloneProgressData.total &&
+								cloneProgressData.total > 0
+							"
+							class="mt-4 text-sm text-gray-600">
+							{{ trans("Page will reload automatically...") }}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</Modal>
+
+	<!-- Modal: Clone Progress -->
+	<Modal
+		:isOpen="isOpenModalCloneProgress"
+		@onClose="
+			cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0
+				? (isOpenModalCloneProgress = false)
+				: null
+		"
+		width="w-full max-w-md">
+		<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+			<div
+				class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+				<div>
+					<div
+						class="mx-auto flex size-12 items-center justify-center rounded-full"
+						:class="
+							cloneProgressData.done >= cloneProgressData.total &&
+							cloneProgressData.total > 0
+								? cloneProgressData.data.number_fails > 0
+									? 'bg-yellow-100'
+									: 'bg-green-100'
+								: 'bg-gray-100'
+						">
+						<FontAwesomeIcon
+							v-if="
+								cloneProgressData.done >= cloneProgressData.total &&
+								cloneProgressData.total > 0
+							"
+							:icon="
+								cloneProgressData.data.number_fails > 0
+									? 'fas fa-exclamation-triangle'
+									: 'fas fa-check'
+							"
+							:class="
+								cloneProgressData.data.number_fails > 0
+									? 'text-yellow-500'
+									: 'text-green-500'
+							"
+							class="text-2xl"
+							fixed-width
+							aria-hidden="true" />
+						<FontAwesomeIcon
+							v-else
+							icon="fas fa-spinner"
+							class="text-gray-500 text-2xl animate-spin"
+							fixed-width
+							aria-hidden="true" />
+					</div>
+
+					<div class="mt-3 text-center sm:mt-5">
+						<div as="h3" class="font-semibold text-xl">
+							<template
+								v-if="
+									cloneProgressData.done >= cloneProgressData.total &&
+									cloneProgressData.total > 0
+								">
+								{{ trans("Cloning Complete!") }}
+							</template>
+							<template v-else>
+								{{ trans("Cloning Portfolios...") }}
+							</template>
+						</div>
+
+						<div class="mt-2 text-sm text-gray-500">
+							<template v-if="cloneSourceChannelName">
+								{{
+									trans("From channel: :channel", {
+										channel: cloneSourceChannelName,
+									})
+								}}
+							</template>
+						</div>
+
+						<!-- Percentage Display -->
+						<div v-if="cloneProgressData.total > 0" class="mt-4">
+							<div
+								class="text-4xl font-bold tabular-nums transition-all duration-300"
+								:class="
+									cloneProgressData.done >= cloneProgressData.total
+										? cloneProgressData.data.number_fails > 0
+											? 'text-yellow-500'
+											: 'text-green-500'
+										: 'text-gray-700'
+								">
+								{{
+									Math.round(
+										(cloneProgressData.done / cloneProgressData.total) * 100
+									)
+								}}%
+							</div>
+							<div class="text-sm text-gray-500 mt-1">
+								{{ cloneProgressData.done }} / {{ cloneProgressData.total }}
+								{{ trans("products") }}
+							</div>
+						</div>
+
+						<!-- Progress Bar -->
+						<div class="mt-4 px-4">
+							<PureProgressBar
+								v-if="cloneProgressData.total > 0"
+								:progressBars="cloneProgressData" />
+							<div
+								v-else
+								class="flex items-center justify-center gap-2 text-gray-500">
+								<FontAwesomeIcon
+									icon="fas fa-spinner"
+									class="animate-spin"
+									aria-hidden="true" />
+								<span>{{ trans("Preparing...") }}</span>
+							</div>
+						</div>
+
+						<div
+							v-if="
+								cloneProgressData.done >= cloneProgressData.total &&
+								cloneProgressData.total > 0
+							"
+							class="mt-4 text-sm text-gray-600">
+							{{ trans("Page will reload automatically...") }}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</Modal>
+
+	<!-- Modal: Clone Progress -->
+	<Modal
+		:isOpen="isOpenModalFetchProgress"
+		@onClose="
+			cloneProgressData.done >= cloneProgressData.total && cloneProgressData.total > 0
+				? (isOpenModalFetchProgress = false)
+				: null
+		"
+		width="w-full max-w-md">
+		<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+			<div
+				class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+				<div>
+					<div
+						class="mx-auto flex size-12 items-center justify-center rounded-full"
+						:class="
+							cloneProgressData.done >= cloneProgressData.total &&
+							cloneProgressData.total > 0
+								? cloneProgressData.data.number_fails > 0
+									? 'bg-yellow-100'
+									: 'bg-green-100'
+								: 'bg-gray-100'
+						">
+						<FontAwesomeIcon
+							v-if="
+								cloneProgressData.done >= cloneProgressData.total &&
+								cloneProgressData.total > 0
+							"
+							:icon="
+								cloneProgressData.data.number_fails > 0
+									? 'fas fa-exclamation-triangle'
+									: 'fas fa-check'
+							"
+							:class="
+								cloneProgressData.data.number_fails > 0
+									? 'text-yellow-500'
+									: 'text-green-500'
+							"
+							class="text-2xl"
+							fixed-width
+							aria-hidden="true" />
+						<FontAwesomeIcon
+							v-else
+							icon="fas fa-spinner"
+							class="text-gray-500 text-2xl animate-spin"
+							fixed-width
+							aria-hidden="true" />
+					</div>
+
+					<div class="mt-3 text-center sm:mt-5">
+						<div as="h3" class="font-semibold text-xl">
+							<template
+								v-if="
+									cloneProgressData.done >= cloneProgressData.total &&
+									cloneProgressData.total > 0
+								">
+								{{ trans("Fetching Complete!") }}
+							</template>
+							<template v-else>
+								{{ trans("Fetching Portfolios...") }}
 							</template>
 						</div>
 

@@ -98,7 +98,7 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getStateFilter(): AllowedFilter
     {
         return AllowedFilter::callback('status', function ($query, $value) {
-            $query->whereNotIn('products.state', (array)$value);
+            $query->where('products.status', $value);
         });
     }
 
@@ -385,6 +385,14 @@ class IndexRetinaPortfolios extends RetinaAction
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->slug,
                             'type'                 => 'portfolio_csv'
+                        ]
+                    ],
+
+                    'extended_properties' => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.download',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug,
+                            'type'                 => 'portfolio_csv_extended_properties'
                         ]
                     ],
                     'json'   => [

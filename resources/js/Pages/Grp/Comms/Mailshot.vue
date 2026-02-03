@@ -43,9 +43,9 @@ const props = defineProps<{
     indexRoute?: routeType
     cancelScheduleMailshotRoute?: routeType
     status?: string
-    isShowProcessButton?: boolean
+    estimatedRecipients?: number
+    mailshotType?: string
 }>();
-
 
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
@@ -66,7 +66,7 @@ const filteredTabs = computed(() => {
 
 // Computed property to check if buttons should be shown
 const shouldShowButtons = computed(() => {
-    return props.status && props.status.toLowerCase() === 'ready' && props.isShowProcessButton;
+    return props.status && props.status.toLowerCase() === 'ready';
 });
 
 const shouldShowDeleteButton = computed(() => {
@@ -228,6 +228,10 @@ const cancelSchedule = () => {
     scheduleDateTime.value = new Date();
 };
 
+const formatNumber = (num: number | null | undefined) => {
+    return new Intl.NumberFormat('en-GB').format(num ?? 0)
+}
+
 const component = computed(() => {
     const components: Component = {
         showcase: MailshotShowcase,
@@ -361,6 +365,12 @@ watch(
 
     <Head :title="capitalize(pageHead.title)" />
     <PageHeading :data="pageHead">
+        <template #afterTitle v-if="
+            props.mailshotType === 'marketing' &&
+            ['in_process', 'ready', 'scheduled'].includes(props.status ?? '')
+        ">
+            <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>
+        </template>
         <template #otherBefore>
             <div class="flex" v-if="shouldShowButtons">
                 <ModalConfirmation :title="trans('Are you sure you want to send this mailshot?')"

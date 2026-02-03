@@ -106,7 +106,7 @@ onMounted(() => {
 
     // Print log only in local
     if (layout.app.environment === 'local') {
-        console.log('Iris Layout', layout)
+        console.log('----- Iris Layout -----', layout)
     }
 
     irisStyleVariables(theme?.color)
