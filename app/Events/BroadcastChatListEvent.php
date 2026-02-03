@@ -83,7 +83,7 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
                 'sender_name'       => $senderName,
                 'text'              => $text,
                 'shop_id'           => $this->message->chatSession->shop_id,
-                'user_id'           => $assignedAgentId,
+                'assigned_user_id'  => $assignedAgentId,
             ]
         ];
     }
