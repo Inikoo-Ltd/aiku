@@ -21,6 +21,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\Warehouse;
@@ -83,7 +84,11 @@ class SendOrderToWarehouse extends OrgAction
             /** @var Transaction $transactions */
             $transactions = $order->transactions()->where('state', TransactionStateEnum::SUBMITTED)->get();
             foreach ($transactions as $transaction) {
-                $transactionData = ['state' => TransactionStateEnum::IN_WAREHOUSE];
+                $transactionData = [
+                    'state'           => TransactionStateEnum::IN_WAREHOUSE,
+                    'status'          => TransactionStatusEnum::PROCESSING,
+                    'in_warehouse_at' => now()
+                ];
                 if ($transaction->in_warehouse_at == null) {
                     data_set($transactionData, 'in_warehouse_at', $date);
                 }
