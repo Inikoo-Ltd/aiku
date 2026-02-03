@@ -1604,15 +1604,15 @@ const submitNewCharge = async () => {
                                 </dd>
                             </div>
                             <!-- button edit all percentage -->
-                            <div class="text-right text-purple-600 w-full mr-1">{{ trans('Global discount') }}</div>
-
-                            <button
-                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'x'))"
-                                class="ml-auto h-6 mr-2" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
-                                v-tooltip="trans('Apply discount to all products')">
-                                <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
-                                    class="h-4 text-purple-400 hover:text-gray-600" />
-                            </button>
+                            <template v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx'))">
+                                <div class="text-right text-purple-600 w-full mr-1">{{ trans('Global discount') }}</div>
+                                <button
+                                    class="ml-auto h-6 mr-2" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
+                                    v-tooltip="trans('Apply discount to all products')">
+                                    <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
+                                        class="h-4 text-purple-400 hover:text-gray-600" />
+                                </button>
+                            </template>
                         </dl>
 
                         <Modal :isOpen="isOpenEditAllPercentageModal" @onClose="closeEditAllPercentageModal"

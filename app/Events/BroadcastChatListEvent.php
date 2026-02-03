@@ -7,6 +7,10 @@ use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use App\Models\CRM\Livechat\ChatMessage;
+use App\Models\CRM\WebUser;
+use Illuminate\Support\Str;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 
 class BroadcastChatListEvent implements ShouldBroadcastNow
 {
@@ -14,14 +18,16 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
+    public $message;
+
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(?ChatMessage $message = null)
     {
-        //
+        $this->message = $message;
     }
 
     /**
@@ -37,5 +43,62 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
     public function broadcastAs(): string
     {
         return 'chatlist';
+    }
+
+    public function broadcastWith(): array
+    {
+        if (!$this->message) {
+            return [
+                'message' => null
+            ];
+        }
+
+        return [
+            'message' => [
+                'sender_type'       => $this->message->sender_type->value,
+                'sender_name'       => $this->resolveSenderName(),
+                'text'              => $this->resolveMessageText(),
+                'shop_id'           => $this->message->chatSession->shop_id,
+                'assigned_user_id'  => $this->resolveAssignedAgentId(),
+            ]
+        ];
+    }
+
+    private function resolveSenderName(): string
+    {
+        $senderName = "Customer";
+
+        if ($this->message->sender_type->value === 'guest') {
+            $senderName = $this->message->chatSession?->guest_identifier;
+        }
+
+        if ($this->message->sender_type->value === 'user') {
+            $webUser = WebUser::find($this->message->sender_id);
+            $senderName = $webUser?->customer?->contact_name;
+        }
+
+        return $senderName;
+    }
+
+    private function resolveAssignedAgentId(): ?int
+    {
+        $activeAssignment = $this->message->chatSession->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE)
+            ->first();
+
+        return $activeAssignment
+            ? $activeAssignment->chatAgent?->user?->id
+            : null;
+    }
+
+    private function resolveMessageText(): string
+    {
+        if ($this->message->message_type->value === 'text') {
+            $text = $this->message->original_text ?? $this->message->message_text;
+        } else {
+            $text = "New " . $this->message->message_type->value . " message";
+        }
+
+        return Str::limit($text, 50, '…');
     }
 }

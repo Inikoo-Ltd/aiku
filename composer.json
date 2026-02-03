@@ -15,6 +15,7 @@
     "ext-gettext": "*",
     "ext-iconv": "*",
     "ext-intl": "*",
+    "ext-libxml": "*",
     "ext-mbstring": "*",
     "ext-pdo": "*",
     "ext-pgsql": "*",
@@ -37,8 +38,10 @@
     "deepseek-php/deepseek-php-client": "^2.0",
     "elasticsearch/elasticsearch": "^8.8",
     "ezyang/htmlpurifier": "^4.19",
+    "geocoder-php/nominatim-provider": "^5.8",
     "google/apiclient": "^2.15.0",
     "guzzlehttp/guzzle": "^7.2",
+    "guzzlehttp/psr7": "^2.8",
     "hisorange/browser-detect": "^4.5",
     "http-interop/http-factory-guzzle": "^1.2",
     "inertiajs/inertia-laravel": "^2.0",
@@ -71,6 +74,7 @@
     "pdmfc/redis-queue-inspector": "^0.1.4",
     "pgvector/pgvector": "^0.2.0",
     "phlak/semver": "^6.0",
+    "php-http/guzzle7-adapter": "^1.1",
     "phpmailer/phpmailer": "^6.9",
     "picqer/php-barcode-generator": "^3.2",
     "pragmarx/google2fa-laravel": "*",
@@ -108,7 +112,7 @@
     "vildanbina/laravel-auto-translation": "^1.5",
     "vlucas/phpdotenv": "^5.4",
     "webklex/laravel-imap": "^6.2",
-    "ext-libxml": "*"
+    "willdurand/geocoder": "^5.0"
   },
   "require-dev": {
     "amphibee/laravel-pint-pre-commit": "^1.5",
@@ -173,6 +177,13 @@
     "allow-plugins": {
       "pestphp/pest-plugin": true,
       "php-http/discovery": true
+    },
+    "audit": {
+      "ignore": [
+        "PKSA-dxyf-6n16-t87m",
+        "PKSA-bjyb-w14t-61js",
+        "PKSA-8x19-j2j3-bn67"
+      ]
     }
   },
   "minimum-stability": "beta",

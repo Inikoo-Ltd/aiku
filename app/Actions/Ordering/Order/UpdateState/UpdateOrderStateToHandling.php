@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -65,6 +66,8 @@ class UpdateOrderStateToHandling extends OrgAction
                         ]
                     );
                 }
+                CalculateOrderTotalAmounts::run(order: $order);
+                $order->refresh();
             }
 
 

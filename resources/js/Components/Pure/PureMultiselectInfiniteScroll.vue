@@ -36,6 +36,7 @@ const props = defineProps<{
     clearOnSelect? : boolean,
     clearOnBlur? : boolean
     clearOnFocus? :boolean
+    optionFunc?: () => boolean
 }>()
 const emits = defineEmits<{
     (e: 'optionsList', value: any[]): void
@@ -60,20 +61,26 @@ const getUrlFetch = (additionalParams: {}) => {
 const optionsList = ref<any[]>([])
 const optionsMeta = ref<Meta | null>(null)
 const optionsLinks = ref<Links | null>(null)
-const fetchProductList = async (url?: string, ccc) => {
-    // console.log('ewqewqewq', ccc)
+const fetchProductList = async (url) => {
     isComponentLoading.value = 'fetchProduct'
 
     const urlToFetch = url || route(props.fetchRoute.name, props.fetchRoute.parameters)
 
     try {
         const xxx = await axios.get(urlToFetch)
-        
-        
+
+
         if (xxx?.data?.data) {
-            optionsList.value = [...optionsList.value, ...xxx?.data?.data]
-            optionsMeta.value = xxx?.data.meta || null
-            optionsLinks.value = xxx?.data.links || null
+            const raw = xxx.data.data
+
+            // Apply filter function if provided
+            const filtered = typeof props.optionFunc === 'function'
+                ? raw.filter((item) => props.optionFunc(item))
+                : raw
+
+            optionsList.value = [...optionsList.value, ...filtered]
+            optionsMeta.value = xxx?.data?.meta || null
+            optionsLinks.value = xxx?.data?.links || null
         } else {
             optionsList.value = xxx?.data
         }
@@ -89,16 +96,16 @@ const fetchProductList = async (url?: string, ccc) => {
     }
     isComponentLoading.value = false
 }
-    
+
 const onSearchQuery = debounce(async (query: string) => {
     optionsList.value = []
-    fetchProductList(getUrlFetch({'filter[global]': query}), 'qqqqqq')
+    fetchProductList(getUrlFetch({ 'filter[global]': query }), 'qqqqqq')
 }, 500)
 
 
 // Method: fetching next page
 const onFetchNext = () => {
-    const dropdown = document.querySelector('.multiselect-dropdown')
+    const dropdown = _multiselectRef.value?.$el?.querySelector('.multiselect-dropdown')
     // console.log(dropdown?.scrollTop, dropdown?.clientHeight, dropdown?.scrollHeight)
 
     const bottomReached = (dropdown?.scrollTop || 0) + (dropdown?.clientHeight || 0) >= (dropdown?.scrollHeight || 10) - 10
@@ -110,7 +117,7 @@ const onFetchNext = () => {
 
 onMounted(() => {
     // fetchProductList(getUrlFetch({'filter[global]': ''}), 'eee')
-    const dropdown = document.querySelector('.multiselect-dropdown')
+    const dropdown = _multiselectRef.value?.$el?.querySelector('.multiselect-dropdown')
     // console.log('bb', dropdown, dropdown?.scrollTop)
     if (dropdown) {
         dropdown.addEventListener('scroll', onFetchNext)
@@ -118,7 +125,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-    const dropdown = document.querySelector('.multiselect-dropdown')
+    const dropdown = _multiselectRef.value?.$el?.querySelector('.multiselect-dropdown')
     if (dropdown) {
         dropdown.removeEventListener('scroll', onFetchNext)
     }
@@ -132,22 +139,22 @@ const onOpen = () => {
     _multiselectRef.value?.clearSearch?.()
 
     // Get internal input element and trigger input event with empty string
-    if(props.clearOnFocus){
+    if (props.clearOnFocus) {
         setTimeout(() => {
-                const input = _multiselectRef.value?.$el?.querySelector('.multiselect-search')
-                if (input) {
-                    input.value = ' '
-                    input.dispatchEvent(new Event('input', { bubbles: true }))
-                }
-            }, 0)
+            const input = _multiselectRef.value?.$el?.querySelector('.multiselect-search')
+            if (input) {
+                input.value = ' '
+                input.dispatchEvent(new Event('input', { bubbles: true }))
+            }
+        }, 0)
     }
-    
+
 }
 
 defineExpose({
-  multiselectRef: _multiselectRef,
-  fetchProductList,
-  onSearchQuery,
+    multiselectRef: _multiselectRef,
+    fetchProductList,
+    onSearchQuery,
 })
 
 </script>
@@ -155,34 +162,28 @@ defineExpose({
 <template>
     <!-- <pre>{{ options }}</pre> -->
     <!-- <div class="relative w-full text-gray-600 rounded-sm"> -->
-        <!-- {{ model }} -->
-        <!-- <pre>{{ optionsList.length ? optionsList : (initOptions || []) }}</pre> -->
-    <Multiselect ref="_multiselectRef"
-        v-model="model"
-        @update:modelValue="(e) => {
-            emits('selectedObject', optionsList.find(opt => (opt[valueProp ?? 'id'] === e)))
-        }"
-        :options="optionsList.length ? optionsList : (initOptions || [])"
-        :classes="{
-                placeholder: 'pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 select-none text-sm text-left w-full pl-4 font-light text-gray-400 opacity-1',
-                ...classes,
-            }" :valueProp="valueProp ?? 'id'" :filterResults="false" :object
-        @change="(e) => _multiselectRef?.clearSearch()" :canClear="!required" :mode="mode || 'single'"
-        :closeOnSelect="mode == 'multiple' ? false : true" :canDeselect="!required" :hideSelected="false"
-        :clearOnSelect="props?.clearOnSelect ?? false" searchable :clearOnBlur="props?.clearOnBlur ?? false"
-        clearOnSearch autofocus :caret="isComponentLoading ? false : true"
+    <!-- {{ model }} -->
+    <!-- <pre>{{ optionsList.length ? optionsList : (initOptions || []) }}</pre> -->
+    <Multiselect ref="_multiselectRef" v-model="model" @update:modelValue="(e) => {
+        emits('selectedObject', optionsList.find(opt => (opt[valueProp ?? 'id'] === e)))
+    }" :options="optionsList.length ? optionsList : (initOptions || [])" :classes="{
+        placeholder: 'pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 select-none text-sm text-left w-full pl-4 font-light text-gray-400 opacity-1',
+        ...classes,
+    }" :valueProp="valueProp ?? 'id'" :filterResults="false" :object @change="(e) => _multiselectRef?.clearSearch()"
+        :canClear="!required" :mode="mode || 'single'" :closeOnSelect="mode == 'multiple' ? false : true"
+        :canDeselect="!required" :hideSelected="false" :clearOnSelect="props?.clearOnSelect ?? false" searchable
+        :clearOnBlur="props?.clearOnBlur ?? false" clearOnSearch autofocus :caret="isComponentLoading ? false : true"
         :loading="isLoading || isComponentLoading === 'fetchProduct'"
         :placeholder="placeholder || trans('Select option')" :resolve-on-load="true" :min-chars="1"
         @open="() => onOpen()"
-        @search-change="(val: string) => val ? onSearchQuery(val) : (onSearchQuery.cancel(), fetchProductList(getUrlFetch({'filter[global]': ''}), 'search')) "
-    >
+        @search-change="(val: string) => val ? onSearchQuery(val) : (onSearchQuery.cancel(), fetchProductList(getUrlFetch({ 'filter[global]': '' }), 'search'))">
 
         <template #singlelabel="{ value }">
             <!-- {{ $attrs }} -->
             <slot name="singlelabel" :value>
                 <div class="w-full text-left pl-4 leading-4 truncate mr-2">{{ value[labelProp || 'name'] }} <span
-                        v-if="labelAdditionalProp || value.code"
-                        class="text-sm text-gray-400">({{ value[labelAdditionalProp || 'code'] }})</span></div>
+                        v-if="labelAdditionalProp || value.code" class="text-sm text-gray-400">({{
+                            value[labelAdditionalProp || 'code'] }})</span></div>
             </slot>
         </template>
 
@@ -196,8 +197,9 @@ defineExpose({
 
         <template #option="{ option, isSelected, isPointed }">
             <slot name="option" :option :isSelected :isPointed>
-                <div class="">{{ option[labelProp || 'name'] }} <span v-if="labelAdditionalProp ?? option.code" class="text-sm"
-                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option[labelAdditionalProp || 'code'] }})</span>
+                <div class="">{{ option[labelProp || 'name'] }} <span v-if="labelAdditionalProp ?? option.code"
+                        class="text-sm" :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{
+                            option[labelAdditionalProp || 'code'] }})</span>
                 </div>
             </slot>
         </template>
@@ -214,7 +216,7 @@ defineExpose({
         <template #nooptions>
             <div v-if="isComponentLoading !== 'fetchProduct'"
                 class="py-2 px-3 text-gray-600 bg-white text-left rtl:text-right">
-                {{ noOptionsText || 'No options'}}
+                {{ noOptionsText || 'No options' }}
             </div>
             <div></div>
         </template>
@@ -247,24 +249,24 @@ defineExpose({
 }
 
 :deep(.multiselect-option.is-pointed) {
-	background-color: color-mix(in srgb, var(--theme-color-4) 10%, transparent) !important;
+    background-color: color-mix(in srgb, var(--theme-color-4) 10%, transparent) !important;
     color: color-mix(in srgb, var(--theme-color-4) 50%, black) !important;
 }
 
 :deep(.multiselect-option.is-disabled) {
-	@apply bg-gray-300 text-gray-500 !important;
+    @apply bg-gray-300 text-gray-500 !important;
 }
 
 :deep(.multiselect.is-active) {
-	border: var(--ms-border-width-active, var(--ms-border-width, 1px)) solid
-		var(--ms-border-color-active, var(--ms-border-color, #787878)) !important;
-	box-shadow: 0 0 0 var(--ms-ring-width, 3px) var(--ms-ring-color, rgba(42, 42, 42, 0.188)) !important;
-	/* box-shadow: 4px 0 0 0 calc(4px + 4px) rgba(42, 42, 42, 1); */
+    border: var(--ms-border-width-active, var(--ms-border-width, 1px)) solid var(--ms-border-color-active, var(--ms-border-color, #787878)) !important;
+    box-shadow: 0 0 0 var(--ms-ring-width, 3px) var(--ms-ring-color, rgba(42, 42, 42, 0.188)) !important;
+    /* box-shadow: 4px 0 0 0 calc(4px + 4px) rgba(42, 42, 42, 1); */
 }
 
 :deep(.multiselect-dropdown) {
     max-height: 250px !important;
 }
+
 :deep(.multiselect-tags-search) {
     @apply focus:outline-none focus:ring-0
 }
@@ -276,6 +278,4 @@ defineExpose({
 :deep(.multiselect-tag-remove-icon) {
     @apply text-lime-800
 }
-
-
 </style>

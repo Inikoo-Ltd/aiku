@@ -236,7 +236,7 @@ defineExpose({
 
 const editingIndex = ref<number | null>(null)
 const renameValue = ref("")
-const MAX_RENAME_LENGTH = 20
+const MAX_RENAME_LENGTH = 35
 
 const onRenameBlock = () => {
 	if (!contextMenu.value.block) return
@@ -388,28 +388,26 @@ const cancelRename = () => {
 
 												<!-- block Display Name -->
 												<div
-													class="max-w-[240px] overflow-x-auto whitespace-nowrap scrollbar-thin">
+													class="max-w-[240px] xoverflow-x-auto whitespace-nowrap scrollbar-thin">
 													<input
 														v-if="editingIndex === index"
 														v-model="renameValue"
 														:maxlength="MAX_RENAME_LENGTH"
-														class="text-sm font-medium border rounded px-1 py-0.5 w-full"
+														class="text-sm font-medium border rounded px-1 py-0.5 w-full text-gray-700"
 														autofocus
 														@keydown.enter.prevent="saveRename(index)"
 														@keydown.esc.prevent="cancelRename"
 														@blur="saveRename(index)" 
 														@click.stop/>
 
-													<span v-else class="text-sm font-medium">
-														<span class="text-sm font-medium">
-															<template
-																v-if="element.web_block.layout.data.fieldValue?.blocks?.name">
-																{{element.web_block.layout.data.fieldValue.blocks.name}}
-															</template>
-															<template v-else>
-																{{ element.name }}
-															</template>
-														</span>
+													<span v-else class="text-sm font-medium whitespace-pre-wrap text-left inline-block">
+														<template
+															v-if="element.web_block.layout.data.fieldValue?.blocks?.name">
+															{{element.web_block.layout.data.fieldValue.blocks.name}}
+														</template>
+														<template v-else>
+															{{ element.name }}
+														</template>
 													</span>
 												</div>
 
