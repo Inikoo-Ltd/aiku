@@ -20,7 +20,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import axios from "axios"
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from "@/types/route";
-import { Popover } from 'primevue';
+import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
@@ -63,7 +63,10 @@ const filteredTabs = computed(() => {
     )
 })
 
-
+// Toggle switch state (second wave)
+const checked = ref(false);
+const subject = ref('');
+const hour = ref<number | null>(null);
 // Computed property to check if buttons should be shown
 const shouldShowButtons = computed(() => {
     return props.status && props.status.toLowerCase() === 'ready';
@@ -134,7 +137,6 @@ const handleSendNow = async () => {
             router.reload();
         })
 };
-
 
 // Function to handle schedule with datetime picker
 const handleSchedule = async (event: Event) => {
@@ -350,6 +352,43 @@ const handleCancelSchedule = async () => {
         })
 }
 
+const isSavingToggle = ref(false)
+const handleToggleSecondWave = async (value: boolean) => {
+    const previous = !value
+    isSavingToggle.value = true
+
+    try {
+        await axios.post("/api/second-wave/toggle", {
+            enabled: value
+        })
+
+        console.log("Second wave status updated:", value)
+    } catch (error) {
+        console.error("Toggle failed:", error)
+
+        // rollback UI kalau gagal
+        // checked.value = previous
+    } finally {
+        isSavingToggle.value = false
+    }
+}
+
+const handleSaveSecond = () => {
+    if (!checked.value) return
+
+    if (!subject.value.trim()) {
+        alert("Subject required")
+        return
+    }
+
+    console.log("SAVE DATA", {
+        subject: subject.value,
+        hour: hour.value
+    })
+
+    // contoh axios
+    // axios.post('/api/second-wave', { subject: subject.value, hour: hour.value })
+}
 watch(
     filteredTabs,
     (tabs) => {
@@ -359,11 +398,13 @@ watch(
     },
     { immediate: true }
 )
+console.log("props mailshot", props)
 </script>
 
 <template>
 
     <Head :title="capitalize(pageHead.title)" />
+
     <PageHeading :data="pageHead">
         <template #afterTitle v-if="
             props.mailshotType === 'marketing' &&
@@ -441,5 +482,33 @@ watch(
         </div>
     </Popover>
     <Tabs :current="currentTab" :navigation="filteredTabs" @update:tab="handleTabUpdate" />
+    <div class="mx-4 my-4 space-y-3" v-if="['in_process', 'ready'].includes(props.status ?? '')">
+
+        <div class="flex items-center gap-2">
+            <small class="text-gray-500 text-sm">2nd Wave</small>
+            <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave" :disabled="isSavingToggle" />
+        </div>
+
+        <template v-if="checked">
+            <h2 class="text-lg font-semibold text-gray-700">
+                Second Wave
+            </h2>
+
+            <form @submit.prevent="handleSaveSecond" class="space-y-3 border rounded-lg p-4 bg-gray-50">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Subject</label>
+                    <InputText v-model="subject" placeholder="Enter value" class="w-full" required />
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-600 mb-2">Delay (Hour)</label>
+                    <InputNumber v-model="hour" :min="1" placeholder="Default 48" class="w-full" />
+                    <small class="text-gray-400">Default: 48 hours</small>
+                </div>
+
+                <Button label="Save" type="submit" icon="save" />
+            </form>
+        </template>
+    </div>
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>
