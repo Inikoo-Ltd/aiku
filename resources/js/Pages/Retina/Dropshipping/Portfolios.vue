@@ -15,7 +15,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWithUpload.vue"
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue"
-import { InputNumber, InputText, Message, Popover } from "primevue"
+import { ColorPickerStyle, InputNumber, InputText, Message, Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSyncAlt, faHandPointer, faBan } from "@fas"
 import { useFormatTime, useTimeCountdown } from "@/Composables/useFormatTime"
@@ -707,8 +707,26 @@ onBeforeUnmount(() => {
 })
 
 // add the Extended Properties for Products
+const productStates = [
+	{
+		key: "in_process",
+		label: "In Process",
+	},
+	{
+		key: "active",
+		label: "Active",
+	},
+	{
+		key: "discontinuing",
+		label: "Discontinuing",
+	},
+	{
+		key: "discontinued",
+		label: "discontinued",
+	},
+]
+
 const showExtendedPicker = ref(false)
-const selectedExtendedColumns = ref<string[]>([])
 const isDownloadingExtendedProperties = ref(false)
 const extendedColumns = [
 	{ key: "product_code", label: "Product code" },
@@ -724,6 +742,10 @@ const extendedColumns = [
 	{ key: "hts_us", label: "HTS US" },
 	{ key: "data_updated", label: "Data updated" },
 ]
+const selectedExtendedColumns = ref<string[]>([])
+const excludedColumns = computed(() => {
+	return extendedColumns.filter((col) => !selectedExtendedColumns.value.includes(col.key))
+})
 const allSelected = computed(() => {
 	return selectedExtendedColumns.value.length === extendedColumns.length
 })
@@ -747,6 +769,7 @@ const onDownloadExtendedProperties = () => {
 
 	const url = downloadUrl("extended_properties", {
 		columns: selectedExtendedColumns.value,
+		product_states: selectedProductStates.value,
 	})
 
 	if (!url) {
@@ -799,33 +822,18 @@ const layout = inject("layout", layoutStructure)
 				<Popover ref="_export_popover">
 					<div class="w-64 relative">
 						<div class="text-sm mb-2">
-							{{ trans("Select another download file type") }}:
+							{{ trans("Select Columns that you need to export") }}:
 						</div>
 						<div class="flex flex-col gap-y-2">
-							<Button
-								:icon="faDownload"
-								:label="trans('Export Properties')"
-								full
-								type="tertiary"
-								@click="showExtendedPicker = !showExtendedPicker" />
-							<div
-								v-if="showExtendedPicker"
-								class="mt-3 border-t pt-2 space-y-2 text-sm">
-								<div class="flex justify-between mb-1">
-									<span class="font-medium">{{
-										trans("Select the Available Columns")
-									}}</span>
-									<button class="text-xs text-primary" @click="toggleSelectAll">
-										{{
-											allSelected
-												? trans("Unselect All")
-												: trans("Select All")
-										}}
-									</button>
+							<div class="mt-3 border-t pt-2 space-y-2 text-sm">
+								<div class="font-medium">
+									{{ trans("Selected Columns") }}
 								</div>
 
 								<label
-									v-for="col in extendedColumns"
+									v-for="col in extendedColumns.filter((c) =>
+										selectedExtendedColumns.includes(c.key)
+									)"
 									:key="col.key"
 									class="flex items-center gap-2 cursor-pointer">
 									<input
@@ -834,17 +842,48 @@ const layout = inject("layout", layoutStructure)
 										v-model="selectedExtendedColumns" />
 									{{ trans(col.label) }}
 								</label>
-
-								<Button
-									class="mt-2"
-									full
-									type="primary"
-									:disabled="!selectedExtendedColumns.length"
-									:loading="isDownloadingExtendedProperties"
-									@click="onDownloadExtendedProperties">
-									{{ trans("Download") }}
-								</Button>
 							</div>
+						</div>
+						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
+							<div class="font-medium">
+								{{ trans("Excluded Columns") }}
+							</div>
+
+							<label
+								v-for="col in excludedColumns"
+								:key="col.key"
+								class="flex items-center gap-2 cursor-pointer opacity-70">
+								<input
+									type="checkbox"
+									:value="col.key"
+									v-model="selectedExtendedColumns" />
+								{{ trans(col.label) }}
+							</label>
+						</div>
+						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
+							<div class="font-medium">
+								{{ trans("Product State") }}
+							</div>
+
+							<label
+								v-for="state in productStates"
+								:key="state.key"
+								class="flex items-center gap-2 cursor-pointer opacity-70">
+								<input
+									type="checkbox"
+									:value="state.key"
+									v-model="selectedProductStates" />
+								{{ trans(state.label) }}
+							</label>
+						</div>
+						<div class="mt-3 border-t pt-2 px-0 space-y-2 text-sm">
+							<Button
+								:loading="isDownloadingExtendedProperties"
+								:disabled="isDownloadingExtendedProperties"
+								type="primary"
+								class="w-full !px-3 !py-2 !justify-center"
+								@click="onDownloadExtendedProperties"
+								:label="trans('Export Extended Properties')" />
 						</div>
 					</div>
 				</Popover>
