@@ -20,6 +20,7 @@ import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
+import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -59,6 +60,7 @@ const newMessage = ref("")
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
 
+const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 // file upload
 const imageInput = ref<HTMLInputElement>()
 const fileInput = ref<HTMLInputElement>()
@@ -355,6 +357,8 @@ const stopSocket = () => {
 }
 
 const isTranslatingAll = ref(false)
+const notifiedMessageIds = new Set<number>()
+
 const initSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
 
@@ -383,6 +387,17 @@ const initSocket = () => {
                 ...message,
                 _status: "sent",
             })
+        }
+
+        const isNewMessage = index === -1
+
+        if (
+            isNewMessage &&
+            message.sender_type !== "agent" &&
+            !notifiedMessageIds.has(message.id)
+        ) {
+            playNotificationSoundFile(soundUrl)
+            notifiedMessageIds.add(message.id)
         }
 
         if (message.sender_type !== "agent") {
