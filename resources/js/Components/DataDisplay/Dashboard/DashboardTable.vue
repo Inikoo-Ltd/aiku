@@ -136,7 +136,7 @@ const updateTab = (value: string) => {
 }
 
 
-console.log('compTableBody',compTableBody.value)
+
 </script>
 
 <template>
@@ -201,30 +201,18 @@ console.log('compTableBody',compTableBody.value)
 								/>
 							</div>
 						</template>
-					</Column>
-				</template>
 
-               <!-- Row: Total (footer) -->
-				<template v-if="compTableBody && compTableBody.length > 0" #footer>
-					<ColumnGroup type="footer">
-						<Row>
-							<template
-								v-for="(column, colSlug) in props.tableData.tables[props.tableData.current_tab].header.columns"
-								:key="colSlug">
-								<Column v-if="showDashboardColumn(column)">
-									<template #footer>
-										<div class="px-2 flex relative" :class="column.align === 'left'
-											? ''
-											: 'justify-end text-right'">
-											<DashboardCell :interval="intervals" :cell="props.tableData.tables[props.tableData.current_tab].totals?.columns?.[colSlug]?.[intervals.value]
-												?? props.tableData.tables[props.tableData.current_tab].totals?.columns?.[colSlug]
-												" />
-										</div>
-									</template>
-								</Column>
-							</template>
-						</Row>
-					</ColumnGroup>
+						<template v-if="compTableBody && compTableBody.length > 0" #footer>
+							<div class="px-2 flex relative" :class="columnHeader.align === 'left' ? '' : 'justify-end text-right'">
+								<DashboardCell
+									:interval="intervals"
+									:cell="props.tableData.tables[props.tableData.current_tab].totals?.columns?.[colSlug]?.[intervals.value]
+										?? props.tableData.tables[props.tableData.current_tab].totals?.columns?.[colSlug]
+									"
+								/>
+							</div>
+						</template>
+					</Column>
 				</template>
 
 			</DataTable>

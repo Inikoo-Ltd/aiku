@@ -1,101 +1,112 @@
 <script setup lang="ts">
-import { faCube, faLink, faImage, faVideo } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getStyles } from "@/Composables/styles";
-import { sendMessageToParent } from "@/Composables/Workshop";
-import Blueprint from "@/Components/CMS/Webpage/Cta1/Blueprint";
-import { watch, inject, computed} from "vue";
-import Button from "@/Components/Elements/Buttons/Button.vue";
+import { faCube, faLink, faImage, faVideo } from "@fortawesome/free-solid-svg-icons"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
+import { computed, inject, onMounted, onBeforeUnmount, watch } from "vue"
 
-library.add(faCube, faLink, faImage, faVideo);
+import { getStyles } from "@/Composables/styles"
+import { sendMessageToParent } from "@/Composables/Workshop"
+import Blueprint from "@/Components/CMS/Webpage/Cta1/Blueprint"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
+library.add(faCube, faLink, faImage, faVideo)
 
 
 type ScreenType = "mobile" | "tablet" | "desktop"
 
 type ResponsiveVideoConfig = {
-	by_url?: boolean
-	source?: string | null
-	embed_code?: string | null
-	properties?: any
-	container?: any
-	attributes?: any
+  by_url?: boolean
+  source?: string | null
+  embed_code?: string | null
+  properties?: any
+  container?: any
+  attributes?: any
 }
 
 type VideoSetup = ResponsiveVideoConfig & {
-	mobile?: ResponsiveVideoConfig
-	tablet?: ResponsiveVideoConfig
-	desktop?: ResponsiveVideoConfig
+  mobile?: ResponsiveVideoConfig
+  tablet?: ResponsiveVideoConfig
+  desktop?: ResponsiveVideoConfig
 }
 
 
 const props = defineProps<{
-	fieldValue: {
-		container?: any;
-		text?: string;
-		text_block?: any;
-		button?: {
-			text: string;
-			container?: any;
-		};
-		video: {
-			video_setup: VideoSetup
-		};
-	};
-	webpageData?: any;
-	blockData?: Object;
-	screenType: ScreenType;
-}>();
-
+  fieldValue: {
+    container?: any
+    text?: string
+    text_block?: any
+    button?: {
+      text: string
+      container?: any
+      link?: {
+        href?: string
+        taget?: string
+      }
+      show?: boolean
+    }
+    video: {
+      video_setup: VideoSetup
+    }
+  }
+  webpageData?: any
+  blockData?: Object
+  screenType: ScreenType
+}>()
 
 const videoSetup = computed(() => props.fieldValue?.video?.video_setup)
 
 const resolvedVideoConfig = computed<ResponsiveVideoConfig | null>(() => {
-	const setup = videoSetup.value
-	if (!setup) return null
+  const setup = videoSetup.value
+  if (!setup) return null
 
-	return (
-		setup[props.screenType] ??
-		setup.desktop ??
-		setup
-	)
+  return (
+    (setup as any)[props.screenType] ??
+    setup.desktop ??
+    setup
+  )
 })
 
 const isVideoByUrl = computed(() => {
-	return resolvedVideoConfig.value?.by_url === true
+  return resolvedVideoConfig.value?.by_url === true
 })
 
 const videoSource = computed(() => {
-	return resolvedVideoConfig.value?.source || null
+  return resolvedVideoConfig.value?.source || null
 })
 
 const videoEmbedCode = computed(() => {
-	return resolvedVideoConfig.value?.embed_code || null
+  return resolvedVideoConfig.value?.embed_code || null
 })
 
+let stopWatcher: (() => void) | null = null
 
+onMounted(() => {
+  stopWatcher = watch(
+    () => videoEmbedCode.value,
+    (code) => {
+      if (!code) return
 
-watch(
-	() => videoEmbedCode.value,
-	(code) => {
-		if (
-			code &&
-			!document.querySelector('script[src*="player.vimeo.com/api/player.js"]')
-		) {
-			const script = document.createElement("script")
-			script.src = "https://player.vimeo.com/api/player.js"
-			script.async = true
-			document.body.appendChild(script)
-		}
-	},
-	{ immediate: true }
-)
+      if (!document.getElementById("vimeo-player-api")) {
+        const script = document.createElement("script")
+        script.id = "vimeo-player-api"
+        script.src = "https://player.vimeo.com/api/player.js"
+        script.async = true
+        document.body.appendChild(script)
+      }
+    },
+    { immediate: true }
+  )
+})
+
+onBeforeUnmount(() => {
+  stopWatcher?.()
+})
 
 
 const layout: any = inject("layout", {})
 </script>
+
 
 <template>
 

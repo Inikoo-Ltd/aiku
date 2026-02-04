@@ -542,9 +542,14 @@ const initSocketFetchListener = () => {
 			done: eventData.number_success,
 			total: eventData.number_total
 		}
-		// stop listening after this event
-		fetchChannel.stopListening(".shopify-fetch-progress")
 		isSocketActive.value = false
+
+		if(eventData.number_success + eventData.number_fails == eventData.number_total) {
+			setTimeout(() => {
+				isOpenModalFetchProgress.value = false
+				window.location.reload()
+			}, 1000)
+		}
 	})
 }
 
