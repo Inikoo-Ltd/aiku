@@ -12,7 +12,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateFreeGift extends OrgAction
 {
-    public function handle(): Response
+    public function handle(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
@@ -48,7 +48,7 @@ class CreateFreeGift extends OrgAction
                                     'label'    => __('Ammount spend'),
                                     'required' => true,
                                     "bind"     => [
-                                         'prefix'   => $this->parent->shop->currency->symbol, 
+                                         'prefix'   => $shop->currency->symbol, 
                                          'min'      => 0
                                     ]
                                    
@@ -64,8 +64,8 @@ class CreateFreeGift extends OrgAction
                                     'fetchRoute' => [
                                         'name'       => 'grp.org.shops.show.catalogue.products.all_products.index',
                                         'parameters' => [
-                                            'organisation' => $this->parent->organisation->slug,
-                                            'shop'         => $this->parent->shop->slug,
+                                            'organisation' => $organisation->slug,
+                                            'shop'         => $shop->slug,
                                         ],
                                     ],
                                 ],
@@ -86,7 +86,7 @@ class CreateFreeGift extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle();
+        return $this->handle($organisation, $shop, $offerCampaign, $request);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
