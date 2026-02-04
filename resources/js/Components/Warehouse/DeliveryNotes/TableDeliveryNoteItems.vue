@@ -408,7 +408,9 @@ const onSubmitEditExpiryDate = () => {
                                         ({{ trans("Unknown") }})
                                     </span>
                                     <span
-                                        class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
+                                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.hehe)?.location_code || '' })"
+                                        class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1"
+                                    >
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
                                         <FractionDisplay
