@@ -24,35 +24,42 @@ const props = defineProps<{
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-         <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="$emit('select-sub-department', department.id)">
-                {{ department.code }}
-            </span>
-        </template>
+
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
-          <template #cell(department_code)="{ item }">
-           <!--  <span class="text-gray-500 mr-1 text-xs">
-                <Tag :label="item.department_code" v-tooltip="item.department_code">
-                    <template #label>
-                        {{ item.department_code }}
-                    </template>
-                </Tag>
-            </span> -->
+        <template #cell(state)="{ item: product }">
+            <Tag :label="product.state.label" v-tooltip="product.state.label">
+                <template #label>
+                    <Icon :data="product.state" /> <span :class="product.state.class">{{ product.state.label }}</span>
+                </template>
+            </Tag>
+        </template>
+
+        <template #cell(department_code)="{ item }">
             <span class="font-medium">
                 {{ item.department_name }}
             </span>
         </template>
 
-           <template #cell(url)="{ item }">
+        <template #cell(sub_department)="{ item }">
+            <span class="font-medium">
+                {{ item.sub_department_name }}
+            </span>
+        </template>
+
+         <template #cell(family)="{ item }">
+            <span class="font-medium">
+                {{ item.family_name }}
+            </span>
+        </template>
+
+          <template #cell(url)="{ item }">
            <a :href="`/${item.code}`"> 
                 <FontAwesomeIcon :icon="faExternalLink" />
            </a>
         </template>
-
-
     </Table>
 </template>

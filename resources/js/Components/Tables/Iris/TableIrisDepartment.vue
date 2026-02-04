@@ -13,6 +13,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import Tag from "@/Components/Tag.vue";
 import { Department } from "@/types/department";
 import Image from "@/Components/Image.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faExternalLink } from "@far";
 
 library.add(faSeedling);
 
@@ -30,10 +32,9 @@ const emit = defineEmits<{
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(image)="{ item: product }">
+       <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="product['image_thumbnail']"
-                    class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
         <template #cell(state)="{ item: department }">
@@ -45,7 +46,7 @@ const emit = defineEmits<{
             </Tag>
         </template>
         <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="$emit('select-department', department.slug)">
+            <span class="primaryLink" @click="$emit('select-department', department.id)">
                 {{ department.code }}
             </span>
         </template>
@@ -60,6 +61,12 @@ const emit = defineEmits<{
         </template>
         <template #cell(number_current_products)="{ item: department }">
             {{ department["number_current_products"] }}
+        </template>
+
+         <template #cell(url)="{ item: department }">
+           <a :href="`/${department.code}`"> 
+                <FontAwesomeIcon :icon="faExternalLink" />
+           </a>
         </template>
     </Table>
 </template>

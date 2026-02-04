@@ -36,22 +36,18 @@ class ShowIrisCatalogue extends IrisAction
         $response = Inertia::render('Catalogue/CatalogueIris', [
             'tabs' => [
                 'current' => $this->validatedData['scope'],
-                'navigation' => [
-                    ['key' => 'departments', 'label' => 'Departments'],
-                    ['key' => 'sub_departments', 'label' => 'Sub Departments'],
-                    ['key' => 'families', 'label' => 'Families'],
-                    ['key' => 'products', 'label' => 'Products'],
-                ],
+                'navigation' => $this->getTabNavigation(data_get($this->validatedData, 'parent_type', null)),
+
             ],
             'data' => $irisCatalogue,
         ]);
 
         return match ($this->validatedData['scope']) {
-            'collection' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'collection', parent: $this->validatedData['parent'], prefix: 'collection')),
-            'department' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'department', parent: $this->validatedData['parent'], prefix: 'department')),
-            'sub_department' =>$response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'sub_department', parent: $this->validatedData['parent'], prefix: 'sub_department')),
-            'family' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'family', parent: $this->validatedData['parent'], prefix: 'family')),
-            'product' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'product', parent: $this->validatedData['parent'], prefix: 'product')),
+            'collection' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'collection', parent: data_get($this->validatedData, 'parent', null), prefix: 'collection')),
+            'department' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'department', parent: data_get($this->validatedData, 'parent', null), prefix: 'department')),
+            'sub_department' =>$response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'sub_department', parent: data_get($this->validatedData, 'parent', null), prefix: 'sub_department')),
+            'family' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'family', parent: data_get($this->validatedData, 'parent', null), prefix: 'family')),
+            'product' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'product', parent: data_get($this->validatedData, 'parent', null), prefix: 'product')),
             default => $response,
         };
     }
@@ -104,4 +100,38 @@ class ShowIrisCatalogue extends IrisAction
 
         return $this->handle($request);
     }
+
+    public function getTabNavigation(?string $level): array
+    {
+        $tabs = [
+            ['key' => 'department', 'label' => 'Departments'],
+            ['key' => 'sub_department', 'label' => 'Sub Departments'],
+            ['key' => 'family', 'label' => 'Families'],
+            ['key' => 'product', 'label' => 'Products'],
+        ];
+
+        if (!$level) {
+            return $tabs;
+        }
+
+        $order = [
+            'department'     => 0,
+            'sub_department' => 1,
+            'family'         => 2,
+            'product'        => 3,
+        ];
+
+        if (!isset($order[$level])) {
+            return $tabs;
+        }
+
+        $index = $order[$level];
+
+        return array_values(
+            array_filter($tabs, fn($tab) => $order[$tab['key']] > $index)
+        );
+    }
+
 }
+
+

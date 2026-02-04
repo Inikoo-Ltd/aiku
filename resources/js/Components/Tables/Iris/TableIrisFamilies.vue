@@ -12,6 +12,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 
 import { faYinYang, faDotCircle, faCheck,} from "@fal";
 import Image from "@/Components/Image.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faExternalLink } from "@far";
 
 
 library.add(faCheck,faYinYang, faDotCircle)
@@ -33,32 +35,31 @@ const props = defineProps<{
 
 <template>
     <Table :resource="data" :name="tab">
-          <template #cell(image)="{ item: item }">
+         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
-                <Image :src="item['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+                <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
-        </template>
-        <template #cell(state)="{ item: family }">
-            <Icon :data="family.state" />
         </template>
         <template #cell(current_products)="{ item: family }">
             {{ family["current_products"] }}
         </template>
-
-         <template #cell(code)="{ item: department }">
-            <span class="primaryLink" @click="$emit('select-department', department.slug)">
-                {{ department.code }}
+        <!-- Column: Department name -->
+        <template #cell(department_code)="{ item }">
+            <span class="font-medium">
+                {{ item.department_name }}
             </span>
         </template>
 
-        <!-- Column: Department code -->
-        <template #cell(department_code)="{ item: family }">
-            {{ family["department_code"] }}
+        <template #cell(sub_department)="{ item }">
+            <span class="font-medium">
+                {{ item.sub_department_name }}
+            </span>
         </template>
 
-        <!-- Column: Department name -->
-        <template #cell(department_name)="{ item: family }">
-            {{ family["department_name"] }}
+           <template #cell(url)="{ item }">
+           <a :href="`/${item.code}`"> 
+                <FontAwesomeIcon :icon="faExternalLink" />
+           </a>
         </template>
     </Table>
 </template>

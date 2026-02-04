@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { router } from '@inertiajs/vue3'
-
-import RetinaTableDepartments from '@/Components/Tables/Iris/TableIrisDepartment.vue'
-
-import Table from '@/Components/Rental/Table.vue'
 import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue';
 import TableIrisSubDepartment from '@/Components/Tables/Iris/TableIrisSubDepartment.vue';
 import TableIrisFamilies from '@/Components/Tables/Iris/TableIrisFamilies.vue';
+import TableIrisProducts from '@/Components/Tables/Iris/TableIrisProducts.vue';
+import Button from '@/Components/Elements/Buttons/Button.vue';
 
 const props = defineProps<{
     tabs: {
@@ -38,10 +36,10 @@ const changeTab = (key: string) => {
 
 
 const componentMap: Record<string, any> = {
-    departments: TableIrisDepartment,
-    sub_departments: TableIrisSubDepartment,
-    families: TableIrisFamilies,
-    products: null,
+    department: TableIrisDepartment,
+    sub_department: TableIrisSubDepartment,
+    family: TableIrisFamilies,
+    product: TableIrisProducts,
 }
 
 const activeComponent = computed(() => {
@@ -49,12 +47,25 @@ const activeComponent = computed(() => {
 })
 
 
-const onSelectParent = (scope : string, parent: any) => {
+const nextScopeMap: Record<string, string | null> = {
+    department: 'sub_department',
+    sub_department: 'family',
+    family: 'product',
+    product: null,
+}
+
+
+const onSelectParent = (parentType: string, parentId: any) => {
+    const nextScope = nextScopeMap[parentType]
+
+    if (!nextScope) return
+
     router.get(
         route(route().current() as string),
         {
-            scope: scope,
-            parent: parent,
+            scope: nextScope,
+            parent_type: parentType,
+            parent_key: parentId,
         },
         {
             preserveState: true,
@@ -63,6 +74,8 @@ const onSelectParent = (scope : string, parent: any) => {
         }
     )
 }
+
+
 
 
 
@@ -75,14 +88,14 @@ const onSelectParent = (scope : string, parent: any) => {
 
             <!-- Top Bar -->
             <div class="flex items-center gap-2 px-4 h-11 border-b border-gray-100">
-                <button v-for="tab in tabs.navigation" :key="tab.key" @click="changeTab(tab.key)"
-                    class="px-3 h-7 text-sm font-medium rounded-lg transition" :class="[
+                <Button v-for="tab in tabs.navigation" :key="tab.key + tabs.current" @click="changeTab(tab.key)"
+                    class="px-3 h-7 text-sm font-medium rounded-lg transition" :type="
                         tab.key === tabs.current
-                            ? 'bg-gray-900 text-white'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                    ]">
+                            ? 'primary'
+                            : 'secondary'
+                    ">
                     {{ tab.label }}
-                </button>
+                </Button>
             </div>
 
             <!-- Table Area -->
@@ -90,12 +103,11 @@ const onSelectParent = (scope : string, parent: any) => {
                 <component 
                     v-if="activeComponent" 
                     :is="activeComponent" 
-                    :data="data[tabs.current]"
+                    :data="data"
                     :tab="tabs.current" 
-                    @select-department="(parent:string)=>onSelectParent('sub_departments',parent)"
-                    @select-family="(parent:string)=>onSelectParent('family',parent)"
-                    @select-sub-department="(parent:string)=>onSelectParent('product',parent)"
-
+                    @select-department="parent => onSelectParent('department', parent)"
+                    @select-sub-department="parent => onSelectParent('sub_department', parent)"
+                    @select-family="parent => onSelectParent('family', parent)"
                 />
             </div>
 
