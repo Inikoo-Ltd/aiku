@@ -27,7 +27,7 @@ class CreatePickedBay extends OrgAction
                 'pageHead'    => [
                     'model'   => __('Picked bay'),
                     'title'   => __('Create'),
-                    'icon'    => 'fal fa-shopping-cart',
+                    'icon'    => 'fal fa-monument',
                     'actions' => [
                         [
                             'type'  => 'button',

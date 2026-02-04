@@ -97,7 +97,7 @@ class IndexPickedBays extends OrgAction
                 'title'       => __('Picked bays'),
                 'pageHead'    => [
                     'title'  => __('Picked bays'),
-                    'icon'   => ['fal', 'fa-shopping-cart'],
+                    'icon'   => ['fal', 'fa-monument'],
                     'actions' => [
                         [
                             'type'  => 'button',

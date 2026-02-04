@@ -35,10 +35,11 @@ class EditPickedBay extends OrgAction
                     suffix: '('.__('Editing').')'
                 ),
                 'pageHead'    => [
+                    'model' => __('Edit Picked bay'),
                     'title'   => $pickedBay->code,
                     'icon'    => [
                         'title' => __('Picked bay'),
-                        'icon'  => 'fal fa-shopping-cart'
+                        'icon'  => 'fal fa-monument'
                     ],
                     'actions' => [
                         [
