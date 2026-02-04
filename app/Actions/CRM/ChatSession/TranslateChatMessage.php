@@ -13,7 +13,6 @@ use App\Models\CRM\Livechat\ChatMessageTranslation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use Sentry\Laravel\Facade as Sentry;
 use Throwable;
-use App\Actions\Helpers\Translations\DetectLanguage;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Helpers\Translations\DetectLanguageWithAI;
 
@@ -86,19 +85,12 @@ class TranslateChatMessage
         }
 
 
-        $detectedLangCode = $this->detectLanguageCode($text);
+        $language = $this->detectLanguageCode($text);
 
 
-        if ($detectedLangCode) {
-
-            $language = Language::where('code', $detectedLangCode)->first();
-
-            if ($language) {
-
+        if ($language) {
                 $message->update(['original_language_id' => $language->id]);
-
                 $this->updateSessionLanguage($session, $language->id);
-            }
         }
     }
 
@@ -190,7 +182,7 @@ class TranslateChatMessage
     }
 
 
-    private function detectLanguageCode(string $text): ?string
+    private function detectLanguageCode(string $text): ?Language
     {
         if (mb_strlen(trim($text)) <= 3) {
             return null;
@@ -200,7 +192,7 @@ class TranslateChatMessage
             /** @var \App\Models\Helpers\Language|null $language */
             $language = DetectLanguageWithAI::run($text);
 
-            return $language?->code;
+            return $language;
         } catch (Throwable $e) {
             Log::error($e->getMessage());
             Sentry::captureException($e);
