@@ -23,8 +23,8 @@ enum PickedBaysTabsEnum: string
     {
         return match ($this) {
             PickedBaysTabsEnum::BAYS => [
-                'title' => __('Showcase'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+                'title' => __('Bays'),
+                'icon'  => 'fal fa-monument',
             ],
             PickedBaysTabsEnum::BAYS_HISTORIES => [
                 'title' => __('History'),
