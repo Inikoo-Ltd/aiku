@@ -128,27 +128,6 @@ const generateLocationRoute = (location: any) => {
 
 // Button: undo pick
 const isLoadingUndoPick = reactive({});
-const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadingKey: string) => {
-    console.log('cccccccccccccccccccc')
-    // try {
-    //     console.log('0000')
-    //     pallet_stored_item.isLoadingUndo = true;
-    //     console.log('1111')
-    //     set(isLoadingUndoPick, loadingKey, true);
-    //     console.log('2222')
-    //     const xxx = await axios[routeTarget.method || "get"](
-    //         route(routeTarget.name, routeTarget.parameters)
-    //     );
-    //     console.log('33333', xxx)
-    //     pallet_stored_item.state = "picking";
-    //     console.log('4444')
-    // } catch (error) {
-    //     console.error("error:", error);
-
-    // } finally {
-    //     set(isLoadingUndoPick, loadingKey, false);
-    // }
-};
 
 // Section: Modal for a location list
 const isModalLocation = ref(false)
@@ -418,7 +397,6 @@ const onSubmitPickMagicPlace = () => {
                             icon="fal fa-undo-alt"
                             :routeTarget="picking.undo_picking_route"
                             :bindToLink="{ preserveScroll: true }"
-                            @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
                             :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
                         />
                     </div>
@@ -605,7 +583,6 @@ const onSubmitPickMagicPlace = () => {
                             v-if="layout.app.environment === 'local'"
                             @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
                             type="rainbow"
-                            key="2"
                             v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
                             :size="screenType == 'desktop' ? 'sm' : 'lg'"
                         >
@@ -700,62 +677,6 @@ const onSubmitPickMagicPlace = () => {
                         onCloseModal()
                     }" :inputId="location.location_code" :disabled="location.quantity <= 0" name="location"
                     :value="location.location_code" />
-
-                <div v-if="false" class="flex items-center flex-nowrap gap-x-2">
-                    <!-- Button: input number (picking) -->
-                    <NumberWithButtonSave v-if="location.quantity > 0" key="picking_picked" noUndoButton @onError="(error: any) => {
-                            selectedItemProxy.errors = Object.values(error || {})
-                        }" :modelValue="location.quantity_picked"
-                        @update:modelValue="() => selectedItemProxy?.errors ? selectedItemProxy.errors = null : undefined"
-                        saveOnForm :routeSubmit="{
-                            name: selectedItemValue.upsert_picking_route.name,
-                            parameters: selectedItemValue.upsert_picking_route.parameters,
-                        }" :bindToTarget="{
-                            step: 1,
-                            min: 0,
-                            max: Math.min(location.quantity, selectedItemValue.quantity_required, selectedItemValue.quantity_to_pick)
-                        }" :additionalData="{
-                            location_org_stock_id: location.id,
-                            picking_id: selectedItemValue.pickings.find(picking => picking.location_id == location.location_id)?.id,
-                        }" autoSave xxisWithRefreshModel
-                        :readonly="selectedItemValue.is_handled || selectedItemValue.quantity_required == selectedItemValue.quantity_picked">
-                        <template #save="{ isProcessing, isDirty, onSaveViaForm }">
-                            <ButtonWithLink v-tooltip="trans('Pick all required quantity in this location')"
-                                icon="fal fa-clipboard-list-check"
-                                :disabled="selectedItemValue.is_handled || selectedItemValue.quantity_required == selectedItemValue.quantity_picked"
-                                :label="locale.number(selectedItemValue.quantity_to_pick )" size="xs" type="secondary"
-                                :loading="isProcessing" class="py-0" :routeTarget="selectedItemValue.picking_all_route"
-                                :bind-to-link="{
-                                    preserveScroll: true,
-                                    preserveState: true,
-                                }" :body="{
-                                    location_org_stock_id: location.id
-                                }" isWithError />
-                            <ButtonWithLink
-                                v-if="!selectedItemValue.is_handled"
-                                type="negative"
-                                class="ml-8"
-                                xtooltip="Set as not picked"
-                                v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(selectedItemValue.quantity_to_pick ) || '0'})"
-                                icon="fal fa-debug"
-                                size="xs"
-                                :routeTarget="selectedItemValue.not_picking_route"
-                                :bindToLink="{preserveScroll: true}"
-                            />
-                        </template>
-                    </NumberWithButtonSave>
-
-                    <div v-else class="text-gray-400 italic">
-                        {{ trans("No quantity available to pick") }}
-                    </div>
-
-                    <!-- Section: Errors list -->
-                    <div v-if="selectedItemProxy?.errors?.length">
-                        <p v-for="error in selectedItemProxy.errors" class="text-xs text-red-500 italic">*{{
-                            error
-                            }}</p>
-                    </div>
-                </div>
             </div>
         </div>
     </Modal>
