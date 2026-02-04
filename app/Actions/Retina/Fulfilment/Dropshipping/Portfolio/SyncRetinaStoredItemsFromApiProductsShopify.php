@@ -75,13 +75,14 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
 
                         $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
                             ->where('reference', $sku)->first();
-                        $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'variants.0.product_id'))->first();
+                        $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_variant_id', Arr::get($variant, 'admin_graphql_api_id'))->first();
 
                         $qty = Arr::get($variant, 'inventory_quantity');
                         if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
                             if (!$storedItem) {
 
                                 if ($qty == 0 || $qty < 0) {
+                                    $numberFails++;
                                     continue;
                                 }
 
@@ -112,21 +113,19 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                     } catch (ValidationException $exception) {
                         $numberFails++;
                     }
-                    Log::info('o:' . $numberSuccess);
                     FetchProductFromShopifyProgressEvent::dispatch($shopifyUser, [
                         'number_total' => $numberTotal,
                         'number_success' => $numberSuccess,
                         'number_fails' => $numberFails
                     ]);
-                    Log::info('w:' . $numberSuccess);
                 }
             }
 
-            /*broadcast(new FetchProductFromShopifyProgressEvent($shopifyUser, [
+            FetchProductFromShopifyProgressEvent::dispatch($shopifyUser, [
                 'number_total' => $numberTotal,
                 'number_success' => $numberTotal,
                 'number_fails' => $numberFails
-            ]));*/
+            ]);
         });
     }
 
@@ -138,6 +137,6 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $customerSalesChannel->user;
 
-        SyncRetinaStoredItemsFromApiProductsShopify::run($shopifyUser);
+        SyncRetinaStoredItemsFromApiProductsShopify::dispatch($shopifyUser);
     }
 }

@@ -3,6 +3,8 @@ import { faCube, faLink, faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ColumnWebppage from "@/Components/CMS/Webpage/WorkshopComponentsHelper/ColumnWebppageWorkshop.vue"
 import { getStyles } from "@/Composables/styles"
+import { ulid } from "ulid"
+import { ref, watch } from "vue"
 
 library.add(faCube, faLink, faImage)
 
@@ -17,6 +19,17 @@ const emits = defineEmits<{
 	(e: "update:modelValue", value: string): void
 	(e: "autoSave"): void
 }>()
+
+
+const key = ref(ulid())
+
+watch(
+  () => props.screenType,
+  () => {
+    key.value = ulid()
+  }
+)
+
 </script>
 
 <template>
@@ -29,6 +42,7 @@ const emits = defineEmits<{
 			:webpageData="webpageData"
 			:blockData="blockData"
 			:screenType="screenType"
+			:key="`col-1-${key}`"
 		/>
 	
 		<ColumnWebppage
@@ -37,6 +51,7 @@ const emits = defineEmits<{
 			:webpageData="webpageData"
 			:blockData="blockData"
 			:screenType="screenType"
+			:key="`col-2-${key}`"
 		/>
 
 	</div>
