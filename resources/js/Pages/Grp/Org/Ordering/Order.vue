@@ -63,7 +63,11 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy, faParachuteBox, faSortNumericDown,faMoneyCheckEditAlt
+    faCopy, 
+    faParachuteBox, 
+    faSortNumericDown,
+    faMoneyCheckEditAlt,
+    faReceipt
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -225,7 +229,14 @@ const props = defineProps<{
     },
     delivery_note?: {
         reference: string
-    }
+    },
+    route_recalculate_vat: {
+        showButton?: bool,
+        name: string,
+        parameters: {
+            order: string
+        }
+    },
     payments: {}
     readonly?: boolean
     attachments?: {}
@@ -1025,6 +1036,29 @@ const submitNewCharge = async () => {
         isLoadingAddNewCharge.value = false
     }
 }
+const isLoadingRecalculateVat = ref(false);
+const recalculateVat = async () => {
+    isLoadingRecalculateVat.value = true;
+    await axios.patch(route(props.route_recalculate_vat.name, props.route_recalculate_vat.parameters))
+        .then(() => {
+            notify({
+                title: trans("Success"),
+                text: trans("Done re-calculating order VAT Charge"),
+                type: "success",
+            })
+        })
+        .catch((response) => {
+            notify({
+                title: trans("Error"),
+                text: trans("Failed to re-calculate order VAT Charge."),
+                type: "error",
+            })
+        })
+        .finally(() => {
+            isLoadingRecalculateVat.value = false;
+            router.reload()
+        })
+}
 
 </script>
 
@@ -1190,7 +1224,7 @@ const submitNewCharge = async () => {
                 </div>
 
                 <div class="space-y-0.5 pl-1">
-
+                    
                     <!-- Field: Client -->
                     <div v-if="box_stats?.customer_client" class="pl-1 pb-2 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer client')" class="flex-none">
@@ -1283,6 +1317,24 @@ const submitNewCharge = async () => {
                             aria-hidden='true' />
                         <ToggleSwitch v-model="isCollection" @change="updateCollection" />
                         <span class="text-sm text-gray-500">Collection</span>
+                    </div>
+
+                    <div class="pl-1 pb-2 flex items-start w-full gap-x-2" v-if="box_stats?.customer?.tax_number?.number">
+                        <FontAwesomeIcon :icon="faReceipt" class='text-gray-400 pt-1' fixed-width aria-hidden='true' v-tooltip="trans('Tax Number')"/>
+                        <span class="text-sm text-gray-500 grid grid-cols-1">
+                            <span>
+                                {{ box_stats?.customer?.tax_number?.number }}
+                            </span>
+                            <span v-if="route_recalculate_vat.showButton" class='text-xs hover:text-gray-700 cursor-pointer' @click="recalculateVat()">
+                                <span v-if="!isLoadingRecalculateVat">
+                                    ({{ trans('Click here to re-calculate VAT Charge') }})
+                                </span>
+                                <span v-else>
+                                    ({{ trans('Re-calculating') }})
+                                    <LoadingIcon/>
+                                </span>
+                            </span>
+                        </span>
                     </div>
 
                     <div class="pl-1.5">
