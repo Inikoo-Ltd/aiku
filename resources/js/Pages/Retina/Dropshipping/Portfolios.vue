@@ -773,6 +773,7 @@ const extendedColumns = [
 	{ key: "data_updated", label: "Data updated" },
 ]
 const selectedExtendedColumns = ref<string[]>([])
+const selectedProductStates = ref<string[]>([])
 const excludedColumns = computed(() => {
 	return extendedColumns.filter((col) => !selectedExtendedColumns.value.includes(col.key))
 })
