@@ -50,10 +50,13 @@ class CloneCatalogueStructure
     /**
      * @throws \Throwable
      */
-    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false, $skipProducts = false, $skipFamilies = false): void
+    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false, $skipProducts = false, $skipFamilies = false, $skipDepartments = false): void
     {
-        $this->cloneDepartments($fromShop, $shop);
-        $this->cloneSubDepartments($fromShop, $shop);
+
+        if (!$skipDepartments) {
+            $this->cloneDepartments($fromShop, $shop);
+            $this->cloneSubDepartments($fromShop, $shop);
+        }
 
         if (!$skipFamilies) {
             $this->cloneFamilies($fromShop, $shop);
@@ -805,7 +808,7 @@ class CloneCatalogueStructure
 
     public function getCommandSignature(): string
     {
-        return 'catalogue:clone {from_type} {from} {to_type} {to} {--delete-missing : Delete categories not found in source shop} {--skip-products : Skip cloning products} {--skip-family : Skip cloning family}';
+        return 'catalogue:clone {from_type} {from} {to_type} {to} {--delete-missing : Delete categories not found in source shop} {--skip-products : Skip cloning products} {--skip-family : Skip cloning family} {--skip-departments : Skip cloning departments and sub departments}';
     }
 
     /**
@@ -832,7 +835,9 @@ class CloneCatalogueStructure
 
         $skipFamilies = $command->option('skip-family');
 
-        $this->handle($fromShop, $toShop, $deleteMissing, $skipProducts, $skipFamilies);
+        $skipDepartments = $command->option('skip-departments');
+
+        $this->handle($fromShop, $toShop, $deleteMissing, $skipProducts, $skipFamilies, $skipDepartments);
 
         return 0;
     }

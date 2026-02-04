@@ -18,7 +18,6 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Enums\UI\Catalogue\MasterGoldRewardTabsEnum;
 use App\Enums\UI\Catalogue\MasterProductCategoryTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Masters\MasterFamiliesResource;
@@ -48,9 +47,7 @@ class IndexMasterFamilies extends OrgAction
         $activeMasterProducts       = null;
         $discontinuedMasterProducts = null;
 
-        $isMasterGR = str_contains(request()->route()->getName(), 'master_gr');
-
-        if (($parent instanceof MasterShop || $parent instanceof MasterProductCategory) && !$isMasterGR) {
+        if ($parent instanceof MasterShop || $parent instanceof MasterProductCategory) {
             $activeMasterProducts       = $parent->stats->number_current_master_product_categories_type_family;
             $discontinuedMasterProducts = $parent->stats->number_master_product_categories_type_family - $parent->stats->number_current_master_product_categories_type_family;
         }
@@ -140,19 +137,7 @@ class IndexMasterFamilies extends OrgAction
         return $this->handle(parent: $parent, parentType: 'sub_department', prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
 
-    public function inMasterGR(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $masterShop;
-        $parent       = $this->parent;
-        $this->initialisationFromGroup($masterShop->group, $request)->withTab(MasterGoldRewardTabsEnum::values());
-
-        $currentTab = $this->tab ?? MasterGoldRewardTabsEnum::WITH->value;
-        $isGR = $currentTab === MasterGoldRewardTabsEnum::WITH->value;
-
-        return $this->handle(parent: $parent, prefix: $currentTab, isGR: $isGR);
-    }
-
-    public function handle(Group|MasterShop|MasterProductCategory $parent, string $parentType = 'department', $prefix = null, $isGR = null): LengthAwarePaginator
+    public function handle(Group|MasterShop|MasterProductCategory $parent, string $parentType = 'department', $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -231,14 +216,6 @@ class IndexMasterFamilies extends OrgAction
             default =>
             $queryBuilder->where('master_product_categories.group_id', $parent->id),
         };
-
-        if ($isGR !== null) {
-            if ($isGR) {
-                $queryBuilder->where('master_product_categories.has_gr_vol_discount', true);
-            } else {
-                $queryBuilder->where('master_product_categories.has_gr_vol_discount', false);
-            }
-        }
 
         $selects = [
             // family
@@ -395,21 +372,8 @@ class IndexMasterFamilies extends OrgAction
         ];
         $parentType      = 'department';
 
-        $isMasterGR = str_contains($request->route()->getName(), 'master_gr');
-
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
-
-            if ($isMasterGR) {
-                $title = __('Gold Reward');
-                $icon = [
-                    'icon'  => ['fal', 'fa-tags'],
-                    'title' => __('Gold Reward')
-                ];
-                $afterTitle = null;
-
-                $navigation = MasterGoldRewardTabsEnum::navigation();
-            }
             $masterShop    = $this->parent;
         } elseif ($this->parent instanceof Group) {
             $title      = __('Master families');
@@ -462,29 +426,6 @@ class IndexMasterFamilies extends OrgAction
             ],
             'shopsData'   => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
         ];
-
-        if ($isMasterGR) {
-            $baseData['tabs'] = [
-                'current'    => $this->tab,
-                'navigation' => $navigation,
-            ];
-
-            $baseData[MasterGoldRewardTabsEnum::WITH->value] = $this->tab === MasterGoldRewardTabsEnum::WITH->value
-                ? fn () => MasterFamiliesResource::collection($masterFamilies)
-                : Inertia::lazy(fn () => MasterFamiliesResource::collection(
-                    $this->handle(parent: $this->parent, prefix: MasterGoldRewardTabsEnum::WITH->value, isGR: true)
-                ));
-
-            $baseData[MasterGoldRewardTabsEnum::WITHOUT->value] = $this->tab === MasterGoldRewardTabsEnum::WITHOUT->value
-                ? fn () => MasterFamiliesResource::collection($masterFamilies)
-                : Inertia::lazy(fn () => MasterFamiliesResource::collection(
-                    $this->handle(parent: $this->parent, prefix: MasterGoldRewardTabsEnum::WITHOUT->value, isGR: false)
-                ));
-
-            return Inertia::render('Masters/MasterFamiliesGR', $baseData)
-                ->table($this->tableStructure($this->parent, prefix: MasterGoldRewardTabsEnum::WITH->value))
-                ->table($this->tableStructure($this->parent, prefix: MasterGoldRewardTabsEnum::WITHOUT->value));
-        }
 
         $baseData['storeRoute'] = match ($this->parent::class) {
             MasterShop::class => [
@@ -562,24 +503,6 @@ class IndexMasterFamilies extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.masters.master_shops.show.master_gr.index' =>
-            array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($parent),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => $routeName,
-                                'parameters' => $routeParameters
-                            ],
-                            'label' => __('Gold Reward'),
-                            'icon'  => 'fal fa-tags'
-                        ],
-                        'suffix' => $suffix
-                    ]
-                ]
-            ),
             'grp.masters.master_families.index' =>
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),

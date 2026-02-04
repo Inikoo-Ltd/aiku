@@ -16,7 +16,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Events\FetchProductFromShopifyProgressEvent;
-use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
@@ -59,11 +58,12 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
         } while ($nextPage);
 
         DB::transaction(function () use ($products, $shopifyUser, $shopType) {
-            $numberTotal = 0;
             $numberSuccess = 0;
             $numberFails = 0;
+
+            $numberTotal = array_sum(array_map(fn ($product) => count($product['variants']), $products));
+
             foreach ($products as $product) {
-                $numberTotal += count($product['variants']);
                 foreach ($product['variants'] as $variant) {
                     try {
                         $sku = $variant['sku'];
@@ -73,14 +73,14 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
 
                         $storedItem = StoredItem::where('fulfilment_customer_id', $shopifyUser->customer->fulfilmentCustomer->id)
                             ->where('reference', $sku)->first();
-                        $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_id', Arr::get($product, 'variants.0.product_id'))->first();
+                        $storedItemShopify = $shopifyUser->customerSalesChannel->portfolios()->where('platform_product_variant_id', Arr::get($variant, 'admin_graphql_api_id'))->first();
 
                         $qty = Arr::get($variant, 'inventory_quantity');
-
                         if ($shopType === ShopTypeEnum::FULFILMENT && !$storedItemShopify) {
                             if (!$storedItem) {
 
                                 if ($qty == 0 || $qty < 0) {
+                                    $numberFails++;
                                     continue;
                                 }
 
@@ -106,20 +106,24 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                             UpdateStoredItem::run($storedItem, [
                                 'state' => StoredItemStateEnum::ACTIVE
                             ]);
-
-                            $numberSuccess++;
                         }
+                        $numberSuccess++;
                     } catch (ValidationException $exception) {
                         $numberFails++;
                     }
+                    FetchProductFromShopifyProgressEvent::dispatch($shopifyUser, [
+                        'number_total' => $numberTotal,
+                        'number_success' => $numberSuccess,
+                        'number_fails' => $numberFails
+                    ]);
                 }
-
-                FetchProductFromShopifyProgressEvent::dispatch($shopifyUser, [
-                    'number_total' => $numberTotal,
-                    'number_success' => $numberSuccess,
-                    'number_fails' => $numberFails
-                ]);
             }
+
+            FetchProductFromShopifyProgressEvent::dispatch($shopifyUser, [
+                'number_total' => $numberTotal,
+                'number_success' => $numberTotal,
+                'number_fails' => $numberFails
+            ]);
         });
     }
 

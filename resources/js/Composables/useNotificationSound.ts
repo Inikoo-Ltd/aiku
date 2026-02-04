@@ -66,5 +66,5 @@ export const buildStorageUrl = (fileName: string, baseUrl?: string) => {
 	if (isAbsolute) return fileName
 	const prefix = (baseUrl || "").replace(/\/+$/, "")
 	const path = fileName.replace(/^\/+/, "")
-	return `${prefix}/storage/${path}`
+	return `${prefix}/assets/${path}`
 }

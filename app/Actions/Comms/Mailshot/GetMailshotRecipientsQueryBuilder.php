@@ -101,6 +101,8 @@ class GetMailshotRecipientsQueryBuilder
         }
         $query->whereNotNull('email');
 
+        $query->select('customers.id', 'customers.shop_id', 'customers.name', 'customers.email', 'customers.slug');
+
         $filters = $mailshot->recipients_recipe;
 
         // Filter Registered Never Ordered

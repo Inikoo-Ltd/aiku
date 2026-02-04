@@ -29,6 +29,9 @@ const props = defineProps<{
             slug: string
             name: string
         }
+        product?: {
+            id: number
+        }
     }
     webpageData?: any
     blockData?: Object,
@@ -60,7 +63,10 @@ const fetchRecommenders = async () => {
         try {
             isLoadingFetch.value = true
             const response = await axios.get(
-                route('iris.json.product_category.last-ordered-products.index', { productCategory: props.fieldValue.family.id })
+                route('iris.json.product_category.last-ordered-products.index', {
+                    productCategory: props.fieldValue.family.id,
+                    product: props.fieldValue?.product?.id
+                })
             )
 
             listProducts.value = response.data.data
@@ -90,7 +96,7 @@ onMounted(() => {
             <div class="px-3 py-6 pb-2">
                 <div class="text-xl md:text-3xl font-semibold">
                     <!-- <div v-html="fieldValue.title"></div> -->
-                    <p style="text-align: center">{{ trans("Customers Recently Bought") }}</p>
+                    <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
                 </div>
             </div>
             

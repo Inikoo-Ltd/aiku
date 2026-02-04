@@ -99,6 +99,10 @@ function unsnakeCase(str?: string | null) {
 				 <template v-if="props.fieldData.type_label == 'department-and-sub-department'" #option="{ option, isSelected, isPointed }">
                     <div class="">{{ option.code }} - {{ option.name }} <Tag v-if="option.type" :label="unsnakeCase(option.type)"></Tag></div>
                 </template>
+
+				 <template v-if="props.fieldData.type_label == 'product'" #option="{ option, isSelected, isPointed }">
+                    <div class="">{{ option.code }} - {{ option.name }} <Tag v-if="option.type" :label="unsnakeCase(option.type)"></Tag></div>
+                </template>
 		</PureMultiselectInfiniteScroll>
 			<div
 				v-if="form.errors[fieldName] || form.recentlySuccessful"

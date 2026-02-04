@@ -225,8 +225,15 @@ onMounted(() => {
 			<SliderLandscape
 				v-if="data.type == 'landscape'"
 				:data="data.compiled_layout"
-				:production="true" :view="screenType"/>
-			<SliderSquare v-else :data="data.compiled_layout" :production="true" :view="screenType" />
+				:production="true" 
+				:view="screenType"
+			/>
+			<SliderSquare 
+				v-else 
+				:data="data.compiled_layout" 
+				:production="true" 
+				:view="screenType" 
+			/>
 
 			<!-- Icon: Edit -->
 			<div class="absolute top-2 right-2 flex space-x-2 z-10">

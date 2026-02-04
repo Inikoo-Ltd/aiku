@@ -183,8 +183,10 @@ const showMissingTaxonomyMessage = computed(() => {
 
         <template #button-reindex>
             <ButtonWithLink
+                v-tooltip="trans('Use this feature to update data to Luigi Search.')"
                 method="post"
                 :style="'edit'"
+                size="sm"
                 :routeTarget="{name: 'grp.models.webpage_luigi.reindex', parameters: { webpage: luigi_data.webpage_id }}"
             >
                 <template #icon>

@@ -26,12 +26,12 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\Validator;
 
 class UpdateMasterProductCategory extends OrgAction
 {
     use WithImageCatalogue;
     use WithMasterProductCategoryAction;
-
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
@@ -104,8 +104,19 @@ class UpdateMasterProductCategory extends OrgAction
 
             if (isset($offersData['volume_discount'])) {
                 data_set($modelData, 'has_gr_vol_discount', true);
+            } else {
+                data_set($modelData, 'has_gr_vol_discount', false);
+            }
+        }
 
-                // Update volume discount in offers and offer_allowances
+        $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
+
+        $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
+
+        if (Arr::has($changed, 'offers_data')) {
+            $offersData = $masterProductCategory->offers_data;
+
+            if (isset($offersData['volume_discount'])) {
                 $volumeDiscount = $offersData['volume_discount'];
 
                 // Convert percentage_off from integer % to decimal (10 -> 0.1)
@@ -118,7 +129,6 @@ class UpdateMasterProductCategory extends OrgAction
                     $volumeDiscount
                 );
 
-                // Flash notification if no offers were found
                 if ($result['updated_offers'] === 0) {
                     session()->flash('notification', [
                         'status'      => 'warning',
@@ -136,9 +146,6 @@ class UpdateMasterProductCategory extends OrgAction
                     ]);
                 }
             } else {
-                data_set($modelData, 'has_gr_vol_discount', false);
-
-                // Remove volume discount from offers and offer_allowances
                 $result = UpdateVolumeGrOfferFromMaster::make()->action(
                     $masterProductCategory,
                     null
@@ -156,10 +163,6 @@ class UpdateMasterProductCategory extends OrgAction
                 }
             }
         }
-
-        $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
-
-        $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
         if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
 
@@ -227,6 +230,18 @@ class UpdateMasterProductCategory extends OrgAction
         return $masterProductCategory;
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        $currErrBag = $validator->errors();
+        if (errorBagHas($currErrBag, ['offers_data.volume_discount.item_quantity', 'offers_data.volume_discount.percentage_off'])) {
+            session()->flash('notification', [
+                'status'      => 'error',
+                'title'       => __('Error'),
+                'description' => __('Failed to update offer details.'),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -260,12 +275,26 @@ class UpdateMasterProductCategory extends OrgAction
                 File::image()
                     ->max(12 * 1024),
             ],
-            'name_i8n'                 => ['sometimes', 'array'],
-            'description_title_i8n' => ['sometimes', 'array'],
-            'description_i8n'          => ['sometimes', 'array'],
-            'description_extra_i8n'    => ['sometimes', 'array'],
-            'offers_data'              => ['sometimes', 'array:volume_discount'],
-            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
+            'name_i8n'                                   => ['sometimes', 'array'],
+            'description_title_i8n'                      => ['sometimes', 'array'],
+            'description_i8n'                            => ['sometimes', 'array'],
+            'description_extra_i8n'                      => ['sometimes', 'array'],
+            'offers_data'                                => ['sometimes', 'array'],
+            'offers_data.volume_discount'                => ['nullable', 'array'],
+            'offers_data.volume_discount.item_quantity'  => [
+                'required_with:offers_data.volume_discount.percentage_off',
+                'nullable',
+                'integer',
+                'min:1'
+            ],
+            'offers_data.volume_discount.percentage_off' => [
+                'required_with:offers_data.volume_discount.item_quantity',
+                'nullable',
+                'numeric',
+                'min:1',
+                'max:100'
+            ],
+            'cost_price_ratio'                           => ['sometimes', 'numeric', 'min:0'],
         ];
 
         if (!$this->strict) {

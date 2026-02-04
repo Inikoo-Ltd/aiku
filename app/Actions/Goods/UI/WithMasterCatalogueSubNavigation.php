@@ -18,7 +18,6 @@ trait WithMasterCatalogueSubNavigation
             [
                 'isAnchor' => true,
                 'label'    => __($masterShop->name),
-
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show',
                     'parameters' => [
@@ -29,8 +28,6 @@ trait WithMasterCatalogueSubNavigation
                     'icon'    => ['fal', 'fa-store-alt'],
                     'tooltip' => __('Master Shop')
                 ]
-
-
             ],
             [
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_department,
@@ -47,9 +44,7 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Master Departments')
                 ]
             ],
-
             [
-
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_sub_department,
                 'label'    => __('M. Sub-departments'),
                 'tooltip'  => __('Master Sub-departments'),
@@ -64,7 +59,6 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Master Sub Departments')
                 ]
             ],
-
             [
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_family,
                 'label'    => __('M. Families'),
@@ -83,7 +77,6 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Master Families')
                 ]
             ],
-
             [
                 'number'   => $masterShop->stats->number_current_master_assets_type_product,
                 'label'    => __('M. Products'),
@@ -102,7 +95,6 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Master Products')
                 ]
             ],
-
             [
                 'number'   => $masterShop->stats->number_master_collections,
                 'label'    => __('M. Collections'),
@@ -118,7 +110,6 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Master Collections')
                 ]
             ],
-
             app()->environment('local') ? [
                 'number'   => $masterShop->stats->number_master_families_with_vol_gr_offer,
                 'label'    => __('M. Vol/GR'),
@@ -135,8 +126,6 @@ trait WithMasterCatalogueSubNavigation
                 ],
                 'align'    => 'right',
             ] : [],
-
         ];
     }
-
 }

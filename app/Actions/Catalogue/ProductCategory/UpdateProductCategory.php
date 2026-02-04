@@ -21,7 +21,6 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Discounts\Offer;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -55,7 +54,7 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
-        if (Arr::has($modelData, 'sub_department_id') && data_get($modelData, 'sub_department_id')) { // Null handling. If key is present but value is null, will be ignored. HELP-1083 fix.
+        if (Arr::has($modelData, 'sub_department_id') && data_get($modelData, 'sub_department_id')) { // Null handling. If the key is present but the value is null, it will be ignored. HELP-1083 fix.
             $subDepartmentId = Arr::pull($modelData, 'sub_department_id');
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
                 $productCategory = UpdateFamilySubDepartment::make()->action($productCategory, [
@@ -228,7 +227,6 @@ class UpdateProductCategory extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
-           // 'offers_data'                => ['sometimes', 'array'],
             'follow_master'              => ['sometimes', 'boolean'],
             'image'                      => [
                 'sometimes',
