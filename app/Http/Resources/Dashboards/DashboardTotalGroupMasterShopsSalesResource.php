@@ -60,15 +60,15 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $group->name,
+                    'formatted_value' => 'All Master Shops',
                     'align'           => 'left',
                     ...$routeTargets['group']
                 ]
             ],
             [
                 'label_minified' => [
-                    'formatted_value' => $group->code,
-                    'tooltip'         => $group->name,
+                    'formatted_value' => 'All',
+                    'tooltip'         => 'All Master Shops',
                     'align'           => 'left',
                     ...$routeTargets['group']
                 ]
