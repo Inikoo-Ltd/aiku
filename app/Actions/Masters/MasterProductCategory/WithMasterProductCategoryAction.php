@@ -23,7 +23,6 @@ trait WithMasterProductCategoryAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
-
     private MasterProductCategory $masterProductCategory;
     private MasterShop $masterShop;
 
@@ -43,7 +42,6 @@ trait WithMasterProductCategoryAction
             }
         }
     }
-
 
     public function action(MasterProductCategory $masterProductCategory, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): MasterProductCategory
     {
@@ -71,5 +69,4 @@ trait WithMasterProductCategoryAction
 
         return $this->handle($masterProductCategory, $this->validatedData);
     }
-
 }

@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Exports\Marketing\DataFeedsMapping;
 use App\Helpers\NaturalLanguage;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -23,8 +24,12 @@ class DownloadPortfoliosCSV extends RetinaAction
 {
     use DataFeedsMapping;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, string $exportType = 'portfolio_csv', mixed $columns = null): BinaryFileResponse|Response
-    {
+    public function handle(
+        CustomerSalesChannel $customerSalesChannel,
+        string $exportType = 'portfolio_csv',
+        mixed $columns = null,
+        mixed $productStates = null
+    ): BinaryFileResponse|Response {
         $filename = 'portfolio_data_feed_' . $customerSalesChannel->customer->slug . '_' . now()->format('Ymd') . '.csv';
 
         $isExtendedProperties = $exportType === 'portfolio_csv_extended_properties';
@@ -36,12 +41,17 @@ class DownloadPortfoliosCSV extends RetinaAction
 
         $csvData[] = $headers;
 
+        $normalizedProductStates = $this->normalizeProductStates($productStates);
+
         DB::table('portfolios')
             ->select('products.*', 'product_categories.name as family_name', 'portfolios.reference')
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
             ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('portfolios.status', true)
+            ->when(count($normalizedProductStates) > 0, function ($query) use ($normalizedProductStates) {
+                $query->whereIn('products.state', $normalizedProductStates);
+            })
             ->orderBy('portfolios.id')
             ->chunk(100, function ($products) use (&$csvData, $isExtendedProperties, $columns) {
                 foreach ($products as $row) {
@@ -107,8 +117,9 @@ class DownloadPortfoliosCSV extends RetinaAction
         $exportType = (string)$request->get('type', 'portfolio_csv');
 
         $columns = $request->get('columns');
+        $productStates = $request->get('product_states');
 
-        return $this->handle($customerSalesChannel, $exportType, $columns);
+        return $this->handle($customerSalesChannel, $exportType, $columns, $productStates);
     }
 
     private function extendedPropertiesHeadingMap(): array
@@ -173,5 +184,21 @@ class DownloadPortfoliosCSV extends RetinaAction
         $columns = array_filter($columns, fn ($value) => is_string($value) && $value !== '');
 
         return array_values(array_unique($columns));
+    }
+
+    public function normalizeProductStates(mixed $productStates): array
+    {
+        if (is_string($productStates)) {
+            $productStates = array_filter(array_map('trim', explode(',', $productStates)));
+        }
+
+        if (!is_array($productStates)) {
+            return [];
+        }
+
+        $productStates = array_filter($productStates, fn ($value) => is_string($value) && $value !== '');
+        $productStates = array_values(array_unique($productStates));
+
+        return array_values(array_intersect(ProductStateEnum::values(), $productStates));
     }
 }

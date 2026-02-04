@@ -40,7 +40,7 @@ class DashboardTotalOffersResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => 'Total',
+                    'formatted_value' => 'All Offer Campaigns',
                     'align'           => 'left',
                 ],
             ],

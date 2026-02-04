@@ -31,7 +31,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 <Image
                     :src="product.image"
                     :alt="product.name"
-                    class="group-hover:scale-105 w-full h-full object-contain text-center text-xxs text-gray-400/70 italic font-normal"
+                    class="w-full h-full object-contain text-center text-xxs text-gray-400/70 italic font-normal"
                     :style="{
                         margin: 'auto auto',
                     }"

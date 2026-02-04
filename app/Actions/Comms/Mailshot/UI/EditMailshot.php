@@ -8,9 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
-use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
-use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\SysAdmin\Organisation;
@@ -18,7 +16,6 @@ use Exception;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 
 class EditMailshot extends OrgAction
 {
@@ -39,7 +36,7 @@ class EditMailshot extends OrgAction
                 ],
             ]
         ];
-        
+
         return Inertia::render(
             'EditModel',
             [

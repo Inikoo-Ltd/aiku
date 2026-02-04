@@ -248,7 +248,7 @@ class EditMasterFamily extends OrgAction
 
                         ],
                         app()->environment('local') ? [
-                            'label'  => __('Discounts'),
+                            'label'  => __('Vol / GR'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
                                 'offers_data' => [

@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Discounts\Offer\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
@@ -25,12 +26,12 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\Validator;
 
 class UpdateMasterProductCategory extends OrgAction
 {
     use WithImageCatalogue;
     use WithMasterProductCategoryAction;
-
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
@@ -112,6 +113,57 @@ class UpdateMasterProductCategory extends OrgAction
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
+        if (Arr::has($changed, 'offers_data')) {
+            $offersData = $masterProductCategory->offers_data;
+
+            if (isset($offersData['volume_discount'])) {
+                $volumeDiscount = $offersData['volume_discount'];
+
+                // Convert percentage_off from integer % to decimal (10 -> 0.1)
+                if (isset($volumeDiscount['percentage_off'])) {
+                    $volumeDiscount['percentage_off'] = ((float) $volumeDiscount['percentage_off']) / 100;
+                }
+
+                $result = UpdateVolumeGrOfferFromMaster::make()->action(
+                    $masterProductCategory,
+                    $volumeDiscount
+                );
+
+                if ($result['updated_offers'] === 0) {
+                    session()->flash('notification', [
+                        'status'      => 'warning',
+                        'title'       => __('Warning'),
+                        'description' => __('No offers found to update for this master family.'),
+                    ]);
+                } else {
+                    session()->flash('notification', [
+                        'status'      => 'success',
+                        'title'       => __('Success'),
+                        'description' => __('Updated :offers offers and :allowances allowances.', [
+                            'offers' => $result['updated_offers'],
+                            'allowances' => $result['updated_allowances']
+                        ]),
+                    ]);
+                }
+            } else {
+                $result = UpdateVolumeGrOfferFromMaster::make()->action(
+                    $masterProductCategory,
+                    null
+                );
+
+                if ($result['updated_offers'] > 0) {
+                    session()->flash('notification', [
+                        'status'      => 'success',
+                        'title'       => __('Success'),
+                        'description' => __('Volume discount removed from :offers offers and :allowances allowances.', [
+                            'offers' => $result['updated_offers'],
+                            'allowances' => $result['updated_allowances']
+                        ]),
+                    ]);
+                }
+            }
+        }
+
         if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
 
             $english      = Language::where('code', 'en')->first();
@@ -125,7 +177,7 @@ class UpdateMasterProductCategory extends OrgAction
                 $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
 
-                // Updates affected field name using translate if follow_master_{field} is true
+                // Updates the affected field name using translation if follow_master_{field} is true
                 if (Arr::has($changed, 'name')) {
                     $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage);
                     $dataToBeUpdated['is_name_reviewed'] = false;
@@ -178,6 +230,18 @@ class UpdateMasterProductCategory extends OrgAction
         return $masterProductCategory;
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        $currErrBag = $validator->errors();
+        if (errorBagHas($currErrBag, ['offers_data.volume_discount.item_quantity', 'offers_data.volume_discount.percentage_off'])) {
+            session()->flash('notification', [
+                'status'      => 'error',
+                'title'       => __('Error'),
+                'description' => __('Failed to update offer details.'),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -211,12 +275,26 @@ class UpdateMasterProductCategory extends OrgAction
                 File::image()
                     ->max(12 * 1024),
             ],
-            'name_i8n'                 => ['sometimes', 'array'],
-            'description_title_i8n'    => ['sometimes', 'array'],
-            'description_i8n'          => ['sometimes', 'array'],
-            'description_extra_i8n'    => ['sometimes', 'array'],
-            'offers_data'              => ['sometimes', 'array'],
-            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
+            'name_i8n'                                   => ['sometimes', 'array'],
+            'description_title_i8n'                      => ['sometimes', 'array'],
+            'description_i8n'                            => ['sometimes', 'array'],
+            'description_extra_i8n'                      => ['sometimes', 'array'],
+            'offers_data'                                => ['sometimes', 'array'],
+            'offers_data.volume_discount'                => ['nullable', 'array'],
+            'offers_data.volume_discount.item_quantity'  => [
+                'required_with:offers_data.volume_discount.percentage_off',
+                'nullable',
+                'integer',
+                'min:1'
+            ],
+            'offers_data.volume_discount.percentage_off' => [
+                'required_with:offers_data.volume_discount.item_quantity',
+                'nullable',
+                'numeric',
+                'min:1',
+                'max:100'
+            ],
+            'cost_price_ratio'                           => ['sometimes', 'numeric', 'min:0'],
         ];
 
         if (!$this->strict) {
