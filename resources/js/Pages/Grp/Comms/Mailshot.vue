@@ -45,6 +45,7 @@ const props = defineProps<{
     status?: string
     estimatedRecipients?: number
     mailshotType?: string
+    setSecondWaveRoute?: routeType
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -354,23 +355,50 @@ const handleCancelSchedule = async () => {
 
 const isSavingToggle = ref(false)
 const handleToggleSecondWave = async (value: boolean) => {
+    if (!props.setSecondWaveRoute) {
+        return
+    }
     const previous = !value
     isSavingToggle.value = true
 
-    try {
-        await axios.post("/api/second-wave/toggle", {
-            enabled: value
+    await axios.post(route(props.setSecondWaveRoute?.name, props.setSecondWaveRoute?.parameters), {
+        status: value
+    })
+        .then((response) => {
+            if (response.data) {
+                notify({
+                    type: 'success',
+                    title: 'Success',
+                    text: 'Second wave status updated successfully',
+                })
+                // Redirect to newsletters index page
+
+            } else {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Failed to delete mailshot',
+                })
+            }
         })
-
-        console.log("Second wave status updated:", value)
-    } catch (error) {
-        console.error("Toggle failed:", error)
-
-        // rollback UI kalau gagal
-        // checked.value = previous
-    } finally {
-        isSavingToggle.value = false
-    }
+        .catch((exception) => {
+            console.log(exception);
+            notify({
+                type: 'error',
+                title: 'Error',
+                text: 'Failed to delete mailshot',
+            })
+        })
+        .finally(() => {
+            if (!props.indexRoute) {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Mailshot index route not configured',
+                })
+                return;
+            }
+        })
 }
 
 const handleSaveSecond = () => {

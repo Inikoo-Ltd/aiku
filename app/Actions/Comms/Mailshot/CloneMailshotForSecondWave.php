@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
+use App\Actions\Comms\Email\StoreEmail;
 use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\OrgAction;
@@ -35,52 +36,44 @@ class CloneMailshotForSecondWave extends OrgAction
      */
     public function handle(Mailshot $originalMailshot): Mailshot
     {
-        // clone the mailshot
-        $newMailshot = $originalMailshot->replicate();
-
-        // Prepare data model for new mailshot
+        // TODO: Check and make sure this block code
         $dataModel = [
-            'parent_mailshot_id' => $originalMailshot->id,
-            'date' => now(),
+            'date' => $originalMailshot->date,
             'group_id' => $originalMailshot->group_id,
             'organisation_id' => $originalMailshot->organisation_id,
             'shop_id' => $originalMailshot->shop_id,
+            'type' => $originalMailshot->type,
+            'subject' => $originalMailshot->subject,
+            'state' => $originalMailshot->state,
+            'is_second_wave' => true,
+            'outbox_id' => $originalMailshot->outbox_id,
+            'recipients_recipe' => $originalMailshot->recipients_recipe,
         ];
 
-        $newMailshot = DB::transaction(function () use ($originalMailshot, $newMailshot, $dataModel) {
+        $newMailshotparent = DB::transaction(function () use ($originalMailshot, $dataModel) {
             /** @var Mailshot $newMailshot */
-            $newMailshot = $originalMailshot->outbox->mailshots()->create($dataModel);
+            $newMailshot = $originalMailshot->secondWave()->create($dataModel);
+
             $newMailshot->stats()->create();
 
-            // Clone the email and its livesnapshot if exists
-            if ($originalMailshot->email) {
-                $originalEmail = $originalMailshot->email;
-                $newEmail = $originalEmail->replicate();
-                $newEmail->parent_id = $newMailshot->id;
-                $newEmail->parent_type = Mailshot::class;
-                $newEmail->save();
+            // call StoreEmail with data from original mailshot
+            $originalEmail = $originalMailshot->email;
 
-                // Clone the livesnapshot if exists
-                if ($originalEmail->liveSnapshot) {
-                    $originalSnapshot = $originalEmail->liveSnapshot;
-                    $newSnapshot = $originalSnapshot->replicate();
-                    $newSnapshot->parent_id = $newEmail->id;
-                    $newSnapshot->parent_type = Email::class;
-                    $newSnapshot->save();
-
-                    // Update the new email to point to the cloned snapshot
-                    $newEmail->live_snapshot_id = $newSnapshot->id;
-                    $newEmail->save();
-                }
-
-                // Update the new mailshot to point to the cloned email
-                $newMailshot->email_id = $newEmail->id;
-                $newMailshot->save();
-            }
-
-            // Mark original mailshot as having active second wave
-            $originalMailshot->is_second_wave_active = true;
-            $originalMailshot->save();
+            StoreEmail::make()->action(
+                $newMailshot,
+                null, // no email template, using existing email data
+                modelData: [
+                    'subject' => $originalEmail->subject,
+                    'builder' => $originalEmail->builder,
+                    'layout' => $originalEmail->liveSnapshot?->layout ?? $originalEmail->unpublishedSnapshot?->layout,
+                    'compiled_layout' => $originalEmail->liveSnapshot?->compiled_layout,
+                    'snapshot_state' => $originalEmail->unpublishedSnapshot?->state ?? $originalEmail->liveSnapshot?->state,
+                    'snapshot_published_at' => $originalEmail->unpublishedSnapshot?->published_at ?? $originalEmail->liveSnapshot?->published_at,
+                    'snapshot_recyclable' => $originalEmail->unpublishedSnapshot?->recyclable ?? $originalEmail->liveSnapshot?->recyclable ?? false,
+                    'snapshot_first_commit' => $originalEmail->unpublishedSnapshot?->first_commit ?? $originalEmail->liveSnapshot?->first_commit ?? true,
+                ],
+                strict: false
+            );
 
             return $newMailshot;
         });
@@ -103,7 +96,7 @@ class CloneMailshotForSecondWave extends OrgAction
         // create email
         // $this->createMailShotEmail($originalMailshot->shop, $outboxCode, $newMailshot, $originalMailshot->outbox);
 
-        return $newMailshot;
+        return $newMailshotparent;
     }
 
     public function action(Mailshot $mailshot): Mailshot

@@ -14,11 +14,13 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOutboxBuilder;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetMailshotSecondWaveStatus extends OrgAction
 {
+    // TODO: Check and make sure this condition is correct
     use HasUIMailshots;
     use WithActionUpdate;
     use WithCatalogueAuthorisation;
@@ -35,13 +37,13 @@ class SetMailshotSecondWaveStatus extends OrgAction
 
         // Only create second wave if activating and it doesn't exist yet
         if ($isActive && !$originalMailshot->secondWave) {
-            $cloneMailshot = (new CloneMailshotForSecondWave())->action($originalMailshot);
-            $this->update($cloneMailshot, ['is_second_wave_active' => true]);
+            (new CloneMailshotForSecondWave())->action($originalMailshot);
+            $this->update($originalMailshot, ['is_second_wave_active' => true]);
         } else {
             $this->update($originalMailshot, ['is_second_wave_active' => $isActive]);
         }
 
-        return $originalMailshot;
+        return $originalMailshot->refresh();
     }
 
 
@@ -58,9 +60,9 @@ class SetMailshotSecondWaveStatus extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Mailshot $mailshot, ActionRequest $request): Mailshot
+    public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
-        $this->initialisationFromShop($mailshot->shop, $request);
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($mailshot, $this->validatedData);
     }

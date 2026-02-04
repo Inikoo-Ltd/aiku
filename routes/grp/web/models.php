@@ -76,6 +76,7 @@ use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\Mailshot\PublishMailShot;
 use App\Actions\Comms\Mailshot\SendMailShotNow;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
+use App\Actions\Comms\Mailshot\SetMailshotSecondWaveStatus;
 use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
 use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
@@ -787,6 +788,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::delete('', DeleteMailshot::class)->name('delete')->withoutScopedBindings();
         Route::post('as-new-template', [StoreMailshotAsNewTemplate::class, 'inMailshot'])->name('store.as-new-template')->withoutScopedBindings();
         Route::patch('recipient-filter', UpdateMailshotRecipientFilter::class)->name('recipient-filter.update')->withoutScopedBindings();
+        Route::post('second-wave', SetMailshotSecondWaveStatus::class)->name('second-wave')->withoutScopedBindings();
     });
 
     Route::name('email-template.')->prefix('email-template')->group(function () {

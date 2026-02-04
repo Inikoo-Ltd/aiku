@@ -159,7 +159,7 @@ class ShowMailshot extends OrgAction
                         )
                     )),
                 'sendMailshotRoute' => [
-                    'name' => match($mailshot->type) {
+                    'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.send',
                         MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.send',
                     },
@@ -170,7 +170,7 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'scheduleMailshotRoute' => [
-                    'name' => match($mailshot->type) {
+                    'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.schedule',
                         MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.schedule',
                     },
@@ -188,7 +188,7 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'indexRoute' => [
-                    'name' => match($mailshot->type) {
+                    'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.index',
                         MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshot.index',
                     },
@@ -198,13 +198,20 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'cancelScheduleMailshotRoute' => [
-                    'name' => match($mailshot->type) {
+                    'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.cancel-schedule',
                         MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.cancel-schedule',
                     },
                     'parameters' => [
                         'shop' => $this->shop->id,
                         'outbox' => $mailshot->outbox->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
+                'setSecondWaveRoute' => [
+                    'name' => 'grp.models.shop.mailshot.second-wave',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
                         'mailshot' => $mailshot->id
                     ],
                 ],
