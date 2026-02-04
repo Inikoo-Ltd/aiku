@@ -83,7 +83,7 @@ class SendChatMessage
 
         TranslateChatMessage::dispatch(messageId: $chatMessage->id);
         BroadcastRealtimeChat::dispatch($chatMessage);
-        BroadcastChatListEvent::dispatch();
+        BroadcastChatListEvent::dispatch($chatMessage);
 
         return $chatMessage;
     }
@@ -313,7 +313,7 @@ class SendChatMessage
             ];
         }
 
-        if (! empty($validated['sender_id'])) {
+        if (!empty($validated['sender_id']) && $senderType === ChatSenderTypeEnum::USER->value) {
 
             $webUser = WebUser::find($validated['sender_id']);
 

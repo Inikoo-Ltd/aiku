@@ -14,11 +14,12 @@ use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsCommand;
 use App\Actions\OrgAction;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Comms\Outbox;
 
-class SendNewsLetterNow extends OrgAction
+class SendMailShotNow extends OrgAction
 {
     use AsCommand;
     use AsAction;
@@ -26,6 +27,12 @@ class SendNewsLetterNow extends OrgAction
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
+
+        // NOTE: For testing purposes, only available for Ukraine
+        if ($mailshot->shop_id !== 44) {
+            throw new \Exception('Action only available for Ukraine');
+        }
+
         if (!$mailshot->start_sending_at) {
             data_set($modelData, 'start_sending_at', now());
         }
@@ -39,7 +46,12 @@ class SendNewsLetterNow extends OrgAction
 
         $mailshot->update($modelData);
 
-        ProcessSendNewsletter::dispatch($mailshot);
+        // NOTE: dispatch process based on mailshot type
+        if ($mailshot->type === MailshotTypeEnum::NEWSLETTER) {
+            ProcessSendNewsletter::dispatch($mailshot);
+        } elseif ($mailshot->type === MailshotTypeEnum::MARKETING) {
+            ProcessSendMailshot::dispatch($mailshot);
+        }
 
         return $mailshot;
     }
@@ -53,6 +65,7 @@ class SendNewsLetterNow extends OrgAction
 
     public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
+        // outbox is not used in this action, but it's required by the route
         $this->initialisationFromShop($shop, $request);
         return $this->handle($mailshot, $this->validatedData);
     }

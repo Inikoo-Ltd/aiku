@@ -63,7 +63,7 @@ const props = defineProps<{
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-console.log('-- Header data', props)
+// console.log('-- Header data', props)
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 // const isLoggedIn = false

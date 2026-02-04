@@ -42,6 +42,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateCompiledLayout;
 use App\Actions\Comms\EmailTemplate\GetOutboxEmailTemplates;
@@ -94,6 +95,7 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotTemplate;
+use App\Actions\Helpers\Address\GetGeocode;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
@@ -133,6 +135,7 @@ Route::get('shop/{shop}/department-and-sub-departments', GetDepartmentAndSubDepa
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
 Route::get('shop/{shop:id}/families', GetFamiliesInShop::class)->name('shop.families');
 Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.departments');
+Route::get('shop/{shop:id}/sub-departments', GetSubDepartmentsInShop::class)->name('shop.sub_departments');
 Route::get('shop/{shop:id}/products-no-webpage', GetProductsWithNoWebpage::class)->name('shop.products.no-webpage');
 
 Route::get('shop/{shop}/catalogue/{productCategory}/families', GetProductCategoryFamilies::class)->name('shop.catalogue.departments.families');
@@ -254,3 +257,5 @@ Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');
 Route::get('product-category/{productCategory:id}/last-ordered-products', GetLastOrderedProducts::class)->name('product_category.last-ordered-products.index');
 
+
+Route::get('location/geocode', GetGeocode::class)->name('get_geocode');

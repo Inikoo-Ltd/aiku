@@ -52,7 +52,7 @@ const props = withDefaults(
     }>(),
     {}
 );
-console.log(props)
+// console.log(props)
 const layout = inject("layout", layoutStructure);
 const isCollapsedOpen = ref(false);
 const hoveredNavigation = ref<any>(null);

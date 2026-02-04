@@ -108,7 +108,7 @@ const removeVolumeDiscount = () => {
     </div>
 
     <!-- ACTION -->
-    <div class="flex justify-start">
+    <div class="flex justify-start" v-if="itemQuantity && percentageOff">
       <Button type="negative" :icon="faTrash" class="h-[42px] w-[42px] flex items-center justify-center"
         @click="removeVolumeDiscount" />
     </div>

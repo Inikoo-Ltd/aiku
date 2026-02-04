@@ -71,4 +71,17 @@ return [
     'jsd' => [
         'widget_key' => env('JSD_WIDGET_KEY'),
     ],
+
+     'geocoding' => [
+        'provider' => env('GEOCODING_PROVIDER', 'nominatim'), // nominatim, google,
+    ],
+
+    'nominatim' => [
+        'url' => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
+        'user_agent' => env('NOMINATIM_USER_AGENT', env('APP_NAME') . ' (' . env('MAIL_FROM_ADDRESS', 'noreply@inikoo.com') . ')'),
+    ],
+
+    'google_maps' => [
+        'api_key' => env('GOOGLE_MAPS_API_KEY'),
+    ],
 ];

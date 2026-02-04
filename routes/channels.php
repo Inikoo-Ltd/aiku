@@ -26,6 +26,10 @@ Broadcast::channel('shopify.{shopifyUserId}.upload-product.{portfolioId}', funct
     return true;
 });
 
+Broadcast::channel('shopify.{shopifyUserId}.fetch-product', function (int|string $shopifyUserId, int|string $portfolioId) {
+    return true;
+});
+
 Broadcast::channel('woo.{wooCommerceUserId}.upload-product.{portfolioId}', function (int|string $wooCommerceUserId, int|string $portfolioId) {
     return true;
 });

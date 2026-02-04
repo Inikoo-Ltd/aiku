@@ -8,9 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
-use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
-use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\SysAdmin\Organisation;
@@ -18,7 +16,6 @@ use Exception;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 
 class EditMailshot extends OrgAction
 {
@@ -39,67 +36,6 @@ class EditMailshot extends OrgAction
                 ],
             ]
         ];
-
-
-        if ($mailshot->type == MailshotTypeEnum::MARKETING) {
-            $fields[] = [
-                'title'  => '',
-                'fields' => [
-                    'type'           => [
-                        'type'     => 'select',
-                        'label'    => __('Type'),
-                        'required' => false,
-                        'value'    => $mailshot->type,
-                        'options'  => Options::forEnum(MailshotTypeEnum::class)->reject(fn ($option) => $option->value === MailshotTypeEnum::NEWSLETTER->value),
-                    ],
-                    'recipient_type' => [
-                        'type'     => 'radio',
-                        'label'    => __('Recipient Type'),
-                        'required' => true,
-                        'value'    => 'query',
-                        'options'  => [
-                            [
-                                "label" => "Query",
-                                "value" => "query"
-                            ],
-                            [
-                                "label" => "custom",
-                                "value" => "custom"
-                            ],
-                            [
-                                "label" => "Prospect",
-                                "value" => "prospect"
-                            ],
-                        ]
-                    ],
-                    'recipients_recipe' => [
-                        'type'     => 'mailshotRecipient',
-                        'label'    => __('recipients'),
-                        'required' => true,
-                        'options'  => [
-                            'query'                  => IndexProspects::run(parent: $mailshot->shop, prefix: null, scope: 'all'),
-                            'custom_prospects_query' => '',
-                        ],
-                        'full'     => true,
-                        'value'    => [
-                            'query'                  => $mailshot->recipients_recipe['query'] ?? null,
-                            'custom_prospects_query' => [
-                                "tags"         => [
-                                    "tag_ids"          => $mailshot->recipients_recipe['custom_prospects_query']['tags']['tag_ids'] ?? null,
-                                    "logic"            => 'all',
-                                    "negative_tag_ids" => $mailshot->recipients_recipe['custom_prospects_query']['tags']['negative_tag_ids'] ?? null
-                                ],
-                                "last_contact" => [
-                                    "use_contact" => false,
-                                    "interval"    => $mailshot->recipients_recipe['custom_prospects_query']['last_contact']['interval'] ?? null
-                                ]
-                            ],
-                            'prospects'              => $mailshot->recipients_recipe['query'] ?? null,
-                        ]
-                    ],
-                ]
-            ];
-        }
 
         return Inertia::render(
             'EditModel',

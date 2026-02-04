@@ -14,7 +14,6 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Masters\MasterProductCategory;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateVolumeGrOfferFromMaster extends OrgAction
@@ -24,35 +23,26 @@ class UpdateVolumeGrOfferFromMaster extends OrgAction
     private int $updatedOffersCount = 0;
     private int $updatedAllowancesCount = 0;
 
-    /**
-     * @throws \Throwable
-     */
     public function handle(MasterProductCategory $masterProductCategory, ?array $volumeDiscount): array
     {
         $this->updatedOffersCount = 0;
         $this->updatedAllowancesCount = 0;
 
-        DB::transaction(function () use ($masterProductCategory, $volumeDiscount) {
+        foreach (ProductCategory::where('type', ProductCategoryTypeEnum::FAMILY)
+            ->where('master_product_category_id', $masterProductCategory->id)
+            ->get() as $family) {
 
-            foreach(ProductCategory::where('type', ProductCategoryTypeEnum::FAMILY)
-                ->where('master_product_category_id', $masterProductCategory->id)
-                ->get() as $family) {
+            $offers = Offer::where('type', 'Category Quantity Ordered Order Interval')
+                ->where('trigger_type', 'ProductCategory')
+                ->where('trigger_id', $family->id)
+                ->get();
 
-                $offers = Offer::where('type', 'Category Quantity Ordered Order Interval')
-                    ->where('trigger_type', 'ProductCategory')
-                    ->where('trigger_id', $family->id)
-                    ->get();
-
-                foreach ($offers as $offer) {
-                    $this->updateOffer($offer, $volumeDiscount);
-                    $this->updateOfferAllowances($offer, $volumeDiscount);
-                    UpdateProductCategoryOffersData::run($offer);
-                }
+            foreach ($offers as $offer) {
+                $this->updateOffer($offer, $volumeDiscount);
+                $this->updateOfferAllowances($offer, $volumeDiscount);
+                UpdateProductCategoryOffersData::run($offer);
             }
-
-
-
-        });
+        }
 
         return [
             'success' => true,
@@ -108,9 +98,6 @@ class UpdateVolumeGrOfferFromMaster extends OrgAction
         }
     }
 
-    /**
-     * @throws \Throwable
-     */
     public function action(MasterProductCategory $masterProductCategory, ?array $volumeDiscount): array
     {
         $this->asAction = true;
