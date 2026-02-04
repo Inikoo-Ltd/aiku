@@ -174,12 +174,10 @@ trait WithFaireShopApiCollection
      * @param string $orderId
      * @return array
      */
-    public function updateInventoryQuantity(array $attributes): array
+    public function updateInventoryQuantity(array $inventories): array
     {
-        return $this->buildRequest('PATCH', "product-inventory/by-skus", [
-            'sku' => Arr::get($attributes, 'sku'),
-            'product_variant_id' => Arr::get($attributes, 'product_variant_id'),
-            'on_hand_quantity' => Arr::get($attributes, 'quantity')
+        return $this->buildRequest('PATCH', "product-inventory/by-product-variant-ids", data: [
+            'inventories' => $inventories
         ]);
     }
 }

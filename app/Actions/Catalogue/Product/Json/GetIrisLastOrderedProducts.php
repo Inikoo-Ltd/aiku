@@ -73,6 +73,7 @@ class GetIrisLastOrderedProducts extends IrisAction
                 'latest_tx.submitted_at',
                 'latest_tx.id as transaction_id',
                 'customers.contact_name as customer_contact_name',
+                'customers.contact_name_components',
                 'customers.name as customer_name',
                 'addresses.country_code as customer_country_code',
             ])
