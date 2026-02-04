@@ -21,7 +21,7 @@ trait WithProductHydrators
 {
     protected function productHydrators(Product $product, $hydrateForSale = true): void
     {
-        if($hydrateForSale) {
+        if ($hydrateForSale) {
             ProductHydrateForSale::run($product);
         }
         GroupHydrateProducts::dispatch($product->group)->delay($this->hydratorsDelay);

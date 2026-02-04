@@ -9,7 +9,6 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -18,8 +17,6 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
-use App\Stubs\Migrations\HasDangerousGoodsFields;
-use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
@@ -47,10 +44,10 @@ class UpdateProductExternal extends OrgAction
                 'is_single_trade_unit'  => $product->tradeUnits()->count() == 1
             ]);
             $isForSaleTwo = $product->is_for_sale;
-            
+
             CloneProductImagesFromTradeUnits::run($product);
             ProductHydrateAvailableQuantity::run($product);
-            
+
             $this->productHydrators($product, false);
         }
 

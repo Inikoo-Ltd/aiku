@@ -33,7 +33,7 @@ class GetFaireProducts extends OrgAction
         $page          = 1;
         $filters = [];
 
-        if($minHours = Arr::get($modelData, 'min_hours')) {
+        if ($minHours = Arr::get($modelData, 'min_hours')) {
             $filters = [
                 'updated_at_min' => now()->subHours($minHours)->toIsoString(),
             ];

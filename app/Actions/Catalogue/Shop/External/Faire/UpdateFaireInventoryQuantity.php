@@ -34,7 +34,7 @@ class UpdateFaireInventoryQuantity extends OrgAction
     {
         $shop = Shop::where('slug', $command->argument('shop'))->first();
 
-        if($command->argument('product')) {
+        if ($command->argument('product')) {
             $products = Product::where('slug', $command->argument('product'))->get();
         } else {
             $products = $shop->products;
