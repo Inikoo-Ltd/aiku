@@ -4,7 +4,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import ColumnWebppage from "@/Components/CMS/Webpage/WorkshopComponentsHelper/ColumnWebppageIris.vue";
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
-import { ref, watch } from "vue"940
+import { ref, watch } from "vue"
 
 library.add(faCube, faLink, faImage)
 
