@@ -11,6 +11,8 @@ use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Livechat\ChatMessageTranslation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use Sentry\Laravel\Facade as Sentry;
+use Throwable;
 
 class TranslateChatMessage
 {
@@ -195,6 +197,7 @@ class TranslateChatMessage
         try {
             $apiKey = env('CHATGPT_TRANSLATIONS_API_KEY');
             if (!$apiKey) {
+                Sentry::captureMessage("Missing CHATGPT_TRANSLATIONS_API_KEY");
                 return null;
             }
 
@@ -223,8 +226,8 @@ class TranslateChatMessage
             }
 
             return null;
-        } catch (\Throwable $e) {
-            Log::warning("OpenAI Language Detection Error: " . $e->getMessage());
+        } catch (Throwable $e) {
+            Sentry::captureMessage($e->getMessage());
             return null;
         }
     }
@@ -234,7 +237,7 @@ class TranslateChatMessage
         try {
             $apiKey = env('CHATGPT_TRANSLATIONS_API_KEY');
             if (!$apiKey) {
-                Log::error("Missing CHATGPT_TRANSLATIONS_API_KEY");
+                Sentry::captureMessage("Missing CHATGPT_TRANSLATIONS_API_KEY");
                 return null;
             }
 
@@ -256,8 +259,8 @@ class TranslateChatMessage
             ]);
 
             return trim($response->choices[0]->message->content);
-        } catch (\Exception $e) {
-            Log::error("OpenAI Translation failed: " . $e->getMessage());
+        } catch (Throwable $e) {
+            Sentry::captureMessage($e->getMessage());
             return null;
         }
     }

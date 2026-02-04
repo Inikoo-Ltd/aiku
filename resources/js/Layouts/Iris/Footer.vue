@@ -1,12 +1,11 @@
 <script setup lang='ts'>
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-
 import { Root } from '@/types/Website/Website/footer1'
 import { checkScreenType } from '@/Composables/useWindowSize'
 import { onMounted, ref } from 'vue'
 
 
-const props = defineProps<{
+defineProps<{
     data: Root
     colorThemed: object
 }>()

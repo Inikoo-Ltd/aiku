@@ -23,6 +23,9 @@ class BreakAllWebsitesVarnishCache extends OrgAction
         $result = Process::timeout(1800)->run('./restart_varnish.sh');
 
         if ($command) {
+            print_r($result);
+            print "\n====\n";
+            print_r($result->output());
             if ($result->successful()) {
                 $command->info("All websites cache cleared");
             } else {

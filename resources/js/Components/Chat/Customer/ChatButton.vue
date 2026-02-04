@@ -430,7 +430,7 @@ defineExpose({
             enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="chat">
             <div v-if="open" ref="panelRef"
-                class="fixed bottom-[9rem] right-5 z-[70] w-[350px] h-fit bg-[#f6f6f7] rounded-md overflow-hidden border">
+                class="fixed right-3 z-[70] w-[calc(100vw-1.5rem)] sm:w-[350px] bg-[#f6f6f7] rounded-md overflow-hidden border shadow-xl bottom-32 sm:bottom-[9rem] max-h-[calc(100dvh-7rem)] sm:max-h-[calc(100dvh-12rem)] flex flex-col">
                 <div class="flex justify-between items-center px-3 py-2 border-b text-sm font-semibold">
                     <span>{{ trans("Chat Support") }}</span>
 

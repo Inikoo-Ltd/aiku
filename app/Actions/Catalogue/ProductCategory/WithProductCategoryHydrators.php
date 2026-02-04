@@ -39,7 +39,7 @@ trait WithProductCategoryHydrators
             OrganisationHydrateFamilies::dispatch($productCategory->organisation)->delay($this->hydratorsDelay);
             ShopHydrateFamilies::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
 
-            if ($productCategory->parent_id) {
+            if ($productCategory->parent) {
                 ProductCategoryHydrateFamilies::dispatch($productCategory->parent)->delay($this->hydratorsDelay);
             }
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
@@ -47,10 +47,10 @@ trait WithProductCategoryHydrators
             OrganisationHydrateSubDepartments::dispatch($productCategory->organisation)->delay($this->hydratorsDelay);
             ShopHydrateSubDepartments::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
 
-            if ($productCategory->department_id) {
+            if ($productCategory->department) {
                 DepartmentHydrateSubDepartments::dispatch($productCategory->department)->delay($this->hydratorsDelay);
             }
-            if ($productCategory->sub_department_id) {
+            if ($productCategory->subDepartment) {
                 SubDepartmentHydrateSubDepartments::dispatch($productCategory->subDepartment)->delay($this->hydratorsDelay);
             }
         }
