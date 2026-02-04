@@ -34,6 +34,7 @@ interface Message {
 }
 
 interface Translation {
+    language_flag: any
     chat_translation_id: number
     language_id: number
     translated_text: string
@@ -53,10 +54,6 @@ const baseUrl = layout?.appUrl ?? ""
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
-const isUser = computed(
-    () => props.message.sender_type === "guest" || props.message.sender_type === "user"
-)
-
 const isFromViewer = computed(() => {
     if (props.viewerType === "agent") {
         return props.message.sender_type === "agent"
@@ -66,6 +63,22 @@ const isFromViewer = computed(() => {
 })
 
 const isSending = computed(() => props.message._status === "sending")
+
+const shouldHideTranslationBlock = computed(() =>
+    props.viewerType === "user" &&
+    props.message.sender_type === "user"
+)
+
+const canShowTranslation = computed(() => {
+    if (
+        props.viewerType === "user" &&
+        props.message.sender_type === "guest"
+    ) {
+        return false
+    }
+
+    return true
+})
 
 const bubbleClass = computed(() => ({
     "bubble-primary": isFromViewer.value,
@@ -138,7 +151,6 @@ const canTranslate = computed(() =>
     )
 )
 
-
 const latestTranslation = computed<Translation | null>(() => {
     const list = activeMessage.value.translations
     if (!Array.isArray(list) || list.length === 0) return null
@@ -201,17 +213,6 @@ watch(selectedLanguage, async (val) => {
     await translateMessage()
     showLanguageSelect.value = false
 })
-
-const canShowTranslation = computed(() => {
-    if (
-        props.viewerType === "user" &&
-        props.message.sender_type === "guest"
-    ) {
-        return false
-    }
-
-    return true
-})
 </script>
 
 <template>
@@ -256,15 +257,16 @@ const canShowTranslation = computed(() => {
                 </div>
 
                 <template v-else>
-                    <div v-if="showTranslation">
+                    <div v-if="showTranslation && !shouldHideTranslationBlock">
                         {{ latestTranslation!.translated_text }}
                     </div>
 
-                    <span v-else class="cursor-pointer underline text-gray-500" @click="showTranslation = true">
+                    <span v-else-if="!shouldHideTranslationBlock" class="cursor-pointer underline text-gray-500"
+                        @click="showTranslation = true">
                         Show translation
                     </span>
 
-                    <div v-if="showTranslation"
+                    <div v-if="showTranslation && !shouldHideTranslationBlock"
                         class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
                         <img v-if="latestTranslation!.language_flag" :src="latestTranslation!.language_flag"
                             class="w-3 h-3 rounded-sm" />

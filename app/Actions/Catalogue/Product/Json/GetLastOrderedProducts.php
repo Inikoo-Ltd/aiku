@@ -15,12 +15,13 @@ use App\Http\Resources\Catalogue\LastOrderedProductsResource;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetLastOrderedProducts extends OrgAction
 {
-    public function handle(ProductCategory $productCategory): \Illuminate\Support\Collection
+    public function handle(ProductCategory $productCategory, array $modelData): \Illuminate\Support\Collection
     {
         $latestUniqueTransactions = DB::table('transactions')
             ->select([
@@ -46,9 +47,14 @@ class GetLastOrderedProducts extends OrgAction
             ->fromSub($latestUniqueTransactions, 'ranked_transactions')
             ->where('rn', 1);
 
+        $ignoredProductId = Arr::pull($modelData, 'ignoredProductId', null);
+
         return DB::table('products')
             ->joinSub($latestUniqueTransactionsQuery, 'latest_tx', function ($join) {
                 $join->on('latest_tx.model_id', '=', 'products.id');
+            })
+            ->when($ignoredProductId, function ($query) use ($ignoredProductId) {
+                $query->whereNot('products.id', $ignoredProductId);
             })
             ->join('webpages', function ($join) {
                 $join->on('webpages.model_id', '=', 'products.id')
@@ -73,6 +79,13 @@ class GetLastOrderedProducts extends OrgAction
             ->get();
     }
 
+    public function rules(): array
+    {
+        return [
+            'ignoredProductId'    => ['sometimes', 'string'],
+        ];
+    }
+
     public function jsonResponse($products): AnonymousResourceCollection
     {
         return LastOrderedProductsResource::collection($products);
@@ -82,7 +95,7 @@ class GetLastOrderedProducts extends OrgAction
     {
         $this->initialisation($productCategory->organisation, $request);
 
-        return $this->handle(productCategory: $productCategory);
+        return $this->handle($productCategory, $this->validatedData);
     }
 
 }
