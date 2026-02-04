@@ -488,9 +488,24 @@ const onSubmitEditExpiryDate = () => {
                             </NumberWithButtonSave>
 
 
-                            <ButtonWithLink v-if="!itemValue.is_handled" type="negative" tooltip="Set as not picked"
-                                icon="fal fa-debug" :size="screenType == 'desktop' ? undefined : 'lg'"
-                                :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
+                            <ButtonWithLink
+                                v-if="!itemValue.is_handled"
+                                type="negative"
+                                iconRight="fal fa-debug"
+                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                                :routeTarget="itemValue.not_picking_route"
+                                :bindToLink="{preserveScroll: true}"
+                                v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                            >
+                            
+                                <template #label>
+                                    <div>
+                                        <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                        <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
+                                    </div>
+                                </template>
+                            </ButtonWithLink>
+
 
                             </div>
                         </div>
@@ -504,13 +519,19 @@ const onSubmitEditExpiryDate = () => {
 
 
                 </div>
-                <div v-else>
+                <div v-else class="flex justify-between gap-x-2">
+                    <div class="italic text-gray-400">{{ trans("No locations found") }}</div>
+                    <!-- {{ itemValue.quantity_to_pick }} -->
 
-                    {{ itemValue.quantity_to_pick }}
-
-                    <ButtonWithLink type="negative" tooltip="Set as not picked" icon="fal fa-debug"
-                        :size="screenType == 'desktop' ? 'sm' : 'lg'" :routeTarget="itemValue.not_picking_route"
-                        :bindToLink="{preserveScroll: true}" />
+                    <ButtonWithLink
+                        type="negative"
+                        v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
+                        iconRight="fal fa-debug"
+                        :label="itemValue.quantity_to_pick.toString() || '0'"
+                        :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                        :routeTarget="itemValue.not_picking_route"
+                        :bindToLink="{ preserveScroll: true }"
+                    />
                 </div>
             </div>
 
@@ -550,7 +571,7 @@ const onSubmitEditExpiryDate = () => {
                     </span>
 
                     <span
-                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(location.quantity), location_code: location.location_code})"
+                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(Number(location.quantity) || 0), location_code: location.location_code || ''})"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
                         <FractionDisplay v-if="location.quantity_fractional"
@@ -593,10 +614,16 @@ const onSubmitEditExpiryDate = () => {
                                 }" :body="{
                                     location_org_stock_id: location.id
                                 }" isWithError />
-                            <ButtonWithLink class="ml-8" v-if="!selectedItemValue.is_handled" type="negative"
-                                tooltip="Set as not picked" icon="fal fa-debug" size="xs"
+                            <ButtonWithLink
+                                class="ml-8"
+                                v-if="!selectedItemValue.is_handled" type="negative"
+                                xtooltip="Set as not picked"
+                                v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(selectedItemValue.quantity_to_pick ) || '0'})"
+                                icon="fal fa-debug"
+                                size="xs"
                                 :routeTarget="selectedItemValue.not_picking_route"
-                                :bindToLink="{preserveScroll: true}" />
+                                :bindToLink="{preserveScroll: true}"
+                            />
                         </template>
                     </NumberWithButtonSave>
 

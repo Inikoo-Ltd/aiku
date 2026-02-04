@@ -73,7 +73,7 @@ import {
 	faCheckDouble,
 	faSmile,
 	faMailBulk,
-	faShare, faUndoAlt,
+	faShare, faUndoAlt, faRobot,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import {
@@ -164,7 +164,7 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk,
-	faShare, faUndoAlt
+	faShare, faUndoAlt, faRobot
 )
 
 provide("layout", useLayoutStore())
