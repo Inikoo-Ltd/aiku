@@ -75,6 +75,11 @@ class EditClockingMachine extends OrgAction
                 'title'  => __('QR Configuration'),
                 'label'  => __('QR Settings'),
                 'fields' => [
+                    'config.qr.enable' => [
+                        'type'  => 'toggle',
+                        'label' => __('Enable QR Code'),
+                        'value' => (bool) data_get($clockingMachine->config, 'qr.enable', false),
+                    ],
                     'config.qr.refresh_interval' => [
                         'type'  => 'input_number',
                         'label' => __('Refresh Interval (seconds)'),
@@ -89,6 +94,16 @@ class EditClockingMachine extends OrgAction
                         'type'  => 'toggle',
                         'label' => __('Allow Multiple Scans'),
                         'value' => (bool) data_get($clockingMachine->config, 'qr.allow_multiple_scans', false),
+                    ],
+                    'config.qr.coordinates' => [
+                        'type'  => 'input',
+                        'label' => __('Maps Coordinates'),
+                        'value' => data_get($clockingMachine->config, 'qr.coordinates'),
+                    ],
+                    'config.qr.radius' => [
+                        'type'  => 'input_number',
+                        'label' => __('Radius (meters)'),
+                        'value' => data_get($clockingMachine->config, 'qr.radius'),
                     ],
                 ],
             ];

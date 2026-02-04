@@ -78,6 +78,7 @@ class ClockingMachine extends Authenticatable implements Auditable
 
     protected $casts = [
         'data'                        => 'array',
+        'config'                      => 'array',
         'status'                      => ClockingMachineStatusEnum::class,
         'fetched_at'                  => 'datetime',
         'last_fetched_at'             => 'datetime',
@@ -85,6 +86,7 @@ class ClockingMachine extends Authenticatable implements Auditable
 
     protected $attributes = [
         'data'        => '{}',
+        'config'      => '{}',
     ];
 
     protected $guarded = [];
