@@ -2,7 +2,6 @@
 
 namespace App\Actions\Helpers\Translations;
 
-use Exception;
 use Throwable;
 use App\Actions\OrgAction;
 use App\Models\Helpers\Language;

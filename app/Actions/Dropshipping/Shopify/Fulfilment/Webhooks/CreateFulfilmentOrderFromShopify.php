@@ -58,7 +58,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
 
             if ($shopifyUser->customer->is_dropshipping) {
                 StoreOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
-            } else if($shopifyUser->customer->is_fulfilment) {
+            } elseif ($shopifyUser->customer->is_fulfilment) {
                 StoreFulfilmentOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
             }
         });

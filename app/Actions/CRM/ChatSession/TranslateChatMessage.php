@@ -2,7 +2,6 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use OpenAI;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Facades\Log;
 use App\Events\BroadcastRealtimeChat;
@@ -13,7 +12,6 @@ use App\Models\CRM\Livechat\ChatMessageTranslation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use Sentry\Laravel\Facade as Sentry;
 use Throwable;
-use App\Actions\Helpers\Translations\DetectLanguage;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Helpers\Translations\DetectLanguageWithAI;
 
