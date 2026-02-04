@@ -16,13 +16,11 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Events\FetchProductFromShopifyProgressEvent;
-use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -63,7 +61,7 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
             $numberSuccess = 0;
             $numberFails = 0;
 
-            $numberTotal = array_sum(array_map(fn($product) => count($product['variants']), $products));
+            $numberTotal = array_sum(array_map(fn ($product) => count($product['variants']), $products));
 
             foreach ($products as $product) {
                 foreach ($product['variants'] as $variant) {

@@ -50,10 +50,10 @@ class CloneCatalogueStructure
     /**
      * @throws \Throwable
      */
-    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false, $skipProducts = false, $skipFamilies = false, $skipDepartments=false): void
+    public function handle(MasterShop|Shop $fromShop, MasterShop|Shop $shop, $deleteMissing = false, $skipProducts = false, $skipFamilies = false, $skipDepartments = false): void
     {
 
-        if(!$skipDepartments) {
+        if (!$skipDepartments) {
             $this->cloneDepartments($fromShop, $shop);
             $this->cloneSubDepartments($fromShop, $shop);
         }
@@ -835,9 +835,9 @@ class CloneCatalogueStructure
 
         $skipFamilies = $command->option('skip-family');
 
-        $skipDepartments=$command->option('skip-departments');
+        $skipDepartments = $command->option('skip-departments');
 
-        $this->handle($fromShop, $toShop, $deleteMissing, $skipProducts, $skipFamilies,$skipDepartments);
+        $this->handle($fromShop, $toShop, $deleteMissing, $skipProducts, $skipFamilies, $skipDepartments);
 
         return 0;
     }

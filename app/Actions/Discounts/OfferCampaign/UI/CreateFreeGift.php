@@ -12,13 +12,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateFreeGift extends OrgAction
 {
-    public function handle(): Response
+    public function handle(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
             [
                 'title'       => __('Free Gift'),
-                'breadcrumbs' => $this->getBreadcrumbs($this->parent, request()->route()->getName(), request()->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs(request()->route()->getName(), request()->route()->originalParameters()),
                 'pageHead'    => [
                     'title'   => __('Free Gift'),
                     'icon'    => [
@@ -39,53 +39,70 @@ class CreateFreeGift extends OrgAction
                 ],
                 'formData' => [
                     'fullLayout' => true,
-                    'blueprint'  =>
+                    'blueprint'  => [
                         [
-                            [
-                                'title'  => __('Create Free Gift'),
-                                'fields' => [
-                                    'name' => [
-                                        'type'       => 'input',
-                                        'label'      => __('Name'),
-                                        'required'   => true
+                            'title'  => __('Create Free Gift'),
+                            'fields' => [
+                                'ammount' => [
+                                    'type'     => 'input_number',
+                                    'label'    => __('Ammount spend'),
+                                    'required' => true,
+                                    "bind"     => [
+                                         'prefix'   => $shop->currency->symbol,
+                                         'min'      => 0
                                     ]
-                                ]
-                            ]
+
+                                ],
+                                'products' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Products'),
+                                    'required'   => true,
+                                    'mode'       => "tags",
+                                    'valueProp'  => "id" ,
+                                    'label-prop' => "name",
+                                    'type_label' => 'product',
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.org.shops.show.catalogue.products.all_products.index',
+                                        'parameters' => [
+                                            'organisation' => $organisation->slug,
+                                            'shop'         => $shop->slug,
+                                        ],
+                                    ],
+                                ],
+                            ],
                         ],
+                    ],
                     'route' => [
                         'name'       => '',
-                        'parameters' => []
-                    ]
+                        'parameters' => [],
+                    ],
                 ],
+
             ]
         );
     }
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
-        $this->parent = $offerCampaign;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle();
+        return $this->handle($organisation, $shop, $offerCampaign, $request);
     }
 
-    public function getBreadcrumbs(OfferCampaign $offerCampaign, string $routeName, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return array_merge(
-            ShowOfferCampaign::make()->getBreadcrumbs($offerCampaign, $routeName, $routeParameters, $suffix),
+        return [
             [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'icon'  => 'fal fa-gift',
-                        'label' => __('Free Gift'),
-                        'route' => [
-                            'name'       => 'grp.org.shops.discounts.campaigns.free_gift',
-                            'parameters' => $routeParameters
-                        ]
+                'type'   => 'simple',
+                'simple' => [
+                    'icon'  => 'fal fa-gift',
+                    'label' => __('Free Gift'),
+                    'route' => [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
                     ]
-                ],
+                ]
             ],
-        );
+        ];
     }
 }
