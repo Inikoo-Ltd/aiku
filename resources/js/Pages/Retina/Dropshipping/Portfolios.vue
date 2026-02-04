@@ -536,21 +536,25 @@ const initSocketListener = () => {
 }
 
 const initSocketFetchListener = () => {
-	fetchChannel = window.Echo.private(`shopify.${props.platform_user_id}.fetch-product`).listen(".shopify-fetch-progress", (eventData: any) => {
-		cloneProgressData.value = {
-			data: eventData,
-			done: eventData.number_success,
-			total: eventData.number_total
+	fetchChannel = window.Echo.private(`shopify.${props.platform_user_id}.fetch-product`).listen(
+		".shopify-fetch-progress",
+		(eventData: any) => {
+			cloneProgressData.value = {
+				data: eventData,
+				done: eventData.number_success,
+				total: eventData.number_total,
+			}
+			// stop listening after this event
+			fetchChannel.stopListening(".shopify-fetch-progress")
+			isSocketActive.value = false
+			if (eventData.number_success + eventData.number_fails == eventData.number_total) {
+				setTimeout(() => {
+					isOpenModalFetchProgress.value = false
+					window.location.reload()
+				}, 1000)
+			}
 		}
-		isSocketActive.value = false
-
-		if(eventData.number_success + eventData.number_fails == eventData.number_total) {
-			setTimeout(() => {
-				isOpenModalFetchProgress.value = false
-				window.location.reload()
-			}, 1000)
-		}
-	})
+	)
 }
 
 watch(
@@ -748,7 +752,7 @@ const productStates = [
 	},
 	{
 		key: "discontinued",
-		label: "discontinued",
+		label: "Discontinued",
 	},
 ]
 
@@ -835,20 +839,26 @@ const layout = inject("layout", layoutStructure)
 		</template>
 
 		<template v-if="!props.is_closed" #other>
-			<div class="rounded-md" v-if="props.product_count">
+			<div
+				class="inline-flex items-center rounded-md border overflow-hidden"
+				v-if="props.product_count">
 				<a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
-					<Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
+					<Button
+						:icon="faDownload"
+						label="CSV"
+						type="tertiary"
+						class="h-9 px-3 py-0 border-0 rounded-none border-r" />
 				</a>
 				<Button
 					@click="(e) => _export_popover?.toggle(e)"
-					v-tooltip="trans('Open other export options')"
+					v-tooltip="trans('Other Export Options')"
 					:icon="faEllipsisV"
-					class="!px-2 border-l-0 border-r-0 rounded-none h-full"
+					class="h-9 px-2 py-0 border-0 rounded-none border-r"
 					type="tertiary" />
 				<Popover ref="_export_popover">
 					<div class="w-64 relative">
 						<div class="text-sm mb-2">
-							{{ trans("Select Columns that you need to export") }}:
+							{{ trans("Select Columns that you need to Export") }}:
 						</div>
 						<div class="flex flex-col gap-y-2">
 							<div class="mt-3 border-t pt-2 space-y-2 text-sm">
@@ -921,7 +931,7 @@ const layout = inject("layout", layoutStructure)
 					<Button
 						:icon="faImage"
 						type="tertiary"
-						class="border-l-0 rounded-l-none"
+						class="h-9 px-3 py-0 border-0 rounded-none"
 						:disabled="isSocketActive">
 						<template #label>
 							<LoadingIcon v-if="stateDownloadImagesReady === 'loading'" />

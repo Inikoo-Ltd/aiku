@@ -2,7 +2,6 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use OpenAI;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Facades\Log;
 use App\Events\BroadcastRealtimeChat;
