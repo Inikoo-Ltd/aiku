@@ -10,6 +10,7 @@ use Http\Adapter\Guzzle7\Client as GuzzleAdapter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Models\Helpers\Country;
+use Sentry;
 
 class GeocoderService
 {
@@ -45,12 +46,18 @@ class GeocoderService
             'total_layers' => count($layers),
             'layers' => array_map(fn ($l) => $l['name'] . ': ' . $l['query'], $layers),
         ]);
+        Sentry::captureMessage('📍 Geocoding started: ' . json_encode([
+            'input' => $addressData,
+            'total_layers' => count($layers),
+            'layers' => array_map(fn ($l) => $l['name'] . ': ' . $l['query'], $layers),
+        ]));
 
         foreach ($layers as $index => $layer) {
             Log::info("🔄 Trying layer " . ($index + 1) . "/" . count($layers), [
                 'layer' => $layer['name'],
                 'query' => $layer['query'],
             ]);
+            Sentry::captureMessage("🔄 Trying layer " . ($index + 1) . "/" . count($layers) . ": " . $layer['name'] . ' - ' . $layer['query']);
 
             // $cacheKey = 'geocode:layered:' . md5($layer['query']);
 
@@ -63,6 +70,7 @@ class GeocoderService
                     'confidence' => $result['confidence_score'],
                     'coordinates' => $result['latitude'] . ', ' . $result['longitude'],
                 ]);
+                Sentry::captureMessage('✅ Geocoding SUCCESS: ' . $layer['name'] . ' - ' . $layer['query'] . ' - Confidence: ' . $result['confidence_score'] . ' - Coordinates: ' . $result['latitude'] . ', ' . $result['longitude']);
                 return $result;
             }
 
@@ -73,6 +81,10 @@ class GeocoderService
             'address_data' => $addressData,
             'layers_tried' => count($layers),
         ]);
+        Sentry::captureMessage('⏭ Geocoding FAILED for all layers: ' . json_encode([
+            'address_data' => $addressData,
+            'layers_tried' => count($layers),
+        ]));
 
         return null;
     }
@@ -204,6 +216,7 @@ class GeocoderService
                     'layer' => $layer['name'],
                     'query' => $layer['query'],
                 ]);
+                Sentry::captureMessage('⏭ Layer gagal: ' . $layer['name'] . ' - ' . $layer['query']);
                 return null;
             }
 
@@ -238,6 +251,8 @@ class GeocoderService
                 'query' => $layer['query'],
                 'error' => $e->getMessage(),
             ]);
+            Sentry::captureMessage('Geocoding exception for layer: ' . $layer['name'] . ' - ' . $layer['query']);
+            Sentry::captureException($e);
             return null;
         }
     }
@@ -326,6 +341,7 @@ class GeocoderService
                     ] : null,
                 ];
             } catch (\Exception $e) {
+                Sentry::captureException($e);
                 return null;
             }
         });
@@ -383,6 +399,9 @@ class GeocoderService
                     'query' => $queryText,
                     'error' => $e->getMessage()
                 ]);
+                Sentry::captureMessage('Simple geocoding failed: ' . $queryText);
+                Sentry::captureException($e);
+
                 return null;
             }
         });
