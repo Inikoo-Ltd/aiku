@@ -20,6 +20,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Catalogue\Shop;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -42,6 +43,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops
  * @property-read \App\Models\Ordering\SalesChannelStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ordering\SalesChannelTimeSeries> $timeSeries $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel onlyTrashed()
@@ -104,5 +106,10 @@ class SalesChannel extends Model implements Auditable
     public function shops(): BelongsToMany
     {
         return $this->belongsToMany(Shop::class, 'shop_has_sales_channels')->withTimestamps();
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(SalesChannelTimeSeries::class);
     }
 }
