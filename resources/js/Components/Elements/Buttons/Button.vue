@@ -49,7 +49,7 @@ let sizeClass = "";
 
 // Styling the Button depends on the 'style' props
 if (props.type == "primary" || props.type == "create" || props.type == "save" || props.type == "upload" || props.style == "primary" || props.style == "create" || props.style == "save" || props.style == "upload") {
-  styleClass = `buttonPrimary`;
+  styleClass = `buttonPrimary ${props.injectStyle ? 'buttonPrimary-has-inject-style' : ''}`;
 }
 else if (props.type == "secondary" || props.style == "secondary") { styleClass = "buttonSecondary"; }
 else if (props.type == "tertiary" || props.style == "tertiary") styleClass = "bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70";
@@ -72,7 +72,7 @@ else if (props.style == "red_outline" || props.type == "red_outline") styleClass
 
 // else if (props.style == 'negative' || props.style == 'cancel') styleClass = 'border border-red-400 text-red-600 hover:text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
 else if (props.style == "disabled" || props.type == "disabled") styleClass = "cursor-not-allowed border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-200/70 disabled:cursor-not-allowed disabled:opacity-70";
-else styleClass = `buttonPrimary`;
+else styleClass = `buttonPrimary ${props.injectStyle ? 'buttonPrimary-has-inject-style' : ''}`;
 
 if(props.style == 'white-w-outline' || props.type  == 'white-w-outline') {styleClass = "bg-white hover:bg-gray-200/70 border border-gray-300  text-gray-600 disabled:bg-gray-300 disabled:border-gray-400"}
 if(props.style == 'blue-bk-outline' || props.type  == 'blue-bk-outline') {styleClass = "bg-blue-400 hover:bg-blue-400/70 border border-gray-400 disabled:bg-gray-400 disabled:border-gray-800"}
@@ -210,6 +210,10 @@ const getActionIcon = (icon: any) => {
   &:disabled {
     background-color: color-mix(in srgb, var(--theme-color-4) 70%, grey) !important;
   }
+}
+
+.buttonPrimary-has-inject-style {
+  border-color: color-mix(in srgb, transparent 80%, black);
 }
 
 .buttonSecondary {
