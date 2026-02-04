@@ -14,6 +14,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsCommand;
 
@@ -60,9 +61,19 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
             'art5_image_id'            => $tradeUnit->art5_image_id,
             'lifestyle_image_id'       => $tradeUnit->lifestyle_image_id,
         ]);
+        $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if(!empty($changed)){
+            BreakProductInWebpagesCache::dispatch($product)->delay(15);
+        }
 
         ProductHydrateImages::run($product);
         UpdateProductWebImages::run($product);
+
+
+
+
+
     }
 
     public string $commandSignature = 'catalogue:product:clone-images-from-trade-units {product?}';
