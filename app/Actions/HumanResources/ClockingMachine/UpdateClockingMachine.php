@@ -80,6 +80,7 @@ class UpdateClockingMachine extends OrgAction
             'config.qr.refresh_interval'     => ['nullable', 'integer', 'min:1'],
             'config.qr.expiry_duration'      => ['nullable', 'integer', 'min:1'],
             'config.qr.allow_multiple_scans' => ['nullable', 'boolean'],
+            'config.qr.allow_coordinates'    => ['nullable', 'boolean'],
             'config.qr.coordinates'          => ['nullable', 'string'],
             'config.qr.radius'               => ['nullable', 'numeric', 'min:0'],
 
