@@ -39,6 +39,16 @@ trait OfferCampaignVolumeDiscountTrait
                         ],
                     'title'         => $offerCampaign->name,
                     'model'         => __('Offer Campaign'),
+                    'actions' => app()->environment('local') ? [
+                        [
+                            'type'  => 'button',
+                            'label' => __('Free Gift'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'free_gift', request()->route()->getName()),
+                                'parameters' => array_values(request()->route()->originalParameters())
+                            ]
+                        ]
+                    ] : [],
                 ],
                 'tabs'                                               => [
                     'current'    => $this->tab,

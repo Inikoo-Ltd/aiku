@@ -147,6 +147,7 @@ class StoreWebpage extends OrgAction
                         $this->createWebBlock($webpage, 'family-1');
                         $this->createWebBlock($webpage, 'products-1');
                         $this->createWebBlock($webpage, 'luigi-trends-1');
+                        $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
                         $this->createWebBlock($webpage, 'luigi-last-seen-1');
                     }
                 }

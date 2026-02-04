@@ -163,7 +163,7 @@ const _popoverProfit = ref(null)
                 <div v-else />
 
                 <!-- Section: Profit -->
-                <div v-if="product?.discounted_profit" class="flex justify-end text-right flex-col text-xs">
+                <div  class="flex justify-end text-right flex-col text-xs">
                     <div class="whitespace-nowrap">
                         <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
                             class="ml-1 cursor-pointer opacity-60 hover:opacity-100"

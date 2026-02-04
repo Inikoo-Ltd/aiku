@@ -90,7 +90,7 @@ onMounted(() => {
             <div class="px-3 py-6 pb-2">
                 <div class="text-xl md:text-3xl font-semibold">
                     <!-- <div v-html="fieldValue.title"></div> -->
-                    <p style="text-align: center">{{ trans("Customers Recently Bought") }}</p>
+                    <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
                 </div>
             </div>
             
