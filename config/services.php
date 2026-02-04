@@ -78,7 +78,7 @@ return [
 
     'nominatim' => [
         'url' => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
-        'user_agent' => env('NOMINATIM_USER_AGENT', env('APP_NAME') . ' (' . env('MAIL_FROM_ADDRESS', 'noreply@inikoo.com') . ')'),
+        'user_agent' => env('NOMINATIM_USER_AGENT', env('APP_NAME') . ' (noreply@inikoo.com)'),
     ],
 
     'google_maps' => [
