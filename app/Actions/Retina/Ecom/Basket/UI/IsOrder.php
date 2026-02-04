@@ -208,10 +208,10 @@ trait IsOrder
                     'label'       => __('Net'),
                     'information' => '',
                     'price_total' => $order->net_amount,
-                    'styleField'    => [
-                        'background' => '#000000CC',
-                        'color' => '#fff',
-                    ],
+                    // 'styleField'    => [
+                    //     'background' => '#000000CC',
+                    //     'color' => '#fff',
+                    // ],
                 ],
                 [
                     'label'       => __('Tax').' ('.$taxCategory->name.')',
@@ -224,10 +224,10 @@ trait IsOrder
             [
                 'label'       => __('Total'),
                 'price_total' => $order->total_amount,
-                'styleField'    => [
-                    'background' => '#000',
-                    'color' => '#fff',
-                ],
+                // 'styleField'    => [
+                //     'background' => '#000',
+                //     'color' => '#fff',
+                // ],
             ],
         ];
 
