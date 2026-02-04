@@ -537,15 +537,19 @@ const initSocketListener = () => {
 
 const initSocketFetchListener = () => {
 	fetchChannel = window.Echo.private(`shopify.${props.platform_user_id}.fetch-product`).listen(".shopify-fetch-progress", (eventData: any) => {
-		console.log(eventData)
 		cloneProgressData.value = {
 			data: eventData,
 			done: eventData.number_success,
 			total: eventData.number_total
 		}
-		// stop listening after this event
-		fetchChannel.stopListening(".shopify-fetch-progress")
 		isSocketActive.value = false
+
+		if(eventData.number_success + eventData.number_fails == eventData.number_total) {
+			setTimeout(() => {
+				isOpenModalFetchProgress.value = false
+				window.location.reload()
+			}, 1000)
+		}
 	})
 }
 
