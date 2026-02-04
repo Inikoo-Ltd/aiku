@@ -39,24 +39,45 @@ class CreateFreeGift extends OrgAction
                 ],
                 'formData' => [
                     'fullLayout' => true,
-                    'blueprint'  =>
+                    'blueprint'  => [
                         [
-                            [
-                                'title'  => __('Create Free Gift'),
-                                'fields' => [
-                                    'name' => [
-                                        'type'       => 'input',
-                                        'label'      => __('Name'),
-                                        'required'   => true
+                            'title'  => __('Create Free Gift'),
+                            'fields' => [
+                                'ammount' => [
+                                    'type'     => 'input_number',
+                                    'label'    => __('Ammount spend'),
+                                    'required' => true,
+                                    "bind"     => [
+                                         'prefix'   => $this->parent->shop->currency->symbol, 
+                                         'min'      => 0
                                     ]
-                                ]
-                            ]
+                                   
+                                ],
+                                'products' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Products'),
+                                    'required'   => true,
+                                    'mode'       =>"tags",
+                                    'valueProp'  =>"id" ,
+                                    'label-prop' =>"name",
+                                    'type_label' => 'product',
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.org.shops.show.catalogue.products.all_products.index',
+                                        'parameters' => [
+                                            'organisation' => $this->parent->organisation->slug,
+                                            'shop'         => $this->parent->shop->slug,
+                                        ],
+                                    ],
+                                ],
+                            ],
                         ],
+                    ],
                     'route' => [
                         'name'       => '',
-                        'parameters' => []
-                    ]
+                        'parameters' => [],
+                    ],
                 ],
+
             ]
         );
     }
