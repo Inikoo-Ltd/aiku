@@ -97,7 +97,7 @@ class IndexPickingTrolleys extends OrgAction
                 'title'       => __('Picking trolleys'),
                 'pageHead'    => [
                     'title'  => __('Picking trolleys'),
-                    'icon'   => ['fal', 'fa-shopping-cart'],
+                    'icon'   => ['fal', 'dolly-flatbed-alt'],
                     'actions' => [
                         [
                             'type'  => 'button',

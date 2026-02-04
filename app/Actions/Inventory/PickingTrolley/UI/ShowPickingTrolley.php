@@ -11,8 +11,7 @@ namespace App\Actions\Inventory\PickingTrolley\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
-use App\Enums\UI\Inventory\PickingTrolleysTabsEnum;
-use App\Enums\UI\Inventory\WarehouseTabsEnum;
+use App\Enums\UI\Inventory\PickingTrolleyTabsEnum;
 use App\Http\Resources\Inventory\PickingTrolleyResource;
 use App\Models\Inventory\PickingTrolley;
 use App\Models\Inventory\Warehouse;
@@ -40,7 +39,7 @@ class ShowPickingTrolley extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, PickingTrolley $pickingTrolley, ActionRequest $request): PickingTrolley
     {
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PickingTrolleyTabsEnum::values());
 
         return $this->handle($pickingTrolley);
     }
@@ -62,10 +61,10 @@ class ShowPickingTrolley extends OrgAction
                 'pageHead'    => [
                     'icon'    =>
                         [
-                            'icon'  => ['fal', 'picking trolley'],
+                            'icon'  => ['fal', 'dolly-flatbed-alt'],
                             'title' => __('picking trolley')
                         ],
-                    'title'   => $pickingTrolley->name,
+                    'title'   => $pickingTrolley->code,
                     'model'   => __('Picking trolley'),
                     'actions' => [
                         [
@@ -82,12 +81,12 @@ class ShowPickingTrolley extends OrgAction
 
                 'tabs'     => [
                     'current'    => $this->tab,
-                    'navigation' => PickingTrolleysTabsEnum::navigation(),
+                    'navigation' => PickingTrolleyTabsEnum::navigation(),
                 ],
 
-                /*WarehouseTabsEnum::SHOWCASE->value => $this->tab == WarehouseTabsEnum::SHOWCASE->value ?
-                    fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)
-                    : Inertia::lazy(fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)),*/
+                PickingTrolleyTabsEnum::SHOWCASE->value => $this->tab == PickingTrolleyTabsEnum::SHOWCASE->value ?
+                    fn () => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'
+                    : Inertia::lazy(fn () => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'),
 
             ]
         );
