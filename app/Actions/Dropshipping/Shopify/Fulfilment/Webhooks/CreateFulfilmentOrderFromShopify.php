@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks;
 
+use App\Actions\Dropshipping\Shopify\Order\StoreFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Order\StoreOrderFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -57,6 +58,8 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
 
             if ($shopifyUser->customer->is_dropshipping) {
                 StoreOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
+            } else if($shopifyUser->customer->is_fulfilment) {
+                StoreFulfilmentOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
             }
         });
     }
