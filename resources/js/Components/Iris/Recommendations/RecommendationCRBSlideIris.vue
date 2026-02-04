@@ -19,6 +19,9 @@ const props = defineProps<{
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
+
+const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
+
 </script>
 
 <template>
@@ -51,9 +54,9 @@ const locale = inject('locale', aikuLocaleStructure)
             </component>
 
             <div class="mt-auto">
-                <div class="mt-3 text-center text-xxs md:text-base text-gray-700 italic">
+                <div vxif="product.customer_first_name" class="mt-3 text-center text-xxs md:text-base text-gray-700 italic">
                     <!-- <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${product.customer_country_code.toLowerCase()}.png`" /> -->
-                    {{ product.customer_contact_name }}
+                    {{ product.customer_first_name ?? firstName }}
                 </div>
                 <div class="text-center text-xxs md:text-sm text-gray-400 italic">
                     {{ useFormatTime(product.submitted_at) }}
