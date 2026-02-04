@@ -36,8 +36,7 @@ class ShowIrisCatalogue extends IrisAction
         $response = Inertia::render('Catalogue/CatalogueIris', [
             'tabs' => [
                 'current' => $this->validatedData['scope'],
-                'navigation' => $this->getTabNavigation(data_get($this->validatedData, 'parent_type', null)),
-
+                'navigation' => $this->getTabNavigation($request->query('parent_type', null)),
             ],
             'data' => $irisCatalogue,
         ]);

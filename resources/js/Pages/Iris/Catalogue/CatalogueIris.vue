@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
-import { router } from '@inertiajs/vue3'
-import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue';
-import TableIrisSubDepartment from '@/Components/Tables/Iris/TableIrisSubDepartment.vue';
-import TableIrisFamilies from '@/Components/Tables/Iris/TableIrisFamilies.vue';
-import TableIrisProducts from '@/Components/Tables/Iris/TableIrisProducts.vue';
-import Button from '@/Components/Elements/Buttons/Button.vue';
+import { computed, inject, ref, watch } from 'vue'
+import { router, usePage  } from '@inertiajs/vue3'
+import type { Component } from 'vue'
+
+import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue'
+import TableIrisSubDepartment from '@/Components/Tables/Iris/TableIrisSubDepartment.vue'
+import TableIrisFamilies from '@/Components/Tables/Iris/TableIrisFamilies.vue'
+import TableIrisProducts from '@/Components/Tables/Iris/TableIrisProducts.vue'
+
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { faArrowLeft, faArrowRight, faWindowClose } from '@far'
+
 
 const props = defineProps<{
     tabs: {
@@ -18,34 +23,22 @@ const props = defineProps<{
     data: any
 }>()
 
-const layout: any = inject("layout", {});
-
-const changeTab = (key: string) => {
-    if (key === props.tabs.current) return
-
-    router.get(
-        route(route().current() as string),
-        { scope: key },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        }
-    )
-}
+const layout: any = inject('layout', {})
 
 
-const componentMap: Record<string, any> = {
+const componentMap: Record<string, Component> = {
     department: TableIrisDepartment,
     sub_department: TableIrisSubDepartment,
     family: TableIrisFamilies,
     product: TableIrisProducts,
 }
 
-const activeComponent = computed(() => {
-    return componentMap[props.tabs.current] ?? null
-})
+const activeComponent = computed(() =>
+    componentMap[props.tabs.current] ?? null
+)
 
+
+const scopeOrder = ['department', 'sub_department', 'family', 'product']
 
 const nextScopeMap: Record<string, string | null> = {
     department: 'sub_department',
@@ -55,17 +48,48 @@ const nextScopeMap: Record<string, string | null> = {
 }
 
 
-const onSelectParent = (parentType: string, parentId: any) => {
-    const nextScope = nextScopeMap[parentType]
+type HistoryState = {
+    scope: string
+    parent_type?: string
+    parent_key?: any
+}
 
-    if (!nextScope) return
+const history = ref<HistoryState[]>([
+    { scope: props.tabs.current },
+])
 
+watch(
+    () => props.tabs.current,
+    (scope) => {
+        const last = history.value.at(-1)
+        if (last?.scope === scope) return
+
+        history.value.push({ scope })
+    }
+)
+
+
+const canBack = computed(() => history.value.length > 1)
+
+const canNext = computed(() => {
+    const idx = scopeOrder.indexOf(props.tabs.current)
+    return idx >= 0 && idx < scopeOrder.length - 1
+})
+
+
+const page = usePage()
+const canClear = computed(() => {
+    return page.url.includes('?')
+})
+
+
+const navigate = (state: HistoryState) => {
     router.get(
         route(route().current() as string),
         {
-            scope: nextScope,
-            parent_type: parentType,
-            parent_key: parentId,
+            scope: state.scope,
+            parent_type: state.parent_type,
+            parent_key: state.parent_key,
         },
         {
             preserveState: true,
@@ -76,44 +100,91 @@ const onSelectParent = (parentType: string, parentId: any) => {
 }
 
 
+const changeTab = (scope: string) => {
+    history.value.push({ scope })
+    navigate({ scope })
+}
+
+const goBack = () => {
+    if (!canBack.value) return
+
+    history.value.pop()
+    const prev = history.value.at(-1)
+    if (!prev) return
+
+    navigate(prev)
+}
+
+const goNext = () => {
+    const idx = scopeOrder.indexOf(props.tabs.current)
+    const nextScope = scopeOrder[idx + 1]
+    if (!nextScope) return
+
+    const last = history.value.at(-1)
+
+    history.value.push({
+        scope: nextScope,
+        parent_type: last?.parent_type,
+        parent_key: last?.parent_key,
+    })
+
+    navigate(history.value.at(-1)!)
+}
+
+const clearScope = () => {
+    history.value = [{ scope: 'department' }]
+    navigate({ scope: 'department' })
+}
 
 
+const onSelectParent = (parentType: string, parentId: any) => {
+    const nextScope = nextScopeMap[parentType]
+    if (!nextScope) return
 
+    const state: HistoryState = {
+        scope: nextScope,
+        parent_type: parentType,
+        parent_key: parentId,
+    }
+
+    history.value.push(state)
+    navigate(state)
+}
 </script>
 
 <template>
     <div class="max-w-7xl mx-auto my-8">
-        <!-- Container -->
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
 
             <!-- Top Bar -->
-            <div class="flex items-center gap-2 px-4 h-11 border-b border-gray-100">
-                <Button v-for="tab in tabs.navigation" :key="tab.key + tabs.current" @click="changeTab(tab.key)"
-                    class="px-3 h-7 text-sm font-medium rounded-lg transition" :type="
-                        tab.key === tabs.current
-                            ? 'primary'
-                            : 'secondary'
-                    ">
-                    {{ tab.label }}
-                </Button>
+            <div class="flex items-center justify-between px-4 h-11 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <Button v-for="tab in tabs.navigation" :key="tab.key"
+                        :type="tab.key === tabs.current ? 'primary' : 'secondary'" :label="tab.label"
+                        @click="changeTab(tab.key)" />
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <Button type="transparent" :disabled="!canBack" :icon="faArrowLeft" @click="goBack" />
+
+                    <Button type="transparent" :disabled="!canNext" :icon="faArrowRight" @click="goNext" />
+
+                    <Button type="transparent" :disabled="!canClear" :icon="faWindowClose" @click="clearScope" />
+                </div>
             </div>
 
-            <!-- Table Area -->
+            <!-- Table -->
             <div class="p-3 iris-catalouge">
-                <component 
-                    v-if="activeComponent" 
-                    :is="activeComponent" 
-                    :data="data"
-                    :tab="tabs.current" 
-                    @select-department="parent => onSelectParent('department', parent)"
-                    @select-sub-department="parent => onSelectParent('sub_department', parent)"
-                    @select-family="parent => onSelectParent('family', parent)"
-                />
+                <component v-if="activeComponent" :is="activeComponent" :data="data" :tab="tabs.current"
+                    @select-department="id => onSelectParent('department', id)"
+                    @select-sub-department="id => onSelectParent('sub_department', id)"
+                    @select-family="id => onSelectParent('family', id)" />
             </div>
 
         </div>
     </div>
 </template>
+
 
 
 <style scoped>
@@ -172,12 +243,12 @@ const onSelectParent = (parentType: string, parentId: any) => {
     @apply px-5 w-16;
 }
 
-:deep(.iris-catalouge .table-query-builder){
+:deep(.iris-catalouge .table-query-builder) {
     @apply p-0
 }
 
 
-:deep(.iris-catalouge .primaryLink){
+:deep(.iris-catalouge .primaryLink) {
     background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
 
     &:hover,
@@ -188,7 +259,7 @@ const onSelectParent = (parentType: string, parentId: any) => {
     @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
 }
 
-:deep(.iris-catalouge .secondaryLink){
+:deep(.iris-catalouge .secondaryLink) {
     background: v-bind('`linear-gradient(to top, ${layout.app.theme[6]}, ${layout.app.theme[6] + "AA"})`');
 
     &:hover,

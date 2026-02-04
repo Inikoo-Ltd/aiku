@@ -30,7 +30,7 @@ const props = defineProps<{
                 <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
-        <template #cell(state)="{ item: product }">
+        <template #cell(state)="{ item: product }">  
             <Tag :label="product.state.label" v-tooltip="product.state.label">
                 <template #label>
                     <Icon :data="product.state" /> <span :class="product.state.class">{{ product.state.label }}</span>
@@ -57,7 +57,7 @@ const props = defineProps<{
         </template>
 
           <template #cell(url)="{ item }">
-           <a :href="`/${item.code}`"> 
+           <a :href="item.canonical_url"> 
                 <FontAwesomeIcon :icon="faExternalLink" />
            </a>
         </template>
