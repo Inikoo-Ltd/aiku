@@ -15,6 +15,7 @@ use Sentry\Laravel\Facade as Sentry;
 use Throwable;
 use App\Actions\Helpers\Translations\DetectLanguage;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Helpers\Translations\DetectLanguageWithAI;
 
 class TranslateChatMessage
 {
@@ -163,7 +164,7 @@ class TranslateChatMessage
         }
 
         $targetCode = $targetLang->code;
-        $sourceCode = $originalLang ? $originalLang->code : 'auto-detect';
+        $sourceCode = $originalLang ? $originalLang->code : 'en';
 
         $translatedText = $this->performTranslationHelper($text, $sourceCode, $targetCode);
 
@@ -197,7 +198,7 @@ class TranslateChatMessage
 
         try {
             /** @var \App\Models\Helpers\Language|null $language */
-            $language = DetectLanguage::run($text);
+            $language = DetectLanguageWithAI::run($text);
 
             return $language?->code;
         } catch (Throwable $e) {
