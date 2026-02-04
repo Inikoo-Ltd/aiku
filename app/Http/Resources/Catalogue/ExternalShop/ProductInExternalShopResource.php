@@ -47,7 +47,6 @@ class ProductInExternalShopResource extends JsonResource
             'units'                         => trimDecimalZeros($product->units),
             'unit'                          => $product->unit,
             'price'                         => $product->price,
-            'rrp'                           => $product->rrp,
             'created_at'                    => $product->created_at,
             'updated_at'                    => $product->updated_at,
             'stock'                         => $product->available_quantity,

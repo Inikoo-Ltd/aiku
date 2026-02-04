@@ -146,6 +146,6 @@ class GetFaireProducts extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        $this->handle($shop, $this->validatedData);
+        GetFaireProducts::dispatch($shop, $this->validatedData);
     }
 }

@@ -369,7 +369,7 @@ class ShowProduct extends OrgAction
                     : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
 
                 ProductTabsEnum::STOCKS->value => $this->tab == ProductTabsEnum::STOCKS->value ?
-                    fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
+                fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
                     : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
                 ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
