@@ -54,7 +54,7 @@ const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
             </component>
 
             <div class="mt-auto">
-                <div vxif="product.customer_first_name" class="mt-3 text-center text-xxs md:text-base text-gray-700 italic">
+                <div v-if="layout?.iris?.is_logged_in" class="mt-3 text-center text-xxs md:text-base text-gray-700 italic">
                     <!-- <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${product.customer_country_code.toLowerCase()}.png`" /> -->
                     {{ product.customer_first_name ?? firstName }}
                 </div>
