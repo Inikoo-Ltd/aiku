@@ -3,6 +3,7 @@
 namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Helpers\Dashboard\CalculateTimeSeriesStats;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -12,9 +13,15 @@ class GetShopTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null): array
+    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null, ?ShopTypeEnum $filterType = null): array
     {
-        $shops = $parent->shops()->get();
+        $query = $parent->shops()->whereNull('closed_at');
+
+        if ($filterType) {
+            $query->where('type', $filterType->value);
+        }
+
+        $shops = $query->get();
 
         $shops->load(['timeSeries' => function ($query) {
             $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
