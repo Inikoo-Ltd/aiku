@@ -18,7 +18,7 @@ import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl } from "@fal";
-import { faSkull } from "@fas";
+import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import axios from "axios";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -31,7 +31,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faWandMagic);
 
 
 defineProps<{
@@ -533,7 +533,8 @@ const onSubmitPickMagicPlace = () => {
                             <Button
                                 v-if="layout.app.environment === 'local' && !itemValue.is_handled && Number(countStockInAllLocations(itemValue.locations)) < 1"
                                 @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
-                                type="rainbow"
+                                type="warning"
+                                key="4"
                                 v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
                                 :size="screenType == 'desktop' ? 'sm' : 'lg'"
                                 method="post"
@@ -544,7 +545,7 @@ const onSubmitPickMagicPlace = () => {
                                             <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
                                             <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
                                         </div>
-                                        <FontAwesomeIcon icon="fas fa-sparkles" class="text-yellow-200" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
                                     </span>
                                 </template>
                             </Button>
@@ -588,14 +589,15 @@ const onSubmitPickMagicPlace = () => {
                         <Button
                             v-if="layout.app.environment === 'local'"
                             @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
-                            type="rainbow"
+                            type="warning"
+                            key="4"
                             v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
                             :size="screenType == 'desktop' ? 'sm' : 'lg'"
                         >
                             <template #label>
                                 <span>
                                     {{ itemValue.quantity_to_pick.toString() || '0' }}
-                                    <FontAwesomeIcon icon="fas fa-sparkles" class="text-yellow-200" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
                                 </span>
                             </template>
                         </Button>
@@ -618,14 +620,15 @@ const onSubmitPickMagicPlace = () => {
                 <Button
                     v-if="layout.app.environment === 'local' && !itemValue.is_handled"
                     @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
-                    type="rainbow"
+                    type="warning"
+                    key="4"
                     v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
                     :size="screenType == 'desktop' ? 'sm' : 'lg'"
                 >
                     <template #label>
                         <span>
                             {{ itemValue.quantity_to_pick.toString() || '0' }}
-                            <FontAwesomeIcon icon="fas fa-sparkles" class="text-yellow-200" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
                         </span>
                     </template>
                 </Button>
@@ -767,9 +770,7 @@ const onSubmitPickMagicPlace = () => {
                     </div>
                     <div class="mt-2">
                         <p class="text-sm text-gray-500">
-                            {{
-                                trans("Yes, magic place.")
-                            }}
+                            {{ trans("Yes, magic place.") }}
                         </p>
                     </div>
 
@@ -780,12 +781,13 @@ const onSubmitPickMagicPlace = () => {
                                 type="warning"
                                 key="2"
                                 :loading="isLoadingSubmitPickMagicPlace"
-                                iconRight="fas fa-sparkles"
+                                iconRight="fas fa-wand-magic"
                                 full>
                                 <template #label>
-                                    <span class="whitespace-nowrap">
-                                        {{ trans("Yes, pick all") }}
-                                    </span>
+                                    <div class="whitespace-nowrap">
+                                        Yes, pick <FractionDisplay v-if="selectedItemToPickMagicPlace?.quantity_to_pick_fractional" :fractionData="selectedItemToPickMagicPlace?.quantity_to_pick_fractional" />
+                                        <span v-else>{{ locale.number(selectedItemToPickMagicPlace?.quantity_to_pick ?? 0) }}</span>
+                                    </div>
                                 </template>
                             </Button>
                         </div>
