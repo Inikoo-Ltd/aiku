@@ -40,6 +40,8 @@ class UpdateFaireInventoryQuantity extends OrgAction
             $products = $shop->products;
         }
 
-        $this->handle($shop, $products, $command);
+        foreach ($products->chunk(50) as $chunk) {
+            $this->handle($shop, $chunk, $command);
+        }
     }
 }
