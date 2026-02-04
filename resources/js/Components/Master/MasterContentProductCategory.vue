@@ -65,7 +65,7 @@ const current = ref(0)
 </template>
 
 
-<style lang="scss">
+<style lang="scss" scoped>
 .buttonPrimary {
   background-color: v-bind('layout?.app?.theme[4]') !important;
   color: v-bind('layout?.app?.theme[5]') !important;

@@ -24,11 +24,24 @@ class GeocoderService
 
         $httpClient = new GuzzleAdapter();
 
-        $provider = new Nominatim(
-            $httpClient,
-            'https://nominatim.openstreetmap.org',
-            config('app.name', 'Laravel App') . ' (' . config('mail.from.address', 'noreply@inikoo.com') . ')'
-        );
+        switch ($this->provider) {
+            case 'nominatim':
+            default:
+                $baseUrl = config('services.nominatim.url')
+                    ?: 'https://nominatim.openstreetmap.org/';
+
+                $userAgent = config('services.nominatim.user_agent')
+                    ?: (config('app.name', 'aiku') . ' (noreply@inikoo.com)');
+
+                Sentry::captureMessage('UserAgent: ' . $userAgent);
+
+                $provider = new Nominatim(
+                    $httpClient,
+                    $baseUrl,
+                    $userAgent
+                );
+                break;
+        }
 
         $this->geocoder = new StatefulGeocoder($provider, 'en');
     }
