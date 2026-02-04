@@ -81,6 +81,7 @@ class IndexPickingTrolleys extends OrgAction
                     ] : null,
                 ])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'delivery_note', label: __('Current Delivery Note'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
