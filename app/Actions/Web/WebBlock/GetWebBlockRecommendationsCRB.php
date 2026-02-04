@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock;
 
+use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -27,9 +28,18 @@ class GetWebBlockRecommendationsCRB
                 'name'  => $webpage->model->name,
                 'slug'  => $webpage->model->slug,
             ];
+
+            data_set($webBlock, 'web_block.layout.data.fieldValue.family', $family);
         }
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue.family', $family);
+        // If Product page
+        if ($webpage->model instanceof Product) {
+            $product = [
+                'id'    => $webpage->model->id
+            ];
+
+            data_set($webBlock, 'web_block.layout.data.fieldValue.product', $product);
+        }
 
         return $webBlock;
     }
