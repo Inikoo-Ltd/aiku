@@ -23,6 +23,7 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -385,6 +386,22 @@ class ShowOrder extends OrgAction
                 'payments_data'     => $paymentsData,
                 'payments_accounts' => $paymentAccountData,
                 'state'             => $order->state->value,
+                'route_recalculate_vat' => [
+                    // Show button if order is creating (not submitted) and deliveryNote has is_cash_on_delivery true and it's not in those condition. Based on Dimitar requests.
+                    'showButton' => in_array($order->state, [OrderStateEnum::CREATING]) || 
+                        $order->deliveryNotes()
+                            ->where('is_cash_on_delivery', true)
+                            ->whereNotIn('state', [
+                                DeliveryNoteStateEnum::DISPATCHED,
+                                DeliveryNoteStateEnum::FINALISED,
+                                DeliveryNoteStateEnum::CANCELLED,
+                            ])
+                            ->exists(),
+                    'name'       => 'grp.models.order.recalculate-vat',
+                    'parameters' => [
+                        'order'        => $order->id
+                    ]
+                ],
                 'proforma_invoice' => [
                     'check_list'         => [
                         [

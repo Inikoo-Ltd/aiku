@@ -2,7 +2,6 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use OpenAI;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Facades\Log;
 use App\Events\BroadcastRealtimeChat;
@@ -13,8 +12,8 @@ use App\Models\CRM\Livechat\ChatMessageTranslation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use Sentry\Laravel\Facade as Sentry;
 use Throwable;
-use App\Actions\Helpers\Translations\DetectLanguage;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Helpers\Translations\DetectLanguageWithAI;
 
 class TranslateChatMessage
 {
@@ -85,19 +84,12 @@ class TranslateChatMessage
         }
 
 
-        $detectedLangCode = $this->detectLanguageCode($text);
+        $language = $this->detectLanguageCode($text);
 
 
-        if ($detectedLangCode) {
-
-            $language = Language::where('code', $detectedLangCode)->first();
-
-            if ($language) {
-
+        if ($language) {
                 $message->update(['original_language_id' => $language->id]);
-
                 $this->updateSessionLanguage($session, $language->id);
-            }
         }
     }
 
@@ -163,7 +155,7 @@ class TranslateChatMessage
         }
 
         $targetCode = $targetLang->code;
-        $sourceCode = $originalLang ? $originalLang->code : 'auto-detect';
+        $sourceCode = $originalLang ? $originalLang->code : 'en';
 
         $translatedText = $this->performTranslationHelper($text, $sourceCode, $targetCode);
 
@@ -189,7 +181,7 @@ class TranslateChatMessage
     }
 
 
-    private function detectLanguageCode(string $text): ?string
+    private function detectLanguageCode(string $text): ?Language
     {
         if (mb_strlen(trim($text)) <= 3) {
             return null;
@@ -197,9 +189,9 @@ class TranslateChatMessage
 
         try {
             /** @var \App\Models\Helpers\Language|null $language */
-            $language = DetectLanguage::run($text);
+            $language = DetectLanguageWithAI::run($text);
 
-            return $language?->code;
+            return $language;
         } catch (Throwable $e) {
             Log::error($e->getMessage());
             Sentry::captureException($e);

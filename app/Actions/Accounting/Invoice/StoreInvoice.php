@@ -46,6 +46,10 @@ class StoreInvoice extends OrgAction
      */
     public function handle(Customer|Order|RecurringBill $parent, array $modelData): Invoice
     {
+        if ($parent instanceof Order) {
+            data_set($modelData, 'sales_channel_id', $parent->sales_channel_id, overwrite: false);
+        }
+
         data_set($modelData, 'uuid', Str::uuid());
         data_set($modelData, 'ulid', Str::ulid());
 

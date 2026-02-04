@@ -48,18 +48,18 @@ class CreateFreeGift extends OrgAction
                                     'label'    => __('Ammount spend'),
                                     'required' => true,
                                     "bind"     => [
-                                         'prefix'   => $shop->currency->symbol, 
+                                         'prefix'   => $shop->currency->symbol,
                                          'min'      => 0
                                     ]
-                                   
+
                                 ],
                                 'products' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Products'),
                                     'required'   => true,
-                                    'mode'       =>"tags",
-                                    'valueProp'  =>"id" ,
-                                    'label-prop' =>"name",
+                                    'mode'       => "tags",
+                                    'valueProp'  => "id" ,
+                                    'label-prop' => "name",
                                     'type_label' => 'product',
                                     'fetchRoute' => [
                                         'name'       => 'grp.org.shops.show.catalogue.products.all_products.index',

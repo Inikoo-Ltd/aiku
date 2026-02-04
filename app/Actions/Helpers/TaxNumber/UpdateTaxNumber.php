@@ -14,7 +14,7 @@ use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\TaxNumber;
-use Arr;
+use Illuminate\Support\Arr;
 
 class UpdateTaxNumber
 {
@@ -23,7 +23,6 @@ class UpdateTaxNumber
 
     public function handle(TaxNumber $taxNumber, array $modelData, bool $strict = true): TaxNumber
     {
-
         $oldChecksumData = array($taxNumber->number,$taxNumber->country_id);
         if (Arr::has($modelData, 'number')) {
             $oldChecksumData[0] = $modelData['number'];
