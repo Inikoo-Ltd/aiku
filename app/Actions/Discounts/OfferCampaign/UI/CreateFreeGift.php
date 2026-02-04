@@ -18,7 +18,7 @@ class CreateFreeGift extends OrgAction
             'CreateModel',
             [
                 'title'       => __('Free Gift'),
-                'breadcrumbs' => $this->getBreadcrumbs($this->parent, request()->route()->getName(), request()->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs(request()->route()->getName(), request()->route()->originalParameters()),
                 'pageHead'    => [
                     'title'   => __('Free Gift'),
                     'icon'    => [
@@ -63,29 +63,25 @@ class CreateFreeGift extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
-        $this->parent = $offerCampaign;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle();
     }
 
-    public function getBreadcrumbs(OfferCampaign $offerCampaign, string $routeName, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return array_merge(
-            ShowOfferCampaign::make()->getBreadcrumbs($offerCampaign, $routeName, $routeParameters, $suffix),
+        return [
             [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'icon'  => 'fal fa-gift',
-                        'label' => __('Free Gift'),
-                        'route' => [
-                            'name'       => 'grp.org.shops.discounts.campaigns.free_gift',
-                            'parameters' => $routeParameters
-                        ]
+                'type'   => 'simple',
+                'simple' => [
+                    'icon'  => 'fal fa-gift',
+                    'label' => __('Free Gift'),
+                    'route' => [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
                     ]
-                ],
+                ]
             ],
-        );
+        ];
     }
 }
