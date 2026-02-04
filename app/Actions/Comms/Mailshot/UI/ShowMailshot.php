@@ -215,6 +215,13 @@ class ShowMailshot extends OrgAction
                         'mailshot' => $mailshot->id
                     ],
                 ],
+                'updateSecondWaveRoute' => [
+                    'name' => 'grp.models.shop.mailshot.second-wave.update',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
                 'status' => $mailshot->state->value,
                 'estimatedRecipients' => $estimatedRecipients,
                 'mailshotType' => $mailshot->type->value,

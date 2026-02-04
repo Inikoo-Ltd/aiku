@@ -46,6 +46,7 @@ const props = defineProps<{
     estimatedRecipients?: number
     mailshotType?: string
     setSecondWaveRoute?: routeType
+    updateSecondWaveRoute?: routeType
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -401,21 +402,61 @@ const handleToggleSecondWave = async (value: boolean) => {
         })
 }
 
-const handleSaveSecond = () => {
-    if (!checked.value) return
+const handleSaveSecond = async () => {
+    // if (!checked.value) return
 
-    if (!subject.value.trim()) {
-        alert("Subject required")
-        return
-    }
+    // if (!subject.value.trim()) {
+    //     alert("Subject required")
+    //     return
+    // }
 
     console.log("SAVE DATA", {
         subject: subject.value,
         hour: hour.value
     })
 
-    // contoh axios
-    // axios.post('/api/second-wave', { subject: subject.value, hour: hour.value })
+    if (!props.updateSecondWaveRoute) {
+        return
+    }
+
+    await axios.patch(route(props.updateSecondWaveRoute?.name, props.setSecondWaveRoute?.parameters), {
+        subject: "Testing update Subject",
+        send_delay_hours: 72
+    })
+        .then((response) => {
+            if (response.data) {
+                notify({
+                    type: 'success',
+                    title: 'Success',
+                    text: 'Second wave data updated successfully',
+                })
+
+            } else {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Failed to delete mailshot',
+                })
+            }
+        })
+        .catch((exception) => {
+            console.log(exception);
+            notify({
+                type: 'error',
+                title: 'Error',
+                text: 'Failed to delete mailshot',
+            })
+        })
+        .finally(() => {
+            if (!props.indexRoute) {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Mailshot index route not configured',
+                })
+                return;
+            }
+        })
 }
 watch(
     filteredTabs,
@@ -534,7 +575,9 @@ console.log("props mailshot", props)
                     <small class="text-gray-400">Default: 48 hours</small>
                 </div>
 
-                <Button label="Save" type="submit" icon="save" />
+                <!-- <Button label="Save" type="submit" icon="save" />
+                 butt -->
+                <button type="submit">save</button>
             </form>
         </template>
     </div>
