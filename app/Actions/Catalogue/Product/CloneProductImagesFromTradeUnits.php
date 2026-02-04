@@ -8,14 +8,20 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Concerns\CanCloneImages;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImages;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\AsCommand;
 
 class CloneProductImagesFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
+    use AsCommand;
+    use CanCloneImages;
 
     public function getJobUniqueId(Product $product): string
     {
@@ -28,34 +34,15 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
             return;
         }
 
-        $images   = [];
-        $position = 1;
-
+        /** @var \App\Models\Goods\TradeUnit $tradeUnit */
         $tradeUnit = $product->tradeUnits->first();
 
         if (!$tradeUnit) {
             return;
         }
 
+        $this->cloneImages($tradeUnit, $product);
 
-        foreach ($tradeUnit->images as $image) {
-            $images[$image->id] = [
-                'is_public'       => true,
-                'scope'           => 'photo',
-                'sub_scope'       => $image->pivot->sub_scope,
-                'caption'         => $image->pivot->caption,
-                'organisation_id' => $product->organisation_id,
-                'group_id'        => $product->group_id,
-                'position'        => $position++,
-                'created_at'      => now(),
-                'updated_at'      => now(),
-                'data'            => '{}'
-
-            ];
-        }
-
-
-        $product->images()->sync($images);
         $product->update([
             'image_id'                 => $tradeUnit->image_id,
             'front_image_id'           => $tradeUnit->front_image_id,
@@ -74,9 +61,41 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
             'lifestyle_image_id'       => $tradeUnit->lifestyle_image_id,
         ]);
 
-        ProductHydrateImages::dispatch($product);
+        ProductHydrateImages::run($product);
         UpdateProductWebImages::run($product);
     }
 
+    public string $commandSignature = 'catalogue:product:clone-images-from-trade-units {product?}';
 
+    public function asCommand(Command $command): int
+    {
+        if ($command->argument('product')) {
+            /** @var Product $product */
+            $product = Product::where('slug', $command->argument('product'))
+                ->firstOrFail();
+
+            $this->handle($product);
+
+            $command->info("Images cloned from trade units for product: $product->code");
+            return 0;
+        }
+
+        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
+
+        $query = Product::whereIn('shop_id', $aikuShops);
+        $total = $query->count();
+
+        $command->getOutput()->progressStart($total);
+
+        $query->chunk(100, function ($products) use ($command) {
+            foreach ($products as $product) {
+                $this->handle($product);
+                $command->getOutput()->progressAdvance();
+            }
+        });
+
+        $command->getOutput()->progressFinish();
+
+        return 0;
+    }
 }
