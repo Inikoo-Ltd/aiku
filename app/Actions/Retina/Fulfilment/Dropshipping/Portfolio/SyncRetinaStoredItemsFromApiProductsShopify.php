@@ -9,6 +9,8 @@
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\StoreShopifyLocationToProductVariant;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Actions\OrgAction;
@@ -93,7 +95,7 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                             $portfolio = $storedItem->portfolio;
                             if (!$portfolio) {
 
-                                StorePortfolio::make()->action(
+                                $portfolio = StorePortfolio::make()->action(
                                     $shopifyUser->customerSalesChannel,
                                     $storedItem,
                                     [
@@ -101,12 +103,15 @@ class SyncRetinaStoredItemsFromApiProductsShopify extends OrgAction
                                         'platform_product_variant_id' => Arr::get($variant, 'admin_graphql_api_id'),
                                     ]
                                 );
+
+                                StoreShopifyLocationToProductVariant::run($portfolio);
                             }
 
                             UpdateStoredItem::run($storedItem, [
                                 'state' => StoredItemStateEnum::ACTIVE
                             ]);
                         }
+
                         $numberSuccess++;
                     } catch (ValidationException $exception) {
                         $numberFails++;

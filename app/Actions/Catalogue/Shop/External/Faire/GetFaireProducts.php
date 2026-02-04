@@ -21,38 +21,47 @@ class GetFaireProducts extends OrgAction
 {
     public string $commandSignature = 'faire:products {shop}';
 
-    public $jobQueue = 'low-priority';
+    public $jobQueue = 'default-long';
 
-    public function handle(Shop $shop): void
+    public function handle(Shop $shop, ?Command $command = null): void
     {
         $faireProducts = [];
-        $limit = 50;
-        $page = 1;
+        $limit         = 50;
+        $page          = 1;
 
         do {
             $response = $shop->getFaireProducts([
                 'limit' => $limit,
-                'page' => $page
+                'page'  => $page
             ]);
+
+
             $fetchedProducts = Arr::get($response, 'products');
+
             $faireProducts = array_merge($faireProducts, $fetchedProducts ?? []);
+            if ($command) {
+                $command->info("Fetched  ($page) ".count($fetchedProducts)." products, total: ".count($faireProducts));
+            }
+
 
             $page++;
         } while (count($fetchedProducts) === $limit);
+
+
 
         foreach ($faireProducts as $faireProduct) {
             foreach ($faireProduct['variants'] as $variant) {
                 if (Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->exists()) {
                     $product = Product::where('shop_id', $shop->id)->where('code', $variant['sku'])->first();
                     UpdateProduct::make()->action($product, [
-                        'code'        => $variant['sku'],
-                        'name'        => $faireProduct['name'].' - '.$variant['name'],
-                        'description' => $faireProduct['description'],
-                        'rrp'         => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
-                        'price'       => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
-                        'units'       => $faireProduct['unit_multiplier'],
+                        'code'           => $variant['sku'],
+                        'name'           => $faireProduct['name'].' - '.$variant['name'],
+                        'description'    => $faireProduct['description'],
+                        'rrp'            => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
+                        'price'          => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
+                        'units'          => $faireProduct['unit_multiplier'],
                         'marketplace_id' => $faireProduct['id'],
-                        'data'        => [
+                        'data'           => [
                             'faire' => $variant
                         ]
                     ], strict: false);
@@ -61,22 +70,23 @@ class GetFaireProducts extends OrgAction
                 }
 
                 StoreProduct::make()->action($shop, [
-                    'code'         => $variant['sku'],
-                    'name'         => $faireProduct['name'].' - '.$variant['name'],
-                    'description'  => $faireProduct['description'],
-                    'rrp'          => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
-                    'price'        => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
-                    'unit'         => 'Piece',
-                    'units'        => $faireProduct['unit_multiplier'],
-                    'is_main'      => true,
-                    'trade_config' => ProductTradeConfigEnum::AUTO,
-                    'status'       => ProductStatusEnum::FOR_SALE,
-                    'state'        => ProductStateEnum::IN_PROCESS,
+                    'code'           => $variant['sku'],
+                    'name'           => $faireProduct['name'].' - '.$variant['name'],
+                    'description'    => $faireProduct['description'],
+                    'rrp'            => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
+                    'price'          => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
+                    'unit'           => 'Piece',
+                    'units'          => $faireProduct['unit_multiplier'],
+                    'is_main'        => true,
+                    'trade_config'   => ProductTradeConfigEnum::AUTO,
+                    'status'         => ProductStatusEnum::FOR_SALE,
+                    'state'          => ProductStateEnum::IN_PROCESS,
                     'marketplace_id' => $faireProduct['id'],
-                    'data'         => [
+                    'data'           => [
                         'faire' => $variant
                     ]
                 ], strict: false);
+                $command?->info("Product added: ".$faireProduct['name'].' - '.$variant['name']);
             }
         }
     }
@@ -87,7 +97,7 @@ class GetFaireProducts extends OrgAction
             ->where('slug', $command->argument('shop'))
             ->first();
 
-        $this->handle($shop);
+        $this->handle($shop, $command);
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): void

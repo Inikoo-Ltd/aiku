@@ -4,13 +4,13 @@ import { faChevronDown } from "@far"
 import { faChartLine, faPlay } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
-import { faCog, faFolderOpen, faSeedling, faTimesCircle, faTriangle, faSitemap } from "@fal"
+import { faCog, faFolderOpen, faSeedling, faTimesCircle, faTriangle, faSitemap, faGiftCard } from "@fal"
 import "tippy.js/dist/tippy.css"
 import { capitalize } from "@/Composables/capitalize"
 import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
 import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 
-library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine)
+library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine, faGiftCard)
 
 const props = defineProps<{
 	title: string

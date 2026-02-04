@@ -70,7 +70,7 @@ const fetchRecommenders = async () => {
             const response = await axios.get(
                 route('grp.json.product_category.last-ordered-products.index', {
                     productCategory: props.modelValue?.family?.id,
-                    product: props.modelValue?.product?.id,
+                    ignoredProductId: props.modelValue?.product?.id,
                 })
             )
             if (response.status !== 200) {
