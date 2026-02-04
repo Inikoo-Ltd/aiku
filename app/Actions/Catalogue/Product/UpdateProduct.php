@@ -118,7 +118,6 @@ class UpdateProduct extends OrgAction
                 $product->update(['is_single_trade_unit' => $product->tradeUnits()->count() == 1]);
                 CloneProductImagesFromTradeUnits::run($product);
             }
-
         }
 
 
@@ -285,9 +284,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInLuigi
-            )
+                    $changed,
+                    $fieldsUsedInLuigi
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60 * 15);
@@ -301,9 +300,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInWebpages
-            )
+                    $changed,
+                    $fieldsUsedInWebpages
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
@@ -348,8 +347,8 @@ class UpdateProduct extends OrgAction
             'code'                      => [
                 'sometimes',
                 'required',
-                'max:32',
-                new AlphaDashDot(),
+                'max:64',
+                $this->shop->type == ShopTypeEnum::EXTERNAL ? 'string' : new AlphaDashDot(),
                 Rule::notIn(['export', 'create', 'upload']),
                 new IUnique(
                     table: 'products',
