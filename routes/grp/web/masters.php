@@ -30,6 +30,7 @@ use App\Actions\Masters\MasterProductCategory\UI\EditMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\EditMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamilies;
+use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesGR;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
@@ -207,7 +208,7 @@ Route::name("master_shops")->prefix('master-shops')
             });
 
             Route::prefix('master-gr')->as('.master_gr.')->group(function () {
-                Route::get('', [IndexMasterFamilies::class, 'inMasterGR'])->name('index');
+                Route::get('', IndexMasterFamiliesGR::class)->name('index');
             });
 
             Route::prefix('master-sub-departments')->as('.master_sub_departments.')->group(function () {
