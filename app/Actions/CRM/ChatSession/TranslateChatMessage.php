@@ -11,6 +11,8 @@ use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Livechat\ChatMessageTranslation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use Sentry\Laravel\Facade as Sentry;
+use Throwable;
 
 class TranslateChatMessage
 {
@@ -224,8 +226,8 @@ class TranslateChatMessage
             }
 
             return null;
-        } catch (\Throwable $e) {
-            Sentry::captureException($e);
+        } catch (Throwable $e) {
+            Sentry::captureMessage($e->getMessage());
             return null;
         }
     }
@@ -257,8 +259,8 @@ class TranslateChatMessage
             ]);
 
             return trim($response->choices[0]->message->content);
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
+        } catch (Throwable $e) {
+            Sentry::captureMessage($e->getMessage());
             return null;
         }
     }
