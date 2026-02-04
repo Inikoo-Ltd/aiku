@@ -69,6 +69,7 @@ class LastOrderedProductsResource extends JsonResource
             'submitted_at'              => $this->submitted_at,
             'customer_contact_name'     => $this->customer_contact_name,
             'customer_name'             => $this->customer_name,
+            'customer_first_name'       => data_get($this->contact_name_components, 'first_name', null),
             'customer_country_code'     => $this->customer_country_code,
         ];
     }
