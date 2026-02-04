@@ -9,6 +9,7 @@ namespace App\Actions\Ordering\SalesChannel;
 
 use App\Actions\Helpers\Dashboard\CalculateTimeSeriesStats;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -19,7 +20,7 @@ class GetSalesChannelTimeSeriesStats
 
     public function handle(Group $group, $from_date = null, $to_date = null): array
     {
-        $salesChannels = SalesChannel::where('group_id', $group->id)->get();
+        $salesChannels = SalesChannel::where('group_id', $group->id)->where('type', SalesChannelTypeEnum::MARKETPLACE)->get();
 
         $salesChannels->load(['timeSeries' => function ($query) {
             $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);
