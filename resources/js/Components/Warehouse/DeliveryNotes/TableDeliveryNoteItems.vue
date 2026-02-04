@@ -202,6 +202,13 @@ const onSubmitEditExpiryDate = () => {
     )
 }
 
+const countStockInAllLocations = (loc?: {}[]) => {
+    if (!!(loc?.length)) {
+        return loc?.reduce((sum, item) => sum + Number(item.quantity), 0) ?? 0
+    } else {
+        return 0
+    }
+}
 
 
 // Section: Modal pick from magic place
@@ -522,10 +529,9 @@ const onSubmitPickMagicPlace = () => {
                                     </div>
                                 </template>
                             </NumberWithButtonSave>
-
                             
                             <Button
-                                v-if="layout.app.environment === 'local' && !itemValue.is_handled"
+                                v-if="layout.app.environment === 'local' && !itemValue.is_handled && Number(countStockInAllLocations(itemValue.locations)) < 1"
                                 @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
                                 type="rainbow"
                                 v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
