@@ -78,9 +78,9 @@ class UpdateCatalogueDuringMigration
                 shop: $shop,
                 deleteMissing: true
             );
-//            if(!in_array($shop->slug, ['bg', 'ua'])){
-//                UpdateProductDescriptionAndNameFromAurora::run($shop);
-//            }
+            if(!in_array($shop->slug, ['bg', 'ua'])){
+                UpdateProductDescriptionAndNameFromAurora::run($shop);
+            }
         }
     }
 
