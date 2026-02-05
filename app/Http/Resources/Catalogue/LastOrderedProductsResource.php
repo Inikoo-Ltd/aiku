@@ -42,34 +42,36 @@ class LastOrderedProductsResource extends JsonResource
     public function toArray($request): array
     {
         $imageSources = null;
-        $thumbnailImageSources = null;
+        // $thumbnailImageSources = null;
         $media        = Media::find($this->image_id);
         if ($media) {
             $image        = $media->getImage()->resize(400, 400);
             $imageSources = GetPictureSources::run($image);
 
-            $imageThumbnail        = $media->getImage()->resize(64, 64);
-            $thumbnailImageSources = GetPictureSources::run($imageThumbnail);
+            // $imageThumbnail        = $media->getImage()->resize(64, 64);
+            // $thumbnailImageSources = GetPictureSources::run($imageThumbnail);
         }
 
 
         return [
-            'id'                        => $this->id,
-            'slug'                      => $this->slug,
-            'asset_id'                  => $this->asset_id,
-            'historic_id'               => $this->current_historic_asset_id,
+            // 'id'                        => $this->id,
+            // 'slug'                      => $this->slug,
+            // 'asset_id'                  => $this->asset_id,
+            // 'historic_id'               => $this->current_historic_asset_id,
             'code'                      => $this->code,
             'canonical_url'             => $this->canonical_url,
             'name'                      => $this->name,
-            'image_thumbnail'           => $thumbnailImageSources,
+            // 'image_thumbnail'           => $thumbnailImageSources,
             'image'                     => $imageSources,
-            'state'                     => $this->state,
-            'available_quantity'        => $this->available_quantity,
-            'price'                     => $this->price,
+            // 'state'                     => $this->state,
+            // 'available_quantity'        => $this->available_quantity,
+            // 'price'                     => $this->price,
             'submitted_at'              => $this->submitted_at,
             'customer_contact_name'     => $this->customer_contact_name,
-            'customer_name'             => $this->customer_name,
-            'customer_country_code'     => $this->customer_country_code,
+            'customer_first_name'       => data_get(json_decode($this->contact_name_components ?? '{}'), 'first_name', null),
+            // 'contact_name_components'     => $this->contact_name_components,
+            // 'customer_name'             => $this->customer_name,
+            // 'customer_country_code'     => $this->customer_country_code,
         ];
     }
 }

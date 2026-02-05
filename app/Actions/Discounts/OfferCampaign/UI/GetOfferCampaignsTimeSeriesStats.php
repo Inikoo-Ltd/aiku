@@ -44,7 +44,9 @@ class GetOfferCampaignsTimeSeriesStats
                 $timeSeriesIds,
                 [
                     'customers' => 'customers_invoiced',
-                    'orders' => 'orders'
+                    'orders'    => 'orders',
+                    'invoices'  => 'invoices',
+                    'sales'     => 'sales_grp_currency',
                 ],
                 'offer_campaign_time_series_records',
                 'offer_campaign_time_series_id',
@@ -65,7 +67,10 @@ class GetOfferCampaignsTimeSeriesStats
             }
 
             // Merge offer campaign attributes with stats
-            $results[] = array_merge($offerCampaign->toArray(), $stats);
+            $results[] = array_merge($offerCampaign->toArray(), $stats, [
+                'shop_slug' => $shop->slug ?? 'unknown',
+                'organisation_slug' => $shop->organisation->slug ?? 'unknown',
+            ]);
         }
 
         return $results;

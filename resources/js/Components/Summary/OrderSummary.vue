@@ -23,7 +23,7 @@ const locale = inject('locale', aikuLocaleStructure)
 <template>
     <dl class="flex flex-col text-gray-500 rounded-lg" :class="size === 'sm' ? 'text-xs' : 'space-y-2'">
         <template v-for="(summaryGroup, summaryRowIndex) in order_summary" :key="'fieldSummary' + summaryRowIndex">
-            <div v-if="summaryGroup.length" class="first:pt-0 pr-2 flex flex-col first:border-t-0 border-t border-gray-200 " :class="size === 'sm' ? 'gap-y-1 pt-1 pb-1.5' : 'gap-y-2 pt-2'">
+            <div v-if="summaryGroup.length" class="first:pt-0 pr-2 flex flex-col first:border-t-0 border-t border-gray-300 " :class="size === 'sm' ? 'gap-y-1 pt-1 pb-1.5' : 'gap-y-2 pt-2'">
                 <div v-for="fieldSummary in summaryGroup" class="grid grid-cols-7 gap-x-4 items-center justify-between"
                     :style="fieldSummary.styleField"
                 >

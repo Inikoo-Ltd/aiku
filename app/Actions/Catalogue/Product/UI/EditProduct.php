@@ -178,7 +178,7 @@ class EditProduct extends OrgAction
                     'blueprint' => !$isExternalShop ? $this->getBlueprint($product) : $this->getBlueprintExternal($product),
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.product.update',
+                            'name'       => !$isExternalShop ? 'grp.models.product.update' : 'grp.models.product.external.update',
                             'parameters' => [
                                 'product' => $product->id
                             ]
@@ -244,20 +244,20 @@ class EditProduct extends OrgAction
                     ],
                 ],
             ],
-            ($product->shop->engine == ShopEngineEnum::FAIRE && $product->state == ProductStateEnum::IN_PROCESS) ? [
-                'label'  => __('Product State'),
-                'icon'   => 'fa-light fa-fingerprint',
-                'fields' => [
-                    'state'        => [
-                        'type'      => 'select',
-                        'label'     => __('Set Product State'),
-                        'value'     => $product->state->value,
-                        'options'   => Arr::except(ProductStateEnum::asOption(), [ProductStateEnum::DISCONTINUED->value, ProductStateEnum::DISCONTINUING->value]),
-                        'mode'      => 'single',
-                        'required'  => true,
-                    ],
-                ]
-            ] : null,
+            // ($product->shop->engine == ShopEngineEnum::FAIRE && $product->state == ProductStateEnum::IN_PROCESS) ? [
+            //     'label'  => __('Product State'),
+            //     'icon'   => 'fa-light fa-fingerprint',
+            //     'fields' => [
+            //         'state'        => [
+            //             'type'      => 'select',
+            //             'label'     => __('Set Product State'),
+            //             'value'     => $product->state->value,
+            //             'options'   => Arr::except(ProductStateEnum::asOption(), [ProductStateEnum::DISCONTINUED->value, ProductStateEnum::DISCONTINUING->value]),
+            //             'mode'      => 'single',
+            //             'required'  => true,
+            //         ],
+            //     ]
+            // ] : null,
         ]);
     }
 

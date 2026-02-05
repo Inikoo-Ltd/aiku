@@ -28,7 +28,7 @@ const isLoadingVisit = ref(false)
 </script>
 
 <template>
-  <div class="relative flex flex-col h-full p-3 rounded bg-white">
+  <div class="relative flex flex-col h-full md:p-3 rounded bg-white">
 
     <!-- IMAGE -->
     <div class="mb-3 flex justify-center">
@@ -41,7 +41,7 @@ const isLoadingVisit = ref(false)
     </div>
 
     <!-- TITLE -->
-    <span class="mb-1 text-[16px] font-semibold leading-snug line-clamp-2 min-h-[3em]"  :title="product.name">
+    <span class="mb-1 text-[13px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em]"  :title="product.name">
       <component :is="product.url ? LinkIris : 'div'"  :href="product.url" class="hover:underline"
         @success="() => SelectItemCollector(product)" @start="() => isLoadingVisit = true"
         @finish="() => isLoadingVisit = false">

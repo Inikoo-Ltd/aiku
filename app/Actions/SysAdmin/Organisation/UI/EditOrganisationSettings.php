@@ -188,6 +188,16 @@ class EditOrganisationSettings extends OrgAction
                                 ]
                             ],
                         ],
+                        [
+                            'label'  => __('Working hours & salary'),
+                            'icon'   => 'fa-light fa-truck',
+                            'fields' => [
+                                'working_hours' => [
+                                    'type'          => 'working-hours',
+                                    'value'         => $organisation->working_hours ?? [],
+                                ]
+                            ],
+                        ],
                     ],
                     "args"      => [
                         "updateRoute" => [

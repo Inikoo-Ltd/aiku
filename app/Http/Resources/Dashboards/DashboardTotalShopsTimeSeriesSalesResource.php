@@ -3,11 +3,20 @@
 namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
+use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
 {
     use WithDashboardIntervalValuesFromArray;
+
+    protected ?GroupDashboardSalesTableTabsEnum $context = null;
+
+    public function withContext(?GroupDashboardSalesTableTabsEnum $context): self
+    {
+        $this->context = $context;
+        return $this;
+    }
 
     public function toArray($request): array
     {
@@ -125,15 +134,27 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
             ];
         }
 
+        $labelFull = match ($this->context) {
+            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => 'All Dropshipping',
+            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => 'All Fulfilment',
+            default => 'All Shops',
+        };
+
+        $labelTooltip = match ($this->context) {
+            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => 'All Dropshipping',
+            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => 'All Fulfilment',
+            default => 'All Shops',
+        };
+
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => 'All Shops',
+                    'formatted_value' => $labelFull,
                     'align'           => 'left',
                 ],
                 'label_minified' => [
                     'formatted_value' => 'All',
-                    'tooltip'         => 'All Shops',
+                    'tooltip'         => $labelTooltip,
                     'align'           => 'left',
                 ],
             ],
@@ -162,14 +183,26 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
 
     private function getEmptyColumns(): array
     {
+        $labelFull = match ($this->context) {
+            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => 'All Dropshipping',
+            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => 'All Fulfilment',
+            default => 'All Shops',
+        };
+
+        $labelTooltip = match ($this->context) {
+            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => 'All Dropshipping',
+            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => 'All Fulfilment',
+            default => 'All Shops',
+        };
+
         return [
             'label' => [
-                'formatted_value' => 'All Shops',
+                'formatted_value' => $labelFull,
                 'align'           => 'left',
             ],
             'label_minified' => [
                 'formatted_value' => 'All',
-                'tooltip'         => 'All Shops',
+                'tooltip'         => $labelTooltip,
                 'align'           => 'left',
             ],
         ];

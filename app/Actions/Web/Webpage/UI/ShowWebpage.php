@@ -274,6 +274,8 @@ class ShowWebpage extends OrgAction
         $subNavigationRoot = '';
 
 
+        $canonicalPath = parse_url($webpage->canonical_url ?? '', PHP_URL_PATH);
+
         return Inertia::render(
             'Org/Web/Webpage',
             [
@@ -281,12 +283,13 @@ class ShowWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpage'),
+                'title'       => __('Webpage') . ' ' . $webpage->code,
                 'pageHead'    => [
                     'title'         => $webpage->code,
                     'afterTitle'    => [
-                        'label' => '../'.$webpage->url,
+                        'label' => '..' . $canonicalPath,
                     ],
+                    'model' => __('Webpage'),
                     'icon'          => [
                         'title' => __('Webpage'),
                         'icon'  => 'fal fa-browser'

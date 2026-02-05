@@ -33,6 +33,7 @@ use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
@@ -129,7 +130,6 @@ class UpdateCustomer extends OrgAction
             }
         }
 
-
         if (Arr::has($modelData, 'tax_number')) {
             if ($this->strict) {
                 $taxNumberData = [];
@@ -151,7 +151,6 @@ class UpdateCustomer extends OrgAction
                         Arr::forget($taxNumberData, 'data.address');
                     }
 
-
                     StoreTaxNumber::run(
                         owner: $customer,
                         modelData: $taxNumberData,
@@ -163,6 +162,33 @@ class UpdateCustomer extends OrgAction
             } elseif ($customer->taxNumber) {
                 DeleteTaxNumber::run($customer->taxNumber);
             }
+
+            // Recalculate customer orders VAT Charges | INI-875
+            // Will only update the VAT Charges for orders that has status creating. Changeable if Dimitar wants it
+
+            $customer->refresh();
+
+            $customer->orders()
+                ->where(function ($q) {
+                    $q->where('state', OrderStateEnum::CREATING)
+                    ->orWhereHas('deliveryNotes', function ($q) {
+                        $q->where('is_cash_on_delivery', true)
+                            ->whereNotIn('state', [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::FINALISED]);
+                    });
+                })
+                ->with(['organisation', 'billingAddress', 'deliveryAddress'])
+                ->each(function ($order) use ($customer) {
+                    $order->update([
+                        'tax_category_id' => GetTaxCategory::run(
+                            country: $order->organisation->country,
+                            taxNumber: $customer->taxNumber,
+                            billingAddress: $order->billingAddress,
+                            deliveryAddress: $order->deliveryAddress,
+                            isRe: $customer->is_re,
+                        )->id,
+                    ]);
+                    CalculateOrderTotalAmounts::run($order, false, false);
+                });
         }
 
         if (Arr::hasAny($modelData, ['contact_name', 'company_name'])) {
@@ -187,28 +213,7 @@ class UpdateCustomer extends OrgAction
 
         $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
 
-
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
-
-        if (Arr::has($changes, 'tax_number')) {
-            // Recalculate customer orders VAT Charges | INI-875
-            // Will only update the VAT Charges for orders that has status creating. Changeable if Dimitar wants it
-            $customer->orders()
-                ->where('state', OrderStateEnum::CREATING)
-                ->with(['organisation', 'billingAddress', 'deliveryAddress'])
-                ->each(function ($order) use ($customer) {
-                    $order->update([
-                        'tax_category_id' => GetTaxCategory::run(
-                            country: $order->organisation->country,
-                            taxNumber: $customer->taxNumber,
-                            billingAddress: $order->billingAddress,
-                            deliveryAddress: $order->deliveryAddress,
-                            isRe: $customer->is_re,
-                        )->id,
-                    ]);
-                    CalculateOrderTotalAmounts::run($order, false, false);
-                });
-        }
 
         if (Arr::hasAny($changes, ['contact_name', 'email'])) {
             $rootWebUser = $customer->webUsers->where('is_root', true)->first();
