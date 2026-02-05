@@ -25,9 +25,9 @@ const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
 </script>
 
 <template>
-    <div id="recommendation-customer-recently-bought-slide-iris" class="flex w-full md:px-4 md:py-3 rounded border border-transparent hover:border-black/10">
+    <div id="recommendation-customer-recently-bought-slide-iris" class="flex w-full md:px-4 md:py-3 rounded xborder border-transparent hover:border-black/10">
         <div class="w-full flex flex-col">
-            <!-- Image -->
+            <!-- Section: Image -->
             <component :is="product.canonical_url ? Link : 'div'"
                 :href="product.canonical_url"
                 class="group max-w-[220px] flex justify-center mx-auto rounded aspect-square w-full overflow-hidden">
@@ -41,20 +41,23 @@ const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
                 />
             </component>
 
-            <div class="mt-3 text-center text-xxs md:text-xs text-gray-600 italic">
-                {{ product.code }}
-            </div>
 
-            <!-- Title -->
+            <!-- Section: Title -->
             <component :is="product.canonical_url ? Link : 'div'"
                 :href="product.canonical_url"
-                class="mb-1 text-[13px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em] xxx block md:text-center hover:!underline !cursor-pointer text-pretty"
+                class="text-[13px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em] block hover:!underline !cursor-pointer text-pretty"
             >
                 {{ product.name }}
             </component>
 
-            <div class="mt-auto">
-                <div v-if="layout?.iris?.is_logged_in" class="mt-3 text-center text-xxs md:text-base text-gray-700 italic">
+            <!-- Section: code -->
+            <div class="text-xs text-gray-400 mb-2">
+                {{ product.code }}
+            </div>
+
+            <!-- Section: first name and date -->
+            <div v-if="layout?.iris?.is_logged_in" class="mt-auto">
+                <div class="mt-3 text-center text-xxs md:text-base text-gray-700 italic">
                     <!-- <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${product.customer_country_code.toLowerCase()}.png`" /> -->
                     {{ product.customer_first_name ?? firstName }}
                 </div>
