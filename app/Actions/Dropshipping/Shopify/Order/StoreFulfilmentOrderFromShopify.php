@@ -51,7 +51,7 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
 
         $existOrder = PalletReturn::where('platform_order_id', Arr::get($modelData, 'id'))->first();
 
-        if (!$existOrder) {
+        if ($existOrder) {
             return;
         }
 
@@ -63,7 +63,7 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
                 'delivery_address'          => new Address($deliveryAddress),
                 'data'                      => ['shopify_data' => $modelData],
                 'platform_order_id'         => Arr::get($modelData, 'id'),
-                'is_collection'             => true,
+                'is_collection'             => false,
                 'shopify_user_id'           => $shopifyUser->id
             ]);
 

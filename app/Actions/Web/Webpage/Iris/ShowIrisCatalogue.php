@@ -27,17 +27,17 @@ class ShowIrisCatalogue extends IrisAction
         $response = Inertia::render('Catalogue/CatalogueIris', [
             'tabs' => [
                 'current' => $this->validatedData['scope'],
-                'navigation' => $this->getTabNavigation($request->query('parent_type', null)),
+                'navigation' => $this->getTabNavigation($request->query('parent', null)),
             ],
             'data' => $irisCatalogue,
         ]);
 
         return match ($this->validatedData['scope']) {
-            'collection' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'collection', parent: data_get($this->validatedData, 'parent', null), prefix: 'collection')),
             'department' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'department', parent: data_get($this->validatedData, 'parent', null), prefix: 'department')),
             'sub_department' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'sub_department', parent: data_get($this->validatedData, 'parent', null), prefix: 'sub_department')),
             'family' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'family', parent: data_get($this->validatedData, 'parent', null), prefix: 'family')),
             'product' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'product', parent: data_get($this->validatedData, 'parent', null), prefix: 'product')),
+            'collection' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'collection', parent: data_get($this->validatedData, 'parent', null), prefix: 'collection')),
             default => $response,
         };
     }
@@ -63,7 +63,7 @@ class ShowIrisCatalogue extends IrisAction
         return [
             'scope'             => ['required', Rule::in($acceptedParentType)],
             'parent'            => ['sometimes', Rule::in($acceptedParentType)],
-            'parentKey'         => ['required_with:parent',
+            'parent_key'         => ['sometimes', 'required_with:parent',
                 // Collection
                 Rule::when(
                     request('parent') === strtolower(class_basename(Collection::class)),
@@ -94,11 +94,11 @@ class ShowIrisCatalogue extends IrisAction
     public function getTabNavigation(?string $level): array
     {
         $tabs = [
-            ['key' => 'collection', 'label' => 'Collections'],
             ['key' => 'department', 'label' => 'Departments'],
             ['key' => 'sub_department', 'label' => 'Sub Departments'],
             ['key' => 'family', 'label' => 'Families'],
             ['key' => 'product', 'label' => 'Products'],
+            ['key' => 'collection', 'label' => 'Collections'],
         ];
 
         if (!$level) {
@@ -108,7 +108,7 @@ class ShowIrisCatalogue extends IrisAction
         // special rule: if parent = collection → only family + product
         if ($level === 'collection') {
             return array_values(
-                array_filter($tabs, fn($tab) => in_array($tab['key'], ['family', 'product']))
+                array_filter($tabs, fn($tab) => in_array($tab['key'], ['product']))
             );
         }
 

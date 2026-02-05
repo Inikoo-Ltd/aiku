@@ -24,11 +24,15 @@ const props = defineProps<{
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
+        </template>
+         <template #cell(code)="{ item: department }">
+            <span class="primaryLink" @click="$emit('select-collection', department.id)">
+                {{ department.code }}
+            </span>
         </template>
         <template #cell(state)="{ item: product }">  
             <Tag :label="product.state.label" v-tooltip="product.state.label">

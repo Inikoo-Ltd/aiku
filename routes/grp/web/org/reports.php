@@ -10,6 +10,8 @@ use App\Actions\Accounting\Intrastat\ExportIntrastatXml;
 use App\Actions\Accounting\Intrastat\ExportIntrastatXmlSlovakia;
 use App\Actions\Accounting\Intrastat\UI\IndexIntrastatExportReport;
 use App\Actions\Accounting\Intrastat\UI\IndexIntrastatImportReport;
+use App\Actions\Accounting\MontanaInvoices\ExportMontanaInvoices;
+use App\Actions\Accounting\MontanaInvoices\UI\IndexMontanaInvoicesReport;
 use App\Actions\Accounting\SageInvoices\ExportSageInvoices;
 use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
@@ -35,6 +37,9 @@ Route::get('/intrastat/imports', IndexIntrastatImportReport::class)->name('intra
 
 Route::get('/sage-invoices', IndexSageInvoicesReport::class)->name('sage-invoices');
 Route::get('/sage-invoices/export', ExportSageInvoices::class)->name('sage-invoices.export');
+
+Route::get('/montana-invoices', IndexMontanaInvoicesReport::class)->name('montana-invoices');
+Route::get('/montana-invoices/export', ExportMontanaInvoices::class)->name('montana-invoices.export');
 
 Route::name("sent_emails.")->prefix('sent-emails')
     ->group(function () {

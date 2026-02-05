@@ -46,7 +46,6 @@ class IndexRetinaFulfilmentOrders extends RetinaAction
         $query->where('pallet_returns.type', PalletReturnTypeEnum::STORED_ITEM);
         $query->where('pallet_returns.platform_id', $customerSalesChannel->platform->id);
         $query->where('pallet_returns.customer_sales_channel_id', $customerSalesChannel->id);
-        $query->whereNot('pallet_returns.state', PalletReturnStateEnum::IN_PROCESS);
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $query->where('pallet_returns.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
         } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {

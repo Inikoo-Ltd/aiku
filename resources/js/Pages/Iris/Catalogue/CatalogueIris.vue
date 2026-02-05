@@ -40,19 +40,20 @@ const activeComponent = computed(() =>
 )
 
 
-const scopeOrder = ['department', 'sub_department', 'family', 'product']
+const scopeOrder = ['department', 'sub_department', 'family', 'product', 'collection']
 
 const nextScopeMap: Record<string, string | null> = {
     department: 'sub_department',
     sub_department: 'family',
     family: 'product',
+    collection: 'product',
     product: null,
 }
 
 
 type HistoryState = {
     scope: string
-    parent_type?: string
+    parent?: string
     parent_key?: any
 }
 
@@ -90,7 +91,7 @@ const navigate = (state: HistoryState) => {
         route(route().current() as string),
         {
             scope: state.scope,
-            parent_type: state.parent_type,
+            parent: state.parent,
             parent_key: state.parent_key,
         },
         {
@@ -103,9 +104,18 @@ const navigate = (state: HistoryState) => {
 
 
 const changeTab = (scope: string) => {
-    history.value.push({ scope })
-    navigate({ scope })
+    const last = history.value.at(-1)
+
+    const state: HistoryState = {
+        scope,
+        parent: last?.parent,
+        parent_key: last?.parent_key,
+    }
+
+    history.value.push(state)
+    navigate(state)
 }
+
 
 const goBack = () => {
     if (!canBack.value) return
@@ -126,7 +136,7 @@ const goNext = () => {
 
     history.value.push({
         scope: nextScope,
-        parent_type: last?.parent_type,
+        parent: last?.parent,
         parent_key: last?.parent_key,
     })
 
@@ -145,7 +155,7 @@ const onSelectParent = (parentType: string, parentId: any) => {
 
     const state: HistoryState = {
         scope: nextScope,
-        parent_type: parentType,
+        parent: parentType,
         parent_key: parentId,
     }
 
@@ -180,7 +190,9 @@ const onSelectParent = (parentType: string, parentId: any) => {
                 <component v-if="activeComponent" :is="activeComponent" :data="data" :tab="tabs.current"
                     @select-department="id => onSelectParent('department', id)"
                     @select-sub-department="id => onSelectParent('sub_department', id)"
-                    @select-family="id => onSelectParent('family', id)" />
+                    @select-family="id => onSelectParent('family', id)"
+                    @select-collection="id => onSelectParent('collection', id)"
+                 />
             </div>
 
         </div>
