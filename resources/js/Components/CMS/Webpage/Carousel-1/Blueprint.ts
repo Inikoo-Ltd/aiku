@@ -27,6 +27,12 @@ export default {
 					type: "switch",
 				},
 				{
+					label: "Autoplay Interval (ms)",
+					key: ["carousel_setting", "interval"],
+					type: "number",
+					information : 'should put in milisecond'
+				},
+				{
 					label: "Loop",
 					key: ["carousel_setting", "loop"],
 					type: "switch",

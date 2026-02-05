@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
@@ -58,24 +59,25 @@ class IndexOffers extends OrgAction
             });
         });
 
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(Offer::class)
-                ->leftJoin('organisations', 'offers.organisation_id', '=', 'organisations.id');
+        $query = QueryBuilder::for(Offer::class);
+
+        $query->leftJoin('organisations', 'offers.organisation_id', '=', 'organisations.id');
 
         if ($parent instanceof OfferCampaign) {
             $query->where('offers.offer_campaign_id', $parent->id);
         } elseif ($parent instanceof Group) {
             $query->where('offers.group_id', $parent->id);
         } elseif ($parent instanceof ProductCategory) {
-            $query->where('offers.trigger_id', $parent->id)
-                ->where('offers.trigger_type', class_basename(ProductCategory::class));
+            $query->where('offers.trigger_id', $parent->id);
+            $query->where('offers.trigger_type', class_basename(ProductCategory::class));
         } else {
             $query->where('offers.shop_id', $parent->id);
         }
+
         $query->leftjoin('shops', 'offers.shop_id', '=', 'shops.id');
         $query->leftjoin('offer_campaigns', 'offers.offer_campaign_id', '=', 'offer_campaigns.id');
 
@@ -98,23 +100,41 @@ class IndexOffers extends OrgAction
             );
         }
 
-        $query->defaultSort('offers.id')
-            ->select(
-                'offers.id',
-                'offers.created_at',
-                'offers.slug',
-                'offers.state',
-                'offers.type',
-                'offers.code',
-                'offers.name',
-                'offer_campaigns.slug as offer_campaign_slug',
-                'shops.slug as shop_slug',
-                'shops.name as shop_name',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
-            );
+        $selects = [
+            'offers.id',
+            'offers.created_at',
+            'offers.slug',
+            'offers.state',
+            'offers.code',
+            'offers.name',
+            'offer_campaigns.slug as offer_campaign_slug',
+            'shops.slug as shop_slug',
+            'shops.name as shop_name',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+        ];
 
-        return $query->allowedSorts(['id','code', 'name'])
+        $timeSeriesData = $query->withTimeSeriesAggregation(
+            timeSeriesTable: 'offer_time_series',
+            timeSeriesRecordsTable: 'offer_time_series_records',
+            foreignKey: 'offer_id',
+            aggregateColumns: [
+                'orders'             => 'orders',
+                'invoices'           => 'invoices',
+                'sales_grp_currency' => 'sales',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+        );
+
+        $selects[] = $timeSeriesData['selectRaw']['orders'];
+        $selects[] = $timeSeriesData['selectRaw']['invoices'];
+        $selects[] = $timeSeriesData['selectRaw']['sales'];
+
+        return $query->defaultSort('offers.id')
+            ->select($selects)
+            ->allowedSorts(['id','code', 'name', 'orders', 'invoices', 'sales'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -142,24 +162,25 @@ class IndexOffers extends OrgAction
                 'title' => __('No offers found'),
             ];
 
-
             $emptyStateData['description'] = __("There are no offers");
 
-
             $table->withGlobalSearch();
-
-
-            $table->withEmptyState($emptyStateData)
-                ->withModelOperations($modelOperations);
+            $table->betweenDates(['date']);
+            $table->withEmptyState($emptyStateData);
+            $table->withModelOperations($modelOperations);
 
             $table->column(key: 'state', label: '', type: 'icon', sortable: false);
             $table->column(key: 'created_at', label: __('Created'), sortable: true, type: 'date');
-            $table->column(key: 'name', label: __('Name'), sortable: true, );
-            $table->column(key: 'type', label: __('Type'), sortable: true, );
+            $table->column(key: 'name', label: __('Name'), sortable: true);
+            $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), sortable: true, )
-                        ->column(key: 'shop_name', label: __('Shop'), sortable: true, );
+                $table->column(key: 'organisation_name', label: __('organisation'), sortable: true);
+                $table->column(key: 'shop_name', label: __('Shop'), sortable: true);
             }
+
             $table->defaultSort('id');
         };
     }
@@ -169,6 +190,7 @@ class IndexOffers extends OrgAction
         if ($this->parent instanceof Group) {
             return $request->user()->authTo("group-overview");
         }
+
         $this->canEdit = $request->user()->authTo("discounts.{$this->shop->id}.edit");
 
         return $request->user()->authTo("discounts.{$this->shop->id}.view");
@@ -232,10 +254,7 @@ class IndexOffers extends OrgAction
         return Inertia::render(
             'Org/Discounts/Offers',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Offers'),
                 'pageHead'    => [
                     'model'      => $this->parent->code,
@@ -253,6 +272,7 @@ class IndexOffers extends OrgAction
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($shop);
     }
 
@@ -274,9 +294,7 @@ class IndexOffers extends OrgAction
         return match ($routeName) {
             'grp.overview.offer.offers.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(
-                    $routeParameters
-                ),
+                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -297,7 +315,6 @@ class IndexOffers extends OrgAction
                             'label' => __('Offers'),
                             'icon'  => 'fal fa-bars',
                         ],
-
                     ]
                 ]
             )

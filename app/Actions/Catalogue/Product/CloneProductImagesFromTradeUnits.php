@@ -63,7 +63,7 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
         ]);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if(!empty($changed)){
+        if (!empty($changed)) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
         }
 

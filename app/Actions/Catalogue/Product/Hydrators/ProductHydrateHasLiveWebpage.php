@@ -25,7 +25,7 @@ class ProductHydrateHasLiveWebpage implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
-        $product->update(['has_live_webpage' => $product->webpage()->where('state', WebpageStateEnum::LIVE)->exists()]);
+        $product->update(['has_live_webpage' => $product->webpage()->where('state', WebpageStateEnum::LIVE)->withTrashed()->exists()]);
     }
 
 }

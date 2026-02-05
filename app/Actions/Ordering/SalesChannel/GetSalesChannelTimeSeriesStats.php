@@ -20,7 +20,7 @@ class GetSalesChannelTimeSeriesStats
 
     public function handle(Group $group, $from_date = null, $to_date = null): array
     {
-        $salesChannels = SalesChannel::where('group_id', $group->id)->where('type', SalesChannelTypeEnum::MARKETPLACE)->get();
+        $salesChannels = SalesChannel::where('group_id', $group->id)->where('type', SalesChannelTypeEnum::MARKETPLACE)->where('is_active', true)->get();
 
         $salesChannels->load(['timeSeries' => function ($query) {
             $query->where('frequency', TimeSeriesFrequencyEnum::DAILY->value);

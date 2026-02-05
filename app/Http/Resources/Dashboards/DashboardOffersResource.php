@@ -19,37 +19,46 @@ class DashboardOffersResource extends JsonResource
     {
         $data = (array) $this->resource;
 
-        // Method 1: One by one
+        $routeTargets = [
+           'label' => [
+               'route_target' => [
+                   'name' => 'grp.org.shops.show.discounts.campaigns.show',
+                   'parameters' => [
+                       'organisation'  => $data['organisation_slug'] ?? 'unknown',
+                       'shop'          => $data['shop_slug'] ?? 'unknown',
+                       'offerCampaign' => $data['slug'] ?? 'unknown'
+                   ]
+               ]
+           ]
+        ];
+
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $data['name'] ?? $data['code'] ?? 'Unknown',
-                    'align'           => 'left'
+                    'formatted_value' => $data['name'] ?? 'Unknown',
+                    'align'           => 'left',
+                    ...$routeTargets['label']
+                ],
+                'label_minified' => [
+                    'formatted_value' => $data['code'] ?? 'Unknown',
+                    'align'           => 'left',
+                    ...$routeTargets['label']
                 ]
             ],
-            $this->getDashboardTableColumnFromArray($data, 'customers'),
-            $this->getDashboardTableColumnFromArray($data, 'customers_minified'),
-            $this->getDashboardTableColumnFromArray($data, 'orders'),
-            $this->getDashboardTableColumnFromArray($data, 'orders_minified'),
-            $this->getDashboardTableColumnFromArray($data, 'orders_delta')
+            $this->getDashboardColumnsFromArray($data, [
+                'customers',
+                'customers_minified',
+                'orders',
+                'orders_minified',
+                'orders_delta',
+                'invoices',
+                'invoices_minified',
+                'invoices_delta',
+                'sales',
+                'sales_minified',
+                'sales_delta'
+            ])
         );
-
-        // Method 2: Batch (alternative, cleaner)
-        // $columns = array_merge(
-        //     [
-        //         'label' => [
-        //             'formatted_value' => $data['name'] ?? $data['code'] ?? 'Unknown',
-        //             'align'           => 'left'
-        //         ]
-        //     ],
-        //     $this->getDashboardColumnsFromArray($data, [
-        //         'customers',
-        //         'customers_minified',
-        //         'orders',
-        //         'orders_minified',
-        //         'orders_delta'
-        //     ])
-        // );
 
         return [
             'slug'    => $data['slug'] ?? 'unknown',
