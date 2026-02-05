@@ -58,7 +58,7 @@ class UpdateFamilyDescriptionAndNameFromAurora
                                 $text           = '';
 
 
-                                foreach ($webpageData['blocks'] as $block) {
+                                foreach (Arr::get($webpageData, 'blocks', []) as $block) {
                                     if (Arr::get($block, 'type') == 'blackboard') {
                                         $blackBoardData = $block;
                                         break;
@@ -70,7 +70,7 @@ class UpdateFamilyDescriptionAndNameFromAurora
                                 }
 
                                 if ($blackBoardData) {
-                                    foreach ($blackBoardData['texts'] as $text) {
+                                    foreach (Arr::get($blackBoardData, 'texts', []) as $text) {
                                         $description .= $text['text'].' ';
                                     }
                                     // Replace all instances of <p><br></p> (and the self-closing variant) with empty string
@@ -88,7 +88,6 @@ class UpdateFamilyDescriptionAndNameFromAurora
 
 
                     if ($description) {
-                        $masterCategory = $family->masterProductCategory;
                         $family->update([
                             'description'             => $description,
                             'is_description_reviewed' => true
