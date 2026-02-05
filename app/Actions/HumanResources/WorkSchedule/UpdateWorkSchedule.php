@@ -4,45 +4,74 @@ namespace App\Actions\HumanResources\WorkSchedule;
 
 use App\Actions\GrpAction;
 use App\Models\HumanResources\WorkSchedule;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Arr;
 
 class UpdateWorkSchedule extends GrpAction
 {
-    public function handle(WorkSchedule $workSchedule, array $data): WorkSchedule
+    /**
+     * @param Model $parent (Organisation, Group, or Shop)
+     * @param array $data
+     */
+    public function handle(Model $parent, array $data): WorkSchedule
     {
-        return DB::transaction(function () use ($workSchedule, $data) {
-            $metadata = $data['metadata'] ?? [];
-            $scheduleData = $data['data'] ?? [];
 
-            $workSchedule->update([
-                'name'        => $metadata['name'] ?? $workSchedule->name,
-                'timezone_id' => $metadata['timezone_id'] ?? $workSchedule->timezone_id,
-                'is_active'   => $metadata['is_active'] ?? $workSchedule->is_active,
-            ]);
+        return DB::transaction(function () use ($parent, $data) {
+            $workingHoursPayload = Arr::get($data, 'working_hours', []) ?? [];
+            $scheduleName = 'Office Schedule';
+
+            /** @var WorkSchedule $workSchedule */
+            $workSchedule = $parent->workSchedules()->firstOrCreate(
+                [],
+                [
+                    'name' => $scheduleName,
+                    'is_active' => true
+                ]
+            );
+
+            $receivedScheduleData = $workingHoursPayload['data'] ?? [];
+
+            for ($dayOfWeek = 1; $dayOfWeek <= 7; $dayOfWeek++) {
+
+                if (array_key_exists($dayOfWeek, $receivedScheduleData)) {
+
+                    $dayData = $receivedScheduleData[$dayOfWeek];
+
+                    $startTime = isset($dayData['s']) ? Carbon::parse($dayData['s'])->format('H:i:s') : null;
+                    $endTime = isset($dayData['e']) ? Carbon::parse($dayData['e'])->format('H:i:s') : null;
+
+                    $dayModel = $workSchedule->days()->updateOrCreate(
+                        ['day_of_week' => $dayOfWeek],
+                        [
+                            'start_time'     => $startTime,
+                            'end_time'       => $endTime,
+                            'is_working_day' => ($startTime && $endTime),
+                        ]
+                    );
 
 
-            foreach ($scheduleData as $dayOfWeek => $dayData) {
-                $dayModel = $workSchedule->days()->updateOrCreate(
-                    ['day_of_week' => $dayOfWeek],
-                    [
-                        'start_time'     => $dayData['s'] ?? null,
-                        'end_time'       => $dayData['e'] ?? null,
-                        'is_working_day' => isset($dayData['s']) && isset($dayData['e']),
-                    ]
-                );
+                    $dayModel->breaks()->delete();
 
-                $dayModel->breaks()->delete();
+                    if (isset($dayData['b']) && is_array($dayData['b'])) {
+                        foreach ($dayData['b'] as $break) {
+                            $breakStart = isset($break['s']) ? Carbon::parse($break['s'])->format('H:i:s') : null;
+                            $breakEnd   = isset($break['e']) ? Carbon::parse($break['e'])->format('H:i:s') : null;
 
-                if (isset($dayData['b']) && is_array($dayData['b'])) {
-                    foreach ($dayData['b'] as $break) {
-                        $dayModel->breaks()->create([
-                            'start_time' => $break['s'],
-                            'end_time'   => $break['e'],
-                            'break_name' => $break['n'] ?? null,
-                            'is_paid'    => $break['p'] ?? false,
-                        ]);
+                            if ($breakStart && $breakEnd) {
+                                $dayModel->breaks()->create([
+                                    'start_time' => $breakStart,
+                                    'end_time'   => $breakEnd,
+                                    'break_name' => $break['n'] ?? null,
+                                    'is_paid'    => $break['p'] ?? false,
+                                ]);
+                            }
+                        }
                     }
+                } else {
+                    $workSchedule->days()->where('day_of_week', $dayOfWeek)->delete();
                 }
             }
 
@@ -56,25 +85,23 @@ class UpdateWorkSchedule extends GrpAction
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit") || $request->user()->authTo("hr.edit");
+        return $request->user()->authTo(
+            [
+                'org-admin.' . $this->organisation->id
+            ]
+        );
     }
 
     public function rules(): array
     {
         return [
-            'metadata.name'        => ['sometimes', 'string', 'max:100'],
-            'metadata.timezone_id' => ['nullable', 'exists:timezones,id'],
-            'metadata.is_active'   => ['sometimes', 'boolean'],
-            'data'                 => ['sometimes', 'array'],
-            'data.*.s'             => ['nullable', 'date_format:H:i'],
-            'data.*.e'             => ['nullable', 'date_format:H:i', 'after:data.*.s'],
-            'data.*.b'             => ['nullable', 'array'],
+            'working_hours' => ['sometimes', 'array'],
         ];
     }
 
-    public function action(WorkSchedule $workSchedule, array $data = []): WorkSchedule
+    public function action(Model $parent, array $data = []): WorkSchedule
     {
         $this->asAction = true;
-        return $this->handle($workSchedule, $data);
+        return $this->handle($parent, $data);
     }
 }

@@ -999,4 +999,9 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->hasMany(PickedBay::class);
     }
+
+    public function workSchedules(): MorphMany
+    {
+        return $this->morphMany(WorkSchedule::class, 'schedulable');
+    }
 }
