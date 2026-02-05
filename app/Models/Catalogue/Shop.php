@@ -151,6 +151,7 @@ use App\Models\Ordering\SalesChannel;
  * @property array<array-key, mixed>|null $offers_data
  * @property ShopEngineEnum $engine
  * @property array<array-key, mixed> $opening_hours
+ * @property string|null $last_external_shop_products_fetched_at
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses

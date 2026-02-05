@@ -73,14 +73,14 @@ class ShowCatalogue extends OrgAction
                 'icon'      => 'fal fa-cube',
                 "color"     => "#38bdf8",
                 'value'     => $shop->stats->number_current_products,
-                'metaRight' => [
+                'metaRight' => $shop->engine == ShopEngineEnum::AIKU ? [
                     'tooltip' => __('Variants'),
                     'icon'    => [
                         'icon'  => 'fal fa-cubes',
                         'class' => ''
                     ],
                     'count'   => $shop->stats->number_current_product_variants,
-                ],
+                ] : null,
                 'metas'     => [
 
                     [

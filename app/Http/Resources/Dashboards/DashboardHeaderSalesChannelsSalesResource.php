@@ -24,13 +24,13 @@ class DashboardHeaderSalesChannelsSalesResource extends JsonResource
 
         $salesChannelColumns = [
             'label' => [
-                'formatted_value'   => __('Sales Channel'),
+                'formatted_value'   => __('Marketplaces'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'align'             => 'left'
             ],
             'label_minified' => [
-                'formatted_value'   => __('Sales Channel'),
+                'formatted_value'   => __('Marketplaces'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'align'             => 'left'

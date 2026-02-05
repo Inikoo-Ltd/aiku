@@ -42,12 +42,12 @@ class DashboardTotalSalesChannelsSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => 'All Sales Channels',
+                    'formatted_value' => 'All Marketplaces',
                     'align'           => 'left',
                 ],
                 'label_minified' => [
                     'formatted_value' => 'All',
-                    'tooltip'         => 'All Sales Channels',
+                    'tooltip'         => 'All Marketplaces',
                     'align'           => 'left',
                 ],
             ],
@@ -76,12 +76,12 @@ class DashboardTotalSalesChannelsSalesResource extends JsonResource
     {
         return [
             'label' => [
-                'formatted_value' => 'All Sales Channels',
+                'formatted_value' => 'All Marketplaces',
                 'align'           => 'left',
             ],
             'label_minified' => [
                 'formatted_value' => 'All',
-                'tooltip'         => 'All Sales Channels',
+                'tooltip'         => 'All Marketplaces',
                 'align'           => 'left',
             ],
         ];

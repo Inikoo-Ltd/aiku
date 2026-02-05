@@ -83,6 +83,7 @@ const locale = inject('locale', aikuLocaleStructure)
         <div class="flex items-center justify-between pl-4 mt-2" v-if="layout.iris.website.slug != 'acar'">
             <div class="">
                 {{ trans("Profit") }} <span class="text-primary font-semibold">({{ product.discounted_margin }})</span>:
+                {{ trans("Profit") }} <span class="text-primary font-semibold">({{ product.discounted_margin }})</span>:
             </div>
 
             <div class="flex items-center gap-2x">

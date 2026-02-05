@@ -19,15 +19,18 @@ const props = defineProps<{
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
+
+const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
+
 </script>
 
 <template>
-    <div id="recommendation-customer-recently-bought-slide-iris" class="flex w-full px-4 py-3 rounded border border-transparent hover:border-black/10">
+    <div id="recommendation-customer-recently-bought-slide-iris" class="flex w-full md:px-4 md:py-3 rounded xborder border-transparent hover:border-black/10">
         <div class="w-full flex flex-col">
-            <!-- Image -->
+            <!-- Section: Image -->
             <component :is="product.canonical_url ? Link : 'div'"
                 :href="product.canonical_url"
-                class="group flex justify-center rounded aspect-[5/4] w-full overflow-hidden">
+                class="group max-w-[220px] flex justify-center mx-auto rounded aspect-square w-full overflow-hidden">
                 <Image
                     :src="product.image"
                     :alt="product.name"
@@ -38,22 +41,25 @@ const locale = inject('locale', aikuLocaleStructure)
                 />
             </component>
 
-            <div class="mt-3 text-center text-xxs md:text-xs text-gray-600 italic">
-                {{ product.code }}
-            </div>
 
-            <!-- Title -->
+            <!-- Section: Title -->
             <component :is="product.canonical_url ? Link : 'div'"
                 :href="product.canonical_url"
-                class="block text-justify md:text-center xmt-2 font-bold text-xs md:text-sm leading-tight hover:!underline !cursor-pointer xtext-balance text-pretty"
+                class="text-[13px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em] block hover:!underline !cursor-pointer text-pretty"
             >
                 {{ product.name }}
             </component>
 
-            <div class="mt-auto">
+            <!-- Section: code -->
+            <div class="text-xs text-gray-400 mb-2">
+                {{ product.code }}
+            </div>
+
+            <!-- Section: first name and date -->
+            <div v-if="layout?.iris?.is_logged_in" class="mt-auto">
                 <div class="mt-3 text-center text-xxs md:text-base text-gray-700 italic">
                     <!-- <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${product.customer_country_code.toLowerCase()}.png`" /> -->
-                    {{ product.customer_contact_name }}
+                    {{ product.customer_first_name ?? firstName }}
                 </div>
                 <div class="text-center text-xxs md:text-sm text-gray-400 italic">
                     {{ useFormatTime(product.submitted_at) }}

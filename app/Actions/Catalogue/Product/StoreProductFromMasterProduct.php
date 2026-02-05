@@ -158,6 +158,9 @@ class StoreProductFromMasterProduct extends GrpAction
     }
 
 
+    /**
+     * @throws \Throwable
+     */
     public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage): void
     {
         $product = UpdateProduct::run($product, $modelData);

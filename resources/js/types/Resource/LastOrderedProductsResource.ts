@@ -8,20 +8,21 @@
 import { Image } from "../Image"
 
 export interface LastOrderedProduct {
-    id: number
-    slug: string
+    // id: number
+    // slug: string
     canonical_url: string
-    asset_id: number
-    historic_id: number
+    // asset_id: number
+    // historic_id: number
     code: string
     name: string
-    image_thumbnail: Image
+    // image_thumbnail: Image
     image: Image
-    state: string
-    available_quantity: number
-    price: number
+    // state: string
+    // available_quantity: number
+    // price: number
     submitted_at: string
     customer_contact_name: string
-    customer_name: string
-    customer_country_code: string
+    // customer_name: string
+    // customer_country_code: string
+    customer_first_name: string
 }
