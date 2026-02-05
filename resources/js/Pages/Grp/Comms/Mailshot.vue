@@ -359,7 +359,7 @@ const handleToggleSecondWave = async (value: boolean) => {
     if (!props.setSecondWaveRoute) {
         return
     }
-    const previous = !value
+    const previous = false
     isSavingToggle.value = true
 
     await axios.post(route(props.setSecondWaveRoute?.name, props.setSecondWaveRoute?.parameters), {
@@ -367,30 +367,35 @@ const handleToggleSecondWave = async (value: boolean) => {
     })
         .then((response) => {
             if (response.data) {
+                isSavingToggle.value = false
                 notify({
                     type: 'success',
                     title: 'Success',
                     text: 'Second wave status updated successfully',
                 })
-                // Redirect to newsletters index page
 
             } else {
+                checked.value = previous
+                isSavingToggle.value = false
                 notify({
                     type: 'error',
                     title: 'Error',
-                    text: 'Failed to delete mailshot',
+                    text: 'Failed to update second wave status',
                 })
             }
         })
         .catch((exception) => {
             console.log(exception);
+            checked.value = previous
+            isSavingToggle.value = false
             notify({
                 type: 'error',
                 title: 'Error',
-                text: 'Failed to delete mailshot',
+                text: 'Failed to update second wave status',
             })
         })
         .finally(() => {
+            isSavingToggle.value = false
             if (!props.indexRoute) {
                 notify({
                     type: 'error',
@@ -402,26 +407,26 @@ const handleToggleSecondWave = async (value: boolean) => {
         })
 }
 
+const loading = ref(false)
 const handleSaveSecond = async () => {
-    // if (!checked.value) return
+    if (!checked.value) return
 
-    // if (!subject.value.trim()) {
-    //     alert("Subject required")
-    //     return
-    // }
-
-    console.log("SAVE DATA", {
-        subject: subject.value,
-        hour: hour.value
-    })
+    if (!subject.value.trim() || hour.value === null) {
+        notify({
+            type: 'error',
+            title: 'Validation',
+            text: 'Subject or delay hours are required',
+        })
+        return
+    }
 
     if (!props.updateSecondWaveRoute) {
         return
     }
 
-    await axios.patch(route(props.updateSecondWaveRoute?.name, props.setSecondWaveRoute?.parameters), {
-        subject: "Testing update Subject",
-        send_delay_hours: 72
+    await axios.patch(route(props.updateSecondWaveRoute?.name, props.updateSecondWaveRoute?.parameters), {
+        subject: subject.value,
+        send_delay_hours: hour.value
     })
         .then((response) => {
             if (response.data) {
@@ -458,6 +463,7 @@ const handleSaveSecond = async () => {
             }
         })
 }
+
 watch(
     filteredTabs,
     (tabs) => {
@@ -556,6 +562,17 @@ console.log("props mailshot", props)
         <div class="flex items-center gap-2">
             <small class="text-gray-500 text-sm">2nd Wave</small>
             <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave" :disabled="isSavingToggle" />
+            <span class="text-gray-300">|</span>
+
+            <div class="flex items-center gap-1 text-sm text-gray-500">
+                <FontAwesomeIcon :icon="faClock" class="h-5 w-5" />
+                <span>
+                    Sent after
+                    <span class="font-medium text-gray-700">
+                        {{ hour || 48 }} Hours
+                    </span>
+                </span>
+            </div>
         </div>
 
         <template v-if="checked">
@@ -563,7 +580,7 @@ console.log("props mailshot", props)
                 Second Wave
             </h2>
 
-            <form @submit.prevent="handleSaveSecond" class="space-y-3 border rounded-lg p-4 bg-gray-50">
+            <div class="space-y-3 border rounded-lg p-4 bg-gray-50">
                 <div>
                     <label class="block text-sm text-gray-600 mb-1">Subject</label>
                     <InputText v-model="subject" placeholder="Enter value" class="w-full" required />
@@ -575,10 +592,8 @@ console.log("props mailshot", props)
                     <small class="text-gray-400">Default: 48 hours</small>
                 </div>
 
-                <!-- <Button label="Save" type="submit" icon="save" />
-                 butt -->
-                <button type="submit">save</button>
-            </form>
+                <Button type="save" @click="handleSaveSecond" :loading="loading" />
+            </div>
         </template>
     </div>
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
