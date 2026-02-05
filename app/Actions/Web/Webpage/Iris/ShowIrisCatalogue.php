@@ -98,6 +98,7 @@ class ShowIrisCatalogue extends IrisAction
             ['key' => 'sub_department', 'label' => 'Sub Departments'],
             ['key' => 'family', 'label' => 'Families'],
             ['key' => 'product', 'label' => 'Products'],
+            ['key' => 'collection', 'label' => 'Collection'],
         ];
 
         if (!$level) {

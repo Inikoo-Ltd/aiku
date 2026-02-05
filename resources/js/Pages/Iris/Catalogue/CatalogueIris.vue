@@ -10,6 +10,7 @@ import TableIrisProducts from '@/Components/Tables/Iris/TableIrisProducts.vue'
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faArrowLeft, faArrowRight, faWindowClose } from '@far'
+import TableIrisCollection from '@/Components/Tables/Iris/TableIrisCollection.vue'
 
 
 const props = defineProps<{
@@ -31,6 +32,7 @@ const componentMap: Record<string, Component> = {
     sub_department: TableIrisSubDepartment,
     family: TableIrisFamilies,
     product: TableIrisProducts,
+    collection: TableIrisCollection,
 }
 
 const activeComponent = computed(() =>
