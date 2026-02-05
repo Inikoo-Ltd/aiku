@@ -59,6 +59,9 @@ class ShowWebpageWorkshop extends OrgAction
             ->where('name', 'not like', '%see-also%')
             ->get();
         }
+
+        $canonicalPath = parse_url($webpage->canonical_url ?? '', PHP_URL_PATH);
+
         // dd($webBlockTypes);
         return Inertia::render(
             'Org/Web/WebpageWorkshop',
@@ -71,7 +74,7 @@ class ShowWebpageWorkshop extends OrgAction
                 'pageHead'      => [
                     'title'      => $webpage->code,
                     'afterTitle' => [
-                        'label' => '../'.$webpage->url,
+                        'label' => '..' . $canonicalPath,
                     ],
                     'icon'       => [
                         'title' => __('Webpage'),
