@@ -51,7 +51,8 @@ class IndexOrgStocksInProduct extends OrgAction
                 'org_stock_families.slug as family_slug',
                 'org_stock_families.code as family_code',
                 'product_has_org_stocks.trade_units_per_org_stock as packed_in',
-                'org_stocks.is_on_demand'
+                'org_stocks.is_on_demand',
+                'org_stocks.quantity_in_locations',
             ])
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
             ->allowedSorts(['code', 'name', 'quantity'])
@@ -79,7 +80,9 @@ class IndexOrgStocksInProduct extends OrgAction
             $table->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity', label: __('Quantity to pick'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'quantity_in_locations', label: __('Quantity in Locations'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
         };
     }
 }

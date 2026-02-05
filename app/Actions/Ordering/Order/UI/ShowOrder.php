@@ -388,7 +388,7 @@ class ShowOrder extends OrgAction
                 'state'             => $order->state->value,
                 'route_recalculate_vat' => [
                     // Show button if order is creating (not submitted) and deliveryNote has is_cash_on_delivery true and it's not in those condition. Based on Dimitar requests.
-                    'showButton' => in_array($order->state, [OrderStateEnum::CREATING]) || 
+                    'showButton' => in_array($order->state, [OrderStateEnum::CREATING]) ||
                         $order->deliveryNotes()
                             ->where('is_cash_on_delivery', true)
                             ->whereNotIn('state', [
