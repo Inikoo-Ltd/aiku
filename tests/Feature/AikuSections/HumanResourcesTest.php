@@ -554,7 +554,7 @@ test('UI edit clocking machine', function () {
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page
-                    ->where('name', 'grp.models.clocking_machine.update')
+                    ->where('name', 'grp.models.clocking_machine..update')
                     ->where('parameters', $clockingMachine->id)
             )
             ->has('breadcrumbs', 4);
