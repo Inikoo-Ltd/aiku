@@ -96,6 +96,7 @@ use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotTemplate;
 use App\Actions\Helpers\Address\GetGeocode;
+use App\Actions\Inventory\PickingTrolley\Json\ListAvailablePickingTrolley;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
@@ -257,5 +258,6 @@ Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');
 Route::get('product-category/{productCategory:id}/last-ordered-products', GetLastOrderedProducts::class)->name('product_category.last-ordered-products.index');
 
-
 Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
+
+Route::get('{organisation}/{warehouse}/picking-trolleys/list/', ListAvailablePickingTrolley::class)->name('inventory.picking_trolleys.list');
