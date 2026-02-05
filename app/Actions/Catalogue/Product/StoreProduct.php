@@ -29,6 +29,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -208,8 +209,8 @@ class StoreProduct extends OrgAction
         $rules = [
             'code'              => [
                 'required',
-                'max:32',
-                new AlphaDashDot(),
+                'max:64',
+                $this->shop->type == ShopTypeEnum::EXTERNAL ? 'string' : new AlphaDashDot(),
                 Rule::notIn(['export', 'create', 'upload']),
                 new IUnique(
                     table: 'assets',
@@ -263,9 +264,12 @@ class StoreProduct extends OrgAction
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
             'master_product_id'         => ['sometimes'],
-            'marketplace_id'            => ['sometimes', Rule::unique('products', 'marketplace_id')->where(function ($query) {
-                $query->where('group_id', $this->shop->group_id);
-            })],
+            'marketplace_id'            => [
+                'sometimes',
+                Rule::unique('products', 'marketplace_id')->where(function ($query) {
+                    $query->where('group_id', $this->shop->group_id);
+                })
+            ],
             'marketing_weight'          => ['sometimes', 'numeric', 'min:0'],
             'gross_weight'              => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'      => ['sometimes'],

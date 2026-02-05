@@ -65,7 +65,7 @@ const fetchRecommenders = async () => {
             const response = await axios.get(
                 route('iris.json.product_category.last-ordered-products.index', {
                     productCategory: props.fieldValue.family.id,
-                    product: props.fieldValue?.product?.id
+                    ignoredProductId: props.fieldValue?.product?.id
                 })
             )
 

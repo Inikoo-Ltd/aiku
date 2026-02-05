@@ -39,6 +39,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Product\UpdateProductExternal;
 use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
@@ -599,6 +600,10 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::patch('{product:id}/update_images', UpdateProductImages::class)->name('images.update_images')->withoutScopedBindings();
     Route::post('{product:id}/attachment/attach', [AttachAttachmentToModel::class, 'inProduct'])->name('attachment.attach');
     Route::delete('{product:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inProduct'])->name('attachment.detach')->withoutScopedBindings();
+
+    Route::name('external.')->prefix('external')->group(function () {
+        Route::patch('/{product:id}/update', UpdateProductExternal::class)->name('update');
+    });
 });
 
 Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->group(function () {
