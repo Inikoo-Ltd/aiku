@@ -19,9 +19,11 @@ use App\Models\Catalogue\Product;
 
 trait WithProductHydrators
 {
-    protected function productHydrators(Product $product): void
+    protected function productHydrators(Product $product, $hydrateForSale = true): void
     {
-        ProductHydrateForSale::run($product);
+        if ($hydrateForSale) {
+            ProductHydrateForSale::run($product);
+        }
         GroupHydrateProducts::dispatch($product->group)->delay($this->hydratorsDelay);
         OrganisationHydrateProducts::dispatch($product->organisation)->delay($this->hydratorsDelay);
         ShopHydrateProducts::dispatch($product->shop)->delay($this->hydratorsDelay);

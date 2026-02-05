@@ -88,8 +88,8 @@ class TranslateChatMessage
 
 
         if ($language) {
-                $message->update(['original_language_id' => $language->id]);
-                $this->updateSessionLanguage($session, $language->id);
+            $message->update(['original_language_id' => $language->id]);
+            $this->updateSessionLanguage($session, $language->id);
         }
     }
 
@@ -189,9 +189,7 @@ class TranslateChatMessage
 
         try {
             /** @var \App\Models\Helpers\Language|null $language */
-            $language = DetectLanguageWithAI::run($text);
-
-            return $language;
+            return DetectLanguageWithAI::run($text);
         } catch (Throwable $e) {
             Log::error($e->getMessage());
             Sentry::captureException($e);
