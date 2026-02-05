@@ -10,6 +10,7 @@ namespace App\Actions\SalesChannels\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Http\Resources\SalesChannels\SalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
@@ -96,14 +97,14 @@ class IndexSalesChannels extends OrgAction
     public function htmlResponse(LengthAwarePaginator $salesChannels): Response
     {
         return Inertia::render(
-            'Devel/Dummy',
+            'SalesChannels/SalesChannels',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Dummy'),
+                'title'       => __('Sales Channels'),
                 'pageHead'    => [
                     'title' => __('Sales Channels')
                 ],
-                'data'        => []
+                'data'        => SalesChannelsResource::collection($salesChannels)
             ]
         )->table($this->tableStructure());
     }
