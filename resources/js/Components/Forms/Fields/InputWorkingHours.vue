@@ -171,7 +171,7 @@ watch(()=>weekTimes,()=>{
             </div>
           </div>
 
-          <div>
+        <div class="py-1 pr-2">
             <DatePicker
               v-if="group[section.key].closed"
               v-model="group[section.key].in"
