@@ -25,27 +25,37 @@ class RunMailshotSecondWave
     {
         $currentDateTime = Carbon::now()->utc();
 
-        // use mailshot as main table
-        $newsletterQuery = QueryBuilder::for(Mailshot::class);
-        $newsletterQuery->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING]);
-        $newsletterQuery->where('is_second_wave', true);
-        $newsletterQuery->whereNull('deleted_at');
-        $newsletterQuery->whereNull('cancelled_at');
-        $newsletterQuery->whereNull('stopped_at');
-        $newsletterQuery->whereNull('sent_at');
-        $newsletterQuery->whereNull('start_sending_at');
-        $newsletterQuery->whereNull('source_id'); // to avoid resending newsletter that imported from Aurora
-        $newsletterQuery->whereNull('source_alt_id'); // to avoid resending newsletter that imported from Aurora
-        $newsletterQuery->whereNull('source_alt2_id'); // to avoid resending newsletter that imported from Aurora
-        $newsletterQuery->whereRaw("scheduled_at AT TIME ZONE 'UTC' <= ?", [$currentDateTime]); // make sure have save time zone before compare
+        // use mailshot second wave filter
+        $secondWaveQuery = QueryBuilder::for(Mailshot::class);
+        $secondWaveQuery->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING]);
+        $secondWaveQuery->where('is_second_wave', true);
+        $secondWaveQuery->whereNull('deleted_at');
+        $secondWaveQuery->whereNull('cancelled_at');
+        $secondWaveQuery->whereNull('stopped_at');
+        $secondWaveQuery->whereNull('sent_at');
+        $secondWaveQuery->whereNull('start_sending_at');
+        $secondWaveQuery->whereNull('source_id'); // to avoid resending newsletter that imported from Aurora
+        $secondWaveQuery->whereNull('source_alt_id'); // to avoid resending newsletter that imported from Aurora
+        $secondWaveQuery->whereNull('source_alt2_id'); // to avoid resending newsletter that imported from Aurora
 
-        foreach ($newsletterQuery->cursor() as $newsletter) {
-            // ProcessSendNewsletter::dispatch($newsletter);
-            // //TODO: update the mailshot state to Sending
-            // $newsletter->update([
-            //     'state' => MailshotStateEnum::SENDING,
-            //     'start_sending_at' => Carbon::now()->utc(), // maybe need to convert to local timezone
-            // ]);
+        // Check parent mailshot conditions if parent_mailshot_id exists
+        $secondWaveQuery->where(function ($query) use ($currentDateTime) {
+            $query->whereHas('parentMailshot', function ($parentQuery) use ($currentDateTime) {
+                $parentQuery->where('state', MailshotStateEnum::SENT)
+                    ->where('is_second_wave_active', true)
+                    ->whereNotNull('sent_at')
+                    ->whereRaw("sent_at + (mailshots.send_delay_hours || ' hours')::interval <= ?", [$currentDateTime]);
+            });
+        });
+
+        // NOTE: for debug the SQL query
+        // \Log::info($secondWaveQuery->toRawSql());
+        foreach ($secondWaveQuery->cursor() as $secondWave) {
+            ProcessSendMailshotSecondWave::dispatch($secondWave);
+            $secondWave->update([
+                'state' => MailshotStateEnum::SENDING,
+                'start_sending_at' => Carbon::now()->utc()
+            ]);
         }
     }
 
