@@ -24,7 +24,7 @@ return new class () extends Migration {
                 $table->foreignId('parent_mailshot_id')->nullable()->constrained('mailshots');
             }
             if (!Schema::hasColumn('mailshots', 'send_delay_hours')) {
-                $table->unsignedInteger('send_delay_hours')->default(0);
+                $table->unsignedInteger('send_delay_hours')->default(48);
             }
         });
     }
