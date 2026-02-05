@@ -157,7 +157,7 @@ const onSelectParent = (parentType: string, parentId: any) => {
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
 
             <!-- Top Bar -->
-            <div class="flex items-center justify-between px-4 h-11 border-b border-gray-100">
+            <div class="flex items-center justify-between px-4 py-4 h-fit border-b border-gray-100">
                 <div class="flex items-center gap-2">
                     <Button v-for="tab in tabs.navigation" :key="tab.key + tabs.current"
                         :type="tab.key === tabs.current ? 'primary' : 'secondary'" :label="tab.label"
