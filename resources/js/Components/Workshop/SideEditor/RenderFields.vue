@@ -44,15 +44,15 @@ const valueForField = computed(() => {
 
 
   if (!Array.isArray(useIn) || useIn.length === 0) {
-    return rawVal
+    return rawVal ?? props.blueprint.defaultValue ?? null
   }
 
   if (!isPlainObject(rawVal)) {
-    return rawVal
+    return rawVal ?? props.blueprint.defaultValue ?? null
   }
 
   const view = currentView.value!
-  return rawVal?.[view] ?? rawVal?.desktop ?? rawVal
+  return rawVal?.[view] ?? rawVal?.desktop ?? rawVal ?? props.blueprint.defaultValue ?? null
 })
 
 /* const valueForField = computed(() => {

@@ -8,12 +8,12 @@ export default {
 		{
 			label: "Text left",
 			key: ["text_left"],
-			type: "text-responesive",
+			type: "text-responsive",
 		},
 		{
 			label:"Text right",
 			key: ["text_right"],
-			type: "text-responesive",
+			type: "text-responsive",
 		},
 	],
 }

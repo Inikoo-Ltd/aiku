@@ -3,7 +3,7 @@
 	"code": "video-1",
 	"name": "Video",
 	"scope": "webpage",
-	"category": "block",
+	"category": "element",
 	"icon": ["fal", "rectangle-wide"],
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"is_in_test" : false,
