@@ -80,6 +80,7 @@ class UpdateCatalogueDuringMigration
             );
             if(!in_array($shop->slug, ['bg', 'ua'])){
                 UpdateProductDescriptionAndNameFromAurora::run($shop);
+                UpdateFamilyDescriptionFromAurora::run($shop);
             }
         }
     }
