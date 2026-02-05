@@ -21,6 +21,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpagesList;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
+use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
 
 Route::get('{path}', function ($path) {
     return redirect('/image_not_found.png');
@@ -94,6 +95,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
         // LLMs.txt for AI crawlers
         Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');
+
+        //system
+        Route::get('/catalogue', ShowIrisCatalogue::class)->name('catalogue_iris');
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
