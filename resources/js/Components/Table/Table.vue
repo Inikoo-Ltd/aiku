@@ -319,7 +319,7 @@ function changeSearchInputValue(key, value) {
 
 const changeGlobalSearchValue = debounce((value?: string) => {
     changeSearchInputValue('global', value);
-}, 400)
+}, 100)
 
 
 
