@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
 
@@ -25,7 +26,7 @@ class FulfillOrderToShopify extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(Order $order, ?DeliveryNote $deliveryNote = null): void
+    public function handle(Order|PalletReturn $order, ?DeliveryNote $deliveryNote = null): void
     {
         $fulfillOrderId = $order->platform_order_id;
 
@@ -51,16 +52,18 @@ class FulfillOrderToShopify extends OrgAction
         MUTATION;
 
 
-        if ($deliveryNote == null) {
+        if ($deliveryNote == null && $order instanceof Order) {
             $deliveryNote = $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->first();
         }
 
+        if($order instanceof PalletReturn) {
+            $shipments = $order->shipments;
+        } else {
+            $shipments = $deliveryNote->shipments;
+        }
 
-        $shipments = $deliveryNote->shipments;
-
-
-        $shipper            = $shipments->first()->shipper;
-        $shipperCompanyName = $shipper->trade_as ?? $shipper->name;
+        $shipper            = $shipments->first()?->shipper;
+        $shipperCompanyName = $shipper?->trade_as ?? $shipper?->name;
 
 
         $numbers = [];
