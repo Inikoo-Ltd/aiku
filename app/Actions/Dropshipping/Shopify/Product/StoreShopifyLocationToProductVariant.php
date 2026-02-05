@@ -72,22 +72,28 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
             $mutation = <<<'MUTATION'
             mutation InventoryActivate($inventoryItemId: ID!, $locationId: ID!, $available: Int) {
               inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId, available: $available) {
+                inventoryLevel {
+                  id
+                  quantities(names: ["available"]) {
+                    name
+                    quantity
+                  }
+                  item {
+                    id
+                  }
+                  location {
+                    id
+                  }
+                }
                 userErrors {
                   field
                   message
-                }
-                inventoryLevel {
-                  id
-                  available
                 }
               }
             }
             MUTATION;
 
             $availableQuantity = $product->total_quantity;
-            if ($customerSalesChannel->max_quantity_advertise > 0) {
-                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
-            }
 
             // Get inventory item ID from variant ID
             // Variant ID format: gid://shopify/ProductVariant/123
@@ -124,7 +130,7 @@ class StoreShopifyLocationToProductVariant extends RetinaAction
             $variables = [
                 'inventoryItemId' => $inventoryItemId,
                 'locationId' => $shopifyUser->shopify_location_id,
-                'available' => $availableQuantity ?? 0
+                'available' => (int) $availableQuantity ?? 0
             ];
 
             // Make the GraphQL request
