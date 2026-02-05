@@ -174,7 +174,7 @@ class CloneCollections
         if ($collection instanceof MasterCollection) {
             foreach ($collection->masterProducts as $childrenMasterProduct) {
                 if ($childrenMasterProduct->pivot->type == 'direct') {
-                    $_product=null;
+                    $_product = null;
                     if ($target instanceof Shop) {
                         $_product = $childrenMasterProduct->products()->where('shop_id', $target->id)->first();
                     }
@@ -325,7 +325,7 @@ class CloneCollections
     /**
      * @throws \Throwable
      */
-    public function upsertCollection(Shop $shop, Collection|MasterCollection $collection, $doNotUpdate=false): ?Collection
+    public function upsertCollection(Shop $shop, Collection|MasterCollection $collection, $doNotUpdate = false): ?Collection
     {
         $code = $collection->code;
 

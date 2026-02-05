@@ -272,10 +272,10 @@ class ShowWebpage extends OrgAction
         $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
 
         $subNavigationRoot = '';
-        
+
 
         $canonicalPath = parse_url($webpage->canonical_url ?? '', PHP_URL_PATH);
-        
+
         return Inertia::render(
             'Org/Web/Webpage',
             [
