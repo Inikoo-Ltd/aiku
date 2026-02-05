@@ -73,7 +73,7 @@ import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
 import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
-
+import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -147,7 +147,8 @@ export const componentsList: { [key: string]: Component } = {
     'input-variant' : VariantsField,
     'editOffer' : EditOffer,
     'offer_fields'  : OfferFields,
-    'vol_discount' : InputVolDiscount
+    'vol_discount' : InputVolDiscount,
+    'map-picker' : MapPickerField,
 }
 
 export const getComponent = (componentName: string) => {
