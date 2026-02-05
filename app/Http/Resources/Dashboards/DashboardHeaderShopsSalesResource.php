@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
+use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -16,6 +17,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class DashboardHeaderShopsSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
+
+    protected ?GroupDashboardSalesTableTabsEnum $context = null;
+
+    public function withContext(?GroupDashboardSalesTableTabsEnum $context): self
+    {
+        $this->context = $context;
+        return $this;
+    }
 
     public function toArray($request): array
     {
@@ -25,15 +34,21 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         $deltaLabel = __('Change versus 1 Year ago');
         $inBasketLabel = __('In basket');
 
+        $labelValue = match ($this->context) {
+            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => __('Dropshipping'),
+            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => __('Fulfilment'),
+            default => __('Shop'),
+        };
+
         $shopColumns = [
             'label' => [
-                'formatted_value'   => __('Shop'),
+                'formatted_value'   => $labelValue,
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'align'             => 'left'
             ],
             'label_minified' => [
-                'formatted_value'   => __('Shop'),
+                'formatted_value'   => $labelValue,
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'align'             => 'left'
@@ -247,9 +262,11 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             $columns = array_merge($columns, $basketShopCurrency);
         }
 
-        $columns = array_merge($columns, $basketOrgCurrency);
+        if ($this->context !== GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT) {
+            $columns = array_merge($columns, $basketOrgCurrency);
+        }
 
-        if ($model instanceof Group) {
+        if ($model instanceof Group && $this->context !== GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT) {
             $columns = array_merge($columns, $basketGrpCurrency);
         }
 

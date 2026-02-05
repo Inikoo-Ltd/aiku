@@ -82,8 +82,8 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesInGroupSalesResource::make($group)->toJson(), true),
             GroupDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardHeaderPlatformSalesResource::make($group)->toJson(), true),
             GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardHeaderSalesChannelsSalesResource::make($group)->toJson(), true),
-            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardHeaderShopsSalesResource::make($group)->toJson(), true),
-            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => json_decode(DashboardHeaderShopsSalesResource::make($group)->toJson(), true),
+            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardHeaderShopsSalesResource::make($group)->withContext($this)->toJson(), true),
+            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => json_decode(DashboardHeaderShopsSalesResource::make($group)->withContext($this)->toJson(), true),
         };
 
         $body = match ($this) {
@@ -102,8 +102,8 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalGroupInvoiceCategoriesSalesResource::make($invoiceCategoryTimeSeriesStats)->toJson(), true),
             GroupDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)->toJson(), true),
             GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardTotalSalesChannelsSalesResource::make($salesChannelTimeSeriesStats)->toJson(), true),
-            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardTotalShopsTimeSeriesSalesResource::make($dropshippingShopTimeSeriesStats)->toJson(), true),
-            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => json_decode(DashboardTotalShopsTimeSeriesSalesResource::make($fulfilmentShopTimeSeriesStats)->toJson(), true),
+            GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardTotalShopsTimeSeriesSalesResource::make($dropshippingShopTimeSeriesStats)->withContext($this)->toJson(), true),
+            GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT => json_decode(DashboardTotalShopsTimeSeriesSalesResource::make($fulfilmentShopTimeSeriesStats)->withContext($this)->toJson(), true),
         };
 
         return [

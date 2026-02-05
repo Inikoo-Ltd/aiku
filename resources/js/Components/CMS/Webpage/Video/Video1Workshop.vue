@@ -83,9 +83,10 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 					<!-- 🎬 Direct Video URL -->
 					<template v-if="modelValue?.video?.video_setup?.by_url && modelValue?.video?.video_setup?.source">
-						<video class="w-full h-auto" controls :src="modelValue?.video?.video_setup?.source"
+						<!-- <video class="w-full h-auto" controls :src="modelValue?.video?.video_setup?.source"
 							v-bind="modelValue.video.video_setup.attributes"
-							:style="getStyles(modelValue.video.video_setup?.properties, screenType)"></video>
+							:style="getStyles(modelValue.video.video_setup?.properties, screenType)"></video> -->
+							<iframe class="w-full aspect-video" :src="modelValue?.video?.video_setup?.source" frameborder="0" allowfullscreen />
 					</template>
 
 					<!-- 🌐 Embed HTML -->
