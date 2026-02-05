@@ -8,6 +8,7 @@ import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNot
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
+import OfflineChatForm from "../OfflineChatForm.vue"
 
 interface ChatMessage {
     id: number
@@ -384,6 +385,9 @@ const startNewSession = async () => {
     initWebSocket()
     forceScrollBottom()
 }
+
+const statusChat = ref(false)
+
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
 
 onMounted(() => {
@@ -412,6 +416,7 @@ defineExpose({
     isInitialLoad,
     isLoadingMore,
 })
+console.log("layout chatbutton", layout)
 </script>
 
 <template>
@@ -449,10 +454,12 @@ defineExpose({
                     </div>
                 </div>
 
-                <MessageArea v-if="activeMenu == 'chat'" :messages="messagesLocal" :session="chatSession"
+                <MessageArea v-if="activeMenu == 'chat' && statusChat" :messages="messagesLocal" :session="chatSession"
                     :loading="loading" :isRating="isRating" :rating="rating" :isLoggedIn="isLoggedIn"
                     @send-message="sendMessage" @reload="(loadMore: any) => getMessages(loadMore)"
                     @mounted="forceScrollBottom" @new-session="startNewSession" :assignedAgent="assignedAgent" />
+
+                <OfflineChatForm v-else-if="activeMenu == 'chat' && !statusChat" />
 
                 <div v-if="activeMenu === 'history'"
                     class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">
