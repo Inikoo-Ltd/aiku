@@ -49,6 +49,10 @@ class GetGroupNavigation
             $groupNavigation['organisations'] = $this->getOrganisationsNavs();
         }
 
+        if (app()->environment('local')) {
+            $groupNavigation['sales-channels'] = $this->getSalesChannelsNavs(); // Todo: Raul please made permission for me: Aldo
+        }
+
         if ($user->hasPermissionTo('group-overview')) {
             $groupNavigation['overview'] = $this->getOverviewNavs();
         }
@@ -230,6 +234,19 @@ class GetGroupNavigation
             'root'    => 'grp.organisations.',
             'route'   => [
                 'name' => 'grp.organisations.index'
+            ],
+            'topMenu' => []
+        ];
+    }
+
+    private function getSalesChannelsNavs(): array
+    {
+        return [
+            'label'   => __('Sales Channels'),
+            'icon'    => ['fal', 'fa-store'],
+            'root'    => 'grp.sales_channels.',
+            'route'   => [
+                'name' => 'grp.sales_channels.index'
             ],
             'topMenu' => []
         ];
