@@ -262,9 +262,11 @@ class DashboardHeaderShopsSalesResource extends JsonResource
             $columns = array_merge($columns, $basketShopCurrency);
         }
 
-        $columns = array_merge($columns, $basketOrgCurrency);
+        if ($this->context !== GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT) {
+            $columns = array_merge($columns, $basketOrgCurrency);
+        }
 
-        if ($model instanceof Group) {
+        if ($model instanceof Group && $this->context !== GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT) {
             $columns = array_merge($columns, $basketGrpCurrency);
         }
 
