@@ -18,6 +18,8 @@ class DashboardHeaderOffersResource extends JsonResource
         /** @var Shop $model */
         $model = $this->resource;
 
+        $deltaTooltip = __('Change versus 1 Year ago');
+
         return [
             'slug'    => $model->slug,
             'columns' => [
@@ -27,19 +29,93 @@ class DashboardHeaderOffersResource extends JsonResource
                     'data_display_type' => 'full',
                     'align'             => 'left'
                 ],
+                'label_minified'     => [
+                    'formatted_value'   => __('Name'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
+                    'align'             => 'left'
+                ],
                 'customers' => [
                     'formatted_value'   => __('Customers'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
-                    'align'             => 'left',
+                    'sortable'          => true,
+                    'align'             => 'right',
+                    'scope'             => 'customers'
+                ],
+                'customers_minified' => [
+                    'formatted_value'   => __('Customers'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'align'             => 'right',
                     'scope'             => 'customers'
                 ],
                 'orders'    => [
                     'formatted_value'   => __('Orders'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
-                    'align'             => 'left',
+                    'sortable'          => true,
+                    'align'             => 'right',
                     'scope'             => 'orders'
+                ],
+                'orders_minified'    => [
+                    'formatted_value'   => __('Orders'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'align'             => 'right',
+                    'scope'             => 'orders'
+                ],
+                'invoices'    => [
+                    'formatted_value'   => __('Invoices'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'align'             => 'right',
+                    'scope'             => 'invoices'
+                ],
+                'invoices_minified'    => [
+                    'formatted_value'   => __('Invoices'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'align'             => 'right',
+                    'scope'             => 'invoices'
+                ],
+                'invoices_delta' => [
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => $deltaTooltip,
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'always',
+                    'sortable'          => true,
+                    'align'             => 'right',
+                    'scope'             => 'invoices'
+                ],
+                'sales' => [
+                    'formatted_value'   => __('Sales'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'full',
+                    'sortable'          => true,
+                    'align'             => 'right',
+                    'scope'             => 'invoices'
+                ],
+                'sales_minified' => [
+                    'formatted_value'   => __('Sales'),
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'minified',
+                    'sortable'          => true,
+                    'align'             => 'right',
+                    'scope'             => 'invoices'
+                ],
+                'sales_delta' => [
+                    'formatted_value'   => 'Δ 1Y',
+                    'tooltip'           => $deltaTooltip,
+                    'currency_type'     => 'always',
+                    'data_display_type' => 'always',
+                    'sortable'          => true,
+                    'align'             => 'right',
+                    'scope'             => 'invoices'
                 ],
             ]
         ];
