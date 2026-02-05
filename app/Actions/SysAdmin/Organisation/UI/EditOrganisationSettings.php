@@ -226,8 +226,11 @@ class EditOrganisationSettings extends OrgAction
                             'fields' => [
                                 'working_hours' => [
                                     'type'          => 'working-hours',
-                                    'metadata' => $metadata,
-                                    'data'     => (object) $scheduleData,
+                                    'value'        => [
+                                         'metadata' => $metadata,
+                                         'data'     => (object) $scheduleData,
+                                    ]
+                                   
                                 ]
                             ],
                         ],
