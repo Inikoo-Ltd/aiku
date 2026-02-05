@@ -615,35 +615,23 @@ const onSubmitPickMagicPlace = () => {
                 </div>
             </div>
 
-            <div v-else class="flex gap-x-2 gap-y-1">
-                
-                <Button
-                    v-if="layout.app.environment === 'local' && !itemValue.is_handled"
-                    @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
-                    type="warning"
-                    key="4"
-                    v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
-                    :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                >
-                    <template #label>
-                        <span>
-                            {{ itemValue.quantity_to_pick.toString() || '0' }}
-                            <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
-                        </span>
-                    </template>
-                </Button>
+            <div v-else class="flex justify-between gap-x-2 gap-y-1">
+                <div v-if="!itemValue.is_handled" class="text-gray-400 italic text-sm">
+                    {{ trans("No quantity to pick") }}
+                </div>
 
-                <ButtonWithLink
-                    v-if="!itemValue.is_handled"
-                    type="negative"
-                    tooltip="No quantity to pick available. Click to set as not picked."
-                    icon="fal fa-debug"
-                    :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                    :routeTarget="itemValue.not_picking_route"
-                    :bindToLink="{preserveScroll: true}"
-                />
-                
-                <span class="hidden text-gray-400 italic text-xs">{{ trans("No quantity to pick") }}</span>
+                <div class="flex gap-x-2 gap-y-1">
+                    <ButtonWithLink
+                        v-if="!itemValue.is_handled"
+                        type="negative"
+                        tooltip="No quantity to pick. Click to ignore."
+                        xicon="fal fa-debug"
+                        label="Click to ignore"
+                        :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                        :routeTarget="itemValue.not_picking_route"
+                        :bindToLink="{preserveScroll: true}"
+                    />
+                </div>
             </div>
 
         </template>
