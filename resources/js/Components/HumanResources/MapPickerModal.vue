@@ -154,8 +154,6 @@ const confirmLocation = () => {
                         Please press <b>Use My Location</b><br>
                         or click on the map after the location appears.
                     </p>
-
-                    <Button label="Use My Location" :type="'secondary'" :icon="faMapPin" @click="detectMyLocation" />
                 </div>
             </div>
 
@@ -178,7 +176,8 @@ const confirmLocation = () => {
                 <div><b>Address:</b> {{ filter.location || "Find Address..." }}</div>
             </div>
 
-            <div class="flex justify-end items-center gap-2">
+            <div class="flex justify-between items-center gap-2">
+                <Button label="Use My Location" :type="'secondary'" :icon="faMapPin" @click="detectMyLocation" />
                 <div class="flex gap-2">
                     <Button label="Cancel" type="exit" @click="close" />
                     <Button label="Use This Location" type="primary" @click="confirmLocation" />
