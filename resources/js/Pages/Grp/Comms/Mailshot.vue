@@ -585,12 +585,13 @@ watch(
 
             <span class="h-4 w-px bg-gray-300"></span>
             <template v-if="checked">
+                <label class="block text-sm text-gray-600 mb-1 font-medium">Subject</label>
                 <InputText v-model="subject" placeholder="Subject" :disabled="!checked || !isEditingSecond"
                     class="!h-8 !py-1 !text-sm w-44" />
 
                 <div class="flex items-center gap-1 shrink-0">
                     <InputNumber v-model="hour" :min="1" :disabled="!checked || !isEditingSecond"
-                        inputClass="!h-8 !py-1 !text-sm text-center" />
+                        inputClass="!h-8 !py-1 !text-sm text-center w-20" />
                     <span class="text-sm font-medium text-gray-700 whitespace-nowrap">hours</span>
                 </div>
 
