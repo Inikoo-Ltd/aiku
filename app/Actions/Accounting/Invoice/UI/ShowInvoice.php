@@ -172,10 +172,10 @@ class ShowInvoice extends OrgAction
                 [
                     'label'       => __('Net'),
                     'information' => '',
-                    'styleField'    => [
-                        'background' => '#000000CC',
-                        'color' => '#fff',
-                    ],
+                    // 'styleField'    => [
+                    //     'background' => '#000000CC',
+                    //     'color' => '#fff',
+                    // ],
                     'price_total' => $invoice->net_amount
                 ],
                 [
@@ -186,10 +186,10 @@ class ShowInvoice extends OrgAction
             [
                 [
                     'label'       => __('Total'),
-                    'styleField'    => [
-                        'background' => '#000',
-                        'color' => '#fff',
-                    ],
+                    // 'styleField'    => [
+                    //     'background' => '#000',
+                    //     'color' => '#fff',
+                    // ],
                     'price_total' => $invoice->total_amount
                 ],
             ],
