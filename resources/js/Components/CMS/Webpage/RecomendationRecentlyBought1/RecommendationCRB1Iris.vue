@@ -94,7 +94,7 @@ onMounted(() => {
         <template v-if="!isFetched || listProducts?.length">
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
-                <div class="text-xl md:text-3xl font-semibold">
+                <div class="text-2xl md:text-3xl font-semibold">
                     <!-- <div v-html="fieldValue.title"></div> -->
                     <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
                 </div>
