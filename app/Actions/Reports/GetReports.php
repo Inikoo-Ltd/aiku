@@ -5,6 +5,7 @@ namespace App\Actions\Reports;
 use App\Actions\OrgAction;
 use App\Actions\Accounting\Intrastat\UI\IndexIntrastatExportReport;
 use App\Actions\Accounting\Intrastat\UI\IndexIntrastatImportReport;
+use App\Actions\Accounting\MontanaInvoices\UI\IndexMontanaInvoicesReport;
 use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
 use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
@@ -62,6 +63,12 @@ class GetReports extends OrgAction
                 'icon'  => 'fal fa-file-invoice',
                 'route' => route('grp.org.reports.sage-invoices', $organisation),
                 'count' => IndexSageInvoicesReport::make()->inReports($organisation),
+            ],
+            [
+                'name'  => __('Montana Invoices'),
+                'icon'  => 'fal fa-file-invoice',
+                'route' => route('grp.org.reports.montana-invoices', $organisation),
+                'count' => IndexMontanaInvoicesReport::make()->inReports($organisation),
             ],
             [
                 'name'  => __('Picker Performance'),
