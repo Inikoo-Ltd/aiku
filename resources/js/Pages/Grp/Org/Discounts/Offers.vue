@@ -18,7 +18,6 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
 }>()
-
 </script>
 
 <template>

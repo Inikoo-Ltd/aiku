@@ -75,11 +75,13 @@ import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
 import InputWorkingHours from '@/Components/Forms/Fields/InputWorkingHours.vue'
+import InputWithWarning from '@/Components/Forms/Fields/InputWithWarning.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
     'input': Input,
+    'input_with_warning': InputWithWarning,
     'input_number': FieldInputNumber,
     'inputWithAddOn': InputWithAddOn,
     'phone': Phone,
