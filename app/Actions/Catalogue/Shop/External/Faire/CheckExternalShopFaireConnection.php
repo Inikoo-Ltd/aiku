@@ -28,7 +28,7 @@ class CheckExternalShopFaireConnection extends OrgAction
         if (!Arr::has($faireBrand, 'name')) {
             data_set($dataToBeUpdated, 'external_shop_platform_status', false);
 
-            // Checks if it's has failed before or not. Write timestamp & err msg if it hasn't failed before. Skip if it does 
+            // Checks if it has failed before or not. Write timestamp & err msg if it hasn't failed before. Skip if it does
             if (!$shop->external_shop_connection_failed_at) {
                 data_set($dataToBeUpdated, 'external_shop_connection_failed_at', now());
                 data_set($dataToBeUpdated, 'external_shop_connection_error', data_get($faireBrand, 'error.message'));
@@ -37,7 +37,7 @@ class CheckExternalShopFaireConnection extends OrgAction
             // Remove connection failed at if it's okay. But do not override the error message. Maybe we'll need it some time else.
             data_set($dataToBeUpdated, 'external_shop_connection_failed_at', null);
         }
-            
+
         $shop->update($dataToBeUpdated);
     }
 

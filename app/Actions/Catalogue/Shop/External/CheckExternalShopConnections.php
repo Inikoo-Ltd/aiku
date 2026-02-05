@@ -26,23 +26,21 @@ class CheckExternalShopConnections extends RetinaAction
 
     public function handle(Shop $shop): void
     {
-        if($shop->engine == ShopEngineEnum::FAIRE){
+        if ($shop->engine == ShopEngineEnum::FAIRE) {
             CheckExternalShopFaireConnection::run($shop);
-        }
-
-        if($shop->engine == ShopEngineEnum::SHOPIFY){
+        } elseif ($shop->engine == ShopEngineEnum::SHOPIFY) {
             // TODO. The file below is not done yet anyway
             // CheckExternalShopShopifyConnection::run($shop);
         }
     }
-    
+
     public function asCommand(Command $command): void
     {
         $command->info('Checking all shop connections');
-        
+
         $shopQuery = Shop::where('type', ShopTypeEnum::EXTERNAL)
                             ->where('state', ShopStateEnum::OPEN);
-        
+
         $total = (clone $shopQuery)->count();
 
         $bar = $command->getOutput()->createProgressBar($total);
@@ -50,12 +48,12 @@ class CheckExternalShopConnections extends RetinaAction
 
         Shop::where('type', ShopTypeEnum::EXTERNAL)
             ->where('state', ShopStateEnum::OPEN)
-            ->each(function ($shop) use ($bar) { 
+            ->each(function ($shop) use ($bar) {
                 $this->handle($shop);
                 $bar->advance();
             });
 
-            
+
         $bar->finish();
         $command->newLine();
     }

@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 05 Feb 2026 12:41:34 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Thu, 05 Feb 2026 14:18:16 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -14,9 +14,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('shops', function (Blueprint $table) {
-            $table->boolean('external_shop_platform_status')->default(false);
-            $table->dateTimeTz('external_shop_connection_failed_at')->nullable();
-            $table->text('external_shop_connection_error')->nullable();
+            $table->unsignedSmallInteger('migration_pivot')->nullable();
         });
     }
 
@@ -24,11 +22,7 @@ return new class () extends Migration {
     public function down(): void
     {
         Schema::table('shops', function (Blueprint $table) {
-            $table->dropColumn([
-                'external_shop_platform_status',
-                'external_shop_connection_failed_at',
-                'external_shop_connection_error'
-            ]);
+            $table->dropColumn('migration_pivot');
         });
     }
 };

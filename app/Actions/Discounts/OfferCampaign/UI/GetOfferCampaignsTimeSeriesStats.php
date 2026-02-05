@@ -44,7 +44,9 @@ class GetOfferCampaignsTimeSeriesStats
                 $timeSeriesIds,
                 [
                     'customers' => 'customers_invoiced',
-                    'orders' => 'orders'
+                    'orders'    => 'orders',
+                    'invoices'  => 'invoices',
+                    'sales'     => 'sales_grp_currency',
                 ],
                 'offer_campaign_time_series_records',
                 'offer_campaign_time_series_id',
