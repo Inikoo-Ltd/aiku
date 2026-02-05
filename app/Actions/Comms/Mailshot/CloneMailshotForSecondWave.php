@@ -43,7 +43,7 @@ class CloneMailshotForSecondWave extends OrgAction
             'organisation_id' => $originalMailshot->organisation_id,
             'shop_id' => $originalMailshot->shop_id,
             'type' => $originalMailshot->type,
-            'subject' => $originalMailshot->subject,
+            'subject' => $originalMailshot->subject . ' (2nd)',
             'state' => $originalMailshot->state,
             'is_second_wave' => true,
             'outbox_id' => $originalMailshot->outbox_id,

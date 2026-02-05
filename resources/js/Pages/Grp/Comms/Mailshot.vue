@@ -48,6 +48,8 @@ const props = defineProps<{
     setSecondWaveRoute?: routeType
     updateSecondWaveRoute?: routeType
     isSecondWaveActive: boolean
+    secondwaveSubject?: string
+    secondwaveDelayHours?: number
 }>();
 
 const currentTab = ref(props.tabs.current);

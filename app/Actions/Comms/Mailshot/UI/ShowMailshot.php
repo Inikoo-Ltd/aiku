@@ -68,6 +68,11 @@ class ShowMailshot extends OrgAction
             : 0;
 
         $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_active;
+        $mailshotSecondWave = null;
+        if ($isSecondWaveActive) {
+            $mailshotSecondWave = $mailshot->secondWave;
+        }
+
 
         return Inertia::render(
             'Comms/Mailshot',
@@ -227,6 +232,9 @@ class ShowMailshot extends OrgAction
                 'estimatedRecipients' => $estimatedRecipients,
                 'mailshotType' => $mailshot->type->value,
                 'isSecondWaveActive' => $isSecondWaveActive,
+                'secondwaveSubject' => $mailshotSecondWave?->subject,
+                'secondwaveDelayHours' => $mailshotSecondWave?->send_delay_hours,
+
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(
