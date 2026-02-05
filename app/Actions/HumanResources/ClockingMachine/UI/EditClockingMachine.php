@@ -96,7 +96,7 @@ class EditClockingMachine extends OrgAction
                         'value' => (bool) data_get($clockingMachine->config, 'qr.allow_multiple_scans', false),
                     ],
                     'config.qr.coordinates' => [
-                        'type'  => 'input',
+                        'type'  => 'map-picker',
                         'label' => __('Maps Coordinates'),
                         'value' => data_get($clockingMachine->config, 'qr.coordinates'),
                     ],
@@ -136,7 +136,6 @@ class EditClockingMachine extends OrgAction
                         'updateRoute' => [
                             'name'       => 'grp.models.clocking_machine..update',
                             'parameters' => $clockingMachine->id
-
                         ],
                     ]
                 ]
@@ -149,7 +148,7 @@ class EditClockingMachine extends OrgAction
         return ShowClockingMachine::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 }
