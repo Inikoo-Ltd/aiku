@@ -18,6 +18,11 @@ class DeleteMailshot
 
     public function handle(Mailshot $mailshot): bool
     {
+        // Note: Delete second wave if exists
+        if ($mailshot->secondWave()->exists()) {
+            DeleteMailshotSecondWave::run($mailshot->secondWave);
+        }
+
         return $mailshot->delete();
         //  TODO: check any hydrator related to this mailshot
 
