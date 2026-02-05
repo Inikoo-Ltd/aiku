@@ -29,12 +29,12 @@ class IndexIrisCatalogue extends IrisAction
     private function queryForCollection()
     {
         $queryBuilder = QueryBuilder::for(Collection::class)
-            ->where('collection.state', CollectionStateEnum::ACTIVE);
+            ->where('collections.state', CollectionStateEnum::ACTIVE);
 
         return $queryBuilder
             ->where('collections.shop_id', $this->shop->id)
-            ->withCount(['families as family_in_collection'])
-            ->withCount(['products as products_in_collection'])
+            ->withCount(['families as number_current_families'])
+            ->withCount(['products as number_current_products'])
             ->select([
                     'collections.id',
                     'collections.slug',
@@ -237,7 +237,10 @@ class IndexIrisCatalogue extends IrisAction
 
             $columns = match ($scope) {
                 strtolower(class_basename(Product::class)) => [],
-                strtolower(class_basename(Collection::class)) => [],
+                strtolower(class_basename(Collection::class)) => [
+                    ['key' => 'number_current_families', 'label' => __('Families'), 'sortable' => true],
+                    ['key' => 'number_current_products', 'label' => __('Products'), 'sortable' => true],
+                ],
                 'department' => [
                     ['key' => 'number_current_sub_departments', 'label' => __('Sub-departments'), 'sortable' => true],
                     ['key' => 'number_current_families', 'label' => __('Families'), 'sortable' => true],
