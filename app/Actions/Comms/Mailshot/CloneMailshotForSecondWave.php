@@ -46,6 +46,7 @@ class CloneMailshotForSecondWave extends OrgAction
             'subject' => $originalMailshot->subject . ' (2nd)',
             'state' => $originalMailshot->state,
             'is_second_wave' => true,
+            'ready_at' => $originalMailshot->ready_at,
             'outbox_id' => $originalMailshot->outbox_id,
             'recipients_recipe' => $originalMailshot->recipients_recipe,
         ];
@@ -67,10 +68,10 @@ class CloneMailshotForSecondWave extends OrgAction
                     'builder' => $originalEmail->builder,
                     'layout' => $originalEmail->liveSnapshot?->layout ?? $originalEmail->unpublishedSnapshot?->layout,
                     'compiled_layout' => $originalEmail->liveSnapshot?->compiled_layout,
-                    'snapshot_state' => $originalEmail->unpublishedSnapshot?->state ?? $originalEmail->liveSnapshot?->state,
-                    'snapshot_published_at' => $originalEmail->unpublishedSnapshot?->published_at ?? $originalEmail->liveSnapshot?->published_at,
-                    'snapshot_recyclable' => $originalEmail->unpublishedSnapshot?->recyclable ?? $originalEmail->liveSnapshot?->recyclable ?? false,
-                    'snapshot_first_commit' => $originalEmail->unpublishedSnapshot?->first_commit ?? $originalEmail->liveSnapshot?->first_commit ?? true,
+                    'snapshot_state' => $originalEmail->liveSnapshot?->state ?? $originalEmail->unpublishedSnapshot?->state,
+                    'snapshot_published_at' => $originalEmail->liveSnapshot?->published_at ??  $originalEmail->unpublishedSnapshot?->published_at,
+                    'snapshot_recyclable' => $originalEmail->liveSnapshot?->recyclable ?? $originalEmail->unpublishedSnapshot?->recyclable ?? false,
+                    'snapshot_first_commit' => $originalEmail->liveSnapshot?->first_commit ?? $originalEmail->unpublishedSnapshot?->first_commit ?? true,
                 ],
                 strict: false
             );
