@@ -64,6 +64,7 @@ class IndexDispatchedEmailsInOrder extends OrgAction
             }
             $table->column(key: 'state', label: 'State', canBeHidden: false, type: 'icon');
             $table->column(key: 'subject', label: 'Subject', canBeHidden: false, sortable: true);
+            $table->column(key: 'body_preview', label: 'Preview', canBeHidden: false, sortable: false);
             $table->column(key: 'email_address', label: __('Email'), canBeHidden: false, sortable: true);
             $table->column(key: 'sent_at', label: __('Sent Date'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_email_tracking_events', label: __('Events'), canBeHidden: false, sortable: true);
