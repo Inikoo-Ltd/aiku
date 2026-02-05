@@ -456,9 +456,12 @@ class EditShop extends OrgAction
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
                                 'faire_access_token' => [
-                                    'type'  => 'input',
+                                    'type'  => 'input_with_warning',
                                     'label' => __('Faire Access Token'),
                                     'value' => Arr::get($shop->settings, 'faire.access_token', ''),
+                                    'showWarning'    => !is_null($shop->external_shop_connection_failed_at),
+                                    'warningTitle'   => __('We are having troubles connecting to the platform'),
+                                    'warningBody'    => __('Error Message') . ": " . $shop->external_shop_connection_error
                                 ]
                             ],
                         ],
