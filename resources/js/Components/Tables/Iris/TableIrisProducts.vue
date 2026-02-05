@@ -24,7 +24,6 @@ const props = defineProps<{
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image :src="item.web_images.main" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
@@ -60,6 +59,12 @@ const props = defineProps<{
            <a :href="item.canonical_url"> 
                 <FontAwesomeIcon :icon="faExternalLink" />
            </a>
+        </template>
+
+        <template #cell(code)="{ item: department }">
+            <a :href="department.canonical_url" class="primaryLink" @click="$emit('select-family', department.id)">
+                {{ department.code }}
+            </a>
         </template>
     </Table>
 </template>

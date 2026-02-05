@@ -94,22 +94,30 @@ class ShowIrisCatalogue extends IrisAction
     public function getTabNavigation(?string $level): array
     {
         $tabs = [
+            ['key' => 'collection', 'label' => 'Collections'],
             ['key' => 'department', 'label' => 'Departments'],
             ['key' => 'sub_department', 'label' => 'Sub Departments'],
             ['key' => 'family', 'label' => 'Families'],
             ['key' => 'product', 'label' => 'Products'],
-            ['key' => 'collection', 'label' => 'Collection'],
         ];
 
         if (!$level) {
             return $tabs;
         }
 
+        // special rule: if parent = collection → only family + product
+        if ($level === 'collection') {
+            return array_values(
+                array_filter($tabs, fn($tab) => in_array($tab['key'], ['family', 'product']))
+            );
+        }
+
         $order = [
-            'department'     => 0,
-            'sub_department' => 1,
-            'family'         => 2,
-            'product'        => 3,
+            'collection'     => 0,
+            'department'     => 1,
+            'sub_department' => 2,
+            'family'         => 3,
+            'product'        => 4,
         ];
 
         if (!isset($order[$level])) {
@@ -119,7 +127,10 @@ class ShowIrisCatalogue extends IrisAction
         $index = $order[$level];
 
         return array_values(
-            array_filter($tabs, fn ($tab) => $order[$tab['key']] > $index)
+            array_filter($tabs, function ($tab) use ($order, $index) {
+                if (!isset($order[$tab['key']])) return false;
+                return $order[$tab['key']] > $index;
+            })
         );
     }
 
