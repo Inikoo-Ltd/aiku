@@ -18,6 +18,7 @@ enum ClockingMachineTypeEnum: string
     case STATIC_NFC = 'static-nfc';
     case MOBILE_APP = 'mobile-app';
     case LEGACY     = 'legacy';
+    case QR_CODE    = 'qr-code';
 
     public static function labels(): array
     {
@@ -26,6 +27,7 @@ enum ClockingMachineTypeEnum: string
             'static-nfc'     => __('Static NFC'),
             'mobile-app'     => __('Mobile App').' (Han)',
             'legacy'         => __('Legacy'),
+            'qr-code'        => __('QR Code'),
         ];
     }
 

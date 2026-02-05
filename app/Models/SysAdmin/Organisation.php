@@ -110,6 +110,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\HumanResources\WorkSchedule;
 
 /**
  * App\Models\SysAdmin\Organisation
@@ -917,5 +918,10 @@ class Organisation extends Model implements HasMedia, Auditable
     public function pickedBays(): HasMany
     {
         return $this->hasMany(PickedBay::class);
+    }
+
+    public function workSchedules(): MorphMany
+    {
+        return $this->morphMany(WorkSchedule::class, 'schedulable');
     }
 }
