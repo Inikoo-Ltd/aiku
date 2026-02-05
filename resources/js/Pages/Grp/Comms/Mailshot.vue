@@ -47,6 +47,7 @@ const props = defineProps<{
     mailshotType?: string
     setSecondWaveRoute?: routeType
     updateSecondWaveRoute?: routeType
+    isSecondWaveActive: boolean
 }>();
 
 const currentTab = ref(props.tabs.current);

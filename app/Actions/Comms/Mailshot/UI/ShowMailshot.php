@@ -67,6 +67,7 @@ class ShowMailshot extends OrgAction
             ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
             : 0;
 
+        $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_active;
 
         return Inertia::render(
             'Comms/Mailshot',
@@ -225,6 +226,7 @@ class ShowMailshot extends OrgAction
                 'status' => $mailshot->state->value,
                 'estimatedRecipients' => $estimatedRecipients,
                 'mailshotType' => $mailshot->type->value,
+                'isSecondWaveActive' => $isSecondWaveActive,
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(
