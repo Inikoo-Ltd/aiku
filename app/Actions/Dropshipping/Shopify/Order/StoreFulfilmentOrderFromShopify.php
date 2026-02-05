@@ -51,7 +51,7 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
 
         $existOrder = PalletReturn::where('platform_order_id', Arr::get($modelData, 'id'))->first();
 
-        if ($existOrder) {
+        if (!$existOrder) {
             return;
         }
 
@@ -63,7 +63,7 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
                 'delivery_address'          => new Address($deliveryAddress),
                 'data'                      => ['shopify_data' => $modelData],
                 'platform_order_id'         => Arr::get($modelData, 'id'),
-                'is_collection'             => false,
+                'is_collection'             => true,
                 'shopify_user_id'           => $shopifyUser->id
             ]);
 
@@ -81,13 +81,17 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
                         continue;
                     }
 
-                    $storedItemModels[$storedItem->id] = $shopifyProduct['quantity'];
+                    $storedItemModels[$storedItem->id] = [
+                        'quantity' => $shopifyProduct['quantity']
+                    ];
                 }
             }
 
             StoreStoredItemsToReturn::make()->action(
                 palletReturn: $palletReturn,
-                modelData: $storedItemModels
+                modelData: [
+                    'stored_items' => $storedItemModels
+                ]
             );
 
             $palletReturn->refresh();

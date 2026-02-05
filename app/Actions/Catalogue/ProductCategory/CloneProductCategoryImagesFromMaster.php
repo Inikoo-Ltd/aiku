@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Catalogue\Concerns\CanCloneImages;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateImages;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CloneProductCategoryImagesFromMaster implements ShouldBeUnique
 {
     use AsAction;
+    use CanCloneImages;
 
     public function getJobUniqueId(ProductCategory $productCategory): string
     {
@@ -28,40 +30,19 @@ class CloneProductCategoryImagesFromMaster implements ShouldBeUnique
             return;
         }
 
-        $images   = [];
-        $position = 1;
-
         $master = $productCategory->masterProductCategory;
 
         if (!$master) {
             return;
         }
 
-        foreach ($master->images as $image) {
-            $images[$image->id] = [
-                'is_public'       => true,
-                'scope'           => 'photo',
-                'sub_scope'       => $image->pivot->sub_scope,
-                'caption'         => $image->pivot->caption,
-                'organisation_id' => $productCategory->organisation_id,
-                'group_id'        => $productCategory->group_id,
-                'position'        => $position++,
-                'created_at'      => now(),
-                'updated_at'      => now(),
-                'data'            => '{}'
+        $this->cloneImages($master, $productCategory);
 
-            ];
-        }
-
-
-        $productCategory->images()->sync($images);
         $productCategory->update([
-            'image_id'                 => $master->image_id,
+            'image_id' => $master->image_id,
         ]);
 
         ProductCategoryHydrateImages::run($productCategory);
         UpdateProductCategoryWebImages::run($productCategory);
     }
-
-
 }

@@ -3,7 +3,7 @@
 	"code": "carousel-cta",
 	"name": "Cta- Carousel",
 	"scope": "webpage",
-	"category": "element",
+	"category": "block",
 	"icon": ["fal", "rectangle-wide"],
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
 	"is_in_test" : false,

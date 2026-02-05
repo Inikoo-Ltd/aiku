@@ -8,6 +8,8 @@ import { routeType } from "@/types/route";
 import FormEditProductCategory from "@/Components/DepartmentAndFamily/FormEditProductCategory.vue";
 import Dialog from "primevue/dialog";
 import { trans } from "laravel-vue-i18n";
+import { ulid } from "ulid";
+import { get, isPlainObject } from "lodash-es";
 
 const props = defineProps<{
   modelValue: {
@@ -103,15 +105,41 @@ const mergedItems = computed(() => {
 })
 
 
+const key = ref(ulid())
+
+const title = computed(() => {
+  const rawVal = get(props.modelValue, ['text','value'])
+
+  let result: any
+
+  if (!isPlainObject(rawVal)) {
+    result = rawVal
+  } else if (!rawVal?.use_responsive) {
+    result = rawVal?.desktop ?? ''
+  } else {
+    const view = props.screenType!
+    result = rawVal?.[view] ?? rawVal?.desktop ?? ''
+  }
+
+  return result || `<h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">${ trans("Browse By Sub-department") }</h2>`
+})
+
+const textVisible = computed(() => {
+  const v = props.modelValue?.text?.visible
+  return v === null || v === undefined ? true : v
+})
+
+
 </script>
 
 <template>
   <div
-    class="mx-auto"
+    class="mx-auto editor-class"
     :class="screenClass"
     :style="getStyles(modelValue?.container?.properties, screenType)"
   >
-    <h2 class="text-2xl font-bold mb-6">Browse by sub-department:</h2>
+   <!--  <h2 class="text-2xl font-bold mb-6">Browse by sub-department:</h2> -->
+    <div v-if="textVisible" v-html="title" class="mb-4"></div>
     <div v-if="modelValue?.sub_departments?.length">
       <div class="grid gap-4" :class="gridColsClass">
         <button

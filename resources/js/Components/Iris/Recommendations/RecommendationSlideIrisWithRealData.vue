@@ -42,7 +42,7 @@ const isLoadingVisit = ref(false)
         </div>
 
         <!-- Section: Title -->
-        <span class="mb-1 text-[11px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em]" :title="product.attributes.title">
+        <span class="mb-1 text-[13px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em]" :title="product.attributes.title">
             <component :is="product.attributes.web_url[0] ? LinkIris : 'div'" :href="product.iris_attributes?.url" class="hover:underline"
                 @success="() => SelectItemCollector(product)" @start="() => isLoadingVisit = true"
                 @finish="() => isLoadingVisit = false">
@@ -76,13 +76,14 @@ const isLoadingVisit = ref(false)
     </div>
 
     <!-- Section: Prices -->
-    <div v-if="isLoadingProductRealData">
-        <div class="h-40 md:h-32 w-full skeleton">
-
+    <template v-if="layout?.iris?.is_logged_in">
+        <div v-if="isLoadingProductRealData">
+            <div class="h-40 md:h-32 w-full skeleton">
+            </div>
         </div>
-    </div>
-    <div v-else-if="layout?.iris?.is_logged_in">
-        <Prices2 v-if="layout.retina?.type === 'b2b'" :product="product.iris_attributes" :currency="currency" :basketButton="false" />
-        <Prices v-else :product="product.iris_attributes" :currency="currency" :basketButton="false" />
-    </div>
+        <div v-else>
+            <Prices2 v-if="layout.retina?.type === 'b2b'" :product="product.iris_attributes" :currency="currency" :basketButton="false" />
+            <Prices v-else :product="product.iris_attributes" :currency="currency" :basketButton="false" />
+        </div>
+    </template>
 </template>

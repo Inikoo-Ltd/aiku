@@ -360,7 +360,7 @@ const onSubmitEditNetAmount = () => {
                     <!-- Editable when creating and not in edit mode -->
                     <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)"
                          class="w-fit">
-                        <NumberWithButtonSave :modelValue="item.quantity_ordered" :routeSubmit="item.updateRoute"
+                        <NumberWithButtonSave :modelValue="Number(item.quantity_ordered)" :routeSubmit="item.updateRoute"
                                               :bindToTarget="{ min: 0, max: item.available_quantity }" isWithRefreshModel
                                               keySubmit="quantity_ordered" :isLoading="isLoading === 'quantity' + item.id"
                                               :readonly="readonly"

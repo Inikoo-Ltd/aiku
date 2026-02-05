@@ -319,7 +319,7 @@ function changeSearchInputValue(key, value) {
 
 const changeGlobalSearchValue = debounce((value?: string) => {
     changeSearchInputValue('global', value);
-}, 400)
+}, 100)
 
 
 
@@ -664,7 +664,7 @@ const isLoading = ref<string | boolean>(false)
                         :tableName="props.name" />
                 </div>
 
-                <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">
+                <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4 table-query-builder">
 
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
                     <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">

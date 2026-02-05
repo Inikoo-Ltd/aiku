@@ -10,6 +10,10 @@
 	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
+			"text" : {
+				"value": "<h2 class=\"text-2xl font-bold mb-6\">Browse by sub-department:</h2>",
+				"visible" : true
+			},
 			"card": {
 				"container": {
 					"properties": {}

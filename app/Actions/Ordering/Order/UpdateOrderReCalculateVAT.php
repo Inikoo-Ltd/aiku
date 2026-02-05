@@ -7,7 +7,6 @@
  * copyright 2026
 */
 
-
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;

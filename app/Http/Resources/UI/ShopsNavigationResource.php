@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\UI;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,7 +33,8 @@ class ShopsNavigationResource extends JsonResource
                     $shop->slug
                 ]
             ],
-
+            'is_external'    => $shop->type == ShopTypeEnum::EXTERNAL,
+            'external_api_problem'   => !$shop->external_shop_platform_status && !is_null($shop->external_shop_connection_failed_at) // true if connection fails & fail timestamp exists
         ];
     }
 }

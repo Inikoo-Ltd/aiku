@@ -13,64 +13,20 @@ use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitImages;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithImageUpdate;
 use App\Models\Catalogue\Product;
-use App\Models\Helpers\Media;
 use App\Models\Masters\MasterAsset;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterProductImages extends GrpAction
 {
     use WithActionUpdate;
+    use WithImageUpdate;
 
     public function handle(MasterAsset $masterAsset, array $modelData, bool $updateDependants = false): MasterAsset
     {
-        $imageTypeMapping = [
-            'image_id' => 'main',
-            'front_image_id' => 'front',
-            '34_image_id' => '34',
-            'left_image_id' => 'left',
-            'right_image_id' => 'right',
-            'back_image_id' => 'back',
-            'top_image_id' => 'top',
-            'bottom_image_id' => 'bottom',
-            'size_comparison_image_id' => 'size_comparison',
-            'lifestyle_image_id' => 'lifestyle',
-            'art1_image_id' => 'art1',
-            'art2_image_id' => 'art2',
-            'art3_image_id' => 'art3',
-            'art4_image_id' => 'art4',
-            'art5_image_id' => 'art5',
-        ];
-
-        $imageKeys = collect($imageTypeMapping)
-            ->keys()
-            ->filter(fn ($key) => Arr::exists($modelData, $key))
-            ->toArray();
-
-        foreach ($imageKeys as $imageKey) {
-            $mediaId = $modelData[$imageKey];
-
-            if ($mediaId === null) {
-                $masterAsset->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                    ->updateExistingPivot(
-                        $masterAsset->images()
-                        ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                        ->first()?->id,
-                        ['sub_scope' => null]
-                    );
-            } else {
-                $media = Media::find($mediaId);
-
-                if ($media) {
-                    $masterAsset->images()->updateExistingPivot(
-                        $media->id,
-                        ['sub_scope' => $imageTypeMapping[$imageKey]]
-                    );
-                }
-            }
-        }
+        $this->updateModelImages($masterAsset, $modelData);
 
         data_set($modelData, 'bucket_images', true);
 
@@ -111,24 +67,7 @@ class UpdateMasterProductImages extends GrpAction
 
     public function rules(): array
     {
-        return [
-            'image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'front_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            '34_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'left_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'right_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'back_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'top_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'bottom_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'size_comparison_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'lifestyle_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'art1_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'art2_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'art3_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'art4_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'art5_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'video_url' => ['sometimes', 'nullable'],
-        ];
+        return $this->imageUpdateRules();
     }
 
 
