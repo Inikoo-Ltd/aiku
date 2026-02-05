@@ -42,7 +42,7 @@ class RunMailshotSecondWave
         $secondWaveQuery->where(function ($query) use ($currentDateTime) {
             $query->whereHas('parentMailshot', function ($parentQuery) use ($currentDateTime) {
                 $parentQuery->where('state', MailshotStateEnum::SENT)
-                    ->where('is_second_wave_active', true)
+                    ->where('is_second_wave_enabled', true)
                     ->whereNotNull('sent_at')
                     ->whereRaw("sent_at + (mailshots.send_delay_hours || ' hours')::interval <= ?", [$currentDateTime]);
             });

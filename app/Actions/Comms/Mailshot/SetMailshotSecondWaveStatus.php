@@ -38,9 +38,9 @@ class SetMailshotSecondWaveStatus extends OrgAction
         // Only create second wave if activating and it doesn't exist yet
         if ($isActive && !$originalMailshot->secondWave) {
             (new CloneMailshotForSecondWave())->action($originalMailshot);
-            $this->update($originalMailshot, ['is_second_wave_active' => true]);
+            $this->update($originalMailshot, ['is_second_wave_enabled' => true]);
         } else {
-            $this->update($originalMailshot, ['is_second_wave_active' => $isActive]);
+            $this->update($originalMailshot, ['is_second_wave_enabled' => $isActive]);
         }
 
         return $originalMailshot->refresh();

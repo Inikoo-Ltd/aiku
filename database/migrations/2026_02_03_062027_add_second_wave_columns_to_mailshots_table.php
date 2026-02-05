@@ -14,8 +14,8 @@ return new class () extends Migration {
     {
         Schema::table('mailshots', function (Blueprint $table) {
 
-            if (!Schema::hasColumn('mailshots', 'is_second_wave_active')) {
-                $table->boolean('is_second_wave_active')->default(false);
+            if (!Schema::hasColumn('mailshots', 'is_second_wave_enabled')) {
+                $table->boolean('is_second_wave_enabled')->default(false);
             }
             if (!Schema::hasColumn('mailshots', 'is_second_wave')) {
                 $table->boolean('is_second_wave')->default(false);
@@ -41,8 +41,8 @@ return new class () extends Migration {
                 $table->dropForeign(['parent_mailshot_id']);
                 $table->dropColumn('parent_mailshot_id');
             }
-            if (Schema::hasColumn('mailshots', 'is_second_wave_active')) {
-                $table->dropColumn('is_second_wave_active');
+            if (Schema::hasColumn('mailshots', 'is_second_wave_enabled')) {
+                $table->dropColumn('is_second_wave_enabled');
             }
             if (Schema::hasColumn('mailshots', 'is_second_wave')) {
                 $table->dropColumn('is_second_wave');

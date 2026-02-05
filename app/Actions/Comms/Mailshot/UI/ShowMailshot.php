@@ -67,7 +67,7 @@ class ShowMailshot extends OrgAction
             ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
             : 0;
 
-        $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_active;
+        $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_enabled;
         $mailshotSecondWave = null;
         if ($isSecondWaveActive) {
             $mailshotSecondWave = $mailshot->secondWave;
