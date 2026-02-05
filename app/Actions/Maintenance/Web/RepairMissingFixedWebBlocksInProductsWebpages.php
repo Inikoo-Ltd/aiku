@@ -182,7 +182,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
         $alternativesWebBlockPosition = $count + 101;
         $trendsWebBlockPosition       = $count + 102;
-        $recentlyBoughtWebBlock       = $count + 103;
+        $recentlyBoughtWebBlockPosition       = $count + 103;
         $lastSeenWebBlockPosition     = $count + 104;
 
 
@@ -197,7 +197,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
             } elseif ($key == $alternativesWebBlock) {
                 $webBlocks[$key] = $alternativesWebBlockPosition;
             } elseif ($key == $recentlyBoughtWebBlock) {
-                $webBlocks[$key] = $recentlyBoughtWebBlock;
+                $webBlocks[$key] = $recentlyBoughtWebBlockPosition;
             } else {
                 $webBlocks[$key] = $runningPosition;
                 $runningPosition++;
