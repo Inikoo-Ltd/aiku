@@ -25,6 +25,7 @@ import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
 
@@ -69,9 +70,12 @@ const filteredTabs = computed(() => {
 })
 
 // Toggle switch state (second wave)
-const checked = ref(false);
-const subject = ref('');
-const hour = ref<number | null>(null);
+const checked = ref(props.isSecondWaveActive ?? false)
+const isEditingSecond = ref(false)
+
+const subject = ref(props.secondwaveSubject ?? "")
+const hour = ref(props.secondwaveDelayHours ?? 48)
+
 // Computed property to check if buttons should be shown
 const shouldShowButtons = computed(() => {
     return props.status && props.status.toLowerCase() === 'ready';
@@ -399,6 +403,7 @@ const handleToggleSecondWave = async (value: boolean) => {
         })
         .finally(() => {
             isSavingToggle.value = false
+            router.reload()
             if (!props.indexRoute) {
                 notify({
                     type: 'error',
@@ -464,8 +469,13 @@ const handleSaveSecond = async () => {
                 })
                 return;
             }
+            router.reload()
         })
 }
+
+watch(() => props.isSecondWaveActive, v => checked.value = v)
+watch(() => props.secondwaveSubject, v => subject.value = v ?? "")
+watch(() => props.secondwaveDelayHours, v => hour.value = v ?? 48)
 
 watch(
     filteredTabs,
@@ -562,24 +572,29 @@ console.log("props mailshot", props)
     <Tabs :current="currentTab" :navigation="filteredTabs" @update:tab="handleTabUpdate" />
     <div class="mx-4 my-4 space-y-3" v-if="['in_process', 'ready'].includes(props.status ?? '')">
 
-        <div class="flex items-center gap-2">
-            <small class="text-gray-500 text-sm">2nd Wave</small>
-            <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave" :disabled="isSavingToggle" />
-            <span class="text-gray-300">|</span>
+        <div class="inline-flex items-center gap-3 px-3 py-1.5 rounded-md
+         bg-gray-50 border border-gray-200">
+            <span class="text-sm font-medium text-gray-700">
+                2nd Wave
+            </span>
 
-            <div class="flex items-center gap-1 text-sm text-gray-500">
-                <FontAwesomeIcon :icon="faClock" class="h-5 w-5" />
+            <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave" :disabled="isSavingToggle" />
+
+            <Button v-if="checked" type="edit" label="Edit" class="!p-1 text-sm"
+                @click="isEditingSecond = !isEditingSecond" />
+
+            <span class="h-4 w-px bg-gray-300 mx-1"></span>
+
+            <div class="flex items-center gap-1 text-xs text-gray-500">
+                <FontAwesomeIcon :icon="faClock" class="text-gray-400" />
                 <span>
-                    Sent after
-                    <span class="font-medium text-gray-700">
-                        {{ hour || 48 }} Hours
-                    </span>
+                    {{ hour || 48 }} hrs
                 </span>
             </div>
         </div>
 
-        <template v-if="checked">
-            <h2 class="text-lg font-semibold text-gray-700">
+        <template v-if="checked && isEditingSecond">
+            <h2 class=" text-lg font-semibold text-gray-700">
                 Second Wave
             </h2>
 
