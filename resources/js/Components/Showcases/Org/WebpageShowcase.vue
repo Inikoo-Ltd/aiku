@@ -52,7 +52,7 @@ const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
 const isIframeLoading = ref(true)
 const _iframe = ref<HTMLIFrameElement | null>(null)
 
-const iframeSrc = route('grp.websites.preview', [
+/* const iframeSrc = route('grp.websites.preview', [
   route().params['website'],
   route().params['webpage'],
   {
@@ -60,7 +60,7 @@ const iframeSrc = route('grp.websites.preview', [
     shop: route().params['shop'],
     fulfilment: route().params['fulfilment']
   }
-])
+]) */
 
 const sendToIframe = (data: any) => {
   _iframe.value?.contentWindow?.postMessage(data, '*')
@@ -123,7 +123,12 @@ const screenModeOptions = [
                 <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
                   <LoadingIcon class="w-24 h-24 text-6xl" />
                 </div>
-                <iframe ref="_iframe" :src="iframeSrc" :title="'props.title'" class="w-full h-full"
+                <iframe 
+                  ref="_iframe" 
+                  :src="data.canonical_url" 
+                  :key="screenMode"
+                  :title="'props.title'" 
+                  class="w-full h-full"
                   @load="isIframeLoading = false" />
                 </div>
               </template>
