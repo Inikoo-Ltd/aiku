@@ -16,7 +16,6 @@ use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Maintenance\Masters\AddMissingFamiliesToMaster;
-use App\Actions\Maintenance\Masters\AddMissingProductCategoriesFromMaster;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelToMasterCollection;
 use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
@@ -80,6 +79,9 @@ class CloneCollections
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function cloneCollections(MasterShop|Shop $fromShop, MasterShop|Shop $shop): void
     {
         /** @var Collection|MasterCollection $fromCollection */
@@ -172,6 +174,7 @@ class CloneCollections
         if ($collection instanceof MasterCollection) {
             foreach ($collection->masterProducts as $childrenMasterProduct) {
                 if ($childrenMasterProduct->pivot->type == 'direct') {
+                    $_product=null;
                     if ($target instanceof Shop) {
                         $_product = $childrenMasterProduct->products()->where('shop_id', $target->id)->first();
                     }
@@ -183,7 +186,7 @@ class CloneCollections
 
             foreach ($collection->masterFamilies as $childrenMasterFamily) {
                 if ($target instanceof Shop) {
-                    $family = AddMissingProductCategoriesFromMaster::make()->upsertFamily($target, $childrenMasterFamily);
+                    $family = CloneCatalogueStructure::make()->upsertFamily($target, $childrenMasterFamily);
                 } else {
                     $family = AddMissingFamiliesToMaster::make()->upsertMasterFamily($target, $childrenMasterFamily);
                 }
@@ -306,7 +309,7 @@ class CloneCollections
         }
 
 
-        UpdateCollection::run($collection, ['master_collection_id' => $foundMasterCollection?->id]);
+        UpdateCollection::run($collection, ['master_collection_id' => $foundMasterCollection->id]);
 
 
         $children = $this->getChildren($collection, $masterShop);
@@ -319,7 +322,10 @@ class CloneCollections
         return $foundMasterCollection;
     }
 
-    public function upsertCollection(Shop $shop, Collection|MasterCollection $collection): ?Collection
+    /**
+     * @throws \Throwable
+     */
+    public function upsertCollection(Shop $shop, Collection|MasterCollection $collection, $doNotUpdate=false): ?Collection
     {
         $code = $collection->code;
 
@@ -356,7 +362,7 @@ class CloneCollections
         } else {
             $foundCollection = Collection::find($foundCollectionData->id);
 
-            if ($foundCollection) {
+            if ($foundCollection &&  !$doNotUpdate) {
                 $descriptionFields = [];
                 if ($foundCollection->name == '' && $collection->name) {
                     $descriptionFields['name']             = Translate::run($collection->name, $fromLanguage, $toLanguage);

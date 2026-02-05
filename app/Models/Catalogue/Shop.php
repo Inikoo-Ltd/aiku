@@ -321,6 +321,14 @@ class Shop extends Model implements HasMedia, Auditable
         'identity_document_number'
     ];
 
+    protected static function booted()
+    {
+        static::creating(function ($shop) {
+            if ($shop->type === ShopTypeEnum::EXTERNAL) {
+                $shop->external_shop_platform_status = true;
+            }
+        });
+    }
 
     public function getSlugOptions(): SlugOptions
     {
