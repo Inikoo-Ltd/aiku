@@ -26,7 +26,7 @@ class UpdateProductDescriptionAndNameFromAurora
     use AsAction;
     use WithOrganisationSource;
 
-    public function handle(Shop $shop, Command $command): void
+    public function handle(Shop $shop, ?Command $command=null): void
     {
         $organisation             = $shop->organisation;
         $this->organisationSource = $this->getOrganisationSource($organisation);
@@ -88,7 +88,7 @@ class UpdateProductDescriptionAndNameFromAurora
                             'is_description_reviewed' => true
                         ]);
                         if ($product->wasChanged('description')) {
-                            $command->info("Description changed $product->code");
+                            $command?->info("Description changed $product->code");
                         }
 
                         $product->update(
@@ -117,7 +117,7 @@ class UpdateProductDescriptionAndNameFromAurora
                             ]
                         );
                         if ($product->wasChanged('name')) {
-                            $command->info("Name changed $product->code $product->name");
+                            $command?->info("Name changed $product->code $product->name");
                         }
                     }
                 }
