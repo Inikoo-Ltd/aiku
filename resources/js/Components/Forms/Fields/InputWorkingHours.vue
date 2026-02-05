@@ -158,17 +158,17 @@ watch(()=>weekTimes,()=>{
         <div class="grid grid-cols-3 items-center px-3 py-2 bg-gray-50/70 border-t">
 
           <div class="flex items-center gap-2 font-semibold text-sm">
-            <button
+            <div
               @click="ui[section.key==='weekday'?'openWeekday':'openWeekend'] =
                       !ui[section.key==='weekday'?'openWeekday':'openWeekend']">
               {{ section.label }}
-            </button>
+            </div>
 
-            <button
+            <div
               @click="group[section.key].closed = !group[section.key].closed"
               class="text-gray-400 hover:text-gray-700">
               <FontAwesomeIcon :icon="group[section.key].closed ? faChevronCircleDown : faChevronCircleUp"/>
-            </button>
+            </div>
           </div>
 
           <div>
