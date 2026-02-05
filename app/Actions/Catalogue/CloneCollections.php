@@ -362,7 +362,7 @@ class CloneCollections
         } else {
             $foundCollection = Collection::find($foundCollectionData->id);
 
-            if ($foundCollection &&  !$doNotUpdate) {
+            if ($foundCollection && !$doNotUpdate) {
                 $descriptionFields = [];
                 if ($foundCollection->name == '' && $collection->name) {
                     $descriptionFields['name']             = Translate::run($collection->name, $fromLanguage, $toLanguage);
@@ -377,7 +377,7 @@ class CloneCollections
                 $dataToUpdate = array_merge(
                     $descriptionFields,
                     [
-                      //  'code' => $collection->code,
+                        //  'code' => $collection->code,
                     ]
                 );
 
