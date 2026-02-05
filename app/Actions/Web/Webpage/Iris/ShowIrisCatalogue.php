@@ -3,24 +3,15 @@
 namespace App\Actions\Web\Webpage\Iris;
 
 use App\Actions\Iris\Catalogue\IndexIrisCatalogue;
-use App\Actions\Iris\Catalogue\IndexIrisDepartments;
-use App\Actions\Iris\Catalogue\IndexIrisFamilies;
-use App\Actions\Iris\Catalogue\IndexIrisSubDepartments;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\IrisDepartmentResource;
-use App\Http\Resources\Catalogue\IrisFamilyResource;
-use App\Http\Resources\Catalogue\IrisSubDepartmentResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowIrisCatalogue extends IrisAction
 {
@@ -44,7 +35,7 @@ class ShowIrisCatalogue extends IrisAction
         return match ($this->validatedData['scope']) {
             'collection' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'collection', parent: data_get($this->validatedData, 'parent', null), prefix: 'collection')),
             'department' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'department', parent: data_get($this->validatedData, 'parent', null), prefix: 'department')),
-            'sub_department' =>$response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'sub_department', parent: data_get($this->validatedData, 'parent', null), prefix: 'sub_department')),
+            'sub_department' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'sub_department', parent: data_get($this->validatedData, 'parent', null), prefix: 'sub_department')),
             'family' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'family', parent: data_get($this->validatedData, 'parent', null), prefix: 'family')),
             'product' => $response->table(IndexIrisCatalogue::make()->tableStructure(scope: 'product', parent: data_get($this->validatedData, 'parent', null), prefix: 'product')),
             default => $response,
@@ -54,7 +45,7 @@ class ShowIrisCatalogue extends IrisAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if(!$this->has('scope')){
+        if (!$this->has('scope')) {
             $this->set('scope', 'department');
         }
     }
@@ -62,7 +53,7 @@ class ShowIrisCatalogue extends IrisAction
     public function rules(): array
     {
         // Parent must be either [collection, product, department, sub_department, family]
-        
+
         $acceptedParentType = [
             strtolower(class_basename(Collection::class)),
             strtolower(class_basename(Product::class)),
@@ -127,10 +118,8 @@ class ShowIrisCatalogue extends IrisAction
         $index = $order[$level];
 
         return array_values(
-            array_filter($tabs, fn($tab) => $order[$tab['key']] > $index)
+            array_filter($tabs, fn ($tab) => $order[$tab['key']] > $index)
         );
     }
 
 }
-
-

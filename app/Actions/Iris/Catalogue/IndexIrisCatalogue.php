@@ -10,34 +10,50 @@
 namespace App\Actions\Iris\Catalogue;
 
 use App\Actions\IrisAction;
-use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\IrisDepartmentResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexIrisCatalogue extends IrisAction
 {
+    private function queryForCollection()
+    {
+        $queryBuilder = QueryBuilder::for(Collection::class)
+            ->where('collection.state', CollectionStateEnum::ACTIVE);
+
+        return $queryBuilder
+            ->where('collections.shop_id', $this->shop->id)
+            ->withCount(['families as family_in_collection'])
+            ->withCount(['products as products_in_collection'])
+            ->select([
+                    'collections.id',
+                    'collections.slug',
+                    'collections.code',
+                    'collections.name',
+                    'collections.web_images',
+                    'collections.state',
+                    'collections.description',
+                    'collections.created_at',
+                    'collections.updated_at',
+            ]);
+    }
 
     private function queryForProductCategories(string $scope, ?string $parent = null, ?string $parentKey = null)
     {
         $queryBuilder = QueryBuilder::for(ProductCategory::class)
             ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUING->value])
             ->where('product_categories.type', $scope);
-        
+
         $parentColumnMap = [
             'department'     => 'department_id',
             'sub_department' => 'sub_department_id',
@@ -54,13 +70,12 @@ class IndexIrisCatalogue extends IrisAction
                     ->where('collection_has_models.collection_id', $parentKey);
             });
         });
-        
-        
-        if($scope != 'department') {
+
+        if ($scope != 'department') {
             $queryBuilder->leftJoin('product_categories as department', 'department.id', "product_categories.department_id");
         }
 
-        if($scope == 'family') {
+        if ($scope == 'family') {
             $queryBuilder->leftJoin('product_categories as sub_department', 'sub_department.id', "product_categories.sub_department_id");
         }
 
@@ -78,11 +93,11 @@ class IndexIrisCatalogue extends IrisAction
                     'product_categories.created_at',
                     'product_categories.updated_at',
                     'product_category_stats.number_current_products',
-            ]);   
-        
-        return match($scope) { 
+            ]);
+
+        return match($scope) {
             'department'        =>  $queryBuilder->addSelect([
-                'product_category_stats.number_current_sub_departments', 
+                'product_category_stats.number_current_sub_departments',
                 'product_category_stats.number_current_families',
             ]),
             'sub_department'    =>  $queryBuilder->addSelect([
@@ -103,7 +118,7 @@ class IndexIrisCatalogue extends IrisAction
     {
         $queryBuilder = QueryBuilder::for(Product::class)
             ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
-        
+
         $parentColumnMap = [
             'department'     => 'department_id',
             'sub_department' => 'sub_department_id',
@@ -121,14 +136,6 @@ class IndexIrisCatalogue extends IrisAction
                     ->where('collection_has_models.collection_id', $parentKey);
             });
         });
-
-        if ($parent == 'collection') {
-            $queryBuilder->join('collection_has_models', function ($join) use ($parentKey) {
-                $join->on('products.id', 'collection_has_model.model_id')
-                    ->where('collection_has_model.model_type', 'Product')
-                    ->where('collection_has_model.collection_id', $parentKey);
-            });
-        }
 
         return $queryBuilder
             ->where('products.shop_id', $this->shop->id)
@@ -149,7 +156,7 @@ class IndexIrisCatalogue extends IrisAction
                     'products.created_at',
                     'products.updated_at',
                     'products.web_images',
-                    'webpages.canonical_url',    
+                    'webpages.canonical_url',
                     'department.code as department_code',
                     'department.name as department_name',
                     'sub_department.code as sub_department_code',
@@ -165,17 +172,34 @@ class IndexIrisCatalogue extends IrisAction
         $parentKey = Arr::pull($modelData, 'parentKey');
         $scope = Arr::pull($modelData, 'scope');
 
+        if(!$prefix){
+            $prefix = $scope;
+        }
+        
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($scope) {
+
+            $tableName = match ($scope) {
+                strtolower(class_basename(Collection::class))   => 'collections',
+                strtolower(class_basename(Product::class))      => 'products',
+                default                                         => 'product_categories',
+            };
+
+            $query->where(function ($query) use ($value, $tableName) {
+                $query->whereAnyWordStartWith("{$tableName}.name", $value)
+                    ->orWhereStartWith("{$tableName}.slug", $value);
+            });
+        });
+
         $queryBuilder = match ($scope) {
-            strtolower(class_basename(Collection::class)) => QueryBuilder::for(Collection::class),
-            strtolower(class_basename(Product::class))    => $this->queryForProducts($parent, $parentKey),
-            default                           => $this->queryForProductCategories($scope, $parent, $parentKey),
+            strtolower(class_basename(Collection::class))   => $this->queryForCollection(),
+            strtolower(class_basename(Product::class))      => $this->queryForProducts($parent, $parentKey),
+            default                                         => $this->queryForProductCategories($scope, $parent, $parentKey),
         };
 
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
+        InertiaTable::updateQueryBuilderParameters($prefix);
 
         return $queryBuilder
+            ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -189,7 +213,7 @@ class IndexIrisCatalogue extends IrisAction
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
-            
+
             $table->withGlobalSearch();
 
             $table->column(key: 'image', label: '', type: 'avatar');
@@ -211,33 +235,30 @@ class IndexIrisCatalogue extends IrisAction
                 $table->column(key: 'family', label:  __(key: 'Family'));
             }
 
-           
-        
-
             $columns = match ($scope) {
                 strtolower(class_basename(Product::class)) => [],
                 strtolower(class_basename(Collection::class)) => [],
                 'department' => [
-                    ['key' => 'number_current_sub_departments', 'label' => __('Sub-departments')],
-                    ['key' => 'number_current_families', 'label' => __('Families')],
-                    ['key' => 'number_current_products', 'label' => __('Products')],
+                    ['key' => 'number_current_sub_departments', 'label' => __('Sub-departments'), 'sortable' => true],
+                    ['key' => 'number_current_families', 'label' => __('Families'), 'sortable' => true],
+                    ['key' => 'number_current_products', 'label' => __('Products'), 'sortable' => true],
                 ],
                 'sub_department' => [
-                    ['key' => 'number_current_families', 'label' => __('Families')],
-                    ['key' => 'number_current_products', 'label' => __('Products')],
+                    ['key' => 'number_current_families', 'label' => __('Families'), 'sortable' => true],
+                    ['key' => 'number_current_products', 'label' => __('Products'), 'sortable' => true],
                 ],
                 'family'      => [
-                    ['key' => 'number_current_products', 'label' => __('Products')],
+                    ['key' => 'number_current_products', 'label' => __('Products'), 'sortable' => true],
                 ],
                 default => [],
             };
-            
-            
+
+
             foreach ($columns as $column) {
-                $table->column(key: $column['key'], label: $column['label'], tooltip: __('current ' . strtolower($column['label'])));
+                $table->column(key: $column['key'], label: $column['label'], tooltip: __('current ' . strtolower($column['label'])), sortable: $column['sortable']);
             };
 
-             $table->column(key: 'url', label: __('Go To Url'), align: 'right');
+            $table->column(key: 'url', label: __('Go To Url'), align: 'right');
         };
     }
 
