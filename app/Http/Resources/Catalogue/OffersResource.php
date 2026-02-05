@@ -20,24 +20,26 @@ use App\Enums\Discounts\Offer\OfferStateEnum;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property string $name
- *
  */
 class OffersResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'created_at'           => $this->created_at,
+            'created_at'          => $this->created_at,
             'shop_slug'           => $this->shop_slug,
             'offer_campaign_slug' => $this->offer_campaign_slug,
             'slug'                => $this->slug,
-            'state'                => OfferStateEnum::stateIcon()[$this->state->value],
+            'state'               => OfferStateEnum::stateIcon()[$this->state->value],
             'code'                => $this->code,
             'name'                => $this->name,
             'type'                => $this->type,
-            'organisation_name' => $this->organisation_name,
-            'organisation_slug' => $this->organisation_slug,
-            'shop_name'         => $this->shop_name,
+            'organisation_name'   => $this->organisation_name,
+            'organisation_slug'   => $this->organisation_slug,
+            'shop_name'           => $this->shop_name,
+            'orders'              => $this->orders,
+            'invoices'            => $this->invoices,
+            'sales'               => $this->sales
         ];
     }
 }

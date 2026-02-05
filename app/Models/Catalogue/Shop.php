@@ -152,6 +152,10 @@ use App\Models\Ordering\SalesChannel;
  * @property ShopEngineEnum $engine
  * @property array<array-key, mixed> $opening_hours
  * @property string|null $last_external_shop_products_fetched_at
+ * @property bool $external_shop_platform_status
+ * @property string|null $external_shop_connection_failed_at
+ * @property string|null $external_shop_connection_error
+ * @property int|null $migration_pivot
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -321,6 +325,14 @@ class Shop extends Model implements HasMedia, Auditable
         'identity_document_number'
     ];
 
+    protected static function booted()
+    {
+        static::creating(function ($shop) {
+            if ($shop->type === ShopTypeEnum::EXTERNAL) {
+                $shop->external_shop_platform_status = true;
+            }
+        });
+    }
 
     public function getSlugOptions(): SlugOptions
     {

@@ -968,7 +968,7 @@ onMounted(async () => {
         </Teleport>
 
         <div class="flex flex-col" id="content-editor-container">
-            <slot name="editor-content" :editor="editorInstance">
+            <slot name="editor-content" :editor="editorInstance" :onEditorClick="onEditorClick">
                 <EditorContent @click.stop="onEditorClick" :editor="editorInstance" />
             </slot>
         </div>

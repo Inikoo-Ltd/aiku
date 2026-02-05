@@ -31,6 +31,10 @@ class FetchAuroraWebpage extends FetchAurora
 
     protected function parseModel(): void
     {
+        //todo delete this action
+        // we not migrating webpages anymore
+        return;
+
         if (!$this->auroraModelData) {
             return;
         }

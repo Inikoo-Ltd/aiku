@@ -269,6 +269,15 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
+            $schedule->command('shop-external:check-all-shop-connections')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'CheckExternalShopConnection',
+            ),
+            name: 'CheckExternalShopConnection',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
             $schedule->command('platform-logs:delete')->daily()->sentryMonitor(
                 monitorSlug: 'PlatformDeletePortfolioLogs',
             ),

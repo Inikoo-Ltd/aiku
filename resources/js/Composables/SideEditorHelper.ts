@@ -95,7 +95,7 @@ export const getComponent = (componentName: string) => {
         "array-data-drawer" : ArrayEditDrawer,
         "image-cropped" : UploadImageCropped,
         'visibility' : ShowBlockInResponsive,
-        'text-responesive': ResponsiveText,
+        'text-responsive': ResponsiveText,
     }
     return components[componentName] ?? NotFoundComponents
 }

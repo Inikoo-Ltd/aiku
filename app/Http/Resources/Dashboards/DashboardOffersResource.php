@@ -35,7 +35,12 @@ class DashboardOffersResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $data['name'] ?? $data['code'] ?? 'Unknown',
+                    'formatted_value' => $data['name'] ?? 'Unknown',
+                    'align'           => 'left',
+                    ...$routeTargets['label']
+                ],
+                'label_minified' => [
+                    'formatted_value' => $data['code'] ?? 'Unknown',
                     'align'           => 'left',
                     ...$routeTargets['label']
                 ]
@@ -45,7 +50,13 @@ class DashboardOffersResource extends JsonResource
                 'customers_minified',
                 'orders',
                 'orders_minified',
-                'orders_delta'
+                'orders_delta',
+                'invoices',
+                'invoices_minified',
+                'invoices_delta',
+                'sales',
+                'sales_minified',
+                'sales_delta'
             ])
         );
 

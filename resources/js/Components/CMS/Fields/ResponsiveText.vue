@@ -193,11 +193,11 @@ watch(
 
     <div :class="props.class">
       <Editor ref="editorRef" v-model="activeText" :uploadImageRoute="props.uploadRoutes">
-        <template #editor-content="{ editor }">
+        <template #editor-content="{ editor, onEditorClick }">
           <div
             class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm transition-all duration-200 focus-within:border-blue-400"
             :style="{ minHeight: `${props.rows * 24}px` }">
-            <EditorContent :editor="editor" class="editor-content" />
+            <EditorContent :editor="editor"  @click.stop="onEditorClick" class="editor-content" />
           </div>
         </template>
       </Editor>

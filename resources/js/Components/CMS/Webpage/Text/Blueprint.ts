@@ -9,7 +9,7 @@ export default {
 		{
 			label: "Responsive Text",
 			key: ["value"],
-			type: "text-responesive",
+			type: "text-responsive",
 			/* useIn: ["desktop", "tablet", "mobile"], */
 		},
 		{

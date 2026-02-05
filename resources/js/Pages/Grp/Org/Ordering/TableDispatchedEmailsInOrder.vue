@@ -31,6 +31,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Modal from "@/Components/Utils/Modal.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
 
 library.add(
     faSpellCheck,
@@ -87,8 +88,10 @@ const locale = inject("locale", aikuLocaleStructure);
         <template #cell(subject)="{ item: dispatchedEmail }">
             <div class="flex items-center gap-2">
                 <span>{{ dispatchedEmail["subject"] }}</span>
-                <span v-if="dispatchedEmail.body_preview" class="cursor-pointer" @click="() => { dispatchedEmailRoute(dispatchedEmail); }">
-                    <FontAwesomeIcon :icon="faEyeEvil" />
+                <span v-if="dispatchedEmail.body_preview" @click="() => { dispatchedEmailRoute(dispatchedEmail); }"
+                  class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 cursor-pointer transition">
+                  <FontAwesomeIcon :icon="faEyeEvil" class="mr-1" />
+                  {{ trans("Preview") }}
                 </span>
             </div>
         </template>
