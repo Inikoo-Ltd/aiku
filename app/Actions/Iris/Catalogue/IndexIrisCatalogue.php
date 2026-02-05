@@ -65,7 +65,7 @@ class IndexIrisCatalogue extends IrisAction
         $queryBuilder->when($parent === 'collection', function ($query) use ($parentKey) {
             $query->join('collection_has_models', function ($join) use ($parentKey) {
                 $join->on('product_categories.id', '=', 'collection_has_models.model_id')
-                    ->where('collection_has_models.model_type', ProductCategory::class)
+                    ->where('collection_has_models.model_type', class_basename(ProductCategory::class))
                     ->where('collection_has_models.collection_id', $parentKey);
             });
         });
@@ -131,7 +131,7 @@ class IndexIrisCatalogue extends IrisAction
         $queryBuilder->when($parent === 'collection', function ($query) use ($parentKey) {
             $query->join('collection_has_models', function ($join) use ($parentKey) {
                 $join->on('products.id', '=', 'collection_has_models.model_id')
-                    ->where('collection_has_models.model_type', Product::class)
+                    ->where('collection_has_models.model_type', class_basename(Product::class))
                     ->where('collection_has_models.collection_id', $parentKey);
             });
         });
@@ -140,7 +140,7 @@ class IndexIrisCatalogue extends IrisAction
             ->where('products.shop_id', $this->shop->id)
             ->join('webpages', function ($join) {
                 $join->on('products.id', 'webpages.model_id')
-                    ->where('webpages.model_type', 'Product');
+                    ->where('webpages.model_type', class_basename(Product::class));
             })
             ->leftJoin('product_categories as department', 'department.id', "products.department_id")
             ->leftJoin('product_categories as sub_department', 'sub_department.id', "products.sub_department_id")
@@ -168,7 +168,7 @@ class IndexIrisCatalogue extends IrisAction
     public function handle(array $modelData, ?string $prefix = null): LengthAwarePaginator
     {
         $parent = Arr::pull($modelData, 'parent');
-        $parentKey = Arr::pull($modelData, 'parentKey');
+        $parentKey = Arr::pull($modelData, 'parent_key');
         $scope = Arr::pull($modelData, 'scope');
 
         if(!$prefix){
