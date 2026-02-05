@@ -33,8 +33,6 @@ class IndexIrisCatalogue extends IrisAction
 
         return $queryBuilder
             ->where('collections.shop_id', $this->shop->id)
-            ->withCount(['families as number_current_families'])
-            ->withCount(['products as number_current_products'])
             ->select([
                     'collections.id',
                     'collections.slug',
@@ -45,7 +43,8 @@ class IndexIrisCatalogue extends IrisAction
                     'collections.description',
                     'collections.created_at',
                     'collections.updated_at',
-            ]);
+            ])
+            ->withCount(['families as number_current_families', 'products as number_current_products']);
     }
 
     private function queryForProductCategories(string $scope, ?string $parent = null, ?string $parentKey = null)
@@ -197,10 +196,27 @@ class IndexIrisCatalogue extends IrisAction
         };
 
         InertiaTable::updateQueryBuilderParameters($prefix);
+        
+        $additionalSortableKeys = match ($scope) {
+            'department' => [
+                'number_current_families',
+                'number_current_sub_departments',
+                'number_current_products',
+            ],
+            'collection',
+            'sub_department' => [
+                'number_current_families',
+                'number_current_products',
+            ],
+            'family' => [
+                'number_current_products',
+            ],
+            default => [],
+        };
 
         return $queryBuilder
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', ...$additionalSortableKeys])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

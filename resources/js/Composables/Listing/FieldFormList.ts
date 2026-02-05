@@ -73,6 +73,7 @@ import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
 import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
+import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
 import InputWorkingHours from '@/Components/Forms/Fields/InputWorkingHours.vue'
 import InputWithWarning from '@/Components/Forms/Fields/InputWithWarning.vue'
 
@@ -151,6 +152,7 @@ export const componentsList: { [key: string]: Component } = {
     'editOffer' : EditOffer,
     'offer_fields'  : OfferFields,
     'vol_discount' : InputVolDiscount,
+    'map-picker' : MapPickerField,
     'working-hours' : InputWorkingHours
 }
 

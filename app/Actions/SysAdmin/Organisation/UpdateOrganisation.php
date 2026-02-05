@@ -20,6 +20,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
 
 class UpdateOrganisation extends OrgAction
 {
@@ -81,6 +82,12 @@ class UpdateOrganisation extends OrgAction
             );
         }
 
+        if (Arr::has($modelData, 'working_hours')) {
+            data_set($modelData, "working_hours", Arr::pull($modelData, 'working_hours'));
+            UpdateWorkSchedule::run($organisation, $modelData);
+            data_forget($modelData, 'working_hours');
+        }
+
 
         $organisation = $this->update($organisation, $modelData, ['data', 'settings']);
 
@@ -130,6 +137,8 @@ class UpdateOrganisation extends OrgAction
                     ->max(12 * 1024)
             ],
             'colour'                       => ['sometimes', 'string'],
+            'working_hours'                => ['sometimes', 'array'],
+
         ];
 
         if (!$this->strict) {
