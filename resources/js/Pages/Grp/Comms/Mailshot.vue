@@ -438,6 +438,7 @@ const handleSaveSecond = async () => {
     })
         .then((response) => {
             if (response.data) {
+                isEditingSecond.value = false
                 notify({
                     type: 'success',
                     title: 'Success',
@@ -475,7 +476,7 @@ const handleSaveSecond = async () => {
 
 watch(() => props.isSecondWaveActive, v => checked.value = v)
 watch(() => props.secondwaveSubject, v => subject.value = v ?? "")
-watch(() => props.secondwaveDelayHours, v => hour.value = v ?? 48)
+watch(() => props.secondwaveDelayHours, v => hour.value = v ?? 0)
 
 watch(
     filteredTabs,
@@ -486,7 +487,6 @@ watch(
     },
     { immediate: true }
 )
-console.log("props mailshot", props)
 </script>
 
 <template>
@@ -574,45 +574,30 @@ console.log("props mailshot", props)
 
         <div class="inline-flex items-center gap-3 px-3 py-1.5 rounded-md
          bg-gray-50 border border-gray-200">
-            <span class="text-sm font-medium text-gray-700">
+            <span class="text-sm font-medium text-gray-700 whitespace-nowrap">
                 2nd Wave
             </span>
 
             <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave" :disabled="isSavingToggle" />
 
-            <Button v-if="checked" type="edit" label="Edit" class="!p-1 text-sm"
+            <Button v-if="checked" type="edit" label="Edit" class="!px-2 !py-1 text-xs h-8"
                 @click="isEditingSecond = !isEditingSecond" />
 
-            <span class="h-4 w-px bg-gray-300 mx-1"></span>
+            <span class="h-4 w-px bg-gray-300"></span>
+            <template v-if="checked">
+                <InputText v-model="subject" placeholder="Subject" :disabled="!checked || !isEditingSecond"
+                    class="!h-8 !py-1 !text-sm w-44" />
 
-            <div class="flex items-center gap-1 text-xs text-gray-500">
-                <FontAwesomeIcon :icon="faClock" class="text-gray-400" />
-                <span>
-                    {{ hour || 48 }} hrs
-                </span>
-            </div>
+                <div class="flex items-center gap-1 shrink-0">
+                    <InputNumber v-model="hour" :min="1" :disabled="!checked || !isEditingSecond"
+                        inputClass="!h-8 !py-1 !text-sm text-center" />
+                    <span class="text-sm font-medium text-gray-700 whitespace-nowrap">hours</span>
+                </div>
+
+                <Button v-if="isEditingSecond" type="save" @click="handleSaveSecond" :loading="loading" />
+            </template>
         </div>
 
-        <template v-if="checked && isEditingSecond">
-            <h2 class=" text-lg font-semibold text-gray-700">
-                Second Wave
-            </h2>
-
-            <div class="space-y-3 border rounded-lg p-4 bg-gray-50">
-                <div>
-                    <label class="block text-sm text-gray-600 mb-1">Subject</label>
-                    <InputText v-model="subject" placeholder="Enter value" class="w-full" required />
-                </div>
-
-                <div>
-                    <label class="block text-sm text-gray-600 mb-2">Delay (Hour)</label>
-                    <InputNumber v-model="hour" :min="1" placeholder="Default 48" class="w-full" />
-                    <small class="text-gray-400">Default: 48 hours</small>
-                </div>
-
-                <Button type="save" @click="handleSaveSecond" :loading="loading" />
-            </div>
-        </template>
     </div>
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>
