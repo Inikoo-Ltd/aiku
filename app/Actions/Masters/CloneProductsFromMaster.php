@@ -93,7 +93,7 @@ class CloneProductsFromMaster
                                     ],
                                 ]
                             );
-                        }catch (\Throwable $e) {
+                        } catch (\Throwable $e) {
                             print $masterProduct->code.' '.$e->getMessage()." can not create product\n";
                         }
 

@@ -56,7 +56,7 @@ class FulfillOrderToShopify extends OrgAction
             $deliveryNote = $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->first();
         }
 
-        if($order instanceof PalletReturn) {
+        if ($order instanceof PalletReturn) {
             $shipments = $order->shipments;
         } else {
             $shipments = $deliveryNote->shipments;
