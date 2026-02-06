@@ -284,15 +284,21 @@ class EditShop extends OrgAction
                         'product_price_currency_exchange'  => [
                             'type'        => 'input_number',
                             'bind'        => [
-                                'maxFractionDigits' => 3
+                                'step'              => '0.5',
+                                'maxFractionDigits' => 3,
+                                'min'               => 0
                             ],
-                            'label'       => __('product currency exchange'),
-                            'placeholder' => __('product currency exchange'),
+                            'saveConfirmation'  => [
+                                'title'     => __('Are you sure want to update currency exchange?'),
+                                'description'   => __("This will affect all products in the shop, including the product that in customer's basket. Products that already purchased in Order will not affected."),
+                                'yesLabel'  => __('Yes, update currency exchane')
+                            ],
+                            'label'       => __('Product Currency Exchange'),
+                            'placeholder' => __('Product Currency Exchange'),
                             'required'    => true,
                             'hidden'      => app()->isProduction(),
                             'value'       => $shop->product_price_currency_exchange
                                 ?? GetCurrencyExchange::run($shop->currency, $shop->currency),
-                            'min'         => 0
                         ]
                     ]
                 ],

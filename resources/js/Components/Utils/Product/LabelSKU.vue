@@ -5,6 +5,11 @@ import { trans } from 'laravel-vue-i18n'
 import Modal from "@/Components/Utils/Modal.vue"
 import { computed, ref } from 'vue'
 
+const emit = defineEmits([
+    'openModal',
+    'closeModal'
+])
+
 const props = defineProps<{
     product: {
         unit: string
@@ -24,7 +29,8 @@ const props = defineProps<{
         } | null
     }[]
     hideUnit?: boolean
-    disableClick?: boolean
+    forceOpenModal?: boolean
+    hoverTooltip?: string
     routeFunction?: Function
     keyPicking?: string
 }>()
@@ -35,18 +41,14 @@ const key = props.keyPicking ?? 'pick_fractional'
 const isOpenModal = ref(false)
 
 const textTooltip = computed(() => {
-    if(props.disableClick) {
-        return ''
-    }
+    if(props.hoverTooltip) return props.hoverTooltip;
     return props.trade_units.length > 1  ? trans('Click to view all trade units detail') : ''
 })
 
 const openModal = () => {
-    if(props.disableClick) {
-        return;
-    }
-    if(props.trade_units.length >= 1) {
+    if(props.trade_units.length >= 1 || props.forceOpenModal) {
         isOpenModal.value = true
+        emit('openModal');
     };
 }
 
@@ -54,7 +56,7 @@ const getAdditionalClass = () => {
     let multiTradeUnit = props.trade_units.length >= 1
     let className = multiTradeUnit ? 'border-green-600' : 'border-red-600';
 
-    if(!props.disableClick && multiTradeUnit) {
+    if(props.forceOpenModal || multiTradeUnit) {
         className += ' hover:cursor-pointer hover:opacity-80';
     }
 
@@ -90,52 +92,54 @@ const getAdditionalClass = () => {
             {{ product.units + " " + product.unit }}
         </div>
 
-        <Modal :isOpen="isOpenModal" @onClose="isOpenModal = false" width="max-w-3xl w-full">
-            <div class="grid grid-cols-2 font-bold mb-4">
-                <div class="text-left text-lg">
-                    {{ trans('Trade Unit SKU Details') }}
+        <Modal :isOpen="isOpenModal" @onClose="() => {isOpenModal = false; emit('closeModal')}" width="max-w-3xl w-full">
+            <slot name="modalBody">
+                <div class="grid grid-cols-2 font-bold mb-4">
+                    <div class="text-left text-lg">
+                        {{ trans('Trade Unit SKU Details') }}
+                    </div>
                 </div>
-            </div>
-
-            <div class="grid grid-cols-5 mt-3 text-sm font-bold">
-                <div class="text-left">
-                    Code
+    
+                <div class="grid grid-cols-5 mt-3 text-sm font-bold">
+                    <div class="text-left">
+                        Code
+                    </div>
+                    <div class="text-left col-span-3">
+                        Name
+                    </div>
+                    <div class="text-right">
+                        SKU
+                    </div>	
                 </div>
-                <div class="text-left col-span-3">
-                    Name
-                </div>
-                <div class="text-right">
-                    SKU
-                </div>	
-            </div>
-
-            <div v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
-                <div class="text-left flex items-center">
-                    <slot name="col_code" :data="tUnit">
-                        <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
-                            {{ tUnit.tradeUnit?.code }}
-                        </Link>
-                        <span v-else>
-                            {{ tUnit.tradeUnit?.code }}
+    
+                <div v-for="tUnit in trade_units" :key="tUnit.tradeUnit?.id" class="grid grid-cols-5 mt-3 text-sm min-h-8">
+                    <div class="text-left flex items-center">
+                        <slot name="col_code" :data="tUnit">
+                            <Link v-if="routeFunction" :href="routeFunction(tUnit.tradeUnit)" class="primaryLinkxx">
+                                {{ tUnit.tradeUnit?.code }}
+                            </Link>
+                            <span v-else>
+                                {{ tUnit.tradeUnit?.code }}
+                            </span>
+                        </slot>
+                    </div>
+    
+                    <div class="text-left col-span-3 flex items-center">
+                        <slot name="col_name" :data="tUnit">
+                            {{ tUnit.tradeUnit?.name }}
+                        </slot>
+                    </div>
+    
+                    <div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end">
+                        <span class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer flex border-green-600 w-fit">
+                            <span> &#8623; SKU </span>
+                            <span class="font-bold ms-2">
+                                <FractionDisplay v-if="tUnit[key]" :fractionData="tUnit[key]" />
+                            </span>
                         </span>
-                    </slot>
+                    </div>
                 </div>
-
-                <div class="text-left col-span-3 flex items-center">
-                    <slot name="col_name" :data="tUnit">
-                        {{ tUnit.tradeUnit?.name }}
-                    </slot>
-                </div>
-
-                <div class="justify-items-end text-teal-600 whitespace-nowrap flex justify-end">
-                    <span class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer flex border-green-600 w-fit">
-                        <span> &#8623; SKU </span>
-                        <span class="font-bold ms-2">
-                            <FractionDisplay v-if="tUnit[key]" :fractionData="tUnit[key]" />
-                        </span>
-                    </span>
-                </div>
-            </div>
+            </slot>
         </Modal>
     </div>
 </template>

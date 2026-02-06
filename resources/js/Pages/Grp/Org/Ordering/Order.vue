@@ -91,6 +91,7 @@ import CopyButton from "@/Components/Utils/CopyButton.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import error from "@/Components/Utils/Error.vue"
 import order from "@/Pages/Grp/Org/Ordering/Order.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -257,6 +258,7 @@ const props = defineProps<{
     payments_accounts: Array<{ id: number, name: string }>
     payments_data: Array<{ id: number, name: string }>
     state: string
+    history: {}
 }>()
 
 
@@ -279,7 +281,8 @@ const component = computed(() => {
         invoices: TableInvoices,
         products: TableProductList,
         payments: TablePayments,
-        dispatched_emails: TableDispatchedEmailsInOrder
+        dispatched_emails: TableDispatchedEmailsInOrder,
+        history: TableHistories,
     }
 
     return components[currentTab.value]

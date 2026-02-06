@@ -152,8 +152,13 @@ const idxSlideLoading = ref<number | null>(null)
           }
           : false" @swiper="onSwiper" class="w-full">
 
-        <SwiperSlide v-for="(data, index) in fieldValue.carousel_data.cards" :key="index" >
-           <div class="space-card ">
+       <SwiperSlide
+  v-for="(data, index) in fieldValue.carousel_data.cards"
+  :key="index"
+  class="!flex !justify-center !items-center"
+>
+  <div class="space-card flex justify-center items-center w-full h-full">
+
              <div class="card flex flex-col h-full ">
                 <component :is="data?.link?.href  ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
                   :href="data?.link?.href" :target="data?.link?.target" class="relative flex flex-1 flex-col" :type="data?.link?.type"
