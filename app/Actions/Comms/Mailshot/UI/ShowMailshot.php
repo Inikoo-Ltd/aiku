@@ -72,7 +72,7 @@ class ShowMailshot extends OrgAction
         if ($isSecondWaveActive) {
             $mailshotSecondWave = $mailshot->secondWave;
         }
-
+        $isHasParentMailshot = $mailshot->parentMailshot()->exists();
 
         return Inertia::render(
             'Comms/Mailshot',
@@ -228,12 +228,25 @@ class ShowMailshot extends OrgAction
                         'mailshot' => $mailshot->id
                     ],
                 ],
+                'showLinkedMailShotRoute' => [
+                    'name' => match ($mailshot->type) {
+                        MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.show',
+                        MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.show',
+                    },
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug,
+                        'mailshot' => $isSecondWaveActive ? $mailshotSecondWave?->slug : $mailshot->parentMailshot?->slug,
+                    ],
+                ],
                 'status' => $mailshot->state->value,
                 'estimatedRecipients' => $estimatedRecipients,
                 'mailshotType' => $mailshot->type->value,
                 'isSecondWaveActive' => $isSecondWaveActive,
                 'secondwaveSubject' => $mailshotSecondWave?->subject,
                 'secondwaveDelayHours' => $mailshotSecondWave?->send_delay_hours,
+                'isHasParentMailshot' => $isHasParentMailshot,
+                'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
 
             ]
         )->table(

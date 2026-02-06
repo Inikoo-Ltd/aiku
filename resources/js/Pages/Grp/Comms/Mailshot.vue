@@ -43,6 +43,7 @@ const props = defineProps<{
     deleteMailshotRoute?: routeType
     indexRoute?: routeType
     cancelScheduleMailshotRoute?: routeType
+    showLinkedMailShotRoute?: routeType
     status?: string
     estimatedRecipients?: number
     mailshotType?: string
@@ -51,8 +52,16 @@ const props = defineProps<{
     isSecondWaveActive: boolean
     secondwaveSubject?: string
     secondwaveDelayHours?: number
+    isHasParentMailshot: boolean
+    numberSecondWaveRecipients?: number
 }>();
 
+console.log("Check Props data")
+console.log(props.showLinkedMailShotRoute)
+console.log("isHasParentMailshot:", props.isHasParentMailshot)
+console.log("numberSecondWaveRecipients:", props.numberSecondWaveRecipients)
+console.log("isSecondWaveActive:", props.isSecondWaveActive)
+console.log("End Check Route")
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
