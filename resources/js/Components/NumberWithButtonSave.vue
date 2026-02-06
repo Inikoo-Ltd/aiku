@@ -170,7 +170,7 @@ const onClickMinusButton = () => {
 		return false // Prevent decreasing when the quantity is at or below the min value
 	} else {
 		if (props.denominator) {
-			form.quantity = Number(form.quantity) - (1/props.denominator) // Increase quantity if it's less than the max
+			form.quantity = Number(form.quantity) - Number((1 / props.denominator).toPrecision(25)) // Increase quantity if it's less than the max
 		} else {
 			form.quantity--
 		}
@@ -185,7 +185,7 @@ const onClickPlusButton = () => {
 		return false // Prevent increase if quantity is at or exceeds max value
 	} else {
 		if (props.denominator) {
-			form.quantity = Number(form.quantity) + (1/props.denominator) // Increase quantity if it's less than the max
+			form.quantity = Number(form.quantity) + Number((1 / props.denominator).toPrecision(25)) // Increase quantity if it's less than the max
 		} else {
 			form.quantity++
 		}
