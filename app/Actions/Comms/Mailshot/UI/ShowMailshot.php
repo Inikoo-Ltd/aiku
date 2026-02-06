@@ -144,7 +144,7 @@ class ShowMailshot extends OrgAction
                                     $this->shop->id,
                                     $mailshot->id
                                 ],
-                                'method'     => 'POST'
+                                'method'     => 'post'
                             ]
                         ] : [],
                         $isShowResume ? [
@@ -158,7 +158,7 @@ class ShowMailshot extends OrgAction
                                     $this->shop->id,
                                     $mailshot->id
                                 ],
-                                'method'     => 'POST'
+                                'method'     => 'post'
                             ]
                         ] : []
                     ]
