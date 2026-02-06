@@ -105,7 +105,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Currency $currency
- * @property-read CustomerSalesChannel|null $customerSaleChannel
+ * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
  * @property-read mixed $discount_amount
  * @property-read Collection<int, Address> $fixedAddresses

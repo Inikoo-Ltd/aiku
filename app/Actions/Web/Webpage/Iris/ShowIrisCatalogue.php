@@ -108,7 +108,7 @@ class ShowIrisCatalogue extends IrisAction
         // special rule: if parent = collection → only family + product
         if ($level === 'collection') {
             return array_values(
-                array_filter($tabs, fn($tab) => in_array($tab['key'], ['product']))
+                array_filter($tabs, fn ($tab) => in_array($tab['key'], ['product']))
             );
         }
 
@@ -128,7 +128,9 @@ class ShowIrisCatalogue extends IrisAction
 
         return array_values(
             array_filter($tabs, function ($tab) use ($order, $index) {
-                if (!isset($order[$tab['key']])) return false;
+                if (!isset($order[$tab['key']])) {
+                    return false;
+                }
                 return $order[$tab['key']] > $index;
             })
         );

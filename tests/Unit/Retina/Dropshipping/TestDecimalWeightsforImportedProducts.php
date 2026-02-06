@@ -4,9 +4,8 @@
  * Test Decimal Weights for Imported Products
  * Author: Oggie Sutrisna 👌
  * Created: Wed, 05 Feb 2025 00:00:00 UTC
- * 
+ *
  */
-
 
 namespace Tests\Unit\Retina\Dropshipping;
 
@@ -47,7 +46,7 @@ test('woocommerce weight export', function () {
 
 test('ebay weight export', function () {
     $marketingWeightInGrams = 320;
-    
+
     $ebayWeightValue = (in_array($marketingWeightInGrams, [null, 0]) ? 100 : $marketingWeightInGrams) / 1000;
 
     expect($ebayWeightValue)->toBe(0.32);

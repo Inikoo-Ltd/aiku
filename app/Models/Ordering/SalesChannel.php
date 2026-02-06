@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property array<array-key, mixed>|null $sources
+ * @property bool $show_in_dashboard
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $shops

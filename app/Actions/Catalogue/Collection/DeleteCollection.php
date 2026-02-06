@@ -137,7 +137,7 @@ class DeleteCollection extends OrgAction
      */
     public function asCommand(Command $command): int
     {
-        $collection = Collection::where('slug',$command->argument('collection'))->firstOrFail();
+        $collection = Collection::where('slug', $command->argument('collection'))->firstOrFail();
         $this->action($collection, $command->option('force_delete'));
         return 0;
     }

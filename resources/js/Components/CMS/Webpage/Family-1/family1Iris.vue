@@ -154,7 +154,7 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
     }
 
 .offers :deep(.offer-max-discount) {
-  @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center
+  @apply bg-[#A80000] border border-red-900 text-gray-100 w-fit flex items-center
     rounded-sm px-1 py-0.5 text-xl
     sm:px-1.5 sm:py-1 sm:text-xl
     md:px-2 md:py-1;

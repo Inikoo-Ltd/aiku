@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 05 Feb 2026 14:18:16 Malaysia Time, Kuala Lumpur, Malaysia
@@ -24,7 +25,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateCatalogueDuringMigration
 {
-
     use AsAction;
 
     public function handle(MasterShop $masterShop, Command $command): void
@@ -70,7 +70,6 @@ class UpdateCatalogueDuringMigration
                     deleteMissing: true,
                     skipProducts: true,
                     skipFamilies: true
-
                 );
             }
             CloneCollections::run(
@@ -78,7 +77,7 @@ class UpdateCatalogueDuringMigration
                 shop: $shop,
                 deleteMissing: true
             );
-            if(!in_array($shop->slug, ['bg', 'ua'])){
+            if (!in_array($shop->slug, ['bg', 'ua'])) {
                 UpdateProductDescriptionAndNameFromAurora::run($shop);
                 UpdateFamilyDescriptionAndNameFromAurora::run($shop);
             }
