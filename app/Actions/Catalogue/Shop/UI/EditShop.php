@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -278,6 +279,19 @@ class EditShop extends OrgAction
                             'placeholder' => __('price rrp ratio'),
                             'required'    => true,
                             'value'       => $shop->price_rrp_ratio,
+                            'min'         => 0
+                        ],
+                        'product_price_currency_exchange'  => [
+                            'type'        => 'input_number',
+                            'bind'        => [
+                                'maxFractionDigits' => 3
+                            ],
+                            'label'       => __('product currency exchange'),
+                            'placeholder' => __('product currency exchange'),
+                            'required'    => true,
+                            'hidden'      => app()->isProduction(),
+                            'value'       => $shop->product_price_currency_exchange
+                                ?? GetCurrencyExchange::run($shop->currency, $shop->currency),
                             'min'         => 0
                         ]
                     ]
