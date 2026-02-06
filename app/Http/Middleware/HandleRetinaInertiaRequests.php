@@ -20,8 +20,7 @@ use Illuminate\Support\Arr;
 use Tighten\Ziggy\Ziggy;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Models\HumanResources\WorkSchedule;
-use Carbon\Carbon;
+use App\Actions\HumanResources\WorkSchedule\GetChatConfig;
 
 class HandleRetinaInertiaRequests extends Middleware
 {
@@ -87,35 +86,6 @@ class HandleRetinaInertiaRequests extends Middleware
             ])
             ->toArray() ?? [];
 
-        $shop = $website->shop;
-        $chatEnabled = $website->settings['enable_chat'] ?? false;
-        $isOnline = false;
-        $todayHours = null;
-
-        if ($chatEnabled && $shop) {
-            $effective = $shop->getEffectiveWorkSchedule();
-            /** @var WorkSchedule|null $schedule */
-            $schedule = $effective['schedule'];
-            $timezone = $effective['timezone'];
-
-            if ($schedule) {
-                $isOnline = $schedule->isOpenNow($timezone);
-                $now = Carbon::now($timezone);
-                $dayOfWeek = $now->dayOfWeekIso; // 1-7
-                $todaySchedule = $schedule->days->where('day_of_week', $dayOfWeek)->first();
-
-                if ($todaySchedule && $todaySchedule->is_working_day) {
-                    $todayHours = [
-                        'start' => substr($todaySchedule->start_time, 0, 5),
-                        'end'   => substr($todaySchedule->end_time, 0, 5),
-                        'timezone' => $timezone
-                    ];
-                }
-            } else {
-                $isOnline = false;
-            }
-        }
-
         return array_merge(
             $firstLoadOnlyProps,
             [
@@ -148,11 +118,8 @@ class HandleRetinaInertiaRequests extends Middleware
                             ->exists(),
                 ],
                 'iris'        => $this->getIrisData($website, $webUser),
-                'use_chat'    => $chatEnabled,
-                'chat_config' => [
-                    'is_online' => $isOnline,
-                    'schedule'  => $todayHours,
-                ],
+                'use_chat'    => $website->settings['enable_chat'] ?? false,
+                'chat_config' => GetChatConfig::run($website),
                 'outboxes' => $outBoxes
             ],
             parent::share($request),
