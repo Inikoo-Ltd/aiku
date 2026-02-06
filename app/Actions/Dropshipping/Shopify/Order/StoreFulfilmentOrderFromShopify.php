@@ -81,13 +81,17 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
                         continue;
                     }
 
-                    $storedItemModels[$storedItem->id] = $shopifyProduct['quantity'];
+                    $storedItemModels[$storedItem->id] = [
+                        'quantity' => $shopifyProduct['quantity']
+                    ];
                 }
             }
 
             StoreStoredItemsToReturn::make()->action(
                 palletReturn: $palletReturn,
-                modelData: $storedItemModels
+                modelData: [
+                    'stored_items' => $storedItemModels
+                ]
             );
 
             $palletReturn->refresh();

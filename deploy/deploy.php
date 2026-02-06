@@ -180,7 +180,7 @@ task('deploy:flush-varnish', function () {
 
     if ($shouldFlush) {
         writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
-        run('cd {{release_path}} && pwd && ./restart_varnish.sh 10');
+        run('cd {{release_path}} && pwd && ./restart_varnish.sh');
     } else {
         writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
     }

@@ -19,6 +19,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Carbon\Carbon;
 
 class EditOrganisationSettings extends OrgAction
 {
@@ -48,6 +49,37 @@ class EditOrganisationSettings extends OrgAction
     {
 
         $title = __('Organisation settings');
+        $workSchedule = $organisation->workSchedules()->first();
+
+        $scheduleData = [];
+        $metadata = [
+            'group_weekdays' => false,
+            'group_weekend'  => false,
+        ];
+
+        if ($workSchedule) {
+            $hasWeekdays = $workSchedule->days()->whereIn('day_of_week', [1, 2, 3, 4, 5])->exists();
+            $hasWeekend = $workSchedule->days()->whereIn('day_of_week', [6, 7])->exists();
+
+            $metadata = [
+                'group_weekdays' => $hasWeekdays,
+                'group_weekend'  => $hasWeekend,
+            ];
+
+            foreach ($workSchedule->days as $day) {
+                $key = (string) $day->day_of_week;
+                $s = $day->start_time ? Carbon::today()->setTimeFromTimeString($day->start_time)->toIso8601String() : null;
+                $e = $day->end_time ? Carbon::today()->setTimeFromTimeString($day->end_time)->toIso8601String() : null;
+
+                $breaks = (object)[];
+
+                $scheduleData[$key] = [
+                    's' => $s,
+                    'e' => $e,
+                    'b' => $breaks
+                ];
+            }
+        }
 
         return Inertia::render(
             'EditModel',
@@ -190,11 +222,15 @@ class EditOrganisationSettings extends OrgAction
                         ],
                         [
                             'label'  => __('Working hours & salary'),
-                            'icon'   => 'fa-light fa-truck',
+                            'icon'   => 'fa-light fa-clock',
                             'fields' => [
                                 'working_hours' => [
                                     'type'          => 'working-hours',
-                                    'value'         => $organisation->working_hours ?? [],
+                                    'value'        => [
+                                         'metadata' => $metadata,
+                                         'data'     => (object) $scheduleData,
+                                    ]
+                                   
                                 ]
                             ],
                         ],

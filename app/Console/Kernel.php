@@ -144,6 +144,13 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
+            $schedule->command('fetch:credits -N')->everyTenMinutes()->timezone('UTC')->withoutOverlapping(),
+            name: 'FetchCredits',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
             $schedule->command('fetch:stock_locations aw')->dailyAt('02:30')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockLocationsAW',
             ),
@@ -396,8 +403,8 @@ class Kernel extends ConsoleKernel
         //     $command = sprintf(
         //         'iris:hit-url %s --inertia=%s --xmlhttp=%s',
         //         $config['url'],
-        //         $config['inertia'] ? 'true' : 'false',
-        //         $config['xmlhttp'] ? 'true' : 'false'
+        //         $config['inertia'] ? 'true': 'false',
+        //         $config['xmlhttp'] ? 'true': 'false'
         //     );
 
         //     $schedule->command($command)
