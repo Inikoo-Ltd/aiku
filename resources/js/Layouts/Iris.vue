@@ -49,7 +49,7 @@ const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { co
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
-
+const chatConfig = usePage().props?.chat_config
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
         const irisData = localStorage.getItem('iris');
@@ -94,7 +94,7 @@ const getAnnouncements = async () => {
   } catch (error: any) {
     console.error(error)
   }
-} 
+}
 
 provide('screenType', screenType)
 
@@ -107,10 +107,11 @@ onMounted(() => {
     // Print log only in local
     if (layout.app.environment === 'local') {
         console.log('----- Iris Layout -----', layout)
+        console.log('----- Iris Chat -----', chatConfig)
     }
 
     irisStyleVariables(theme?.color)
-    
+
 })
 
 onBeforeUnmount(() => {

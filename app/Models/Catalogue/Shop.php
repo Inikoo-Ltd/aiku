@@ -97,6 +97,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Ordering\SalesChannel;
+use App\Models\HumanResources\WorkSchedule;
 
 /**
  * App\Models\Catalogue\Shop
@@ -782,5 +783,35 @@ class Shop extends Model implements HasMedia, Auditable
     public function emailTemplates(): HasMany
     {
         return $this->hasMany(EmailTemplate::class);
+    }
+
+    public function workSchedules(): MorphMany
+    {
+        return $this->morphMany(WorkSchedule::class, 'schedulable');
+    }
+
+    public function getEffectiveWorkSchedule(): array
+    {
+        $shopSchedule = $this->workSchedules()->where('is_active', true)->first();
+        if ($shopSchedule) {
+            return [
+                'schedule' => $shopSchedule,
+                'timezone' => $this->timezone->name ?? config('app.timezone'),
+            ];
+        }
+
+        $orgSchedule = $this->organisation->workSchedules()->where('is_active', true)->first();
+        // dd($orgSchedule);
+        if ($orgSchedule) {
+            return [
+                'schedule' => $orgSchedule,
+                'timezone' => $this->organisation->timezone->name ?? config('app.timezone'),
+            ];
+        }
+
+        return [
+            'schedule' => null,
+            'timezone' => $this->timezone->name ?? $this->organisation->timezone->name ?? config('app.timezone'),
+        ];
     }
 }

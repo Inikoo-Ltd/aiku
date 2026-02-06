@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use Carbon\Carbon;
 
 class HandleIrisInertiaRequests extends Middleware
 {
@@ -54,6 +55,42 @@ class HandleIrisInertiaRequests extends Middleware
                 },
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,
+                'chat_config' => (function () use ($website) {
+                    $shop = $website->shop;
+                    $chatEnabled = $website->settings['enable_chat'] ?? false;
+                    if (!$chatEnabled || !$shop) {
+                        return ['is_online' => false, 'schedule' => null];
+                    }
+
+                    $effective = $shop->getEffectiveWorkSchedule();
+
+                    $schedule = $effective['schedule'];
+                    $timezone = $effective['timezone'];
+
+                    $isOnline = false;
+                    $todayHours = null;
+
+                    if ($schedule) {
+                        $isOnline = $schedule->isOpenNow($timezone);
+
+                        $now = Carbon::now($timezone);
+                        $dayOfWeek = $now->dayOfWeekIso;
+                        $todaySchedule = $schedule->days->where('day_of_week', $dayOfWeek)->first();
+
+                        if ($todaySchedule && $todaySchedule->is_working_day) {
+                            $todayHours = [
+                                'start' => $todaySchedule->start_time,
+                                'end'   => $todaySchedule->end_time,
+                                'timezone' => $timezone
+                            ];
+                        }
+                    }
+
+                    return [
+                        'is_online' => $isOnline,
+                        'schedule'  => $todayHours
+                    ];
+                })(),
                 'iris'     => $this->getIrisData($website),
                 "retina"   => [
                     "type" => $request->input('shop_type'),
@@ -64,6 +101,8 @@ class HandleIrisInertiaRequests extends Middleware
                 ],
                 'outboxes' => $outBoxes
             ];
+
+
 
 
             if (Session::get('reloadLayout') == 'remove') {

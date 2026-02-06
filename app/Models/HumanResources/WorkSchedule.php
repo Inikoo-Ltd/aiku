@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Carbon\Carbon;
 
 class WorkSchedule extends Model
 {
@@ -32,5 +33,26 @@ class WorkSchedule extends Model
     public function days(): HasMany
     {
         return $this->hasMany(WorkScheduleDay::class);
+    }
+
+    public function isOpenNow(string $timezone): bool
+    {
+        $now = Carbon::now($timezone);
+        $dayOfWeek = $now->dayOfWeekIso; // 1 (Mon) - 7 (Sun)
+
+        $todaySchedule = $this->days()->where('day_of_week', $dayOfWeek)->first();
+
+        if (!$todaySchedule || !$todaySchedule->is_working_day) {
+            return false;
+        }
+
+        $start = Carbon::parse($todaySchedule->start_time, $timezone)->setDateFrom($now);
+        $end = Carbon::parse($todaySchedule->end_time, $timezone)->setDateFrom($now);
+
+        if ($end->lessThan($start)) {
+            $end->addDay();
+        }
+
+        return $now->between($start, $end);
     }
 }
