@@ -20,7 +20,6 @@ use Illuminate\Support\Arr;
 use Tighten\Ziggy\Ziggy;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Actions\HumanResources\WorkSchedule\GetChatConfig;
 
 class HandleRetinaInertiaRequests extends Middleware
 {
@@ -119,7 +118,6 @@ class HandleRetinaInertiaRequests extends Middleware
                 ],
                 'iris'        => $this->getIrisData($website, $webUser),
                 'use_chat'    => $website->settings['enable_chat'] ?? false,
-                'chat_config' => GetChatConfig::run($website),
                 'outboxes' => $outBoxes
             ],
             parent::share($request),

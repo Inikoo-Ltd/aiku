@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Actions\HumanResources\WorkSchedule\GetChatConfig;
 
 class HandleIrisInertiaRequests extends Middleware
 {
@@ -55,7 +54,6 @@ class HandleIrisInertiaRequests extends Middleware
                 },
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,
-                'chat_config' => GetChatConfig::run($website),
                 'iris'     => $this->getIrisData($website),
                 "retina"   => [
                     "type" => $request->input('shop_type'),
