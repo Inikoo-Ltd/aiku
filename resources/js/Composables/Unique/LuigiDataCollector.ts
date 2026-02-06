@@ -57,3 +57,18 @@ export const SelectItemCollector = (hit: ProductHit) => {
 
     window.dataLayer?.push(body)
 }
+
+// Collector: on visit product page
+export const ProductViewCollector = (product_luigi_identity?: string) => {
+    
+    if (!product_luigi_identity) {
+        return 
+    }
+
+    window?.dataLayer?.push({
+        event: 'view_item',
+        ecommerce: {
+            items: [{ item_id: product_luigi_identity }],
+        },
+    })
+}

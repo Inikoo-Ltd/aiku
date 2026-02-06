@@ -145,18 +145,6 @@ watch(
 
 onMounted(() => {
     set(layout, "temp.fetchIrisProductCustomerData", getOrderingProduct)
-    if (props.modelValue?.product?.luigi_identity) {
-        window?.dataLayer?.push({
-            event: "view_item",
-            ecommerce: {
-                items: [
-                    {
-                        item_id: props.modelValue?.product?.luigi_identity
-                    }
-                ]
-            }
-        })
-    }
     getAllProductFromVariant()
 })
 
