@@ -46,13 +46,20 @@ class WorkSchedule extends Model
             return false;
         }
 
-        $start = Carbon::parse($todaySchedule->start_time, $timezone)->setDateFrom($now);
-        $end = Carbon::parse($todaySchedule->end_time, $timezone)->setDateFrom($now);
+        $startTime = substr((string) $todaySchedule->start_time, 0, 8);
+        $endTime   = substr((string) $todaySchedule->end_time, 0, 8);
 
-        if ($end->lessThan($start)) {
+        $start = Carbon::createFromFormat('H:i:s', $startTime, $timezone)
+            ->setDateFrom($now);
+
+        $end = Carbon::createFromFormat('H:i:s', $endTime, $timezone)
+            ->setDateFrom($now);
+
+        if ($end->lessThanOrEqualTo($start)) {
             $end->addDay();
         }
 
-        return $now->between($start, $end);
+
+        return $now->gte($start) && $now->lt($end);
     }
 }

@@ -44,11 +44,9 @@ class GetChatConfig
 
             $todaySchedule = $schedule->days->where('day_of_week', $dayOfWeek)->first();
             $startTime = Carbon::parse($todaySchedule->start_time)
-                ->setTimezone($timezone)
                 ->format('H:i:s');
 
             $endTime = Carbon::parse($todaySchedule->end_time)
-                ->setTimezone($timezone)
                 ->format('H:i:s');
 
             if ($todaySchedule && $todaySchedule->is_working_day) {
