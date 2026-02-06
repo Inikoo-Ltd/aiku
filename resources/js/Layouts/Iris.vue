@@ -29,6 +29,7 @@ import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vu
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
+import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
 
 library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
@@ -99,6 +100,8 @@ const getAnnouncements = async () => {
 provide('screenType', screenType)
 
 onMounted(() => {
+    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())  // Luigi: to set customer_id
+
     checkScreenType()
     setColorStyleRoot(theme?.color)
     layout.app.webpage_layout = theme
