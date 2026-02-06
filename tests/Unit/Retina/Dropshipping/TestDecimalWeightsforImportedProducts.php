@@ -26,6 +26,16 @@ test('decimal weights conversion for external platforms', function () {
     expect($productWeightInGrams / $weightInKgCorrect)->toBe(1000.0);
 });
 
+
+test('tiktok weight export', function () {
+    $itemWeightInGrams = 320;
+
+    $tiktokWeightInKg = $itemWeightInGrams / 1000;
+
+    expect($tiktokWeightInKg)->toBe(0.32);
+    expect($tiktokWeightInKg)->toBeFloat();
+});
+
 test('woocommerce weight export', function () {
     $grossWeightInGrams = 320;
 
