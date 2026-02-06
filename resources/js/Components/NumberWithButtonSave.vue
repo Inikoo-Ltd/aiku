@@ -254,7 +254,7 @@ const onClickPlusButton = () => {
 					}">
 					<InputNumber
 						vxmodel="form.quantity"
-						:modelValue="props.denominator ? form.quantity * props.denominator : form.quantity"
+						:modelValue="props.denominator ? Math.floor(form.quantity * props.denominator) : form.quantity"
 						@update:model-value="(e) => (props.denominator? (form.quantity = e/props.denominator) : (form.quantity = e))"
 						@input="(e) => (props.denominator ? (form.quantity = e.value/props.denominator) : (form.quantity = e.value))"
 						buttonLayout="horizontal"

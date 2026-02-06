@@ -17,12 +17,12 @@ import { ulid } from "ulid"
 import Image from "@/Components/Image.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBadgePercent } from "@fas"
+import { faBadgePercent, faFragile } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import { InputNumber, InputText } from "primevue"
 
-library.add(faBadgePercent, faMoneyCheckEditAlt)
+library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt)
 
 type ProductRow = {
     id: number
@@ -359,9 +359,9 @@ const onSubmitEditNetAmount = () => {
                 <div class="flex items-center justify-end gap-2">
                     <!-- Editable when creating and not in edit mode -->
                     <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)"
-                         class="w-fit">
+                        class="w-fit flex gap-x-2">
                         <NumberWithButtonSave
-                            :modelValue="item.quantity_ordered"
+                            :modelValue="Number(item.quantity_ordered)"
                             :routeSubmit="item.updateRoute"
                             isWithRefreshModel
                             keySubmit="quantity_ordered" :isLoading="isLoading === 'quantity' + item.id"
@@ -372,8 +372,13 @@ const onSubmitEditNetAmount = () => {
                                 min: 0,
                                 max: item.available_quantity,
                             }"
-                            :denominator="item.is_cut_view && Number(item.product_units) > 1 ? Number(item.product_units) : undefined"
+                            :denominator="Number(item.product_units) > 1 ? Number(item.product_units) : undefined"
                         />
+
+                        <!-- <span @click="() => onSetSamples()" class="align-middle">
+                            {{ item.is_cut_view }}
+                            <FontAwesomeIcon icon="fas fa-fragile" class="" fixed-width aria-hidden="true" />
+                        </span> -->
                     </div>
 
                     <!-- Read-only display -->
