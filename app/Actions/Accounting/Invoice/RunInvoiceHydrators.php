@@ -178,7 +178,7 @@ class RunInvoiceHydrators
         if ($invoice->sales_channel_id) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $queueOrRun(ProcessSalesChannelTimeSeriesRecords::class, [
-                    $invoice->platform_id,
+                    $invoice->sales_channel_id,
                     $frequency,
                     match ($frequency) {
                         TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
