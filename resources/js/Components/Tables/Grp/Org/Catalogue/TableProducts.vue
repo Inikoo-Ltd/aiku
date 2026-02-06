@@ -429,13 +429,17 @@ function variantRoute(product: MasterProduct): string {
         <template #cell(product_org_stocks)="{ item: product }">
             <LabelSKU
 				v-if="product.product_org_stocks"
-                :disableClick="true"
+                :forceOpenModal="true"
+                :hoverTooltip="trans('Click to set up Trade Units')"
 				:product="product"
 				:trade_units="product.product_org_stocks"
                 :hideUnit="true"
 				xrouteFunction="tradeUnitRoute"
 				keyPicking="picking_factor"
 			>
+                <template #modalBody> 
+                    {{ 'hi' }}
+                </template>
 			</LabelSKU>
         </template>
 
