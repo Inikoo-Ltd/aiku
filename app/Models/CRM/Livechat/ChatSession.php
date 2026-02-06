@@ -131,4 +131,14 @@ class ChatSession extends Model
     {
         return $this->belongsTo(Language::class, 'active_user_language_id');
     }
+
+    public function isActive(): bool
+    {
+        return $this->status === ChatSessionStatusEnum::ACTIVE;
+    }
+    public function isClosed(): bool
+    {
+        return $this->status === ChatSessionStatusEnum::CLOSED;
+    }
+
 }
