@@ -8,24 +8,17 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Traits\WithOutboxBuilder;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetMailshotSecondWaveStatus extends OrgAction
 {
-    // TODO: Check and make sure this condition is correct
-    use HasUIMailshots;
     use WithActionUpdate;
     use WithCatalogueAuthorisation;
-    use WithNoStrictRules;
-    use WithOutboxBuilder;
 
     /**
      * @throws \Throwable

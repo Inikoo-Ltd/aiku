@@ -9,27 +9,20 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Comms\Email\StoreEmail;
-use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Traits\WithOutboxBuilder;
 use App\Models\Comms\Mailshot;
 use Illuminate\Support\Facades\DB;
 
 class CloneMailshotForSecondWave extends OrgAction
 {
-    use HasUIMailshots;
     use WithCatalogueAuthorisation;
-    use WithNoStrictRules;
-    use WithOutboxBuilder;
 
     /**
      * @throws \Throwable
      */
     public function handle(Mailshot $parentMailshot): Mailshot
     {
-        // TODO: Check and make sure this block code
         $dataModel = [
             'date' => $parentMailshot->date,
             'group_id' => $parentMailshot->group_id,
