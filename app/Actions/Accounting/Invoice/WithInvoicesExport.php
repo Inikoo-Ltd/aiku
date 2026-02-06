@@ -52,36 +52,37 @@ trait WithInvoicesExport
                 return $transaction;
             });
 
-            $refund = $invoice->type == InvoiceTypeEnum::REFUND;
+            //$refund = $invoice->type == InvoiceTypeEnum::REFUND;
             $refundData = [];
-            if ($refund) {
-                foreach ($invoice->invoiceTransactions->where('model_type', 'Product') as $invoiceTransaction) {
-
-                    $refunded = false;
-                    if ($invoiceTransaction->transaction) {
-                        $refunded = $invoiceTransaction->quantity < $invoiceTransaction->transaction->quantity_ordered;
-                    }
-
-                    if ($refunded) {
-                        $quantityRefunded = $invoiceTransaction->transaction->quantity_ordered - $invoiceTransaction->quantity;
-
-                        $totalRefunded = $invoiceTransaction->historicAsset->price * $quantityRefunded;
-
-                        if ($invoiceTransaction->is_tax_only) {
-                            $totalRefunded = $invoiceTransaction->tax_amount;
-                        }
-
-                        $refundData[] = [
-                            'code' => $invoiceTransaction->historicAsset->code,
-                            'description' => $invoiceTransaction->historicAsset->name,
-                            'price' =>  $invoiceTransaction->historicAsset->price,
-                            'quantity' => $quantityRefunded,
-                            'is_tax_only' => $invoiceTransaction->is_tax_only,
-                            'total' => $totalRefunded
-                        ];
-                    }
-                }
-            }
+            // todo remove this i dont think we need this
+//            if ($refund) {
+//                foreach ($invoice->invoiceTransactions->where('model_type', 'Product') as $invoiceTransaction) {
+//
+//                    $refunded = false;
+//                    if ($invoiceTransaction->transaction) {
+//                        $refunded = $invoiceTransaction->quantity < $invoiceTransaction->transaction->quantity_ordered;
+//                    }
+//
+//                    if ($refunded) {
+//                        $quantityRefunded = $invoiceTransaction->transaction->quantity_ordered - $invoiceTransaction->quantity;
+//
+//                        $totalRefunded = $invoiceTransaction->historicAsset->price * $quantityRefunded;
+//
+//                        if ($invoiceTransaction->is_tax_only) {
+//                            $totalRefunded = $invoiceTransaction->tax_amount;
+//                        }
+//
+//                        $refundData[] = [
+//                            'code' => $invoiceTransaction->historicAsset->code,
+//                            'description' => $invoiceTransaction->historicAsset->name,
+//                            'price' =>  $invoiceTransaction->historicAsset->price,
+//                            'quantity' => $quantityRefunded,
+//                            'is_tax_only' => $invoiceTransaction->is_tax_only,
+//                            'total' => $totalRefunded
+//                        ];
+//                    }
+//                }
+//            }
 
             $config = [
                 'title'                  => $invoice->reference,

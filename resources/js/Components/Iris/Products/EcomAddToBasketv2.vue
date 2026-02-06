@@ -4,7 +4,7 @@ import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
-import { inject, ref, watch } from 'vue'
+import { inject, ref, watch, computed } from 'vue'
 import { debounce, set } from 'lodash-es'
 import axios from 'axios'
 
@@ -228,6 +228,13 @@ const onManualInput = (e: Event) => {
 }
 
 
+
+const disableDecrement = computed(() => {
+    const currentQty = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
+    return isLoadingSubmitQuantityProduct.value || currentQty <= 0
+})
+
+
 watch(
     () => props.customerData,
     val => (customer.value = { ...val }),
@@ -238,7 +245,7 @@ watch(
 <template>
     <div :class="props.classContainer">
         <div class="qty-control">
-            <button class="qty-btn" :disabled="isLoadingSubmitQuantityProduct" @click="decrementQty">
+            <button class="qty-btn" :disabled="disableDecrement" @click="decrementQty">
                 <FontAwesomeIcon icon="fas fa-minus" />
             </button>
 

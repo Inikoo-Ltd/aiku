@@ -323,8 +323,11 @@ onBeforeUnmount(() => {
             class="w-max max-w-[180px] md:max-w-[200px] lg:max-w-[260px]">
             <div class="p-4 text-sm break-words">
                 <loading-icon v-if="loadingGetVariants" />
-                <variant-dialog-content v-else :variants="listProducts" :hasInBasketList="hasInBasketList"
-                    @setBackInStock="onAddBackInStock" @unsetBackInStock="onUnselectBackInStock"
+                <variant-dialog-content 
+                    v-else :variants="listProducts" 
+                    :hasInBasketList="hasInBasketList"
+                    @setBackInStock="onAddBackInStock" 
+                    @unsetBackInStock="onUnselectBackInStock"
                     :isLoadingRemindBackInStock="isLoadingRemindBackInStock" />
             </div>
         </Popover>

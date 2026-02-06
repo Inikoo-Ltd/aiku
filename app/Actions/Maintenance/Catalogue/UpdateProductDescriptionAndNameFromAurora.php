@@ -7,8 +7,6 @@
  */
 
 
-
-
 /** @noinspection DuplicatedCode */
 
 namespace App\Actions\Maintenance\Catalogue;
@@ -26,7 +24,7 @@ class UpdateProductDescriptionAndNameFromAurora
     use AsAction;
     use WithOrganisationSource;
 
-    public function handle(Shop $shop, Command $command): void
+    public function handle(Shop $shop, ?Command $command = null): void
     {
         $organisation             = $shop->organisation;
         $this->organisationSource = $this->getOrganisationSource($organisation);
@@ -51,32 +49,26 @@ class UpdateProductDescriptionAndNameFromAurora
                         if ($webpageData) {
                             $webpageData = $webpageData->{'Page Store Content Published Data'};
                             if ($webpageData) {
-                                $webpageData    = json_decode($webpageData, true);
+                                $webpageData = json_decode($webpageData, true);
 
-                                $productWebBlockdData = null;
+                                $productWebBlockData = null;
 
 
-                                foreach ($webpageData['blocks'] as $block) {
+                                foreach (Arr::get($webpageData, 'blocks', []) as $block) {
                                     if (Arr::get($block, 'type') == 'product') {
-                                        $productWebBlockdData = $block;
+                                        $productWebBlockData = $block;
                                         break;
                                     }
                                 }
 
 
-
-                                if ($productWebBlockdData) {
-
-                                    $description = Arr::get($productWebBlockdData, 'text', '');
+                                if ($productWebBlockData) {
+                                    $description = Arr::get($productWebBlockData, 'text', '');
 
                                     $description = str_replace('<p><br></p>', '', $description);
                                     $description = str_replace('<p><br />\u003C/p>', '', $description); // handle potential escaped variant
                                     $description = str_replace('<p><br /></p>', '', $description);
-
-
                                 }
-
-
                             }
                         }
                     }
@@ -88,7 +80,7 @@ class UpdateProductDescriptionAndNameFromAurora
                             'is_description_reviewed' => true
                         ]);
                         if ($product->wasChanged('description')) {
-                            $command->info("Description changed $product->code");
+                            $command?->info("Description changed $product->code");
                         }
 
                         $product->update(
@@ -97,8 +89,6 @@ class UpdateProductDescriptionAndNameFromAurora
                                 'is_description_extra_reviewed' => true
                             ]
                         );
-
-
                     }
 
 
@@ -117,7 +107,7 @@ class UpdateProductDescriptionAndNameFromAurora
                             ]
                         );
                         if ($product->wasChanged('name')) {
-                            $command->info("Name changed $product->code $product->name");
+                            $command?->info("Name changed $product->code $product->name");
                         }
                     }
                 }

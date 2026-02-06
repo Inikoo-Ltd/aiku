@@ -289,9 +289,9 @@ class PalletReturn extends Model implements HasMedia
     }
 
 
-    public function customerSaleChannel(): BelongsTo
+    public function customerSalesChannel(): BelongsTo
     {
-        return $this->belongsTo(CustomerSalesChannel::class, 'customer_sales_channel_id');
+        return $this->belongsTo(CustomerSalesChannel::class);
     }
 
 }
