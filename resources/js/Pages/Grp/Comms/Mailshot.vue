@@ -526,6 +526,12 @@ const waveLabel = computed(() =>
     props.isHasParentMailshot ? 'First Wave' : '2nd Wave'
 )
 
+const canFetchWaveAction = computed(() => {
+    return (
+        !showWaveSettings.value &&
+        (props.isHasParentMailshot || props.isSecondWaveActive)
+    )
+})
 watch(
     filteredTabs,
     (tabs) => {
@@ -622,9 +628,9 @@ watch(
 
         <div class="inline-flex items-center gap-3 px-3 py-1.5 rounded-md
          bg-gray-50 border border-gray-200">
-            <span class="text-sm font-medium whitespace-nowrap transition" :class="showWaveSettings
-                ? 'text-gray-700'
-                : 'text-indigo-600 cursor-pointer hover:underline'" @click="!showWaveSettings && handleFetchAction()">
+            <span class="text-sm font-medium whitespace-nowrap transition" :class="canFetchWaveAction
+                ? 'text-indigo-600 cursor-pointer hover:underline'
+                : 'text-gray-700'" @click="canFetchWaveAction && handleFetchAction()">
                 {{ waveLabel }}
             </span>
             <span class="text-sm font-medium text-gray-700 whitespace-nowrap"
