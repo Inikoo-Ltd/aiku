@@ -5,6 +5,11 @@ import { trans } from 'laravel-vue-i18n'
 import Modal from "@/Components/Utils/Modal.vue"
 import { computed, ref } from 'vue'
 
+const emit = defineEmits([
+    'openModal',
+    'closeModal'
+])
+
 const props = defineProps<{
     product: {
         unit: string
@@ -43,6 +48,7 @@ const textTooltip = computed(() => {
 const openModal = () => {
     if(props.trade_units.length >= 1 || props.forceOpenModal) {
         isOpenModal.value = true
+        emit('openModal');
     };
 }
 
@@ -86,7 +92,7 @@ const getAdditionalClass = () => {
             {{ product.units + " " + product.unit }}
         </div>
 
-        <Modal :isOpen="isOpenModal" @onClose="isOpenModal = false" width="max-w-3xl w-full">
+        <Modal :isOpen="isOpenModal" @onClose="() => {isOpenModal = false; emit('closeModal')}" width="max-w-3xl w-full">
             <slot name="modalBody">
                 <div class="grid grid-cols-2 font-bold mb-4">
                     <div class="text-left text-lg">

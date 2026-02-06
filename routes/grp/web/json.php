@@ -12,6 +12,7 @@ use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Collection\Json\GetCollectionsForWorkshop;
 use App\Actions\Catalogue\Collection\Json\GetWebpagesInCollection;
+use App\Actions\Catalogue\Product\Json\GetExternalProductTradeUnits;
 use App\Actions\Catalogue\Product\Json\GetGrpProductOfVariant;
 use App\Actions\Catalogue\Product\Json\GetLastOrderedProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
@@ -250,6 +251,8 @@ Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::c
 
 
 Route::post('variant/{variant}/products', GetGrpProductOfVariant::class)->name('variant.products');
+
+Route::get('product/{product}/trade-units', GetExternalProductTradeUnits::class)->name('product.external.trade-units-linked');
 
 Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
