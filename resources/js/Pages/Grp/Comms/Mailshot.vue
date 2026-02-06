@@ -375,12 +375,6 @@ const handleToggleSecondWave = async (value: boolean) => {
         .then((response) => {
             if (response.data) {
                 isSavingToggle.value = false
-                notify({
-                    type: 'success',
-                    title: 'Success',
-                    text: 'Second wave status updated successfully',
-                })
-
             } else {
                 checked.value = previous
                 isSavingToggle.value = false

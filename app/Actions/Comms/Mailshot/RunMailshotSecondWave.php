@@ -28,12 +28,14 @@ class RunMailshotSecondWave
         // use mailshot second wave filter
         $secondWaveQuery = QueryBuilder::for(Mailshot::class);
         $secondWaveQuery->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING]);
+        $secondWaveQuery->where('state', MailshotStateEnum::READY);
         $secondWaveQuery->where('is_second_wave', true);
         $secondWaveQuery->whereNull('deleted_at');
         $secondWaveQuery->whereNull('cancelled_at');
         $secondWaveQuery->whereNull('stopped_at');
         $secondWaveQuery->whereNull('sent_at');
         $secondWaveQuery->whereNull('start_sending_at');
+        $secondWaveQuery->where('send_delay_hours', '>', 0);
         $secondWaveQuery->whereNull('source_id'); // to avoid resending newsletter that imported from Aurora
         $secondWaveQuery->whereNull('source_alt_id'); // to avoid resending newsletter that imported from Aurora
         $secondWaveQuery->whereNull('source_alt2_id'); // to avoid resending newsletter that imported from Aurora
