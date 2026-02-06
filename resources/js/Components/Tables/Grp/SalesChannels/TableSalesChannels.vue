@@ -21,6 +21,10 @@ function salesChannelRoute(salesChannel: any) {
         <template #cell(is_active)="{ item }">
              <Icon :data="item.is_active" class="px-1" />
         </template>
+        
+        <template #cell(show_in_dashboard)="{ item }">
+             <Icon :data="item.show_in_dashboard" class="px-1" />
+        </template>
 
         <template #cell(name)="{ item }">
              <Link :href="salesChannelRoute(item)" class="primaryLink">
