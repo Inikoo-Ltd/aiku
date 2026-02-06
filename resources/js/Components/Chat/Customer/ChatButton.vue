@@ -40,7 +40,7 @@ const props = defineProps<{
     }
 }>()
 
-console.log("chatConfig props", props.chatConfig)
+
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
 type LocalChatMessage = ChatMessage & {
@@ -352,13 +352,32 @@ const initChat = async () => {
     forceScrollBottom()
 }
 
-const toggle = () => {
+const toggle = async () => {
     open.value = !open.value
     if (open.value) {
         unreadMessageIds.clear()
         unreadCount.value = 0
         initChat()
-        router.reload()
+
+        try {
+            const res = await axios.get(`${baseUrl}/app/api/chats/status`, {
+                params: { shop_id: layout?.iris?.shop?.id },
+            })
+
+            const config = res.data.chat_config
+
+            statusChat.value = config?.is_online ?? false
+
+            if (config?.schedule) {
+                chatHours.value = {
+                    start: config.schedule.start,
+                    end: config.schedule.end
+                }
+            }
+
+        } catch (e) {
+            console.error("Chat status fetch failed", e)
+        }
     }
 }
 
@@ -435,22 +454,6 @@ defineExpose({
     isLoadingMore,
 })
 
-watch(
-    () => props.chatConfig,
-    (config) => {
-        if (!config) return
-
-        statusChat.value = config.is_online
-
-        if (config.schedule) {
-            chatHours.value.start = config.schedule.start
-            chatHours.value.end = config.schedule.end
-        }
-    },
-    { immediate: true }
-)
-
-console.log("layout chatbutton", layout)
 </script>
 
 <template>
