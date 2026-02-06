@@ -148,8 +148,12 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
           }
           : false" @swiper="onSwiper" class="w-full">
 
-        <SwiperSlide v-for="(data, index) in modelValue.carousel_data.cards" :key="index">
-          <div class="space-card">
+       <SwiperSlide
+  v-for="(data, index) in modelValue.carousel_data.cards"
+  :key="index"
+  class="!flex !justify-center !items-center"
+>
+  <div class="space-card flex justify-center items-center w-full h-full">
             <div class="card flex flex-col h-full">
               <div class="flex flex-1 flex-col">
 

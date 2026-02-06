@@ -16,6 +16,9 @@ import { faSave as fadSave, } from '@fad'
 import { faSave as falSave, faInfoCircle } from '@fal'
 import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import Modal from '../Utils/Modal.vue'
+import { trans } from 'laravel-vue-i18n'
+import Button from '../Elements/Buttons/Button.vue'
 library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk)
 
 const props = defineProps<{
@@ -38,6 +41,11 @@ const props = defineProps<{
         updateRoute?: routeType
         isWithRefreshFieldForm?: boolean
         revisit_after_save?: boolean
+        saveConfirmation?: {   // On click save will show modal confirmation
+            title?: string
+            description?: string
+            yesLabel?: string
+        }
     }
     args: {
         updateRoute: routeType
@@ -88,7 +96,8 @@ const submit = () => {
                     if(props.fieldData.revisit_after_save){
                         router.reload()
                     }
-                }
+                    isModalConfirmation.value = false
+                },
             }
         )
     }
@@ -143,6 +152,8 @@ watch(() => props?.fieldData?.value, (newValue) => {
 defineExpose({
     form
 })
+
+const isModalConfirmation = ref(false)
 </script>
 
 <template>
@@ -189,8 +200,23 @@ defineExpose({
 
                 <!-- Button: Save -->
                 <template v-if="fieldData.noSaveButton" />
+                <span v-else-if="fieldData.save" class="ml-2 flex-shrink-0">
+
+                </span>
                 <span v-else class="ml-2 flex-shrink-0">
-                    <button v-if="!fieldData.verification" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="submit">
+                    <div v-if="fieldData.saveConfirmation"
+                        @click="() => isModalConfirmation = true"
+                        class="h-9 align-bottom text-center cursor-pointer"
+                        :disabled="form.processing || !form.isDirty"
+                    >
+                        <template v-if="form.isDirty">
+                            <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                        </template>
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                    </div>
+
+                    <button v-else-if="!fieldData.verification" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="submit">
                         <template v-if="form.isDirty">
                             <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
                             <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
@@ -210,5 +236,57 @@ defineExpose({
                 </span>
             </dd>
         </dl>
+
+        <!-- Modal: Save confirmation -->
+        <Modal v-if="fieldData.saveConfirmation" :isOpen="isModalConfirmation" @onClose="() => isModalConfirmation = false" width="w-full max-w-lg">
+            <div class="relative text-left sm:w-full sm:max-w-lg py-2 flex">
+
+                <div
+                    class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 sm:mx-0 sm:size-10">
+                    <FontAwesomeIcon
+                        icon="fal fa-exclamation-triangle"
+                        class="text-amber-600"
+                        fixed-width
+                        aria-hidden="true" />
+                </div>
+
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <div class="text-base font-semibold">
+                        {{ fieldData.saveConfirmation?.title ?? trans("Are you sure want to pick all from magic place?") }}
+                    </div>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">
+                            {{ fieldData.saveConfirmation?.description ?? trans("I understand what I did.") }}
+                        </p>
+                    </div>
+
+                    <div class="mt-5 flex xflex-row-reverse gap-2">
+                        <Button
+                            type="tertiary"
+                            icon="far fa-arrow-left"
+                            :disabled="form.processing"
+                            :label="trans('Cancel')"
+                            full
+                            @click=" () => (isModalConfirmation = false)"
+                        />
+                        <div class="xw-full sm:w-fit">
+                            <Button
+                                @click="() => submit()"
+                                type="secondary"
+                                key="3"
+                                :loading="form.processing"
+                                full
+                            >
+                                <template #label>
+                                    <div class="whitespace-nowrap">
+                                        {{ fieldData.saveConfirmation?.yesLabel ?? trans("Yes, update it") }}
+                                    </div>
+                                </template>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Modal>
     </form>
 </template>
