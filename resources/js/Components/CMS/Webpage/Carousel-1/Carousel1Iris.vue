@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import Carousel from 'primevue/carousel'
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { Autoplay } from 'swiper/modules'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 import Image from '@/Components/Image.vue'
 import { ulid } from 'ulid'
-import { inject, ref, computed, watch, nextTick } from 'vue'
+import { inject, ref, watch, computed, nextTick } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage } from '@fal'
 import { getStyles } from '@/Composables/styles'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import { faChevronRight, faChevronLeft } from '@fas'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 const props = defineProps<{
@@ -34,7 +36,11 @@ const props = defineProps<{
 }>()
 
 
+const keySwiper = ref(ulid())
 const layout: any = inject("layout", {})
+const refreshTrigger = ref(0)
+const swiperInstance = ref<any>(null)
+
 
 const hasCards = computed(() =>
   Array.isArray(props.fieldValue?.carousel_data?.cards) &&
@@ -50,66 +56,25 @@ const isLooping = computed(() => {
   return settingsLoop && props.fieldValue.carousel_data.cards.length > slidesPerView.value
 })
 
-const screenType = computed(() => props.screenType)
 const cardStyle = ref(getStyles(props.fieldValue?.carousel_data?.card_container?.properties, props.screenType, false))
 const ImageContainer = ref(getStyles(props.fieldValue.carousel_data.card_container?.container_image, props.screenType, false))
 
-// Auto select aspect ratio based on slidesPerView
-const selectedAspectRatio = computed(() => {
-  if (!hasCards.value) return 1
-  if (slidesPerView.value === 1) return 1
-  if (slidesPerView.value <= 3) return 4 / 3
-  return 16 / 9
-})
+const spaceBetween = ref(((props.fieldValue?.carousel_data?.carousel_setting?.spaceBetween || 0)))
 
 
-const responsiveOptions = computed(() => {
-  const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
-  return [
-    {
-      breakpoint: '1200px',
-      numVisible: settings.slidesPerView?.desktop || 4,
-      numScroll: 1
-    },
-    {
-      breakpoint: '992px',
-      numVisible: settings.slidesPerView?.tablet || 2,
-      numScroll: 1
-    },
-    {
-      breakpoint: '576px',
-      numVisible: settings.slidesPerView?.mobile || 1,
-      numScroll: 1
-    }
-  ]
-})
-
-const refreshTrigger = ref(0)
 
 const refreshCarousel = async (delay = 100) => {
   await new Promise(resolve => setTimeout(resolve, delay))
-  refreshTrigger.value++
+  keySwiper.value = ulid()
   await nextTick()
 }
 
-const spaceBetween = ref(((props.fieldValue?.carousel_data?.carousel_setting?.spaceBetween || 0) / 2) + 'px')
-watch(
-  () => props.fieldValue?.carousel_data?.carousel_setting?.spaceBetween,
-  (newVal) => {
-    spaceBetween.value = ((newVal || 0) / 2) + 'px'
-    refreshCarousel()
-  },
-  { immediate: true, deep: true }
-)
-
-// Watch for settings or screen changes
 watch(
   () => [props.fieldValue?.carousel_data?.carousel_setting, props.screenType],
   () => refreshCarousel(),
   { deep: true }
 )
 
-// Watch for card container property changes
 watch(
   () => props.fieldValue?.carousel_data?.card_container,
   async () => {
@@ -120,28 +85,75 @@ watch(
   { deep: true }
 )
 
+watch(
+  () => props.fieldValue?.carousel_data?.carousel_setting?.spaceBetween,
+  (newVal) => {
+    spaceBetween.value = (newVal || 0)
+    refreshCarousel()
+  },
+  { immediate: true, deep: true }
+)
+
+const breakpoints = computed(() => {
+  const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
+  return {
+    0: { slidesPerView: settings.slidesPerView?.mobile || 1 },
+    768: { slidesPerView: settings.slidesPerView?.tablet || 2 },
+    1200: { slidesPerView: settings.slidesPerView?.desktop || 4 }
+  }
+})
+
+const onSwiper = (swiper: any) => {
+  swiperInstance.value = swiper
+}
+
+const scrollLeft = () => {
+  if (!swiperInstance.value) return
+  swiperInstance.value.slidePrev()
+}
+
+const scrollRight = () => {
+  if (!swiperInstance.value) return
+  swiperInstance.value.slideNext()
+}
+
+const onArrowKeyLeft = (e: KeyboardEvent) => {
+  if (e.key === 'Enter' || e.key === ' ') scrollLeft()
+}
+
+const onArrowKeyRight = (e: KeyboardEvent) => {
+  if (e.key === 'Enter' || e.key === ' ') scrollRight()
+}
+
+
 const idxSlideLoading = ref<number | null>(null)
-console.log(props)
+
 </script>
 
 <template>
-  <div id="carousel" class="relative">
-    <div :data-refresh="refreshTrigger" :style="{
+<div id="carousel" class="relative overflow-hidden">
+    <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(fieldValue?.container?.properties, props.screenType)
     }">
-      <Carousel
-        v-show="hasCards"
-        :value="fieldValue.carousel_data.cards"
-        :numVisible="slidesPerView"
-        :circular="isLooping"
-        :numScroll="1"
-        :autoplayInterval="fieldValue?.carousel_data?.carousel_setting?.autoplay ? 5000 : 0"
-        :responsiveOptions="responsiveOptions"
-        :showNavigators="fieldValue?.carousel_data?.cards?.length > slidesPerView"
-        class="w-full">
-        <template #item="{ data, index }" :showNavigators="false" :showIndicators="false">
-          <div class="space-card ">
+      <button v-if="swiperInstance?.allowSlidePrev && isLooping" ref="prevEl"
+        class="absolute left-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+        @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
+        <FontAwesomeIcon :icon="faChevronLeft" />
+      </button>
+      <div class="mx-24 overflow-hidden">
+         <Swiper v-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
+        :space-between="spaceBetween" :breakpoints="breakpoints" 
+        :autoplay="fieldValue.carousel_data.carousel_setting?.interval && fieldValue.carousel_data.carousel_setting?.autoplay
+          ? {
+            delay: fieldValue.carousel_data.carousel_setting.interval,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: true
+          }
+          : false" @swiper="onSwiper" class="w-full">
+
+        <SwiperSlide v-for="(data, index) in fieldValue.carousel_data.cards" :key="index" >
+           <div class="space-card ">
              <div class="card flex flex-col h-full ">
                 <component :is="data?.link?.href  ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
                   :href="data?.link?.href" :target="data?.link?.target" class="relative flex flex-1 flex-col" :type="data?.link?.type"
@@ -180,29 +192,37 @@ console.log(props)
                 </component>
               </div>
           </div>
-        </template>
-      </Carousel>
+        </SwiperSlide>
+      </Swiper>
+
+      </div>
+      <button v-if="swiperInstance?.allowSlideNext && isLooping" ref="nextEl"
+        class="absolute right-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+        @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
+        <FontAwesomeIcon :icon="faChevronRight" />
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-
-
-
-:deep(.p-carousel-items-container) {
-  align-items: stretch !important;
-}
-
-:deep(.p-carousel-indicator-list) {
+/* hide indicator if you later enable pagination */
+:deep(.swiper-pagination) {
   display: none;
 }
 
-:deep(.space-card) {
-  margin-left: v-bind(spaceBetween);
-  margin-right: v-bind(spaceBetween);
+
+/* :deep(.p-carousel-indicator-list) {
+  display: none;
+} */
+
+/* spacing between cards (same behavior as previous carousel gap logic) */
+.space-card {
+  box-sizing: border-box;
+  height: 100%;
 }
 
+/* main card styling (UNCHANGED — keep exactly same dynamic binding) */
 .card {
   display: flex;
   flex-direction: column;
@@ -231,10 +251,24 @@ console.log(props)
   border-right: v-bind('cardStyle?.borderRight || "0px solid transparent"') !important;
 }
 
-.image-container {
-  justify-content: v-bind('ImageContainer?.justifyContent || "center"') !important;;
+/* ensure swiper slide takes full height */
+:deep(.swiper-slide) {
+  height: auto;
+  display: flex;
 }
 
+/* allow card stretch full height */
+:deep(.swiper-slide > .space-card) {
+  width: 100%;
+  display: flex;
+}
+
+/* image alignment dynamic */
+.image-container {
+  justify-content: v-bind('ImageContainer?.justifyContent || "center"') !important;
+}
+
+/* smooth fade (optional if you use transitions later) */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.25s ease;
@@ -245,6 +279,12 @@ console.log(props)
   opacity: 0;
 }
 
+/* optional: remove overflow clipping if builder needs edit outside */
+:deep(.swiper) {
+  overflow: visible;
+}
 
+:deep(.swiper-wrapper) {
+  align-items: stretch;
+}
 </style>
-
