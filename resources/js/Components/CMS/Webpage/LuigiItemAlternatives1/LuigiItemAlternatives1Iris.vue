@@ -98,6 +98,8 @@ const isFetched = ref(false)
 
 
 const fetchRecommenders = async () => {
+    const userId = layout.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+    
     try {
         isLoadingFetch.value = true
         const response = await axios.post(
@@ -109,7 +111,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": "item_detail_alternatives",
                     "recommender_client_identifier": "item_detail_alternatives",
                     "size": 25,
-                    "user_id": layout.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
+                    "user_id": userId ?? null,  // Customer ID or Cookie _lb
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
                 }
@@ -186,6 +188,10 @@ const fetchRecommendersToGetProducts = async () => {
 
 
 onMounted(() => {
+    console.log('wwwwwwwwwwwwww$$$$$$$$$$', layout)
+    console.log('wwwwwwwwwwwwww............', layout.iris_variables.customer_id)
+    console.log('wwwwwwwwwwwwwwwwwwwwwwww', layout.user?.customer_id?.toString())
+    console.log('wwwwwwwwwwwwww----------', Cookies.get('_lb'))
     fetchRecommenders()
     window.luigiItemAlternatives = fetchRecommenders
 })
