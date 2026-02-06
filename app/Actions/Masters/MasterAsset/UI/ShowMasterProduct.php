@@ -261,11 +261,11 @@ class ShowMasterProduct extends GrpAction
 
 
                 MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
+                    fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))),
 
             ]
-        )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value))
+        )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value, masterAsset: $masterAsset))
             ->table(IndexMasterAssetTimeSeries::make()->tableStructure(MasterAssetTabsEnum::SALES->value))
             ->table(IndexMailshots::make()->tableStructure($masterAsset))
             ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value))
