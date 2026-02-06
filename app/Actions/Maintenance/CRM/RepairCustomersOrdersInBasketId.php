@@ -23,6 +23,10 @@ class RepairCustomersOrdersInBasketId
 
     protected function handle(Customer $customer, Command $command): void
     {
+        if ($customer->shop->type != ShopTypeEnum::B2B) {
+            return;
+        }
+
         $order = Order::where('customer_id', $customer->id)->where('state', OrderStateEnum::CREATING)->first();
 
         $oldOrder = $customer->current_order_in_basket_id;
@@ -53,10 +57,6 @@ class RepairCustomersOrdersInBasketId
             ->orderBy('id')
             ->chunkById(500, function ($customers) use ($command) {
                 foreach ($customers as $customer) {
-                    if ($customer->shop->type != ShopTypeEnum::B2B) {
-                        return;
-                    }
-
                     $this->handle($customer, $command);
                 }
             }, 'id');

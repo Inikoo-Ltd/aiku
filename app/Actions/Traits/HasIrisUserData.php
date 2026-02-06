@@ -17,15 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 trait HasIrisUserData
 {
-    /**
-     * Build the Iris user data payload shared across Iris/Retina actions.
-     *
-     * Note: Consuming classes are expected to provide $this->webUser, $this->customer, and $this->shop.
-     *
-     * @return array
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
+    use InteractsWithOrderInBasket;
+
     public function getIrisUserData(): array
     {
         $webUser = $this->webUser;
@@ -37,7 +30,8 @@ trait HasIrisUserData
         $offerMeters                  = null;
 
         if ($this->shop->type == ShopTypeEnum::B2B) {
-            $orderInBasket = $this->customer->orderInBasket;
+            $orderInBasket = $this->getOrderInBasket($this->customer);
+
             if ($orderInBasket) {
                 $cartCount                    = $orderInBasket->number_item_transactions;
                 $cartAmount                   = $orderInBasket->total_amount;
