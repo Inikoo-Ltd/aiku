@@ -12,7 +12,7 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import MailshotShowcase from "@/Components/Showcases/Org/Mailshot/MailshotShowcase.vue";
 import { faEnvelope, faStop } from "@fas";
-import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock } from "@fal";
+import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock, faSpinner, faSave } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue";
 import TableMailshotRecipients from "@/Components/Tables/TableMailshotRecipients.vue";
@@ -56,12 +56,11 @@ const props = defineProps<{
     numberSecondWaveRecipients?: number
 }>();
 
-console.log("Check Props data")
-console.log(props.showLinkedMailShotRoute)
+console.log("api", props.showLinkedMailShotRoute)
 console.log("isHasParentMailshot:", props.isHasParentMailshot)
 console.log("numberSecondWaveRecipients:", props.numberSecondWaveRecipients)
 console.log("isSecondWaveActive:", props.isSecondWaveActive)
-console.log("End Check Route")
+
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
@@ -477,9 +476,55 @@ const handleSaveSecond = async () => {
         })
 }
 
+const loadingFetch = ref(false)
+
+const handleFetchAction = () => {
+    if (!props.showLinkedMailShotRoute) return
+
+    loadingFetch.value = true
+
+    router.get(
+        route(props.showLinkedMailShotRoute.name, props.showLinkedMailShotRoute.parameters),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                loadingFetch.value = true
+            },
+            onFinish: () => {
+                loadingFetch.value = false
+            },
+            onSuccess: () => {
+                notify({
+                    type: 'success',
+                    title: 'Success',
+                    text: 'Wave data refreshed',
+                })
+            },
+            onError: () => {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Failed to fetch wave data',
+                })
+            }
+        }
+    )
+}
+
+
 watch(() => props.isSecondWaveActive, v => checked.value = v)
 watch(() => props.secondwaveSubject, v => subject.value = v ?? "")
 watch(() => props.secondwaveDelayHours, v => hour.value = v ?? 0)
+
+const showWaveSettings = computed(() =>
+    ['in_process', 'ready'].includes(props.status ?? '')
+)
+
+const waveLabel = computed(() =>
+    props.isHasParentMailshot ? 'First Wave' : '2nd Wave'
+)
 
 watch(
     filteredTabs,
@@ -573,32 +618,40 @@ watch(
         </div>
     </Popover>
     <Tabs :current="currentTab" :navigation="filteredTabs" @update:tab="handleTabUpdate" />
-    <div class="mx-4 my-4 space-y-3" v-if="['in_process', 'ready'].includes(props.status ?? '')">
+    <div class="mx-4 my-4 space-y-3">
 
         <div class="inline-flex items-center gap-3 px-3 py-1.5 rounded-md
          bg-gray-50 border border-gray-200">
-            <span class="text-sm font-medium text-gray-700 whitespace-nowrap">
-                2nd Wave
+            <span class="text-sm font-medium whitespace-nowrap transition" :class="showWaveSettings
+                ? 'text-gray-700'
+                : 'text-indigo-600 cursor-pointer hover:underline'" @click="!showWaveSettings && handleFetchAction()">
+                {{ waveLabel }}
             </span>
+            <span class="text-sm font-medium text-gray-700 whitespace-nowrap"
+                v-if="!props.isHasParentMailshot && !showWaveSettings">
+                Recipients: {{ numberSecondWaveRecipients }}
+            </span>
+            <template v-if="showWaveSettings">
+                <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave"
+                    :disabled="isSavingToggle" />
 
-            <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave" :disabled="isSavingToggle" />
+                <Button v-if="checked" type="edit" label="Edit" class="!px-2 !py-1 text-xs h-8"
+                    @click="isEditingSecond = !isEditingSecond" />
 
-            <Button v-if="checked" type="edit" label="Edit" class="!px-2 !py-1 text-xs h-8"
-                @click="isEditingSecond = !isEditingSecond" />
+                <span class="h-4 w-px bg-gray-300"></span>
+                <template v-if="checked">
+                    <label class="block text-sm text-gray-600 mb-1 font-medium">Subject</label>
+                    <InputText v-model="subject" placeholder="Subject" :disabled="!checked || !isEditingSecond"
+                        class="!h-8 !py-1 !text-sm w-44" />
 
-            <span class="h-4 w-px bg-gray-300"></span>
-            <template v-if="checked">
-                <label class="block text-sm text-gray-600 mb-1 font-medium">Subject</label>
-                <InputText v-model="subject" placeholder="Subject" :disabled="!checked || !isEditingSecond"
-                    class="!h-8 !py-1 !text-sm w-44" />
+                    <div class="flex items-center gap-1 shrink-0">
+                        <InputNumber v-model="hour" :min="1" :disabled="!checked || !isEditingSecond"
+                            inputClass="!h-8 !py-1 !text-sm text-center w-20" />
+                        <span class="text-sm font-medium text-gray-700 whitespace-nowrap">hours</span>
+                    </div>
 
-                <div class="flex items-center gap-1 shrink-0">
-                    <InputNumber v-model="hour" :min="1" :disabled="!checked || !isEditingSecond"
-                        inputClass="!h-8 !py-1 !text-sm text-center w-20" />
-                    <span class="text-sm font-medium text-gray-700 whitespace-nowrap">hours</span>
-                </div>
-
-                <Button v-if="isEditingSecond" type="save" @click="handleSaveSecond" :loading="loading" />
+                    <Button v-if="isEditingSecond" type="save" @click="handleSaveSecond" :loading="loading" />
+                </template>
             </template>
         </div>
 
