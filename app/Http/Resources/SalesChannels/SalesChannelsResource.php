@@ -17,6 +17,7 @@ class SalesChannelsResource extends JsonResource
         return [
             'id'                => $this->id,
             'name'              => $this->name,
+            'slug'              => $this->slug,
             'code'              => $this->code,
             'type'              => $this->type,
             'is_active'         => $this->getIsActiveIcon(),

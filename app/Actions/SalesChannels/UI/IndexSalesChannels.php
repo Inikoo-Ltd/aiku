@@ -43,6 +43,7 @@ class IndexSalesChannels extends OrgAction
         $selects = [
             'id',
             'name',
+            'slug',
             'code',
             'type',
             'is_active',
