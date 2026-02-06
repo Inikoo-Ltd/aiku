@@ -34,7 +34,7 @@ const isLoadingVisit = ref(false)
     <div class="mb-3 flex justify-center">
       <component :is="product.url ? LinkIris : 'div'" :href="product.url"
         class="w-full max-w-[220px] aspect-square flex items-center justify-center"
-        @success="() => SelectItemCollector(product)" @start="() => isLoadingVisit = true"
+        @start="() => (SelectItemCollector(product), isLoadingVisit = true)"
         @finish="() => isLoadingVisit = false">
         <Image :src="product?.web_images?.main?.original" :alt="product.name" class="object-contain w-full h-full" />
       </component>
@@ -43,7 +43,7 @@ const isLoadingVisit = ref(false)
     <!-- TITLE -->
     <span class="mb-1 text-[13px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em]"  :title="product.name">
       <component :is="product.url ? LinkIris : 'div'"  :href="product.url" class="hover:underline"
-        @success="() => SelectItemCollector(product)" @start="() => isLoadingVisit = true"
+        @start="() => (SelectItemCollector(product), isLoadingVisit = true)"
         @finish="() => isLoadingVisit = false">
         {{ product.name }}
       </component>

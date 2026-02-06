@@ -13,6 +13,7 @@ import { usePage } from '@inertiajs/vue3'
 import { Image as ImageTS } from "@/types/Image"
 import { getProductRenderB2bComponent } from "@/Composables/getIrisComponents"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
+import { ProductViewCollector } from "@/Composables/Unique/LuigiDataCollector"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -339,12 +340,7 @@ watch(
 
 onMounted(() => {
   if (props.fieldValue?.product?.luigi_identity) {
-    window?.dataLayer?.push({
-      event: 'view_item',
-      ecommerce: {
-        items: [{ item_id: props.fieldValue.product.luigi_identity }],
-      },
-    })
+    ProductViewCollector(props.fieldValue.product.luigi_identity)
   }
 
   getAllProductFromVariant()

@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Fulfilment\Order\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Fulfilment\PalletReturnsResource;

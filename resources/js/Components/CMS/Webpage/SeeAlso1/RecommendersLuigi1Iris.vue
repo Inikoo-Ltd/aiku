@@ -6,7 +6,7 @@ import { Link } from '@inertiajs/vue3'
 // import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
-import { inject, onMounted, ref, withDefaults } from 'vue'
+import { inject, onMounted, ref } from 'vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay } from 'swiper/modules'
@@ -104,6 +104,18 @@ const fetchRecommenders = async () => {
 onMounted(() => {
     fetchRecommenders()
 })
+
+// FILES IS DEPRECATED
+// FILES IS DEPRECATED
+// FILES IS DEPRECATED
+// FILES IS DEPRECATED
+// FILES IS DEPRECATED
+// FILES IS DEPRECATED
+// FILES IS DEPRECATED
+// FILES IS DEPRECATED
+// FILES IS DEPRECATED
+// FILES IS DEPRECATED
+
 </script>
 
 <template>
