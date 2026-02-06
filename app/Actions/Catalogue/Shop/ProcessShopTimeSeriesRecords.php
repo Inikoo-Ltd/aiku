@@ -182,7 +182,7 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                 ->count();
 
             $registrationsWithOrders = DB::table('customers')
-                ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+                ->leftjoin('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
                 ->where('customers.shop_id', $timeSeries->shop_id)
                 ->where('customers.registered_at', '>=', $periodFrom)
                 ->where('customers.registered_at', '<=', $periodTo)
@@ -190,11 +190,14 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                 ->count();
 
             $registrationsWithoutOrders = DB::table('customers')
-                ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+                ->leftJoin('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
                 ->where('customers.shop_id', $timeSeries->shop_id)
                 ->where('customers.registered_at', '>=', $periodFrom)
                 ->where('customers.registered_at', '<=', $periodTo)
-                ->where('customer_stats.number_orders', '=', 0)
+                ->where(function ($query) {
+                    $query->where('customer_stats.number_orders', '=', 0)
+                          ->orWhereNull('customer_stats.number_orders');
+                })
                 ->count();
 
             $timeSeries->records()->updateOrCreate(
