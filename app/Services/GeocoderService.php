@@ -33,8 +33,6 @@ class GeocoderService
                 $userAgent = config('services.nominatim.user_agent')
                     ?: (config('app.name', 'aiku') . ' (noreply@inikoo.com)');
 
-                Sentry::captureMessage('UserAgent: ' . $userAgent);
-
                 $provider = new Nominatim(
                     $httpClient,
                     $baseUrl,
