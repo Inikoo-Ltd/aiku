@@ -80,6 +80,7 @@ class UpdateSalesChannel extends OrgAction
                 'sometimes',
                 'boolean'
             ],
+            'show_in_dashboard' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
@@ -91,6 +92,7 @@ class UpdateSalesChannel extends OrgAction
 
     public function asController(SalesChannel $salesChannel, ActionRequest $request): SalesChannel
     {
+        $this->salesChannel   = $salesChannel;
         $this->initialisationFromGroup($salesChannel->group, $request);
 
         return $this->handle($salesChannel, $this->validatedData);
