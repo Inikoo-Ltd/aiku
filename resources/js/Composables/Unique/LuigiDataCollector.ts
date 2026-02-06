@@ -60,7 +60,6 @@ export const SelectItemCollector = (hit: ProductHit) => {
 
 // Collector: on visit product page
 export const ProductViewCollector = (product_luigi_identity?: string) => {
-    
     if (!product_luigi_identity) {
         return 
     }

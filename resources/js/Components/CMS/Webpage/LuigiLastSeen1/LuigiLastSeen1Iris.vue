@@ -125,7 +125,7 @@ const fetchRecommenders = async () => {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        console.log('LIA1:', response.data)
+        console.log('LLS:', response.data)
         RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProductsFromLuigi.value = response.data[0].hits
@@ -176,6 +176,7 @@ const fetchRecommendersToGetProducts = async () => {
                     }
                 }
             )
+            console.log('product detail:', response.data.data)
             listProducts.value = response.data.data
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
