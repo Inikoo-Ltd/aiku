@@ -280,7 +280,7 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     </notifications>
 
 
-    <ChatButton data="null" v-if="useChat" />
+    <ChatButton data="null" v-if="useChat" :chatConfig="chatConfig" />
 
 
 </template>

@@ -28,6 +28,18 @@ interface ChatSessionData {
     contact_name?: string
 }
 
+const props = defineProps<{
+    chatConfig: {
+        is_online: boolean,
+        schedule?: {
+            start: string,
+            end: string,
+            timezone: string
+        }
+    }
+}>()
+
+console.log("chatConfig props", props.chatConfig)
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
 type LocalChatMessage = ChatMessage & {
@@ -386,7 +398,11 @@ const startNewSession = async () => {
     forceScrollBottom()
 }
 
-const statusChat = ref(false)
+const statusChat = ref(false) // ← hanya boolean
+const chatHours = ref({
+    start: '',
+    end: ''
+})
 
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
 
@@ -416,6 +432,22 @@ defineExpose({
     isInitialLoad,
     isLoadingMore,
 })
+
+watch(
+    () => props.chatConfig,
+    (config) => {
+        if (!config) return
+
+        statusChat.value = config.is_online
+
+        if (config.schedule) {
+            chatHours.value.start = config.schedule.start
+            chatHours.value.end = config.schedule.end
+        }
+    },
+    { immediate: true }
+)
+
 console.log("layout chatbutton", layout)
 </script>
 
@@ -459,7 +491,7 @@ console.log("layout chatbutton", layout)
                     @send-message="sendMessage" @reload="(loadMore: any) => getMessages(loadMore)"
                     @mounted="forceScrollBottom" @new-session="startNewSession" :assignedAgent="assignedAgent" />
 
-                <OfflineChatForm v-else-if="activeMenu == 'chat' && !statusChat" />
+                <OfflineChatForm v-else-if="activeMenu == 'chat' && !statusChat" :hours="chatHours" />
 
                 <div v-if="activeMenu === 'history'"
                     class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">

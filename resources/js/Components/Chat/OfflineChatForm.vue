@@ -6,6 +6,11 @@ import Button from "../Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMessage } from "@fortawesome/free-solid-svg-icons"
 
+const props = defineProps({
+    isOnline: Boolean,
+    hours: Object
+})
+
 const layout: any = inject("layout")
 const baseUrl = layout.appUrl
 
@@ -49,7 +54,7 @@ const submitOffline = async () => {
                 Sorry, we aren’t online at the moment.
             </p>
             <p class="text-sm text-gray-600">
-                Our working hours are <strong>{{ hours }}</strong>.
+                Our working hours are <strong>{{ props.hours?.start }} - {{ props.hours?.end }}</strong>.
             </p>
             <p class="text-sm text-gray-500 mt-1">
                 Leave a message and we’ll get back to you.
@@ -65,7 +70,7 @@ const submitOffline = async () => {
             <Textarea v-model="form.message" placeholder="Your message" rows="4" required />
 
             <Button type="save" :label="loading ? 'Sending...' : 'Send message'" :disabled="loading"
-                @click="submitOffline" />
+                class="justify-center" @click="submitOffline" />
 
             <span v-if="success" class="text-green-600 text-sm text-center gap-2 flex items-center">
                 <FontAwesomeIcon :icon="faMessage" class="text-base" />
