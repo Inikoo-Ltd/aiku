@@ -16,6 +16,7 @@ class PickingTrolleyResource extends JsonResource
             'id'                => $this->id,
             'code'              => $this->code,
             'slug'              => $this->slug,
+            'delivery_note'     => $this->delivery_note,  // TODO
             'warehouse_slug'    => $this->whenLoaded('warehouse', fn () => $this->warehouse->slug, $this->warehouse->slug ?? null),
             'organisation_slug' => $this->whenLoaded('organisation', fn () => $this->organisation->slug, $this->organisation->slug ?? null),
         ];

@@ -81,6 +81,7 @@ class IndexPickedBays extends OrgAction
                     ] : null,
                 ])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'delivery_note', label: __('Current Delivery Note'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -97,7 +98,7 @@ class IndexPickedBays extends OrgAction
                 'title'       => __('Picked bays'),
                 'pageHead'    => [
                     'title'  => __('Picked bays'),
-                    'icon'   => ['fal', 'fa-shopping-cart'],
+                    'icon'   => ['fal', 'fa-monument'],
                     'actions' => [
                         [
                             'type'  => 'button',

@@ -11,8 +11,7 @@ namespace App\Actions\Inventory\PickedBay\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
-use App\Enums\UI\Inventory\PickedBaysTabsEnum;
-use App\Enums\UI\Inventory\WarehouseTabsEnum;
+use App\Enums\UI\Inventory\PickedBayTabsEnum;
 use App\Http\Resources\Inventory\PickedBayResource;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
@@ -40,7 +39,7 @@ class ShowPickedBay extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, PickedBay $pickedBay, ActionRequest $request): PickedBay
     {
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PickedBayTabsEnum::values());
 
         return $this->handle($pickedBay);
     }
@@ -64,10 +63,10 @@ class ShowPickedBay extends OrgAction
                 'pageHead'    => [
                     'icon'    =>
                         [
-                            'icon'  => ['fal', 'picked bay'],
+                            'icon'  => ['fal', 'monument'],
                             'title' => __('picked bay')
                         ],
-                    'title'   => $pickedBay->name,
+                    'title'   => $pickedBay->code,
                     'model'   => __('Picked bay'),
                     'actions' => [
                         [
@@ -84,12 +83,12 @@ class ShowPickedBay extends OrgAction
 
                 'tabs'     => [
                     'current'    => $this->tab,
-                    'navigation' => PickedBaysTabsEnum::navigation(),
+                    'navigation' => PickedBayTabsEnum::navigation(),
                 ],
 
-                /*WarehouseTabsEnum::SHOWCASE->value => $this->tab == WarehouseTabsEnum::SHOWCASE->value ?
-                    fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)
-                    : Inertia::lazy(fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)),*/
+                PickedBayTabsEnum::SHOWCASE->value => $this->tab == PickedBayTabsEnum::SHOWCASE->value ?
+                    fn () => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'
+                    : Inertia::lazy(fn () => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'),
 
             ]
         );

@@ -27,7 +27,7 @@ class CreatePickingTrolley extends OrgAction
                 'pageHead'    => [
                     'model'   => __('Picking trolley'),
                     'title'   => __('Create'),
-                    'icon'    => 'fal fa-shopping-cart',
+                    'icon'    => 'fal fa-dolly-flatbed-alt',
                     'actions' => [
                         [
                             'type'  => 'button',

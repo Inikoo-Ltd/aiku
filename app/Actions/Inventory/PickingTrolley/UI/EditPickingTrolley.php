@@ -39,10 +39,11 @@ class EditPickingTrolley extends OrgAction
                     suffix: '('.__('Editing').')'
                 ),
                 'pageHead'    => [
+                    'model'     => __('Edit Picking Trolley'),
                     'title'   => $pickingTrolley->code,
                     'icon'    => [
                         'title' => __('Picking trolley'),
-                        'icon'  => 'fal fa-shopping-cart'
+                        'icon'  => 'fal fa-dolly-flatbed-alt'
                     ],
                     'actions' => [
                         [

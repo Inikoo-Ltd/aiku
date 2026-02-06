@@ -29,7 +29,7 @@ const fetchTrolleysList = async () => {
         isLoadingFetch.value = true
         const response = await axios.get(
             route(
-                'grp.org.warehouses.show.dispatching.picking_trolleys.index',
+                'grp.json.inventory.picking_trolleys.list',
                 {
                     organisation: layout.currentParams.organisation,
                     warehouse: props.warehouse.slug,
@@ -58,7 +58,7 @@ watch(isOpenModal, (newVal) => {
 
 const selectedTrolley = ref<number | null>(null)
 const isLoadingSubmitTrolley = ref(false)
-const submitSelectTrolley = () => {
+const submitSelectTrolley = (trolleySlug?: number|null) => {
     // Section: Submit
     router.patch(
         route(
@@ -68,7 +68,7 @@ const submitSelectTrolley = () => {
             }
         ),
         {
-            trolley: selectedTrolley.value
+            trolley: trolleySlug
         },
         {
             preserveScroll: true,
@@ -86,7 +86,7 @@ const submitSelectTrolley = () => {
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to submit bay"),
+                    text: trans("Failed to submit"),
                     type: "error"
                 })
             },
@@ -127,7 +127,7 @@ const submitSelectTrolley = () => {
                         v-else
                         v-for="trolley in listTrolleys"
                         :key="trolley.id"
-                        @click="() => selectedTrolley = trolley.slug"
+                        @click="() => selectedTrolley == trolley.slug ? selectedTrolley = null : selectedTrolley = trolley.slug"
                         class="cursor-pointer py-2 px-3 border border-gray-300 text-sm rounded"
                         :class="selectedTrolley == trolley.slug ? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
                     >
@@ -137,11 +137,20 @@ const submitSelectTrolley = () => {
             </div>
 
             <Button
-                @click="() => submitSelectTrolley()"
+                @click="() => submitSelectTrolley(null)"
+                :label="trans('Skip')"
+                full
+                class="mt-4"
+                type="tertiary"
+                :loading="isLoadingSubmitTrolley"
+            />
+
+            <Button
+                @click="() => submitSelectTrolley(selectedTrolley)"
                 label="Select trolley and start picking"
                 full
                 iconRight="fas fa-arrow-right"
-                class="mt-4"
+                class="mt-2"
                 :disabled="!selectedTrolley"
                 :loading="isLoadingSubmitTrolley"
             />

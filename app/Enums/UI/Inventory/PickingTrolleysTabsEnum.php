@@ -24,7 +24,7 @@ enum PickingTrolleysTabsEnum: string
         return match ($this) {
             PickingTrolleysTabsEnum::TROLLEYS => [
                 'title' => __('Trolleys'),
-                'icon'  => 'fal fa-warehouse-alt',
+                'icon'  => 'fal fa-dolly-flatbed-alt',
             ],
             PickingTrolleysTabsEnum::TROLLEYS_HISTORIES => [
                 'title' => __('History'),
