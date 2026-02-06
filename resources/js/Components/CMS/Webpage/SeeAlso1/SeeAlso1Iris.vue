@@ -21,7 +21,16 @@ library.add(faChevronLeft, faChevronRight)
 
 
 const props = defineProps<{
-  fieldValue: FieldValue
+  fieldValue: {
+    settings: {
+      products_data: {  //  GetWebBlockSeeAlso
+        products: {}  //  ProductsWebpageResource
+        top_sellers: {}
+        current_family: {}
+        other_family: {}
+      }  // 
+    }
+  }
   webpageData?: any
   blockData?: Object,
   screenType: 'mobile' | 'tablet' | 'desktop'

@@ -15,6 +15,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faEnvelope } from '@far'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
 
 const layout = inject("layout", retinaLayoutStructure)
 
@@ -33,6 +34,7 @@ interface ProductResource {
     rating: number
     price: number
     url: string | null
+    canonical_url: string | null
     units: number
     bestseller?: boolean
     is_favourite?: boolean
@@ -105,8 +107,8 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 
             <!-- Product Image -->
             <component 
-                :is="product.url ? LinkIris : 'div'" 
-                :href="product.url"  
+                :is="product.canonical_url || product.url ? LinkIris : 'div'" 
+                :href="product.canonical_url || product.url"  
                 :type="typeOfLink" 
                 @start="() => idxSlideLoading = true" 
                 @finish="() => idxSlideLoading = false"
@@ -188,6 +190,8 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 </LinkIris>
             </div>
         </div>
+
+        <LoadingOverlay2 v-if="idxSlideLoading" />
     </div>
 </template>
 

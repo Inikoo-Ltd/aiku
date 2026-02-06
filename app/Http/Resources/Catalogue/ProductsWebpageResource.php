@@ -63,6 +63,7 @@ class ProductsWebpageResource extends JsonResource
             'rrp'             => $this->rrp,
             'web_images'      => $webImages,
             'url'             => $this->webpage?->url,
+            'canonical_url'   => $this->webpage?->canonical_url,
             'margin'          => $margin,
             'profit'          => $profit,
             'profit_per_unit' => $profitPerUnit,
