@@ -96,7 +96,7 @@ class TransactionsResource extends JsonResource
             'discretionary_offer_label' => $this->discretionary_offer_label,
             'transaction_label'         => $this->transaction_label,
             'product_units'             => $this->product_units,
-            'is_cut_view'               => $this->order->shop->type === ShopTypeEnum::B2B ? false : false,  // TODO: Raul INI-915
+            'is_cut_view'               => true,
 
 
             'deleteRoute' => $request->user() instanceof User
