@@ -17,10 +17,10 @@ enum OrderTabsEnum: string
     use HasTabs;
 
     case TRANSACTIONS                       = 'transactions';
-    
+
     // case HISTORY
     case HISTORY           = 'history';
-    
+
     case PAYMENTS                    = 'payments';
     // case DISCOUNTS                   = 'discounts';
     case INVOICES                    = 'invoices';

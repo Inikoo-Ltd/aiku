@@ -80,7 +80,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $source_alt_id to be used in no product transactions
  * @property int|null $estimated_weight grams
  * @property string|null $platform_transaction_id
- * @property string|null $quantity_picked quantity picked for delivery
+ * @property string|null $quantity_picked
  * @property string $submitted_quantity_ordered
  * @property array<array-key, mixed>|null $offers_data
  * @property \Illuminate\Support\Carbon|null $dispatched_at
