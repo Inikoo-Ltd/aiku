@@ -77,21 +77,41 @@ const mergedItems = computed(() => {
 </script>
 
 <template>
-  <div class="mx-auto" :class="screenClass" :style="getStyles(modelValue?.container?.properties, screenType)">
+  <div
+    class="mx-auto"
+    :class="screenClass"
+    :style="getStyles(modelValue?.container?.properties, screenType)"
+  >
     <div v-if="modelValue?.sub_departments?.length">
-      <div class="grid gap-4" :class="gridColsClass">
-        <button v-for="item in mergedItems" :key="item?.code" :style="getStyles(modelValue?.card?.container?.properties, screenType)"
-          class="flex items-center gap-3 border border-gray-600 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full">
-          <span class="flex-1 text-center">{{ item?.name }}</span>
+      
+      <!-- equal height grid -->
+      <div class="grid gap-4 auto-rows-fr" :class="gridColsClass">
+        
+        <button
+          v-for="item in mergedItems"
+          :key="item?.code"
+          :style="getStyles(modelValue?.card?.container?.properties, screenType)"
+          class="flex items-center justify-center
+                 border border-gray-600 rounded-xl
+                 px-4 py-3 text-sm font-medium
+                 text-gray-800 bg-white hover:bg-gray-50 transition-all
+                 w-full h-full"
+        >
+          <span class="text-center line-clamp-3 leading-snug">
+            {{ item?.name }}
+          </span>
         </button>
+
       </div>
     </div>
 
     <div v-else class="text-center text-gray-500 py-6">
-      <EmptyState :data="{
-        title: trans('There is no published sub-department webpages'),
-        description: 'Please make sure the sub-departments, have published webpage.',
-      }" />
+      <EmptyState
+        :data="{
+          title: trans('There is no published sub-department webpages'),
+          description: 'Please make sure the sub-departments, have published webpage.',
+        }"
+      />
     </div>
   </div>
 </template>
