@@ -29,6 +29,7 @@ import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
 import { faTriangle, faEquals, faMinus, faShapes, faStar} from "@fas"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
+import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
 
 
 
@@ -58,6 +59,7 @@ const editingValues = shallowRef<Record<number, { price: number; rrp: number, un
 const editingBackup = ref<Record<number, any>>({})
 const onEditOpen = ref<number[]>([])
 const loadingSave = ref([])
+const selectedTardeUnits = ref(null)
 
 function onEdit(data) {
     const item = cloneDeep(data)
@@ -388,6 +390,33 @@ function variantRoute(product: MasterProduct): string {
     )
 }
 
+
+const saveTradeUnits = (value, product) => {
+    console.log("Saving trade units", value, product)
+      /*  router.patch(
+        route("grp.models.product.update", { product: product.id }),
+        {
+            value
+        },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                loadingSave.value.push(product.id)
+            },
+            onSuccess: () => {
+               selectedTardeUnits.value = null
+            },
+            onError: (errors) => {
+                console.error("Save failed", errors)
+            },
+            onFinish: () => {
+                loRemove(loadingSave.value, (id) => id === product.id)
+            }
+        }
+    ) */
+}
+
+
 </script>
 
 <template>
@@ -437,10 +466,42 @@ function variantRoute(product: MasterProduct): string {
 				xrouteFunction="tradeUnitRoute"
 				keyPicking="picking_factor"
 			>
-                <template #modalBody> 
-                    {{ 'hi' }}
+                <template #modalBody>
+                    <div>
+                        <ListSelector v-model="selectedTardeUnits" key_quantity="quantity" :withQuantity="false" :tabs="[
+                            {
+                                label: 'Recommended',
+                                routeFetch: {
+                                    name: 'grp.json.trade-units.recommended.under-product',
+                                    parameters: {
+                                        product: product.id
+                                    }
+                                }
+                            },
+                            {
+                                label: 'All',
+                                search: true,
+                                routeFetch: {
+                                    name: 'grp.json.trade-units.all.under-product',
+                                    parameters: {
+                                        product: product.id
+                                    }
+                                }
+                            }
+                        ]" />
+                        <div class="border-t flex w-full justify-end gap-3 mt-4 pt-3">
+                          <!--   <div>
+                                <Button @click="() => cancelSaveTradeUnits()" type="negative" :label="'cancel'" />
+                            </div> -->
+                            <div>
+                                <Button @click="() => saveTradeUnits(selectedTardeUnits, product)" type="save"  :loading="loadingSave.includes(product.id)"/>
+                            </div>
+                        </div>
+                    </div>
+
+
                 </template>
-			</LabelSKU>
+            </LabelSKU>
         </template>
 
         <template #cell(price)="{ item: product }">
