@@ -78,7 +78,7 @@ class StoreExternalShop extends OrgAction
             }
 
             if ($modelData['engine'] === ShopEngineEnum::FAIRE->value) {
-                GetFaireProducts::dispatch($shop);
+                GetFaireProducts::dispatch($shop, []);
             }
 
             return $shop;

@@ -68,6 +68,8 @@ class MasterAssetHydrateAssets implements ShouldBeUnique
             )
         );
 
+        $stats['status'] = $stats['number_current_assets'] > 0;
+
         $masterAsset->stats()->update($stats);
     }
 
