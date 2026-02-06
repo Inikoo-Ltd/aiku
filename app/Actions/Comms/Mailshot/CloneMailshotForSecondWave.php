@@ -8,19 +8,12 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Comms\Email\StoreEmail;
 use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
-use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithOutboxBuilder;
-use App\Enums\Comms\Mailshot\MailshotTypeEnum;
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Models\Comms\Email;
 use App\Models\Comms\Mailshot;
 use Illuminate\Support\Facades\DB;
 
@@ -34,44 +27,44 @@ class CloneMailshotForSecondWave extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Mailshot $originalMailshot): Mailshot
+    public function handle(Mailshot $parentMailshot): Mailshot
     {
         // TODO: Check and make sure this block code
         $dataModel = [
-            'date' => $originalMailshot->date,
-            'group_id' => $originalMailshot->group_id,
-            'organisation_id' => $originalMailshot->organisation_id,
-            'shop_id' => $originalMailshot->shop_id,
-            'type' => $originalMailshot->type,
-            'subject' => $originalMailshot->subject . ' (2nd)',
-            'state' => $originalMailshot->state,
+            'date' => $parentMailshot->date,
+            'group_id' => $parentMailshot->group_id,
+            'organisation_id' => $parentMailshot->organisation_id,
+            'shop_id' => $parentMailshot->shop_id,
+            'type' => $parentMailshot->type,
+            'subject' => $parentMailshot->subject . ' (2nd)',
+            'state' => $parentMailshot->state,
             'is_second_wave' => true,
-            'ready_at' => $originalMailshot->ready_at,
-            'outbox_id' => $originalMailshot->outbox_id,
-            'recipients_recipe' => $originalMailshot->recipients_recipe,
+            'ready_at' => $parentMailshot->ready_at,
+            'outbox_id' => $parentMailshot->outbox_id,
+            'recipients_recipe' => $parentMailshot->recipients_recipe,
         ];
 
-        $newMailshotparent = DB::transaction(function () use ($originalMailshot, $dataModel) {
+        $secondWaveMailshot = DB::transaction(function () use ($parentMailshot, $dataModel) {
             /** @var Mailshot $newMailshot */
-            $newMailshot = $originalMailshot->secondWave()->create($dataModel);
+            $newMailshot = $parentMailshot->secondWave()->create($dataModel);
 
             $newMailshot->stats()->create();
 
             // call StoreEmail with data from original mailshot
-            $originalEmail = $originalMailshot->email;
+            $parentEmail = $parentMailshot->email;
 
             StoreEmail::make()->action(
                 $newMailshot,
                 null, // no email template, using existing email data
                 modelData: [
-                    'subject' => $originalEmail->subject,
-                    'builder' => $originalEmail->builder,
-                    'layout' => $originalEmail->liveSnapshot?->layout ?? $originalEmail->unpublishedSnapshot?->layout,
-                    'compiled_layout' => $originalEmail->liveSnapshot?->compiled_layout,
-                    'snapshot_state' => $originalEmail->liveSnapshot?->state ?? $originalEmail->unpublishedSnapshot?->state,
-                    'snapshot_published_at' => $originalEmail->liveSnapshot?->published_at ??  $originalEmail->unpublishedSnapshot?->published_at,
-                    'snapshot_recyclable' => $originalEmail->liveSnapshot?->recyclable ?? $originalEmail->unpublishedSnapshot?->recyclable ?? false,
-                    'snapshot_first_commit' => $originalEmail->liveSnapshot?->first_commit ?? $originalEmail->unpublishedSnapshot?->first_commit ?? true,
+                    'subject' => $parentEmail->subject,
+                    'builder' => $parentEmail->builder,
+                    'layout' => $parentEmail->liveSnapshot?->layout ?? $parentEmail->unpublishedSnapshot?->layout,
+                    'compiled_layout' => $parentEmail->liveSnapshot?->compiled_layout,
+                    'snapshot_state' => $parentEmail->liveSnapshot?->state ?? $parentEmail->unpublishedSnapshot?->state,
+                    'snapshot_published_at' => $parentEmail->liveSnapshot?->published_at ??  $parentEmail->unpublishedSnapshot?->published_at,
+                    'snapshot_recyclable' => $parentEmail->liveSnapshot?->recyclable ?? $parentEmail->unpublishedSnapshot?->recyclable ?? false,
+                    'snapshot_first_commit' => $parentEmail->liveSnapshot?->first_commit ?? $parentEmail->unpublishedSnapshot?->first_commit ?? true,
                 ],
                 strict: false
             );
@@ -79,25 +72,7 @@ class CloneMailshotForSecondWave extends OrgAction
             return $newMailshot;
         });
 
-
-        //  TODO: Check later, how it work
-        // GroupHydrateMailshots::dispatch($originalMailshot->group)->delay($this->hydratorsDelay);
-        // OrganisationHydrateMailshots::dispatch($originalMailshot->organisation)->delay($this->hydratorsDelay);
-        // OutboxHydrateMailshots::dispatch($originalMailshot->outbox)->delay($this->hydratorsDelay);
-        // ShopHydrateMailshots::dispatch($originalMailshot->shop)->delay($this->hydratorsDelay);
-
-        // $outboxCode = match ($newMailshot->type) {
-        //     MailshotTypeEnum::MARKETING => OutboxCodeEnum::MARKETING,
-        //     MailshotTypeEnum::NEWSLETTER => OutboxCodeEnum::NEWSLETTER,
-        //     MailshotTypeEnum::INVITE => OutboxCodeEnum::INVITE,
-        //     MailshotTypeEnum::ABANDONED_CART => OutboxCodeEnum::ABANDONED_CART,
-        //     default => OutboxCodeEnum::NEWSLETTER,
-        // };
-
-        // create email
-        // $this->createMailShotEmail($originalMailshot->shop, $outboxCode, $newMailshot, $originalMailshot->outbox);
-
-        return $newMailshotparent;
+        return $secondWaveMailshot;
     }
 
     public function action(Mailshot $mailshot): Mailshot

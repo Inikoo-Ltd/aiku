@@ -8,11 +8,15 @@
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
+use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
@@ -136,8 +140,11 @@ class ProcessSendMailshotSecondWave
             ]
         );
 
-        // TODO: check another hydrator
         MailshotHydrateDispatchedEmails::run($mailshot);
+        GroupHydrateMailshots::dispatch($mailshot->group);
+        OrganisationHydrateMailshots::dispatch($mailshot->organisation);
+        OutboxHydrateMailshots::dispatch($mailshot->outbox);
+        ShopHydrateMailshots::dispatch($mailshot->shop);
     }
 
     public string $commandSignature = 'mailshot-second-wave:send {mailshot}';
