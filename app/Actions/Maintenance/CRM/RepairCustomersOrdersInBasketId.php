@@ -39,7 +39,7 @@ class RepairCustomersOrdersInBasketId
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
         if ($changes) {
             CustomerHydrateBasket::run($customer->id);
-            $command->info("Customer $customer->slug: $oldOrder  ->   $order->id");
+            $command->info("Customer $customer->slug: $oldOrder  ->   $order?->id");
         }
     }
 
