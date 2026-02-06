@@ -57,7 +57,7 @@ class CloneMailshotForSecondWave extends OrgAction
                 $newMailshot,
                 null, // no email template, using existing email data
                 modelData: [
-                    'subject' => $parentEmail->subject,
+                    'subject' => $newMailshot->subject,
                     'builder' => $parentEmail->builder,
                     'layout' => $parentEmail->liveSnapshot?->layout ?? $parentEmail->unpublishedSnapshot?->layout,
                     'compiled_layout' => $parentEmail->liveSnapshot?->compiled_layout,
