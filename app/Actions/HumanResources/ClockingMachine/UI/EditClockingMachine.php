@@ -51,6 +51,64 @@ class EditClockingMachine extends OrgAction
      */
     public function htmlResponse(ClockingMachine $clockingMachine, ActionRequest $request): Response
     {
+        $blueprint = [
+            [
+                'title'  => __('Edit clocking machine'),
+                'label'  => __('Basic Setting'),
+                'fields' => [
+                    'name' => [
+                        'type'  => 'input',
+                        'label' => __('Name'),
+                        'value' => $clockingMachine->name,
+                    ],
+                    'type' => [
+                        'type'    => 'select',
+                        'options' => Options::forEnum(ClockingMachineTypeEnum::class),
+                        'label'   => __('Type'),
+                        'value'   => $clockingMachine->type,
+                    ],
+                ],
+            ],
+        ];
+        if ($clockingMachine->type === ClockingMachineTypeEnum::QR_CODE->value) {
+            $blueprint[] = [
+                'title'  => __('QR Configuration'),
+                'label'  => __('QR Settings'),
+                'fields' => [
+                    'config.qr.enable' => [
+                        'type'  => 'toggle',
+                        'label' => __('Enable QR Code'),
+                        'value' => (bool) data_get($clockingMachine->config, 'qr.enable', false),
+                    ],
+                    'config.qr.refresh_interval' => [
+                        'type'  => 'input_number',
+                        'label' => __('Refresh Interval (seconds)'),
+                        'value' => data_get($clockingMachine->config, 'qr.refresh_interval', 60),
+                    ],
+                    'config.qr.expiry_duration' => [
+                        'type'  => 'input_number',
+                        'label' => __('Expiry Duration (seconds)'),
+                        'value' => data_get($clockingMachine->config, 'qr.expiry_duration', 60),
+                    ],
+                    'config.qr.allow_multiple_scans' => [
+                        'type'  => 'toggle',
+                        'label' => __('Allow Multiple Scans'),
+                        'value' => (bool) data_get($clockingMachine->config, 'qr.allow_multiple_scans', false),
+                    ],
+                    'config.qr.coordinates' => [
+                        'type'  => 'map-picker',
+                        'label' => __('Maps Coordinates'),
+                        'value' => data_get($clockingMachine->config, 'qr.coordinates'),
+                    ],
+                    'config.qr.radius' => [
+                        'type'  => 'input_number',
+                        'label' => __('Radius (meters)'),
+                        'value' => data_get($clockingMachine->config, 'qr.radius'),
+                    ],
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -73,34 +131,14 @@ class EditClockingMachine extends OrgAction
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' => [
-                        [
-                            'title'  => __('Edit clocking machine'),
-                            'fields' => [
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Name'),
-                                    'value' => $clockingMachine->name
-                                ],
-                                'type' => [
-                                    'type'    => 'select',
-                                    'options' => Options::forEnum(ClockingMachineTypeEnum::class),
-                                    'label'   => __('Type'),
-                                    'value'   => $clockingMachine->type
-                                ],
-                            ]
-                        ]
-
-                    ],
+                    'blueprint' => $blueprint,
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.clocking_machine..update',
                             'parameters' => $clockingMachine->id
-
                         ],
                     ]
                 ]
-
             ]
         );
     }
@@ -110,7 +148,7 @@ class EditClockingMachine extends OrgAction
         return ShowClockingMachine::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 }

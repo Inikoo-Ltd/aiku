@@ -12,10 +12,10 @@ namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
+use App\Actions\Traits\InteractsWithOrderInBasket;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Helpers\AddressResource;
@@ -30,15 +30,17 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowRetinaEcomBasket extends RetinaAction
 {
     use IsOrder;
+    use InteractsWithOrderInBasket;
 
     public function handle(Customer $customer): Order|null
     {
-        // dd($customer);
+
         if (!$customer->current_order_in_basket_id) {
             return null;
         }
 
-        return Order::where('id', $customer->current_order_in_basket_id)->where('customer_id', $customer->id)->where('state', OrderStateEnum::CREATING)->first();
+        return $this->getOrderInBasket($customer);
+
     }
 
 

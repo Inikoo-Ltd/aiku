@@ -18,7 +18,7 @@ import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl } from "@fal";
-import { faSkull } from "@fas";
+import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import axios from "axios";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -29,8 +29,9 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faWandMagic);
 
 
 defineProps<{
@@ -47,6 +48,7 @@ const emit = defineEmits<{
 const screenType = inject('screenType', ref('desktop'))
 
 const locale = inject("locale", aikuLocaleStructure);
+const layout = inject('layout', layoutStructure)
 
 function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
     if(!deliveryNoteItem.org_stock_id){
@@ -126,27 +128,6 @@ const generateLocationRoute = (location: any) => {
 
 // Button: undo pick
 const isLoadingUndoPick = reactive({});
-const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadingKey: string) => {
-    console.log('cccccccccccccccccccc')
-    // try {
-    //     console.log('0000')
-    //     pallet_stored_item.isLoadingUndo = true;
-    //     console.log('1111')
-    //     set(isLoadingUndoPick, loadingKey, true);
-    //     console.log('2222')
-    //     const xxx = await axios[routeTarget.method || "get"](
-    //         route(routeTarget.name, routeTarget.parameters)
-    //     );
-    //     console.log('33333', xxx)
-    //     pallet_stored_item.state = "picking";
-    //     console.log('4444')
-    // } catch (error) {
-    //     console.error("error:", error);
-
-    // } finally {
-    //     set(isLoadingUndoPick, loadingKey, false);
-    // }
-};
 
 // Section: Modal for a location list
 const isModalLocation = ref(false)
@@ -221,6 +202,67 @@ const onSubmitEditExpiryDate = () => {
     )
 }
 
+const countStockInAllLocations = (loc?: {}[]) => {
+    if (!!(loc?.length)) {
+        return loc?.reduce((sum, item) => sum + Number(item.quantity), 0) ?? 0
+    } else {
+        return 0
+    }
+}
+
+
+// Section: Modal pick from magic place
+const selectedItemToPickMagicPlace = ref(null)
+const isModalEPickMagicPlace = ref(false)
+const onCloseModalPickMagicPlace = () => {
+    isModalEPickMagicPlace.value = false
+
+    setTimeout(() => {
+        selectedItemToPickMagicPlace.value = null
+    }, 300);
+}
+const isLoadingSubmitPickMagicPlace = ref(false)
+const onSubmitPickMagicPlace = () => {
+
+    if (!selectedItemToPickMagicPlace.value) {
+        console.log('No item expiry date selected')
+        return
+    }
+
+    router.post(
+        route('grp.models.delivery_note_item.picking.magic_place', {
+            deliveryNoteItem: selectedItemToPickMagicPlace.value?.id
+        }),
+        {
+            
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSubmitPickMagicPlace.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully pick from magic place"),
+                    type: "success"
+                })
+                onCloseModalPickMagicPlace()
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to pick from magic place. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitPickMagicPlace.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -362,7 +404,6 @@ const onSubmitEditExpiryDate = () => {
                             icon="fal fa-undo-alt"
                             :routeTarget="picking.undo_picking_route"
                             :bindToLink="{ preserveScroll: true }"
-                            @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
                             :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
                         />
                     </div>
@@ -408,7 +449,9 @@ const onSubmitEditExpiryDate = () => {
                                         ({{ trans("Unknown") }})
                                     </span>
                                     <span
-                                        class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
+                                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.hehe)?.location_code || '' })"
+                                        class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1"
+                                    >
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
                                         <FractionDisplay
@@ -459,7 +502,7 @@ const onSubmitEditExpiryDate = () => {
                                 <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                                     <div class="flex gap-x-8 w-fit">
                                         <ButtonWithLink
-                                            v-tooltip="trans('Pick all required quantity in this location')"
+                                            v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, proxyItem.hehe).location_code || '-' })"
                                             icon="fal fa-clipboard-list-check"
                                             :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                                             :size="screenType != 'mobile' ? 'xs' : 'md'"
@@ -486,11 +529,45 @@ const onSubmitEditExpiryDate = () => {
                                     </div>
                                 </template>
                             </NumberWithButtonSave>
+                            
+                            <Button
+                                v-if="layout.app.environment === 'local' && !itemValue.is_handled && Number(countStockInAllLocations(itemValue.locations)) < 1"
+                                @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
+                                type="warning"
+                                key="4"
+                                v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
+                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                                method="post"
+                            >
+                                <template #label>
+                                    <span class="flex items-center">
+                                        <div>
+                                            <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                            <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
+                                        </div>
+                                        <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
+                                    </span>
+                                </template>
+                            </Button>
 
+                            <ButtonWithLink
+                                v-if="!itemValue.is_handled"
+                                type="negative"
+                                iconRight="fal fa-debug"
+                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                                :routeTarget="itemValue.not_picking_route"
+                                :bindToLink="{preserveScroll: true}"
+                                v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                            >
+                            
+                                <template #label>
+                                    <div>
+                                        <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                        <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
+                                    </div>
+                                </template>
+                            </ButtonWithLink>
 
-                            <ButtonWithLink v-if="!itemValue.is_handled" type="negative" tooltip="Set as not picked"
-                                icon="fal fa-debug" :size="screenType == 'desktop' ? undefined : 'lg'"
-                                :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
 
                             </div>
                         </div>
@@ -504,22 +581,57 @@ const onSubmitEditExpiryDate = () => {
 
 
                 </div>
-                <div v-else>
+                <div v-else class="flex justify-between gap-x-2">
+                    <div class="italic text-gray-400">{{ trans("No locations found") }}</div>
+                    <!-- {{ itemValue.quantity_to_pick }} -->
 
-                    {{ itemValue.quantity_to_pick }}
-
-                    <ButtonWithLink type="negative" tooltip="Set as not picked" icon="fal fa-debug"
-                        :size="screenType == 'desktop' ? 'sm' : 'lg'" :routeTarget="itemValue.not_picking_route"
-                        :bindToLink="{preserveScroll: true}" />
+                    <div class="flex gap-x-2 gap-y-1 items-center">
+                        <Button
+                            v-if="layout.app.environment === 'local'"
+                            @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
+                            type="warning"
+                            key="4"
+                            v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
+                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                        >
+                            <template #label>
+                                <span>
+                                    {{ itemValue.quantity_to_pick.toString() || '0' }}
+                                    <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
+                                </span>
+                            </template>
+                        </Button>
+                        
+                        <ButtonWithLink
+                            type="negative"
+                            v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
+                            iconRight="fal fa-debug"
+                            :label="itemValue.quantity_to_pick.toString() || '0'"
+                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                            :routeTarget="itemValue.not_picking_route"
+                            :bindToLink="{ preserveScroll: true }"
+                        />
+                    </div>
                 </div>
             </div>
 
-            <div v-else>
-                <ButtonWithLink v-if="!itemValue.is_handled" type="negative" tooltip="No quantity to pick available. Click to set as not picked."
-                    icon="fal fa-debug" :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                    :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
-                
-                <span class="hidden text-gray-400 italic text-xs">{{ trans("No quantity to pick") }}</span>
+            <div v-else class="flex justify-between gap-x-2 gap-y-1">
+                <div v-if="!itemValue.is_handled" class="text-gray-400 italic text-sm">
+                    {{ trans("No quantity to pick") }}
+                </div>
+
+                <div class="flex gap-x-2 gap-y-1">
+                    <ButtonWithLink
+                        v-if="!itemValue.is_handled"
+                        type="negative"
+                        tooltip="No quantity to pick. Click to ignore."
+                        xicon="fal fa-debug"
+                        label="Click to ignore"
+                        :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                        :routeTarget="itemValue.not_picking_route"
+                        :bindToLink="{preserveScroll: true}"
+                    />
+                </div>
             </div>
 
         </template>
@@ -550,7 +662,7 @@ const onSubmitEditExpiryDate = () => {
                     </span>
 
                     <span
-                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(location.quantity), location_code: location.location_code})"
+                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(Number(location.quantity) || 0), location_code: location.location_code || ''})"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
                         <FractionDisplay v-if="location.quantity_fractional"
@@ -562,55 +674,6 @@ const onSubmitEditExpiryDate = () => {
                         onCloseModal()
                     }" :inputId="location.location_code" :disabled="location.quantity <= 0" name="location"
                     :value="location.location_code" />
-
-                <div v-if="false" class="flex items-center flex-nowrap gap-x-2">
-                    <!-- Button: input number (picking) -->
-                    <NumberWithButtonSave v-if="location.quantity > 0" key="picking_picked" noUndoButton @onError="(error: any) => {
-                            selectedItemProxy.errors = Object.values(error || {})
-                        }" :modelValue="location.quantity_picked"
-                        @update:modelValue="() => selectedItemProxy?.errors ? selectedItemProxy.errors = null : undefined"
-                        saveOnForm :routeSubmit="{
-                            name: selectedItemValue.upsert_picking_route.name,
-                            parameters: selectedItemValue.upsert_picking_route.parameters,
-                        }" :bindToTarget="{
-                            step: 1,
-                            min: 0,
-                            max: Math.min(location.quantity, selectedItemValue.quantity_required, selectedItemValue.quantity_to_pick)
-                        }" :additionalData="{
-                            location_org_stock_id: location.id,
-                            picking_id: selectedItemValue.pickings.find(picking => picking.location_id == location.location_id)?.id,
-                        }" autoSave xxisWithRefreshModel
-                        :readonly="selectedItemValue.is_handled || selectedItemValue.quantity_required == selectedItemValue.quantity_picked">
-                        <template #save="{ isProcessing, isDirty, onSaveViaForm }">
-                            <ButtonWithLink v-tooltip="trans('Pick all required quantity in this location')"
-                                icon="fal fa-clipboard-list-check"
-                                :disabled="selectedItemValue.is_handled || selectedItemValue.quantity_required == selectedItemValue.quantity_picked"
-                                :label="locale.number(selectedItemValue.quantity_to_pick )" size="xs" type="secondary"
-                                :loading="isProcessing" class="py-0" :routeTarget="selectedItemValue.picking_all_route"
-                                :bind-to-link="{
-                                    preserveScroll: true,
-                                    preserveState: true,
-                                }" :body="{
-                                    location_org_stock_id: location.id
-                                }" isWithError />
-                            <ButtonWithLink class="ml-8" v-if="!selectedItemValue.is_handled" type="negative"
-                                tooltip="Set as not picked" icon="fal fa-debug" size="xs"
-                                :routeTarget="selectedItemValue.not_picking_route"
-                                :bindToLink="{preserveScroll: true}" />
-                        </template>
-                    </NumberWithButtonSave>
-
-                    <div v-else class="text-gray-400 italic">
-                        {{ trans("No quantity available to pick") }}
-                    </div>
-
-                    <!-- Section: Errors list -->
-                    <div v-if="selectedItemProxy?.errors?.length">
-                        <p v-for="error in selectedItemProxy.errors" class="text-xs text-red-500 italic">*{{
-                            error
-                            }}</p>
-                    </div>
-                </div>
             </div>
         </div>
     </Modal>
@@ -670,6 +733,61 @@ const onSubmitEditExpiryDate = () => {
                     label="Save"
                 >
                 </Button>
+            </div>
+        </div>
+    </Modal>
+
+    <!-- Modal: Magic Place -->
+    <Modal :isOpen="isModalEPickMagicPlace" @onClose="() => onCloseModalPickMagicPlace()" width="w-full max-w-lg">
+        <div
+            class="relative text-left sm:w-full sm:max-w-lg py-2">
+
+            <div class="sm:flex sm:items-start">
+                <div
+                    class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 sm:mx-0 sm:size-10">
+                    <FontAwesomeIcon
+                        icon="fal fa-exclamation-triangle"
+                        class="text-amber-600"
+                        fixed-width
+                        aria-hidden="true" />
+                </div>
+
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <div class="text-base font-semibold">
+                        {{ trans("Are you sure want to pick all from magic place?") }}
+                    </div>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">
+                            {{ trans("Yes, magic place.") }}
+                        </p>
+                    </div>
+
+                    <div class="mt-5 flex flex-row-reverse gap-2">
+                        <div class="xw-full sm:w-fit">
+                            <Button
+                                @click="() => onSubmitPickMagicPlace()"
+                                type="warning"
+                                key="2"
+                                :loading="isLoadingSubmitPickMagicPlace"
+                                iconRight="fas fa-wand-magic"
+                                full>
+                                <template #label>
+                                    <div class="whitespace-nowrap">
+                                        Yes, pick <FractionDisplay v-if="selectedItemToPickMagicPlace?.quantity_to_pick_fractional" :fractionData="selectedItemToPickMagicPlace?.quantity_to_pick_fractional" />
+                                        <span v-else>{{ locale.number(selectedItemToPickMagicPlace?.quantity_to_pick ?? 0) }}</span>
+                                    </div>
+                                </template>
+                            </Button>
+                        </div>
+                        <Button
+                            type="tertiary"
+                            icon="far fa-arrow-left"
+                            :disabled="isLoadingSubmitPickMagicPlace"
+                            :label="trans('Cancel')"
+                            full
+                            @click=" () => (isModalEPickMagicPlace = false)" />
+                    </div>
+                </div>
             </div>
         </div>
     </Modal>

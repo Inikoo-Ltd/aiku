@@ -32,6 +32,9 @@ const props = defineProps<{
             slug: string
             name: string
         }
+        product?: {
+            id: number
+        }
     }
     webpageData?: any
     blockData?: {}
@@ -67,6 +70,7 @@ const fetchRecommenders = async () => {
             const response = await axios.get(
                 route('grp.json.product_category.last-ordered-products.index', {
                     productCategory: props.modelValue?.family?.id,
+                    ignoredProductId: props.modelValue?.product?.id,
                 })
             )
             if (response.status !== 200) {

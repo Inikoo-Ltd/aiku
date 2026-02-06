@@ -110,6 +110,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\HumanResources\WorkSchedule;
 
 /**
  * App\Models\SysAdmin\Organisation
@@ -261,6 +262,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read LaravelCollection<int, Webpage> $webpages
  * @property-read LaravelCollection<int, Website> $websites
+ * @property-read LaravelCollection<int, WorkSchedule> $workSchedules
  * @property-read LaravelCollection<int, Workplace> $workplaces
  * @method static \Database\Factories\SysAdmin\OrganisationFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organisation newModelQuery()
@@ -917,5 +919,10 @@ class Organisation extends Model implements HasMedia, Auditable
     public function pickedBays(): HasMany
     {
         return $this->hasMany(PickedBay::class);
+    }
+
+    public function workSchedules(): MorphMany
+    {
+        return $this->morphMany(WorkSchedule::class, 'schedulable');
     }
 }

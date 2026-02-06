@@ -21,6 +21,7 @@ import { faLambda } from "@fad";
 import { trans } from "laravel-vue-i18n"
 import LinkIris from "@/Components/Iris/LinkIris.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { get, isPlainObject } from "lodash-es";
 
 // Tambahkan semua ikon ke library
 library.add(
@@ -81,16 +82,41 @@ const mergedItems = computed(() => {
 })
 
 const idxSlideLoading = ref<number | null>(null)
-console.log('ssssdsd', mergedItems.value)
+
+const title = computed(() => {
+  const rawVal = get(props.fieldValue, ['text','value'])
+
+  let result: any
+
+  if (!isPlainObject(rawVal)) {
+    result = rawVal
+  } else if (!rawVal?.use_responsive) {
+    result = rawVal?.desktop ?? ''
+  } else {
+    const view = props.screenType!
+    result = rawVal?.[view] ?? rawVal?.desktop ?? ''
+  }
+
+  return result || `<h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">${ trans("Browse By Sub-department") }</h2>`
+})
+
+const textVisible = computed(() => {
+  const v = props.fieldValue?.text?.visible
+  return v === null || v === undefined ? true : v
+})
+
+
 </script>
 
 <template>
 
   <div v-if="mergedItems.length" class="mx-auto" :class="screenClass"
     :style="getStyles(fieldValue?.container?.properties, screenType)">
-    <h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">
+   <!--  <h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">
       {{ trans("Browse By Sub-department") }}
-    </h2>
+    </h2> -->
+      <div v-if="textVisible" v-html="title"></div>
+      sdfsdfsdfsidjf
 
     <div>
       <div class="grid gap-4" :class="gridColsClass">
@@ -119,8 +145,6 @@ console.log('ssssdsd', mergedItems.value)
         </LinkIris>
       </div>
     </div>
-
-
   </div>
 
 

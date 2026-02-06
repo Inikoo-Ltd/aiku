@@ -359,7 +359,7 @@ const onSubmitEditNetAmount = () => {
                 <div class="flex items-center justify-end gap-2">
                     <!-- Editable when creating and not in edit mode -->
                     <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)"
-                        class="w-fit">
+                         class="w-fit">
                         <NumberWithButtonSave
                             :modelValue="item.quantity_ordered"
                             :routeSubmit="item.updateRoute"

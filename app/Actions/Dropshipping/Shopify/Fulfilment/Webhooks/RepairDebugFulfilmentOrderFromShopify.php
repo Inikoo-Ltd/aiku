@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks;
 
-use App\Actions\Dropshipping\Shopify\Order\StoreOrderFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -45,33 +44,9 @@ class RepairDebugFulfilmentOrderFromShopify extends OrgAction
 
         foreach ($debugWebhooks as $webhook) {
             DB::transaction(function () use ($shopifyUser, $webhook) {
-                $assignedLineItems = [];
                 $fulfillmentOrder = $webhook->data;
 
-                $destination = $fulfillmentOrder['destination'];
-                $lineItems = $fulfillmentOrder['lineItems']['edges'];
-
-                data_set($fulfillmentOrder, 'shipping_address', $destination);
-                data_set($fulfillmentOrder, 'customer', $fulfillmentOrder['order']['customer']);
-                data_set($fulfillmentOrder, 'created_at', $fulfillmentOrder['order']['createdAt']);
-
-                foreach ($lineItems as $lineItemEdge) {
-                    $lineItem = $lineItemEdge['node'];
-                    $productId = $lineItem['lineItem']['product']['id'];
-
-                    $assignedLineItems[] = [
-                        'id' => $lineItem['id'],
-                        'quantity' => $lineItem['remainingQuantity'],
-                        'sku' => $lineItem['sku'],
-                        'product_id' => $productId
-                    ];
-                }
-
-                data_set($fulfillmentOrder, 'line_items', $assignedLineItems);
-
-                if ($shopifyUser->customer->is_dropshipping) {
-                    StoreOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
-                }
+                CreateFulfilmentOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
             });
         }
     }

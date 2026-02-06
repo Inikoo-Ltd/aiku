@@ -57,3 +57,31 @@ export const SelectItemCollector = (hit: ProductHit) => {
 
     window.dataLayer?.push(body)
 }
+
+// Collector: on visit product page
+export const ProductViewCollector = (product_luigi_identity?: string) => {
+    if (!product_luigi_identity) {
+        return 
+    }
+
+    window?.dataLayer?.push({
+        event: 'view_item',
+        ecommerce: {
+            items: [{ item_id: product_luigi_identity }],
+        },
+    })
+}
+
+// Collector: on visit product page
+export const CustomerIdCollector = (customer_id?: string) => {
+    if (!customer_id) {
+        // If not send, default will use cookies _lb
+        return 
+    } else {
+        window.dataLayer?.push({
+            event: 'luigisbox.collector.customer_id',
+            customer_id: customer_id, // Replace with the actual ID
+        })
+    }
+
+}

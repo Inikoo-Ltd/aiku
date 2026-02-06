@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Collection;
+use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
@@ -52,6 +53,10 @@ class DeleteCollection extends OrgAction
                 $collection->orderingStats->delete();
             }
 
+            if ($collection->orderingIntervals) {
+                $collection->orderingIntervals->delete();
+            }
+
             $collection->forceDelete();
         } else {
             $collection->delete();
@@ -75,6 +80,9 @@ class DeleteCollection extends OrgAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Collection $collection, bool $forceDelete = false): Collection
     {
         $this->collection = $collection;
@@ -82,6 +90,9 @@ class DeleteCollection extends OrgAction
         return $this->handle($collection, $forceDelete);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Collection $collection, ActionRequest $request): Collection
     {
         $this->collection = $collection;
@@ -92,6 +103,9 @@ class DeleteCollection extends OrgAction
         return $this->handle($collection, $forceDelete);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function inShop(Shop $shop, Collection $collection, ActionRequest $request): Collection
     {
         $this->collection = $collection;
@@ -112,4 +126,20 @@ class DeleteCollection extends OrgAction
             ]
         );
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'collections:delete {collection} {--force_delete}';
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): int
+    {
+        $collection = Collection::where('slug', $command->argument('collection'))->firstOrFail();
+        $this->action($collection, $command->option('force_delete'));
+        return 0;
+    }
+
 }

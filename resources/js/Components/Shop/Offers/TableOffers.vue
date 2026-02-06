@@ -11,12 +11,15 @@ import Table from "@/Components/Table/Table.vue"
 import { Order } from "@/types/order"
 import type { Table as TableTS } from "@/types/Table"
 import { RouteParams } from "@/types/route-params"
+import { inject } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+
+const locale = inject("locale", aikuLocaleStructure)
 
 defineProps<{
     data: TableTS
     tab?: string
 }>()
-
 
 function offerRoute(offer: Order) {
     switch (route().current()) {
@@ -33,8 +36,6 @@ function offerRoute(offer: Order) {
             return ""
     }
 }
-
-
 </script>
 
 <template>
@@ -45,5 +46,8 @@ function offerRoute(offer: Order) {
             </Link>
         </template>
 
+        <template #cell(sales)="{ item: collection }">
+            <span class="tabular-nums">{{ locale.currencyFormat('GBP', collection.sales) }}</span>
+        </template>
     </Table>
 </template>

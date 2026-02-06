@@ -7,7 +7,6 @@
   <script setup lang="ts">
   import { faCube, faStar, faImage } from "@fas"
   import { library } from "@fortawesome/fontawesome-svg-core"
-  import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
   import Modal from "@/Components/Utils/Modal.vue";
   import { layoutStructure } from '@/Composables/useLayoutStructure'
   import { inject, ref } from 'vue'
@@ -15,6 +14,7 @@
   import Upload from './Upload.vue'
   import StockImages from './StockImages.vue'
   import UploadedImages from "@/Components/Fulfilment/Website/Gallery/UploadedImages.vue";
+  import { routeType } from "@/types/route"
 
   library.add(faCube, faStar, faImage)
 

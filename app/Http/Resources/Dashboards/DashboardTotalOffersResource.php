@@ -31,6 +31,8 @@ class DashboardTotalOffersResource extends JsonResource
         $fields = [
             'customers',
             'orders',
+            'invoices',
+            'sales',
         ];
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
@@ -40,13 +42,26 @@ class DashboardTotalOffersResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => 'Total',
+                    'formatted_value' => 'All Offer Campaigns',
+                    'align'           => 'left',
+                ],
+                'label_minified' => [
+                    'formatted_value' => 'All',
                     'align'           => 'left',
                 ],
             ],
             $this->getDashboardColumnsFromArray($summedData, [
                 'customers',
+                'customers_minified',
                 'orders',
+                'orders_minified',
+                'orders_delta',
+                'invoices',
+                'invoices_minified',
+                'invoices_delta',
+                'sales',
+                'sales_minified',
+                'sales_delta',
             ])
         );
 
@@ -56,13 +71,14 @@ class DashboardTotalOffersResource extends JsonResource
         ];
     }
 
-    /**
-     * Empty state columns
-     */
     private function getEmptyColumns(): array
     {
         return [
             'label' => [
+                'formatted_value' => 'Total',
+                'align'           => 'left',
+            ],
+            'label_minified' => [
                 'formatted_value' => 'Total',
                 'align'           => 'left',
             ],

@@ -10,7 +10,9 @@ namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
+use App\Actions\Ordering\SalesChannel\GetSalesChannelTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
 use App\Actions\OrgAction;
@@ -72,6 +74,9 @@ class ShowGroupDashboard extends OrgAction
         $shopTimeSeriesStats = GetShopTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
         $invoiceCategoryTimeSeriesStats = GetInvoiceCategoryTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
         $platformTimeSeriesStats = GetPlatformTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
+        $salesChannelTimeSeriesStats = GetSalesChannelTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1]);
+        $dropshippingShopTimeSeriesStats = GetShopTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1], ShopTypeEnum::DROPSHIPPING);
+        $fulfilmentShopTimeSeriesStats = GetShopTimeSeriesStats::run($group, $performanceDates[0], $performanceDates[1], ShopTypeEnum::FULFILMENT);
 
         $tabsBox = $this->getTabsBox($group);
 
@@ -95,7 +100,7 @@ class ShowGroupDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $organisationTimeSeriesStats, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats),
+                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $organisationTimeSeriesStats, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats, $salesChannelTimeSeriesStats, $dropshippingShopTimeSeriesStats, $fulfilmentShopTimeSeriesStats),
                             'charts'      => [], // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
                             'top_performance' => $topPerformanceStats,
                         ]

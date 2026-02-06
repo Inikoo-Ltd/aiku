@@ -434,10 +434,10 @@ watch(() => model.value, (newValue) => {
 												@update:modelValue="(e) => (debSubmitProducts(action, slotProps))"
 												noUndoButton
 												noSaveButton
-												:bindToTarget="{
+												xbindToTarget="{
 													max: slotProps.data?.available_quantity,
 												}"
-												:readonly="!slotProps.data?.available_quantity"
+												xreadonly="!slotProps.data?.available_quantity"
 											/>
 									</template>
 								</Column>

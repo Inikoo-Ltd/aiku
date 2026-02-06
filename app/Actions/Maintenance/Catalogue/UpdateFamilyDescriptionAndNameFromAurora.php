@@ -25,7 +25,7 @@ class UpdateFamilyDescriptionAndNameFromAurora
     use AsAction;
     use WithOrganisationSource;
 
-    public function handle(Shop $shop, Command $command): void
+    public function handle(Shop $shop, ?Command $command = null): void
     {
         $organisation             = $shop->organisation;
         $this->organisationSource = $this->getOrganisationSource($organisation);
@@ -58,7 +58,7 @@ class UpdateFamilyDescriptionAndNameFromAurora
                                 $text           = '';
 
 
-                                foreach ($webpageData['blocks'] as $block) {
+                                foreach (Arr::get($webpageData, 'blocks', []) as $block) {
                                     if (Arr::get($block, 'type') == 'blackboard') {
                                         $blackBoardData = $block;
                                         break;
@@ -70,7 +70,7 @@ class UpdateFamilyDescriptionAndNameFromAurora
                                 }
 
                                 if ($blackBoardData) {
-                                    foreach ($blackBoardData['texts'] as $text) {
+                                    foreach (Arr::get($blackBoardData, 'texts', []) as $text) {
                                         $description .= $text['text'].' ';
                                     }
                                     // Replace all instances of <p><br></p> (and the self-closing variant) with empty string
@@ -88,13 +88,12 @@ class UpdateFamilyDescriptionAndNameFromAurora
 
 
                     if ($description) {
-                        $masterCategory = $family->masterProductCategory;
                         $family->update([
                             'description'             => $description,
                             'is_description_reviewed' => true
                         ]);
                         if ($family->wasChanged('description')) {
-                            $command->info("Description changed $family->code");
+                            $command?->info("Description changed $family->code");
                         }
 
                         $family
@@ -107,7 +106,6 @@ class UpdateFamilyDescriptionAndNameFromAurora
                                 'is_description_extra_reviewed' => true
                             ]
                         );
-
                     }
 
                     // get family name
@@ -129,7 +127,7 @@ class UpdateFamilyDescriptionAndNameFromAurora
                             ]
                         );
                         if ($family->wasChanged('name')) {
-                            $command->info("Name changed $family->code $family->name");
+                            $command?->info("Name changed $family->code $family->name");
                         }
                     }
                 }

@@ -99,12 +99,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_sales_channel_id
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
+ * @property string|null $platform_order_id
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Currency $currency
- * @property-read CustomerSalesChannel|null $customerSaleChannel
+ * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
  * @property-read mixed $discount_amount
  * @property-read Collection<int, Address> $fixedAddresses
@@ -288,9 +289,9 @@ class PalletReturn extends Model implements HasMedia
     }
 
 
-    public function customerSaleChannel(): BelongsTo
+    public function customerSalesChannel(): BelongsTo
     {
-        return $this->belongsTo(CustomerSalesChannel::class, 'customer_sales_channel_id');
+        return $this->belongsTo(CustomerSalesChannel::class);
     }
 
 }

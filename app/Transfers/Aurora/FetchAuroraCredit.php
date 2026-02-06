@@ -10,6 +10,7 @@ namespace App\Transfers\Aurora;
 
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraCredit extends FetchAurora
@@ -20,13 +21,28 @@ class FetchAuroraCredit extends FetchAurora
     {
         $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Credit Transaction Customer Key'});
 
+        $shop = $customer->shop;
+
+        if (!$shop) {
+            return;
+        }
+
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING || $shop->type == ShopTypeEnum::FULFILMENT) {
+            return;
+        }
+
+        if ($shop->slug == 'acar') {
+            return;
+        }
+
+
         $payment = null;
         if ($this->auroraModelData->{'Credit Transaction Payment Key'}) {
             $payment  = $this->parsePayment($this->organisation->id.':'.$this->auroraModelData->{'Credit Transaction Payment Key'});
         }
 
 
-        if ($payment and $payment->customer_id != $customer->id) {
+        if ($payment && $payment->customer_id != $customer->id) {
             $payment = null;
             print "\nError Payment Customer does not match Customer   ".$this->auroraModelData->{'Credit Transaction Date'}."   >>".$this->auroraModelData->{'Credit Transaction Key'}."<<  \n";
         }

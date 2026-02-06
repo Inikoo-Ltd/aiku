@@ -112,13 +112,6 @@ class UpdateProduct extends OrgAction
             }
         } elseif (Arr::has($modelData, 'trade_units')) {
             $product = SyncProductTradeUnits::run($product, Arr::pull($modelData, 'trade_units'));
-
-            if ($product->shop->type == ShopTypeEnum::EXTERNAL) {
-                // This is needed for external shop. Since it has no master, so is_single_trade_unit & image never get properly hydrated
-                $product->update(['is_single_trade_unit' => $product->tradeUnits()->count() == 1]);
-                CloneProductImagesFromTradeUnits::run($product);
-            }
-
         }
 
 
@@ -168,7 +161,6 @@ class UpdateProduct extends OrgAction
 
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
-
 
         if (Arr::hasAny($changed, ['is_for_sale']) || $oldState != $product->state) {
             $product = ProductHydrateAvailableQuantity::run($product);
@@ -348,8 +340,8 @@ class UpdateProduct extends OrgAction
             'code'                      => [
                 'sometimes',
                 'required',
-                'max:32',
-                new AlphaDashDot(),
+                'max:64',
+                $this->shop->type == ShopTypeEnum::EXTERNAL ? 'string' : new AlphaDashDot(),
                 Rule::notIn(['export', 'create', 'upload']),
                 new IUnique(
                     table: 'products',

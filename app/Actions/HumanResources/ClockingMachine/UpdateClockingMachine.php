@@ -33,7 +33,8 @@ class UpdateClockingMachine extends OrgAction
 
     public function handle(ClockingMachine $clockingMachine, array $modelData): ClockingMachine
     {
-        $clockingMachine = $this->update($clockingMachine, $modelData, ['data']);
+
+        $clockingMachine = $this->update($clockingMachine, $modelData, ['data', 'config']);
 
         if ($clockingMachine->wasChanged(['type', 'status'])) {
             OrganisationHydrateClockingMachines::dispatch($clockingMachine->organisation)->delay($this->hydratorsDelay);
@@ -73,7 +74,15 @@ class UpdateClockingMachine extends OrgAction
                 ),
 
             ],
-            'type' => ['required', Rule::enum(ClockingMachineTypeEnum::class)],
+            'type' => ['sometimes', Rule::enum(ClockingMachineTypeEnum::class)],
+            'config'                         => ['nullable', 'array'],
+            'config.qr.enable'               => ['nullable', 'boolean'],
+            'config.qr.refresh_interval'     => ['nullable', 'integer', 'min:1'],
+            'config.qr.expiry_duration'      => ['nullable', 'integer', 'min:1'],
+            'config.qr.allow_multiple_scans' => ['nullable', 'boolean'],
+            'config.qr.allow_coordinates'    => ['nullable', 'boolean'],
+            'config.qr.coordinates'          => ['nullable', 'string'],
+            'config.qr.radius'               => ['nullable', 'numeric', 'min:0'],
 
         ];
 

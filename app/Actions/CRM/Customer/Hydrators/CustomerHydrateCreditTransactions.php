@@ -66,7 +66,7 @@ class CustomerHydrateCreditTransactions implements ShouldBeUnique
 
     public function getCommandSignature(): string
     {
-        return "crm:customer:hydrate-credit-transactions {customer}";
+        return "crm:customer:hydrate-credit-transactions {customer?}";
     }
 
     public function getCommandDescription(): string
@@ -76,7 +76,26 @@ class CustomerHydrateCreditTransactions implements ShouldBeUnique
 
     public function asCommand(Command $command): int
     {
-        $this->handle(Customer::where('slug', $command->argument('customer'))->firstOrFail());
+        if ($command->argument('customer') === null) {
+            $customers = Customer::query()->orderBy('id');
+            $count = $customers->count();
+
+            $command->getOutput()->progressStart($count);
+
+            $customers->chunk(100, function ($customers) use ($command) {
+                foreach ($customers as $customer) {
+                    $this->handle($customer->id);
+                    $command->getOutput()->progressAdvance();
+                }
+            });
+
+            $command->getOutput()->progressFinish();
+
+            return 0;
+        }
+
+        $this->handle(Customer::where('slug', $command->argument('customer'))->firstOrFail()->id);
+
         return 0;
     }
 

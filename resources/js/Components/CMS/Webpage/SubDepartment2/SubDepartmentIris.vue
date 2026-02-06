@@ -84,22 +84,45 @@ const idxSlideLoading = ref<number | null>(null)
 </script>
 
 <template>
+  <div
+    v-if="mergedItems.length"
+    class="mx-auto"
+    :class="screenClass"
+    :style="getStyles(fieldValue?.container?.properties, screenType)"
+  >
+    <div class="grid gap-4 auto-rows-fr" :class="gridColsClass">
+      
+      <LinkIris
+        v-for="(item, index) in mergedItems"
+        :key="item?.code"
+        :href="`${item?.url}`"
+        class="relative flex w-full h-full"
+        :aria-label="`Go to ${item?.name}`"
+        type="internal"
+        @start="() => idxSlideLoading = index"
+        @finish="() => idxSlideLoading = null"
+      >
+        <button
+          :style="getStyles(fieldValue?.card?.container?.properties, screenType)"
+          class="flex items-center justify-center
+                 border border-gray-600 rounded-xl
+                 px-4 py-3 text-sm font-medium
+                 text-gray-800 bg-white hover:bg-gray-50 transition-all
+                 w-full h-full"
+        >
+          <span class="text-center line-clamp-3 leading-snug">
+            {{ item?.name }}
+          </span>
+        </button>
 
-  <div v-if="mergedItems.length" class="mx-auto" :class="screenClass"
-    :style="getStyles(fieldValue?.container?.properties, screenType)">
-    <div>
-      <div class="grid gap-4" :class="gridColsClass">
-        <LinkIris v-for="(item, index) in mergedItems" :key="item?.code" :href="`${item?.url}`"
-          class="relative flex items-center gap-3  rounded px-4 py-3 text-sm font-medium text-gray-800   transition-all w-full"
-          :aria-label="`Go to ${item?.name}`" type="internal" @start="() => idxSlideLoading = index"
-          @finish="() => idxSlideLoading = null">
-          <button :key="item?.code" :style="getStyles(fieldValue?.card?.container?.properties, screenType)"
-            class="flex items-center gap-3 border border-gray-600 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full">
-            <span class="flex-1 text-center">{{ item?.name }}</span>
-          </button>
-        </LinkIris>
-      </div>
+        <div
+          v-if="idxSlideLoading === index"
+          class="absolute inset-0 grid place-items-center bg-black/40 text-white"
+        >
+          <LoadingIcon />
+        </div>
+      </LinkIris>
+
     </div>
   </div>
-  <div v-else></div>
 </template>

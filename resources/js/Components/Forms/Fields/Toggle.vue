@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Switch } from '@headlessui/vue'
-import { isNull, get } from 'lodash-es'
+import { isNull, get as getLodash } from 'lodash-es'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes, faCheck } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -99,7 +99,7 @@ const clearAndWarn = () => {
             <img :src="fieldData.suffixImage" class="inline-block h-8 w-8 ml-2  object-cover" />
         </slot>
 
-        <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+        <p v-if="getLodash(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
             {{ form.errors[fieldName] }}
         </p>
     </div>

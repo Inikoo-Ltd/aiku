@@ -292,7 +292,7 @@
                 @endif
             </td>
 
-            <td style="text-align:right">{{  (int) $transaction->quantity }}</td>
+            <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity) }}</td>
 
             <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
         </tr>
@@ -364,7 +364,7 @@
                     {{ $refund['description'] }}
                 </td>
                 <td style="text-align:left">{{  $invoice->currency->symbol . $refund['price'] }}</td>
-                <td style="text-align:right">{{ $refund['quantity'] }}</td>
+                <td style="text-align:right">{{ trimDecimalZeros($refund['quantity']) }}</td>
                 <td style="text-align:right">{{ $invoice->currency->symbol . $refund['total'] }}</td>
             </tr>
         @endforeach

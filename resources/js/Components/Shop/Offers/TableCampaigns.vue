@@ -8,19 +8,19 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { Order } from "@/types/order"
-import type { Links, Meta, Table as TableTS } from "@/types/Table"
-// import { useFormatTime } from '@/Composables/useFormatTime'
+import type { Table as TableTS } from "@/types/Table"
+import { inject } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Icon from "@/Components/Icon.vue"
+
+const locale = inject("locale", aikuLocaleStructure)
 
 defineProps<{
     data: TableTS
     tab?: string
 }>()
 
-
 function campaignRoute(campaign: {}) {
-    // console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.discounts.campaigns.index":
             return route(
@@ -30,26 +30,22 @@ function campaignRoute(campaign: {}) {
             return ''
     }
 }
-
-
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <!-- Column: Reference -->
         <template #cell(state)="{ item: campaign }">
             <Icon :data="campaign.state_icon" />
         </template>
+
         <template #cell(code)="{ item: campaign }">
             <Link :href="campaignRoute(campaign)" class="primaryLink">
             {{ campaign.code }}
             </Link>
         </template>
 
-
-        <!-- Column: Date -->
-        <!-- <template #cell(date)="{ item: order }">
-            {{ useFormatTime(order.date) }}
-        </template> -->
+        <template #cell(sales)="{ item: campaign }">
+            <span class="tabular-nums">{{ locale.currencyFormat('GBP', campaign.sales) }}</span>
+        </template>
     </Table>
 </template>

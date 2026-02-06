@@ -5,411 +5,445 @@
   -->
 
 <script setup lang="ts">
-import {Link, router} from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import {Product} from "@/types/product"
-import {library} from "@fortawesome/fontawesome-svg-core"
-import {inject, onMounted, ref, computed, watch, nextTick} from "vue"
-import {trans} from "laravel-vue-i18n"
-import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
+import { Product } from "@/types/product"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { inject, onMounted, ref, computed, watch, nextTick } from "vue"
+import { trans } from "laravel-vue-i18n"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import {FontAwesomeIcon, FontAwesomeLayers} from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import {debounce, get, set} from "lodash-es"
+import { debounce, get, set } from "lodash-es"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import {
-    faConciergeBell,
-    faGarage,
-    faExclamationTriangle,
-    faSyncAlt,
-    faPencil,
-    faSearch,
-    faThLarge,
-    faListUl,
-    faStar as falStar,
-    faTrashAlt,
-    faExclamationCircle,
-    faClone,
-    faLink, faScrewdriver, faTools,
-    faRecycle, faHandPointer, faHandshakeSlash, faHandshake, faTimes,
-    faSkullCrossbones,
-    faBan,
-    faDollarSign,
-    faCube
+	faConciergeBell,
+	faGarage,
+	faExclamationTriangle,
+	faSyncAlt,
+	faPencil,
+	faSearch,
+	faThLarge,
+	faListUl,
+	faStar as falStar,
+	faTrashAlt,
+	faExclamationCircle,
+	faClone,
+	faLink,
+	faScrewdriver,
+	faTools,
+	faRecycle,
+	faHandPointer,
+	faHandshakeSlash,
+	faHandshake,
+	faTimes,
+	faSkullCrossbones,
+	faBan,
+	faDollarSign,
+	faCube,
 } from "@fal"
-import {faStar, faFilter} from "@fas"
-import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
-import {faCheck} from "@far"
+import { faStar, faFilter } from "@fas"
+import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
+import { faCheck } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import {retinaLayoutStructure} from "@/Composables/useRetinaLayoutStructure"
-import {notify} from "@kyvg/vue3-notification"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { notify } from "@kyvg/vue3-notification"
 import Modal from "@/Components/Utils/Modal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
-import {routeType} from "@/types/route";
+import { routeType } from "@/types/route"
 import { InputNumber, InputText, Message } from "primevue"
-import { EditorContent } from "@tiptap/vue-3";
-import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue";
+import { EditorContent } from "@tiptap/vue-3"
+import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
-library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
+library.add(
+	faHandshake,
+	faHandshakeSlash,
+	faHandPointer,
+	fadExclamationTriangle,
+	faSyncAlt,
+	faConciergeBell,
+	faGarage,
+	faExclamationTriangle,
+	faPencil,
+	faSearch,
+	faThLarge,
+	faListUl,
+	faStar,
+	faFilter,
+	falStar,
+	faTrashAlt,
+	faCheck,
+	faExclamationCircle,
+	faClone,
+	faLink,
+	faScrewdriver,
+	faTools
+)
 
 interface PlatformData {
-    id: number
-    code: string
-    name: string
-    type: string
+	id: number
+	code: string
+	name: string
+	type: string
 }
 
 interface PlatformProduct {
-    id: string // "gid://shopify/Product/12148498727252"
-    name: string // "Aarhus Atomiser - Classic Pod - USB - Colour Change - Timer"
-    slug: string // "aarhus-atomiser-classic-pod-usb-colour-change-timer"
-    vendor: string // "AW-Dropship"
-    images: {
-        src: string
-    }[] // []
+	id: string // "gid://shopify/Product/12148498727252"
+	name: string // "Aarhus Atomiser - Classic Pod - USB - Colour Change - Timer"
+	slug: string // "aarhus-atomiser-classic-pod-usb-colour-change-timer"
+	vendor: string // "AW-Dropship"
+	images: {
+		src: string
+	}[] // []
 }
 
 const props = defineProps<{
-    data: {}
-    tab?: string
-    selectedData: {
-        products: number[]
-    }
-    routes: {
-        batch_upload: routeType
-        batch_match: routeType
-        fetch_products: routeType
-        single_create_new: routeType
-        single_match: routeType
-    }
-    platform_data: PlatformData
-    platform_user_id: number
-    is_platform_connected: boolean
-    route_match: routeType
-    route_create_new: routeType
-    progressToUploadToShopify: {}
-    isPlatformManual?: boolean
-    customerSalesChannel: {}
-    useCheckBox?: boolean
-    progressToUploadToEcom : {}
-    count_product_not_synced : number
-    disabled?: boolean
+	data: {}
+	tab?: string
+	selectedData: {
+		products: number[]
+	}
+	routes: {
+		batch_upload: routeType
+		batch_match: routeType
+		fetch_products: routeType
+		single_create_new: routeType
+		single_match: routeType
+	}
+	platform_data: PlatformData
+	platform_user_id: number
+	is_platform_connected: boolean
+	route_match: routeType
+	route_create_new: routeType
+	progressToUploadToShopify: {}
+	isPlatformManual?: boolean
+	customerSalesChannel: {}
+	useCheckBox?: boolean
+	progressToUploadToEcom: {}
+	count_product_not_synced: number
+	disabled?: boolean
 }>()
 
 const errorBluk = ref([])
 const _table = ref(null)
 function portfolioRoute(product: Product) {
-    if (product.type == "StoredItem") {
-        return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
-    }
+	if (product.type == "StoredItem") {
+		return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
+	}
 
-    return route("retina.dropshipping.customer_sales_channels.portfolios.show",
-        [
-            route().params['customerSalesChannel'], product.id])
-
+	return route("retina.dropshipping.customer_sales_channels.portfolios.show", [
+		route().params["customerSalesChannel"],
+		product.id,
+	])
 }
 
-const locale = inject('locale', aikuLocaleStructure)
-const layout = inject('layout', retinaLayoutStructure)
-const selectedProducts = defineModel<number[]>('selectedProducts')
+const locale = inject("locale", aikuLocaleStructure)
+const layout = inject("layout", retinaLayoutStructure)
+const isEbay = computed(() => props.platform_data?.type === "ebay")
+const selectedProducts = defineModel<number[]>("selectedProducts")
 const onUnchecked = (itemId: number) => {
-    props.selectedData.products = props.selectedData.products.filter(product => product !== itemId)
+	props.selectedData.products = props.selectedData.products.filter(
+		(product) => product !== itemId
+	)
 }
 
 const selectSocketiBasedPlatform = (porto: { id: number }) => {
-    if (props.platform_data.type === 'shopify') {
-        return {
-            event: `shopify.${props.platform_user_id}.upload-product.${porto.id}`,
-            action: '.shopify-upload-progress'
-        }
-    } else if (props.platform_data.type === 'woocommerce') {
-        return {
-            event: `woo.${props.platform_user_id}.upload-product.${porto.id}`,
-            action: '.woo-upload-progress'
-        }
-    } else if (props.platform_data.type === 'ebay') {
-        return {
-            event: `ebay.${props.platform_user_id}.upload-product.${porto.id}`,
-            action: '.ebay-upload-progress'
-        }
-    } else if (props.platform_data.type === 'amazon') {
-        return {
-            event: `amazon.${props.platform_user_id}.upload-product.${porto.id}`,
-            action: '.amazon-upload-progress'
-        }
-    } else if (props.platform_data.type === 'magento') {
-        return {
-            event: `magento.${props.platform_user_id}.upload-product.${porto.id}`,
-            action: '.magento-upload-progress'
-        }
-    }
+	if (props.platform_data.type === "shopify") {
+		return {
+			event: `shopify.${props.platform_user_id}.upload-product.${porto.id}`,
+			action: ".shopify-upload-progress",
+		}
+	} else if (props.platform_data.type === "woocommerce") {
+		return {
+			event: `woo.${props.platform_user_id}.upload-product.${porto.id}`,
+			action: ".woo-upload-progress",
+		}
+	} else if (props.platform_data.type === "ebay") {
+		return {
+			event: `ebay.${props.platform_user_id}.upload-product.${porto.id}`,
+			action: ".ebay-upload-progress",
+		}
+	} else if (props.platform_data.type === "amazon") {
+		return {
+			event: `amazon.${props.platform_user_id}.upload-product.${porto.id}`,
+			action: ".amazon-upload-progress",
+		}
+	} else if (props.platform_data.type === "magento") {
+		return {
+			event: `magento.${props.platform_user_id}.upload-product.${porto.id}`,
+			action: ".magento-upload-progress",
+		}
+	}
 }
 
 const ebayCalculator = () => {
-    //
+	//
 }
 
 const debReloadPage = debounce(() => {
-    router.reload({
-        except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
-    })
+	router.reload({
+		except: ["auth", "breadcrumbs", "flash", "layout", "localeData", "pageHead", "ziggy"],
+	})
 }, 1200)
 
-
 onMounted(() => {
-    errorBluk.value = []
+	errorBluk.value = []
 
-    const activeListeners = new Map<string | number, { event: string; action: string }>()
-    let isCompleted = false // flag untuk menandai progress sudah selesai
+	const activeListeners = new Map<string | number, { event: string; action: string }>()
+	let isCompleted = false // flag untuk menandai progress sudah selesai
 
-    props.data?.data?.forEach((porto) => {
-        const socketConfig = selectSocketiBasedPlatform(porto)
-        if (!socketConfig) return
+	props.data?.data?.forEach((porto) => {
+		const socketConfig = selectSocketiBasedPlatform(porto)
+		if (!socketConfig) return
 
-        // === replace listener jika sudah ada untuk ID yang sama ===
-        if (activeListeners.has(porto.id)) {
-            const oldConfig = activeListeners.get(porto.id)
-            if (oldConfig) {
-                window.Echo.private(oldConfig.event).stopListening(oldConfig.action)
-            }
-        }
+		// === replace listener jika sudah ada untuk ID yang sama ===
+		if (activeListeners.has(porto.id)) {
+			const oldConfig = activeListeners.get(porto.id)
+			if (oldConfig) {
+				window.Echo.private(oldConfig.event).stopListening(oldConfig.action)
+			}
+		}
 
-        activeListeners.set(porto.id, socketConfig)
+		activeListeners.set(porto.id, socketConfig)
 
-        window.Echo.private(socketConfig.event).listen(socketConfig.action, (eventData) => {
-            const progress = props.progressToUploadToEcom?.data
-            if (!progress) return
+		window.Echo.private(socketConfig.event).listen(socketConfig.action, (eventData) => {
+			const progress = props.progressToUploadToEcom?.data
+			if (!progress) return
 
-            // === Error handler (all platforms) ===
-            if (eventData.errors_response) {
-                set(props.progressToUploadToShopify, [porto.id], 'error')
-                setTimeout(() => {
-                    set(props.progressToUploadToShopify, [porto.id], null)
-                }, 3000)
-                return
-            }
+			// === Error handler (all platforms) ===
+			if (eventData.errors_response) {
+				set(props.progressToUploadToShopify, [porto.id], "error")
+				setTimeout(() => {
+					set(props.progressToUploadToShopify, [porto.id], null)
+				}, 3000)
+				return
+			}
 
-            const pf = eventData.portfolio
+			const pf = eventData.portfolio
 
-            // ✅ kalau sudah complete, hanya simpan error tapi jangan update success/fail count lagi
-            if (isCompleted) {
-                if (!pf.has_valid_platform_product_id || !pf.platform_status || !pf.exist_in_platform) {
-                    if (!errorBluk.value.includes(pf.item_code)) {
-                        errorBluk.value.push(pf)
-                    }
-                }
-                return
-            }
+			// ✅ kalau sudah complete, hanya simpan error tapi jangan update success/fail count lagi
+			if (isCompleted) {
+				if (
+					!pf.has_valid_platform_product_id ||
+					!pf.platform_status ||
+					!pf.exist_in_platform
+				) {
+					if (!errorBluk.value.includes(pf.item_code)) {
+						errorBluk.value.push(pf)
+					}
+				}
+				return
+			}
 
-            // === Unified handling for ALL platforms ===
-            const isSuccess =
-                pf.has_valid_platform_product_id &&
-                pf.platform_status &&
-                pf.exist_in_platform
+			// === Unified handling for ALL platforms ===
+			const isSuccess =
+				pf.has_valid_platform_product_id && pf.platform_status && pf.exist_in_platform
 
-            if (isSuccess) {
-                progress.number_success += 1
-            } else {
-                progress.number_fails += 1
-                if (!errorBluk.value.includes(pf.item_code)) {
-                    errorBluk.value.push(pf)
-                }
-            }
+			if (isSuccess) {
+				progress.number_success += 1
+			} else {
+				progress.number_fails += 1
+				if (!errorBluk.value.includes(pf.item_code)) {
+					errorBluk.value.push(pf)
+				}
+			}
 
-            const totalFinished = progress.number_success + progress.number_fails
+			const totalFinished = progress.number_success + progress.number_fails
 
-            // 🚀 tandai selesai hanya sekali
-            if (
-                totalFinished === props.count_product_not_synced ||
-                totalFinished === selectedProducts.value.length
-            ) {
-                isCompleted = true
-                props.progressToUploadToEcom.done = true
+			// 🚀 tandai selesai hanya sekali
+			if (
+				totalFinished === props.count_product_not_synced ||
+				totalFinished === selectedProducts.value.length
+			) {
+				isCompleted = true
+				props.progressToUploadToEcom.done = true
 
-                setTimeout(() => {
-                    progress.number_success = 0
-                    progress.number_fails = 0
-                    selectedProducts.value = []
-                    props.progressToUploadToEcom.total = 0
-                }, 5000)
+				setTimeout(() => {
+					progress.number_success = 0
+					progress.number_fails = 0
+					selectedProducts.value = []
+					props.progressToUploadToEcom.total = 0
+				}, 5000)
 
-                debReloadPage()
-            }
-        })
-    })
+				debReloadPage()
+			}
+		})
+	})
 })
-
-
-
 
 // Table: Filter out-of-stock and discontinued
 const compTableFilterStatus = computed(() => {
-    return layout.currentQuery?.[`${props.tab}_filter`]?.status
+	return layout.currentQuery?.[`${props.tab}_filter`]?.status
 })
 const isLoadingTable = ref<null | string>(null)
 const onClickFilterOutOfStock = (query: string) => {
-    let xx: string | null = ''
-    if (compTableFilterStatus.value === query) {
-        xx = null
-    } else {
-        xx = query
-    }
+	let xx: string | null = ""
+	if (compTableFilterStatus.value === query) {
+		xx = null
+	} else {
+		xx = query
+	}
 
-    router.reload(
-        {
-            data: {[`${props.tab}_filter[status]`]: xx},  // Sent to url parameter (?tab=showcase, ?tab=menu)
-            // only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
-            onStart: () => {
-                isLoadingTable.value = query || null
-            },
-            onSuccess: () => {
-            },
-            onFinish: (e) => {
-                isLoadingTable.value = null
-            },
-            onError: (e) => {
-            }
-        }
-    )
+	router.reload({
+		data: { [`${props.tab}_filter[status]`]: xx }, // Sent to url parameter (?tab=showcase, ?tab=menu)
+		// only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+		onStart: () => {
+			isLoadingTable.value = query || null
+		},
+		onSuccess: () => {},
+		onFinish: (e) => {
+			isLoadingTable.value = null
+		},
+		onError: (e) => {},
+	})
 }
 
 // Section: Modal Shopify select variant
 const isOpenModal = ref(false)
 const selectedPortfolio = ref(null)
 const isLoadingSubmit = ref(false)
-const querySearchPortfolios = ref('')
+const querySearchPortfolios = ref("")
 const filteredPortfolios = computed(() => {
-    if (!querySearchPortfolios.value) {
-        return selectedPortfolio.value?.platform_possible_matches
-    }
-    return selectedPortfolio.value?.platform_possible_matches.filter(portfolio => {
-        return portfolio.name.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
-            || portfolio.code.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
-    })
+	if (!querySearchPortfolios.value) {
+		return selectedPortfolio.value?.platform_possible_matches
+	}
+	return selectedPortfolio.value?.platform_possible_matches.filter((portfolio) => {
+		return (
+			portfolio.name.toLowerCase().includes(querySearchPortfolios.value.toLowerCase()) ||
+			portfolio.code.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
+		)
+	})
 })
 const selectedVariant = ref<Product | null>(null)
 const onSubmitVariant = () => {
-
-    /* selectedVariant.value = null
+	/* selectedVariant.value = null
     selectedPortfolio.value = null */
 
-    /* Section: Submit */
-    router.post(
-        route(props.routes.single_match.name, {
-            portfolio: selectedPortfolio.value?.id,
-            platform_product_id: selectedVariant.value?.id
-        }),
-        {
-            // data: 'qqq'
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully match the product"),
-                    type: "success"
-                })
+	/* Section: Submit */
+	router.post(
+		route(props.routes.single_match.name, {
+			portfolio: selectedPortfolio.value?.id,
+			platform_product_id: selectedVariant.value?.id,
+		}),
+		{
+			// data: 'qqq'
+		},
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => {
+				isLoadingSubmit.value = true
+			},
+			onSuccess: () => {
+				notify({
+					title: trans("Success"),
+					text: trans("Successfully match the product"),
+					type: "success",
+				})
 
-                isOpenModal.value = false
-                setTimeout(() => {
-                    selectedVariant.value = null
-                    selectedPortfolio.value = null
-                }, 700)
-
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message ?? trans("Failed to match the product to platform"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
-        }
-    )
+				isOpenModal.value = false
+				setTimeout(() => {
+					selectedVariant.value = null
+					selectedPortfolio.value = null
+				}, 700)
+			},
+			onError: (errors) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: errors.message ?? trans("Failed to match the product to platform"),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingSubmit.value = false
+			},
+		}
+	)
 }
 
 const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
 const isLoadingFetchPlatformProduct = ref(false)
 
 const fetchRoute = async () => {
-    isLoadingFetchPlatformProduct.value = true
-    try {
-        const www = await axios.get(route(props.routes.fetch_products.name, {
-            customerSalesChannel: props.customerSalesChannel?.id,
-            query: querySearchPortfolios.value
-        }))
-        
-        if (!Array.isArray(www.data) || www.data.length < 50) {
-            hasMore.value = false;
-        }
+	isLoadingFetchPlatformProduct.value = true
+	try {
+		const www = await axios.get(
+			route(props.routes.fetch_products.name, {
+				customerSalesChannel: props.customerSalesChannel?.id,
+				query: querySearchPortfolios.value,
+			})
+		)
 
-        resultOfFetchPlatformProduct.value = www.data
-        // console.log('qweqw', www)
-    } catch (e) {
-        console.error("Error processing products", e)
-    }
-    isLoadingFetchPlatformProduct.value = false
+		if (!Array.isArray(www.data) || www.data.length < 50) {
+			hasMore.value = false
+		}
 
+		resultOfFetchPlatformProduct.value = www.data
+		// console.log('qweqw', www)
+	} catch (e) {
+		console.error("Error processing products", e)
+	}
+	isLoadingFetchPlatformProduct.value = false
 }
 
 const debounceGetPortfoliosList = debounce(() => fetchRoute(), 700)
 
 const openEditModal = (item) => {
-    isOpenModalEditProduct.value = true
+	isOpenModalEditProduct.value = true
 	selectedEditProduct.value = {
 		...item,
-		basePrice: item?.customer_price
-	};
+		basePrice: item?.customer_price,
+	}
 }
 
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
-    if (!selectedProducts.value) return
+	if (!selectedProducts.value) return
 
-    if (checked) {
-        if (!selectedProducts.value.includes(item.id)) {
-            selectedProducts.value.push(item.id)
-        }
-    } else {
-        selectedProducts.value = selectedProducts.value.filter(id => id != item.id)
-    }
+	if (checked) {
+		if (!selectedProducts.value.includes(item.id)) {
+			selectedProducts.value.push(item.id)
+		}
+	} else {
+		selectedProducts.value = selectedProducts.value.filter((id) => id != item.id)
+	}
 }
 
-const onCheckedAll = ({data, allChecked}) => {
-    if (!selectedProducts.value) return
+const onCheckedAll = ({ data, allChecked }) => {
+	if (!selectedProducts.value) return
 
-    if (allChecked) {
-        const newIds = data.map(row => row.id)
-        selectedProducts.value = Array.from(new Set([...selectedProducts.value, ...newIds]))
-    } else {
-        const uncheckIds = data.map(row => row.id)
-        selectedProducts.value = selectedProducts.value.filter(id => !uncheckIds.includes(id))
-    }
+	if (allChecked) {
+		const newIds = data.map((row) => row.id)
+		selectedProducts.value = Array.from(new Set([...selectedProducts.value, ...newIds]))
+	} else {
+		const uncheckIds = data.map((row) => row.id)
+		selectedProducts.value = selectedProducts.value.filter((id) => !uncheckIds.includes(id))
+	}
 }
 
 const onDisableCheckbox = (item) => {
-    if ((item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) || disableButtons(item)) return true
-    return false
-}
+	if (disableButtons(item)) {
+		return true
+	}
 
+	if (
+		!isEbay.value &&
+		item.platform_status &&
+		item.exist_in_platform &&
+		item.has_valid_platform_product_id
+	) {
+		return true
+	}
+	return false
+}
 
 const disableButtons = (item) => {
-    return item.product_state == 'discontinued' || !item.is_for_sale;
+	return item.product_state == "discontinued" || !item.is_for_sale
 }
 
-
-const listErrorProducts = ref({
-
-})
+const listErrorProducts = ref({})
 
 // Section: Modal Error Product (i.e Ebay title too long)
 const selectedEditProduct = ref(null)
@@ -417,235 +451,269 @@ const selectedErrorProduct = ref(null)
 const isOpenModalEditProduct = ref(false)
 const isLoadingSubmitErrorTitle = ref(false)
 
-const calculateAdjustedPrice = (basePrice: number, adjustment: number, type: 'percent' | 'fixed'): number => {
-    if (type === 'percent') {
-        return basePrice * (1 + (adjustment / 100));
-    }
+const calculateAdjustedPrice = (
+	basePrice: number,
+	adjustment: number,
+	type: "percent" | "fixed"
+): number => {
+	if (type === "percent") {
+		return basePrice * (1 + adjustment / 100)
+	}
 
-    return (basePrice * 1) + adjustment;
+	return basePrice * 1 + adjustment
 }
 
-const submitUpdateAndUploadProduct = (sel, state: 'draft' | 'publish') => {
-    // Section: Submit
-    router.post(
-        route(`retina.models.portfolio.update_new_product.${state}`, {
-            portfolio: sel.id
-        }),
-        {
-            title: sel.name,
-            price: sel.customer_price,
-            description: sel.description
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmitErrorTitle.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-                isOpenModalEditProduct.value = false
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Try again or contact administrator"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmitErrorTitle.value = false
-            },
-        }
-    )
+const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
+	// Section: Submit
+	router.post(
+		route(`retina.models.portfolio.update_new_product.${state}`, {
+			portfolio: sel.id,
+		}),
+		{
+			title: sel.name,
+			price: sel.customer_price,
+			description: sel.description,
+		},
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => {
+				isLoadingSubmitErrorTitle.value = true
+			},
+			onSuccess: () => {
+				notify({
+					title: trans("Success"),
+					text: trans("Successfully submit the data"),
+					type: "success",
+				})
+				isOpenModalEditProduct.value = false
+			},
+			onError: (errors) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: trans("Try again or contact administrator"),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingSubmitErrorTitle.value = false
+			},
+		}
+	)
 }
 
 const calculateVat = (price: number) => {
-    return (price * 1) + (price * props.customerSalesChannel.vat_rate);
+	return price * 1 + price * props.customerSalesChannel.vat_rate
 }
-  
-let observer = null;
-const sentinel = ref(null);
-const currentOffset = ref(0);
-const hasMore = ref(true);
-const isLoadingMore = ref(false);
 
-if (props.platform_data?.type === 'ebay') {
-    watch(sentinel,
-        async (element) => {
-            if (!element) return;
-            await nextTick();
-            observer = new IntersectionObserver(([entry]) => {
-                if (entry.isIntersecting && hasMore) {
-                    loadMore();
-                }
-            });
-            observer.observe(element);
-        }
-    );
+let observer = null
+const sentinel = ref(null)
+const currentOffset = ref(0)
+const hasMore = ref(true)
+const isLoadingMore = ref(false)
 
-    const loadMore = async () => {
-        if(resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value)  {
-            hasMore.value = false; 
-            return;
-        }
-        currentOffset.value += 50;
-        isLoadingMore.value = true
-        try {
-            const www = await axios.get(route(props.routes.fetch_products.name, {
-                customerSalesChannel: props.customerSalesChannel?.id,
-                offset: currentOffset.value,
-            }))
-            if (!Array.isArray(www.data) || www.data.length < 50) {
-                console.log("Doesn't have more");
-                hasMore.value = false;
-            }
-            isLoadingMore.value = false
-            resultOfFetchPlatformProduct.value = [...resultOfFetchPlatformProduct.value, ...www.data]
-        } catch (e) {
-            console.error("Error processing products", e)
-            isLoadingMore.value = false
-        }
-    }
+if (props.platform_data?.type === "ebay") {
+	watch(sentinel, async (element) => {
+		if (!element) return
+		await nextTick()
+		observer = new IntersectionObserver(([entry]) => {
+			if (entry.isIntersecting && hasMore) {
+				loadMore()
+			}
+		})
+		observer.observe(element)
+	})
+
+	const loadMore = async () => {
+		if (resultOfFetchPlatformProduct.value.length < 50 || !hasMore.value) {
+			hasMore.value = false
+			return
+		}
+		currentOffset.value += 50
+		isLoadingMore.value = true
+		try {
+			const www = await axios.get(
+				route(props.routes.fetch_products.name, {
+					customerSalesChannel: props.customerSalesChannel?.id,
+					offset: currentOffset.value,
+				})
+			)
+			if (!Array.isArray(www.data) || www.data.length < 50) {
+				console.log("Doesn't have more")
+				hasMore.value = false
+			}
+			isLoadingMore.value = false
+			resultOfFetchPlatformProduct.value = [
+				...resultOfFetchPlatformProduct.value,
+				...www.data,
+			]
+		} catch (e) {
+			console.error("Error processing products", e)
+			isLoadingMore.value = false
+		}
+	}
 }
 
 const onClickFilterForSale = (query: string) => {
-    let xx: string | null = 'true'
-    if (compTableFilterForSale.value === query) {
-        xx = null
-    } else {
-        xx = query
-    }
+	let xx: string | null = "true"
+	if (compTableFilterForSale.value === query) {
+		xx = null
+	} else {
+		xx = query
+	}
 
-    router.reload(
-        {
-            data: {[`${props.tab}_filter[is_for_sale]`]: xx},  // Sent to url parameter (?tab=showcase, ?tab=menu)
-            // only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
-            onStart: () => {
-                isLoadingTable.value = query || null
-            },
-            onSuccess: () => {
-            },
-            onFinish: (e) => {
-                isLoadingTable.value = null
-            },
-            onError: (e) => {
-            }
-        }
-    )
+	router.reload({
+		data: { [`${props.tab}_filter[is_for_sale]`]: xx }, // Sent to url parameter (?tab=showcase, ?tab=menu)
+		// only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+		onStart: () => {
+			isLoadingTable.value = query || null
+		},
+		onSuccess: () => {},
+		onFinish: (e) => {
+			isLoadingTable.value = null
+		},
+		onError: (e) => {},
+	})
 }
 
 const compTableFilterForSale = computed(() => {
-    return layout.currentQuery?.[`${props.tab}_filter`]?.is_for_sale
+	return layout.currentQuery?.[`${props.tab}_filter`]?.is_for_sale
 })
 </script>
 
 <template>
-    <Message v-if="errorBluk.length > 0 && progressToUploadToEcom.total == 0" severity="error"
-             class="relative m-4 pr-10">
-        <!-- Close Button -->
-        <button @click="errorBluk = []" class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
-                aria-label="Close">
-            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4"/>
-        </button>
+	<Message
+		v-if="errorBluk.length > 0 && progressToUploadToEcom.total == 0"
+		severity="error"
+		class="relative m-4 pr-10">
+		<!-- Close Button -->
+		<button
+			@click="errorBluk = []"
+			class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
+			aria-label="Close">
+			<FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
+		</button>
 
-        <!-- Message Content -->
-        <h3 class="font-semibold mb-2 text-red-700">Upload Error(s):</h3>
-        <ul class="list-disc list-inside text-sm text-red-800">
-            <li v-for="(item, index) in errorBluk" :key="index">
-                {{ `Error when uploading item with code: ${item.item_code} - ${item.upload_warning}` }}
-            </li>
-        </ul>
-    </Message>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true"
-        @onChecked="(item) => onChangeCheked(true, item)"
-        @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)"
-        checkboxKey='id' :isChecked="(item) => selectedProducts.includes(item.id)"
-        :disabledCheckbox="(item)=>onDisableCheckbox(item)" 
-        :rowColorFunction="(item) => {
-            if (disableButtons(item)) {
-                return item.product_state == 'discontinued' ? 'bg-red-100' : 'bg-red-50'
-            }else if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
-                return 'bg-yellow-50'
-            } else {
-                return ''
-            }
-        }" 
-        :isParentLoading="!!isLoadingTable">
+		<!-- Message Content -->
+		<h3 class="font-semibold mb-2 text-red-700">Upload Error(s):</h3>
+		<ul class="list-disc list-inside text-sm text-red-800">
+			<li v-for="(item, index) in errorBluk" :key="index">
+				{{
+					`Error when uploading item with code: ${item.item_code} - ${item.upload_warning}`
+				}}
+			</li>
+		</ul>
+	</Message>
+	<Table
+		:resource="data"
+		:name="tab"
+		class="mt-5"
+		:isCheckBox="true"
+		@onChecked="(item) => onChangeCheked(true, item)"
+		@onUnchecked="(item) => onChangeCheked(false, item)"
+		@onCheckedAll="(data) => onCheckedAll(data)"
+		checkboxKey="id"
+		:isChecked="(item) => selectedProducts.includes(item.id)"
+		:disabledCheckbox="(item) => onDisableCheckbox(item)"
+		:rowColorFunction="
+			(item) => {
+				if (disableButtons(item)) {
+					return item.product_state == 'discontinued' ? 'bg-red-100' : 'bg-red-50'
+				} else if (
+					!isPlatformManual &&
+					is_platform_connected &&
+					!item.platform_product_id &&
+					get(progressToUploadToShopify, [item.id], undefined) != 'success'
+				) {
+					return 'bg-yellow-50'
+				} else {
+					return ''
+				}
+			}
+		"
+		:isParentLoading="!!isLoadingTable">
+		<template #header-checkbox="data">
+			<div></div>
+		</template>
 
-        <template #header-checkbox="data">
-            <div></div>
-        </template>
+		<template #disable-checkbox>
+			<div></div>
+		</template>
 
-        <template #disable-checkbox>
-            <div></div>
-        </template>
+		<template #checkbox="{ checked, data }">
+			<!-- Spinner ketika sedang upload -->
+			<FontAwesomeIcon
+				v-if="progressToUploadToEcom.total !== 0 && selectedProducts.includes(data.id)"
+				icon="fad fa-spinner-third"
+				class="animate-spin text-blue-500 p-2 text-lg mx-auto block"
+				fixed-width
+				aria-hidden="true" />
 
+			<!-- Checkbox aktif -->
+			<FontAwesomeIcon
+				v-else-if="selectedProducts.includes(data.id)"
+				@click="() => onChangeCheked(false, data)"
+				icon="fas fa-check-square"
+				class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
+				fixed-width
+				aria-hidden="true" />
 
-        <template #checkbox="{ checked, data }">
-            <!-- Spinner ketika sedang upload -->
-            <FontAwesomeIcon v-if="progressToUploadToEcom.total !== 0 && selectedProducts.includes(data.id)"
-                             icon="fad fa-spinner-third" class="animate-spin text-blue-500 p-2 text-lg mx-auto block"
-                             fixed-width
-                             aria-hidden="true"/>
+			<!-- Checkbox kosong -->
+			<FontAwesomeIcon
+				v-else
+				@click="() => onChangeCheked(true, data)"
+				icon="fal fa-square"
+				class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
+				fixed-width
+				aria-hidden="true" />
+		</template>
 
-            <!-- Checkbox aktif -->
-            <FontAwesomeIcon v-else-if="selectedProducts.includes(data.id)" @click="() => onChangeCheked(false, data)"
-                             icon="fas fa-check-square" class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
-                             fixed-width
-                             aria-hidden="true"/>
+		<template #add-on-button-in-before>
+			<div class="border-r px-4">
+				<PureProgressBar
+					v-if="progressToUploadToEcom.total != 0"
+					:progressBars="progressToUploadToEcom" />
+			</div>
+		</template>
 
-            <!-- Checkbox kosong -->
-            <FontAwesomeIcon v-else @click="() => onChangeCheked(true, data)" icon="fal fa-square"
-                             class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
-                             fixed-width
-                             aria-hidden="true"/>
-        </template>
-
-
-        <template #add-on-button-in-before>
-            <div class="border-r px-4">
-                <PureProgressBar v-if="progressToUploadToEcom.total != 0"
-                                 :progressBars="progressToUploadToEcom"/>
-            </div>
-        </template>
-
-
-        <template #add-on-button>
-            <Button
-                @click="onClickFilterForSale('true')"
-                v-tooltip="trans('Only show products that are for sale')"
-                :label="trans('Only For Sale')"
-                size="xs"
+		<template #add-on-button>
+			<Button
+				@click="onClickFilterForSale('true')"
+				v-tooltip="trans('Only show products that are for sale')"
+				:label="trans('Only For Sale')"
+				size="xs"
 				class="whitespace-nowrap"
-                :key="compTableFilterForSale"
-                :type="compTableFilterForSale ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
-                iconRight="fal fa-times"
-                :loading="isLoadingTable == 'discontinued'"
-            />
-            <Button @click="onClickFilterOutOfStock('discontinued')"
-                    v-tooltip="trans('Filter the product that discontinued')" label="Discontinued" size="xs"
-				    class="whitespace-nowrap"
-                    :key="compTableFilterStatus"
-                    :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
-                    :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
-                    iconRight="fal fa-times" :loading="isLoadingTable == 'discontinued'"/>
-            <Button @click="onClickFilterOutOfStock('out-of-stock')"
-                    v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
-				    class="whitespace-nowrap"
-                    :key="compTableFilterStatus"
-                    :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
-                    :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
-                    iconRight="fal fa-exclamation-triangle" :loading="isLoadingTable == 'out-of-stock'"/>
-        </template>
+				:key="compTableFilterForSale"
+				:type="compTableFilterForSale ? 'secondary' : 'tertiary'"
+				:icon="compTableFilterForSale ? 'fas fa-filter' : 'fal fa-filter'"
+				iconRight="fal fa-times"
+				:loading="isLoadingTable == 'discontinued'" />
+			<Button
+				@click="onClickFilterOutOfStock('discontinued')"
+				v-tooltip="trans('Filter the product that discontinued')"
+				label="Discontinued"
+				size="xs"
+				class="whitespace-nowrap"
+				:key="compTableFilterStatus"
+				:type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
+				:icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
+				iconRight="fal fa-times"
+				:loading="isLoadingTable == 'discontinued'" />
+			<Button
+				@click="onClickFilterOutOfStock('out-of-stock')"
+				v-tooltip="trans('Filter the product that out of stock')"
+				label="Out of stock"
+				size="xs"
+				class="whitespace-nowrap"
+				:key="compTableFilterStatus"
+				:type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
+				:icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
+				iconRight="fal fa-exclamation-triangle"
+				:loading="isLoadingTable == 'out-of-stock'" />
+		</template>
 
-        <template #cell(image)="{ item: product }">
-          <div class="relative group">
+		<template #cell(image)="{ item: product }">
+			<div class="relative group">
 				<div class="relative overflow-hidden w-10 h-10">
 					<Image :src="product.image" :alt="product.name" />
 				</div>
@@ -654,193 +722,299 @@ const compTableFilterForSale = computed(() => {
 					class="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
 					<div class="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
 						<div class="w-64 h-64 overflow-hidden rounded">
-							<Image :src="product.full_size_image || product.image" :alt="product.name"
+							<Image
+								:src="product.full_size_image || product.image"
+								:alt="product.name"
 								class="w-full h-full object-cover" />
 						</div>
 					</div>
 				</div>
 			</div>
-        </template>
+		</template>
 
-        <template #cell(name)="{ item: product }">
-            <Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
-                {{ product["code"] }}
-            </Link>
-            <div class="text-base font-semibold">
-                {{ product["name"] }}
-            </div>
-            <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
-                <div>
-                    {{ trans("Stocks:") }} {{ locale.number(product.quantity_left) }}
-                </div>
-                <div>
-                    {{ trans("Weight:") }} {{ locale.number(product.weight / 1000) }} kg
-                </div>
-            </div>
+		<template #cell(name)="{ item: product }">
+			<Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
+				{{ product["code"] }}
+			</Link>
+			<div class="text-base font-semibold">
+				{{ product["name"] }}
+			</div>
+			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
+				<div>{{ trans("Stocks:") }} {{ locale.number(product.quantity_left) }}</div>
+				<div>{{ trans("Weight:") }} {{ locale.number(product.weight / 1000) }} kg</div>
+			</div>
 
-            <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
-                <div v-if="customerSalesChannel.include_vat">
-                    {{ trans("Price (include VAT):") }} {{ locale.currencyFormat(product.currency_code, calculateVat(product.price)) }}
-                </div>
-                <div v-else>
-                    {{ trans("Price:") }} {{ locale.currencyFormat(product.currency_code, product.price) }}
-                </div>
-                <div v-if="customerSalesChannel.include_vat">
-                    {{ trans("RRP (include VAT):") }} {{ locale.currencyFormat(product.currency_code, product.customer_price) }}
-                </div>
-                <div v-else-if="platform_data.type === 'ebay'">
-                    {{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, (product.customer_price * 0.8)) }}
-                </div>
-                <div v-else>
-                    {{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, (product.customer_price)) }}
-                </div>
-            </div>
-        </template>
+			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
+				<div v-if="customerSalesChannel.include_vat">
+					{{ trans("Price (include VAT):") }}
+					{{ locale.currencyFormat(product.currency_code, calculateVat(product.price)) }}
+				</div>
+				<div v-else>
+					{{ trans("Price:") }}
+					{{ locale.currencyFormat(product.currency_code, product.price) }}
+				</div>
+				<div v-if="customerSalesChannel.include_vat">
+					{{ trans("RRP (include VAT):") }}
+					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+				</div>
+				<div v-else-if="platform_data.type === 'ebay'">
+					{{ trans("RRP:") }}
+					{{ locale.currencyFormat(product.currency_code, product.customer_price * 0.8) }}
+				</div>
+				<div v-else>
+					{{ trans("RRP:") }}
+					{{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+				</div>
+			</div>
+		</template>
 
-        <!-- Column: Status (repair) -->
-        <template #cell(status)="{ item }">
-            <div class="whitespace-nowrap">
-                <FontAwesomeIcon v-if="item.has_valid_platform_product_id"
-                                 v-tooltip="trans('Has valid platform product id')" icon="fal fa-check"
-                                 class="text-green-500"
-                                 fixed-width aria-hidden="true"/>
-                <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times"
-                                 class="text-red-500" fixed-width aria-hidden="true"/>
-                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')"
-                                 icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
-                <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500"
-                                 fixed-width aria-hidden="true"/>
-                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check"
-                                 class="text-green-500" fixed-width aria-hidden="true"/>
-                <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500"
-                                 fixed-width aria-hidden="true"/>
-            </div>
-        </template>
+		<!-- Column: Status (repair) -->
+		<template #cell(status)="{ item }">
+			<div class="whitespace-nowrap">
+				<FontAwesomeIcon
+					v-if="item.has_valid_platform_product_id"
+					v-tooltip="trans('Has valid platform product id')"
+					icon="fal fa-check"
+					class="text-green-500"
+					fixed-width
+					aria-hidden="true" />
+				<FontAwesomeIcon
+					v-else
+					v-tooltip="trans('Has valid platform product id')"
+					icon="fal fa-times"
+					class="text-red-500"
+					fixed-width
+					aria-hidden="true" />
+				<FontAwesomeIcon
+					v-if="item.exist_in_platform"
+					v-tooltip="trans('Exist in platform')"
+					icon="fal fa-check"
+					class="text-green-500"
+					fixed-width
+					aria-hidden="true" />
+				<FontAwesomeIcon
+					v-else
+					v-tooltip="trans('Exist in platform')"
+					icon="fal fa-times"
+					class="text-red-500"
+					fixed-width
+					aria-hidden="true" />
+				<FontAwesomeIcon
+					v-if="item.platform_status"
+					v-tooltip="trans('Platform status')"
+					icon="fal fa-check"
+					class="text-green-500"
+					fixed-width
+					aria-hidden="true" />
+				<FontAwesomeIcon
+					v-else
+					v-tooltip="trans('Platform status')"
+					icon="fal fa-times"
+					class="text-red-500"
+					fixed-width
+					aria-hidden="true" />
+			</div>
+		</template>
 
-        <template #cell(message)="{item}">
-            <div class="whitespace min-w-[50px] text-left font-medium italic whitespace-break-spaces text-red-500" v-if="disableButtons(item)">
-                <FontAwesomeLayers v-if="item.product_state == 'discontinued'"
-                    v-tooltip="trans('This product line has been discontinued. Please remove this item')"
-                    class="flex h-full w-full"
-                >
-                    <FontAwesomeIcon
-                        :icon="faBan"
-                        class="text-2xl"
-                    />
-                    <FontAwesomeIcon
-                        :icon="faCube"
-                        class="text-md text-center"
-                    />
-                </FontAwesomeLayers>
-                <FontAwesomeLayers v-else
-                    v-tooltip="trans('This product line is currently not for sale')"
-                    class="flex h-full w-full"
-                >
-                    <FontAwesomeIcon
-                        :icon="faBan"
-                        class="text-2xl"
-                    />
-                    <FontAwesomeIcon
-                        :icon="faDollarSign"
-                        class="text-lg text-center"
-                    />
-                </FontAwesomeLayers>
-            </div>
-            <div class="whitespace min-w-[50px] font-medium whitespace-break-spaces flex items-center text-center w-full" v-else-if="item.message">
-                <FontAwesomeIcon v-tooltip="item.message" v-if="item.message === 'OK'" icon='fal fa-check-circle' class="text-green-500 text-xl" style="width:100% !important;" fixed-width aria-hidden='true' />
-                <FontAwesomeIcon v-tooltip="item.message" v-else icon='fal fa-exclamation-circle' class="text-red-500 text-xl" style="width:100% !important;" fixed-width aria-hidden='true' />
-            </div>
-            <div v-else />
-        </template>
+		<template #cell(message)="{ item }">
+			<div
+				class="whitespace min-w-[50px] text-left font-medium italic whitespace-break-spaces text-red-500"
+				v-if="disableButtons(item)">
+				<FontAwesomeLayers
+					v-if="item.product_state == 'discontinued'"
+					v-tooltip="
+						trans('This product line has been discontinued. Please remove this item')
+					"
+					class="flex h-full w-full">
+					<FontAwesomeIcon :icon="faBan" class="text-2xl" />
+					<FontAwesomeIcon :icon="faCube" class="text-md text-center" />
+				</FontAwesomeLayers>
+				<FontAwesomeLayers
+					v-else
+					v-tooltip="trans('This product line is currently not for sale')"
+					class="flex h-full w-full">
+					<FontAwesomeIcon :icon="faBan" class="text-2xl" />
+					<FontAwesomeIcon :icon="faDollarSign" class="text-lg text-center" />
+				</FontAwesomeLayers>
+			</div>
+			<div
+				class="whitespace min-w-[50px] font-medium whitespace-break-spaces flex items-center text-center w-full"
+				v-else-if="item.message">
+				<FontAwesomeIcon
+					v-tooltip="item.message"
+					v-if="item.message === 'OK'"
+					icon="fal fa-check-circle"
+					class="text-green-500 text-xl"
+					style="width: 100% !important"
+					fixed-width
+					aria-hidden="true" />
+				<FontAwesomeIcon
+					v-tooltip="item.message"
+					v-else
+					icon="fal fa-exclamation-circle"
+					class="text-red-500 text-xl"
+					style="width: 100% !important"
+					fixed-width
+					aria-hidden="true" />
+			</div>
+			<div v-else />
+		</template>
 
-        <!-- Column: Actions (connect) -->
-        <template #cell(matches)="{ item }">
-            <template v-if="item.customer_sales_channel_platform_status">
-                <template v-if="!item.platform_status">
-                    <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded p-1"
-                         :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'">
-                        <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
-                            <div v-if="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"
-                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                                <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"/>
-                            </div>
-                            <div>
-                                <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0] }}</span>
-                            </div>
-                        </div>
-                        <ButtonWithLink v-if="item.platform_possible_matches?.number_matches && !disabled && item.is_for_sale"
-                            v-tooltip="item.is_for_sale ? trans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'}) : trans('This product line is currently not for sale')"
-                            :routeTarget="item.is_for_sale ? {
-                                method: 'post',
-                                name: props.routes.single_match.name,
-                                parameters: {
-                                    portfolio: item.id,
-                                    platform_product_id: item.platform_possible_matches.raw_data?.[0]?.id
-                                }
-                            } : {}"
-                            :bindToLink="{ preserveScroll: true}" 
-                            type="primary" 
-                            :label="trans('Match with this product')" 
-                            size="xxs"
-                            icon="fal fa-hand-pointer"
-                            :disabled="disableButtons(item)"
-                        />
-                    </div>
+		<!-- Column: Actions (connect) -->
+		<template #cell(matches)="{ item }">
+			<template v-if="item.customer_sales_channel_platform_status">
+				<template v-if="!item.platform_status">
+					<div
+						v-if="item.platform_possible_matches?.number_matches"
+						class="border rounded p-1"
+						:class="
+							selectedProducts?.includes(item.id)
+								? 'bg-green-200 border-green-400'
+								: 'border-gray-300'
+						">
+						<div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
+							<div
+								v-if="
+									item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src
+								"
+								class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
+								<img
+									:src="
+										item.platform_possible_matches?.raw_data?.[0]?.images?.[0]
+											?.src
+									" />
+							</div>
+							<div>
+								<span class="mr-1">{{
+									item.platform_possible_matches?.matches_labels[0]
+								}}</span>
+							</div>
+						</div>
+						<ButtonWithLink
+							v-if="
+								item.platform_possible_matches?.number_matches &&
+								!disabled &&
+								item.is_for_sale
+							"
+							v-tooltip="
+								item.is_for_sale
+									? trans('Match to existing :platform product', {
+											platform: platform_data?.name || 'Platform',
+										})
+									: trans('This product line is currently not for sale')
+							"
+							:routeTarget="
+								item.is_for_sale
+									? {
+											method: 'post',
+											name: props.routes.single_match.name,
+											parameters: {
+												portfolio: item.id,
+												platform_product_id:
+													item.platform_possible_matches.raw_data?.[0]
+														?.id,
+											},
+										}
+									: {}
+							"
+							:bindToLink="{ preserveScroll: true }"
+							type="primary"
+							:label="trans('Match with this product')"
+							size="xxs"
+							icon="fal fa-hand-pointer"
+							:disabled="disableButtons(item)" />
+					</div>
 
-                    <div v-if="!disabled">
-                        <Button v-if="item.platform_possible_matches?.number_matches"
-                            @click="() => {if(item.is_for_sale) {fetchRoute(); isOpenModal = true; selectedPortfolio = item}}"
-                            v-tooltip="item.is_for_sale ? trans('Choose another product from your shop') : trans('This product line is currently not for sale')"
-                            :label="trans('Choose another product from your shop')" 
-                            :capitalize="false" 
-                            size="xxs"
-                            type="tertiary"
-                            :style="'white-w-outline'"
-                            :disabled="disableButtons(item)"
-                        />
-                        <Button v-else 
-                            @click="() => {if(item.is_for_sale) {fetchRoute(); isOpenModal = true; selectedPortfolio = item}}"
-                            v-tooltip="item.is_for_sale ? trans('Match it with an existing product in your shop') : trans('This product line is currently not for sale')"
-                            :label="trans('Match it with an existing product in your shop')" 
-                            :capitalize="false"
-                            size="xxs"
-                            type="tertiary"
-                            :style="'white-w-outline'"
-                            :disabled="disableButtons(item)"
-                        />
-                    </div>
+					<div v-if="!disabled">
+						<Button
+							v-if="item.platform_possible_matches?.number_matches"
+							@click="
+								() => {
+									if (item.is_for_sale) {
+										fetchRoute()
+										isOpenModal = true
+										selectedPortfolio = item
+									}
+								}
+							"
+							v-tooltip="
+								item.is_for_sale
+									? trans('Choose another product from your shop')
+									: trans('This product line is currently not for sale')
+							"
+							:label="trans('Choose another product from your shop')"
+							:capitalize="false"
+							size="xxs"
+							type="tertiary"
+							:style="'white-w-outline'"
+							:disabled="disableButtons(item)" />
+						<Button
+							v-else
+							@click="
+								() => {
+									if (item.is_for_sale) {
+										fetchRoute()
+										isOpenModal = true
+										selectedPortfolio = item
+									}
+								}
+							"
+							v-tooltip="
+								item.is_for_sale
+									? trans('Match it with an existing product in your shop')
+									: trans('This product line is currently not for sale')
+							"
+							:label="trans('Match it with an existing product in your shop')"
+							:capitalize="false"
+							size="xxs"
+							type="tertiary"
+							:style="'white-w-outline'"
+							:disabled="disableButtons(item)" />
+					</div>
+				</template>
 
-                </template>
+				<template v-else>
+					<template v-if="item.platform_product_data?.name">
+						<div class="flex gap-x-2 items-center">
+							<div
+								v-if="item.platform_product_data?.images?.[0]?.src"
+								class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
+								<img :src="item.platform_product_data?.images?.[0]?.src" />
+							</div>
 
-                <template v-else>
-                    <template v-if="item.platform_product_data?.name">
-                        <div class="flex gap-x-2 items-center">
-                            <div v-if="item.platform_product_data?.images?.[0]?.src"
-                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                                <img :src="item.platform_product_data?.images?.[0]?.src"/>
-                            </div>
+							<div>
+								<span class="mr-1">{{ item.platform_product_data?.name }}</span>
+							</div>
+						</div>
+					</template>
+					<Button
+						v-if="!disabled"
+						class="mt-2"
+						@click="
+							() => {
+								if (item.is_for_sale) {
+									fetchRoute()
+									isOpenModal = true
+									selectedPortfolio = item
+								}
+							}
+						"
+						v-tooltip="
+							item.is_for_sale
+								? trans('Connect with other product')
+								: trans('This product line is currently not for sale')
+						"
+						:label="trans('Connect with other product')"
+						:capitalize="false"
+						:icon="faRecycle"
+						size="xxs"
+						type="tertiary"
+						:style="'white-w-outline'"
+						:disabled="disableButtons(item)" />
+				</template>
+			</template>
 
-                            <div>
-                                <span class="mr-1">{{ item.platform_product_data?.name }}</span>
-                            </div>
-                        </div>
-                    </template>
-                    <Button v-if="!disabled" 
-                        class="mt-2" 
-                        @click="() => {if(item.is_for_sale) {fetchRoute(); isOpenModal = true; selectedPortfolio = item}}"
-                        v-tooltip="item.is_for_sale ? trans('Connect with other product') : trans('This product line is currently not for sale')"
-                        :label="trans('Connect with other product')" 
-                        :capitalize="false" 
-                        :icon="faRecycle"
-                        size="xxs"
-                        type="tertiary"
-                        :style="'white-w-outline'"
-                        :disabled="disableButtons(item)"
-                    />
-                </template>
-            </template>
-
-            <!--  <div class="mx-auto flex flex-wrap justify-center gap-2">
+			<!--  <div class="mx-auto flex flex-wrap justify-center gap-2">
 
                 <ButtonWithLink
 					v-if="
@@ -904,209 +1078,345 @@ const compTableFilterForSale = computed(() => {
 
 
             </div> -->
-        </template>
+		</template>
 
-        <!-- Column: Actions 2 (Modal shopify) -->
-        <template #cell(create_new)="{ item }" v-if="!disabled">
-            <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
-            <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status"
-                class="flex gap-x-2 items-center">
-                <ButtonWithLink
-                    v-tooltip="item.is_for_sale ? trans('Will create new product in :platform', {platform: props.platform_data.name}) : trans('This product line is currently not for sale')"
-                    :routeTarget="item.is_for_sale ? {
-                        method: 'post',
-                        name: props.routes.single_create_new.name,
-                        parameters: {
-                            portfolio: item.id
-                        },
-                    } : {}"
-                    isWithError
-                    icon=""
-                    :label="trans('Create new product')"
-                    size="xxs"
-                    type="tertiary"
-                    :style="'white-w-outline'"
-                    :bindToLink="{
-                        preserveScroll: true,
-                    }"
-                    @success="(a) => {
-                        // console.log('zvvcvc', a)
-                    }"
-                    @error="(e) => {
-                        // console.log('aaaaaaaaaaaa', e, item)
-                        selectedErrorProduct = {
-                            product: item,
-                            error: e
-                        }
-                        set(listErrorProducts, [`x${item.id}`], e)
-                    }"
-                    :disabled="disableButtons(item)"
-                />
-            </div>
-        </template>
+		<!-- Column: Actions 2 (Modal shopify) -->
+		<template #cell(create_new)="{ item }" v-if="!disabled">
+			<!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
+			<div
+				v-if="item.customer_sales_channel_platform_status && !item.platform_status"
+				class="flex gap-x-2 items-center">
+				<ButtonWithLink
+					v-tooltip="
+						item.is_for_sale
+							? trans('Will create new product in :platform', {
+									platform: props.platform_data.name,
+								})
+							: trans('This product line is currently not for sale')
+					"
+					:routeTarget="
+						item.is_for_sale
+							? {
+									method: 'post',
+									name: props.routes.single_create_new.name,
+									parameters: {
+										portfolio: item.id,
+									},
+								}
+							: {}
+					"
+					isWithError
+					icon=""
+					:label="trans('Create new product')"
+					size="xxs"
+					type="tertiary"
+					:style="'white-w-outline'"
+					:bindToLink="{
+						preserveScroll: true,
+					}"
+					@success="
+						(a) => {
+							// console.log('zvvcvc', a)
+						}
+					"
+					@error="
+						(e) => {
+							// console.log('aaaaaaaaaaaa', e, item)
+							selectedErrorProduct = {
+								product: item,
+								error: e,
+							}
+							set(listErrorProducts, [`x${item.id}`], e)
+						}
+					"
+					:disabled="disableButtons(item)" />
+			</div>
+		</template>
 
-        <!-- Column: Actions 3 -->
-        <template #cell(delete)="{ item }"  v-if=!disabled>
-            <div class="flex gap-2">
-                <Button 
-                v-if="!item.platform_status && !(disableButtons(item))"
-                    v-tooltip="trans('Edit detail of the product')"
-                    type="tertiary"
-                    :style="'white-w-outline'"
-                    size="xs"
-                    icon="fal fa-pencil"
-                    @click="openEditModal(item)"
-                />
-                <ButtonWithLink 
-                    v-tooltip="trans('Unselect product. This will remove the product from :platform', {platform: props.platform_data.name})" 
-                    type="negative"
-                    icon="fal fa-skull"
-                    :routeTarget="item.delete_portfolio" 
-                    :method="'delete'" 
-                    size="xs" 
-                    :style="'white-r-outline'"
-                    :bindToLink="{preserveScroll: true}"
-                />
-            </div>
-        </template>
-    </Table>
+		<!-- Column: Actions 3 -->
+		<template #cell(delete)="{ item }" v-if="!disabled">
+			<div class="flex gap-2">
+				<Button
+					v-if="(isEbay || !item.platform_status) && !disableButtons(item)"
+					v-tooltip="trans('Edit detail of the product')"
+					type="tertiary"
+					:style="'white-w-outline'"
+					size="xs"
+					icon="fal fa-pencil"
+					@click="openEditModal(item)" />
+				<ButtonWithLink
+					v-tooltip="
+						trans('Unselect product. This will remove the product from :platform', {
+							platform: props.platform_data.name,
+						})
+					"
+					type="negative"
+					icon="fal fa-skull"
+					:routeTarget="item.delete_portfolio"
+					:method="'delete'"
+					size="xs"
+					:style="'white-r-outline'"
+					:bindToLink="{ preserveScroll: true }" />
+			</div>
+		</template>
+	</Table>
 
-    <!-- <pre>{{ data.data[0] }}</pre> -->
+	<!-- <pre>{{ data.data[0] }}</pre> -->
 
-    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchPlatformProduct = []; currentOffset = 0; hasMore = true}">
-        <div class="relative isolate">
-            <div v-if="isLoadingSubmit || isLoadingMore"
-                 class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
-                <LoadingIcon/>
-            </div>
+	<Modal
+		:isOpen="isOpenModal"
+		width="w-full max-w-2xl h-full min-h-fit"
+		@close="
+			() => {
+				isOpenModal = false
+				selectedVariant = null
+				resultOfFetchPlatformProduct = []
+				currentOffset = 0
+				hasMore = true
+			}
+		">
+		<div class="relative isolate">
+			<div
+				v-if="isLoadingSubmit || isLoadingMore"
+				class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
+				<LoadingIcon />
+			</div>
 
-            <div class="mb-2">
-                <strong>
-                    {{ trans('List of Products under your :_storetype Store', {_storetype: platform_data.name}) }}
-                </strong>
-            </div>
+			<div class="mb-2">
+				<strong>
+					{{
+						trans("List of Products under your :_storetype Store", {
+							_storetype: platform_data.name,
+						})
+					}}
+				</strong>
+			</div>
 
-            <div class="mb-2 relative">
-                <PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()" :placeholder="trans('Search in :platform', { platform: platform_data.name })" :disabled="isLoadingFetchPlatformProduct"/>
-                <div v-if="isLoadingFetchPlatformProduct" class="absolute right-2 text-xl top-1/2 -translate-y-1/2">
-                    <LoadingIcon/>
-                </div>
-                <slot name="afterInput">
-                </slot>
-            </div>
+			<div class="mb-2 relative">
+				<PureInput
+					v-model="querySearchPortfolios"
+					@update:modelValue="() => debounceGetPortfoliosList()"
+					:placeholder="trans('Search in :platform', { platform: platform_data.name })"
+					:disabled="isLoadingFetchPlatformProduct" />
+				<div
+					v-if="isLoadingFetchPlatformProduct"
+					class="absolute right-2 text-xl top-1/2 -translate-y-1/2">
+					<LoadingIcon />
+				</div>
+				<slot name="afterInput"> </slot>
+			</div>
 
-            <div class="xh-full xmd:h-[570px] text-base font-normal">
-                <div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
-                    <div class="flex justify-between items-center">
-                        <!-- <div class="font-semibold text-lg py-1">{{ trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div> -->
-                    </div>
-                    <div class="border-t border-gray-300 mb-1"></div>
-                    <div class="h-full md:h-[400px] overflow-x-clip overflow-y-scroll py-2 relative" style="scrollbar-width: thin; scrollbar-gutter: stable;">
-                        <!-- Products list -->
-                        <div  class="min-h-24 relative mb-4 pb-4  p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
-                            <div v-if="isLoadingFetchPlatformProduct" class="text-center text-gray-500 col-span-3">
-                                <LoadingIcon class="ml-1"/> {{ trans("Fetching your :_storetype product list", {_storetype: platform_data.name}) }}
-                            </div>
-                            <template ref="list"  v-else-if="resultOfFetchPlatformProduct?.length > 0">
-                                <div v-for="(item, index) in resultOfFetchPlatformProduct" :key="index"
-                                     @click="() => {selectedVariant = item}"
-                                     class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
-                                     :class="[
-										selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
+			<div class="xh-full xmd:h-[570px] text-base font-normal">
+				<div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
+					<div class="flex justify-between items-center">
+						<!-- <div class="font-semibold text-lg py-1">{{ trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div> -->
+					</div>
+					<div class="border-t border-gray-300 mb-1"></div>
+					<div
+						class="h-full md:h-[400px] overflow-x-clip overflow-y-scroll py-2 relative"
+						style="scrollbar-width: thin; scrollbar-gutter: stable">
+						<!-- Products list -->
+						<div
+							class="min-h-24 relative mb-4 pb-4 p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
+							<div
+								v-if="isLoadingFetchPlatformProduct"
+								class="text-center text-gray-500 col-span-3">
+								<LoadingIcon class="ml-1" />
+								{{
+									trans("Fetching your :_storetype product list", {
+										_storetype: platform_data.name,
+									})
+								}}
+							</div>
+							<template
+								ref="list"
+								v-else-if="resultOfFetchPlatformProduct?.length > 0">
+								<div
+									v-for="(item, index) in resultOfFetchPlatformProduct"
+									:key="index"
+									@click="
+										() => {
+											selectedVariant = item
+										}
+									"
+									class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+									:class="[
+										selectedVariant?.id === item.id
+											? 'bg-green-100 border-green-400'
+											: '',
 									]">
-                                    <Transition name="slide-to-right">
-                                        <FontAwesomeIcon v-if="selectedVariant?.id === item.id"
-                                            icon="fas fa-check-circle"
-                                            class="-top-2 -right-2 absolute text-green-500" fixed-width
-                                            aria-hidden="true"
-                                        />
-                                    </Transition>
-                                    <slot name="product" :item="item">
-<!--                                        <Image v-if="item.images?.src" :src="item.images?.src"
+									<Transition name="slide-to-right">
+										<FontAwesomeIcon
+											v-if="selectedVariant?.id === item.id"
+											icon="fas fa-check-circle"
+											class="-top-2 -right-2 absolute text-green-500"
+											fixed-width
+											aria-hidden="true" />
+									</Transition>
+									<slot name="product" :item="item">
+										<!--                                        <Image v-if="item.images?.src" :src="item.images?.src"
                                                class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
                                                :alt="item.name"/>-->
-                                        <div class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
-                                            <img :src="item.images?.[0]?.src" class="shadow"/>
-                                        </div>
-                                        <div class="flex flex-col justify-between">
-                                            <div class="w-fit" xclick="() => selectProduct(item)">
-                                                <div v-tooltip="trans('Name')"
-                                                     class="w-fit font-semibold leading-none mb-1">
-                                                    {{ item.name || 'no name' }}
-                                                </div>
-                                                <div v-if="!item.no_code" v-tooltip="trans('Code')"
-                                                     class="w-fit text-xs text-gray-400 italic">
-                                                    {{ item.code || 'no code' }}
-                                                </div>
-                                                <div v-if="item.reference" v-tooltip="trans('Reference')"
-                                                     class="w-fit text-xs text-gray-400 italic">
-                                                    {{ item.reference || 'no reference' }}
-                                                </div>
-                                                <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
-                                                     class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
-                                                </div>
-                                            </div>
-                                            <div v-if="!item.no_price && item.price" xclick="() => selectProduct(item)"
-                                                 v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
-                                                {{
-                                                    locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
-                                                }}
-                                            </div>
-                                        </div>
-                                    </slot>
-                                </div>
-                                <div ref="sentinel" class="col-span-2 justify-items-center flex mx-auto">
-                                    <LoadingIcon v-if="hasMore" />
-                                </div>
-                                <div v-if="!hasMore && platform_data.type == 'ebay'" class="col-span-2 text-center">
-                                    {{ trans("You've reached the end of item list") }}
-                                </div>
-                            </template>
-                            <div v-else class="text-center text-gray-500 col-span-3">
-                                {{ trans("No products found") }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <Button @click="() => onSubmitVariant()"
-                            :disabled="!selectedVariant?.id"
-                            v-tooltip="!selectedVariant?.id ? trans('Select at least one product on your platform') : ''"
-                            :label="trans('Link :_productcode to selected item on your platform', {_productcode: selectedPortfolio?.code ?? 'it'})" type="primary" full xicon="fas fa-plus"
-                            :loading="isLoadingSubmit"/>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </Modal>
+										<div
+											class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
+											<img :src="item.images?.[0]?.src" class="shadow" />
+										</div>
+										<div class="flex flex-col justify-between">
+											<div class="w-fit" xclick="() => selectProduct(item)">
+												<div
+													v-tooltip="trans('Name')"
+													class="w-fit font-semibold leading-none mb-1">
+													{{ item.name || "no name" }}
+												</div>
+												<div
+													v-if="!item.no_code"
+													v-tooltip="trans('Code')"
+													class="w-fit text-xs text-gray-400 italic">
+													{{ item.code || "no code" }}
+												</div>
+												<div
+													v-if="item.reference"
+													v-tooltip="trans('Reference')"
+													class="w-fit text-xs text-gray-400 italic">
+													{{ item.reference || "no reference" }}
+												</div>
+												<div
+													v-if="item.gross_weight"
+													v-tooltip="trans('Weight')"
+													class="w-fit text-xs text-gray-400 italic">
+													{{ item.gross_weight }}
+												</div>
+											</div>
+											<div
+												v-if="!item.no_price && item.price"
+												xclick="() => selectProduct(item)"
+												v-tooltip="trans('Price')"
+												class="w-fit text-xs text-gray-x500">
+												{{
+													locale?.currencyFormat(
+														item.currency_code || "usd",
+														item.price || 0
+													)
+												}}
+											</div>
+										</div>
+									</slot>
+								</div>
+								<div
+									ref="sentinel"
+									class="col-span-2 justify-items-center flex mx-auto">
+									<LoadingIcon v-if="hasMore" />
+								</div>
+								<div
+									v-if="!hasMore && platform_data.type == 'ebay'"
+									class="col-span-2 text-center">
+									{{ trans("You've reached the end of item list") }}
+								</div>
+							</template>
+							<div v-else class="text-center text-gray-500 col-span-3">
+								{{ trans("No products found") }}
+							</div>
+						</div>
+					</div>
+					<div class="mt-4">
+						<Button
+							@click="() => onSubmitVariant()"
+							:disabled="!selectedVariant?.id"
+							v-tooltip="
+								!selectedVariant?.id
+									? trans('Select at least one product on your platform')
+									: ''
+							"
+							:label="
+								trans('Link :_productcode to selected item on your platform', {
+									_productcode: selectedPortfolio?.code ?? 'it',
+								})
+							"
+							type="primary"
+							full
+							xicon="fas fa-plus"
+							:loading="isLoadingSubmit" />
+					</div>
+				</div>
+			</div>
+		</div>
+	</Modal>
 
-    <Modal :isOpen="isOpenModalEditProduct" width="w-full max-w-2xl h-full" @close="isOpenModalEditProduct = false">
-        <div class="max-h-[570px] overflow-auto">
-            <div class="text-xl font-semibold text-center">
-                {{ trans("Edit Product") }}
-            </div>
+	<Modal
+		:isOpen="isOpenModalEditProduct"
+		width="w-full max-w-2xl h-full"
+		@close="isOpenModalEditProduct = false">
+		<div class="max-h-[570px] overflow-auto">
+			<div class="text-xl font-semibold text-center">
+				{{ trans("Edit Product") }}
+			</div>
 
-            <div class="mb-3">
-                <label for="edit-product-title" class="block text-sm font-semibold">{{ trans("Title") }}</label>
-                <InputText v-model="selectedEditProduct.name" fluid inputId="edit-product-title" size="small"
-                    :disabled="isLoadingSubmitErrorTitle" />
-            </div>
+			<div class="mb-3">
+				<label for="edit-product-title" class="block text-sm font-semibold">{{
+					trans("Title")
+				}}</label>
+				<InputText
+					v-model="selectedEditProduct.name"
+					fluid
+					inputId="edit-product-title"
+					size="small"
+					:disabled="isLoadingSubmitErrorTitle" />
+			</div>
 
-            <div class="mb-3">
-                <label for="edit-product-rrp" class="block text-sm font-semibold">{{ trans("Selling Price") }}</label>
-                <InputNumber :modelValue="selectedEditProduct?.customer_price" inputId="edit-product-rrp"
-                    mode="currency" fluid size="small" :currency="layout?.iris?.currency?.code" :locale="layout.locale"
-                    :disabled="true" />
-                <div class="mt-2 flex flex-row gap-2">
-                    <Button v-for="percent in [20, 40, 60, 80, 100]" :key="'p' + percent"
-                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.basePrice || 0, percent, 'percent'))"
-                        :label="`+${percent}%`" size="xs" type="tertiary" :style="'white-w-outline'" />
-                    <Button v-for="amount in [2, 4, 6, 8, 10]" :key="'a' + amount"
-                        @click="set(selectedEditProduct, ['customer_price'], calculateAdjustedPrice(selectedEditProduct?.basePrice || 0, amount, 'fixed'))"
-                        :label="`+${amount}`" size="xs" type="tertiary" :style="'white-w-outline'" />
-                </div>
-            </div>
+			<div class="mb-3">
+				<label for="edit-product-rrp" class="block text-sm font-semibold">{{
+					trans("Selling Price")
+				}}</label>
+				<InputNumber
+					:modelValue="selectedEditProduct?.customer_price"
+					inputId="edit-product-rrp"
+					mode="currency"
+					fluid
+					size="small"
+					:currency="layout?.iris?.currency?.code"
+					:locale="layout.locale"
+					:disabled="true" />
+				<div class="mt-2 flex flex-row gap-2">
+					<Button
+						v-for="percent in [20, 40, 60, 80, 100]"
+						:key="'p' + percent"
+						@click="
+							set(
+								selectedEditProduct,
+								['customer_price'],
+								calculateAdjustedPrice(
+									selectedEditProduct?.basePrice || 0,
+									percent,
+									'percent'
+								)
+							)
+						"
+						:label="`+${percent}%`"
+						size="xs"
+						type="tertiary"
+						:style="'white-w-outline'" />
+					<Button
+						v-for="amount in [2, 4, 6, 8, 10]"
+						:key="'a' + amount"
+						@click="
+							set(
+								selectedEditProduct,
+								['customer_price'],
+								calculateAdjustedPrice(
+									selectedEditProduct?.basePrice || 0,
+									amount,
+									'fixed'
+								)
+							)
+						"
+						:label="`+${amount}`"
+						size="xs"
+						type="tertiary"
+						:style="'white-w-outline'" />
+				</div>
+			</div>
 
-            <!--            <div v-if="platform_data.type === 'ebay'">
+			<!--            <div v-if="platform_data.type === 'ebay'">
                 <div class="mb-3" v-for="(aspect, key) in selectedEditProduct.portfolio_data?.product?.aspects">
                     <label :for="'edit-product-'+key" class="block text-sm font-semibold">{{ trans(key) }}</label>
                     <InputText
@@ -1120,31 +1430,60 @@ const compTableFilterForSale = computed(() => {
                     />
                 </div>
             </div>-->
-            <div class="mb-3">
-                <label for="edit-product-description" class="block text-sm font-semibold">{{ trans("Description")}}</label>
-                <Editor2
-                    v-model="selectedEditProduct.description" 
-                    class="w-full" 
-                    :placeholder="trans('Enter text')"
-                    :toogle="['heading', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'query', 'fontFamily', 'orderedList', 'blockquote' , 'divider' , 'alignLeft' , 'alignRight' , 'link' , 'alignCenter' , 'undo', 'redo' , 'highlight' , 'color' , 'clear', 'video' , 'table' ]"
-                >
-                    <template #editor-content="{ editor }">
-                        <div
-                            class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-gray-400">
-                            <EditorContent :editor="editor" class="focus:outline-none" />
-                        </div>
-                    </template>
-                </Editor2>
-            </div>
-            <div class="mt-3 flex gap-2">
-                <Button type="tertiary" :style="'white-w-outline'"
-                    @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'draft')"
-                    :label="trans('Save as Draft')" full :loading="isLoadingSubmitErrorTitle" />
-                <Button @click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'publish')"
-                    :label="trans('Save & Upload')" full :loading="isLoadingSubmitErrorTitle" />
-            </div>
-        </div>
-    </Modal>
-
+			<div class="mb-3">
+				<label for="edit-product-description" class="block text-sm font-semibold">{{
+					trans("Description")
+				}}</label>
+				<Editor2
+					v-model="selectedEditProduct.description"
+					class="w-full"
+					:placeholder="trans('Enter text')"
+					:toogle="[
+						'heading',
+						'fontSize',
+						'bold',
+						'italic',
+						'underline',
+						'bulletList',
+						'query',
+						'fontFamily',
+						'orderedList',
+						'blockquote',
+						'divider',
+						'alignLeft',
+						'alignRight',
+						'link',
+						'alignCenter',
+						'undo',
+						'redo',
+						'highlight',
+						'color',
+						'clear',
+						'video',
+						'table',
+					]">
+					<template #editor-content="{ editor }">
+						<div
+							class="editor-wrapper border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus-within:border-gray-400">
+							<EditorContent :editor="editor" class="focus:outline-none" />
+						</div>
+					</template>
+				</Editor2>
+			</div>
+			<div class="mt-3 flex gap-2">
+				<Button
+					type="tertiary"
+					:style="'white-w-outline'"
+					@click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'draft')"
+					:label="trans('Save as Draft')"
+					full
+					:loading="isLoadingSubmitErrorTitle" />
+				<Button
+					@click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'publish')"
+					:label="trans('Save & Upload')"
+					full
+					:loading="isLoadingSubmitErrorTitle" />
+			</div>
+		</div>
+	</Modal>
 </template>
-

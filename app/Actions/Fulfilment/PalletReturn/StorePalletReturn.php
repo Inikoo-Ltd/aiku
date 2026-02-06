@@ -157,6 +157,7 @@ class StorePalletReturn extends OrgAction
             'delivery_address'          => ['sometimes', new ValidAddress()],
             'data'                      => ['sometimes', 'array'],
             'is_collection'             => ['sometimes', 'boolean'],
+            'platform_order_id'         => ['sometimes', 'string'],
             'shopify_user_id'           => ['sometimes', 'integer']
         ];
     }

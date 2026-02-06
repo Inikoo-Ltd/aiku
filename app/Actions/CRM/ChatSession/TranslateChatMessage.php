@@ -2,7 +2,6 @@
 
 namespace App\Actions\CRM\ChatSession;
 
-use OpenAI;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Facades\Log;
 use App\Events\BroadcastRealtimeChat;
@@ -11,6 +10,10 @@ use App\Models\CRM\Livechat\ChatSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\Livechat\ChatMessageTranslation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use Sentry\Laravel\Facade as Sentry;
+use Throwable;
+use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Helpers\Translations\DetectLanguageWithAI;
 
 class TranslateChatMessage
 {
@@ -81,19 +84,12 @@ class TranslateChatMessage
         }
 
 
-        $detectedLangCode = $this->detectLanguageCode($text);
+        $language = $this->detectLanguageCode($text);
 
 
-        if ($detectedLangCode) {
-
-            $language = Language::where('code', $detectedLangCode)->first();
-
-            if ($language) {
-
-                $message->update(['original_language_id' => $language->id]);
-
-                $this->updateSessionLanguage($session, $language->id);
-            }
+        if ($language) {
+            $message->update(['original_language_id' => $language->id]);
+            $this->updateSessionLanguage($session, $language->id);
         }
     }
 
@@ -159,9 +155,9 @@ class TranslateChatMessage
         }
 
         $targetCode = $targetLang->code;
-        $sourceCode = $originalLang ? $originalLang->code : 'auto-detect';
+        $sourceCode = $originalLang ? $originalLang->code : 'en';
 
-        $translatedText = $this->performTranslationWithOpenAI($text, $sourceCode, $targetCode);
+        $translatedText = $this->performTranslationHelper($text, $sourceCode, $targetCode);
 
         if ($translatedText && $translatedText !== $text) {
             ChatMessageTranslation::updateOrCreate(
@@ -185,80 +181,45 @@ class TranslateChatMessage
     }
 
 
-    private function detectLanguageCode(string $text): ?string
+    private function detectLanguageCode(string $text): ?Language
     {
-
-        if (mb_strlen($text) <= 3) {
+        if (mb_strlen(trim($text)) <= 3) {
             return null;
         }
 
         try {
-            $apiKey = env('CHATGPT_TRANSLATIONS_API_KEY');
-            if (!$apiKey) {
-                return null;
-            }
-
-            $client = OpenAI::client($apiKey);
-
-            $response = $client->chat()->create([
-                'model' => 'gpt-4o-mini',
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => 'You are a language detector. Reply ONLY with the ISO 639-1 language code (e.g., en, es, fr, id, ar). Do not write anything else.'
-                    ],
-                    [
-                        'role' => 'user',
-                        'content' => $text
-                    ],
-                ],
-                'temperature' => 0.7,
-                'max_tokens' => 5,
-            ]);
-
-            $code = trim($response->choices[0]->message->content);
-
-            if (preg_match('/^[a-z]{2}$/i', $code)) {
-                return strtolower($code);
-            }
-
-            return null;
-        } catch (\Throwable $e) {
-            Log::warning("OpenAI Language Detection Error: " . $e->getMessage());
+            /** @var \App\Models\Helpers\Language|null $language */
+            return DetectLanguageWithAI::run($text);
+        } catch (Throwable $e) {
+            Log::error($e->getMessage());
+            Sentry::captureException($e);
             return null;
         }
     }
 
-    private function performTranslationWithOpenAI(string $text, string $sourceCode, string $targetCode): ?string
+
+    private function performTranslationHelper(string $text, string $sourceCode, string $targetCode): ?string
     {
         try {
-            $apiKey = env('CHATGPT_TRANSLATIONS_API_KEY');
-            if (!$apiKey) {
-                Log::error("Missing CHATGPT_TRANSLATIONS_API_KEY");
-                return null;
+            if (trim($text) === '' || $sourceCode === $targetCode) {
+                return $text;
             }
 
-            $client = OpenAI::client($apiKey);
+            $languageFrom = Language::where('code', $sourceCode)->first();
+            $languageTo   = Language::where('code', $targetCode)->first();
 
-            $response = $client->chat()->create([
-                'model' => 'gpt-5-nano',
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => 'You are a professional translator. Translate the text accurately. Do not add quotes or explanations. Return ONLY the translated text.'
-                    ],
-                    [
-                        'role' => 'user',
-                        'content' => "Translate from {$sourceCode} to {$targetCode}:\n\n{$text}"
-                    ],
-                ],
-                'temperature' => 1,
-            ]);
+            if (!$languageFrom || !$languageTo) {
+                Log::warning('Language not found', [
+                    'from' => $sourceCode,
+                    'to'   => $targetCode,
+                ]);
+                return $text;
+            }
 
-            return trim($response->choices[0]->message->content);
-        } catch (\Exception $e) {
-            Log::error("OpenAI Translation failed: " . $e->getMessage());
-            return null;
+            return Translate::run($text, $languageFrom, $languageTo);
+        } catch (Throwable $e) {
+            Sentry::captureException($e);
+            return $text;
         }
     }
 }

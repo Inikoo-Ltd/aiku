@@ -23,6 +23,7 @@ use App\Http\Resources\Catalogue\ExternalShop\ProductInExternalShopResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -44,7 +45,7 @@ class IndexProductsInCatalogue extends OrgAction
     private string $bucket;
 
 
-    public function getElementGroups(Shop $shop, $bucket = null): array
+    public function getElementGroups(Shop|MasterAsset $shop, $bucket = null): array
     {
         return [
 
@@ -230,9 +231,13 @@ class IndexProductsInCatalogue extends OrgAction
 
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+
+            if (!$shop->type == ShopTypeEnum::EXTERNAL) {
+                $table->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            }
+
+            $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             if ($bucket != 'discontinued') {
                 $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

@@ -50,6 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property array<array-key, mixed> $config
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
  * @property-read Group $group
@@ -78,6 +79,7 @@ class ClockingMachine extends Authenticatable implements Auditable
 
     protected $casts = [
         'data'                        => 'array',
+        'config'                      => 'array',
         'status'                      => ClockingMachineStatusEnum::class,
         'fetched_at'                  => 'datetime',
         'last_fetched_at'             => 'datetime',
@@ -85,6 +87,7 @@ class ClockingMachine extends Authenticatable implements Auditable
 
     protected $attributes = [
         'data'        => '{}',
+        'config'      => '{}',
     ];
 
     protected $guarded = [];

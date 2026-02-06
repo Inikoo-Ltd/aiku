@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
@@ -23,6 +24,7 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -32,6 +34,7 @@ use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Ordering\DispatchedEmailsInOrderResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
 use App\Http\Resources\Ordering\TransactionsResource;
@@ -385,6 +388,22 @@ class ShowOrder extends OrgAction
                 'payments_data'     => $paymentsData,
                 'payments_accounts' => $paymentAccountData,
                 'state'             => $order->state->value,
+                'route_recalculate_vat' => [
+                    // Show button if order is creating (not submitted) and deliveryNote has is_cash_on_delivery true and it's not in those condition. Based on Dimitar requests.
+                    'showButton' => in_array($order->state, [OrderStateEnum::CREATING]) ||
+                        $order->deliveryNotes()
+                            ->where('is_cash_on_delivery', true)
+                            ->whereNotIn('state', [
+                                DeliveryNoteStateEnum::DISPATCHED,
+                                DeliveryNoteStateEnum::FINALISED,
+                                DeliveryNoteStateEnum::CANCELLED,
+                            ])
+                            ->exists(),
+                    'name'       => 'grp.models.order.recalculate-vat',
+                    'parameters' => [
+                        'order'        => $order->id
+                    ]
+                ],
                 'proforma_invoice' => [
                     'check_list'         => [
                         [
@@ -523,6 +542,10 @@ class ShowOrder extends OrgAction
                 OrderTabsEnum::PAYMENTS->value => $this->tab == OrderTabsEnum::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))
                     : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))),
+                
+                OrderTabsEnum::HISTORY->value => $this->tab == OrderTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($order, OrderTabsEnum::HISTORY->value)) 
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($order, OrderTabsEnum::HISTORY->value))),
 
             ]
         )
@@ -560,7 +583,11 @@ class ShowOrder extends OrgAction
                     parent: $order,
                     prefix: OrderTabsEnum::DELIVERY_NOTES->value
                 )
-            );
+            )
+            ->table(
+                IndexHistory::make()->tableStructure(
+                    OrderTabsEnum::HISTORY->value)
+                );
     }
 
     public function prepareForValidation(ActionRequest $request): void

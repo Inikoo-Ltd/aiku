@@ -47,7 +47,7 @@ const bestOffer = computed(() => {
         <div class="col-span-3 space-y-1.5">
             <!-- Section: Price -->
             <div v-if="product?.units < 2">
-                <span class="font-bold">{{ locale.currencyFormat(currency?.code, product?.price) }}</span>/{{ product?.unit }}
+                <span :class="layout?.retina?.organisation == 'aroma' && bestOffer ? 'line-through' : ''"><span class="font-bold">{{ locale.currencyFormat(currency?.code, product?.price) }}</span>/{{ product?.unit }}</span>
             </div>
             <div v-else>
                 <span class="font-bold">{{ locale.currencyFormat(currency?.code, product?.price) }}</span> ({{ locale.currencyFormat(currency?.code, Number((product?.price / product?.units).toFixed(2) || 0).toFixed(2)) }}/{{ product?.unit }})

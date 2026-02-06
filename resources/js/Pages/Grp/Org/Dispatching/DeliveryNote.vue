@@ -55,6 +55,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -129,6 +130,8 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
+	history: {}
+}>();
 	shop: {
 		type: string   // 'b2b', 'dropshipping'
 	}
@@ -142,6 +145,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
+		history: TableHistories,
         pickings: TablePickings
     };
 
@@ -446,7 +450,7 @@ onMounted(() => {
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
 			>
-				
+
 			</ButtonSelectBays>
 		</template>
 	</PageHeading>

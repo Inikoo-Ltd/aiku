@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -279,6 +280,25 @@ class EditShop extends OrgAction
                             'required'    => true,
                             'value'       => $shop->price_rrp_ratio,
                             'min'         => 0
+                        ],
+                        'product_price_currency_exchange'  => [
+                            'type'        => 'input_number',
+                            'bind'        => [
+                                'step'              => '0.5',
+                                'maxFractionDigits' => 3,
+                                'min'               => 0
+                            ],
+                            'saveConfirmation'  => [
+                                'title'     => __('Are you sure want to update currency exchange?'),
+                                'description'   => __("This will affect all products in the shop, including the product that in customer's basket. Products that already purchased in Order will not affected."),
+                                'yesLabel'  => __('Yes, update currency exchane')
+                            ],
+                            'label'       => __('Product Currency Exchange'),
+                            'placeholder' => __('Product Currency Exchange'),
+                            'required'    => true,
+                            'hidden'      => app()->isProduction(),
+                            'value'       => $shop->product_price_currency_exchange
+                                ?? GetCurrencyExchange::run($shop->currency, $shop->currency),
                         ]
                     ]
                 ],
@@ -456,9 +476,12 @@ class EditShop extends OrgAction
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
                                 'faire_access_token' => [
-                                    'type'  => 'input',
+                                    'type'  => 'input_with_warning',
                                     'label' => __('Faire Access Token'),
                                     'value' => Arr::get($shop->settings, 'faire.access_token', ''),
+                                    'showWarning'    => !is_null($shop->external_shop_connection_failed_at),
+                                    'warningTitle'   => __('We are having troubles connecting to the platform'),
+                                    'warningBody'    => __('Error Message') . ": " . $shop->external_shop_connection_error
                                 ]
                             ],
                         ],

@@ -15,6 +15,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandl
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
@@ -30,6 +31,7 @@ use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Ordering\PickersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -720,6 +722,10 @@ class ShowDeliveryNote extends OrgAction
             'warehouse'           => [
                 'slug' => $deliveryNote->warehouse->slug,
             ],
+
+            DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))),
             'shop'  => [
                 'type'  => $deliveryNote->shop?->type?->value,
             ]
@@ -743,6 +749,8 @@ class ShowDeliveryNote extends OrgAction
         } else {
             $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
         }
+
+        $inertiaResponse->table(IndexHistory::make()->tableStructure(DeliveryNoteTabsEnum::HISTORY->value));
 
         return $inertiaResponse;
     }

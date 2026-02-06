@@ -8,13 +8,13 @@
 
 namespace App\Events;
 
-use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class FetchProductFromShopifyProgressEvent implements ShouldBroadcastNow
 {
@@ -41,6 +41,7 @@ class FetchProductFromShopifyProgressEvent implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
+        Log::info('info:' . json_encode($this->modelData));
         return $this->modelData;
     }
 
