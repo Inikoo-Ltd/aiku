@@ -92,6 +92,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $discretionary_offer_label
  * @property string|null $label
  * @property string|null $marketplace_id
+ * @property bool $is_cut_view
  * @property-read Asset|null $asset
  * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE
@@ -151,8 +152,7 @@ class Transaction extends Model
         'org_net_amount'            => 'decimal:2',
         'grp_exchange'              => 'decimal:4',
         'org_exchange'              => 'decimal:4',
-
-
+        'is_cut_view'               => 'boolean',
     ];
 
     protected $attributes = [

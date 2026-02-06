@@ -51,6 +51,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $transaction_label
  * @property mixed $product_units
  * @property mixed $quantity_picked
+ * @property bool $is_cut_view
  */
 class TransactionsResource extends JsonResource
 {
@@ -96,7 +97,7 @@ class TransactionsResource extends JsonResource
             'discretionary_offer_label' => $this->discretionary_offer_label,
             'transaction_label'         => $this->transaction_label,
             'product_units'             => $this->product_units,
-            'is_cut_view'               => true,
+            'is_cut_view'               => $this->is_cut_view,
 
 
             'deleteRoute' => $request->user() instanceof User
