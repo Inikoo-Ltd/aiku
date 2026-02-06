@@ -76,31 +76,30 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
         $invoice = $row;
 
         $customer = $invoice->customer;
-        $order = $invoice->order;
+        $order    = $invoice->order;
 
         if (!$customer) {
             return $this->emptyRow();
         }
 
-        $address = $customer->address;
+        $address     = $customer->address;
         $countryCode = $address->country_code ?? '';
 
-        $isRefund = $invoice->type === InvoiceTypeEnum::REFUND;
+        $isRefund   = $invoice->type === InvoiceTypeEnum::REFUND;
         $multiplier = $isRefund ? -1 : 1;
 
-        $netAmount = $multiplier * (float)$invoice->net_amount;
-        $taxAmount = $multiplier * (float)$invoice->tax_amount;
+        $netAmount   = $multiplier * (float)$invoice->net_amount;
+        $taxAmount   = $multiplier * (float)$invoice->tax_amount;
         $totalAmount = $multiplier * (float)$invoice->total_amount;
 
-        $goodsAmount = $multiplier * (float)($invoice->goods_amount ?? 0);
+        $goodsAmount    = $multiplier * (float)($invoice->goods_amount ?? 0);
         $servicesAmount = $multiplier * (float)($invoice->services_amount ?? 0);
         $shippingAmount = $multiplier * (float)($invoice->shipping_amount ?? 0);
-        $chargesAmount = $multiplier * (float)($invoice->charges_amount ?? 0);
+        $chargesAmount  = $multiplier * (float)($invoice->charges_amount ?? 0);
 
         $itemsAmount = $goodsAmount + $servicesAmount;
 
-        // TODO: R column - currently always 0, needs clarification on what this field represents
-        // Possible options: returns amount, refunds processed, or other business-specific value
+        // : R column - currently always 0, and is ok
 
         $taxPercentage = $netAmount != 0 ? abs(($taxAmount / $netAmount) * 100) : 0;
 
@@ -111,7 +110,7 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             $invoice->reference,
             $order ? $order->reference : '',
             $customer->company_name ?: $customer->name,
-            $customer->identity_document_number ? "'" . $customer->identity_document_number : '',
+            $customer->identity_document_number ? "'".$customer->identity_document_number : '',
             $countryCode,
             $invoice->date->format('Y-m-d H:i'),
             $invoice->currency->code ?? 'EUR',
@@ -119,7 +118,7 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             number_format($itemsAmount, 2, '.', ''),
             number_format($shippingAmount, 2, '.', ''),
             number_format($chargesAmount, 2, '.', ''),
-            '0', // TODO: Determine what R column should contain
+            '0',
             number_format($netAmount, 2, '.', ''),
             number_format($taxAmount, 2, '.', ''),
             number_format($taxPercentage, 2, '.', ''),
@@ -130,9 +129,33 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
     protected function determineTaxType($customer, string $countryCode, float $taxPercentage): string
     {
         $euCountries = [
-            'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'GR', 'EL',
-            'FI', 'FR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT',
-            'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK'
+            'AT',
+            'BE',
+            'BG',
+            'CY',
+            'CZ',
+            'DE',
+            'DK',
+            'EE',
+            'GR',
+            'EL',
+            'FI',
+            'FR',
+            'HR',
+            'HU',
+            'IE',
+            'IT',
+            'LT',
+            'LU',
+            'LV',
+            'MT',
+            'NL',
+            'PL',
+            'PT',
+            'RO',
+            'SE',
+            'SI',
+            'SK'
         ];
 
         if ($countryCode === 'ES') {
@@ -148,6 +171,7 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             if ($taxPercentage > 0) {
                 return 'T5';
             }
+
             return 'T1';
         }
 

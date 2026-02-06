@@ -18,40 +18,41 @@ const props = defineProps<{
 |--------------------------------------------------------------------------
 */
 const parseTime = (val: any) => {
-  if (!val) return null
+    if (!val) return null
 
-  if (val instanceof Date) return val
+    if (val instanceof Date && !isNaN(val.getTime())) return val
 
-  if (typeof val === 'string' && val.includes('T')) {
-    const d = new Date(val)
-    if (!isNaN(d.getTime())) return d
-  }
+    if (typeof val === 'string') {
+        const timePart = val.includes('T') ? val.split('T')[1] : val
+        const clean = timePart.replace(/Z|[+-]\d{2}:\d{2}$/, '')
+        const parts = clean.split(':')
 
-  if (typeof val === 'string' && val.includes(':')) {
-    const parts = val.split(':')
-    if (parts.length < 2) return null
+        if (parts.length >= 2) {
+            const h = Number(parts[0])
+            const m = Number(parts[1])
+            if (isNaN(h) || isNaN(m)) return null
 
-    const h = Number(parts[0])
-    const m = Number(parts[1])
-    if (isNaN(h) || isNaN(m)) return null
+            const d = new Date()
+            d.setHours(h, m, 0, 0)
+            return d
+        }
+    }
 
-    const d = new Date()
-    d.setHours(h)
-    d.setMinutes(m)
-    d.setSeconds(0)
-    d.setMilliseconds(0)
-    return d
-  }
-
-  return null
+    return null
 }
+
+
+
 
 const formatTime = (val: Date | null) => {
-  if (!val) return null
-  const h = String(val.getHours()).padStart(2, '0')
-  const m = String(val.getMinutes()).padStart(2, '0')
-  return `${h}:${m}`
+    if (!val) return null
+
+    const h = String(val.getHours()).padStart(2, '0')
+    const m = String(val.getMinutes()).padStart(2, '0')
+
+    return `${h}:${m}`
 }
+
 
 /*
 |--------------------------------------------------------------------------
@@ -268,8 +269,9 @@ watch(() => weekTimes, () => {
               </div>
 
               <div class="py-1 pr-2">
-                <DatePicker v-model="weekTimes[d].in" timeOnly fluid :placeholder="trans('Start')"
-                  inputClass="text-sm py-1" :showClear="true" />
+                <DatePicker v-model="weekTimes[d].in" timeOnly fluid :minuteStep="1" :hourStep="1"
+                    :placeholder="trans('Start')" inputClass="text-sm py-1" :showClear="true" />
+
               </div>
 
               <div class="py-1">

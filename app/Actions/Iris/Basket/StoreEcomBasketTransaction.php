@@ -8,6 +8,7 @@
 
 namespace App\Actions\Iris\Basket;
 
+use App\Actions\Traits\InteractsWithOrderInBasket;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Catalogue\Product;
@@ -19,13 +20,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreEcomBasketTransaction extends IrisAction
 {
+    use InteractsWithOrderInBasket;
+
     /**
      * @throws \Illuminate\Validation\ValidationException
      * @throws \Throwable
      */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
-        $order = $customer->orderInBasket;
+        $order = $this->getOrderInBasket($customer);
 
         if (!$order) {
             $order = StoreEcomOrder::make()->action($customer);

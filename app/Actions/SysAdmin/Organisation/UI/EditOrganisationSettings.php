@@ -230,7 +230,7 @@ class EditOrganisationSettings extends OrgAction
                                          'metadata' => $metadata,
                                          'data'     => (object) $scheduleData,
                                     ]
-                                   
+
                                 ]
                             ],
                         ],

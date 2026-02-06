@@ -70,7 +70,7 @@ const isFetched = ref(false)
 //                     "recommendation_type": "item_detail_alternatives",
 //                     "recommender_client_identifier": "item_detail_alternatives",
 //                     "size": 25,
-//                     "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
+//                     "user_id": layout.iris_variables?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
 //                     "recommendation_context": {},
 //                     // "hit_fields": ["url", "title"]
 //                 }
@@ -99,6 +99,8 @@ const isFetched = ref(false)
 
 
 const fetchRecommenders = async () => {
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+
     try {
         isLoadingFetch.value = true
         const response = await axios.post(
@@ -110,7 +112,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": "last_seen",
                     "recommender_client_identifier": "last_seen",
                     "size": 25,
-                    "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
+                    "user_id": userId ?? null,  // Customer ID or Cookie _lb
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
                 }
@@ -125,7 +127,7 @@ const fetchRecommenders = async () => {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        console.log('LIA1:', response.data)
+        console.log('LLS:', response.data)
         RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProductsFromLuigi.value = response.data[0].hits
@@ -176,6 +178,7 @@ const fetchRecommendersToGetProducts = async () => {
                     }
                 }
             )
+            console.log('product detail:', response.data.data)
             listProducts.value = response.data.data
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)

@@ -66,19 +66,36 @@ class IndexProductsInMasterProduct extends OrgAction
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
+        foreach (IndexProductsInCatalogue::make()->getElementGroups($masterAsset) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
+        }
+
         return $queryBuilder->allowedSorts(['code', 'name', 'shop_code', 'units'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure($prefix = null, ?MasterAsset $masterAsset = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $masterAsset) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
+            }
+
+            foreach (IndexProductsInCatalogue::make()->getElementGroups($masterAsset, 'all') as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
             }
 
             $table

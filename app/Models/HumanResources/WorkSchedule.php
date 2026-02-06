@@ -9,6 +9,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property int $id
+ * @property string $schedulable_type
+ * @property int $schedulable_id
+ * @property string $name
+ * @property int|null $timezone_id
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\WorkScheduleDay> $days
+ * @property-read Model|\Eloquent $schedulable
+ * @property-read Timezone|null $timezone
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule query()
+ * @mixin \Eloquent
+ */
 class WorkSchedule extends Model
 {
     use HasFactory;

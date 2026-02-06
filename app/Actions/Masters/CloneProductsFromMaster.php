@@ -79,19 +79,23 @@ class CloneProductsFromMaster
                     } else {
                         print "Adding product $masterProduct->code to shop $shop->slug \n";
 
-                        StoreProductFromMasterProduct::make()->action(
-                            $masterProduct,
-                            [
-                                'shop_products' => [
-                                    $shop->id => [
-                                        'price'          => $price,
-                                        'rrp'            => $rrp,
-                                        'create_webpage' => $createWebpage,
-                                        'create_in_shop' => 'Yes'
-                                    ]
-                                ],
-                            ]
-                        );
+                        try {
+                            StoreProductFromMasterProduct::make()->action(
+                                $masterProduct,
+                                [
+                                    'shop_products' => [
+                                        $shop->id => [
+                                            'price' => $price,
+                                            'rrp' => $rrp,
+                                            'create_webpage' => $createWebpage,
+                                            'create_in_shop' => 'Yes'
+                                        ]
+                                    ],
+                                ]
+                            );
+                        } catch (\Throwable $e) {
+                            print $masterProduct->code.' '.$e->getMessage()." can not create product\n";
+                        }
 
                         $product = $shop->products()->where('master_product_id', $masterProduct->id)->first();
                         if ($product) {

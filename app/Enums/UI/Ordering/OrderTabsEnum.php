@@ -17,6 +17,10 @@ enum OrderTabsEnum: string
     use HasTabs;
 
     case TRANSACTIONS                       = 'transactions';
+    
+    // case HISTORY
+    case HISTORY           = 'history';
+    
     case PAYMENTS                    = 'payments';
     // case DISCOUNTS                   = 'discounts';
     case INVOICES                    = 'invoices';
@@ -28,11 +32,6 @@ enum OrderTabsEnum: string
 
     // case SENT_EMAILS                 = 'sent_emails';
     case DISPATCHED_EMAILS           = 'dispatched_emails';
-
-
-
-
-
 
     public function blueprint(): array
     {
@@ -82,12 +81,12 @@ enum OrderTabsEnum: string
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            //OrderTabsEnum::HISTORY => [
-            //     'title' => __('History'),
-            //     'icon'  => 'fal fa-clock',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            // ],
+            OrderTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
 
         };
     }

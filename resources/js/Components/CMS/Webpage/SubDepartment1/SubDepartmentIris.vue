@@ -116,7 +116,6 @@ const textVisible = computed(() => {
       {{ trans("Browse By Sub-department") }}
     </h2> -->
       <div v-if="textVisible" v-html="title"></div>
-
     <div>
       <div class="grid gap-4" :class="gridColsClass">
         <LinkIris v-for="(item, index) in mergedItems" :key="item?.code" :href="`${item?.url}`"

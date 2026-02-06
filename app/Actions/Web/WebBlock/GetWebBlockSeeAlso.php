@@ -61,7 +61,7 @@ class GetWebBlockSeeAlso
                 'title'  => $modelOtherFamily->webpage?->title,
                 'option' => ProductsWebpageResource::collection(
                     $modelOtherFamily->getProductsDistinctVariant()
-                        // ->where('stock', '>', 0)
+                        ->where('available_quantity', '>', 0)
                         ->sortByDesc('id')
                         ->take(6)
                 )->resolve(),

@@ -21,17 +21,17 @@ class FetchAuroraCredit extends FetchAurora
     {
         $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Credit Transaction Customer Key'});
 
-        $shop=$customer->shop;
+        $shop = $customer->shop;
 
-        if(!$shop){
+        if (!$shop) {
             return;
         }
 
-        if($shop->type==ShopTypeEnum::DROPSHIPPING || $shop->type==ShopTypeEnum::FULFILMENT){
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING || $shop->type == ShopTypeEnum::FULFILMENT) {
             return;
         }
 
-        if($shop->slug=='acar'){
+        if ($shop->slug == 'acar') {
             return;
         }
 
@@ -42,7 +42,7 @@ class FetchAuroraCredit extends FetchAurora
         }
 
 
-        if ($payment and $payment->customer_id != $customer->id) {
+        if ($payment && $payment->customer_id != $customer->id) {
             $payment = null;
             print "\nError Payment Customer does not match Customer   ".$this->auroraModelData->{'Credit Transaction Date'}."   >>".$this->auroraModelData->{'Credit Transaction Key'}."<<  \n";
         }

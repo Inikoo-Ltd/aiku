@@ -55,6 +55,8 @@ const isProductLoading = (productId: string) => {
 const isFetched = ref(false)
 
 const fetchRecommenders = async () => {
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+
     try {
         isLoadingFetch.value = true
         const response = await axios.post(
@@ -66,7 +68,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": "trends",
                     "recommender_client_identifier": "trends",
                     "size": 25,
-                    "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,
+                    "user_id": userId ?? null,
                     "category": undefined,
                     "brand": undefined,
                     "product_id": undefined,

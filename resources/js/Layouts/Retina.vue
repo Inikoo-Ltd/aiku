@@ -36,6 +36,7 @@ import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal } 
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
+import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
 
 library.add(faMedal, fasMedal, fadMedal)
 library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)
@@ -210,6 +211,8 @@ const checkScreenType = () => {
 provide('screenType', screenType)
 onMounted(() => {
     checkScreenType()
+    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())  // Luigi: to set customer_id
+
     // window.addEventListener('resize', checkScreenType)
 })
 // onBeforeUnmount(() => {

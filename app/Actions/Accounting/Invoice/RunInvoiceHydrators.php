@@ -31,6 +31,7 @@ use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesInt
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesOrgCurrency;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
+use App\Actions\Ordering\SalesChannel\ProcessSalesChannelTimeSeriesRecords;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
@@ -160,6 +161,24 @@ class RunInvoiceHydrators
                 $queueOrRun(ProcessPlatformTimeSeriesRecords::class, [
                     $invoice->platform_id,
                     $invoice->shop_id,
+                    $frequency,
+                    match ($frequency) {
+                        TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
+                        TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
+                        TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
+                        TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
+                        TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                    },
+                    now()->toDateString(),
+                ]);
+            }
+        }
+
+        // --- Sales Channel Time Series ---
+        if ($invoice->sales_channel_id) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                $queueOrRun(ProcessSalesChannelTimeSeriesRecords::class, [
+                    $invoice->sales_channel_id,
                     $frequency,
                     match ($frequency) {
                         TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
