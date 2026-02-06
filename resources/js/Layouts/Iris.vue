@@ -30,6 +30,15 @@ import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
 
+interface ChatConfig {
+    is_online: boolean
+    schedule?: {
+        start: string
+        end: string
+        timezone: string
+    }
+}
+
 library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
@@ -49,7 +58,7 @@ const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { co
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
-const chatConfig = usePage().props?.chat_config
+const chatConfig = usePage().props?.chat_config as ChatConfig
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
         const irisData = localStorage.getItem('iris');

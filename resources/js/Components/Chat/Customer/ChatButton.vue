@@ -9,6 +9,7 @@ import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 import OfflineChatForm from "../OfflineChatForm.vue"
+import { router } from "@inertiajs/vue3"
 
 interface ChatMessage {
     id: number
@@ -357,6 +358,7 @@ const toggle = () => {
         unreadMessageIds.clear()
         unreadCount.value = 0
         initChat()
+        router.reload()
     }
 }
 
