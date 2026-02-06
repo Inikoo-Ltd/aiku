@@ -15,6 +15,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 class RepairCustomersOrdersInBasketId
 {
@@ -30,12 +31,13 @@ class RepairCustomersOrdersInBasketId
         $order = Order::where('customer_id', $customer->id)->where('state', OrderStateEnum::CREATING)->first();
 
         $oldOrder = $customer->current_order_in_basket_id;
-        if ($order) {
-            $customer->update([
-                'current_order_in_basket_id' => $order->id,
-            ]);
-        }
-        if ($order && $oldOrder != $order->id) {
+
+        $customer->update([
+            'current_order_in_basket_id' => $order?->id,
+        ]);
+
+        $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
+        if ($changes) {
             CustomerHydrateBasket::run($customer->id);
             $command->info("Customer $customer->slug: $oldOrder  ->   $order->id");
         }
