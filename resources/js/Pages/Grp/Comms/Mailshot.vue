@@ -56,11 +56,6 @@ const props = defineProps<{
     numberSecondWaveRecipients?: number
 }>();
 
-console.log("api", props.showLinkedMailShotRoute)
-console.log("isHasParentMailshot:", props.isHasParentMailshot)
-console.log("numberSecondWaveRecipients:", props.numberSecondWaveRecipients)
-console.log("isSecondWaveActive:", props.isSecondWaveActive)
-
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
@@ -478,7 +473,7 @@ const handleSaveSecond = async () => {
 
 const loadingFetch = ref(false)
 
-const handleFetchAction = () => {
+const handleFetchActionWave = () => {
     if (!props.showLinkedMailShotRoute) return
 
     loadingFetch.value = true
@@ -513,25 +508,28 @@ const handleFetchAction = () => {
     )
 }
 
-
-watch(() => props.isSecondWaveActive, v => checked.value = v)
-watch(() => props.secondwaveSubject, v => subject.value = v ?? "")
-watch(() => props.secondwaveDelayHours, v => hour.value = v ?? 0)
+const waveLabel = computed(() =>
+    props.isHasParentMailshot ? 'First Wave' : '2nd Wave'
+)
+const isWaveContext = computed(() =>
+    props.isHasParentMailshot || props.isSecondWaveActive
+)
 
 const showWaveSettings = computed(() =>
     ['in_process', 'ready'].includes(props.status ?? '')
 )
 
-const waveLabel = computed(() =>
-    props.isHasParentMailshot ? 'First Wave' : '2nd Wave'
+// for the input subject secondwave validation
+const shouldShowWaveInfo = computed(() =>
+    showWaveSettings.value || isWaveContext.value
 )
 
-const canFetchWaveAction = computed(() => {
-    return (
-        !showWaveSettings.value &&
-        (props.isHasParentMailshot || props.isSecondWaveActive)
-    )
-})
+// for the links
+const canFetchWaveAction = computed(() =>
+    !showWaveSettings.value && isWaveContext.value
+)
+
+watch(() => props.isSecondWaveActive, v => checked.value = v)
 watch(
     filteredTabs,
     (tabs) => {
@@ -624,19 +622,20 @@ watch(
         </div>
     </Popover>
     <Tabs :current="currentTab" :navigation="filteredTabs" @update:tab="handleTabUpdate" />
-    <div class="mx-4 my-4 space-y-3">
-
+    <div class="mx-4 my-4 space-y-3" v-if="shouldShowWaveInfo && props.status">
         <div class="inline-flex items-center gap-3 px-3 py-1.5 rounded-md
          bg-gray-50 border border-gray-200">
-            <span class="text-sm font-medium whitespace-nowrap transition" :class="canFetchWaveAction
-                ? 'text-indigo-600 cursor-pointer hover:underline'
-                : 'text-gray-700'" @click="canFetchWaveAction && handleFetchAction()">
-                {{ waveLabel }}
-            </span>
-            <span class="text-sm font-medium text-gray-700 whitespace-nowrap"
-                v-if="!props.isHasParentMailshot && !showWaveSettings">
-                Recipients: {{ numberSecondWaveRecipients }}
-            </span>
+            <template v-if="shouldShowWaveInfo">
+                <span class="text-sm font-medium whitespace-nowrap transition" :class="canFetchWaveAction
+                    ? 'text-indigo-600 cursor-pointer hover:underline'
+                    : 'text-gray-700'" @click="canFetchWaveAction && handleFetchActionWave()">
+                    {{ waveLabel }}
+                </span>
+                <span class="text-sm font-medium text-gray-700 whitespace-nowrap"
+                    v-if="!props.isHasParentMailshot && !showWaveSettings">
+                    Recipients: {{ numberSecondWaveRecipients }}
+                </span>
+            </template>
             <template v-if="showWaveSettings">
                 <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave"
                     :disabled="isSavingToggle" />
