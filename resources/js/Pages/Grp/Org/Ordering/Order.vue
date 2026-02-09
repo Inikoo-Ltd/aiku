@@ -259,6 +259,10 @@ const props = defineProps<{
     payments_data: Array<{ id: number, name: string }>
     state: string
     history: {}
+    salesChannel?: {
+        name: string
+        icon: string
+    }
 }>()
 
 
@@ -1224,6 +1228,7 @@ const recalculateVat = async () => {
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Order") }}
+                    <span v-if="salesChannel" v-tooltip="trans('This order is from :salesChannel', { salesChannel: salesChannel.name})" class="font-normal text-sm opacity-70">({{ salesChannel.name }} <FontAwesomeIcon :icon="salesChannel.icon" class="" fixed-width aria-hidden="true" />)</span>
                 </div>
 
                 <div class="space-y-0.5 pl-1">
