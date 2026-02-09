@@ -74,8 +74,16 @@ enum GroupDashboardSalesTableTabsEnum: string
         };
     }
 
-    public function table(Group $group, array $organisationTimeSeriesStats = [], mixed $shopTimeSeriesStats = [], mixed $invoiceCategoryTimeSeriesStats = [], mixed $platformTimeSeriesStats = [], mixed $salesChannelTimeSeriesStats = [], mixed $dropshippingShopTimeSeriesStats = [], mixed $fulfilmentShopTimeSeriesStats = []): array
+    public function table(Group $group, array $timeSeriesData = []): array
     {
+        $organisationTimeSeriesStats = $timeSeriesData['organisations'];
+        $shopTimeSeriesStats = $timeSeriesData['shops']['all'];
+        $invoiceCategoryTimeSeriesStats = $timeSeriesData['invoiceCategories'];
+        $platformTimeSeriesStats = $timeSeriesData['platforms'];
+        $salesChannelTimeSeriesStats = $timeSeriesData['salesChannels'];
+        $dropshippingShopTimeSeriesStats = $timeSeriesData['shops']['dropshipping'];
+        $fulfilmentShopTimeSeriesStats = $timeSeriesData['shops']['fulfilment'];
+
         $header = match ($this) {
             GroupDashboardSalesTableTabsEnum::ORGANISATIONS => json_decode(DashboardHeaderOrganisationsSalesResource::make($group)->toJson(), true),
             GroupDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($group)->toJson(), true),
@@ -113,10 +121,10 @@ enum GroupDashboardSalesTableTabsEnum: string
         ];
     }
 
-    public static function tables(Group $group, array $organisationTimeSeriesStats = [], mixed $shopTimeSeriesStats = [], mixed $invoiceCategoryTimeSeriesStats = [], mixed $platformTimeSeriesStats = [], mixed $salesChannelTimeSeriesStats = [], mixed $dropshippingShopTimeSeriesStats = [], mixed $fulfilmentShopTimeSeriesStats = []): array
+    public static function tables(Group $group, array $timeSeriesData = []): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($group, $organisationTimeSeriesStats, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats, $salesChannelTimeSeriesStats, $dropshippingShopTimeSeriesStats, $fulfilmentShopTimeSeriesStats) {
-            return [$case->value => $case->table($group, $organisationTimeSeriesStats, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats, $salesChannelTimeSeriesStats, $dropshippingShopTimeSeriesStats, $fulfilmentShopTimeSeriesStats)];
+        return collect(self::cases())->mapWithKeys(function ($case) use ($group, $timeSeriesData) {
+            return [$case->value => $case->table($group, $timeSeriesData)];
         })->all();
     }
 }

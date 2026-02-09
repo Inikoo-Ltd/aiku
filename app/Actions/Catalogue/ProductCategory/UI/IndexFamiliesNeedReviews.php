@@ -52,6 +52,11 @@ class IndexFamiliesNeedReviews extends OrgAction
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
+        $queryBuilder->leftJoin('webpages', function ($join) { 
+            $join->on('webpages.model_id', 'product_categories.id')
+                ->where('webpages.model_type', class_basename(ProductCategory::class));
+        });
+
         if ($parent instanceof Group) {
             $queryBuilder->where('product_categories.group_id', $parent->id);
         } elseif (class_basename($parent) == 'Shop') {
@@ -115,6 +120,7 @@ class IndexFamiliesNeedReviews extends OrgAction
                 'product_category_sales_intervals.sales_grp_currency_all as sales_all',
                 'product_category_ordering_intervals.invoices_all as invoices_all',
                 'product_categories.master_product_category_id',
+                'webpages.state as webpage_state',
                 DB::raw(
                     "(
                     SELECT json_agg(json_build_object(
@@ -144,6 +150,7 @@ class IndexFamiliesNeedReviews extends OrgAction
                 'is_description_reviewed',
                 'sales_all',
                 'invoices_all',
+                'webpage_state',
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -196,10 +203,11 @@ class IndexFamiliesNeedReviews extends OrgAction
                 ->withModelOperations($modelOperations);
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'webpage_state', label:['fal', 'fa-browser'], tooltip: 'Webpage State', type: 'icon', canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'is_name_reviewed', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'is_description_title_reviewed', label: __('description title'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'is_description_title_reviewed', label: __('Description Title'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_description_reviewed', label: __('Description'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'is_description_extra_reviewed', label: __('description extra'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'is_description_extra_reviewed', label: __('Description Extra'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 

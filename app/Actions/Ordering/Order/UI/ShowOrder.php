@@ -518,6 +518,10 @@ class ShowOrder extends OrgAction
                         ],
                     ]
                 ],
+                'salesChannel'  => $order->salesChannel ? [
+                    'name'  => $order->salesChannel->name,
+                    'icon'  => $order->salesChannel->type->icon()
+                ] : null,
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
@@ -542,9 +546,9 @@ class ShowOrder extends OrgAction
                 OrderTabsEnum::PAYMENTS->value => $this->tab == OrderTabsEnum::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))
                     : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))),
-                
+
                 OrderTabsEnum::HISTORY->value => $this->tab == OrderTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($order, OrderTabsEnum::HISTORY->value)) 
+                    fn () => HistoryResource::collection(IndexHistory::run($order, OrderTabsEnum::HISTORY->value))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($order, OrderTabsEnum::HISTORY->value))),
 
             ]
@@ -586,8 +590,9 @@ class ShowOrder extends OrgAction
             )
             ->table(
                 IndexHistory::make()->tableStructure(
-                    OrderTabsEnum::HISTORY->value)
-                );
+                    OrderTabsEnum::HISTORY->value
+                )
+            );
     }
 
     public function prepareForValidation(ActionRequest $request): void

@@ -41,7 +41,7 @@ class CloneProductsFromMaster
     /**
      * @throws \Throwable
      */
-    public function upsertProduct(Shop $shop, MasterAsset $masterProduct): void
+    public function upsertProduct(Shop $shop, MasterAsset $masterProduct, ?bool $verbose = false): void
     {
         $masterShop = $masterProduct->masterShop;
 
@@ -53,7 +53,9 @@ class CloneProductsFromMaster
 
                 $anchorProduct = $anchorShop->products()->where('master_product_id', $masterProduct->id)->first();
                 if (!$anchorProduct) {
-                    print "Skipping Product $masterProduct->code has no anchor product in shop $anchorShop->slug \n";
+                    if ($verbose) {
+                        print "Skipping Product $masterProduct->code has no anchor product in shop $anchorShop->slug \n";
+                    }
 
                     return;
                 }
@@ -71,11 +73,15 @@ class CloneProductsFromMaster
 
 
                 if (!$masterProduct->masterFamily) {
-                    print "Skipping Product $masterProduct->code master product do not have master family $shop->slug \n";
+                    if ($verbose) {
+                        print "Skipping Product $masterProduct->code master product do not have master family $shop->slug \n";
+                    }
                 } else {
                     $productCategories = $masterProduct->masterFamily->productCategories;
                     if (!$productCategories) {
-                        print "Skipping Product $masterProduct->code master family do not have local family $shop->slug \n";
+                        if ($verbose) {
+                            print "Skipping Product $masterProduct->code master family do not have local family $shop->slug \n";
+                        }
                     } else {
                         print "Adding product $masterProduct->code to shop $shop->slug \n";
 
@@ -85,8 +91,8 @@ class CloneProductsFromMaster
                                 [
                                     'shop_products' => [
                                         $shop->id => [
-                                            'price' => $price,
-                                            'rrp' => $rrp,
+                                            'price'          => $price,
+                                            'rrp'            => $rrp,
                                             'create_webpage' => $createWebpage,
                                             'create_in_shop' => 'Yes'
                                         ]
@@ -111,16 +117,20 @@ class CloneProductsFromMaster
                                 print $product->slug.' '.$e->getMessage()." can not create product webpage\n";
                             }
                         }
-
-
                     }
                 }
             } elseif (!$hasAllOrgStocks) {
-                print "Skipping Product $masterProduct->code has no org stocks in shop $shop->slug \n";
+                if ($verbose) {
+                    print "Skipping Product $masterProduct->code has no org stocks in shop $shop->slug \n";
+                }
             } elseif ($hasDiscontinued) {
-                print "Skipping Product $masterProduct->code has discontinued in shop $shop->slug \n";
+                if ($verbose) {
+                    print "Skipping Product $masterProduct->code has discontinued in shop $shop->slug \n";
+                }
             } else {
-                print "Skipping Product $masterProduct->code has discontinuing org stocks in shop $shop->slug \n";
+                if ($verbose) {
+                    print "Skipping Product $masterProduct->code has discontinuing org stocks in shop $shop->slug \n";
+                }
             }
         }
     }
@@ -198,7 +208,7 @@ class CloneProductsFromMaster
     public function asCommand(Command $command): int
     {
         $masterShop = MasterShop::where('slug', $command->argument('master'))->firstOrFail();
-        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+        $shop       = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 
         $this->handle($masterShop, $shop);
 

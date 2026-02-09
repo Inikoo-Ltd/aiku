@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject } from "vue"
+import { inject, computed } from "vue"
 import { faCube, faLink, faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
@@ -8,6 +8,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Image from "@/Components/Image.vue"
+import { get, isPlainObject } from 'lodash-es'
 
 library.add(faCube, faLink, faImage)
 
@@ -37,6 +38,19 @@ const imageSettings = {
 
 const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
+
+
+
+const valueForField = computed(() => {
+	const rawVal = get(props.modelValue, ['column_position'])
+	if (!isPlainObject(rawVal)) return rawVal
+
+	const view = props.screenType!
+	return rawVal?.[view] ?? rawVal?.desktop ?? 'Image-right'
+})
+
+const isImageRight = computed(() => valueForField.value === 'Image-right')
+
 </script>
 
 <template>
@@ -45,42 +59,24 @@ const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType),
 		}">
-			<div class="grid w-full grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 min-h-[auto] md:min-h-[400px]">
-				<!-- 🖼️ Image Block -->
-				<!-- <div 
-					class="relative w-full cursor-pointer overflow-hidden order-1 md:order-2  md:aspect-auto" 
-					:class="!modelValue.image.source ? '' : ' h-[250px] sm:h-[300px] md:h-[400px]'"
-					@click.stop="() => {
-						sendMessageToParent('activeBlock', indexBlock)
-						sendMessageToParent('activeChildBlock', bKeys[0])
-					}" 
-					@dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
-					:style="getStyles(modelValue.image.properties, screenType)" 
-				>
-					<Image 
-						:src="modelValue.image.source" 
-						:imageCover="true"
-						:alt="modelValue.image.alt || 'Image preview'"
-						class="absolute inset-0 w-full h-full object-cover" 
-						:imgAttributes="modelValue.image.attributes"
-					/>
-				</div> -->
+			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
 
-				<div class="relative w-full cursor-pointer overflow-hidden order-1 mx-auto md:order-2 md:aspect-auto flex justify-center items-center md:block"
-					:class="!modelValue.image.source ? '' : ' h-[250px] sm:h-[300px] md:h-[400px]'"
-					:style="getStyles(modelValue.image.properties, screenType)" @click.stop="() => {
-						sendMessageToParent('activeBlock', indexBlock)
-						sendMessageToParent('activeChildBlock', bKeys[0])
-					}" 
-					@dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)">
+				<!-- IMAGE -->
+				<div class="relative cursor-pointer overflow-hidden w-full" :class="[
+					!modelValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]',
+					isImageRight ? 'order-2' : 'order-1'
+				]" :style="getStyles(modelValue.image.properties, screenType)" @click.stop="() => {
+					sendMessageToParent('activeBlock', indexBlock)
+					sendMessageToParent('activeChildBlock', bKeys[0])
+				}" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)">
 					<Image :src="modelValue.image.source" :imageCover="true"
 						:alt="modelValue.image.alt || 'Image preview'"
 						class="w-full h-full object-cover md:absolute md:inset-0"
 						:imgAttributes="modelValue.image.attributes" />
 				</div>
 
-				<!-- 📝 Text & Button Block -->
-				<div class="flex flex-col justify-center m-auto order-2 md:order-1"
+				<!-- TEXT -->
+				<div class="flex flex-col justify-center m-auto p-4" :class="isImageRight ? 'order-1' : 'order-2'"
 					:style="getStyles(modelValue?.text_block?.properties, screenType)">
 					<div class="max-w-xl w-full" @click="() => {
 						sendMessageToParent('activeBlock', indexBlock)
@@ -105,7 +101,9 @@ const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 						</div>
 					</div>
 				</div>
+
 			</div>
+
 		</div>
 	</div>
 </template>
