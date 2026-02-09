@@ -162,7 +162,7 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
             if (index !== -1) {
                 products[index] = productToAddToBasket
             } else {
-                products.push(productToAddToBasket)
+                products.unshift(productToAddToBasket)
             }
         }
 
