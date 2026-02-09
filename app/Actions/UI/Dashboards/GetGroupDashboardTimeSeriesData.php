@@ -39,8 +39,7 @@ class GetGroupDashboardTimeSeriesData
     protected function getCacheKey(Group $group, $fromDate, $toDate): string
     {
         return sprintf(
-            '%s:group_timeseries:%s:%s:%s',
-            'dashboard',
+            'dashboard:group_timeseries:%s:%s:%s',
             $group->id,
             $fromDate ?? 'null',
             $toDate ?? 'null'
