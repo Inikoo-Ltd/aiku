@@ -137,9 +137,20 @@ class GetChatActivity
             case ChatEventTypeEnum::GUEST_PROFILE:
                 $formatted['details'] = $this->formatGuestProfileEvent($event, $chatSession);
                 break;
+
+            case ChatEventTypeEnum::REOPEN:
+                $formatted['details'] = $this->formatReopenEvent($event);
+                break;
         }
 
         return $formatted;
+    }
+
+    private function formatReopenEvent($event): array
+    {
+        return [
+            'description' => 'Chat session was reopened',
+        ];
     }
 
 
