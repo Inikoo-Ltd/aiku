@@ -7,6 +7,7 @@ use App\Models\CRM\Livechat\ChatMessage;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use Illuminate\Support\Arr;
 
 class ChatSessionListResource extends JsonResource
 {
@@ -51,6 +52,16 @@ class ChatSessionListResource extends JsonResource
         $webUser = $this->web_user_id ? $this->webUser : null;
 
         $shop = $this->shop_id ? $this->shop : null;
+
+        $aiSummary = null;
+        if (isset($this->metadata['ai_summary'])) {
+            $summaryData = $this->metadata['ai_summary'];
+            $aiSummary = [
+                'summary'     => Arr::get($summaryData, 'summary'),
+                'key_points'  => Arr::get($summaryData, 'key_points', []),
+                'sentiment'   => Arr::get($summaryData, 'sentiment', 'neutral'),
+            ];
+        }
 
         return [
             'ulid' => $this->ulid,
@@ -128,7 +139,11 @@ class ChatSessionListResource extends JsonResource
             'message_count' => $this->relationLoaded('messages')
                 ? $this->messages->count()
                 : 0,
-            'duration' => $this->created_at->diffForHumans(),
+            'duration' => $this->closed_at
+                ? $this->created_at->diffForHumans($this->closed_at, true)
+                : null,
+
+            'ai_summary' => $aiSummary,
         ];
     }
 
