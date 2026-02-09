@@ -8,7 +8,6 @@
 
 namespace App\Actions\Masters\MasterAsset\Hydrators;
 
-use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Asset\AssetStateEnum;

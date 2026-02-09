@@ -22,13 +22,18 @@ import { Invoice } from "@/types/invoice"
 import { RouteParams } from "@/types/route-params"
 import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
-import { faXmark } from "@fortawesome/free-solid-svg-icons"
+import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
 import { faTriangle, faEquals, faMinus, faShapes, faStar} from "@fas"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
+import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
+import axios from "axios"
+import { ulid } from "ulid"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 
 
@@ -58,6 +63,8 @@ const editingValues = shallowRef<Record<number, { price: number; rrp: number, un
 const editingBackup = ref<Record<number, any>>({})
 const onEditOpen = ref<number[]>([])
 const loadingSave = ref([])
+const selectedTradeUnit = ref(null)
+const keyListTradeUnit = ref(ulid())
 
 function onEdit(data) {
     const item = cloneDeep(data)
@@ -387,6 +394,70 @@ function variantRoute(product: MasterProduct): string {
         }
     )
 }
+const isLoadingFetchTradeUnit = ref(false);
+const isErrorFetchingTradeUnit = ref(false);
+
+const fetchTradeUnits = async (product)   => {
+    isLoadingFetchTradeUnit.value = true;
+    await axios.get(route('grp.json.product.external.trade-units-linked', {
+        product: product.slug
+    })).then((response) => {
+        selectedTradeUnit.value = response.data;
+        keyListTradeUnit.value = ulid()
+    })
+    .catch(() => {
+        notify({
+            title: 'Failed to Fetch',
+            text: 'Unable to fetch product trade units.',
+            type: 'error',
+        });
+        isErrorFetchingTradeUnit.value = true;
+    })
+    .finally(() => {
+        isLoadingFetchTradeUnit.value = false;
+    })
+}
+
+const resetTradeUnits = () => {
+    isLoadingFetchTradeUnit.value = true;
+    selectedTradeUnit.value = null;
+    keyListTradeUnit.value = ulid()
+}
+
+const saveTradeUnits = (value, product) => {
+    console.log("Saving trade units", value, product)
+      router.patch(
+        route("grp.models.product.external.update", { product: product.id }),
+        {
+            trade_units: value
+        },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                loadingSave.value.push(product.id)
+            },
+            onSuccess: () => {
+                notify({
+                    title: 'Success',
+                    text: 'Succesfully updated product trade units',
+                    type: 'success',
+                });
+            },
+            onError: (errors) => {
+                notify({
+                    title: 'Update Failed',
+                    text: 'Failed to update product trade units',
+                    type: 'error',
+                });
+                console.error("Save failed", errors)
+            },
+            onFinish: () => {
+                selectedTradeUnit.value = null
+                loRemove(loadingSave.value, (id) => id === product.id)
+            }
+        }
+    )
+}
 
 </script>
 
@@ -429,14 +500,65 @@ function variantRoute(product: MasterProduct): string {
         <template #cell(product_org_stocks)="{ item: product }">
             <LabelSKU
 				v-if="product.product_org_stocks"
-                :disableClick="true"
+                @open-modal="fetchTradeUnits(product)"
+                @close-modal="resetTradeUnits()"
+                :forceOpenModal="true"
+                :hoverTooltip="trans('Click to set up Trade Units')"
 				:product="product"
 				:trade_units="product.product_org_stocks"
                 :hideUnit="true"
 				xrouteFunction="tradeUnitRoute"
 				keyPicking="picking_factor"
 			>
-			</LabelSKU>
+                <template #modalBody>
+                    <div v-if="isLoadingFetchTradeUnit" class="grid items-center justify-items-center ">
+                        <span class="align-middle">
+                            <LoadingIcon class="text-xl"/> {{ trans('Fetching trade unit details') }}
+                        </span>
+                    </div>
+                    <div v-else-if="isErrorFetchingTradeUnit" class="text-md font-medium text-red-400 grid grid-cols-1">
+                        <span>
+                            <FontAwesomeIcon :icon="faWarning"/> {{ trans('Error fetching Trade Unit details') }}
+                        </span>
+                        <span class="mt-2">
+                            Unable to modify trade unit here. Please access it from the Product Edit page
+                        </span>
+                    </div>
+                    <div v-else>
+                        <ListSelector :key="keyListTradeUnit" v-model="selectedTradeUnit" key_quantity="quantity" :withQuantity="true" :tabs="[
+                            {
+                                label: 'Recommended',
+                                routeFetch: {
+                                    name: 'grp.json.trade-units.recommended.under-product',
+                                    parameters: {
+                                        product: product.id
+                                    }
+                                }
+                            },
+                            {
+                                label: 'All',
+                                search: true,
+                                routeFetch: {
+                                    name: 'grp.json.trade-units.all.under-product',
+                                    parameters: {
+                                        product: product.id
+                                    }
+                                }
+                            }
+                        ]" />
+                        <div class="border-t flex w-full justify-end gap-3 mt-4 pt-3">
+                          <!--   <div>
+                                <Button @click="() => cancelSaveTradeUnits()" type="negative" :label="'cancel'" />
+                            </div> -->
+                            <div>
+                                <Button @click="() => saveTradeUnits(selectedTradeUnit, product)" type="save"  :loading="loadingSave.includes(product.id)"/>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </template>
+            </LabelSKU>
         </template>
 
         <template #cell(price)="{ item: product }">
