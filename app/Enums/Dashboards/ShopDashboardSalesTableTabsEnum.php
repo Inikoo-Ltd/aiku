@@ -26,18 +26,20 @@ enum ShopDashboardSalesTableTabsEnum: string
         };
     }
 
-    public function table(Shop $shop, mixed $timeSeriesStats): array
+    public function table(Shop $shop, array $timeSeriesData = []): array
     {
+        $platformTimeSeriesStats = $timeSeriesData['platforms'];
+
         $header = match ($this) {
             ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true)
         };
 
         $body = match ($this) {
-            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardPlatformSalesResource::collection($timeSeriesStats)->toJson(), true),
+            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
         };
 
         $totals = match ($this) {
-            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($timeSeriesStats)->toJson(), true)
+            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS => json_decode(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)->toJson(), true)
         };
 
         return [
@@ -47,10 +49,10 @@ enum ShopDashboardSalesTableTabsEnum: string
         ];
     }
 
-    public static function tables(Shop $shop, mixed $timeSeriesStats): array
+    public static function tables(Shop $shop, array $timeSeriesData = []): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($shop, $timeSeriesStats) {
-            return [$case->value => $case->table($shop, $timeSeriesStats)];
+        return collect(self::cases())->mapWithKeys(function ($case) use ($shop, $timeSeriesData) {
+            return [$case->value => $case->table($shop, $timeSeriesData)];
         })->all();
     }
 }
