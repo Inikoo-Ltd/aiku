@@ -23,7 +23,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $created_at
  * @property string $updated_at
  */
-class ProductBackInStockRemindersResource extends JsonResource
+class ProductHasBackInStockRemindersResource extends JsonResource
 {
     use HasSelfCall;
 
