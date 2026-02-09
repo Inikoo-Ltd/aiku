@@ -79,7 +79,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Inventory\PickedBay> $pickedBays
  * @property-read Collection<int, PickingRoute> $pickingRoutes
  * @property-read Collection<int, \App\Models\Inventory\PickingSession> $pickingSessions
- * @property-read Collection<int, \App\Models\Inventory\PickingTrolley> $pickingTrolleys
  * @property-read Collection<int, Role> $roles
  * @property-read \App\Models\Inventory\WarehouseStats|null $stats
  * @property-read Collection<int, \App\Models\Inventory\WarehouseTimeSeries> $timeSeries

@@ -33,9 +33,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $picking_session_id
- * @property-read DeliveryNote $currentDeliveryNote
+ * @property bool $status
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \App\Models\Dispatching\DeliveryNote|null $currentDeliveryNote
  * @property-read Group $group
  * @property-read Organisation $organisation
+ * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trolley newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trolley newQuery()

@@ -52,7 +52,7 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
-        $queryBuilder->leftJoin('webpages', function ($join) { 
+        $queryBuilder->leftJoin('webpages', function ($join) {
             $join->on('webpages.model_id', 'product_categories.id')
                 ->where('webpages.model_type', class_basename(ProductCategory::class));
         });

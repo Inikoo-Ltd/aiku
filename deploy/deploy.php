@@ -141,51 +141,54 @@ task('deploy:save-ssr-checksums', function () {
 
 
 desc('Flush varnish cache if ssr checksum if different as previous release');
-task('deploy:flush-varnish',
+task(
+    'deploy:flush-varnish',
     function () {
-    $currentFile  = '{{release_path}}/SSR_CHECKSUM';
-    $previousFile = '{{previous_release}}/SSR_CHECKSUM';
+        $currentFile  = '{{release_path}}/SSR_CHECKSUM';
+        $previousFile = '{{previous_release}}/SSR_CHECKSUM';
 
-    $current  = '';
-    $previous = '';
+        $current  = '';
+        $previous = '';
 
-    // Read current checksum
-    try {
-        if (test('[ -f '.$currentFile.' ]')) {
-            $current = trim(run('cat '.$currentFile));
-        } else {
-            writeln('SSR checksum: current file not found, will trigger cache flush.');
+        // Read current checksum
+        try {
+            if (test('[ -f '.$currentFile.' ]')) {
+                $current = trim(run('cat '.$currentFile));
+            } else {
+                writeln('SSR checksum: current file not found, will trigger cache flush.');
+            }
+        } catch (\Throwable $e) {
+            writeln('Error reading current SSR checksum: '.$e->getMessage());
         }
-    } catch (\Throwable $e) {
-        writeln('Error reading current SSR checksum: '.$e->getMessage());
-    }
 
-    // Read previous checksum
-    try {
-        if (test('[ -f '.$previousFile.' ]')) {
-            $previous = trim(run('cat '.$previousFile));
-        } else {
-            writeln('SSR checksum: previous file not found, will trigger cache flush.');
+        // Read previous checksum
+        try {
+            if (test('[ -f '.$previousFile.' ]')) {
+                $previous = trim(run('cat '.$previousFile));
+            } else {
+                writeln('SSR checksum: previous file not found, will trigger cache flush.');
+            }
+        } catch (\Throwable $e) {
+            writeln('Error reading previous SSR checksum: '.$e->getMessage());
         }
-    } catch (\Throwable $e) {
-        writeln('Error reading previous SSR checksum: '.$e->getMessage());
+
+        $shouldFlush = false;
+
+        $frontEndChanged = get('front_end_changed');
+
+        if ($previous === '' || $current === '' || $previous !== $current || $frontEndChanged) {
+            $shouldFlush = true; // missing values, err on flushing
+        }
+
+        if ($shouldFlush) {
+            writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
+            run('cd {{release_path}} && pwd && ./restart_varnish.sh');
+        } else {
+            writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
+        }
     }
+)->select('env=prod');
 
-    $shouldFlush = false;
-
-    $frontEndChanged = get('front_end_changed');
-
-    if ($previous === '' || $current === '' || $previous !== $current || $frontEndChanged) {
-        $shouldFlush = true; // missing values, err on flushing
-    }
-
-    if ($shouldFlush) {
-        writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
-        run('cd {{release_path}} && pwd && ./restart_varnish.sh');
-    } else {
-        writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
-    }
-})->select('env=prod');;
 
 desc('Restart Inertia SSR by supervisorctl');
 task('deploy:restart-ssr-by-supervisorctl', function () {

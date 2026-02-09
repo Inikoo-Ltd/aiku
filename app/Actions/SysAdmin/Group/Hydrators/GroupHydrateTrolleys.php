@@ -27,16 +27,16 @@ class GroupHydrateTrolleys implements ShouldBeUnique
 
     public function handle(Group $group): void
     {
-        $allPickingTrolleys     = $group->trolleys()->count();
-        $currentPickingTrolleys = $group->trolleys()->where('status', true)->count();
-        $usedPickingTrolleys    = $group->trolleys()->where('status', true)
+        $allTrolleys     = $group->trolleys()->count();
+        $currentTrolleys = $group->trolleys()->where('status', true)->count();
+        $usedTrolleys    = $group->trolleys()->where('status', true)
             ->whereNotNull('current_delivery_note_id')->count();
 
 
         $stats = [
-            'number_current_picking_trolleys'        => $currentPickingTrolleys,
-            'number_current_picking_trolleys_in_use' => $usedPickingTrolleys,
-            'number_picking_trolleys'                => $allPickingTrolleys
+            'number_current_picking_trolleys'        => $currentTrolleys,
+            'number_current_picking_trolleys_in_use' => $usedTrolleys,
+            'number_picking_trolleys'                => $allTrolleys
         ];
 
 

@@ -2,7 +2,6 @@
 
 namespace App\Actions\Inventory\PickedBay\UI;
 
-use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
@@ -120,7 +119,7 @@ class IndexPickedBays extends OrgAction
         )->table($this->tableStructure(prefix: PickedBaysTabsEnum::BAYS->value));
     }
 
-    
+
     public function jsonResponse(LengthAwarePaginator $pickedBays): AnonymousResourceCollection
     {
         return PickedBayResource::collection($pickedBays);

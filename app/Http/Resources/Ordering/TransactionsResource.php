@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Ordering;
 
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;

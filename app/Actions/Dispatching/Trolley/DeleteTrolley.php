@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 09 Feb 2026 14:45:52 Malaysia Time, Kuala Lumpur, Malaysia
@@ -9,34 +10,34 @@ namespace App\Actions\Dispatching\Trolley;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseSupervisorAuthorisation;
-use App\Models\Inventory\PickingTrolley as PickingTrolleyModel;
+use App\Models\Dispatching\Trolley;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class DeletePickingTrolley extends OrgAction
+class DeleteTrolley extends OrgAction
 {
     use AsController;
     use WithAttributes;
     use WithWarehouseSupervisorAuthorisation;
 
-    public function handle(PickingTrolleyModel $pickingTrolley): PickingTrolleyModel
+    public function handle(Trolley $trolley): Trolley
     {
-        $pickingTrolley->delete();
+        $trolley->delete();
 
-        return $pickingTrolley;
+        return $trolley;
     }
 
-    public function asController(PickingTrolleyModel $pickingTrolley, ActionRequest $request): PickingTrolleyModel
+    public function asController(Trolley $trolley, ActionRequest $request): Trolley
     {
-        $this->initialisationFromWarehouse($pickingTrolley->warehouse, $request);
+        $this->initialisationFromWarehouse($trolley->warehouse, $request);
 
-        return $this->handle($pickingTrolley);
+        return $this->handle($trolley);
     }
 
-    public function htmlResponse(PickingTrolleyModel $trolley): RedirectResponse
+    public function htmlResponse(Trolley $trolley): RedirectResponse
     {
         return Redirect::route('grp.org.warehouses.show.dispatching.trolleys.index', [
             $trolley->organisation->slug,

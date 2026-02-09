@@ -74,7 +74,6 @@ use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\PickedBay;
-use App\Models\Inventory\PickingTrolley;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Masters\MasterAsset;
@@ -219,7 +218,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, PaymentServiceProvider> $paymentServiceProviders
  * @property-read LaravelCollection<int, Payment> $payments
  * @property-read LaravelCollection<int, PickedBay> $pickedBays
- * @property-read LaravelCollection<int, PickingTrolley> $pickingTrolleys
  * @property-read LaravelCollection<int, Picking> $pickings
  * @property-read LaravelCollection<int, Platform> $platforms
  * @property-read LaravelCollection<int, Portfolio> $portfolios
@@ -260,6 +258,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, TopUp> $topUps
  * @property-read LaravelCollection<int, TradeUnitFamily> $tradeUnitFamilies
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
+ * @property-read LaravelCollection<int, Trolley> $trolleys
  * @property-read LaravelCollection<int, Upload> $uploads
  * @property-read LaravelCollection<int, UserRequest> $userRequests
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\User> $users

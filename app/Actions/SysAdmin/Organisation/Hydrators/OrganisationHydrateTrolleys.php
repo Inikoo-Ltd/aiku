@@ -26,15 +26,15 @@ class OrganisationHydrateTrolleys implements ShouldBeUnique
 
     public function handle(Organisation $organisation): void
     {
-        $allPickingTrolleys     = $organisation->trolleys()->count();
-        $currentPickingTrolleys = $organisation->trolleys()->where('status', true)->count();
-        $usedPickingTrolleys    = $organisation->trolleys()->where('status', true)->whereNotNull('current_delivery_note_id')->count();
+        $allTrolleys     = $organisation->trolleys()->count();
+        $currentTrolleys = $organisation->trolleys()->where('status', true)->count();
+        $usedTrolleys    = $organisation->trolleys()->where('status', true)->whereNotNull('current_delivery_note_id')->count();
 
 
         $stats = [
-            'number_current_picking_trolleys'        => $currentPickingTrolleys,
-            'number_current_picking_trolleys_in_use' => $usedPickingTrolleys,
-            'number_picking_trolleys'                => $allPickingTrolleys
+            'number_current_picking_trolleys'        => $currentTrolleys,
+            'number_current_picking_trolleys_in_use' => $usedTrolleys,
+            'number_picking_trolleys'                => $allTrolleys
         ];
 
 

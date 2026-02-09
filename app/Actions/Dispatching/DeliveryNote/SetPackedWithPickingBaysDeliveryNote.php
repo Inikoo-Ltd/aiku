@@ -9,28 +9,19 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
-use App\Actions\Dispatching\Packing\StorePacking;
-use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
-use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetPackedWithPickingBaysDeliveryNote extends OrgAction
 {
-
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
         $pickingBay = data_get($modelData, 'picking_bay');
         dd("maybe can copy from SetDeliveryNoteStateAsPacked. selected picking bay: $pickingBay");
     }
 
-    
+
     public function rules(): array
     {
         return [
