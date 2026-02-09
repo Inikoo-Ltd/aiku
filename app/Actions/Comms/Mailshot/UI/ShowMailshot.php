@@ -61,7 +61,7 @@ class ShowMailshot extends OrgAction
 
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
-        $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]);
+        $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]) && !$mailshot->is_second_wave;
 
         $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
             ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
@@ -74,6 +74,10 @@ class ShowMailshot extends OrgAction
         }
         $isHasParentMailshot = $mailshot->parentMailshot()->exists();
 
+        /* NOTE:
+         * is_second_wave_enabled is perspective from parent mailshot
+         * is_second_wave  is perspective from child mailshot
+         */
         return Inertia::render(
             'Comms/Mailshot',
             [
@@ -246,6 +250,7 @@ class ShowMailshot extends OrgAction
                 'secondwaveSubject' => $mailshotSecondWave?->subject,
                 'secondwaveDelayHours' => $mailshotSecondWave?->send_delay_hours,
                 'isHasParentMailshot' => $isHasParentMailshot,
+                'isSecondWave' => $mailshot->is_second_wave,
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
 
             ]

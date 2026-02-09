@@ -54,6 +54,7 @@ const props = defineProps<{
     secondwaveDelayHours?: number
     isHasParentMailshot: boolean
     numberSecondWaveRecipients?: number
+    isSecondWave: boolean
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -81,15 +82,15 @@ const hour = ref(props.secondwaveDelayHours ?? 48)
 
 // Computed property to check if buttons should be shown
 const shouldShowButtons = computed(() => {
-    return props.status && props.status.toLowerCase() === 'ready';
+    return props.status && props.status.toLowerCase() === 'ready' && !props.isSecondWave;
 });
 
 const shouldShowDeleteButton = computed(() => {
-    return props.status && ['ready', 'in_process'].includes(props.status.toLowerCase());
+    return props.status && ['ready', 'in_process'].includes(props.status.toLowerCase()) && !props.isSecondWave;
 });
 
 const shouldShowCancelScheduleButton = computed(() => {
-    return props.status && props.status.toLowerCase() === 'scheduled';
+    return props.status && props.status.toLowerCase() === 'scheduled' && !props.isSecondWave;
 });
 
 // Schedule datetime picker state
@@ -526,7 +527,7 @@ const shouldShowWaveInfo = computed(() =>
 
 // for the links
 const canFetchWaveAction = computed(() =>
-    !showWaveSettings.value && isWaveContext.value
+    !showWaveSettings.value && isWaveContext.value && ['sent'].includes(props.status ?? '')
 )
 
 watch(() => props.isSecondWaveActive, v => checked.value = v)

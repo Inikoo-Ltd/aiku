@@ -23,6 +23,10 @@ class SetMailshotAsScheduled
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
+        if ($mailshot->is_second_wave) {
+            throw new \Exception('Action not available for second wave mailshot');
+        }
+
         $updateData = array_merge([
             'state' => MailshotStateEnum::SCHEDULED
         ], $modelData);
