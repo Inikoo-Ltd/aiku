@@ -30,18 +30,6 @@ interface ChatSessionData {
     contact_name?: string
 }
 
-const props = defineProps<{
-    chatConfig: {
-        is_online: boolean,
-        schedule?: {
-            start: string,
-            end: string,
-            timezone: string
-        }
-    }
-}>()
-
-
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
 type LocalChatMessage = ChatMessage & {
@@ -353,6 +341,12 @@ const initChat = async () => {
     forceScrollBottom()
 }
 
+const statusChat = ref(false)
+const chatHours = ref({
+    start: '',
+    end: ''
+})
+
 const isCheckingStatus = ref(false)
 const toggle = async () => {
     open.value = !open.value
@@ -427,12 +421,6 @@ const startNewSession = async () => {
     initWebSocket()
     forceScrollBottom()
 }
-
-const statusChat = ref(false)
-const chatHours = ref({
-    start: '',
-    end: ''
-})
 
 const handleOfflineSession = (sessionData: ChatSessionData) => {
     console.log("sessiondataoffline", sessionData)
