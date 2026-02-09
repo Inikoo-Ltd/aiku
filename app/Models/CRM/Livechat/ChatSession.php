@@ -61,6 +61,7 @@ class ChatSession extends Model
         'closed_by' => ChatSessionClosedByTypeEnum::class,
         'closed_at' => 'datetime',
         'rating' => 'decimal:1',
+        'metadata' => 'array',
     ];
 
     protected $guarded = [];
