@@ -94,6 +94,14 @@ class ShowGroupDashboard extends OrgAction
                             'top_performance' => $topPerformanceStats,
                         ]
                     ],
+                    'blocks_2'    => [
+                        [
+                            'id'          => 'sales_table_2',
+                            'type'        => 'table',
+                            'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
+                            'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData, true),
+                        ]
+                    ],
                     'tabs_box'  => [
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
