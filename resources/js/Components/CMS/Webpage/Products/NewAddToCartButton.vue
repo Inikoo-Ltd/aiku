@@ -79,12 +79,17 @@ const currentQuantity = computed(() => {
   const quantityNew = Number(get(props.hasInBasket, 'quantity_ordered_new') ?? 0)
   const quantity = Number(get(props.hasInBasket, 'quantity_ordered') ?? 0)
 
-  // Jika quantity lama ada dan quantity baru 0/undefined, pakai quantity lama
-  if (quantity !== 0 && quantityNew === 0) {
-    return quantity
-  }
+    return quantityNew
+    // if ( quantityNew === 0) {
+    //     return 0
+    // } else {
+    //     if (quantity !== 0 && quantityNew === 0) {
+    //         return quantity
+    //     }
+        
+    //     return quantityNew
 
-  return quantityNew
+    // }
 })
 
 
@@ -203,10 +208,12 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
     const productTransactionId = product.transaction_id
     router[props.updateBasketQuantityRoute.method || 'post'](
         route(props.updateBasketQuantityRoute.name, {
-            transaction: product.transaction_id
+            transaction: product.transaction_id,
+            product: product.id
         }),
         {
-            quantity_ordered: get(basket, ['quantity_ordered_new'], basket.quantity_ordered)
+            quantity_ordered: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
+            quantity: get(basket, ['quantity_ordered_new'], basket.quantity_ordered)
         },
         {
             preserveScroll: true,
@@ -283,10 +290,14 @@ const debAddAndUpdateProduct = debounce(() => {
 // Handle quantity change
 const updateQuantity = (newQuantity: number) => {
 
-    const clampedQuantity = Math.max(0, Math.min(newQuantity, props.product.stock))
-
-    // set quantity_ordered_new
-    set(props.hasInBasket, ['quantity_ordered_new'], clampedQuantity)
+    if (newQuantity === 0) {
+        set(props.hasInBasket, ['quantity_ordered_new'], 0)
+    } else {
+        const clampedQuantity = Math.max(0, Math.min(newQuantity, props.product.stock))
+    
+        // set quantity_ordered_new
+        set(props.hasInBasket, ['quantity_ordered_new'], clampedQuantity)
+    }
 
     // trigger debounced update jika berubah
     if (compIsValueDirty.value) {
@@ -310,10 +321,6 @@ const decrement = () => {
     updateQuantity(currentQuantity.value - 1)
 }
 
-// Handle initial add (when qty is 0)
-const handleInitialAdd = () => {
-    updateQuantity(1)
-}
 
 const instantAddToBasket = () => {
     set(props.hasInBasket, ['quantity_ordered_new'], 1)
@@ -336,6 +343,7 @@ const hoveredButton = ref<string | null>(null)
 </script>
 
 <template>
+    <!-- <pre>{{ props.hasInBasket }}</pre> -->
     <div class="group relative">
         <!-- State awal: qty 0, tampilkan icon + -->
         <button v-if="showChartButton" @click.stop.prevent="instantAddToBasket" :style="buttonStyle"
