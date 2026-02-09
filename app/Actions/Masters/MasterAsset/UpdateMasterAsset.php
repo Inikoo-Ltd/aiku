@@ -193,8 +193,7 @@ class UpdateMasterAsset extends OrgAction
         }
 
         if ($masterAsset->wasChanged(['name', 'description', 'description_title', 'description_extra', 'code'])) {
-
-            $english      = Language::where('code', 'en')->first();
+            $english = Language::where('code', 'en')->first();
 
             foreach ($masterAsset->products as $product) {
                 $shop = $product->shop;
@@ -202,24 +201,24 @@ class UpdateMasterAsset extends OrgAction
                     continue;
                 }
 
-                $shopLanguage = $shop->language;
+                $shopLanguage    = $shop->language;
                 $dataToBeUpdated = [];
 
                 // Updates affected field name using translate if follow_master_{field} is true
                 if ($masterAsset->wasChanged('name')) {
-                    $dataToBeUpdated['name'] = Translate::run($masterAsset->name, $english, $shopLanguage);
+                    $dataToBeUpdated['name']             = Translate::run($masterAsset->name, $english, $shopLanguage);
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
                 if ($masterAsset->wasChanged('description_title')) {
-                    $dataToBeUpdated['description_title'] = Translate::run($masterAsset->description_title, $english, $shopLanguage);
+                    $dataToBeUpdated['description_title']             = Translate::run($masterAsset->description_title, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
                 if ($masterAsset->wasChanged('description')) {
-                    $dataToBeUpdated['description'] = Translate::run($masterAsset->description, $english, $shopLanguage);
+                    $dataToBeUpdated['description']             = Translate::run($masterAsset->description, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
                 if ($masterAsset->wasChanged('description_extra')) {
-                    $dataToBeUpdated['description_extra'] = Translate::run($masterAsset->description_extra, $english, $shopLanguage);
+                    $dataToBeUpdated['description_extra']             = Translate::run($masterAsset->description_extra, $english, $shopLanguage);
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
                 }
 
