@@ -5,7 +5,6 @@ namespace App\Actions\Helpers\AI;
 use App\Actions\OrgAction;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Sentry\Laravel\Facade as Sentry;
 use Throwable;
 
 class AskToAi extends OrgAction
@@ -60,7 +59,6 @@ class AskToAi extends OrgAction
             if (!$response->successful()) {
                 $errorMsg = "AskToAi API Error: " . $response->body();
                 Log::error($errorMsg);
-                Sentry::captureMessage($errorMsg);
                 return null;
             }
 
@@ -69,7 +67,6 @@ class AskToAi extends OrgAction
         } catch (Throwable $e) {
             $errorMsg = "AskToAi Exception: " . $e->getMessage();
             Log::error($errorMsg);
-            Sentry::captureMessage($errorMsg);
             return null;
         }
     }
