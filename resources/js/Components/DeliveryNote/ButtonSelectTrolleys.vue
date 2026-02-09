@@ -29,7 +29,7 @@ const fetchTrolleysList = async () => {
         isLoadingFetch.value = true
         const response = await axios.get(
             route(
-                'grp.json.inventory.trolleys.list',
+                'grp.json.trolleys.list',
                 {
                     warehouse: props.warehouse.slug,
                 }

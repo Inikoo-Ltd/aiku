@@ -1,12 +1,12 @@
 <?php
 
 /*
- * Author: Jonathan Lopez Sanchez <jonathan@ancientwisdom.biz>
- * Created: Tue, 14 Mar 2023 15:31:00 Central European Standard Time, Malaga, Spain
- * Copyright (c) 2023, Inikoo LTD
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 09 Feb 2026 15:59:40 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Inventory\PickedBay\UI;
+namespace App\Actions\Dispatching\PickedBay\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
@@ -46,8 +46,6 @@ class ShowPickedBay extends OrgAction
 
     public function htmlResponse(PickedBay $pickedBay, ActionRequest $request): Response
     {
-        $routeParameters = $request->route()->originalParameters();
-
         return Inertia::render(
             'Org/Warehouse/PickedBay',
             [
@@ -81,14 +79,14 @@ class ShowPickedBay extends OrgAction
                     ],
                 ],
 
-                'tabs'     => [
+                'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => PickedBayTabsEnum::navigation(),
                 ],
 
                 PickedBayTabsEnum::SHOWCASE->value => $this->tab == PickedBayTabsEnum::SHOWCASE->value ?
-                    fn () => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'
-                    : Inertia::lazy(fn () => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'),
+                    fn() => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'
+                    : Inertia::lazy(fn() => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'),
 
             ]
         );
@@ -143,12 +141,12 @@ class ShowPickedBay extends OrgAction
 
         return match ($routeName) {
             'grp.org.warehouses.show.dispatching.picked_bays.show' => [
-                'label' => $pickedBay->name,
+                'label' => $pickedBay->code,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
-                        'warehouse' => $pickedBay->warehouse->slug,
+                        'warehouse'    => $pickedBay->warehouse->slug,
                         'pickedBay'    => $pickedBay->slug
                     ]
                 ]

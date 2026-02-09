@@ -1,11 +1,16 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 09 Feb 2026 15:59:51 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Inventory\PickedBay;
+namespace App\Actions\Dispatching\PickedBay;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
-use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\WithActionUpdate;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
 use App\Rules\IUnique;

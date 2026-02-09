@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\PickedBay\StorePickedBay;
+use App\Actions\Dispatching\PickedBay\UpdatePickedBay;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
@@ -15,8 +17,6 @@ use App\Actions\Dispatching\Trolley\StoreTrolley;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
 use App\Actions\Inventory\Location\ImportLocation;
 use App\Actions\Inventory\Location\StoreLocation;
-use App\Actions\Inventory\PickedBay\StorePickedBay;
-use App\Actions\Inventory\PickedBay\UpdatePickedBay;
 use App\Actions\Inventory\Warehouse\DeleteWarehouse;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Inventory\Warehouse\UpdateWarehouse;

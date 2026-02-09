@@ -51,6 +51,7 @@ use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
 use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
+use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
@@ -263,4 +264,5 @@ Route::get('product-category/{productCategory:id}/last-ordered-products', GetLas
 
 Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
 
-Route::get('{warehouse}/trolleys/list/', ListAvailableTrolleys::class)->name('inventory.trolleys.list');
+Route::get('{warehouse}/trolleys/list/', ListAvailableTrolleys::class)->name('trolleys.list');
+Route::get('{warehouse}/picked-bays/list/', ListAvailablePickedBays::class)->name('picked_bays.list');

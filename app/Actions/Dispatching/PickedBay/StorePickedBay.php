@@ -1,6 +1,11 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 09 Feb 2026 15:59:44 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Inventory\PickedBay;
+namespace App\Actions\Dispatching\PickedBay;
 
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickedBays;
 use App\Actions\OrgAction;
