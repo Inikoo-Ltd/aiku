@@ -144,7 +144,7 @@ defineExpose({
                         :key="product" 
                         :addToBasketRoute="addToBasketRoute" 
                         :buttonStyleHover="buttonStyleHover"
-                        :updateBasketQuantityRoute="updateBasketQuantityRoute" 
+                        :updateBasketQuantityRoute="addToBasketRoute" 
                         :buttonStyle="buttonStyle" 
                     />
                     <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant"

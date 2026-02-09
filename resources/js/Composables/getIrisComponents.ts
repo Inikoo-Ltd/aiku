@@ -91,7 +91,7 @@ import UserSubscribeIris from "@/Components/CMS/Webpage/UserSubscribe/UserSubscr
 import Cta4Iris from "@/Components/CMS/Webpage/Cta4/Cta4Iris.vue"
 import BlogIris from "@/Components/CMS/Webpage/Blog/BlogIris.vue"
 import Step2Iris from "@/Components/CMS/Webpage/Step2/Step2Iris.vue"
-import Video1Iris from "@/Components/CMS/Webpage/Video/Video1Iris.vue"
+import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
 
 
 const async = (loader: () => Promise<Component>) =>
@@ -195,6 +195,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		blog: BlogIris,
 		"step-2": Step2Iris,
 		'video-1': Video1Iris,
+		'slider-1' : Slider1Iris
 	}
 }
 

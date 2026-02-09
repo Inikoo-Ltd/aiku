@@ -90,7 +90,6 @@ class IndexRetinaPortfolios extends RetinaAction
 
         return $query->defaultSort('-portfolios.id')
             ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter(), $this->getForSaleFilter()])
-            // ->ddRawSql()
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

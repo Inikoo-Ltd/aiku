@@ -10,7 +10,7 @@ import { routeType } from "@/types/route"
 import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue"
 import Drawer from "primevue/drawer"
 import Skeleton from "primevue/skeleton"
-import { debounce, get } from "lodash-es"
+import { debounce, get, set } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -341,10 +341,10 @@ const toggleSort = (key: string) => {
 }
 
 
-const productInBasket = ref({
-    isLoading: false,
-    list: []
-})
+// const productInBasket = ref({
+//     isLoading: false,
+//     list: []
+// })
 
 const getRouteForProductInBasket = () => {
     const { model_type, model_id } = props.fieldValue;
@@ -355,8 +355,10 @@ const getRouteForProductInBasket = () => {
     }
 };
 
+// Method: fetch each quantity_ordered of the products
 const fetchHasInBasket = async () => {
-    productInBasket.value.isLoading = true;
+    // productInBasket.value.isLoading = true;
+    set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
     try {
         const apiUrl = getRouteForProductInBasket();
 
@@ -365,7 +367,7 @@ const fetchHasInBasket = async () => {
         }
 
         const response = await axios.get(apiUrl);
-        productInBasket.value.list = response.data || [];
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
     } catch (error) {
         console.error('Failed to load product portfolio', error);
         // notify({
@@ -374,7 +376,9 @@ const fetchHasInBasket = async () => {
         //     type: "error"
         // });
     } finally {
-        productInBasket.value.isLoading = false;
+        // productInBasket.value.isLoading = false;
+        set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
+
     }
 };
 
@@ -531,7 +535,7 @@ watch(
                                 :key="index" 
                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" 
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :hasInBasketList="productInBasket.list" 
+                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])" 
                                 :bestSeller="fieldValue.bestseller" 
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
                                 :button="fieldValue?.button"

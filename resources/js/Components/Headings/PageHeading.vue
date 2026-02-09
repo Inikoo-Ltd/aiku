@@ -19,6 +19,8 @@ import {
 	faEllipsisH,
 	faShapes,
 	faLock,
+	faChartLine,
+	faBoxes,
     faPause,
     faPlay
 } from "@fal"
@@ -57,6 +59,8 @@ library.add(
 	faMoneyBillWave,
 	faShapes,
 	faLock,
+	faChartLine,
+	faBoxes,
     faPause,
     faPlay
 )
