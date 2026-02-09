@@ -43,7 +43,7 @@ class ShowTrolley extends OrgAction
         return Inertia::render(
             'Org/Dispatching/Trolley',
             [
-                'title'       => __('Warehouse'),
+                'title'       => __('Trolley') . ' ' . $trolley->name,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -56,10 +56,10 @@ class ShowTrolley extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'dolly-flatbed-alt'],
-                            'title' => __('picking trolley')
+                            'title' => __('Trolley')
                         ],
                     'title'   => $trolley->name,
-                    'model'   => __('Picking trolley'),
+                    'model'   => __('Trolley'),
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -79,8 +79,8 @@ class ShowTrolley extends OrgAction
                 ],
 
                 TrolleyTabsEnum::SHOWCASE->value => $this->tab == TrolleyTabsEnum::SHOWCASE->value ?
-                    fn () => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'
-                    : Inertia::lazy(fn () => 'GetWarehouseShowcase::run($warehouse, $routeParameters)'),
+                    fn () => GetTrolleyShowcase::run($trolley)
+                    : Inertia::lazy(fn () => GetTrolleyShowcase::run($trolley)),
 
             ]
         );

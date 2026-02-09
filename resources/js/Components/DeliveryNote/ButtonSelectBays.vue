@@ -5,13 +5,9 @@ import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { router } from '@inertiajs/vue3'
-
 import Button from '../Elements/Buttons/Button.vue'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMonument } from "@fas"
-import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faMonument)
+import { router } from '@inertiajs/vue3'
+import LoadingIcon from '../Utils/LoadingIcon.vue'
 
 const props = defineProps<{
     warehouse: {
@@ -29,12 +25,12 @@ const isOpenModal = ref(false)
 
 const listBays = ref([])
 const isLoadingFetch = ref(false)
-const fetchTrolleysList = async () => {
+const fetchBaysList = async () => {
     try {
         isLoadingFetch.value = true
         const response = await axios.get(
             route(
-                'grp.org.warehouses.show.inventory.picked_bays.index',
+                'grp.json.inventory.picking_trolleys.list',
                 {
                     organisation: layout.currentParams.organisation,
                     warehouse: props.warehouse.slug,
@@ -57,13 +53,13 @@ const fetchTrolleysList = async () => {
 
 watch(isOpenModal, (newVal) => {
     if (newVal) {
-        fetchTrolleysList()
+        fetchBaysList()
     }
 })
 
 const selectedBay = ref<number | null>(null)
-const isLoadingSubmitBay = ref(false)
-const submitSelectBay = () => {
+const isLoadingSubmitBay = ref<number|null|undefined>(undefined)
+const submitSelectBay = (bayId?: number|null) => {
     // Section: Submit
     router.patch(
         route(
@@ -73,13 +69,13 @@ const submitSelectBay = () => {
             }
         ),
         {
-            picking_bay: selectedBay.value
+            picking_bay: bayId
         },
         {
             preserveScroll: true,
             preserveState: true,
             onStart: () => { 
-                isLoadingSubmitBay.value = true
+                isLoadingSubmitBay.value = bayId
             },
             onSuccess: () => {
                 notify({
@@ -91,12 +87,12 @@ const submitSelectBay = () => {
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to submit bay"),
+                    text: trans("Failed to submit picked bay"),
                     type: "error"
                 })
             },
             onFinish: () => {
-                isLoadingSubmitBay.value = false
+                isLoadingSubmitBay.value = undefined
             },
         }
     )
@@ -117,7 +113,7 @@ const submitSelectBay = () => {
             </div>
 
             <div class="mb-1">
-                {{ trans("Available picked bay") }} ({{ isLoadingFetch ? '-' : listBays.length }}):
+                {{ trans("Available picked bays") }} ({{ isLoadingFetch ? '-' : listBays.length }}):
             </div>
             <div class="h-64">
                 <div class="grid grid-cols-3 gap-2">
@@ -128,27 +124,48 @@ const submitSelectBay = () => {
                         
                     />
 
-                    <div
-                        v-else
-                        v-for="bay in listBays"
-                        :key="bay.id"
-                        @click="() => selectedBay = bay.slug"
-                        class="cursor-pointer py-2 px-3 border border-gray-300 text-sm rounded"
-                        :class="selectedBay == bay.slug ? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
-                    >
-                        {{ bay.code }}
+                    <template v-else-if="listBays.length">
+                        <div
+                            v-for="bay in listBays"
+                            :key="bay.id"
+                            @click="() => submitSelectBay(bay.id)"
+                            class="cursor-pointer flex justify-between items-center py-2 px-3 border border-gray-300 text-sm rounded"
+                            :class="isLoadingSubmitBay == bay.id ? 'bg-[var(--theme-color-0)] opacity-70 text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
+                        >
+                            {{ bay.code }}
+                            <LoadingIcon v-if="isLoadingSubmitBay == bay.id" />
+                        </div>
+                    </template>
+                    
+                    <!-- Section: no bays found -->
+                    <div v-else class="flex items-center justify-center w-full col-span-3 pt-3">
+                        <div class="text-center border-gray-200 p-14">
+                            <h3 class="text-lg font-semibold tracking-wide pb-2">{{ trans("No picked bays found") }}</h3>
+                            <a :href="route('grp.org.warehouses.show.dispatching.picked_bays.create', {
+                                    organisation: layout.currentParams.organisation,
+                                    warehouse: props.warehouse.slug
+                                })"
+                                target="_blank"
+                            >
+                                <Button label="Create picked bay" icon="fas fa-plus" size="xs" type="secondary" key="4">
+
+                                </Button>
+                            </a>
+
+                        </div>
                     </div>
                 </div>
             </div>
 
             <Button
-                @click="() => submitSelectBay()"
-                label="Select bay and start packing"
+                @click="() => submitSelectBay(null)"
+                :label="trans('Skip')"
                 full
-                iconRight="fas fa-arrow-right"
+                iconRight="far fa-arrow-right"
                 class="mt-4"
-                :disabled="!selectedBay"
-                :loading="isLoadingSubmitBay"
+                type="dashed"
+                :disabled="isLoadingSubmitBay !== undefined"
+                :loading="isLoadingSubmitBay === null"
             />
         </Modal>
     </div>

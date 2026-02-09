@@ -73,7 +73,7 @@ import {
 	faCheckDouble,
 	faSmile,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot,faMonument, faDollyFlatbedAlt
+	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -87,7 +87,7 @@ import {
 	faStar,
 	faCheckCircle,
 	faTimesCircle,
-	faSkull as fasSkull,
+	faSkull as fasSkull, faMonument
 } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
@@ -116,6 +116,7 @@ library.add(
 	faExclamationTriangle,
 	faSunset,
 	faChair,
+	falMonument,
 	faSkull,
 	faSkullCow,
 	faToggleOn,
