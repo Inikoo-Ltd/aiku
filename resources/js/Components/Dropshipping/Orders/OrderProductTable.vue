@@ -21,6 +21,8 @@ import { faBadgePercent, faFragile } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import { InputNumber, InputText } from "primevue"
+import axios from "axios"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt)
 
@@ -310,6 +312,36 @@ const onSubmitEditNetAmount = () => {
         }
     )
 }
+
+// Section: Cut View
+const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boolean) => {
+    try {
+        // console.log('newValnewVal', proxyItem, newVal)
+        set(proxyItem, 'is_transaction_loading', true)
+        const response = await axios.patch(
+            route(
+                routeUpdate.name,
+                routeUpdate.parameters
+            ),
+            { 
+                is_cut_view: newVal
+            }
+        )
+        
+        proxyItem.is_cut_view = newVal
+
+        // console.log('---- Response axios:', response.data)
+    } catch (error: any) {
+        console.log('eeerr', error)
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        set(proxyItem, 'is_transaction_loading', false)
+    }
+}
 </script>
 
 <template>
@@ -354,7 +386,7 @@ const onSubmitEditNetAmount = () => {
             </template>
 
             <!-- Column: Quantity Ordered -->
-            <template #cell(quantity_ordered)="{ item }">
+            <template #cell(quantity_ordered)="{ item, proxyItem }">
 
                 <div class="flex items-center justify-end gap-2">
                     <!-- Editable when creating and not in edit mode -->
@@ -375,10 +407,16 @@ const onSubmitEditNetAmount = () => {
                             :denominator="Number(item.product_units) > 1 ? Number(item.product_units) : undefined"
                         />
 
-                        <!-- <span @click="() => onSetSamples()" class="align-middle">
-                            {{ item.is_cut_view }}
-                            <FontAwesomeIcon icon="fas fa-fragile" class="" fixed-width aria-hidden="true" />
-                        </span> -->
+                        <span
+                            v-if="layout.app.environment == 'local'"
+                            @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
+                            v-tooltip="trans('Cut view')"
+                            class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
+                            :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
+                        >
+                            <LoadingIcon v-if="proxyItem.is_transaction_loading" class="text-gray-700" />
+                            <FontAwesomeIcon v-else icon="fas fa-fragile" class="" fixed-width aria-hidden="true" />
+                        </span>
                     </div>
 
                     <!-- Read-only display -->
