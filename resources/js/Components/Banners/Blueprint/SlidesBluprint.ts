@@ -11,7 +11,6 @@ export default {
                     type: "slideBackground",
                     label: trans("Image"),
                     value: ["image"],
-                   /*  uploadRoute: props.imagesUploadRoute, */
                 },
                 {
                     name: ["layout", "link"],
