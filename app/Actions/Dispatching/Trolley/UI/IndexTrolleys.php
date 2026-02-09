@@ -91,7 +91,7 @@ class IndexTrolleys extends OrgAction
         };
     }
 
-    public function htmlResponse(LengthAwarePaginator $pickingTrolleys, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $trolleys, ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/Dispatching/Trolleys',
@@ -120,7 +120,7 @@ class IndexTrolleys extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => TrolleysTabsEnum::navigation(),
                 ],
-                TrolleysTabsEnum::TROLLEYS->value => TrolleysResource::collection($pickingTrolleys),
+                TrolleysTabsEnum::TROLLEYS->value => TrolleysResource::collection($trolleys),
             ]
         )->table($this->tableStructure(prefix: TrolleysTabsEnum::TROLLEYS->value));
     }

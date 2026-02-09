@@ -54,9 +54,9 @@ class ListAvailableTrolleys extends OrgAction
             ->withQueryString();
     }
 
-    public function jsonResponse(LengthAwarePaginator $pickingTrolleys): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $trolleys): AnonymousResourceCollection
     {
-        return TrolleysResource::collection($pickingTrolleys);
+        return TrolleysResource::collection($trolleys);
     }
 
     public function asController(Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
