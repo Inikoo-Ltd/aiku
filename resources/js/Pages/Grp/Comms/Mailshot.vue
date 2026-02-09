@@ -45,6 +45,7 @@ const props = defineProps<{
     cancelScheduleMailshotRoute?: routeType
     showLinkedMailShotRoute?: routeType
     status?: string
+    secondWaveStatus?: string
     estimatedRecipients?: number
     mailshotType?: string
     setSecondWaveRoute?: routeType
@@ -517,7 +518,7 @@ const isWaveContext = computed(() =>
 )
 
 const showWaveSettings = computed(() =>
-    ['in_process', 'ready'].includes(props.status ?? '')
+    ['in_process', 'ready'].includes(props.status ?? '') && !props.isSecondWave
 )
 
 // for the input subject secondwave validation
@@ -527,7 +528,7 @@ const shouldShowWaveInfo = computed(() =>
 
 // for the links
 const canFetchWaveAction = computed(() =>
-    !showWaveSettings.value && isWaveContext.value && ['sent'].includes(props.status ?? '')
+    !showWaveSettings.value && isWaveContext.value
 )
 
 watch(() => props.isSecondWaveActive, v => checked.value = v)
@@ -549,7 +550,7 @@ watch(
     <PageHeading :data="pageHead">
         <template #afterTitle v-if="
             props.mailshotType === 'marketing' &&
-            ['in_process', 'ready', 'scheduled'].includes(props.status ?? '')
+            ['in_process', 'ready', 'scheduled'].includes(props.status ?? '') && !props.isSecondWave
         ">
             <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>
         </template>
@@ -633,7 +634,7 @@ watch(
                     {{ waveLabel }}
                 </span>
                 <span class="text-sm font-medium text-gray-700 whitespace-nowrap"
-                    v-if="!props.isHasParentMailshot && !showWaveSettings && props.status === 'sent'">
+                    v-if="!props.isHasParentMailshot && !showWaveSettings && props.status === 'sent' && props.secondWaveStatus === 'sent'">
                     Recipients: {{ numberSecondWaveRecipients }}
                 </span>
             </template>

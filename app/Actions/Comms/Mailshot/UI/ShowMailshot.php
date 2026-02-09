@@ -244,6 +244,7 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'status' => $mailshot->state->value,
+                'secondWaveStatus' => $mailshot->secondWave?->state?->value,
                 'estimatedRecipients' => $estimatedRecipients,
                 'mailshotType' => $mailshot->type->value,
                 'isSecondWaveActive' => $isSecondWaveActive,
