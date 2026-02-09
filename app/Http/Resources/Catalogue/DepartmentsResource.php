@@ -79,6 +79,7 @@ class DepartmentsResource extends JsonResource
             'organisation_code'              => $this->organisation_code,
             'organisation_slug'              => $this->organisation_slug,
             'master_product_category_id'     => $this->master_product_category_id,
+            'webpage_state'                 => $this->webpage_state,
             'is_name_reviewed'               => $this->is_name_reviewed,
             'is_description_title_reviewed'  => $this->is_description_title_reviewed,
             'is_description_reviewed'        => $this->is_description_reviewed,
