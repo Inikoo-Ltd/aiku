@@ -59,6 +59,7 @@ import { blueprint as LuigiTrends1Blueprint  } from "@/Components/CMS/Webpage/Lu
 import { blueprint as LuigiLastSeen1  } from "@/Components/CMS/Webpage/LuigiLastSeen1/Blueprint"
 import { blueprint as LuigiItemAlternatives1  } from "@/Components/CMS/Webpage/LuigiItemAlternatives1/Blueprint"
 import { blueprint as RecommendersCustomerRecentlyBought  } from "@/Components/CMS/Webpage/RecomendationRecentlyBought1/Blueprint"
+import SliderBlueprint  from "@/Components/CMS/Webpage/Slider-1/Blueprint"
 
 
 
@@ -146,7 +147,8 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"cta4": Cta4Blueprint.blueprint,
 		'carousel-cta' : CtaCarousel.blueprint,
 		'carousel-image-background' : CarouselImageBackgroundIrisBlueprint.blueprint,
-		'step-2' : TimelineIris2.blueprint
+		'step-2' : TimelineIris2.blueprint,
+		'slider-1' : SliderBlueprint.blueprint
 	}
 
 	const blueprint = components[componentName]

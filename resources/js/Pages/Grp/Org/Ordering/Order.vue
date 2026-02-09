@@ -1435,7 +1435,7 @@ const recalculateVat = async () => {
                             </div>
                         </div>
 
-                        <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && Number(box_stats.products.payment.total_amount) > 0"
+                        <div v-else-if="data.data?.state !== 'creating' && box_stats.products.payment.pay_status != 'no_need' && (Number(box_stats.products.payment.total_amount) > 0 || Number(box_stats.products.excesses_payment?.amount) > 0)"
                             class="w-full">
                             <!-- Section: pay with balance (if order Submit without paid) -->
                             <div class="w-full rounded-md shadow pxb-2 isolate border" :class="[

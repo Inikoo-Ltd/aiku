@@ -132,9 +132,21 @@ watch(() => props.isOpen, (newValue) => {
 const onRemoveProductWhenQuantityZero = (product: ProductResource) => {
     // console.log('productRemoved', product)
     // console.log('layout.rightbasket.products', layout.rightbasket.products)
+
     if (layout?.rightbasket?.products) {
         layout.rightbasket.products = layout.rightbasket.products.filter(p => p.transaction_id !== product.transaction_id)
     }
+}
+
+const setProductQuantityInFamilyPageToNull = (productId: number) => {
+    if (!productId) {
+        return
+    }
+    set(layout, ['family_page', 'productInBasket', 'list', productId], {
+        quantity_ordered: null,
+        quantity_ordered_new: null,
+        transactions_id: null,
+    })
 }
 
 const onRemoveFromBasket = (product) => {
@@ -143,6 +155,9 @@ const onRemoveFromBasket = (product) => {
             layout.rightbasket.products = layout.rightbasket.products.filter(p => p.transaction_id !== product.transaction_id)
             layout.reload_handle()
         }
+
+        setProductQuantityInFamilyPageToNull(product.id)
+
         return
     }
     
@@ -177,6 +192,8 @@ const onRemoveFromBasket = (product) => {
                 if (layout.temp?.fetchIrisProductCustomerData) {
                     layout.temp.fetchIrisProductCustomerData()
                 }
+
+                setProductQuantityInFamilyPageToNull(product.id)
 
                 // fetchDataSideBasket(true)
             },

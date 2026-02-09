@@ -31,7 +31,7 @@ function favouriteRoute(favourite: {}) {
             [
                 (route().params as RouteParams).organisation,
                 (route().params as RouteParams).shop,
-                customer.slug
+                favourite.slug
             ]);
     }
 }
@@ -43,7 +43,7 @@ function favouriteRoute(favourite: {}) {
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: favourite }">
             <Link :href="favouriteRoute(favourite)" class="primaryLink">
-            {{ favourite["reference"] }}
+                {{ favourite["reference"] }}
             </Link>
         </template>
         <template #cell(contact_name)="{ item: favourite }">
