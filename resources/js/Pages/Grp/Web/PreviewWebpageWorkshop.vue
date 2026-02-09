@@ -17,6 +17,7 @@ import "@/../css/Iris/editor.css"
 import { ulid } from "ulid"
 
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { setColorStyleRoot } from "@/Composables/useApp"
 
 library.add(faTimes);
 
@@ -111,6 +112,7 @@ onMounted(() => {
   window.addEventListener("message", handleMessage)
   window.addEventListener("resize", checkScreenType)
   checkScreenType()
+  setColorStyleRoot(props.layout?.color)
 })
 
 onBeforeUnmount(() => {
