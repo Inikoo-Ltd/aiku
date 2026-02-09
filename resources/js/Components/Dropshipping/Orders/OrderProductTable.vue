@@ -315,32 +315,32 @@ const onSubmitEditNetAmount = () => {
 
 // Section: Cut View
 const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boolean) => {
-    try {
-        // console.log('newValnewVal', proxyItem, newVal)
-        set(proxyItem, 'is_transaction_loading', true)
-        const response = await axios.patch(
-            route(
-                routeUpdate.name,
-                routeUpdate.parameters
-            ),
-            { 
-                is_cut_view: newVal
-            }
-        )
-        
-        proxyItem.is_cut_view = newVal
+    router.patch(
+        route(
+            routeUpdate.name,
+            routeUpdate.parameters
+        ),
+        { 
+            is_cut_view: newVal
+        },
+        {
+            onStart: () => {
+                set(proxyItem, 'is_transaction_loading', true)
 
-        // console.log('---- Response axios:', response.data)
-    } catch (error: any) {
-        console.log('eeerr', error)
-        notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
-            type: 'error'
-        })
-    } finally {
-        set(proxyItem, 'is_transaction_loading', false)
-    }
+            },
+            onError: () => {
+                console.log('eeerr', error)
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message || trans("Please try again or contact administrator"),
+                    type: 'error'
+                })
+            },
+            onFinish: () => {
+                set(proxyItem, 'is_transaction_loading', false)
+            }
+        }
+    )
 }
 </script>
 
@@ -404,9 +404,9 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                                 min: 0,
                                 max: item.available_quantity,
                             }"
-                            :denominator="Number(item.product_units) > 1 ? Number(item.product_units) : undefined"
+                            :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         />
-
+                        
                         <span
                             v-if="layout.app.environment == 'local'"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
