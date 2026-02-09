@@ -12,6 +12,8 @@ class CalculateTimeSeriesStats
 {
     use AsObject;
 
+    protected int $chunkSize = 100;
+
     public function handle(
         array $timeSeriesIds,
         array $metricsMapping,
@@ -25,6 +27,44 @@ class CalculateTimeSeriesStats
             return [];
         }
 
+        if (count($timeSeriesIds) > $this->chunkSize) {
+            return $this->handleChunked($timeSeriesIds, $metricsMapping, $tableName, $foreignKey, $from_date, $to_date, $additionalWhere);
+        }
+
+        return $this->processTimeSeriesIds($timeSeriesIds, $metricsMapping, $tableName, $foreignKey, $from_date, $to_date, $additionalWhere);
+    }
+
+    protected function handleChunked(
+        array $timeSeriesIds,
+        array $metricsMapping,
+        string $tableName,
+        string $foreignKey,
+        $from_date,
+        $to_date,
+        array $additionalWhere
+    ): array {
+        $chunks = array_chunk($timeSeriesIds, $this->chunkSize);
+        $results = [];
+
+        foreach ($chunks as $chunk) {
+            $chunkResults = $this->processTimeSeriesIds($chunk, $metricsMapping, $tableName, $foreignKey, $from_date, $to_date, $additionalWhere);
+            $results = array_merge($results, $chunkResults);
+
+            unset($chunkResults);
+        }
+
+        return $results;
+    }
+
+    protected function processTimeSeriesIds(
+        array $timeSeriesIds,
+        array $metricsMapping,
+        string $tableName,
+        string $foreignKey,
+        $from_date,
+        $to_date,
+        array $additionalWhere
+    ): array {
         $selects = [$foreignKey];
         $bindings = [];
         $intervals = DateIntervalEnum::cases();
@@ -56,14 +96,12 @@ class CalculateTimeSeriesStats
 
             [$start, $end] = $range;
 
-            // Generate Selects for Current Period
             foreach ($metricsMapping as $outputKey => $column) {
                 $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_{$interval->value}";
                 $bindings[] = $start;
                 $bindings[] = $end;
             }
 
-            // Generate Selects for Last Year Period
             $startLy = $start->copy()->subYear();
             $endLy = $end->copy()->subYear();
 
@@ -78,14 +116,12 @@ class CalculateTimeSeriesStats
             ->selectRaw(implode(', ', $selects), $bindings)
             ->whereIn($foreignKey, $timeSeriesIds);
 
-        // Apply additional where conditions
         foreach ($additionalWhere as $column => $value) {
             $query->where($column, $value);
         }
 
         $results = $query->groupBy($foreignKey)->get();
 
-        // Key results by foreign key (e.g., platform_time_series_id)
         return $results->keyBy($foreignKey)->map(fn ($item) => (array) $item)->toArray();
     }
 
@@ -108,7 +144,6 @@ class CalculateTimeSeriesStats
                 $currentValue = (float)($stats[$currentValueKey] ?? 0);
                 $lastYearValue = (float)($stats[$lastYearValueKey] ?? 0);
 
-                // Format for currency if the key contains 'sales' or 'revenue'
                 if (str_contains($metricKey, 'sales') || str_contains($metricKey, 'revenue')) {
                     $formattedValue = $currencyCode ? Number::currency($currentValue, $currencyCode) : $currentValue;
                 } else {
@@ -165,19 +200,15 @@ class CalculateTimeSeriesStats
             '1w'    => [$now->copy()->subWeek()->startOfDay(), $now->copy()->endOfDay()],
             '3d'    => [$now->copy()->subDays(3)->startOfDay(), $now->copy()->endOfDay()],
             '1d'    => [$now->copy()->subDay()->startOfDay(), $now->copy()->endOfDay()],
-
             'ytd'   => [$now->copy()->startOfYear(), $now->copy()->endOfDay()],
             'qtd'   => [$now->copy()->startOfQuarter(), $now->copy()->endOfDay()],
             'mtd'   => [$now->copy()->startOfMonth(), $now->copy()->endOfDay()],
             'wtd'   => [$now->copy()->startOfWeek(), $now->copy()->endOfDay()],
             'tdy'   => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
-
             'lm'    => [$now->copy()->subMonth()->startOfMonth(), $now->copy()->subMonth()->endOfMonth()],
             'lw'    => [$now->copy()->subWeek()->startOfWeek(), $now->copy()->subWeek()->endOfWeek()],
             'ld'    => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()],
-
             'all'   => [Carbon::create(1970, 1, 1), $now->copy()->endOfDay()],
-
             default => null
         };
     }
