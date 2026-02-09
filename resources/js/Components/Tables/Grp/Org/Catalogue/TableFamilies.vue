@@ -15,7 +15,7 @@ import { remove as loRemove } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faTimesCircle, faCheckCircle } from "@fal";
+import { faCheck, faTimesCircle, faCheckCircle, faBroadcastTower, faSkull } from "@fal";
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
@@ -217,9 +217,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
+
         <template #cell(state)="{ item: family }">
             <Icon :data="family.state" />
         </template>
+
         <template #cell(code)="{ item: family }">
             <div class="whitespace-nowrap">
                 <Link :href="(masterFamilyRoute(family) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
@@ -232,11 +234,13 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 </Link>
             </div>
         </template>
+
         <template #cell(shop_code)="{ item: family }">
             <Link :href="shopRoute(family)" class="secondaryLink">
             {{ family["shop_code"] }}
             </Link>
         </template>
+
         <template #cell(current_products)="{ item: family }">
             <Link :href="productRoute(family)" class="primaryLink">
             {{ family["current_products"] }}
@@ -281,6 +285,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 {{ family["department_code"] }}
             </Link> -->
         </template>
+
         <template #cell(sub_department_name)="{ item: family }">
             <Link v-if="family.sub_department_slug" :href="subDepartmentRoute(family)" class="secondaryLink">
             {{ family["sub_department_code"] }}
@@ -298,6 +303,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
         </template>
+
         <template #cell(action)="{ item }">
             <Link v-if="routes?.detach?.name" as="button"
                 :href="route(routes.detach.name, { ...routes.detach.parameters, family: item.id })"
@@ -307,36 +313,47 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
         </template>
+
+        <template #cell(webpage_state)="{ item: family }">
+            <div class="whitespace-nowrap">
+                <FontAwesomeIcon v-if="family['webpage_state'] == 'live'" v-tooltip="trans('Webpage is Live')" :icon="faBroadcastTower" class="text-green-500"/>
+                <FontAwesomeIcon v-else v-tooltip="trans('Webpage is Offline')" :icon="faSkull" class="text-red-500"/>
+            </div>
+        </template>
+
         <template #cell(is_name_reviewed)="{ item }">
             <div >
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_name_reviewed),
-                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="trans('Name needs a review')" />
             </div>
         </template>
+
         <template #cell(is_description_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_reviewed),
-                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="trans('Description needs a review')" />
             </div>
         </template>
+
         <template #cell(is_description_title_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_title_reviewed),
-                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="trans('Description Title needs a review')" />
             </div>
         </template>
+
         <template #cell(is_description_extra_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_extra_reviewed),
-                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="trans('Description Extra needs a review')" />
             </div>
         </template>
 
@@ -415,5 +432,6 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 />
             </div>
         </template>
+
     </Table>
 </template>

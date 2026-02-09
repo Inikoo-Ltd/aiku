@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset\Hydrators;
 
+use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
@@ -68,7 +69,8 @@ class MasterAssetHydrateAssets implements ShouldBeUnique
             )
         );
 
-        $stats['status'] = $stats['number_current_assets'] > 0;
+        $status = $stats['number_current_assets'] > 0;
+        UpdateMasterAsset::run($masterAsset, ['status' => $status]);
 
         $masterAsset->stats()->update($stats);
     }

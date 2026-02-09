@@ -141,7 +141,8 @@ task('deploy:save-ssr-checksums', function () {
 
 
 desc('Flush varnish cache if ssr checksum if different as previous release');
-task('deploy:flush-varnish', function () {
+task('deploy:flush-varnish',
+    function () {
     $currentFile  = '{{release_path}}/SSR_CHECKSUM';
     $previousFile = '{{previous_release}}/SSR_CHECKSUM';
 
@@ -184,7 +185,7 @@ task('deploy:flush-varnish', function () {
     } else {
         writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
     }
-});
+})->select('env=prod');;
 
 desc('Restart Inertia SSR by supervisorctl');
 task('deploy:restart-ssr-by-supervisorctl', function () {

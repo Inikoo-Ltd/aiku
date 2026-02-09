@@ -1510,7 +1510,7 @@ const layout = inject("layout", layoutStructure)
 				:loading="loadingAction.includes('bulk-edit')" />
 			<Button
 				@click="() => submitBulkEditPrice('publish')"
-				:label="trans('Save & Upload')"
+				:label="trans('Save & Publish')"
 				full
 				:loading="loadingAction.includes('bulk-edit')" />
 		</div>

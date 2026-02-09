@@ -19,12 +19,17 @@ class GetInvoiceCategoryTimeSeriesStats
         $invoiceCategories = [];
 
         if ($parent instanceof Group) {
-            $invoiceCategories = InvoiceCategory::where('group_id', $parent->id)
-                ->where('state', InvoiceCategoryStateEnum::ACTIVE)
+            $invoiceCategories = InvoiceCategory::where('invoice_categories.group_id', $parent->id)
+                ->where('invoice_categories.state', InvoiceCategoryStateEnum::ACTIVE)
+                ->join('organisations', 'invoice_categories.organisation_id', '=', 'organisations.id')
+                ->orderBy('organisations.code')
+                ->orderBy('invoice_categories.name')
+                ->select('invoice_categories.*')
                 ->get();
         } else {
             $invoiceCategories = InvoiceCategory::where('organisation_id', $parent->id)
                 ->where('state', InvoiceCategoryStateEnum::ACTIVE)
+                ->orderBy('name')
                 ->get();
         }
 

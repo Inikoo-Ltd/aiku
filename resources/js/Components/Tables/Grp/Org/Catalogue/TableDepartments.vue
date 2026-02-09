@@ -18,7 +18,7 @@ import { RouteParams } from "@/types/route-params"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTimesCircle, faCheckCircle, faSeedling } from "@fal"
+import { faTimesCircle, faCheckCircle, faSeedling, faBroadcastTower, faSkull } from "@fal"
 import { faTriangle, faEquals, faMinus } from "@fas"
 import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
@@ -183,6 +183,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
+
         <template #cell(organisation_code)="{ item: department }">
             <Link v-tooltip='department["organisation_name"]' :href="organisationRoute(department)" class="secondaryLink">
                 {{ department["organisation_code"] }}
@@ -275,6 +276,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <Icon :data="department.state" :title="department.state?.label">
             </Icon>
         </template>
+
         <template #cell(code)="{ item: department }">
             <div class="whitespace-nowrap">
                 <Link :href="(masterDepartmentRoute(department) as string)" v-tooltip="trans('Go to Master')" class="mr-1" :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
@@ -314,7 +316,6 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </Link>
         </template>
 
-
         <template #cell(actions)="{ item }">
             <Link
                 v-if="routes?.detach?.name"
@@ -336,36 +337,47 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 />
             </Link>
         </template>
+
+        <template #cell(webpage_state)="{ item }">
+            <div class="whitespace-nowrap">
+                <FontAwesomeIcon v-if="item['webpage_state'] == 'live'" v-tooltip="trans('Webpage is Live')" :icon="faBroadcastTower" class="text-green-500"/>
+                <FontAwesomeIcon v-else v-tooltip="trans('Webpage is Offline')" :icon="faSkull" class="text-red-500"/>
+            </div>
+        </template>
+
         <template #cell(is_name_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_name_reviewed),
-                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="trans('Name needs a review')" />
             </div>
         </template>
+
         <template #cell(is_description_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_reviewed),
-                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="trans('Description needs a review')" />
             </div>
         </template>
+
         <template #cell(is_description_title_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_title_reviewed),
-                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="trans('Description Title needs a review')" />
             </div>
         </template>
+
         <template #cell(is_description_extra_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_extra_reviewed),
-                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="trans('Description Extra needs a review')" />
             </div>
         </template>
     </Table>

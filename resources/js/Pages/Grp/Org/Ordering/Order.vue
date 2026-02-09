@@ -91,6 +91,7 @@ import CopyButton from "@/Components/Utils/CopyButton.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import error from "@/Components/Utils/Error.vue"
 import order from "@/Pages/Grp/Org/Ordering/Order.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -257,6 +258,11 @@ const props = defineProps<{
     payments_accounts: Array<{ id: number, name: string }>
     payments_data: Array<{ id: number, name: string }>
     state: string
+    history: {}
+    salesChannel?: {
+        name: string
+        icon: string
+    }
 }>()
 
 
@@ -279,7 +285,8 @@ const component = computed(() => {
         invoices: TableInvoices,
         products: TableProductList,
         payments: TablePayments,
-        dispatched_emails: TableDispatchedEmailsInOrder
+        dispatched_emails: TableDispatchedEmailsInOrder,
+        history: TableHistories,
     }
 
     return components[currentTab.value]
@@ -1221,6 +1228,7 @@ const recalculateVat = async () => {
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Order") }}
+                    <span v-if="salesChannel" v-tooltip="trans('This order is from :salesChannel', { salesChannel: salesChannel.name})" class="font-normal text-sm opacity-70">({{ salesChannel.name }} <FontAwesomeIcon :icon="salesChannel.icon" class="" fixed-width aria-hidden="true" />)</span>
                 </div>
 
                 <div class="space-y-0.5 pl-1">

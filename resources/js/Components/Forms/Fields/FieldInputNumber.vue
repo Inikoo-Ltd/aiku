@@ -40,7 +40,6 @@ const props = defineProps<{
                 inputId="horizontal-buttons"
                 v-bind="fieldData?.bind"
                 showButtons
-                :step="1"
             >
                 <!--                <template #incrementbuttonicon>
                                     <FontAwesomeIcon :icon="faPlus" class="" fixed-width aria-hidden="true" />
