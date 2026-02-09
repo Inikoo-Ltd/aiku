@@ -24,14 +24,33 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 
 class ShowClockingMachine extends OrgAction
 {
     use WithHumanResourcesAuthorisation;
 
+    private function getAvailableTabs(ClockingMachine $clockingMachine): array
+    {
+        $tabs = [
+            ClockingMachineTabsEnum::SHOWCASE->value,
+            ClockingMachineTabsEnum::CLOCKINGS->value,
+            ClockingMachineTabsEnum::HISTORY->value,
+            ClockingMachineTabsEnum::DATA->value,
+        ];
+
+        // Jika tipe mesin adalah QR Code, tambahkan tabnya
+        if ($clockingMachine->type === ClockingMachineTypeEnum::QR_CODE) {
+            // Masukkan setelah SHOWCASE
+            array_splice($tabs, 1, 0, ClockingMachineTabsEnum::SCAN_QR_CODE->value);
+        }
+
+        return $tabs;
+    }
+
     public function inOrganisation(Organisation $organisation, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
-        $this->initialisation($organisation, $request)->withTab(ClockingMachineTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab($this->getAvailableTabs($clockingMachine));
 
         return $clockingMachine;
     }
@@ -40,7 +59,7 @@ class ShowClockingMachine extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inWorkplace(Organisation $organisation, Workplace $workplace, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
-        $this->initialisation($organisation, $request)->withTab(ClockingMachineTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab($this->getAvailableTabs($clockingMachine));
 
         return $clockingMachine;
     }
@@ -117,11 +136,19 @@ class ShowClockingMachine extends OrgAction
                 ],
                 'tabs'                                   => [
                     'current'    => $this->tab,
-                    'navigation' => ClockingMachineTabsEnum::navigation()
+                    'navigation' => ClockingMachineTabsEnum::navigation($this->getAvailableTabs($clockingMachine))
                 ],
+
                 ClockingMachineTabsEnum::SHOWCASE->value => $this->tab == ClockingMachineTabsEnum::SHOWCASE->value ?
                     fn () => GetClockingMachineShowcase::run($clockingMachine)
                     : Inertia::lazy(fn () => GetClockingMachineShowcase::run($clockingMachine)),
+
+                ClockingMachineTabsEnum::SCAN_QR_CODE->value => $this->tab == ClockingMachineTabsEnum::SCAN_QR_CODE->value ?
+                    fn() => [
+                        'qr_code_url' => $clockingMachine->qr_code_url,
+                        'machine_name' => $clockingMachine->name
+                    ]
+                    : Inertia::lazy(fn() => ['status' => 'loaded_lazy']),
 
                 ClockingMachineTabsEnum::CLOCKINGS->value => $this->tab == ClockingMachineTabsEnum::CLOCKINGS->value ?
                     fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))
