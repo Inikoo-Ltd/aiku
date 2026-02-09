@@ -131,7 +131,6 @@ const props = defineProps<{
         slug: string
     }
 	history: {}
-}>();
 	shop: {
 		type: string   // 'b2b', 'dropshipping'
 	}
