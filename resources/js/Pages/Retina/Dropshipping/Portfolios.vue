@@ -735,12 +735,19 @@ onBeforeUnmount(() => {
 	}
 })
 
+const productAvailibility = [
+	{
+		key: 'exclude_not_for_sale',
+		label: trans('Exclude products that are not for sale')
+	},
+	{
+		key: 'exclude_out_of_stocks',
+		label: trans('Exclude products that are out of stock')
+	},
+]
+
 // add the Extended Properties for Products
 const productStates = [
-	{
-		key: "in_process",
-		label: "In Process",
-	},
 	{
 		key: "active",
 		label: "Active",
@@ -773,6 +780,7 @@ const extendedColumns = [
 ]
 const selectedExtendedColumns = ref<string[]>([])
 const selectedProductStates = ref<string[]>([])
+const selectedProductAvailibility = ref<string[]>([])
 const excludedColumns = computed(() => {
 	return extendedColumns.filter((col) => !selectedExtendedColumns.value.includes(col.key))
 })
@@ -800,6 +808,7 @@ const onDownloadExtendedProperties = () => {
 	const url = downloadUrl("extended_properties", {
 		columns: selectedExtendedColumns.value,
 		product_states: selectedProductStates.value,
+		product_availibility: selectedProductAvailibility.value
 	})
 
 	if (!url) {
@@ -910,6 +919,22 @@ const layout = inject("layout", layoutStructure)
 									:value="state.key"
 									v-model="selectedProductStates" />
 								{{ trans(state.label) }}
+							</label>
+						</div>
+						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
+							<div class="font-medium">
+								{{ trans("Product Sale Status") }}
+							</div>
+
+							<label
+								v-for="availibility in productAvailibility"
+								:key="availibility.key"
+								class="flex items-center gap-2 cursor-pointer opacity-70">
+								<input
+									type="checkbox"
+									:value="availibility.key"
+									v-model="selectedProductAvailibility" />
+								{{ trans(availibility.label) }}
 							</label>
 						</div>
 						<div class="mt-3 border-t pt-2 px-0 space-y-2 text-sm">
