@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
-use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
@@ -49,7 +48,6 @@ class ShowShop extends OrgAction
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
         $performanceDates = [null, null];
-        $timeSeriesStats = [];
 
         if ($saved_interval === DateIntervalEnum::CUSTOM) {
             $rangeInterval = Arr::get($userSettings, 'range_interval', '');
@@ -57,12 +55,12 @@ class ShowShop extends OrgAction
                 $dates = explode('-', $rangeInterval);
                 if (count($dates) === 2) {
                     $performanceDates = [$dates[0], $dates[1]];
-                    $timeSeriesStats = GetFormatedShopTimeSeriesStats::run($shop, $dates[0], $dates[1]);
                 }
             }
-        } else {
-            $timeSeriesStats = GetFormatedShopTimeSeriesStats::run($shop);
         }
+
+        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $performanceDates[0], $performanceDates[1]);
+        $shopTimeSeriesStats = $timeSeriesData['shops'];
 
         $topPerformanceStats = GetTopPerformanceStats::run($shop, $performanceDates[0], $performanceDates[1]);
 
@@ -84,7 +82,7 @@ class ShowShop extends OrgAction
                     ],
                     'shop_blocks' => array_merge(
                         [
-                            'interval_data'   => $timeSeriesStats,
+                            'interval_data'   => $shopTimeSeriesStats,
                             'currency_code'   => $shop->currency->code,
                             'top_performance' => $topPerformanceStats,
                         ],
@@ -98,16 +96,14 @@ class ShowShop extends OrgAction
             ],
         ];
 
-        if ($shop->type->value === 'dropshipping') {
-            $platformTimeSeriesStats = GetPlatformTimeSeriesStats::run($shop, $performanceDates[0], $performanceDates[1]);
-
+        if ($shop->type->value === 'dropshipping' && isset($timeSeriesData['platforms'])) {
             $dashboard['super_blocks'][0]['blocks'] = [
                 [
                     'id'          => 'sales_table',
                     'type'        => 'table',
                     'current_tab' => $currentTab,
                     'tabs'        => ShopDashboardSalesTableTabsEnum::navigation($shop),
-                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $platformTimeSeriesStats),
+                    'tables'      => ShopDashboardSalesTableTabsEnum::tables($shop, $timeSeriesData),
                     'charts'      => [],
                 ],
             ];

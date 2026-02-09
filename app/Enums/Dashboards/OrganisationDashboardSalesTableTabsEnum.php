@@ -48,8 +48,12 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         };
     }
 
-    public function table(Organisation $organisation, mixed $shopTimeSeriesStats = [], mixed $invoiceCategoryTimeSeriesStats = [], mixed $platformTimeSeriesStats = []): array
+    public function table(Organisation $organisation, array $timeSeriesData = []): array
     {
+        $shopTimeSeriesStats = $timeSeriesData['shops'];
+        $invoiceCategoryTimeSeriesStats = $timeSeriesData['invoiceCategories'];
+        $platformTimeSeriesStats = $timeSeriesData['platforms'];
+
         $header = match ($this) {
             OrganisationDashboardSalesTableTabsEnum::SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($organisation)->toJson(), true),
             OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardHeaderInvoiceCategoriesInOrganisationSalesResource::make($organisation)->toJson(), true),
@@ -75,10 +79,10 @@ enum OrganisationDashboardSalesTableTabsEnum: string
         ];
     }
 
-    public static function tables(Organisation $organisation, mixed $shopTimeSeriesStats = [], mixed $invoiceCategoryTimeSeriesStats = [], mixed $platformTimeSeriesStats = []): array
+    public static function tables(Organisation $organisation, array $timeSeriesData = []): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($organisation, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats) {
-            return [$case->value => $case->table($organisation, $shopTimeSeriesStats, $invoiceCategoryTimeSeriesStats, $platformTimeSeriesStats)];
+        return collect(self::cases())->mapWithKeys(function ($case) use ($organisation, $timeSeriesData) {
+            return [$case->value => $case->table($organisation, $timeSeriesData)];
         })->all();
     }
 }

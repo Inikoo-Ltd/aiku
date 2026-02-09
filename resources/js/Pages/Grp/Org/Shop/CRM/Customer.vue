@@ -148,7 +148,7 @@ const component = computed(() => {
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
 
-    <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false">
+    <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false" width="w-full max-w-5xl">
         <div class="p-6 relative">
             <LoadingOverlay :is-loading="orderForm.processing" position="absolute" />
             <h2 class="text-lg font-medium text-gray-900">{{ capitalize('Select Sales Channel') }}</h2>

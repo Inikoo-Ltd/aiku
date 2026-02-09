@@ -9,6 +9,16 @@ export default {
 			useIn: ["desktop", "tablet", "mobile"],
 		},
 		{
+			label: "Column position",
+			key: ["column_position"],
+			type: "select-button",
+			useIn: ["desktop", "tablet", "mobile"],
+			defaultValue : 'Image-left',
+			props_data:{
+				options : [ "Image-left", "Image-right" ],
+			}
+		},
+		{
 			name: "Image",
 			key: ["image"],
 			replaceForm: [

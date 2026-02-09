@@ -106,7 +106,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         $argumentName   = ($prefix ? $prefix . '_' : '') . 'between';
 
         $filters  = request()->input($argumentName, []);
-        $timezone = request()->header('X-Timezone');
+        $timezone = resolveTimezoneHeader();
 
         foreach ($allowedColumns as $column) {
             if (array_key_exists($column, $filters)) {
@@ -270,7 +270,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                 $start = trim($start);
                 $end = trim($end);
 
-                $timezone = request()->header('X-Timezone', 'UTC');
+                $timezone = resolveTimezoneHeader();
 
                 $startDate = Carbon::createFromFormat('Ymd', $start, $timezone)
                     ->setTimezone('UTC')

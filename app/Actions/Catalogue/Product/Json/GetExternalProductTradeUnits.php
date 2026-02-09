@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\DB;
 
 class GetExternalProductTradeUnits extends OrgAction
 {
-    
     public function handle(Product $product): array
     {
         $packedIn = DB::table('model_has_trade_units')
