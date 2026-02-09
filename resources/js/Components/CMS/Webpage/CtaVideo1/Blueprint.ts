@@ -3,6 +3,22 @@ import { trans } from "laravel-vue-i18n";
 export default {
 	blueprint: [
 		{
+			label: "Responsive Visibility",
+			key: ["container", "properties", "visibility"],
+			type: "visibility",
+			useIn: ["desktop", "tablet", "mobile"],
+		},
+		{
+			label: "Column position",
+			key: ["column_position"],
+			type: "select-button",
+			useIn: ["desktop", "tablet", "mobile"],
+			defaultValue : 'video-left',
+			props_data:{
+				options : [ "video-left", "video-right" ],
+			}
+		},
+		{
 			name: "Video",
 			key: ["video"],
 			replaceForm: [

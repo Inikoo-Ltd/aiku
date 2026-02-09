@@ -63,6 +63,10 @@ class ShowMailshot extends OrgAction
     {
         $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]) && !$mailshot->is_second_wave;
 
+        $isShowStop = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENDING]);
+
+        $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
+
         $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
             ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
             : 0;
@@ -137,6 +141,34 @@ class ShowMailshot extends OrgAction
                                     $this->shop->slug,
                                     $mailshot->slug
                                 ]
+                            ]
+                        ] : [],
+                        $isShowStop ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Stop'),
+                            'icon'  => ["fal", "fa-pause"],
+                            'route' => [
+                                'name'       => "grp.models.shop.mailshot.stop",
+                                'parameters' => [
+                                    $this->shop->id,
+                                    $mailshot->id
+                                ],
+                                'method'     => 'post'
+                            ]
+                        ] : [],
+                        $isShowResume ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Resume'),
+                            'icon'  => ["fal", "fa-play"],
+                            'route' => [
+                                'name'       => "grp.models.shop.mailshot.resume",
+                                'parameters' => [
+                                    $this->shop->id,
+                                    $mailshot->id
+                                ],
+                                'method'     => 'post'
                             ]
                         ] : []
                     ]

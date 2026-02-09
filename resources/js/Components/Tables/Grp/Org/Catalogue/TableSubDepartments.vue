@@ -13,7 +13,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { RouteParams } from "@/types/route-params"
 import { Family } from "@/types/family"
-import { faTimesCircle, faCheckCircle } from "@fal"
+import { faTimesCircle, faCheckCircle, faBroadcastTower, faSkull } from "@fal"
 import { faTriangle, faEquals, faMinus } from "@fas"
 import Image from "@/Components/Image.vue"
 import { inject } from "vue"
@@ -181,10 +181,12 @@ const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
                 <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
             </div>
         </template>
+
         <template #cell(state)="{ item: SubDepartment }">
             <Icon :data="SubDepartment.state">
             </Icon>
         </template>
+
         <template #cell(code)="{ item: SubDepartment }">
             <div class="whitespace-nowrap">
                 <Link :href="(masterSubDepartmentRoute(SubDepartment) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
@@ -199,21 +201,25 @@ const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
                 </Link>
             </div>
         </template>
+
         <template #cell(shop_code)="{ item: family }">
             <Link :href="shopRoute(family) as string" class="secondaryLink">
                 {{ family["shop_code"] }}
             </Link>
         </template>
+
         <template #cell(department_code)="{ item: family }">
             <Link v-if="family.department_slug" :href="departmentRoute(family) as string" class="secondaryLink">
                 {{ family["department_code"] }}
             </Link>
         </template>
+
         <template #cell(number_families)="{ item: SubDepartment }">
             <Link :href="familiesRoute(SubDepartment) as string" class="secondaryLink">
                 {{ SubDepartment["number_families"] }}
             </Link>
         </template>
+
         <template #cell(number_products)="{ item: SubDepartment }">
             <Link :href="productsRoute(SubDepartment) as string" class="secondaryLink">
                 {{ SubDepartment["number_products"] }}
@@ -295,37 +301,47 @@ const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
                 />
             </div>
         </template>
+        
+        <template #cell(webpage_state)="{ item }">
+            <div class="whitespace-nowrap">
+                <FontAwesomeIcon v-if="item['webpage_state'] == 'live'" v-tooltip="trans('Webpage is Live')" :icon="faBroadcastTower" class="text-green-500"/>
+                <FontAwesomeIcon v-else v-tooltip="trans('Webpage is Offline')" :icon="faSkull" class="text-red-500"/>
+            </div>
+        </template>
 
         <template #cell(is_name_reviewed)="{ item }">
             <div >
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_name_reviewed),
-                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="trans('Name needs a review')" />
             </div>
         </template>
+
         <template #cell(is_description_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_reviewed),
-                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="trans('Description needs a review')" />
             </div>
         </template>
+
         <template #cell(is_description_title_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_title_reviewed),
-                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="trans('Description Title needs a review')" />
             </div>
         </template>
+
         <template #cell(is_description_extra_reviewed)="{ item }">
             <div>
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_extra_reviewed),
-                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="'Review name'" />
+                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="trans('Description Extra needs a review')" />
             </div>
         </template>
     </Table>
