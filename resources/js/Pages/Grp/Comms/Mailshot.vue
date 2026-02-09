@@ -532,6 +532,8 @@ const canFetchWaveAction = computed(() =>
 )
 
 watch(() => props.isSecondWaveActive, v => checked.value = v)
+watch(() => props.secondwaveSubject, v => subject.value = v ?? "")
+watch(() => props.secondwaveDelayHours, v => hour.value = v ?? 48)
 watch(
     filteredTabs,
     (tabs) => {
