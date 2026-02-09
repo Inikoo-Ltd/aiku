@@ -10,6 +10,7 @@ import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 import OfflineChatForm from "../OfflineChatForm.vue"
 import { router } from "@inertiajs/vue3"
+import { faSpinner } from "@far"
 
 interface ChatMessage {
     id: number
@@ -120,7 +121,7 @@ const createSession = async (): Promise<ChatSessionData | null> => {
     loading.value = true
     try {
         const payload: any = {
-            language_id: 64,
+            language_id: 68,
             priority: "normal",
             shop_id: layout?.iris?.shop?.id,
         }
@@ -352,12 +353,14 @@ const initChat = async () => {
     forceScrollBottom()
 }
 
+const isCheckingStatus = ref(false)
 const toggle = async () => {
     open.value = !open.value
     if (open.value) {
         unreadMessageIds.clear()
         unreadCount.value = 0
-        initChat()
+
+        isCheckingStatus.value = true
 
         try {
             const res = await axios.get(`${baseUrl}/app/api/chats/status`, {
@@ -375,8 +378,14 @@ const toggle = async () => {
                 }
             }
 
+            if (statusChat.value) {
+                await initChat()
+            }
+
         } catch (e) {
             console.error("Chat status fetch failed", e)
+        } finally {
+            isCheckingStatus.value = false
         }
     }
 }
@@ -419,11 +428,17 @@ const startNewSession = async () => {
     forceScrollBottom()
 }
 
-const statusChat = ref(false) // ← hanya boolean
+const statusChat = ref(false)
 const chatHours = ref({
     start: '',
     end: ''
 })
+
+const handleOfflineSession = (sessionData: ChatSessionData) => {
+    console.log("sessiondataoffline", sessionData)
+    chatSession.value = sessionData
+    saveChatSession(sessionData)
+}
 
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
 
@@ -491,12 +506,19 @@ defineExpose({
                     </div>
                 </div>
 
-                <MessageArea v-if="activeMenu == 'chat' && statusChat" :messages="messagesLocal" :session="chatSession"
-                    :loading="loading" :isRating="isRating" :rating="rating" :isLoggedIn="isLoggedIn"
-                    @send-message="sendMessage" @reload="(loadMore: any) => getMessages(loadMore)"
-                    @mounted="forceScrollBottom" @new-session="startNewSession" :assignedAgent="assignedAgent" />
+                <div v-if="isCheckingStatus" class="flex flex-col items-center bg-white">
+                    <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-2xl" />
+                    <span class="text-sm">{{ trans("Connecting...") }}</span>
+                </div>
 
-                <OfflineChatForm v-else-if="activeMenu == 'chat' && !statusChat" :hours="chatHours" />
+                <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat" :messages="messagesLocal"
+                    :session="chatSession" :loading="loading" :isRating="isRating" :rating="rating"
+                    :isLoggedIn="isLoggedIn" @send-message="sendMessage"
+                    @reload="(loadMore: any) => getMessages(loadMore)" @mounted="forceScrollBottom"
+                    @new-session="startNewSession" :assignedAgent="assignedAgent" />
+
+                <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat" :hours="chatHours"
+                    :session="chatSession" :isLoggedIn="isLoggedIn" @session-created="handleOfflineSession" />
 
                 <div v-if="activeMenu === 'history'"
                     class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">
