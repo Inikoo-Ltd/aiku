@@ -1,15 +1,20 @@
 <?php
 
-namespace App\Actions\Inventory\PickingTrolley\UI;
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 09 Feb 2026 14:44:35 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
+namespace App\Actions\Dispatching\Trolley\UI;
+
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
-use App\Enums\UI\Inventory\PickingTrolleysTabsEnum;
-use App\Http\Resources\Inventory\PickingTrolleyResource;
+use App\Enums\UI\Dispatch\TrolleysTabsEnum;
+use App\Http\Resources\Dispatching\TrolleysResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Inventory\PickingTrolley;
+use App\Models\Dispatching\Trolley;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -21,7 +26,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexPickingTrolleys extends OrgAction
+class IndexTrolleys extends OrgAction
 {
     use WithWarehouseEditAuthorisation;
 
@@ -29,7 +34,7 @@ class IndexPickingTrolleys extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('picking_trolleys.code', $value);
+                $query->whereStartWith('trolleys.name', $value);
             });
         });
 
@@ -37,17 +42,17 @@ class IndexPickingTrolleys extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(PickingTrolley::class)
-            ->where('picking_trolleys.warehouse_id', $warehouse->id);
+        $query = QueryBuilder::for(Trolley::class)
+            ->where('trolleys.warehouse_id', $warehouse->id);
 
         return $query
             ->select([
-                'picking_trolleys.id',
-                'picking_trolleys.code',
-                'picking_trolleys.slug',
+                'trolleys.id',
+                'trolleys.name',
+                'trolleys.slug',
             ])
-            ->defaultSort('picking_trolleys.code')
-            ->allowedSorts(['code'])
+            ->defaultSort('trolleys.name')
+            ->allowedSorts(['name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -72,7 +77,7 @@ class IndexPickingTrolleys extends OrgAction
                         'tooltip' => __('New picking trolley'),
                         'label'   => __('picking trolley'),
                         'route'   => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.picking_trolleys.create',
+                            'name'       => 'grp.org.warehouses.show.dispatching.trolleys.create',
                             'parameters' => [
                                 request()->route('organisation'),
                                 request()->route('warehouse'),
@@ -80,23 +85,23 @@ class IndexPickingTrolleys extends OrgAction
                         ],
                     ] : null,
                 ])
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'delivery_note', label: __('Current Delivery Note'), canBeHidden: false, sortable: true, searchable: true)
-                ->defaultSort('code');
+                ->defaultSort('name');
         };
     }
 
     public function htmlResponse(LengthAwarePaginator $pickingTrolleys, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Warehouse/PickingTrolleys',
+            'Org/Dispatching/Trolleys',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('Picking trolleys'),
-                'pageHead'    => [
+                'pageHead'                        => [
                     'title'  => __('Picking trolleys'),
                     'icon'   => ['fal', 'dolly-flatbed-alt'],
                     'actions' => [
@@ -105,31 +110,31 @@ class IndexPickingTrolleys extends OrgAction
                             'style' => 'create',
                             'label' => __('Create'),
                             'route' => [
-                                'name'       => 'grp.org.warehouses.show.dispatching.picking_trolleys.create',
+                                'name'       => 'grp.org.warehouses.show.dispatching.trolleys.create',
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ],
                         ],
                     ],
                 ],
-                'tabs'        => [
+                'tabs'                            => [
                     'current'    => $this->tab,
-                    'navigation' => PickingTrolleysTabsEnum::navigation(),
+                    'navigation' => TrolleysTabsEnum::navigation(),
                 ],
-                PickingTrolleysTabsEnum::TROLLEYS->value => PickingTrolleyResource::collection($pickingTrolleys),
+                TrolleysTabsEnum::TROLLEYS->value => TrolleysResource::collection($pickingTrolleys),
             ]
-        )->table($this->tableStructure(prefix: PickingTrolleysTabsEnum::TROLLEYS->value));
+        )->table($this->tableStructure(prefix: TrolleysTabsEnum::TROLLEYS->value));
     }
-    
-    public function jsonResponse(LengthAwarePaginator $pickingTrolleys): AnonymousResourceCollection
+
+    public function jsonResponse(LengthAwarePaginator $trolleys): AnonymousResourceCollection
     {
-        return PickingTrolleyResource::collection($pickingTrolleys);
+        return TrolleysResource::collection($trolleys);
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PickingTrolleysTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(TrolleysTabsEnum::values());
 
-        return $this->handle($warehouse, PickingTrolleysTabsEnum::TROLLEYS->value);
+        return $this->handle($warehouse, TrolleysTabsEnum::TROLLEYS->value);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -149,11 +154,11 @@ class IndexPickingTrolleys extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.dispatching.picking_trolleys.index' =>
+            'grp.org.warehouses.show.dispatching.trolleys.index' =>
             array_merge(
                 ShowDispatchHub::make()->getBreadcrumbs($routeParameters),
                 $headCrumb([
-                    'name'       => 'grp.org.warehouses.show.dispatching.picking_trolleys.index',
+                    'name'       => 'grp.org.warehouses.show.dispatching.trolleys.index',
                     'parameters' => $routeParameters,
                 ])
             ),

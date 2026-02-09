@@ -11,13 +11,12 @@ use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
+use App\Actions\Dispatching\Trolley\StoreTrolley;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
 use App\Actions\Inventory\Location\ImportLocation;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\PickedBay\StorePickedBay;
 use App\Actions\Inventory\PickedBay\UpdatePickedBay;
-use App\Actions\Inventory\PickingTrolley\StorePickingTrolley;
-use App\Actions\Inventory\PickingTrolley\UpdatePickingTrolley;
 use App\Actions\Inventory\Warehouse\DeleteWarehouse;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Inventory\Warehouse\UpdateWarehouse;
@@ -37,8 +36,7 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
     Route::post('picking-session', StorePickingSession::class)->name('picking_session.store');
     Route::post('queued-picking-session', [StorePickingSession::class, 'inQueued'])->name('queued_picking_session.store');
 
-    Route::post('picking-trolleys', [StorePickingTrolley::class, 'inWarehouse'])->name('picking_trolleys.store');
-    Route::patch('picking-trolleys/{pickingTrolley:id}', UpdatePickingTrolley::class)->name('picking_trolleys.update')->withoutScopedBindings();
+    Route::post('trolleys', StoreTrolley::class)->name('trolleys.store');
 
     Route::post('picked-bays', [StorePickedBay::class, 'inWarehouse'])->name('picked_bays.store');
     Route::patch('picked-bays/{pickedBay:id}', UpdatePickedBay::class)->name('picked_bays.update')->withoutScopedBindings();

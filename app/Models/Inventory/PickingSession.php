@@ -13,6 +13,7 @@ use App\Actions\Utils\Abbreviate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Dispatching\Trolley;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -54,7 +55,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\PickingSessionItem> $pickingSessionItem
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Trolley> $trolleys
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\Trolley> $trolleys
  * @property-read User $user
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSession newModelQuery()

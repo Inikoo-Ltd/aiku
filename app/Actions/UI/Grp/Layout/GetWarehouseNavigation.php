@@ -246,9 +246,9 @@ class GetWarehouseNavigation
                             'label' => __('Trolleys'),
                             'tooltip' => __('Picking Trolleys'),
                             'icon'  => ['fal', 'fa-dolly-flatbed-alt'],
-                            'root'  => 'grp.org.warehouses.show.dispatching.picking_trolleys.',
+                            'root'  => 'grp.org.warehouses.show.dispatching.trolleys.',
                             'route' => [
-                                "name"       => "grp.org.warehouses.show.dispatching.picking_trolleys.index",
+                                "name"       => "grp.org.warehouses.show.dispatching.trolleys.index",
                                 "parameters" => [
                                     $warehouse->organisation->slug,
                                     $warehouse->slug

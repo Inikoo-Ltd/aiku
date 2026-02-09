@@ -19,14 +19,14 @@ use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
 use App\Actions\Dispatching\Shipper\UI\ShowShipper;
+use App\Actions\Dispatching\Trolley\UI\CreateTrolley;
+use App\Actions\Dispatching\Trolley\UI\EditTrolley;
+use App\Actions\Dispatching\Trolley\UI\IndexTrolleys;
+use App\Actions\Dispatching\Trolley\UI\ShowTrolley;
 use App\Actions\Inventory\PickedBay\UI\CreatePickedBay;
 use App\Actions\Inventory\PickedBay\UI\EditPickedBay;
 use App\Actions\Inventory\PickedBay\UI\IndexPickedBays;
 use App\Actions\Inventory\PickedBay\UI\ShowPickedBay;
-use App\Actions\Inventory\PickingTrolley\UI\CreatePickingTrolley;
-use App\Actions\Inventory\PickingTrolley\UI\EditPickingTrolley;
-use App\Actions\Inventory\PickingTrolley\UI\IndexPickingTrolleys;
-use App\Actions\Inventory\PickingTrolley\UI\ShowPickingTrolley;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use Illuminate\Support\Facades\Route;
 
@@ -78,11 +78,11 @@ Route::get('boxes/create', CreateBox::class)->name('boxes.create');
 Route::get('picking-sessions', IndexPickingSessions::class)->name('picking_sessions.index');
 Route::get('picking-sessions/{pickingSession}', ShowPickingSession::class)->name('picking_sessions.show');
 
-Route::prefix('picking-trolleys')->as('picking_trolleys.')->group(function () {
-    Route::get('', IndexPickingTrolleys::class)->name('index');
-    Route::get('create', CreatePickingTrolley::class)->name('create');
-    Route::get('{pickingTrolley}', ShowPickingTrolley::class)->name('show');
-    Route::get('{pickingTrolley}/edit', EditPickingTrolley::class)->name('edit');
+Route::prefix('trolleys')->as('trolleys.')->group(function () {
+    Route::get('', IndexTrolleys::class)->name('index');
+    Route::get('create', CreateTrolley::class)->name('create');
+    Route::get('{trolley}', ShowTrolley::class)->name('show');
+    Route::get('{trolley}/edit', EditTrolley::class)->name('edit');
 });
 
 Route::prefix('picked-bays')->as('picked_bays.')->group(function () {

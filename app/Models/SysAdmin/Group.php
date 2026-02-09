@@ -51,6 +51,7 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
+use App\Models\Dispatching\Trolley;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
@@ -990,9 +991,9 @@ class Group extends Authenticatable implements Auditable, HasMedia
         return $this->hasMany(Holiday::class);
     }
 
-    public function pickingTrolleys(): HasMany
+    public function trolleys(): HasMany
     {
-        return $this->hasMany(PickingTrolley::class);
+        return $this->hasMany(Trolley::class);
     }
 
     public function pickedBays(): HasMany

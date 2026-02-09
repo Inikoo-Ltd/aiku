@@ -13,7 +13,7 @@ use App\Models\Inventory\Warehouse;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class WarehouseHydratePickingTrolleys implements ShouldBeUnique
+class WarehouseHydrateTrolleys implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -26,17 +26,16 @@ class WarehouseHydratePickingTrolleys implements ShouldBeUnique
 
     public function handle(Warehouse $warehouse): void
     {
-        $allPickingTrolleys            = $warehouse->pickingTrolleys()->count();
-        $currentPickingTrolleys = $warehouse->pickingTrolleys()->where('status', true)->count();
-        $usedPickingTrolleys = $warehouse->pickingTrolleys()->where('status', true)->whereNotNull('delivery_note_id')->count();
+        $allPickingTrolleys     = $warehouse->trolleys()->count();
+        $currentPickingTrolleys = $warehouse->trolleys()->where('status', true)->count();
+        $usedPickingTrolleys    = $warehouse->trolleys()->where('status', true)->whereNotNull('current_delivery_note_id')->count();
 
 
         $stats = [
-            'number_current_picking_trolleys' => $currentPickingTrolleys,
+            'number_current_picking_trolleys'        => $currentPickingTrolleys,
             'number_current_picking_trolleys_in_use' => $usedPickingTrolleys,
-            'number_picking_trolleys' => $allPickingTrolleys
+            'number_picking_trolleys'                => $allPickingTrolleys
         ];
-
 
 
         $warehouse->stats()->update($stats);

@@ -131,7 +131,6 @@ const props = defineProps<{
         slug: string
     }
 	history: {}
-}>();
 	shop: {
 		type: string   // 'b2b', 'dropshipping'
 	}
@@ -435,14 +434,14 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select trolley (only for Ecom) -->
-<!--		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-start-picking="{ action }">-->
-<!--			<ButtonSelectTrolleys-->
-<!--				:warehouse="warehouse"-->
-<!--				:deliveryNote="delivery_note"-->
-<!--			>-->
-<!--				-->
-<!--			</ButtonSelectTrolleys>-->
-<!--		</template>-->
+		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-start-picking="{ action }">
+			<ButtonSelectTrolleys
+				:warehouse="warehouse"
+				:deliveryNote="delivery_note"
+			>
+
+			</ButtonSelectTrolleys>
+		</template>
 
 		<!-- Button: Select trolley (only for Ecom) -->
 		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-as-packed="{ action }">
