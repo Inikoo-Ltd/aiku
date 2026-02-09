@@ -1,6 +1,11 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 09 Feb 2026 14:45:52 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Inventory\PickingTrolley;
+namespace App\Actions\Dispatching\Trolley;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseSupervisorAuthorisation;
@@ -31,11 +36,11 @@ class DeletePickingTrolley extends OrgAction
         return $this->handle($pickingTrolley);
     }
 
-    public function htmlResponse(PickingTrolleyModel $pickingTrolley): RedirectResponse
+    public function htmlResponse(PickingTrolleyModel $trolley): RedirectResponse
     {
-        return Redirect::route('grp.org.warehouses.show.infrastructure.picking_trolleys.index', [
-            $pickingTrolley->organisation->slug,
-            $pickingTrolley->warehouse->slug,
+        return Redirect::route('grp.org.warehouses.show.dispatching.trolleys.index', [
+            $trolley->organisation->slug,
+            $trolley->warehouse->slug,
         ]);
     }
 }

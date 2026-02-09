@@ -13,7 +13,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OrganisationHydratePickingTrolleys implements ShouldBeUnique
+class OrganisationHydrateTrolleys implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -26,17 +26,16 @@ class OrganisationHydratePickingTrolleys implements ShouldBeUnique
 
     public function handle(Organisation $organisation): void
     {
-        $allPickingTrolleys            = $organisation->pickingTrolleys()->count();
-        $currentPickingTrolleys = $organisation->pickingTrolleys()->where('status', true)->count();
-        $usedPickingTrolleys = $organisation->pickingTrolleys()->where('status', true)->whereNotNull('delivery_note_id')->count();
+        $allPickingTrolleys     = $organisation->trolleys()->count();
+        $currentPickingTrolleys = $organisation->trolleys()->where('status', true)->count();
+        $usedPickingTrolleys    = $organisation->trolleys()->where('status', true)->whereNotNull('current_delivery_note_id')->count();
 
 
         $stats = [
-            'number_current_picking_trolleys' => $currentPickingTrolleys,
+            'number_current_picking_trolleys'        => $currentPickingTrolleys,
             'number_current_picking_trolleys_in_use' => $usedPickingTrolleys,
-            'number_picking_trolleys' => $allPickingTrolleys
+            'number_picking_trolleys'                => $allPickingTrolleys
         ];
-
 
 
         $organisation->inventoryStats()->update($stats);

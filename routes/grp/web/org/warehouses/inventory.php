@@ -22,23 +22,15 @@ use App\Actions\Goods\StockFamily\ExportStockFamilies;
 use App\Actions\Goods\StockFamily\UI\CreateStockFamily;
 use App\Actions\Goods\StockFamily\UI\EditStockFamily;
 use App\Actions\Inventory\OrgStock\ExportOrgStocks;
+use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
-use App\Actions\Inventory\OrgStock\UI\EditOrgStock;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProcurement;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProducts;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockStockHistory;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
-use App\Actions\Inventory\PickedBay\UI\CreatePickedBay;
-use App\Actions\Inventory\PickedBay\UI\EditPickedBay;
-use App\Actions\Inventory\PickedBay\UI\IndexPickedBays;
-use App\Actions\Inventory\PickedBay\UI\ShowPickedBay;
-use App\Actions\Inventory\PickingTrolley\UI\CreatePickingTrolley;
-use App\Actions\Inventory\PickingTrolley\UI\EditPickingTrolley;
-use App\Actions\Inventory\PickingTrolley\UI\IndexPickingTrolleys;
-use App\Actions\Inventory\PickingTrolley\UI\ShowPickingTrolley;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -194,5 +186,3 @@ Route::prefix('stored-items')->as('stored_items.')->group(function () {
         Route::get('{storedItem}/edit', EditStoredItem::class)->name('edit');
     });
 });
-
-

@@ -228,9 +228,9 @@ class Warehouse extends Model implements Auditable
         return $this->hasMany(PickingSession::class);
     }
 
-    public function pickingTrolleys(): HasMany
+    public function trolleys(): HasMany
     {
-        return $this->hasMany(PickingTrolley::class);
+        return $this->hasMany(Trolley::class);
     }
 
     public function pickedBays(): HasMany

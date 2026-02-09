@@ -13,7 +13,7 @@ use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydratePickingTrolleys implements ShouldBeUnique
+class GroupHydrateTrolleys implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -22,23 +22,22 @@ class GroupHydratePickingTrolleys implements ShouldBeUnique
 
     public function getJobUniqueId(Group $group): string
     {
-        return (string) $group->id;
+        return (string)$group->id;
     }
 
     public function handle(Group $group): void
     {
-        $allPickingTrolleys = $group->pickingTrolleys()->count();
-        $currentPickingTrolleys = $group->pickingTrolleys()->where('status', true)->count();
-        $usedPickingTrolleys = $group->pickingTrolleys()->where('status', true)
-            ->whereNotNull('delivery_note_id')->count();
+        $allPickingTrolleys     = $group->trolleys()->count();
+        $currentPickingTrolleys = $group->trolleys()->where('status', true)->count();
+        $usedPickingTrolleys    = $group->trolleys()->where('status', true)
+            ->whereNotNull('current_delivery_note_id')->count();
 
 
         $stats = [
-            'number_current_picking_trolleys' => $currentPickingTrolleys,
+            'number_current_picking_trolleys'        => $currentPickingTrolleys,
             'number_current_picking_trolleys_in_use' => $usedPickingTrolleys,
-            'number_picking_trolleys' => $allPickingTrolleys
+            'number_picking_trolleys'                => $allPickingTrolleys
         ];
-
 
 
         $group->inventoryStats()->update($stats);

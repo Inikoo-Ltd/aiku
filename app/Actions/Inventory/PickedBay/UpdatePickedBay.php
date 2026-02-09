@@ -33,7 +33,7 @@ class UpdatePickedBay extends OrgAction
                 'max:64',
                 $this->strict ? 'alpha_dash' : 'string',
                 new IUnique(
-                    table: 'picking_trolleys',
+                    table: 'trolleys',
                     extraConditions: [
                         ['column' => 'warehouse_id', 'value' => $this->pickedBay->warehouse_id],
                         ['column' => 'id', 'operator' => '!=', 'value' => $this->pickedBay->id],

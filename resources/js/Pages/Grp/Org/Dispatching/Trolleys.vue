@@ -14,7 +14,7 @@ import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import TablePickingTrolleys from "@/Components/Tables/Grp/Org/Inventory/TablePickingTrolleys.vue"
+import TableTrolleys from "@/Components/Tables/Grp/Org/Dispatching/TableTrolleys.vue"
 
 
 library.add(faBars, faWarehouse)
@@ -36,7 +36,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components = {
-		trolleys: TablePickingTrolleys,
+		trolleys: TableTrolleys,
 		trolleys_histories: TableHistories
 
     }

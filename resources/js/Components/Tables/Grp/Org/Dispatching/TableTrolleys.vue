@@ -7,25 +7,22 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
-import { useLocaleStore } from '@/Stores/locale'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
 }>()
 
-const locale = useLocaleStore()
 
 function trolleyRoute(trolley: trolley) {
     switch (route().current()) {
-        case 'grp.org.warehouses.show.dispatching.picking_trolleys.index':
+        case 'grp.org.warehouses.show.dispatching.trolleys.index':
             return route(
-                'grp.org.warehouses.show.dispatching.picking_trolleys.show',
+                'grp.org.warehouses.show.dispatching.trolleys.show',
                 [route().params['organisation'], route().params['warehouse'], trolley.slug])
         default:
             return route(
-                'grp.org.warehouses.show.dispatching.picking_trolleys.index',
+                'grp.org.warehouses.show.dispatching.trolleys.index',
                 [trolley.organisation_slug, trolley.slug])
     }
 }
@@ -34,9 +31,9 @@ function trolleyRoute(trolley: trolley) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: Code -->
-        <template #cell(code)="{ item: trolley }">
+        <template #cell(name)="{ item: trolley }">
             <Link :href="trolleyRoute(trolley)" class="primaryLink">
-                {{ trolley['code'] }}
+                {{ trolley['name'] }}
             </Link>
         </template>
     </Table>

@@ -29,9 +29,8 @@ const fetchTrolleysList = async () => {
         isLoadingFetch.value = true
         const response = await axios.get(
             route(
-                'grp.json.inventory.picking_trolleys.list',
+                'grp.json.inventory.trolleys.list',
                 {
-                    organisation: layout.currentParams.organisation,
                     warehouse: props.warehouse.slug,
                 }
             )
@@ -127,9 +126,9 @@ const submitSelectTrolley = (trolleySlug?: number|null) => {
                         v-else
                         v-for="trolley in listTrolleys"
                         :key="trolley.id"
-                        @click="() => selectedTrolley == trolley.slug ? selectedTrolley = null : selectedTrolley = trolley.slug"
+                        @click="() => selectedTrolley == trolley.id ? selectedTrolley = null : selectedTrolley = trolley.id"
                         class="cursor-pointer py-2 px-3 border border-gray-300 text-sm rounded"
-                        :class="selectedTrolley == trolley.slug ? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
+                        :class="selectedTrolley == trolley.id ? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
                     >
                         {{ trolley.code }}
                     </div>

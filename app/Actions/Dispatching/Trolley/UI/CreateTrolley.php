@@ -1,6 +1,12 @@
 <?php
 
-namespace App\Actions\Inventory\PickingTrolley\UI;
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 09 Feb 2026 14:03:03 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Dispatching\Trolley\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
@@ -10,7 +16,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreatePickingTrolley extends OrgAction
+class CreateTrolley extends OrgAction
 {
     use WithWarehouseEditAuthorisation;
 
@@ -45,9 +51,9 @@ class CreatePickingTrolley extends OrgAction
                         [
                             'title'  => __('ID/Name'),
                             'fields' => [
-                                'code' => [
+                                'name' => [
                                     'type'        => 'input',
-                                    'label'       => __('Code'),
+                                    'label'       => __('ID/Name'),
                                     'placeholder' => __('maximum 64 character long'),
                                     'value'       => '',
                                     'required'    => true,
@@ -56,7 +62,7 @@ class CreatePickingTrolley extends OrgAction
                         ],
                     ],
                     'route'     => [
-                        'name'       => 'grp.models.warehouse.picking_trolleys.store',
+                        'name'       => 'grp.models.warehouse.trolleys.store',
                         'parameters' => $warehouse->id
                     ]
                 ],
@@ -74,7 +80,7 @@ class CreatePickingTrolley extends OrgAction
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
-            IndexPickingTrolleys::make()->getBreadcrumbs(
+            IndexTrolleys::make()->getBreadcrumbs(
                 routeName: preg_replace('/create$/', 'index', $routeName),
                 routeParameters: $routeParameters,
             ),

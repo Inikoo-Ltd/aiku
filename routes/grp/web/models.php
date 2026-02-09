@@ -108,6 +108,7 @@ use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
+use App\Actions\Dispatching\Trolley\UpdateTrolley;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
@@ -1124,6 +1125,8 @@ Route::post('master-product-category/{masterProductCategory:id}/master-variant',
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
+
+Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
 
 
 require __DIR__.'/models/inventory/warehouse.php';

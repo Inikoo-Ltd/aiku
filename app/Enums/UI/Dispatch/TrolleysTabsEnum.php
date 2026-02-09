@@ -2,16 +2,16 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 08 May 2024 14:33:40 British Summer Time, Sheffield, UK
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Mon, 09 Feb 2026 13:59:35 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Enums\UI\Inventory;
+namespace App\Enums\UI\Dispatch;
 
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 
-enum PickingTrolleysTabsEnum: string
+enum TrolleysTabsEnum: string
 {
     use EnumHelperTrait;
     use HasTabs;
@@ -22,11 +22,11 @@ enum PickingTrolleysTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
-            PickingTrolleysTabsEnum::TROLLEYS => [
+            TrolleysTabsEnum::TROLLEYS => [
                 'title' => __('Trolleys'),
                 'icon'  => 'fal fa-dolly-flatbed-alt',
             ],
-            PickingTrolleysTabsEnum::TROLLEYS_HISTORIES => [
+            TrolleysTabsEnum::TROLLEYS_HISTORIES => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
