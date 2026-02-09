@@ -115,24 +115,25 @@ class StoreOfflineMessage
         ]);
     }
 
-    public function rules(): array
+    public function rules(ActionRequest $request): array
     {
         return [
-            'web_user_id'      => ['nullable', 'exists:web_users,id'],
+            'web_user_id' => [
+                Rule::requiredIf(fn() => $request->input('sender_type') === ChatSenderTypeEnum::USER->value),
+                'nullable',
+                'exists:web_users,id',
+            ],
+
             'shop_id'      => ['required', 'exists:shops,id'],
             'session_ulid' => ['nullable', 'string'],
             'name'         => ['required', 'string', 'max:100'],
             'email'        => ['required', 'email', 'max:150'],
             'message'      => ['required', 'string', 'max:5000'],
             'language_id'  => ['required', 'exists:languages,id'],
-            'sender_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('web_users', 'id'),
-            ],
+
             'sender_type' => [
-                'sometimes',
-                Rule::enum(ChatSenderTypeEnum::class)
+                'required',
+                Rule::enum(ChatSenderTypeEnum::class),
             ],
         ];
     }
