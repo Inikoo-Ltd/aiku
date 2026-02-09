@@ -71,7 +71,7 @@ enum GroupDashboardSalesTableTabsEnum: string
 
     public function table(Group $group, array $timeSeriesData = [], ?bool $bool = false): array
     {
-        if ($bool && $this !== self::GLOBAL_DROPSHIPPING) {
+        if ($bool && !in_array($this, [self::GLOBAL_DROPSHIPPING, self::GLOBAL_MARKETPLACES])) {
             return [];
         }
 
@@ -82,6 +82,7 @@ enum GroupDashboardSalesTableTabsEnum: string
         $salesChannelTimeSeriesStats = $timeSeriesData['salesChannels'];
         $dropshippingShopTimeSeriesStats = $timeSeriesData['shops']['dropshipping'];
         $fulfilmentShopTimeSeriesStats = $timeSeriesData['shops']['fulfilment'];
+        $faireTimeSeriesStats = $timeSeriesData['faire'];
 
         if (!$bool) {
             $header = match ($this) {
@@ -113,14 +114,17 @@ enum GroupDashboardSalesTableTabsEnum: string
         } else {
             $header = match ($this) {
                 GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardHeaderPlatformSalesResource::make($group)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardHeaderInvoiceCategoriesInGroupSalesResource::make($group)->toJson(), true),
             };
 
             $body = match ($this) {
                 GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardPlatformSalesResource::collection($platformTimeSeriesStats)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardInvoiceCategoriesInGroupSalesResource::collection($faireTimeSeriesStats)->toJson(), true),
             };
 
             $totals = match ($this) {
                 GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => json_decode(DashboardTotalPlatformSalesResource::make($platformTimeSeriesStats)->toJson(), true),
+                GroupDashboardSalesTableTabsEnum::GLOBAL_MARKETPLACES => json_decode(DashboardTotalGroupInvoiceCategoriesSalesResource::make($faireTimeSeriesStats)->toJson(), true),
             };
         }
 
