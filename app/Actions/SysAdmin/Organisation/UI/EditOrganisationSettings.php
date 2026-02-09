@@ -221,7 +221,7 @@ class EditOrganisationSettings extends OrgAction
                             ],
                         ],
                         [
-                            'label'  => __('Working hours & salary'),
+                            'label'  => __('Working hours'),
                             'icon'   => 'fa-light fa-clock',
                             'fields' => [
                                 'working_hours' => [
@@ -230,7 +230,7 @@ class EditOrganisationSettings extends OrgAction
                                          'metadata' => $metadata,
                                          'data'     => (object) $scheduleData,
                                     ]
-                                   
+
                                 ]
                             ],
                         ],
