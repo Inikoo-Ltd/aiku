@@ -119,7 +119,7 @@ class StoreOfflineMessage
     {
         return [
             'web_user_id' => [
-                Rule::requiredIf(fn() => $request->input('sender_type') === ChatSenderTypeEnum::USER->value),
+                Rule::requiredIf(fn () => $request->input('sender_type') === ChatSenderTypeEnum::USER->value),
                 'nullable',
                 'exists:web_users,id',
             ],
