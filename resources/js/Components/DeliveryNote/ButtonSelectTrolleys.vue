@@ -167,16 +167,6 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
                 :disabled="isLoadingSubmitTrolley !== undefined"
                 :loading="isLoadingSubmitTrolley === null"
             />
-
-            <!-- <Button
-                @click="() => submitSelectTrolley(selectedTrolley)"
-                label="Select trolley and start picking"
-                full
-                iconRight="fas fa-arrow-right"
-                class="mt-2"
-                :disabled="!selectedTrolley"
-                :loading="isLoadingSubmitTrolley"
-            /> -->
         </Modal>
     </div>
 </template>
