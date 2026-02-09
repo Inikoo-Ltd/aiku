@@ -10,8 +10,8 @@ namespace App\Actions\Dispatching\PickedBay\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
-use App\Enums\UI\Dispatch\TrolleysTabsEnum;
-use App\Http\Resources\Dispatching\TrolleysResource;
+use App\Enums\UI\Inventory\PickedBaysTabsEnum;
+use App\Http\Resources\Dispatching\PickedBaysResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
@@ -41,26 +41,26 @@ class ListAvailablePickedBays extends OrgAction
             ->where('picked_bays.warehouse_id', $warehouse->id);
         return $query
             ->select([
-                'trolleys.id',
-                'trolleys.code',
-                'trolleys.slug',
+                'picked_bays.id',
+                'picked_bays.code',
+                'picked_bays.slug',
             ])
-            ->defaultSort('trolleys.code')
+            ->defaultSort('picked_bays.code')
             ->allowedSorts(['code'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function jsonResponse(LengthAwarePaginator $trolleys): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $pickedBays): AnonymousResourceCollection
     {
-        return TrolleysResource::collection($trolleys);
+        return PickedBaysResource::collection($pickedBays);
     }
 
     public function asController(Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(TrolleysTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PickedBaysTabsEnum::values());
 
-        return $this->handle($warehouse, TrolleysTabsEnum::TROLLEYS->value);
+        return $this->handle($warehouse, PickedBaysTabsEnum::BAYS->value);
     }
 }

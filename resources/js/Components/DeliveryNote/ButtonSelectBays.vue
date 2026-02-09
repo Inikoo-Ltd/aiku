@@ -30,7 +30,7 @@ const fetchBaysList = async () => {
         isLoadingFetch.value = true
         const response = await axios.get(
             route(
-                'grp.json.inventory.picking_trolleys.list',
+                'grp.json.picked_bays.list',
                 {
                     organisation: layout.currentParams.organisation,
                     warehouse: props.warehouse.slug,
@@ -132,7 +132,7 @@ const submitSelectBay = (bayId?: number|null) => {
                             class="cursor-pointer flex justify-between items-center py-2 px-3 border border-gray-300 text-sm rounded"
                             :class="isLoadingSubmitBay == bay.id ? 'bg-[var(--theme-color-0)] opacity-70 text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
                         >
-                            {{ bay.code }}
+                            {{ bay.name ?? bay.code ?? bay.slug }}
                             <LoadingIcon v-if="isLoadingSubmitBay == bay.id" />
                         </div>
                     </template>
