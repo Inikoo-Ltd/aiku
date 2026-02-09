@@ -131,7 +131,7 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
                             class="cursor-pointer flex justify-between items-center py-2 px-3 border border-gray-300 text-sm rounded"
                             :class="isLoadingSubmitTrolley == trolley.id ? 'bg-[var(--theme-color-0)] opacity-70 text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
                         >
-                            {{ trolley.code }}
+                            {{ trolley.name }}
                             <LoadingIcon v-if="isLoadingSubmitTrolley == trolley.id" />
                         </div>
                     </template>
@@ -140,7 +140,7 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
                     <div v-else class="flex items-center justify-center w-full col-span-3 pt-3">
                         <div class="text-center border-gray-200 p-14">
                             <h3 class="text-lg font-semibold tracking-wide pb-2">{{ trans("No trolleys found") }}</h3>
-                            <a :href="route('grp.org.warehouses.show.dispatching.picking_trolleys.create', {
+                            <a :href="route('grp.org.warehouses.show.dispatching.trolleys.create', {
                                     organisation: layout.currentParams.organisation,
                                     warehouse: props.warehouse.slug
                                 })"
