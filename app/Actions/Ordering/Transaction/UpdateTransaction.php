@@ -31,6 +31,11 @@ class UpdateTransaction extends OrgAction
 
     public function handle(Transaction $transaction, array $modelData, $calculateShipping = true): Transaction
     {
+        if (Arr::has($modelData, 'is_cut_view') && !Arr::get($modelData, 'is_cut_view')) {
+            $modelData['quantity_ordered'] = (int)ceil($transaction->quantity_ordered);
+        }
+
+
         if (Arr::exists($modelData, 'quantity_ordered') && $this->strict) {
             if ($modelData['quantity_ordered'] == 0 && $transaction->order->status == OrderStatusEnum::CREATING) {
                 return DeleteTransaction::run($transaction);
@@ -39,7 +44,7 @@ class UpdateTransaction extends OrgAction
             if ($transaction->model_type == 'Product') {
                 /** @var Product $product */
                 $product         = $transaction->model;
-                $estimatedWeight = (int) ceil(Arr::get($modelData, 'quantity_ordered') * $product->gross_weight);
+                $estimatedWeight = (int)ceil(Arr::get($modelData, 'quantity_ordered') * $product->gross_weight);
                 data_set($modelData, 'estimated_weight', $estimatedWeight);
             }
 
