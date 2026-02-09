@@ -30,11 +30,11 @@ class StoreOfflineMessage
 
                 if (!empty($data['session_ulid'])) {
                     $session = ChatSession::where('ulid', $data['session_ulid'])
-                        ->where('shop_id', $shop->id)
-                        ->first();
+                    ->where('shop_id', $shop->id)
+                    ->first();
                 }
 
-                if ($session->isClosed()) {
+                if ($session && $session->isClosed()) {
                     $session->update([
                         'status' => ChatSessionStatusEnum::ACTIVE,
                     ]);
@@ -78,15 +78,14 @@ class StoreOfflineMessage
                     'metadata'    => $currentMetadata
                 ]);
 
-
-
                 // 3. Send Message via SendChatMessage Action
                 $messageData = [
                     'message_text' => $data['message'],
                     'message_type' => ChatMessageTypeEnum::TEXT->value,
-                    'sender_type'  => $data['sender_type'] ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
+                    'sender_type'  => $data['sender_type'] === ChatSenderTypeEnum::USER->value ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
                     'sender_id'    => $data['sender_id'] ?? null,
                 ];
+
 
                 $message = SendChatMessage::run($session, $messageData);
 
@@ -125,6 +124,7 @@ class StoreOfflineMessage
             'name'         => ['required', 'string', 'max:100'],
             'email'        => ['required', 'email', 'max:150'],
             'message'      => ['required', 'string', 'max:5000'],
+            'language_id'  => ['required', 'exists:languages,id'],
             'sender_id' => [
                 'nullable',
                 'integer',
