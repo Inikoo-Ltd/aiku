@@ -9,14 +9,11 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\Catalogue\Product\UpdateProductImages;
-use App\Actions\Goods\TradeUnit\UpdateTradeUnitImages;
+use App\Actions\Catalogue\Product\CloneProductImagesFromMasterProduct;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithImageUpdate;
-use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterProductImages extends GrpAction
@@ -26,40 +23,29 @@ class UpdateMasterProductImages extends GrpAction
 
     public function handle(MasterAsset $masterAsset, array $modelData, bool $updateDependants = false): MasterAsset
     {
+        if ($masterAsset->is_single_trade_unit) {
+            return $masterAsset;
+        }
+
         $this->updateModelImages($masterAsset, $modelData);
 
         data_set($modelData, 'bucket_images', true);
 
         $this->update($masterAsset, $modelData);
 
-        if ($updateDependants && $masterAsset->is_single_trade_unit) {
-            $this->updateDependants($masterAsset, $modelData);
+        if ($updateDependants && !$masterAsset->is_single_trade_unit) {
+            $this->updateDependants($masterAsset);
         }
 
 
         return $masterAsset;
     }
 
-    public function updateDependants(MasterAsset $seedMasterAsset, array $modelData): void
+    public function updateDependants(MasterAsset $seedMasterAsset): void
     {
-        $tradeUnit = $seedMasterAsset->tradeUnits->first();
-        UpdateTradeUnitImages::run($tradeUnit, $modelData, false);
-
-        foreach (DB::table('model_has_trade_units')
-            ->select('model_type', 'model_id')
-            ->where('trade_unit_id', $tradeUnit->id)
-            ->whereIn('model_type', ['MasterAsset','Product'])
-            ->get() as $modelsData) {
-            if ($modelsData->model_type == 'MasterAsset' && $modelsData->model_id != $seedMasterAsset->id) {
-                $masterAsset = MasterAsset::find($modelsData->model_id);
-                if ($masterAsset && $masterAsset->is_single_trade_unit) {
-                    UpdateMasterProductImages::run($masterAsset, $modelData);
-                }
-            } elseif ($modelsData->model_type == 'Product') {
-                $product = Product::find($modelsData->model_id);
-                if ($product && $product->is_single_trade_unit) {
-                    UpdateProductImages::run($product, $modelData);
-                }
+        foreach ($seedMasterAsset->products as $product) {
+            if ($product && !$product->is_single_trade_unit) {
+                CloneProductImagesFromMasterProduct::dispatch($product);
             }
         }
     }

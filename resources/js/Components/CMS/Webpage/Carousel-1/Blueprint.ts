@@ -25,12 +25,13 @@ export default {
 					label: "Autoplay",
 					key: ["carousel_setting", "autoplay"],
 					type: "switch",
+					information : 'if autoplay is enabled, the carousel will automatically switch slides after a set interval (only works on live site)'
 				},
 				{
 					label: "Autoplay Interval (ms)",
 					key: ["carousel_setting", "interval"],
 					type: "number",
-					information : 'should put in milisecond'
+					information : 'should put in milisecond (only works on live site)' 
 				},
 				{
 					label: "Loop",

@@ -84,6 +84,52 @@ class StoreWooCommerceProduct extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
+            $dimensions = [];
+            if(! blank($product->marketing_dimensions)) {
+                $dimensions = [
+                    'width' => Arr::get($product->marketing_dimensions, 'w'),
+                    'height' => Arr::get($product->marketing_dimensions, 'h'),
+                    'length' => Arr::get($product->marketing_dimensions, 'l')
+                ];
+            }
+
+            $attributes = [
+                [
+                    'id' => 0,
+                    'name' => 'Country of Origin',
+                    'position' => 0,
+                    'visible' => true,
+                    'variation' => false,
+                    'options' => [$product->country_of_origin]
+                ]
+            ];
+
+            if(! blank($customAttributes)) {
+                foreach ($customAttributes as $key => $attr) {
+                    $attributes[] = [
+                        'id' => 0,
+                        'name' => $attr['name'],
+                        'position' => $key + 1,
+                        'visible' => true,
+                        'variation' => false,
+                        'options' => [$attr['option']]
+                    ];
+                }
+            }
+
+            $ingredients = explode(',', $product->marketing_ingredients);
+
+            if(! blank($ingredients)) {
+                $attributes[] = [
+                    'id' => 0,
+                    'name' => 'Ingredients',
+                    'position' => count($attributes) + 1,
+                    'visible' => true,
+                    'variation' => false,
+                    'options' => array_values($ingredients)
+                ];
+            }
+
             $wooCommerceProduct = [
                 'name'              => $portfolio->customer_product_name,
                 'type'              => 'simple',
@@ -98,8 +144,9 @@ class StoreWooCommerceProduct extends RetinaAction
                 'stock_status'      => Arr::get($product, 'stock_status', 'instock'),
                 'sku'               => $portfolio->sku,
                 'weight'            => (string)($product->gross_weight / 1000),
+                'dimensions'        => $dimensions,
                 'status'            => $this->mapProductStateToWooCommerce($product->status->value),
-                'default_attributes'         => $customAttributes
+                'attributes'        => $attributes
             ];
 
             $isOnDemand = false;

@@ -28,8 +28,10 @@ class DownloadPortfoliosCSV extends RetinaAction
         CustomerSalesChannel $customerSalesChannel,
         string $exportType = 'portfolio_csv',
         mixed $columns = null,
-        mixed $productStates = null
+        mixed $productStates = null,
+        array $productAvailibility
     ): BinaryFileResponse|Response {
+
         $filename = 'portfolio_data_feed_' . $customerSalesChannel->customer->slug . '_' . now()->format('Ymd') . '.csv';
 
         $isExtendedProperties = $exportType === 'portfolio_csv_extended_properties';
@@ -43,7 +45,7 @@ class DownloadPortfoliosCSV extends RetinaAction
 
         $normalizedProductStates = $this->normalizeProductStates($productStates);
 
-        DB::table('portfolios')
+        $portfolios = DB::table('portfolios')
             ->select('products.*', 'product_categories.name as family_name', 'portfolios.reference')
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
@@ -51,7 +53,19 @@ class DownloadPortfoliosCSV extends RetinaAction
             ->where('portfolios.status', true)
             ->when(count($normalizedProductStates) > 0, function ($query) use ($normalizedProductStates) {
                 $query->whereIn('products.state', $normalizedProductStates);
-            })
+            });
+
+        if(in_array('exclude_not_for_sale', $productAvailibility)){
+            $portfolios
+                ->where('products.is_for_sale', true);
+        }
+
+        if(in_array('exclude_out_of_stocks', $productAvailibility)){
+            $portfolios
+                ->where('products.available_quantity', '>', 0);
+        }
+
+        $portfolios
             ->orderBy('portfolios.id')
             ->chunk(100, function ($products) use (&$csvData, $isExtendedProperties, $columns) {
                 foreach ($products as $row) {
@@ -118,8 +132,9 @@ class DownloadPortfoliosCSV extends RetinaAction
 
         $columns = $request->get('columns');
         $productStates = $request->get('product_states');
+        $productAvailibility = $request->get('product_availibility') ?? [];
 
-        return $this->handle($customerSalesChannel, $exportType, $columns, $productStates);
+        return $this->handle($customerSalesChannel, $exportType, $columns, $productStates, $productAvailibility);
     }
 
     private function extendedPropertiesHeadingMap(): array

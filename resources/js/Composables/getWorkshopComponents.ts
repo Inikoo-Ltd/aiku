@@ -69,6 +69,7 @@ import Product2WorkshopEcom from '@/Components/CMS/Webpage/Product2/Product2Work
 import ProductWorkshop2 from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
 import Column3Workshop from '@/Components/CMS/Webpage/Column3/Column3Workshop.vue'
 import Column4Workshop from '@/Components/CMS/Webpage/Column4/Column4Workshop.vue'
+import Slider1Workshop from '@/Components/CMS/Webpage/Slider-1/Slider1Workshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -151,7 +152,8 @@ const components = (shop_type?: string): Record<string, Component> => {
         'blog' : BlogWorkshop,
         'carousel-cta' : CarouselCtaWorkshop,
         'carousel-image-background' : CarouselImageBackground,
-        'step-2' : TimelineWorkshop2
+        'step-2' : TimelineWorkshop2,
+        'slider-1' : Slider1Workshop
     }
 }
 

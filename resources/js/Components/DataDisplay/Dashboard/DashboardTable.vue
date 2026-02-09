@@ -57,7 +57,7 @@ interface Tables {
 	}[]
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
 	idTable: string  //  organisation_dashboard_tab
 	tableData: {
 		charts: []
@@ -74,7 +74,10 @@ const props = defineProps<{
 	intervals: Intervals
 	settings: Settings
 	currentTab: string
-}>()
+	showTabs?: boolean
+}>(), {
+	showTabs: true
+})
 
 const emits = defineEmits<(e: "onChangeTab", val: string) => void>()
 
@@ -144,7 +147,7 @@ const updateTab = (value: string) => {
 
 		<div class="">
 			<!-- Section: Tabs -->
-			<Tabs :value="tableData.current_tab" class="overflow-x-auto text-xs md:text-base pb-2">
+			<Tabs v-if="showTabs" :value="tableData.current_tab" class="overflow-x-auto text-xs md:text-base pb-2">
 				<TabList>
 					<Tab
 						v-for="(tab, tabSlug) in tableData.tabs"
