@@ -632,7 +632,7 @@ watch(
                     {{ waveLabel }}
                 </span>
                 <span class="text-sm font-medium text-gray-700 whitespace-nowrap"
-                    v-if="!props.isHasParentMailshot && !showWaveSettings">
+                    v-if="!props.isHasParentMailshot && !showWaveSettings && props.status === 'sent'">
                     Recipients: {{ numberSecondWaveRecipients }}
                 </span>
             </template>
