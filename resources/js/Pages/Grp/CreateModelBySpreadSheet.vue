@@ -5,16 +5,15 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
-import PageHeading from "@/Components/Headings/PageHeading.vue";
-import { capitalize } from "@/Composables/capitalize";
-// import SpreadSheet from "@/Components/SpreadSheets/SpreadSheet.vue";
-// import CustomTable from "@/Components/SpreadSheets/CustomTable.vue";
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { capitalize } from "@/Composables/capitalize"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
-const props = defineProps<{
-    pageHead: object
+defineProps<{
+    pageHead: PageHeadingTypes
     title: string
-    documentName : string,
+    documentName: string,
     sheetData: {
         columns: Array<{
             id: string
@@ -24,11 +23,11 @@ const props = defineProps<{
             required?: boolean
         }>
     }
-    saveRoute:{
-        name:string,
-        arguments?:Array<string>
+    saveRoute: {
+        name: string,
+        arguments?: Array<string>
     }
-}>();
+}>()
 </script>
 
 <template>
