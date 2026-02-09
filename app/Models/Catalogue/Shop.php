@@ -28,6 +28,7 @@ use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
+use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
@@ -747,6 +748,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function platformStats(): HasMany
     {
         return $this->hasMany(ShopPlatformStats::class);
+    }
+
+    public function backInStockReminders(): HasMany
+    {
+        return $this->hasMany(BackInStockReminder::class);
     }
 
     public function tags(): BelongsToMany

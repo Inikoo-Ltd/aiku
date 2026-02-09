@@ -9,6 +9,7 @@
 
 namespace App\Actions\Comms\BackInStockReminder;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePendingBackInStockReminders;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedInCategories;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBackInStockReminders;
@@ -35,6 +36,9 @@ class UpdateBackInStockReminder extends OrgAction
             ProductHydrateCustomersWhoReminded::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
             ProductHydrateCustomersWhoRemindedInCategories::dispatch($backInStockReminder->product)->delay($this->hydratorsDelay);
         }
+
+        ShopHydratePendingBackInStockReminders::dispatch($backInStockReminder->shop);
+
         return $backInStockReminder;
     }
 
