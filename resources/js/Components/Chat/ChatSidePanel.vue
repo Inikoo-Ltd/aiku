@@ -36,11 +36,7 @@ const props = defineProps<{
 	initialTab?: "history" | "profile" | "message-details"
 }>()
 
-const selectedHistory = ref<{
-	ulid: string
-	contact_name?: string
-	guest_identifier?: string
-} | null>(null)
+const selectedHistory = ref<SessionAPI | null>(null)
 
 const emit = defineEmits<{
 	(e: "close"): void
@@ -186,7 +182,7 @@ const assignAgent = async (opt: any) => {
 
 	try {
 		isAssigningAgent.value = true
-		const organisation = route().params?.organisation ?? "aw"
+		const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
 		const parameters = [organisation, props.session.ulid]
 		const body = {
 			agent_id: opt.agent_id,
@@ -238,7 +234,7 @@ const displayName = computed(() => {
 	return props.session?.contact_name || props.session?.guest_identifier || ""
 })
 const avatarUrl = computed(() => {
-	return props.session?.image || props.session?.image || ""
+	return (props.session as any)?.image || ""
 })
 
 const onSyncByEmail = async () => {
@@ -309,6 +305,19 @@ const updatePriority = async (val: string) => {
 	}
 }
 
+const sentimentClass = (val: string) => {
+	switch (val) {
+		case 'positive':
+			return 'bg-green-100 text-green-700'
+		case 'neutral':
+			return 'bg-yellow-100 text-yellow-700'
+		case 'negative':
+			return 'bg-red-100 text-red-700'
+		default:
+			return 'bg-gray-100 text-gray-600'
+	}
+}
+
 const priorityClass = (p?: string) => {
 	return "primary-outline"
 }
@@ -339,39 +348,27 @@ onMounted(async () => {
 
 		<div
 			class="fixed right-[25rem] top-[120px] z-[9999] w-[380px] h-[calc(100vh-180px)] bg-white flex flex-col rounded-xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
-			<div class="px-4 py-3 border-b">
-				<div class="flex items-start">
-					<div class="w-10"></div>
+			<div class="px-4 py-3 border-b relative">
+				<button class="absolute right-4 top-3 p-1 rounded hover:bg-gray-100" @click="emit('close')">
+					<FontAwesomeIcon :icon="faClose" class="text-base text-gray-400" />
+				</button>
+				<div class="flex flex-col items-center gap-2 text-center">
+					<div
+						class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+						<Image v-if="avatarUrl" :src="avatarUrl" class="w-full h-full rounded-full object-cover" />
 
-					<div class="flex-1 flex flex-col items-center gap-2 text-center">
-						<div
-							class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
-							<Image v-if="avatarUrl" :src="avatarUrl" class="w-full h-full rounded-full object-cover" />
-
-							<FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
-						</div>
-
-						<div class="leading-tight">
-							<div class="font-semibold text-sm">
-								{{ capitalize(displayName) }}
-							</div>
-
-							<span v-if="props.session?.web_user"
-								class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-green-100 text-green-800">
-								{{ trans("Customer") }}
-							</span>
-
-							<span v-else
-								class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium bg-blue-100 text-blue-800">
-								{{ trans("Guest") }}
-							</span>
-						</div>
+						<FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
 					</div>
 
-					<div class="w-10 flex justify-end">
-						<button class="px-2 py-1 rounded hover:bg-gray-100" @click="emit('close')">
-							<FontAwesomeIcon :icon="faClose" class="text-base text-gray-400" />
-						</button>
+					<div class="leading-tight">
+						<div class="font-semibold text-sm">
+							{{ capitalize(displayName) }}
+						</div>
+						<span
+							class="inline-flex items-center justify-center px-2 py-0.5 mt-1 rounded-sm text-[11px] font-medium "
+							:class="props.session?.web_user ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
+							{{ props.session?.web_user ? trans('Customer') : trans('Guest') }}
+						</span>
 					</div>
 				</div>
 			</div>
@@ -401,19 +398,10 @@ onMounted(async () => {
 						</div>
 						<div v-else class="px-3 py-3 space-y-3">
 							<div v-for="s in userSessions" :key="s.ulid"
-								class="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-lg transition cursor-pointer"
-								@click="
-									selectedHistory = {
-										ulid: s.ulid,
-										contact_name: s.contact_name,
-										guest_identifier: s.guest_identifier,
-										status: s.status,
-										web_user: s.web_user,
-										guest_profile: s.guest_profile,
-									}
-									">
-								<div class="flex items-left mb-3">
-									<span class="text-xs font-semibold px-2 py-1 rounded-full" :class="s.status === 'closed'
+								class="border border-gray-200 rounded-xl p-4 bg-white shadow-lg hover:shadow-xl transition cursor-pointer"
+								@click="selectedHistory = s">
+								<div class="flex justify-start mb-3">
+									<span class="text-xs font-semibold px-2 py-1 rounded-xl capitalize" :class="s.status === 'closed'
 										? 'bg-red-50 text-red-600'
 										: 'bg-green-50 text-green-600'">
 										{{ s.status }}
@@ -423,20 +411,20 @@ onMounted(async () => {
 								<!-- Time Info -->
 								<div class="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
 									<div>
-										<div class="text-gray-400">Created</div>
+										<div class="text-gray-400">{{ trans("Created") }}</div>
 										<div class="font-medium text-gray-800">
 											{{ useFormatTime(s.created_at, { formatTime: 'hms' }) }}
 										</div>
 									</div>
 									<div>
-										<div class="text-gray-400">Last Activity</div>
+										<div class="text-gray-400">{{ trans("Last Activity") }}</div>
 										<div class="font-medium text-gray-800">
 											{{ useFormatTime(s.last_message?.created_at, { formatTime: 'hms' })
 											}}
 										</div>
 									</div>
 									<div>
-										<div class="text-gray-400">Duration</div>
+										<div class="text-gray-400">{{ trans("Duration") }}</div>
 										<div class="font-medium text-gray-800">
 											{{ s.duration || '' }}
 										</div>
@@ -446,14 +434,15 @@ onMounted(async () => {
 								<!-- AI Summary -->
 								<div class="bg-gray-50 rounded-lg p-3 border border-gray-100">
 									<div class="flex items-center justify-between mb-2">
-										<span class="text-xs font-bold text-indigo-600">AI Summary</span>
-										<span class="text-[10px] text-gray-400">Auto generated</span>
+										<span class="text-xs font-bold text-indigo-600">{{ trans("AI Summary") }}</span>
+										<span class="text-[10px] text-gray-400">{{ trans("Auto generated") }}</span>
 									</div>
 
 									<template v-if="s.ai_summary">
 										<!-- Summary -->
 										<div class="mb-2">
-											<div class="text-[11px] font-bold text-gray-500 mb-1">Summary</div>
+											<div class="text-[11px] font-bold text-gray-500 mb-1">{{ trans("Summary") }}
+											</div>
 											<p class="text-xs text-gray-700 leading-relaxed">
 												{{ s.ai_summary.summary }}
 											</p>
@@ -461,7 +450,9 @@ onMounted(async () => {
 
 										<!-- Key Points -->
 										<div class="mb-2">
-											<div class="text-[11px] font-bold text-gray-500 mb-1">Key Points</div>
+											<div class="text-[11px] font-bold text-gray-500 mb-1">
+												{{ trans("Key Points") }}
+											</div>
 											<ul class="text-xs text-gray-700 space-y-1 list-disc pl-4">
 												<li v-for="(point, i) in s.ai_summary.key_points" :key="i">
 													{{ point }}
@@ -472,22 +463,17 @@ onMounted(async () => {
 										<!-- Sentiment -->
 										<div class="flex items-center mt-2 gap-2">
 											<span class="text-[11px] font-medium px-2 py-0.5 rounded-full capitalize"
-												:class="{
-													'bg-green-100 text-green-700': s.ai_summary.sentiment === 'positive',
-													'bg-yellow-100 text-yellow-700': s.ai_summary.sentiment === 'neutral',
-													'bg-red-100 text-red-700': s.ai_summary.sentiment === 'negative',
-												}">
-												Sentiment: {{ s.ai_summary.sentiment }}
+												:class="sentimentClass(s.ai_summary.sentiment)">
+												{{ trans("Sentiment :") }} {{ s.ai_summary.sentiment || '' }}
 											</span>
 										</div>
 									</template>
 
 									<!-- Fallback -->
 									<div v-else class="text-xs text-gray-400 italic">
-										AI summary not available.
+										{{ trans("AI summary not available.") }}
 									</div>
 								</div>
-
 							</div>
 						</div>
 					</template>

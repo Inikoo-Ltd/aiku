@@ -10,7 +10,7 @@ import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 import OfflineChatForm from "../OfflineChatForm.vue"
 import { router } from "@inertiajs/vue3"
-import { faSpinner } from "@far"
+import { faSpinner } from "@fal"
 
 interface ChatMessage {
     id: number
