@@ -42,12 +42,14 @@ class ResumeMailshot extends OrgAction
             ->update(['state' => MailshotSendChannelStateEnum::READY]);
 
 
-        foreach (
-            EmailDeliveryChannel::where('model_type', class_basename(Mailshot::class))->where('model_id', $mailshot->id)
-                ->where('state', MailshotSendChannelStateEnum::READY)->get() as $mailshotSendChannel
-        ) {
-            SendEmailDeliveryChannel::dispatch($mailshotSendChannel);
-        }
+        EmailDeliveryChannel::where('model_type', class_basename(Mailshot::class))
+            ->where('model_id', $mailshot->id)
+            ->where('state', MailshotSendChannelStateEnum::READY)
+            ->chunk(1000, function ($channels) {
+                foreach ($channels as $mailshotSendChannel) {
+                    SendEmailDeliveryChannel::dispatch($mailshotSendChannel);
+                }
+            });
 
         return $mailshot;
     }
