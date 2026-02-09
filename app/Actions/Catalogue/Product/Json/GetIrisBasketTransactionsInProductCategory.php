@@ -56,7 +56,7 @@ class GetIrisBasketTransactionsInProductCategory extends IrisAction
             }
             $productsData[$data->id] = [
                 'quantity_ordered' => $quantityOrdered,
-                'quantity_ordered_new' => null,
+                'quantity_ordered_new' => $quantityOrdered,  // Helper for FE
                 'transactions_id' =>  $transactionIds,
             ];
         }
