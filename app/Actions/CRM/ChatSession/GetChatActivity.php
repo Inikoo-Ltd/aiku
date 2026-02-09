@@ -25,6 +25,7 @@ class GetChatActivity
                     ChatEventTypeEnum::PRIORITY,
                     ChatEventTypeEnum::CLOSE,
                     ChatEventTypeEnum::GUEST_PROFILE,
+                    ChatEventTypeEnum::REOPEN,
                 ])
                 ->with(['actor'])
                 ->orderBy('created_at', 'desc')
@@ -96,11 +97,10 @@ class GetChatActivity
 
                 case ChatActorTypeEnum::USER->value:
                     $webUser = WebUser::find($event->actor_id);
-
                     if ($webUser) {
                         $actor['id'] = $webUser->id;
                         $actor['name'] = $webUser->contact_name ??
-                            $webUser->name ??
+                            $webUser->username ??
                             'User';
                     } else {
                         $actor['id'] = null;
