@@ -157,7 +157,7 @@ const data = computed<BannerWorkshop>({
         <div class="border border-gray-300 w-3/4 rounded-md" v-if="commonEditActive">
             <SliderCommonWorkshop 
                 ref="_SlideWorkshop" 
-                :currentComponentBeenEdited="props.modelValue"
+                v-model="data"
                 :blueprint="CommonBlueprint" 
             />
         </div>
