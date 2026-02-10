@@ -2,7 +2,6 @@
 
 namespace App\Actions\HumanResources\ClockingMachine;
 
-use App\Actions\OrgAction;
 use App\Models\HumanResources\ClockingMachine;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\ActionRequest;
@@ -11,6 +10,11 @@ use Exception;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Enums\HumanResources\Clocking\ClockingActionEnum;
 use Illuminate\Validation\Rules\Enum;
+use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
+use App\Models\HumanResources\Clocking;
+use App\Actions\HumanResources\Timesheet\StoreTimesheet;
+use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
+use Illuminate\Support\Facades\Auth;
 
 class ValidateClockingMachineQrCode
 {
@@ -59,6 +63,8 @@ class ValidateClockingMachineQrCode
                 $userLng
             );
 
+            $this->processClocking($clockingMachine, $userLat, $userLng);
+
             return $clockingMachine;
         } catch (Exception $e) {
             StoreQrScanLog::make()->handle(
@@ -72,6 +78,55 @@ class ValidateClockingMachineQrCode
 
             throw $e;
         }
+    }
+
+    private function processClocking(ClockingMachine $machine, ?float $lat, ?float $lng): void
+    {
+        $user = Auth::user();
+        $employee = $user?->employee;
+
+        if (!$employee) {
+            return;
+        }
+
+        $lastClocking = Clocking::where('subject_type', $employee->getMorphClass())
+            ->where('subject_id', $employee->id)
+            ->latest('clocked_at')
+            ->first();
+
+        if ($lastClocking && $lastClocking->clocked_at->diffInSeconds(now()) < 60) {
+            throw new Exception(__('Scan too frequent. Please wait a moment.'));
+        }
+
+
+        $today = Carbon::now()->format('Y-m-d');
+        $timesheet = $employee->timesheets()->where('date', $today)->first();
+
+        if (!$timesheet) {
+            $timesheet = StoreTimesheet::make()->handle($employee, ['date' => $today]);
+        }
+
+        $clocking = new Clocking();
+        $clocking->group_id = $employee->group_id;
+        $clocking->organisation_id = $employee->organisation_id;
+        $clocking->workplace_id = $machine->workplace_id;
+        $clocking->timesheet_id = $timesheet->id;
+        $clocking->clocking_machine_id = $machine->id;
+
+        // Polymorphic relation subject
+        $clocking->subject_type = $employee->getMorphClass();
+        $clocking->subject_id = $employee->id;
+
+        $clocking->type = ClockingTypeEnum::CLOCKING_MACHINE;
+        $clocking->clocked_at = now();
+
+        if ($lat && $lng) {
+            $clocking->data = array_merge($clocking->data ?? [], ['location' => ['lat' => $lat, 'lng' => $lng]]);
+        }
+
+        $clocking->save();
+
+        AddClockingToTimeTracker::make()->handle($timesheet, $clocking);
     }
 
     private function validateCoordinates(array $config, float $userLat, float $userLng): void
