@@ -48,7 +48,7 @@ class StorePayment extends OrgAction
         data_set($modelData, 'org_amount', Arr::get($modelData, 'amount') * GetCurrencyExchange::run($customer->shop->currency, $paymentAccount->organisation->currency), overwrite: false);
         data_set($modelData, 'grp_amount', Arr::get($modelData, 'amount') * GetCurrencyExchange::run($customer->shop->currency, $paymentAccount->organisation->group->currency), overwrite: false);
 
-        if ($modelData['source']) {
+        if (isset($modelData['source'])) {
             data_set($modelData, 'method', Arr::get($modelData, 'source.card_wallet_type', strtolower(Arr::get($modelData, 'source.scheme', null))));
         } else {
             data_set($modelData, 'method', $paymentAccount->type->value);

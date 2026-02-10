@@ -78,7 +78,7 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
             'payment_account_shop_id' => $paymentAccountShop->id,
             'api_point_type'          => class_basename($orderPaymentApiPoint),
             'api_point_id'            => $orderPaymentApiPoint->id,
-            'source'                  => Arr::get($checkoutComPayment, 'source', []),
+            'source'                  => Arr::get($checkoutComPayment, 'source'),
         ];
 
 
