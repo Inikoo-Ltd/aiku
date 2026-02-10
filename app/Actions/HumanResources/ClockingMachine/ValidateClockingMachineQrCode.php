@@ -3,6 +3,7 @@
 namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Models\HumanResources\ClockingMachine;
+use App\Models\HumanResources\Clocking;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -10,11 +11,12 @@ use Exception;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Enums\HumanResources\Clocking\ClockingActionEnum;
 use Illuminate\Validation\Rules\Enum;
-use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
-use App\Models\HumanResources\Clocking;
+use Illuminate\Support\Facades\DB;
 use App\Actions\HumanResources\Timesheet\StoreTimesheet;
-use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
+use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Auth;
+use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
 
 class ValidateClockingMachineQrCode
 {
@@ -63,7 +65,9 @@ class ValidateClockingMachineQrCode
                 $userLng
             );
 
-            $this->processClocking($clockingMachine, $userLat, $userLng);
+            DB::transaction(function () use ($clockingMachine, $userLat, $userLng) {
+                $this->processClocking($clockingMachine, $userLat, $userLng);
+            });
 
             return $clockingMachine;
         } catch (Exception $e) {
@@ -83,10 +87,10 @@ class ValidateClockingMachineQrCode
     private function processClocking(ClockingMachine $machine, ?float $lat, ?float $lng): void
     {
         $user = Auth::user();
-        $employee = $user?->employee;
+        $employee = $user?->employees->first();
 
         if (!$employee) {
-            return;
+            throw new Exception(__('User is not associated with an employee record.'));
         }
 
         $lastClocking = Clocking::where('subject_type', $employee->getMorphClass())
@@ -97,7 +101,6 @@ class ValidateClockingMachineQrCode
         if ($lastClocking && $lastClocking->clocked_at->diffInSeconds(now()) < 60) {
             throw new Exception(__('Scan too frequent. Please wait a moment.'));
         }
-
 
         $today = Carbon::now()->format('Y-m-d');
         $timesheet = $employee->timesheets()->where('date', $today)->first();
@@ -112,17 +115,11 @@ class ValidateClockingMachineQrCode
         $clocking->workplace_id = $machine->workplace_id;
         $clocking->timesheet_id = $timesheet->id;
         $clocking->clocking_machine_id = $machine->id;
-
-        // Polymorphic relation subject
         $clocking->subject_type = $employee->getMorphClass();
         $clocking->subject_id = $employee->id;
 
         $clocking->type = ClockingTypeEnum::CLOCKING_MACHINE;
         $clocking->clocked_at = now();
-
-        if ($lat && $lng) {
-            $clocking->data = array_merge($clocking->data ?? [], ['location' => ['lat' => $lat, 'lng' => $lng]]);
-        }
 
         $clocking->save();
 
@@ -147,9 +144,6 @@ class ValidateClockingMachineQrCode
         }
     }
 
-    /**
-     * Haversine formula
-     */
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
         $earthRadius = 6371000;
@@ -173,7 +167,7 @@ class ValidateClockingMachineQrCode
         $token = $data['qr_code'];
         $lat   = $data['latitude'] ?? null;
         $lng   = $data['longitude'] ?? null;
-        $type = $data['type'] ?? null;
+        $type  = $data['type'] ?? null;
 
         try {
             $machine = $this->handle($token, $lat, $lng, $type);
@@ -198,8 +192,8 @@ class ValidateClockingMachineQrCode
     public function rules(): array
     {
         return [
-            'qr_code' => ['required', 'string'],
-            'latitude' => ['nullable', 'numeric'],
+            'qr_code'   => ['required', 'string'],
+            'latitude'  => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
             'type'    => ['required', new Enum(ClockingActionEnum::class)],
         ];
