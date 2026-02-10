@@ -12,44 +12,66 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use App\Enums\HumanResources\Clocking\ClockingActionEnum;
 use Illuminate\Validation\Rules\Enum;
 
-class ValidateClockingMachineQrCode extends OrgAction
+class ValidateClockingMachineQrCode
 {
     use AsAction;
 
-    public function handle(string $qrCodeToken, ?float $userLat = null, ?float $userLng = null): ClockingMachine
+    public function handle(string $qrCodeToken, ?float $userLat = null, ?float $userLng = null, ?string $type = null): ClockingMachine
     {
+        $clockingMachine = null;
+
         try {
-            $payload = json_decode(decrypt($qrCodeToken), true);
-        } catch (DecryptException $e) {
-            throw new Exception(__('Invalid QR Code.'));
+            try {
+                $payload = json_decode(decrypt($qrCodeToken), true);
+            } catch (DecryptException $e) {
+                throw new Exception(__('Invalid QR Code.'));
+            }
+
+            if (!$payload || !isset($payload['mid'], $payload['ts'])) {
+                throw new Exception(__('Invalid QR Code format.'));
+            }
+
+            $clockingMachine = ClockingMachine::find($payload['mid']);
+
+            if (!$clockingMachine) {
+                throw new Exception(__('Clocking machine not found.'));
+            }
+
+            $config = $clockingMachine->config['qr'] ?? [];
+
+            $expiryDuration = (int) ($config['expiry_duration'] ?? 60);
+            $generatedAt = Carbon::createFromTimestamp($payload['ts']);
+
+            if ($generatedAt->addSeconds($expiryDuration)->isPast()) {
+                throw new Exception(__('QR Code has expired. Please scan a new one.'));
+            }
+
+            if (($config['allow_coordinates'] ?? false) && $userLat && $userLng) {
+                $this->validateCoordinates($config, $userLat, $userLng);
+            }
+
+            StoreQrScanLog::make()->handle(
+                $clockingMachine,
+                'success',
+                null,
+                $qrCodeToken,
+                $userLat,
+                $userLng
+            );
+
+            return $clockingMachine;
+        } catch (Exception $e) {
+            StoreQrScanLog::make()->handle(
+                $clockingMachine,
+                'failed',
+                $e->getMessage(),
+                $qrCodeToken,
+                $userLat,
+                $userLng
+            );
+
+            throw $e;
         }
-
-        if (!$payload || !isset($payload['mid'], $payload['ts'])) {
-            throw new Exception(__('Invalid QR Code format.'));
-        }
-
-        $clockingMachine = ClockingMachine::find($payload['mid']);
-
-        if (!$clockingMachine) {
-            throw new Exception(__('Clocking machine not found.'));
-        }
-
-        $config = $clockingMachine->config['qr'] ?? [];
-
-        // 1. Check Expiry based on timestamp in payload vs config duration
-        $expiryDuration = (int) ($config['expiry_duration'] ?? 60);
-        $generatedAt = Carbon::createFromTimestamp($payload['ts']);
-
-        if ($generatedAt->addSeconds($expiryDuration)->isPast()) {
-            throw new Exception(__('QR Code has expired. Please scan a new one.'));
-        }
-
-        // 2. Validate Coordinates (Optional, if device sends location)
-        if (($config['allow_coordinates'] ?? false) && $userLat && $userLng) {
-            $this->validateCoordinates($config, $userLat, $userLng);
-        }
-
-        return $clockingMachine;
     }
 
     private function validateCoordinates(array $config, float $userLat, float $userLng): void
@@ -91,12 +113,15 @@ class ValidateClockingMachineQrCode extends OrgAction
 
     public function asController(ActionRequest $request)
     {
-        $token = $request->input('qr_code');
-        $lat = $request->input('latitude');
-        $lng = $request->input('longitude');
+        $data = $request->validated();
+
+        $token = $data['qr_code'];
+        $lat   = $data['latitude'] ?? null;
+        $lng   = $data['longitude'] ?? null;
+        $type = $data['type'] ?? null;
 
         try {
-            $machine = $this->handle($token, $lat, $lng);
+            $machine = $this->handle($token, $lat, $lng, $type);
 
             return response()->json([
                 'success' => true,
