@@ -51,5 +51,7 @@ enum EmailOngoingRunCodeEnum: string
     case CREDIT_BALANCE_NOTIFICATION_FOR_USER = 'credit_balance_notification_for_user';
     case CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER = 'credit_balance_notification_for_customer';
 
+    case CHAT_NOTIFICATION_TO_CUSTOMER = 'chat_notification_to_customer';
+
 
 }
