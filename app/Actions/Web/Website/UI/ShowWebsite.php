@@ -249,6 +249,26 @@ class ShowWebsite extends OrgAction
                     WebsiteResource::make($website)->getArray(),
                     ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']],
                     ['stats' => $stats, 'content_blog_stats' => $content_blog_stats, 'website_type' => $website->shop->type],
+                    [
+                        'pic'   => [  // TODO: INI-1032
+                            'webmaster' => [
+                                [
+                                    'name'  => 'Vika',
+                                ],
+                                [
+                                    'name'  => 'Aqordi',
+                                ],
+                            ],
+                            'seo' => [
+                                [
+                                    'name'  => 'Vika',
+                                ],
+                                [
+                                    'name'  => 'Aqordi',
+                                ],
+                            ],
+                        ]
+                    ]
                 )
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 
