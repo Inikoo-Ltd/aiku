@@ -9,6 +9,8 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Exception;
 use Illuminate\Contracts\Encryption\DecryptException;
+use App\Enums\HumanResources\Clocking\ClockingActionEnum;
+use Illuminate\Validation\Rules\Enum;
 
 class ValidateClockingMachineQrCode extends OrgAction
 {
@@ -119,6 +121,7 @@ class ValidateClockingMachineQrCode extends OrgAction
             'qr_code' => ['required', 'string'],
             'latitude' => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
+            'type'    => ['required', new Enum(ClockingActionEnum::class)],
         ];
     }
 }
