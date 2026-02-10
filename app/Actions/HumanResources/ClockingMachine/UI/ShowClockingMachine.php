@@ -39,9 +39,8 @@ class ShowClockingMachine extends OrgAction
             ClockingMachineTabsEnum::DATA->value,
         ];
 
-        // Jika tipe mesin adalah QR Code, tambahkan tabnya
-        if ($clockingMachine->type === ClockingMachineTypeEnum::QR_CODE) {
-            // Masukkan setelah SHOWCASE
+
+        if ($clockingMachine->type === ClockingMachineTypeEnum::QR_CODE->value) {
             array_splice($tabs, 1, 0, ClockingMachineTabsEnum::SCAN_QR_CODE->value);
         }
 
@@ -66,6 +65,16 @@ class ShowClockingMachine extends OrgAction
 
     public function htmlResponse(ClockingMachine $clockingMachine, ActionRequest $request): Response
     {
+        $availableTabs = $this->getAvailableTabs($clockingMachine);
+        $navigationData = [];
+        foreach ($availableTabs as $tabValue) {
+            $enumCase = ClockingMachineTabsEnum::tryFrom($tabValue);
+            if ($enumCase) {
+                $blueprint = $enumCase->blueprint();
+                $navigationData[$tabValue] = $blueprint;
+            }
+        }
+
         return Inertia::render(
             'Org/HumanResources/ClockingMachine',
             [
@@ -136,7 +145,7 @@ class ShowClockingMachine extends OrgAction
                 ],
                 'tabs'                                   => [
                     'current'    => $this->tab,
-                    'navigation' => ClockingMachineTabsEnum::navigation($this->getAvailableTabs($clockingMachine))
+                    'navigation' => $navigationData
                 ],
 
                 ClockingMachineTabsEnum::SHOWCASE->value => $this->tab == ClockingMachineTabsEnum::SHOWCASE->value ?
@@ -144,11 +153,11 @@ class ShowClockingMachine extends OrgAction
                     : Inertia::lazy(fn () => GetClockingMachineShowcase::run($clockingMachine)),
 
                 ClockingMachineTabsEnum::SCAN_QR_CODE->value => $this->tab == ClockingMachineTabsEnum::SCAN_QR_CODE->value ?
-                    fn() => [
-                        'qr_code_url' => $clockingMachine->qr_code_url,
+                    fn () => [
+                        'qr_code_url'  => $clockingMachine->qr_code_url,
                         'machine_name' => $clockingMachine->name
                     ]
-                    : Inertia::lazy(fn() => ['status' => 'loaded_lazy']),
+                    : Inertia::lazy(fn () => ['status' => 'loaded_lazy']),
 
                 ClockingMachineTabsEnum::CLOCKINGS->value => $this->tab == ClockingMachineTabsEnum::CLOCKINGS->value ?
                     fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))
