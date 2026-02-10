@@ -250,7 +250,7 @@ class ShowWebsite extends OrgAction
                     WebsiteResource::make($website)->getArray(),
                     ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']],
                     ['stats' => $stats, 'content_blog_stats' => $content_blog_stats, 'website_type' => $website->shop->type],
-                    ['users' => User::permission("web.{$website->shop_id}.edit")->get()]
+                    ['pic' => User::permission("web.{$website->shop_id}.edit")->get()],
                 )
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 
