@@ -26,6 +26,7 @@ use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -249,26 +250,7 @@ class ShowWebsite extends OrgAction
                     WebsiteResource::make($website)->getArray(),
                     ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']],
                     ['stats' => $stats, 'content_blog_stats' => $content_blog_stats, 'website_type' => $website->shop->type],
-                    [
-                        'pic'   => [  // TODO: INI-1032
-                            'webmaster' => [
-                                [
-                                    'name'  => 'Vika',
-                                ],
-                                [
-                                    'name'  => 'Aqordi',
-                                ],
-                            ],
-                            'seo' => [
-                                [
-                                    'name'  => 'Vika',
-                                ],
-                                [
-                                    'name'  => 'Aqordi',
-                                ],
-                            ],
-                        ]
-                    ]
+                    ['pic' => User::permission("web.{$website->shop_id}.edit")->get()],
                 )
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 

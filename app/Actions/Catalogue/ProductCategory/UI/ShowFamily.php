@@ -43,6 +43,10 @@ class ShowFamily extends OrgAction
 
     public function handle(ProductCategory $family): ProductCategory
     {
+        if($family->type!=ProductCategoryTypeEnum::FAMILY){
+            abort(404);
+        }
+
         return $family;
     }
 
@@ -207,7 +211,6 @@ class ShowFamily extends OrgAction
                         )
                     )
                 );
-
         return Inertia::render(
             'Org/Catalogue/Family',
             [
