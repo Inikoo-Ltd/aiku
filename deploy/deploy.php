@@ -189,7 +189,6 @@ task(
     }
 )->select('env=prod');
 
-
 desc('Restart Inertia SSR by supervisorctl');
 task('deploy:restart-ssr-by-supervisorctl', function () {
 

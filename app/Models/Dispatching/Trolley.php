@@ -16,6 +16,7 @@ use App\Models\Traits\InWarehouse;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -89,6 +90,12 @@ class Trolley extends Model implements Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function deliveryNotes(): BelongsToMany
+    {
+        return $this->belongsToMany(DeliveryNote::class, 'delivery_note_has_trolleys')
+            ->withTimestamps();
     }
 
     public function currentDeliveryNote(): BelongsTo

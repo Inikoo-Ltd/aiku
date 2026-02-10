@@ -49,6 +49,7 @@ class GetGroupDashboardTimeSeriesData
     protected function fetchData(Group $group, $fromDate, $toDate): array
     {
         $allShops = GetShopTimeSeriesStats::run($group, $fromDate, $toDate);
+        $allInvoiceCategories = GetInvoiceCategoryTimeSeriesStats::run($group, $fromDate, $toDate);
 
         $shopsByType = [
             'all' => $allShops,
@@ -66,10 +67,16 @@ class GetGroupDashboardTimeSeriesData
             }
         }
 
+        $faireInvoiceCategories = collect($allInvoiceCategories)
+            ->filter(fn ($category) => str_contains(strtolower($category['name'] ?? ''), 'faire'))
+            ->values()
+            ->all();
+
         return [
             'organisations' => GetOrganisationTimeSeriesStats::run($group, $fromDate, $toDate),
             'shops' => $shopsByType,
-            'invoiceCategories' => GetInvoiceCategoryTimeSeriesStats::run($group, $fromDate, $toDate),
+            'invoiceCategories' => $allInvoiceCategories,
+            'faire' => $faireInvoiceCategories,
             'platforms' => GetPlatformTimeSeriesStats::run($group, $fromDate, $toDate),
             'salesChannels' => GetSalesChannelTimeSeriesStats::run($group, $fromDate, $toDate),
         ];

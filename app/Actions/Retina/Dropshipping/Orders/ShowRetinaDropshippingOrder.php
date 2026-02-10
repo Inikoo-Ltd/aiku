@@ -28,6 +28,7 @@ use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -228,7 +229,8 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                             'customerSalesChannel' => $order->customerSalesChannel->slug,
                             'customerClient'       => $order->customerClient->ulid
                         ]
-                    ]
+                    ],
+                    'recipient_name' => Arr::get($order->data, 'woo_order.shipping.first_name') . ' ' . Arr::get($order->data, 'woo_order.shipping.last_name')
                 ]
             );
         }

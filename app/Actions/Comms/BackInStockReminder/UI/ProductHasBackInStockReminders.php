@@ -10,7 +10,7 @@
 namespace App\Actions\Comms\BackInStockReminder\UI;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
+use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Comms\BackInStockReminder;
@@ -21,7 +21,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexProductBackInStockReminders extends OrgAction
+class ProductHasBackInStockReminders extends OrgAction
 {
     public function handle(Product $parent, $prefix = null): LengthAwarePaginator
     {
@@ -102,7 +102,7 @@ class IndexProductBackInStockReminders extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $reminder): AnonymousResourceCollection
     {
-        return ProductBackInStockRemindersResource::collection($reminder);
+        return ProductHasBackInStockRemindersResource::collection($reminder);
     }
 
 }

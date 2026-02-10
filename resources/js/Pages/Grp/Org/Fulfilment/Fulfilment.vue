@@ -8,7 +8,6 @@
 import { Head } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTachometerAlt, faHandHoldingBox } from '@fal'
-
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -18,7 +17,6 @@ import ModelDetails from "@/Components/ModelDetails.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import FulfilmentShowcase from "@/Components/Showcases/Org/FulfilmentShowcase.vue"
 import TablePallets from "@/Components/Tables/Grp/Org/Fulfilment/TablePallets.vue"
-import Dashboard from "@/Components/DataDisplay/Dashboard/DashboardOld.vue";
 
 library.add(faTachometerAlt, faHandHoldingBox)
 

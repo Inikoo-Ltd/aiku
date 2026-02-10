@@ -32,7 +32,7 @@ class StartHandlingDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(DeliveryNote $deliveryNote): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
         $oldState = $deliveryNote->state;
 
@@ -46,13 +46,13 @@ class StartHandlingDeliveryNote extends OrgAction
         }
 
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED) {
-            $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $this->user);
+            $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $user);
         }
 
 
         data_set($modelData, 'handling_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING->value);
-        data_set($modelData, 'picker_user_id', $this->user->id);
+        data_set($modelData, 'picker_user_id', $user->id);
 
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
@@ -84,10 +84,9 @@ class StartHandlingDeliveryNote extends OrgAction
      */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
-        $this->user = $request->user();
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $request->user());
     }
 
     /**
@@ -95,10 +94,9 @@ class StartHandlingDeliveryNote extends OrgAction
      */
     public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
-        $this->user     = $user;
         $this->asAction = true;
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $user);
     }
 }

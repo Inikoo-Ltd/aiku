@@ -140,6 +140,7 @@ class FetchIrisEcomBasket extends IrisAction
                 'quantity_ordered',
                 'gross_amount',
                 'products.url',
+                'products.id as product_id',
                 'products.name',
                 'products.units',
                 'products.code',
@@ -164,6 +165,7 @@ class FetchIrisEcomBasket extends IrisAction
 
             $transactions[] = [
                 'transaction_id'       => $productData->id,
+                'id'       => $productData->product_id,
                 'net_amount'           => $productData->net_amount,
                 'gross_amount'         => $productData->gross_amount,
                 'quantity_ordered'     => $productData->quantity_ordered,

@@ -9,28 +9,30 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\Trolley\AttachDeliveryNoteToTrolley;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Trolley;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StartHandlingWithTrolleyDeliveryNote extends OrgAction
 {
-    public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, User $user, array $modelData): DeliveryNote
     {
         $trolley = null;
         if (Arr::has($modelData, 'trolley')) {
             $trolley = Trolley::find($modelData['trolley']);
         }
 
-        if (!$trolley) {
-
+        if ($trolley) {
+            AttachDeliveryNoteToTrolley::run($trolley, $deliveryNote);
         }
-        StartHandlingDeliveryNote::run($deliveryNote);
+        StartHandlingDeliveryNote::run($deliveryNote, $user);
 
-        dd("maybe can copy from StartHandlingDeliveryNote. selected trolley: $trolley");
+        return $deliveryNote;
     }
 
 
@@ -47,9 +49,8 @@ class StartHandlingWithTrolleyDeliveryNote extends OrgAction
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
     {
-
         $this->initialisationFromShop($deliveryNote->shop, $request);
-        $this->handle($deliveryNote, $this->validatedData);
+        $this->handle($deliveryNote, $request->user(), $this->validatedData);
     }
 
 
