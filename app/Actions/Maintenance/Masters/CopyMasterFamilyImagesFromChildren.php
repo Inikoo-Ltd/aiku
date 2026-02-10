@@ -29,10 +29,6 @@ class CopyMasterFamilyImagesFromChildren
 
         /** @var MasterProductCategory $masterFamily */
         foreach ($from->getMasterFamilies() as $masterFamily) {
-            if ($masterFamily->slug != 'careo-1') {
-                continue;
-            }
-
             $mainImage  = null;
             $images     = [];
             $imagesData = [];
