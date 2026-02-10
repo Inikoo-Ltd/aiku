@@ -8,7 +8,7 @@
 
 namespace App\Actions\Maintenance\Masters;
 
-use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryImages;
+use App\Actions\Catalogue\ProductCategory\CloneProductCategoryImagesFromMaster;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -31,13 +31,34 @@ class CopyMasterFamilyImagesFromAnotherMaster
 
             if ($fromFamily && $fromFamily->image && $masterFamily->image_id != $fromFamily->image_id) {
                 $command->info("Updating ".$masterFamily->code.'  '.$masterFamily->image_id.'  -> '.$fromFamily->image_id);
-                UpdateMasterProductCategoryImages::run(
-                    masterProductCategory: $masterFamily,
-                    modelData: [
-                        'image_id' => $fromFamily->image_id
-                    ],
-                    updateDependants: true
-                );
+
+                $mainImage  = null;
+                $imagesData = [];
+                $position   = 0;
+                $mainImage  = $fromFamily->image_id;
+                foreach ($fromFamily->images as $image) {
+                    $imagesData[$image->id] = [
+                        'scope'      => 'catalogue',
+                        'group_id'   => $fromFamily->group_id,
+                        'position'   => $position,
+                        'is_public'  => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                        'data'       => '{}',
+                    ];
+                    $position++;
+                }
+                $masterFamily->images()->sync($imagesData);
+                $masterFamily->images()->sync($imagesData);
+                if (!$mainImage) {
+                    $mainImage = $imagesData[array_key_first($imagesData)];
+                }
+                $masterFamily->update(['image_id' => $mainImage]);
+
+
+                foreach ($masterFamily->productCategories as $productCategory) {
+                    CloneProductCategoryImagesFromMaster::run($productCategory);
+                }
             }
         }
     }

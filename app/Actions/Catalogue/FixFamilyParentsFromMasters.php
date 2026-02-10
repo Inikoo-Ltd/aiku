@@ -28,7 +28,8 @@ class FixFamilyParentsFromMasters
 
             $subDepartments = CloneCatalogueStructure::make()->getSubDepartments($shop);
             foreach ($subDepartments as $subDepartment) {
-                $masterSubDepartment = $subDepartment->masterSubDepartment;
+
+                $masterSubDepartment = $subDepartment->masterProductCategory;
 
                 if ($masterSubDepartment) {
                     $fromMasterFamilies = CloneCatalogueStructure::make()->getCategories($masterSubDepartment, 'family');
