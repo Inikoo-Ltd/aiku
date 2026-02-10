@@ -84,14 +84,13 @@ onUnmounted(() => stopQR())
 
 <template>
     <div class="flex items-center justify-center py-12">
-        <div class=" rounded-xl p-8 w-[460px] text-center space-y-6">
+        <div class="rounded-xl w-full max-w-[760px] text-center space-y-6">
 
             <div>
                 <h2 class="text-xl font-semibold text-gray-800">{{ trans("Employee Check-In") }}</h2>
                 <p class="text-sm text-gray-500">{{ trans("Scan QR to clock in or out") }}</p>
             </div>
 
-            <!-- GENERATE BUTTON -->
             <Button :label="trans(isGenerating ? 'Generating...' : 'Generate QR Code')" :loading="isGenerating"
                 :disabled="isGenerating" @click="fetchQR" type="primary" icon="fal fa-qrcode" v-if="!hasQR" />
 
@@ -104,14 +103,14 @@ onUnmounted(() => stopQR())
                     :icon="isFullscreen ? faCompress : faExpand" :tooltip="trans('Toggle Fullscreen')" />
 
                 <div class="relative flex items-center justify-center"
-                    :style="{ width: isFullscreen ? '420px' : '240px', height: isFullscreen ? '420px' : '240px' }">
+                    :style="{ width: isFullscreen ? '600px' : '440px', height: isFullscreen ? '600px' : '440px' }">
 
                     <div v-if="isGenerating"
                         class="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-10">
                         <LoadingIcon class="text-4xl text-gray-600" />
                     </div>
 
-                    <QrcodeVue :value="qrData" :size="isFullscreen ? 420 : 240" level="H" />
+                    <QrcodeVue :value="qrData" :size="isFullscreen ? 600 : 440" level="H" />
                 </div>
 
                 <div class="mt-4 text-md font-semibold">
