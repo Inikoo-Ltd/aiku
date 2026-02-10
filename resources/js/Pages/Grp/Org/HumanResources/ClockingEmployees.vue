@@ -6,19 +6,16 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import TableClockings from "@/Components/Tables/Grp/Org/HumanResources/TableClockings.vue";
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { computed, defineAsyncComponent, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
-
+import ScanQrUser from './ScanQrUser.vue';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faEnvelope, faIdCard, faPhone, faSignature, faUser, faBuilding, faBirthdayCake, faVenusMars, faHashtag, faHeading, faHospitalUser, faClock, faPaperclip, faTimes, faCameraRetro, faQrcode } from '@fal';
 
 library.add(faEnvelope, faIdCard, faPhone, faSignature, faUser, faBuilding, faBirthdayCake, faVenusMars, faHashtag, faHeading, faHospitalUser, faClock, faPaperclip, faTimes, faCameraRetro, faQrcode);
-
-
 
 const props = defineProps<{
     data: object
@@ -40,7 +37,7 @@ const component = computed(() => {
 
     const components = {
         timesheets: "",
-        scan_qr_code: "",
+        scan_qr_code: ScanQrUser,
     };
     return components[currentTab.value as keyof typeof components];
 
