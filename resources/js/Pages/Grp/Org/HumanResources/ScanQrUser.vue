@@ -43,7 +43,6 @@ const startCamera = async () => {
     }
 
     try {
-        // Trigger permission early
         const stream = await navigator.mediaDevices.getUserMedia({ video: true })
         console.log("Camera permission granted", stream)
 
@@ -67,19 +66,25 @@ const onDecode = async (result: string) => {
     try {
         await axios.post(route('grp.models.clocking-machine.qr.validate'), {
             qr_code: result,
-            lat: lat.value,
-            lng: lng.value,
+            latitude: lat.value,
+            longitude: lng.value,
             type: type.value
         })
 
         notify({
-            title: trans('Absent Success'),
+            title: trans('Success'),
             text: trans('Success Scan QR'),
             type: 'success',
         })
         stopCamera()
     } catch (e: any) {
+        notify({
+            title: trans('Failed Scan QR'),
+            text: trans(`${e.response?.data?.message}`),
+            type: 'error',
+        })
         errorMsg.value = e.response?.data?.message || "QR invalid"
+        stopCamera()
     } finally {
         loading.value = false
     }
@@ -109,11 +114,11 @@ const onInit = (promise: Promise<void>) => {
     <div class="relative">
         <div v-if="!cameraOn" class="max-w-lg mx-auto p-6">
 
-            <h2 class="text-2xl font-bold mb-6">Employee Clocking</h2>
+            <h2 class="text-2xl font-bold mb-6">{{ trans("Employee Clocking") }}</h2>
 
             <!-- STEP 1 -->
             <div class="mb-6">
-                <p class="text-sm font-semibold text-gray-500 mb-2">STEP 1 — Choose Action</p>
+                <p class="text-sm font-semibold text-gray-500 mb-2">{{ trans("STEP 1 — Choose Action") }}</p>
                 <div class="grid grid-cols-2 gap-3">
                     <Button label="Check In" type="green"
                         :class="type === 'check_in' ? 'ring-4 ring-green-200' : 'opacity-70'" @click="type = 'check_in'"
@@ -126,7 +131,7 @@ const onInit = (promise: Promise<void>) => {
 
             <!-- STEP 2 -->
             <div class="mb-6">
-                <p class="text-sm font-semibold text-gray-500 mb-2">STEP 2 — Your Location</p>
+                <p class="text-sm font-semibold text-gray-500 mb-2">{{ trans("STEP 2 — Your Location") }}</p>
                 <Button label="Detect My Location" type="secondary" @click="detectMyLocation" :disabled="!type" full />
 
                 <div v-if="hasLocation" class="mt-3 h-48 rounded-xl overflow-hidden border shadow">
@@ -144,10 +149,11 @@ const onInit = (promise: Promise<void>) => {
             <!-- OPEN CAMERA -->
             <Button label="Open Camera" type="primary" @click="startCamera" :disabled="!canOpenCamera" full />
         </div>
+
         <div v-else class="fixed inset-0 bg-black z-50 flex flex-col">
 
             <div class="flex justify-between items-center text-white p-4">
-                <h3 class="font-semibold">Scan QR Code</h3>
+                <h3 class="font-semibold">{{ trans("Scan QR Code") }}</h3>
                 <button @click="stopCamera" class="text-2xl">✕</button>
             </div>
 
@@ -158,7 +164,7 @@ const onInit = (promise: Promise<void>) => {
             </div>
 
             <div class="text-center text-white pb-6 text-sm opacity-70">
-                Align QR code inside the frame
+                {{ trans("Align QR code inside the frame") }}
             </div>
 
         </div>
