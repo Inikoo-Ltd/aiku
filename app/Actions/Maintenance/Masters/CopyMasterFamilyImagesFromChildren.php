@@ -25,6 +25,8 @@ class CopyMasterFamilyImagesFromChildren
      */
     public function handle(MasterShop $from, Command $command): void
     {
+
+        dd('this should no run anymore because some images will be lost');
         $seederShop = 13;
 
         /** @var MasterProductCategory $masterFamily */
