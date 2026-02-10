@@ -29,7 +29,7 @@ class DownloadPortfoliosCSV extends RetinaAction
         string $exportType = 'portfolio_csv',
         mixed $columns = null,
         mixed $productStates = null,
-        array $productAvailibility
+        array $productAvailibility = []
     ): BinaryFileResponse|Response {
 
         $filename = 'portfolio_data_feed_' . $customerSalesChannel->customer->slug . '_' . now()->format('Ymd') . '.csv';
