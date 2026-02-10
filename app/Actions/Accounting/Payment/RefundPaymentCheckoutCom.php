@@ -88,7 +88,8 @@ class RefundPaymentCheckoutCom extends OrgAction
                 'payment_account_shop_id' => $payment->payment_account_shop_id,
                 'status'                  => $status,
                 'state'                   => $state,
-                'class'                   => PaymentClassEnum::TOPUP
+                'class'                   => PaymentClassEnum::TOPUP,
+                'source'                  => Arr::get($checkoutPayment, 'source', []),
             ]);
 
         } catch (CheckoutApiException $e) {
