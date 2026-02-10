@@ -29,7 +29,7 @@ class CopyMasterFamilyImagesFromAnotherMaster
                 ->whereRaw("lower(code) = lower(?)", [$masterFamily->code])
                 ->first();
 
-            if ($fromFamily && $fromFamily->image && $masterFamily->image_id != $fromFamily->image_id) {
+            if ($fromFamily && $fromFamily->image ) {
                 $command->info("Updating ".$masterFamily->code.'  '.$masterFamily->image_id.'  -> '.$fromFamily->image_id);
 
                 $mainImage  = null;
