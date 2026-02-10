@@ -124,6 +124,7 @@ class PayOrderWithMitCard
                 'debug_mit_status'        => Arr::get($response, 'status'),
                 'debug_mit_is_approved'   => (bool)Arr::get($response, 'approved', false),
                 'payment_account_shop_id' => $paymentAccountShop->id,
+                'source'                  => Arr::get($response, 'source', []),
                 'data'                    => [
                     'checkout_com' => $response
                 ]

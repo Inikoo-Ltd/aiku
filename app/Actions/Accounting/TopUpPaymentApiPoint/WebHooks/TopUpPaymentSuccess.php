@@ -66,7 +66,8 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             'payment_account_shop_id' => $paymentAccountShop->id,
             'api_point_type'          => class_basename($topUpPaymentApiPoint),
             'api_point_id'            => $topUpPaymentApiPoint->id,
-            'class'                   => PaymentClassEnum::TOPUP
+            'class'                   => PaymentClassEnum::TOPUP,
+            'source'                  => Arr::get($checkoutComPayment, 'source', []),
         ];
 
 

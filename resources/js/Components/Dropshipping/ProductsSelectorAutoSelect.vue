@@ -15,7 +15,9 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '../NumberWithButtonSave.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import ConditionIcon from '../Utils/ConditionIcon.vue'
-library.add(faCheckCircle)
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faImage } from "@fal"
+library.add(faCheckCircle, faImage)
 
 const props = defineProps<{
     routeFetch: routeType
@@ -104,7 +106,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
 <template>
     <div>
         <slot name="header">
-            <div class="mx-auto text-center text-2xl font-semibold pb-4">
+            <div class="mx-auto text-center text-lg md:text-2xl font-semibold pb-4">
                 {{ headLabel ?? trans("Add products") }}
             </div>
         </slot>
@@ -123,11 +125,11 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                 <slot name="afterInput">
                 </slot>
             </div>
-            <div class="h-full md:h-[500px] text-base font-normal">
 
+            <div class="h-full md:h-[500px] text-base font-normal">
                 <div class="col-span-4 pb-2 h-fit overflow-auto flex flex-col">
                     <div class="flex justify-between items-center">
-                        <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
+                        <div class="font-semibold text-base md:text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                     </div>
                     <div class="border-t border-gray-300 mb-1"></div>
                     <div class="max-h-[380px] md:h-[400px] overflow-auto py-2 relative">
@@ -138,27 +140,37 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                                     <div
                                         v-for="(item, index) in portfoliosList"
                                         :key="index"
-                                        class="relative h-fit rounded xcursor-pointer p-2 flex gap-x-2 border"
+                                        class="relative h-auto rounded xcursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                         :class="[
                                             typeof item.available_quantity !== 'undefined' && item.available_quantity < 1 ? 'bg-gray-200 border border-gray-300 opacity-40' : ''
                                         ]"
                                     >
                                         <slot name="product" :item="item">
-                                            <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
-                                            <div class="flex flex-col justify-between">
-                                                <div class="w-fit" xclick="() => selectProduct(item)">
-                                                    <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic mb-1">{{ item.code || 'no code' }}</div>
-                                                    <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                                                    <div v-tooltip="trans('Available stock')" class="w-fit text-xs xtext-gray-400 italic mb-1">{{ trans("Stock") }}: {{ locale.number(item.available_quantity || 0) }} {{ trans("available") }}</div>
-                                                    <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
-                                                    <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                                            <div class="mx-auto md:m-0 w-16 h-16 aspect-square flex justify-center items-center">
+                                                <Image v-if="item.image" :src="item.image" class="overflow-hidden" imageCover :alt="item.name" />
+                                                <div v-else class="h-full w-full flex justify-center items-center border border-gray-300 rounded">
+                                                    <FontAwesomeIcon icon="fal fa-image" class="text-2xl opacity-70" fixed-width aria-hidden="true" />
+                                                </div>
+                                            </div>
+
+                                            <div class="flex flex-col justify-between h-full">
+                                                <div>
+                                                    <div class="w-fit" xclick="() => selectProduct(item)">
+                                                        <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xxs md:text-xs text-gray-400 italic mt-2 md:mt-0 md:mb-1">{{ item.code || 'no code' }}</div>
+                                                        <div v-tooltip="trans('Name')" class="w-fit text-justify md:text-left font-semibold leading-none mb-1 text-sm md:text-base">{{ item.name || 'no name' }}</div>
+                                                        <div v-tooltip="trans('Available stock')" class="w-fit text-xxs md:text-xs xtext-gray-400 italic mb-1">{{ trans("Stock") }}: {{ locale.number(item.available_quantity || 0) }} {{ trans("available") }}</div>
+                                                        <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
+                                                        <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                                                    </div>
+
+                                                    <!-- Section: Price -->
+                                                    <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="mb-2 w-fit text-xs text-gray-x500">
+                                                        {{ locale?.currencyFormat(layout?.iris?.currency?.code, item.price || 0) }}
+                                                    </div>
                                                 </div>
 
-                                                <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="mb-2 w-fit text-xs text-gray-x500">
-                                                    {{ locale?.currencyFormat(layout?.iris?.currency?.code, item.price || 0) }}
-                                                </div>
-
-                                                <div v-if="withQuantity && (item?.available_quantity && item?.available_quantity > 0)" class="flex items-center gap-x-2">
+                                                <!-- Button: quantity -->
+                                                <div v-if="withQuantity && (item?.available_quantity && item?.available_quantity > 0)" class="mt-auto flex items-center gap-x-2">
                                                     <NumberWithButtonSave
                                                         :modelValue="get(item, 'quantity_ordered', 0)"
                                                         :bindToTarget="{
@@ -193,18 +205,20 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                             >
                             </div>
                         </div>
-                        <!-- Pagination -->
-                        <Pagination
-                            v-if="portfoliosMeta"
-                            :on-click="getPortfoliosList"
-                            :has-data="true"
-                            :meta="portfoliosMeta"
-                            xexportLinks="queryBuilderProps.exportLinks"
-                            :per-page-options="[]"
-                            xon-per-page-change="onPerPageChange"
-                        />
                     </div>
-                    <div class="mt-4">
+
+                    <!-- Pagination -->
+                    <Pagination
+                        v-if="portfoliosMeta"
+                        :on-click="getPortfoliosList"
+                        :has-data="true"
+                        :meta="portfoliosMeta"
+                        xexportLinks="queryBuilderProps.exportLinks"
+                        :per-page-options="[]"
+                        xon-per-page-change="onPerPageChange"
+                    />
+
+                    <div class="md:mt-4">
                     </div>
                 </div>
             </div>

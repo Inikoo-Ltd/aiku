@@ -23,6 +23,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -98,6 +99,9 @@ trait WithLuigis
 
 
         if ($response->failed()) {
+            Log::error('Failed to send request to Luigis Box API: '.$response->body(), [
+                'ResponseDetail'    => $response
+            ]);
             throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
         }
 
