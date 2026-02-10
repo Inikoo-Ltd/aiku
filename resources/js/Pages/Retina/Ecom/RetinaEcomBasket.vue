@@ -789,5 +789,14 @@ const onChangeInsurance = async (val: boolean) => {
             withQuantity
         >
         </ProductsSelectorAutoSelect>
+
+        <div class="md:hidden">
+            <Button
+                @click="() => isModalProductListOpen = false"
+                :label="trans('Complete')"
+                type="tertiary"
+                full
+            />
+        </div>
     </Modal>
 </template>
