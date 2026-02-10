@@ -10,6 +10,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -52,6 +53,7 @@ trait WithInvoicesSubNavigation
             $unpaidRouteName          = str_replace('invoices', 'invoices.unpaid', $routeName).'.index';
             $refundsRouteName         = str_replace('invoices', 'invoices.refunds', $routeName).'.index';
             $deletedInvoicesRouteName = str_replace('invoices', 'invoices.deleted', $routeName).'.index';
+            $sageInvoicesRouteName    = str_replace('invoices', 'invoices.sage', $routeName).'.index';
         }
 
         return [
@@ -74,6 +76,15 @@ trait WithInvoicesSubNavigation
                     "parameters" => $param,
                 ],
             ],
+
+            $parent instanceof Shop ? [
+                'number' => IndexSageInvoicesReport::make()->inReports($parent),
+                'label'  => __('Sage Invoices'),
+                'route'  => [
+                    'name'       => $sageInvoicesRouteName,
+                    'parameters' => $param,
+                ]
+            ] : [],
 
             [
                 "number" => $numberDeletedInvoices,
