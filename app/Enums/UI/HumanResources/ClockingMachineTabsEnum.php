@@ -50,7 +50,7 @@ enum ClockingMachineTabsEnum: string
             ],
             ClockingMachineTabsEnum::SCAN_QR_CODE => [
                 'title' => __('Scan QR Code'),
-                'icon'  => 'fas fa-qrcode',
+                'icon'  => 'fal fa-qrcode',
             ],
         };
     }
