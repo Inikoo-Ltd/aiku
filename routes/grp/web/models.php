@@ -365,6 +365,8 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
+use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -1125,6 +1127,10 @@ Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->n
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
 
+Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
+    Route::post('{clockingMachine:id}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
+    Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
+});
 
 require __DIR__.'/models/inventory/warehouse.php';
 require __DIR__.'/models/goods_in/return.php';
