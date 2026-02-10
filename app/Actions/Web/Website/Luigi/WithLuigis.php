@@ -62,7 +62,7 @@ trait WithLuigis
         if ($parent instanceof Website) {
             $website = $parent;
         } else {
-            if($parent->model_type == 'Product'){
+            if ($parent->model_type == 'Product') {
                 Log::info('Product Code: '.$parent->code);
             }
             $website = $parent->website;
@@ -106,7 +106,7 @@ trait WithLuigis
                 'ResponseDetail'    => $response
             ]);
             throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
-        }else{
+        } else {
             Log::info('Request sent to Luigis Box API. Response Data: '.$response->body(), [
                 'ResponseDetail'    => $response
             ]);
