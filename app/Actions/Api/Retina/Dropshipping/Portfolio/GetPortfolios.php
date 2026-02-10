@@ -11,6 +11,8 @@
 namespace App\Actions\Api\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaApiAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\Api\PortfoliosResource;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -56,6 +58,9 @@ class GetPortfolios extends RetinaApiAction
                 'products.state as product_state',
                 'products.is_for_sale',
             );
+
+        $query->where('products.status', ProductStatusEnum::FOR_SALE);
+        $query->where('products.state', ProductStateEnum::ACTIVE);
 
         return $query->withPaginator(null, queryName: 'per_page')
         ->withQueryString();
