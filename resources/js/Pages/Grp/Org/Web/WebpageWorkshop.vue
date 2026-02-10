@@ -30,11 +30,12 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Dialog from 'primevue/dialog';
 import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
-
+import Button from "@/Components/Elements/Buttons/Button.vue";
 import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route";
+import PureInput from "@/Components/Pure/PureInput.vue";
 
 import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
@@ -99,6 +100,8 @@ const imageUploadSetting = ref(null)
 const activeChildBlockArray = ref<number | null>(null);
 const activeChildBlockArrayBlock = ref<number | null>(null);
 const sideKey = ref(1);
+const dialogSaveAsTemplateVisible = ref(false);
+const nameAsTemplate = ref("")
 
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
@@ -470,7 +473,7 @@ const setHideBlock = (block: Daum) => {
   onSaveWorkshop(block);
 };
 
-const SyncAurora = () => {
+/* const SyncAurora = () => {
   router.patch(
     route(props.webpage.route_webpage_edit.name, props.webpage.route_webpage_edit.parameters),
     { allow_fetch: props.webpage.allow_fetch },
@@ -487,7 +490,7 @@ const SyncAurora = () => {
     }
   );
 };
-
+ */
 
 const saveState = () => {
   history.value.push(JSON.parse(JSON.stringify(data.value.layout)));
@@ -559,6 +562,46 @@ const closeUploadImage = (visible) => {
   dialogUploadImageVisible.value = visible,
     imageUploadSetting.value = null
 }
+
+
+const saveAsTemplate = async (payload) => {
+  const label = payload.label.trim();
+  if (!label) return;
+
+  isLoadingPublish.value = true;
+  console.log(payload)
+
+ /*  try {
+    const response = await axios[action.method](
+      route(action.name, action.parameters),
+      payload
+    );
+
+    if (response?.status === 200) {
+      notify({
+        title: trans("Template saved"),
+        text: trans("Webpage data has been saved as a template successfully"),
+        type: "success"
+      });
+
+      dialogSaveAsTemplateVisible.value = false;
+      nameAsTemplate.value = "";
+    }
+  } catch (error: any) {
+    notify({
+      title: trans("Something went wrong"),
+      text:
+        error?.response?.data?.message ||
+        error?.message ||
+        trans("Unknown error occurred"),
+      type: "error"
+    });
+  } finally {
+    isLoadingPublish.value = false;
+  } */
+};
+
+
 
 watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
 watch(currentView, (newValue) => iframeClass.value = setIframeView(newValue));
@@ -673,7 +716,7 @@ console.log('props_workshop',props)
           :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock" @add="addNewBlock"
           @order="sendOrderBlock" @setVisible="setHideBlock" @onSaveSiteSettings="onSaveSiteSettings"
           @onDuplicateBlock="duplicateBlock" v-model:selectedTab="selectedTab"
-          @update:selected-tab="(e) => selectedTab = e" />
+          @update:selected-tab="(e) => selectedTab = e"  @save-template="saveAsTemplate"/>
       </div>
 
       <!-- Toggle Button -->
@@ -719,12 +762,20 @@ console.log('props_workshop',props)
           <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
         </div>
 
-        <div class="flex items-center gap-2 text-sm text-gray-700">
+        <!-- <div class="flex items-center gap-2 text-sm text-gray-700">
           <label v-if="props.webpage.allow_fetch" for="sync-toggle">Connected with aurora</label>
           <label v-else for="sync-toggle">Disconnected from aurora</label>
           <ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch"
             @update:modelValue="(e) => SyncAurora(e)" />
-        </div>
+        </div> -->
+        <Button 
+          label="Save as a template"  
+          :disabled="data.layout?.web_blocks.length === 0" 
+          size="xs"  
+          :icon="faBrowser" 
+          type="secondary" 
+          @click="dialogSaveAsTemplateVisible = true" 
+        />
       </div>
 
       <div class="relative border-2 h-full w-full bg-white overflow-auto">
@@ -754,6 +805,26 @@ console.log('props_workshop',props)
             modelHasWebBlocks: data.layout.web_blocks[openedBlockSideEditor].id
           }
         }" />
+  </Dialog>
+
+
+  <Dialog v-model:visible="dialogSaveAsTemplateVisible" modal header="Save as template" :style="{ width: '26rem' }"
+    @hide="dialogSaveAsTemplateVisible = false">
+    <div class="flex flex-col gap-3 border-t py-4">
+      <label class="text-sm font-medium text-gray-700">
+        {{ trans("Label") }}
+      </label>
+
+      <PureInput v-model="nameAsTemplate" placeholder="Enter template name" class="w-full" autofocus />
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <Button label="Cancel" type="tertiary" outlined @click="dialogSaveAsTemplateVisible = false" />
+
+        <Button label="Save" type="save"  :disabled="nameAsTemplate.trim() === ''"  @click="saveAsTemplate({label :nameAsTemplate, block: data.layout })" />
+      </div>
+    </template>
   </Dialog>
 
 </template>

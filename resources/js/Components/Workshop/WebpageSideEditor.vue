@@ -8,6 +8,8 @@ import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
+import Dialog from 'primevue/dialog';
+import PureInput from "@/Components/Pure/PureInput.vue";
 
 import VisibleCheckmark from '@/Components/CMS/Fields/VisibleCheckmark.vue'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
@@ -43,6 +45,7 @@ import {
 	faEdit,
 } from '@fal'
 import { faBrush, faCogs, faExclamationTriangle, faLayerGroup } from '@fas'
+import SavedTemplates from '../CMS/Website/Outboxes/Templates/SavedTemplates.vue'
 
 library.add(
 	faBrowser,
@@ -74,6 +77,7 @@ const emits = defineEmits<{
 	(e: 'openBlockList', value: boolean): void
 	(e: 'onDuplicateBlock', value: Number): void
 	(e: 'update:selectedTab', value: Number): void
+	(e: 'saveTemplate', value: { label: string; block: Daum }): void
 }>()
 
 const confirm = useConfirm()
@@ -85,6 +89,8 @@ const isAddBlockLoading = inject('isAddBlockLoading', ref(null))
 const isLoadingDeleteBlock = inject('isLoadingDeleteBlock', ref(null))
 const isLoadingBlock = inject('isLoadingBlock', ref(null))
 const filterBlock = inject('filterBlock')
+const selectedTemplateBlock = ref<Daum | null>(null)
+
 const changeTab = (index: number) => emits('update:selectedTab', index)
 const sendNewBlock = (block: Daum) => {
 	emits('add', { block, type: addType.value })
@@ -92,6 +98,9 @@ const sendNewBlock = (block: Daum) => {
 const sendBlockUpdate = (block: Daum) => emits('update', block)
 const sendOrderBlock = (block: object) => emits('order', block)
 const sendDeleteBlock = (block: Daum) => emits('delete', block)
+
+const dialogSaveAsTemplateVisible = ref(false);
+const nameAsTemplate = ref("")
 
 const tabs = computed(() => {
 	const baseTabs = [
@@ -275,7 +284,6 @@ const saveRename = (index: number) => {
     fieldValue.blocks.name = value
   }
 
-  console.log(block)
   sendBlockUpdate(block)
   editingIndex.value = null
 }
@@ -285,6 +293,36 @@ const cancelRename = () => {
 	editingIndex.value = null
 	renameValue.value = ""
 }
+
+const openSaveTemplateDialog = () => {
+  if (!contextMenu.value.block) return
+
+  selectedTemplateBlock.value = structuredClone(
+    toRaw(contextMenu.value.block)
+  )
+
+  nameAsTemplate.value = ""
+  dialogSaveAsTemplateVisible.value = true
+  closeContextMenu()
+}
+
+const saveAsTemplate = () => {
+  const label = nameAsTemplate.value.trim()
+  if (!label || !selectedTemplateBlock.value) return
+
+  emits('saveTemplate', {
+    label,
+    block: {
+		web_blocks: [selectedTemplateBlock.value]
+		} 
+  })
+
+  dialogSaveAsTemplateVisible.value = false
+  nameAsTemplate.value = ""
+  selectedTemplateBlock.value = null
+}
+
+
 </script>
 
 <template>
@@ -610,6 +648,20 @@ const cancelRename = () => {
 					Copy
 				</li>
 
+				<li @click="
+					getEditPermissions(contextMenu.block.web_block.layout.data) && openSaveTemplateDialog()
+					"
+
+					:class="[
+						'flex items-center gap-2 px-3 py-2',
+						getEditPermissions(contextMenu.block.web_block.layout.data)
+							? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
+							: 'text-gray-400 cursor-not-allowed pointer-events-none',
+					]">
+					<font-awesome-icon :icon="faSave" />
+					Save as Template
+				</li>
+
 				<!--Rename) -->
 				<li
 					@click="
@@ -637,6 +689,26 @@ const cancelRename = () => {
 			</template>
 		</ul>
 	</div>
+
+
+	 <Dialog v-model:visible="dialogSaveAsTemplateVisible" modal header="Save as template" :style="{ width: '26rem' }"
+		@hide="dialogSaveAsTemplateVisible = false">
+		<div class="flex flex-col gap-3 border-t py-4">
+			<label class="text-sm font-medium text-gray-700">
+				{{ trans("Label") }}
+			</label>
+
+			<PureInput v-model="nameAsTemplate" placeholder="Enter template name" class="w-full" autofocus />
+		</div>
+
+		<template #footer>
+			<div class="flex justify-end gap-2">
+				<Button label="Cancel" type="tertiary" outlined @click="dialogSaveAsTemplateVisible = false" />
+
+				<Button label="Save" type="save" :disabled="nameAsTemplate.trim() === ''" @click="saveAsTemplate" />
+			</div>
+		</template>
+	</Dialog>
 </template>
 
 <style scoped>
