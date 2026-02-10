@@ -50,6 +50,7 @@ class StorePayment extends OrgAction
 
         if (isset($modelData['source'])) {
             data_set($modelData, 'method', Arr::get($modelData, 'source.card_wallet_type', strtolower(Arr::get($modelData, 'source.scheme', null))));
+            unset($modelData['source']);
         } else {
             data_set($modelData, 'method', $paymentAccount->type->value);
         }
