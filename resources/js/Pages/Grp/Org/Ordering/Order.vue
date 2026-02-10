@@ -1386,7 +1386,7 @@ const recalculateVat = async () => {
                             </dd>
                         </dl>
 
-                        <!-- Field: Billing Address -->
+                        <!-- Field: Shipping Address && Billing Address -->
                         <dl v-if="box_stats?.customer?.addresses?.delivery?.formatted_address === box_stats?.customer?.addresses?.billing?.formatted_address && !isCollection"
                             class="mt-2 flex items-start w-full flex-none gap-x-2">
                             <dt v-tooltip="trans('Shipping address and Billing address')"

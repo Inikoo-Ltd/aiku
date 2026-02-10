@@ -30,7 +30,7 @@ class DownloadPortfoliosCSV extends RetinaAction
         mixed $columns = null,
         mixed $productStates = null,
         array $productAvailibility = []
-    ): BinaryFileResponse|Response {
+    ): BinaryFileResponse|Response|string {
 
         $filename = 'portfolio_data_feed_' . $customerSalesChannel->customer->slug . '_' . now()->format('Ymd') . '.csv';
 
@@ -55,12 +55,12 @@ class DownloadPortfoliosCSV extends RetinaAction
                 $query->whereIn('products.state', $normalizedProductStates);
             });
 
-        if(in_array('exclude_not_for_sale', $productAvailibility)){
+        if (in_array('exclude_not_for_sale', $productAvailibility)) {
             $portfolios
                 ->where('products.is_for_sale', true);
         }
 
-        if(in_array('exclude_out_of_stocks', $productAvailibility)){
+        if (in_array('exclude_out_of_stocks', $productAvailibility)) {
             $portfolios
                 ->where('products.available_quantity', '>', 0);
         }
@@ -91,7 +91,12 @@ class DownloadPortfoliosCSV extends RetinaAction
 
         fclose($file);
 
-        // Return the file as a download response
+        if ($exportType === 'csv_content') {
+            $content = file_get_contents($tempFile);
+            unlink($tempFile);
+            return $content;
+        }
+
         return response()->download($tempFile, $filename, [
             'Content-Type'  => 'text/csv',
             'Cache-Control' => 'max-age=0',

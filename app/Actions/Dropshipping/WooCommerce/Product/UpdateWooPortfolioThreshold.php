@@ -52,7 +52,7 @@ class UpdateWooPortfolioThreshold
                 ]);
             } else {
                 $rawMessage  = Arr::get($response, '0', 'Unknown error');
-                if(is_array($rawMessage)) {
+                if (is_array($rawMessage)) {
                     $rawMessage = json_encode($rawMessage);
                 }
                 $messageData = json_decode($rawMessage, true);
