@@ -125,6 +125,7 @@ const props = defineProps<{
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
+const screenType = inject<string>('screenType', 'desktop')
 
 const isModalProductListOpen = ref(false)
 const listLoadingProducts = ref({
@@ -710,7 +711,7 @@ const onChangeInsurance = async (val: boolean) => {
                     </div>
                 </div>
                 <!-- Section: button Place Order & button Checkout -->
-                <div v-if="!is_unable_dispatch || order.is_collection" class="w-72 pt-5">
+                <div v-if="!is_unable_dispatch || order.is_collection" class="w-full md:w-72 pt-5">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink
@@ -719,6 +720,7 @@ const onChangeInsurance = async (val: boolean) => {
                             :routeTarget="routes?.pay_with_balance"
                             class="w-full"
                             full
+                            :size="screenType === 'mobile' ? 'lg' : ''"
                         >
                         </ButtonWithLink>
                         <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
@@ -742,6 +744,7 @@ const onChangeInsurance = async (val: boolean) => {
                         }"
                         class="w-full"
                         full
+                        :size="screenType === 'mobile' ? 'lg' : ''"
                     />
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
