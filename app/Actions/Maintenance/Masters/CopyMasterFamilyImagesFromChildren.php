@@ -29,9 +29,7 @@ class CopyMasterFamilyImagesFromChildren
 
         /** @var MasterProductCategory $masterFamily */
         foreach ($from->getMasterFamilies() as $masterFamily) {
-
-
-            if($masterFamily->slug!='careo-1'){
+            if ($masterFamily->slug != 'careo-1') {
                 continue;
             }
 
@@ -53,8 +51,7 @@ class CopyMasterFamilyImagesFromChildren
             }
 
             foreach ($masterFamily->productCategories as $productCategory) {
-
-                if(!$productCategory->image_id){
+                if (!$productCategory->image_id) {
                     continue;
                 }
 
@@ -69,8 +66,8 @@ class CopyMasterFamilyImagesFromChildren
                     'organisation_id' => $productCategory->organization_id,
                     'position'        => $position,
                     'is_public'       => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'created_at'      => now(),
+                    'updated_at'      => now(),
                     'data'            => '{}',
                 ];
                 $position++;
@@ -87,7 +84,7 @@ class CopyMasterFamilyImagesFromChildren
 
 
             foreach ($masterFamily->productCategories as $productCategory) {
-                //  CloneProductCategoryImagesFromMaster::run($productCategory);
+                CloneProductCategoryImagesFromMaster::run($productCategory);
             }
 
 
