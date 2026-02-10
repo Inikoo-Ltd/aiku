@@ -40,7 +40,7 @@ class ShowSubDepartment extends OrgAction
 
     public function handle(ProductCategory $subDepartment): ProductCategory
     {
-        if($subDepartment->type!=ProductCategoryTypeEnum::SUB_DEPARTMENT){
+        if ($subDepartment->type != ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             abort(404);
         }
         return $subDepartment;

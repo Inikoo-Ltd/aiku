@@ -85,7 +85,7 @@ class StoreWooCommerceProduct extends RetinaAction
             }
 
             $dimensions = [];
-            if(! blank($product->marketing_dimensions)) {
+            if (! blank($product->marketing_dimensions)) {
                 $dimensions = [
                     'width' => Arr::get($product->marketing_dimensions, 'w'),
                     'height' => Arr::get($product->marketing_dimensions, 'h'),
@@ -104,7 +104,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 ]
             ];
 
-            if(! blank($customAttributes)) {
+            if (! blank($customAttributes)) {
                 foreach ($customAttributes as $key => $attr) {
                     $attributes[] = [
                         'id' => 0,
@@ -119,7 +119,7 @@ class StoreWooCommerceProduct extends RetinaAction
 
             $ingredients = explode(',', $product->marketing_ingredients);
 
-            if(! blank($ingredients)) {
+            if (! blank($ingredients)) {
                 $attributes[] = [
                     'id' => 0,
                     'name' => 'Ingredients',
