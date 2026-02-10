@@ -53,6 +53,10 @@ class GetGroupNavigation
             $groupNavigation['sales-channels'] = $this->getSalesChannelsNavs(); // Todo: Raul please made permission for me: Aldo
         }
 
+        if (app()->environment('local')) {
+            $groupNavigation['clocking-machines'] = $this->getClockingMachinesNavs();
+        }
+
         if ($user->hasPermissionTo('group-overview')) {
             $groupNavigation['overview'] = $this->getOverviewNavs();
         }
@@ -251,6 +255,21 @@ class GetGroupNavigation
             'topMenu' => []
         ];
     }
+
+    private function getClockingMachinesNavs(): array
+    {
+        return [
+            'label'   => __('Clocking'),
+            'icon'    => ['fal', 'fa-clock'],
+            'root'    => 'grp.clocking_employees.',
+            'route'   => [
+                'name' => 'grp.clocking_employees.index'
+            ],
+            'topMenu' => []
+        ];
+    }
+
+
 
     private function getOverviewNavs(): array
     {
