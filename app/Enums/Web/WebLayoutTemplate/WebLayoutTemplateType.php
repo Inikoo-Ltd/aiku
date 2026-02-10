@@ -7,7 +7,7 @@
  * copyright 2026
 */
 
-namespace App\Enums\Web\Webpage;
+namespace App\Enums\Web\WebLayoutTemplate;
 
 use App\Enums\EnumHelperTrait;
 

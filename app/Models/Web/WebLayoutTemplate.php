@@ -9,7 +9,7 @@
 
 namespace App\Models\Web;
 
-use App\Enums\Web\Webpage\WebLayoutTemplateType;
+use App\Enums\Web\WebLayoutTemplate\WebLayoutTemplateType;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
