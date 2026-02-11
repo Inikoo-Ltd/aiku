@@ -26,6 +26,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicking;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
+use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
@@ -36,6 +37,8 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
 
     Route::post('shipment-from-warehouse', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
+    Route::patch('trolleys', SyncDeliveryNoteTrolleys::class)->name('trolleys.sync');
+
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in_queue')->withoutScopedBindings();
         Route::patch('remove-picker', UpdateDeliveryNoteStateToUnassigned::class)->name('remove-picker');

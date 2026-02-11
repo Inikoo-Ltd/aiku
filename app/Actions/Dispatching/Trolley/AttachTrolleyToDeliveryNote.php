@@ -22,7 +22,7 @@ class AttachTrolleyToDeliveryNote extends OrgAction
     use WithWarehouseEditAuthorisation;
 
 
-    public function handle(Trolley $trolley, DeliveryNote $deliveryNote): Trolley
+    public function handle(Trolley $trolley, DeliveryNote $deliveryNote): void
     {
         $trolley->deliveryNotes()->attach([
             $deliveryNote->id => [
@@ -34,7 +34,7 @@ class AttachTrolleyToDeliveryNote extends OrgAction
             'current_delivery_note_id' => $deliveryNote->id
         ]);
 
-        return $trolley;
+
     }
 
 
