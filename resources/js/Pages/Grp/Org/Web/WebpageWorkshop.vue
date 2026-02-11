@@ -174,11 +174,11 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
         addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length, type: "current" }
+        saveState()
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
-        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
@@ -232,7 +232,6 @@ const debounceSaveWorkshop = (block, reload = false) => {
 
       // Reload the preview
       data.value.layout = response.data.data.layout;
-      saveState()
       if (reload) {
         router.reload({
           only: ['webpage'],
@@ -270,6 +269,7 @@ const debounceSaveWorkshop = (block, reload = false) => {
       isLoadingBlock.value = null;
       isSavingBlock.value = false;
       delete cancelTokens.value[block.id];
+      saveState()
     }
   }, 1500);
 };
@@ -283,10 +283,12 @@ const debouncedSaveSiteSettings = debounce(block => {
       preserveScroll: true,
       preserveState: true,
       onStart: () => isSavingBlock.value = true,
-      onFinish: () => isSavingBlock.value = false,
+      onFinish: () =>{
+         saveState()
+         isSavingBlock.value = false,
+      } ,
       onSuccess: (e) => {
         data.value = e.props.webpage;
-        saveState()
         sendToIframe({ key: 'reload', value: {} })
       },
       onError: error => notify({
@@ -337,11 +339,11 @@ const sendOrderBlock = async block => {
       onFinish: () => {
         isLoadingBlock.value = null;
         orderBlockCancelToken.value = null;
+        saveState()
       },
       onCancelToken: token => orderBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
-        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
@@ -362,13 +364,13 @@ const sendDeleteBlock = async (block: Daum) => {
       onFinish: () => {
         isLoadingDeleteBlock.value = null;
         orderBlockCancelToken.value = null;
+        saveState()
       },
       onCancelToken: token => deleteBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
         openedBlockSideEditor.value = null
         openedChildSideEditor.value = null
-        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
