@@ -177,7 +177,7 @@ class ShowDeliveryNote extends OrgAction
                 'key'     => 'set-for-waiting',
                 'route'   => [
                     'method'     => 'patch',
-                    'name'       => 'grp.models.delivery_note.state.packed',// todo creante new route
+                    'name'       => 'grp.models.delivery_note.state.handling_blocked_with_picking_bay',
                     'parameters' => [
                         'deliveryNote' => $deliveryNote->id
                     ]

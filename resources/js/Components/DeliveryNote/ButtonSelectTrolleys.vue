@@ -62,7 +62,7 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
     // Section: Submit
     router.patch(
         route(
-            'grp.models.delivery_note.state.handling-with-trolley',
+            'grp.models.delivery_note.state.handling_with_trolley',
             {
                 deliveryNote: props.deliveryNote.id
             }

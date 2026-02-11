@@ -63,7 +63,7 @@ const submitSelectBay = (bayId?: number|null) => {
     // Section: Submit
     router.patch(
         route(
-            'grp.models.delivery_note.state.packed-with-picking-bay',
+            'grp.models.delivery_note.state.packed_with_picking_bay',
             {
                 deliveryNote: props.deliveryNote.id
             }
