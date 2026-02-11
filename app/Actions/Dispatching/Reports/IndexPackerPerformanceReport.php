@@ -60,7 +60,8 @@ class IndexPackerPerformanceReport extends OrgAction
             ->joinSub($packingsSubQuery->clone()->groupBy('packings.packer_user_id'), 'packings_metrics', function ($join) {
                 $join->on('users.id', '=', 'packings_metrics.packer_id');
             })
-            ->count();
+            ->distinct()
+            ->count('users.contact_name');
 
         if ($dateFilter && !empty($dateFilter['created_at'])) {
             $raw = $dateFilter['created_at'];
@@ -108,13 +109,13 @@ class IndexPackerPerformanceReport extends OrgAction
                 $join->on('employees.id', '=', 'timesheets_metrics.employee_id');
             })
             ->select(
-                'users.id',
+                DB::raw('MAX(users.id) as id'),
                 'users.contact_name as name',
-                'packings_metrics.deliveries',
-                'packings_metrics.items',
-                'packings_metrics.dp',
-                DB::raw('COALESCE(timesheets_metrics.hours, 0) as hours'),
-                DB::raw('CASE WHEN (COALESCE(timesheets_metrics.hours, 0) > 0) THEN (packings_metrics.dp / COALESCE(timesheets_metrics.hours, 0)) ELSE 0 END as dp_per_hour'),
+                DB::raw('SUM(packings_metrics.deliveries) as deliveries'),
+                DB::raw('SUM(packings_metrics.items) as items'),
+                DB::raw('SUM(packings_metrics.dp) as dp'),
+                DB::raw('SUM(COALESCE(timesheets_metrics.hours, 0)) as hours'),
+                DB::raw('CASE WHEN (SUM(COALESCE(timesheets_metrics.hours, 0)) > 0) THEN (SUM(packings_metrics.dp) / SUM(COALESCE(timesheets_metrics.hours, 0))) ELSE 0 END as dp_per_hour'),
                 DB::raw('0 as issues'), // Placeholder
                 DB::raw('0 as issues_percentage'), // Placeholder
                 DB::raw('0 as cartons'), // Placeholder
@@ -123,12 +124,25 @@ class IndexPackerPerformanceReport extends OrgAction
                 DB::raw('0 as bonus_net'), // Placeholder
                 // DB::raw("COALESCE(CAST(employees.data->'salary'->>'hourly_rate' AS NUMERIC), 0) * COALESCE(timesheets_metrics.hours, 0) as salary"),
                 // DB::raw("0 - (COALESCE(CAST(employees.data->'salary'->>'hourly_rate' AS NUMERIC), 0) * COALESCE(timesheets_metrics.hours, 0)) as bonus_net")
-            );
+            )
+            ->groupBy('users.contact_name');
 
-        $totalDpQuery = clone $queryBuilder->getQuery();
-        $totalDp = $totalDpQuery->sum('dp');
+        $totalDpQuery = DB::table('packings')
+            ->join('delivery_notes', 'packings.delivery_note_id', '=', 'delivery_notes.id')
+            ->join('delivery_note_items', 'packings.delivery_note_item_id', '=', 'delivery_note_items.id')
+            ->where('delivery_notes.organisation_id', $organisation->id);
 
-        $queryBuilder->addSelect(DB::raw($totalDp > 0 ? "(packings_metrics.dp / $totalDp) * 100 as dp_percentage" : '0 as dp_percentage'));
+        if ($dateFilter && !empty($dateFilter['created_at'])) {
+            $raw = $dateFilter['created_at'];
+            [$start, $end] = explode('-', $raw);
+            $startDate = Carbon::createFromFormat('Ymd', $start)->format('Y-m-d');
+            $endDate = Carbon::createFromFormat('Ymd', $end)->format('Y-m-d');
+            $totalDpQuery->whereBetween('packings.created_at', [$startDate, $endDate]);
+        }
+
+        $totalDp = $totalDpQuery->distinct()->count(DB::raw("CONCAT(packings.delivery_note_id, '-', delivery_note_items.org_stock_id)"));
+
+        $queryBuilder->addSelect(DB::raw($totalDp > 0 ? "(SUM(packings_metrics.dp) / $totalDp) * 100 as dp_percentage" : '0 as dp_percentage'));
 
         return $queryBuilder
             ->allowedSorts(['name', 'deliveries', 'items', 'dp', 'dp_percentage', 'hours', 'dp_per_hour'])
