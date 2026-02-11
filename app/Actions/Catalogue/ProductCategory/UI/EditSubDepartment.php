@@ -177,13 +177,25 @@ class EditSubDepartment extends OrgAction
                                             'languages'     => $languages,
                                             'mode'          => 'single',
                                             'value'         => $subDepartment->description,
-                                            'reviewed'      => $subDepartment->is_description_reviewed
-
+                                            'reviewed'      => $subDepartment->is_description_reviewed,
+                                            'toogle'  => [
+                                                'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
                                         ]
                                         : [
                                             'type'  => 'textEditor',
                                             'label' => __('Description'),
-                                            'value' => $subDepartment->description
+                                            'value' => $subDepartment->description,
+                                            'options' => [
+                                                'counter' => true,
+                                            ],
+                                            'toogle'  => [
+                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
                                         ],
                                     'description_extra' => $subDepartment->masterProductCategory
                                         ? [
@@ -195,12 +207,25 @@ class EditSubDepartment extends OrgAction
                                             'languages'     => $languages,
                                             'mode'          => 'single',
                                             'value'         => $subDepartment->description_extra,
-                                            'reviewed'      => $subDepartment->is_description_extra_reviewed
+                                            'reviewed'      => $subDepartment->is_description_extra_reviewed,
+                                            'toogle'  => [
+                                                'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
                                         ]
                                         : [
                                             'type'  => 'textEditor',
                                             'label' => __('Extra Description'),
-                                            'value' => $subDepartment->description_extra
+                                            'value' => $subDepartment->description_extra,
+                                            'options' => [
+                                                'counter' => true,
+                                            ],
+                                            'toogle'  => [
+                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
                                         ],
                                 ]
                             ],
