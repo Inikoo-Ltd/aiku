@@ -367,6 +367,7 @@ use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
 use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
+use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
