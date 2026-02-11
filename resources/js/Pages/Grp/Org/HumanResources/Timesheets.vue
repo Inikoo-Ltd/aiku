@@ -1,36 +1,42 @@
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Thu, 16 May 2024 12:23:59 British Summer Time, Sheffield, UK
-  - Copyright (c) 2024, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import TableSheets from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheets.vue"
+import TableTimesheets from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheets.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { startOfWeek, startOfMonth, startOfQuarter, startOfYear, addDays, addWeeks } from 'date-fns'
+import { format, startOfWeek, startOfMonth, startOfQuarter, startOfYear, addDays } from 'date-fns'
+import { ref } from 'vue'
+import { useTabChange } from '@/Composables/tab-change'
 
-import { format, parse, getYear, getMonth, getDate } from 'date-fns'
-import { getISOWeek, getISOWeekYear, parseISO } from 'date-fns'
-import { computed, ref, watch } from 'vue'
-import VueDatePicker from '@vuepic/vue-datepicker'
-import '@vuepic/vue-datepicker/dist/main.css'
-
-
-import { faChevronLeft, faChevronRight } from '@fas'
-import { faCalendarAlt } from '@fal'
+// Import Icons
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faChevronLeft, faChevronRight, faCalendarAlt)
+import { faInfoCircle } from '@fal'
+library.add(faInfoCircle)
 
-defineProps<{
+const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    data: {}
+    tabs: {
+        current: string,
+        navigation: any
+    }
+    statistics: {
+        on_time: number,
+        late_clock_in: number,
+        early_clock_out: number,
+        no_clock_out: number,
+        no_clock_in: number,
+        invalid: number,
+        absent: number,
+        total: number
+    }
+    employees: {}
+    employee: {}
 }>()
 
 
+const currentTab = ref(props.tabs?.current || 'employees')
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 function periodLabel(period: any) {
     if (!period) return false
@@ -81,14 +87,63 @@ function periodLabel(period: any) {
     <PageHeading :data="pageHead">
         <template #afterTitle>
             <div v-if="route().params?.period" class="flex font-normal text-lg leading-none h-full text-gray-400">
-                <div>({{ periodLabel(route().params.period) }}</div>
-                <div>
-
-                </div>
-                <div>)</div>
+                <div>({{ periodLabel(route().params.period) }})</div>
             </div>
         </template>
     </PageHeading>
+    <!-- STATISTICS CARDS SECTION -->
+    <div class="mt-4 bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-center divide-x divide-gray-100">
 
-    <TableSheets :data="data" />
+            <div class="px-2">
+                <div class="text-lg font-bold text-blue-600">{{ statistics.on_time }}</div>
+                <div class="text-xs text-gray-500 mt-1">On time</div>
+            </div>
+
+            <div class="px-2">
+                <div class="text-lg font-bold text-blue-600">{{ statistics.late_clock_in }}</div>
+                <div class="text-xs text-gray-500 mt-1">Late clock in</div>
+            </div>
+
+            <div class="px-2">
+                <div class="text-lg font-bold text-blue-600">{{ statistics.early_clock_out }}</div>
+                <div class="text-xs text-gray-500 mt-1">Early clock out</div>
+            </div>
+
+            <div class="px-2">
+                <div class="text-lg font-bold text-blue-600 flex justify-center items-center gap-1">
+                    {{ statistics.no_clock_out }}
+                    <font-awesome-icon :icon="['fal', 'info-circle']" class="text-gray-400 text-[10px]" />
+                </div>
+                <div class="text-xs text-gray-500 mt-1">No clock out</div>
+            </div>
+
+            <div class="px-2">
+                <div class="text-lg font-bold text-blue-600 flex justify-center items-center gap-1">
+                    {{ statistics.no_clock_in }}
+                    <font-awesome-icon :icon="['fal', 'info-circle']" class="text-gray-400 text-[10px]" />
+                </div>
+                <div class="text-xs text-gray-500 mt-1">No clock in</div>
+            </div>
+
+            <div class="px-2">
+                <div class="text-lg font-bold text-blue-600">{{ statistics.invalid }}</div>
+                <div class="text-xs text-gray-500 mt-1">Invalid</div>
+            </div>
+
+            <div class="px-2 border-r-0 lg:border-r">
+                <div class="text-lg font-bold text-blue-600">{{ statistics.absent }}</div>
+                <div class="text-xs text-gray-500 mt-1">Absent</div>
+            </div>
+
+            <div class="px-2 border-l border-gray-200">
+                <div class="text-lg font-bold text-gray-800">{{ statistics.total }}</div>
+                <div class="text-xs text-gray-500 mt-1">Total Logs</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <TableTimesheets :key="currentTab" :tab="currentTab" :data="props[currentTab]" />
 </template>

@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+
 namespace App\Actions\HumanResources\Timesheet\UI;
 
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
@@ -13,6 +14,7 @@ use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\WithTabsBox; // Trait Tabs
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\Helpers\Period\PeriodEnum;
 use App\Enums\UI\HumanResources\TimesheetsTabsEnum;
@@ -37,8 +39,10 @@ class IndexTimesheets extends OrgAction
 {
     use WithEmployeeSubNavigation;
     use WithHumanResourcesAuthorisation;
+    use WithTabsBox;
 
     private Group|Employee|Organisation|Guest $parent;
+    private $statsQuery;
 
     public function handle(Group|Organisation|Employee|Guest $parent, ?string $prefix = null, bool $isTodayTimesheet = false): LengthAwarePaginator
     {
@@ -71,25 +75,41 @@ class IndexTimesheets extends OrgAction
         }
 
         $query->withFilterPeriod('date');
+
+        $this->statsQuery = $query->clone();
+
         $query->select([
-            'timesheets.id',
-            'timesheets.date',
-            'timesheets.subject_name',
-            'timesheets.start_at',
-            'timesheets.end_at',
-            'timesheets.working_duration',
-            'timesheets.breaks_duration',
-            'timesheets.number_time_trackers',
-            'timesheets.number_open_time_trackers',
+            'timesheets.*',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
         ]);
+
         return $query
             ->defaultSort('date')
             ->allowedSorts(['date', 'subject_name', 'working_duration', 'breaks_duration'])
             ->allowedFilters([$globalSearch, 'subject_name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function getStatistics(): array
+    {
+        if (!$this->statsQuery) {
+            return [];
+        }
+
+        $baseQuery = $this->statsQuery->clone();
+
+        return [
+            'on_time' => 0,
+            'late_clock_in' => 0,
+            'early_clock_out' => 0,
+            'no_clock_out' => (clone $baseQuery)->where('number_open_time_trackers', '>', 0)->count(),
+            'no_clock_in' => 0,
+            'invalid' => 0,
+            'absent' => 0,
+            'total' => (clone $baseQuery)->count(),
+        ];
     }
 
     protected function getPeriodFilters(): array
@@ -111,9 +131,7 @@ class IndexTimesheets extends OrgAction
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
+                $table->name($prefix)->pageName($prefix . 'Page');
             }
 
             $noResults = __("No timesheets found");
@@ -126,162 +144,110 @@ class IndexTimesheets extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->withEmptyState(
-                    [
-                        'title' => $noResults,
-                        'count' => $stats->number_timesheets
-                    ]
-                )
+                ->withEmptyState(['title' => $noResults, 'count' => $stats->number_timesheets ?? 0])
                 ->withModelOperations($modelOperations)
-                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true);
+                ->column(key: 'date', label: __('Date'), sortable: true);
 
             if ($parent instanceof Organisation) {
-                $table->column(key: 'subject_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'subject_name', label: __('Name'), sortable: true, searchable: true);
+                $table->column(key: 'job_position', label: __('Job Position'));
             }
 
             foreach ($this->getPeriodFilters() as $periodFilter) {
                 $table->periodFilters($periodFilter['elements']);
             }
 
-            $table->column(key: 'working_duration', label: __('working'), canBeHidden: false, sortable: true)
-                ->column(key: 'breaks_duration', label: __('breaks'), canBeHidden: false, sortable: true);
+            $table->column(key: 'working_duration', label: __('Working'), sortable: true)
+                ->column(key: 'breaks_duration', label: __('Breaks'), sortable: true)
+                ->column(key: 'clock_in_count', label: __('Clock In'))
+                ->column(key: 'clock_out_count', label: __('Clock Out'));
+
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
+                $table->column(key: 'organisation_name', label: __('Organisation'), searchable: true);
             }
             $table->defaultSort('date');
         };
     }
 
-
     public function jsonResponse(LengthAwarePaginator $timesheets): AnonymousResourceCollection
     {
+
+        $timesheets->setCollection(
+            $timesheets->getCollection()->map(function ($timesheet) {
+            $timesheet->job_position = $timesheet->subject->jobPositions->pluck('name')->join(', ') ?: '-';
+            $timesheet->clock_in_count = $timesheet->number_time_trackers;
+            $timesheet->clock_out_count = $timesheet->number_time_trackers - $timesheet->number_open_time_trackers;
+            return $timesheet;
+            })
+        );
+
         return TimesheetsResource::collection($timesheets);
     }
 
-    public function htmlResponse(LengthAwarePaginator $timesheets, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator|Group|Organisation|Employee|Guest $parent, ActionRequest $request): Response
     {
-        $subNavigation = [];
-        $model         = '';
-        $title         = __('Timesheets');
-        $icon          = [
-            'title' => __('Timesheets'),
-            'icon'  => 'fal fa-stopwatch'
-        ];
-        $afterTitle    = null;
-        $iconRight     = null;
-        $modelOperations = [
 
-            'createLink' => [
-                [
-                    'route' => [
-                        'name'       => 'grp.org.hr.timesheets.index',
-                        'parameters' => array_values($request->route()->originalParameters())
-                    ],
-                    'label' => __('per employee')
-                ]
-            ]
-
-        ];
-        if ($this->parent instanceof Group) {
-            $modelOperations = [];
+        if ($parent instanceof LengthAwarePaginator) {
+            $parent = $this->parent;
         }
-        if ($this->parent instanceof Employee) {
-            $afterTitle    = [
-                'label' => $title
-            ];
-            $iconRight     = $icon;
-            $subNavigation = $this->getEmployeeSubNavigation($this->parent, $request);
-            $title         = $this->parent->contact_name;
 
-            $icon = [
-                'icon'  => ['fal', 'fa-user-hard-hat'],
-                'title' => __('Employee')
-            ];
+        if (empty($this->tab)) {
+            $this->tab = TimesheetsTabsEnum::ALL_EMPLOYEES->value; // Default tab
         }
+
+
+        $this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value);
 
         return Inertia::render(
             'Org/HumanResources/Timesheets',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->parent,
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($this->parent, $request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('timesheets'),
                 'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'subNavigation' => $subNavigation,
-                    'actions' => [
-                        class_basename($this->parent) !== class_basename(Organisation::class) ? [
-                            'type'   => 'button',
-                            'style'  => 'tertiary',
-                            'label'  => 'PDF',
-                            'target' => '_blank',
-                            'icon'   => 'fal fa-file-pdf',
-                            'key'    => 'action',
-                            'route'  => [
-                                'name'       => match (class_basename($this->parent)) {
-                                    class_basename(Organisation::class) => 'grp.org.hr.timesheets.export',
-                                    class_basename(Employee::class) => 'grp.org.hr.employees.show.timesheets.pdf',
-                                },
-                                'parameters' => match (class_basename($this->parent)) {
-                                    class_basename(Organisation::class) => [
-                                        'organisation' => $this->parent->slug,
-                                        ...$request->query
-                                    ],
-                                    class_basename(Employee::class) => [
-                                        'organisation' => $this->parent->organisation->slug,
-                                        'employee' => $this->parent->slug,
-                                        ...$request->query
-                                    ],
-                                },
-                            ]
-                        ] : []
-                    ]
-        ],
-
+                    'title'         => __('Timesheets'),
+                    'icon'          => ['title' => __('Timesheets'), 'icon'  => 'fal fa-stopwatch'],
+                ],
+                'statistics' => $this->getStatistics(),
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => TimesheetsTabsEnum::navigation()
+                    'navigation' => $this->getTabsBox($this->parent)
                 ],
 
-                'data' => TimesheetsResource::collection($timesheets)
+                TimesheetsTabsEnum::ALL_EMPLOYEES->value => $this->tab == TimesheetsTabsEnum::ALL_EMPLOYEES->value
+                    ? fn() => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))
+                    : Inertia::lazy(fn() => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))),
 
+                TimesheetsTabsEnum::PER_EMPLOYEE->value => $this->tab == TimesheetsTabsEnum::PER_EMPLOYEE->value
+                    ? fn() => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))
+                    : Inertia::lazy(fn() => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))),
             ]
-        )->table(
-            $this->tableStructure($this->parent, modelOperations: $modelOperations)
-        );
+        )
+            ->table($this->tableStructure($this->parent, null, TimesheetsTabsEnum::ALL_EMPLOYEES->value))
+            ->table($this->tableStructure($this->parent, null, TimesheetsTabsEnum::PER_EMPLOYEE->value));
     }
 
 
-    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(TimesheetsTabsEnum::values());
 
-        return $this->handle($organisation);
+        return $organisation;
     }
 
-    public function inEmployee(Organisation $organisation, Employee $employee, ActionRequest $request): LengthAwarePaginator
+    public function inEmployee(Organisation $organisation, Employee $employee, ActionRequest $request): Employee
     {
         $this->parent = $employee;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($employee);
+        $this->initialisation($organisation, $request)->withTab(TimesheetsTabsEnum::values());
+        return $employee;
     }
 
-    public function inGroup(ActionRequest $request): LengthAwarePaginator
+    public function inGroup(ActionRequest $request): Group
     {
         $this->parent = group();
-        $this->initialisationFromGroup(group(), $request);
-
-        return $this->handle(group());
+        $this->initialisationFromGroup(group(), $request)->withTab(TimesheetsTabsEnum::values());
+        return group();
     }
-
 
     public function getBreadcrumbs(Group|Organisation|Employee|Guest $parent, string $routeName, array $routeParameters): array
     {
