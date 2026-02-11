@@ -110,6 +110,11 @@ const props = defineProps<{
             }
         }
         shipping_fields_update_route: routeType
+        trolleys?: {
+            id: number
+            name: string
+            slug: string
+        }[]
     }
     routes: {
         pickers_list: routeType
@@ -378,7 +383,21 @@ const updateCollection = async (e: Event) => {
                             </dd>
                         </dl>
                     </div>
-                    <div class="mt-2 border-t border-gray-300 w-full" />
+
+                    <div v-if="boxStats?.trolleys?.length" class="!mt-1.5">
+                        <dl v-tooltip="trans('Trolleys selected')"
+                            class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                            <dt class="flex-none">
+                                <!-- <FontAwesomeIcon icon="" class="" fixed-width aria-hidden="true" /> -->
+                                {{ trans("Trolleys") }} ({{ boxStats?.trolleys?.length }}):
+                            </dt>
+                            <dd class="text-gray-500">
+                                <pre>{{ boxStats.trolleys.map(trolley => trolley?.name ?? '-').join(', ') }}</pre>
+                            </dd>
+                        </dl>
+                    </div>
+                    
+                    <div class="!mt-2 border-t border-gray-300 w-full" />
 
                     <!-- Current State -->
                     <dl xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
