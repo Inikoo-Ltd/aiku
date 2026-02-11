@@ -1130,6 +1130,7 @@ Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem:
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
     Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
     Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
+    Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
 });
 
 require __DIR__.'/models/inventory/warehouse.php';
