@@ -87,9 +87,9 @@ class StoreWooCommerceProduct extends RetinaAction
             $dimensions = [];
             if (! blank($product->marketing_dimensions)) {
                 $dimensions = [
-                    'width' => Arr::get($product->marketing_dimensions, 'w'),
-                    'height' => Arr::get($product->marketing_dimensions, 'h'),
-                    'length' => Arr::get($product->marketing_dimensions, 'l')
+                    'width' => (string) Arr::get($product->marketing_dimensions, 'w'),
+                    'height' => (string) Arr::get($product->marketing_dimensions, 'h'),
+                    'length' => (string) Arr::get($product->marketing_dimensions, 'l')
                 ];
             }
 
