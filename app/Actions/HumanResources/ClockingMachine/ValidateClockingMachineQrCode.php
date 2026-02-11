@@ -192,6 +192,7 @@ class ValidateClockingMachineQrCode
                 ],
                 'clocking' => [
                     'clocked_at' => $clocking->clocked_at,
+                    'id' => $clocking->id,
                     'type' => $actionType,
                 ]
             ]);
