@@ -283,10 +283,10 @@ const debouncedSaveSiteSettings = debounce(block => {
       preserveScroll: true,
       preserveState: true,
       onStart: () => isSavingBlock.value = true,
-      onFinish: () =>{
+      onFinish: () => {
          saveState()
-         isSavingBlock.value = false,
-      } ,
+         isSavingBlock.value = false
+      },
       onSuccess: (e) => {
         data.value = e.props.webpage;
         sendToIframe({ key: 'reload', value: {} })
