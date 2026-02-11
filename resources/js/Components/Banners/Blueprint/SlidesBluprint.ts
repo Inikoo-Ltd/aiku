@@ -7,10 +7,29 @@ export default {
             icon: ["fal", "fa-image"],
             fields: [
                 {
+                    name: ["layout","backgroundType"],
+                    type: "radio",
+                    label: trans("Background Type"),
+                    value: ["layout","backgroundType"],
+                    useIn: ["desktop", "tablet", "mobile"],
+                    options: [
+                        { label: trans("Image"), value: "image" },
+                        { label: trans("Color"), value: "color" },
+                    ]
+                },
+                {
                     name: "image",
                     type: "slideBackground",
                     label: trans("Image"),
+                    useIn: ["desktop", "tablet", "mobile"],
                     value: ["image"],
+                },
+                {
+                    name: ["layout","background"],
+                    type: "color-background",
+                    label: trans("Background Color"),
+                    useIn: ["desktop", "tablet", "mobile"],
+                    value: ["layout","background"],
                 },
                 {
                     name: ["layout", "link"],

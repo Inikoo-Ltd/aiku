@@ -1,68 +1,44 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue"
-import { get, isEqual } from "lodash-es"
+import { computed } from "vue"
+import RadioButton from "primevue/radiobutton"
 
 const props = defineProps<{
   modelValue?: any
   fieldData?: any
-  radioValue?: any
 }>()
 
-const emit = defineEmits(["update:modelValue", "onChange"])
+const emit = defineEmits(["update:modelValue"])
 
-// resolve default
-const initial = computed(() => {
-  if (props.modelValue !== undefined) return props.modelValue
-  if (props.radioValue !== undefined) return props.radioValue
-  return get(props, ["fieldData", "defaultValue"], null)
-})
-
-const value = ref(initial.value)
-
-// sync from parent
-watch(
-  () => props.modelValue,
-  v => {
-    if (!isEqual(v, value.value)) {
-      value.value = v
-    }
+const value = computed({
+  get: () => props.modelValue,
+  set: v => {
+    emit("update:modelValue", v)
   }
-)
-
-// emit to parent
-watch(value, newValue => {
-  emit("update:modelValue", newValue)
-  emit("onChange", newValue)
 })
 
+const groupName = computed(() => props.fieldData?.name || "radio-group")
 </script>
 
+
 <template>
-  <div>
-    <fieldset class="select-none">
-      <legend class="sr-only"></legend>
 
-      <div class="flex items-center gap-x-5 gap-y-1 flex-wrap">
-        <label
-          v-for="(option, index) in fieldData?.options"
-          :key="option.label + index"
-          :for="option.label + index"
-          class="inline-flex items-center gap-x-1.5 cursor-pointer py-1"
-        >
-          <input
-            v-model="value"
-            type="radio"
-            :id="option.label + index"
-            :value="option.value"
-            :checked="isEqual(value, option.value)"
-            class="h-4 w-4 border-gray-300 text-gray-600 focus:ring-0 focus:outline-none cursor-pointer"
-          />
+  <div class="flex flex-wrap gap-4">
+    <div
+      v-for="(option, index) in fieldData?.options"
+      :key="index"
+      class="flex items-center gap-2"
+    >
 
-          <span v-if="option.label" class="font-light text-sm text-gray-400">
-            {{ option.label }}
-          </span>
-        </label>
-      </div>
-    </fieldset>
+      <RadioButton
+        v-model="value"
+        :value="option.value"
+        :name="groupName"
+        :inputId="groupName + index"
+      />
+
+      <label :for="groupName + '_' + index" class="cursor-pointer text-sm">
+        {{ option.label }}
+      </label>
+    </div>
   </div>
 </template>

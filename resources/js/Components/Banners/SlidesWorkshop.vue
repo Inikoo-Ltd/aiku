@@ -131,7 +131,6 @@ const data = computed<BannerWorkshop>({
     return props.modelValue
   },
   set(v) {
-    console.log('sdsd', v)
     emits("update:modelValue", v)
   }
 })
