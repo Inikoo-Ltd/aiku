@@ -7,10 +7,13 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimes } from "@fal";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTimes, faCheck } from "@fal";
+import { Dialog } from 'primevue'
+import InputText from "primevue/inputtext"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useFormatTime } from '@/Composables/useFormatTime'
 
-library.add(faTimes);
+library.add(faTimes, faCheck);
 
 interface DetectedCode {
     rawValue: string
@@ -28,8 +31,15 @@ const lastResult = ref<string | null>(null)
 const hasLocation = computed(() => lat.value !== null && lng.value !== null)
 const canOpenCamera = computed(() => hasLocation.value)
 
+const showSuccessModal = ref(false)
+const notes = ref<string>("")
+const scanTime = ref<string | null>(null)
+const now = new Date().toLocaleString()
+const clockType = ref<'clock_in' | 'clock_out' | null>(null)
+
 const detectMyLocation = () => {
     errorMsg.value = null
+
     navigator.geolocation.getCurrentPosition(
         (pos) => {
             lat.value = pos.coords.latitude
@@ -67,18 +77,15 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
     loading.value = true
 
     try {
-        await axios.post(route('grp.models.clocking-machine.qr.validate'), {
+        const { data } = await axios.post(route('grp.models.clocking-machine.qr.validate'), {
             qr_code: result,
             latitude: lat.value,
             longitude: lng.value,
         })
 
-        notify({
-            title: trans('Success'),
-            text: trans('Success Scan QR'),
-            type: 'success',
-        })
-
+        clockType.value = data.clocking?.type
+        scanTime.value = useFormatTime(data.clocking?.clocked_at, { formatTime: 'hms' })
+        showSuccessModal.value = true
         stopCamera()
     } catch (e: any) {
         notify({
@@ -105,6 +112,34 @@ const onStreamError = (err: Error) => {
         errorMsg.value = "HTTPS required"
     } else {
         errorMsg.value = "Camera error"
+    }
+}
+
+const modalTitle = computed(() => {
+    if (clockType.value === 'clock_in') return trans('Clock-in successful')
+    if (clockType.value === 'clock_out') return trans('Clock-out successful')
+    return trans('Scan successful')
+})
+
+
+const submitNotes = async () => {
+    try {
+        await axios.post(route('grp.models.clocking-machine.qr.notes'), {
+            notes: notes.value,
+            // qr_code: lastResult.value
+        })
+
+        showSuccessModal.value = false
+        notes.value = ''
+    } catch (e: any) {
+        notify({
+            title: trans('Failed submit notes'),
+            text: trans(`${e.response?.data?.message}`),
+            type: 'error',
+        })
+
+        errorMsg.value = e.response?.data?.message || "Failed submit notes"
+        console.error(e)
     }
 }
 
@@ -169,6 +204,56 @@ const onStreamError = (err: Error) => {
             </div>
 
         </div>
+
+        <Dialog v-model:visible="showSuccessModal" modal :closable="false" :style="{ width: '420px' }">
+            <div class="text-center space-y-4 py-4">
+
+                <!-- ICON -->
+                <div class="flex justify-center">
+                    <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+                        <FontAwesomeIcon :icon="faCheck" class="text-4xl text-green-600" />
+                    </div>
+                </div>
+
+                <!-- TITLE -->
+                <h3 class="text-xl font-semibold text-gray-800">
+                    {{ modalTitle }}
+                </h3>
+
+                <!-- INFO -->
+                <div class="text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">{{ trans("Schedule ") }}</span>
+                        <span class="font-semibold text-gray-800">
+                            {{ useFormatTime(now) ?? '-' }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">{{ trans("Working Office Hour ") }}</span>
+                        <!-- <span class="font-semibold text-gray-800">{{ scanTime ?? '-' }}</span> -->
+                        <span class="font-semibold text-gray-800">08:00 - 17:00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">{{ trans("Scan Time") }}</span>
+                        <span class="font-semibold text-gray-800">{{ scanTime ?? '-' }}</span>
+                    </div>
+                </div>
+
+                <!-- NOTES INPUT -->
+                <div class="pt-3">
+                    <label class="text-sm text-gray-600 block mb-1 text-left">
+                        {{ trans("Notes (optional)") }}
+                    </label>
+                    <InputText v-model="notes" class="w-full" required placeholder="Input Notes" />
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="flex gap-2 pt-4">
+                    <Button label="Close" type="exit" @click="showSuccessModal = false" full />
+                    <Button label="Submit" type="save" @click="submitNotes" full />
+                </div>
+            </div>
+        </Dialog>
 
         <div v-if="errorMsg" class="text-red-500 text-sm mt-2 text-center">{{ errorMsg }}</div>
     </div>

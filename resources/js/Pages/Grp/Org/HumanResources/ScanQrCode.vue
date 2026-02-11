@@ -102,7 +102,7 @@ onUnmounted(() => stopQR())
         <div class="rounded-xl w-full max-w-[760px] text-center space-y-6">
 
             <div>
-                <h2 class="text-xl font-semibold text-gray-800">{{ trans("Employee Check-In") }}</h2>
+                <h2 class="text-xl font-semibold text-gray-800">{{ trans("Employee Scan") }}</h2>
                 <p class="text-sm text-gray-500">{{ trans("Scan QR to clock in or out") }}</p>
             </div>
 
