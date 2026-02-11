@@ -8,21 +8,26 @@
 
 namespace App\Actions\Comms\Outbox\PriceChangeNotification;
 
-use App\Actions\Comms\Email\SendBackToStockToCustomerEmail;
-use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails;
+use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
+use App\Actions\Comms\EmailBulkRun\StoreEmailBulkRun;
+use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
+use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
+use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
+use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePendingBackInStockReminders;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class RunPriceChangeNotificationEmailBulkRuns
 {
@@ -46,6 +51,7 @@ class RunPriceChangeNotificationEmailBulkRuns
         $outboxes = $queryOutbox->get();
 
         $currentDateTime = Carbon::now()->utc();
+        $last24Hours = now()->subHours(24);
 
         /**
          * check following steps :
@@ -54,6 +60,9 @@ class RunPriceChangeNotificationEmailBulkRuns
          * 3. check the product price change
          * 4. check the product is_for_sale
          * 5. check the product state
+         * 6. check table historic asset to check the product price change
+         * 7. optimize the query
+         * 8. make sure unsubscribe is working
          *
          */
         /** @var Outbox $outbox */
@@ -63,83 +72,110 @@ class RunPriceChangeNotificationEmailBulkRuns
                 continue;
             }
 
+            $emailongoingRun = $outbox->emailOngoingRun;
+
             $lastOutBoxSent = $outbox->last_sent_at;
-            // make customers as the main table
+
+            $productClass = class_basename(Product::class);
+
+            //  Check another condition:
             $baseQuery = QueryBuilder::for(Customer::class);
-            $baseQuery->join('portfolios', function ($join) {
-                $join->on('customers.id', '=', 'portfolios.customer_id');
-            });
-            $baseQuery->join('products', function ($join) {
-                $join->on('portfolios.item_id', '=', 'products.id')
-                    ->where('portfolios.item_type', class_basename(Product::class));
-            });
             $baseQuery->where('customers.shop_id', $outbox->shop_id);
-            // select options
-            $baseQuery->select('customers.id', 'customers.shop_id', 'products.id as product_id', 'portfolios.id as portfolio_id');
+
+            // check customer comms
+            $baseQuery->join('customer_comms', function ($join) {
+                $join->on('customers.id', '=', 'customer_comms.customer_id')
+                    ->where('customer_comms.is_subscribed_to_price_change_notification', true);
+            });
+
+            // check portfolio
+            $baseQuery->join('portfolios', function ($join) use ($productClass) {
+                $join->on('customers.id', '=', 'portfolios.customer_id')
+                    ->where('portfolios.item_type', $productClass)
+                    ->where('portfolios.status', true);
+            });
+
+            $baseQuery->join('customer_sales_channels', function ($join) {
+                $join->on('portfolios.customer_sales_channel_id', '=', 'customer_sales_channels.id')
+                    ->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN);
+            });
+
+            // check product
+            $baseQuery->join('products', function ($join) use ($last24Hours) {
+                $join->on('portfolios.item_id', '=', 'products.id');
+                $join->where('products.is_for_sale', true);
+                $join->where('products.price_updated_at', '>', $last24Hours);
+                $join->whereNull('products.deleted_at');
+            });
+
+            $baseQuery->select(
+                'customers.id',
+                'customers.email',
+                DB::raw('STRING_AGG(products.id::TEXT, \',\' ORDER BY products.id) AS product_ids')
+            );
+            $baseQuery->groupBy('customers.id');
+
             $baseQuery->orderBy('customers.id');
-
-            // need to add where condition for product
-
-
-
             //  Log the query
             // \Log::info($baseQuery->toRawSql());
 
 
-            // $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
-            // $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
+            $lastBulkRun = null;
+            $updateLastOutBoxSent = null;
+
+            // create email bulk run
+            $emailBulkRun = StoreEmailBulkRun::make()->action($emailongoingRun, [
+                'scheduled_at' => now(),
+                'subject'      => now()->format('Y.m.d'),
+                'state'        => EmailBulkRunStateEnum::SCHEDULED,
+            ], 0, false);
 
 
-            // $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
-            // // select options
-            // $baseQuery->select('customers.id', 'customers.shop_id', 'back_in_stock_reminders.product_id as product_id', 'back_in_stock_reminders.id as reminder_id');
+            $baseQuery->chunk(250, function ($customers) use ($emailBulkRun, $outbox) {
+                $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
 
-            // // where conditions
-            // $baseQuery->where('back_in_stock_reminders.shop_id', $outbox->shop_id);
-            // $baseQuery->where('products.available_quantity', '>', 0);
-            // $baseQuery->where('products.back_in_stock_since', '>', DB::raw('back_in_stock_reminders.created_at'));
-            // if ($lastOutBoxSent) {
-            //     $baseQuery->where('back_in_stock_reminders.created_at', '>', $lastOutBoxSent);
-            //     $baseQuery->where('products.back_in_stock_since', '>', $lastOutBoxSent);
-            // }
-            // // check another customers condition
-            // $baseQuery->whereNull('customers.deleted_at');
-            // // check another product condition
-            // $baseQuery->whereNull('products.deleted_at');
-            // // order by customer id
-            // $baseQuery->orderBy('customers.id');
+                foreach ($customers as $customer) {
+                    if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
+                        StoreDispatchedEmail::run(
+                            $emailBulkRun,
+                            $customer,
+                            [
+                                'is_test'       => false,
+                                'outbox_id'     => $outbox->id,
+                                'email_address' => $customer->email,
+                                'provider'      => DispatchedEmailProviderEnum::SES,
+                            ]
+                        );
+                    }
+                }
 
-            // $lastBulkRun = null;
-            // $updateLastOutBoxSent = null;
+                // After processing the chunk, update and dispatch the delivery channel
+                UpdateEmailDeliveryChannel::run(
+                    $emailDeliveryChannel,
+                    [
+                        'number_emails' => $emailBulkRun->dispatchedEmails()->where('channel', $emailDeliveryChannel->id)->count()
+                    ]
+                );
+                SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+            });
 
-            // // Get count before iterating
-            // $totalCustomers = (clone $baseQuery)->count() ?? 0;
-
-            // $processedCount = 0;
-            // $productData = [];
-            // $lastCustomerId = null;
-            // $lastCustomer = null;
-            // $deleteBackInStockReminderIds = [];
-            // foreach ($baseQuery->cursor() as $customer) {
+            // foreach ($baseQuery-> as $customer) {
             //     $processedCount++;
 
-            //     if ($lastCustomerId === null) {
-            //         $lastCustomerId = $customer->id;
+            //     if ($lastCustomer === null) {
             //         $lastCustomer = $customer;
             //     }
 
-
             //     // running code for sending email
-            //     if ($lastCustomerId !== $customer->id) {
+            //     if ($lastCustomer->id !== $customer->id) {
             //         $bulkRun = $this->upsertEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
             //         $additionalData = [
             //             'products' => $this->generateProductLinks($productData),
             //         ];
-            //         SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
+            //         // SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
 
             //         $lastBulkRun = $bulkRun;
 
-            //         $lastCustomerId = $customer->id;
             //         $lastCustomer = $customer;
             //         $productData = []; // Reset for new customer
 
@@ -157,7 +193,7 @@ class RunPriceChangeNotificationEmailBulkRuns
             //         $additionalData = [
             //             'products' => $this->generateProductLinks($productData),
             //         ];
-            //         SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
+            //         // SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
             //         // reset product data
             //         $productData = [];
             //         $lastBulkRun = $bulkRun;
@@ -165,28 +201,6 @@ class RunPriceChangeNotificationEmailBulkRuns
             //         // Update last sent time for this outbox
             //         $updateLastOutBoxSent = $currentDateTime;
             //     }
-
-            //     // Track reminder IDs to delete
-            //     $deleteBackInStockReminderIds[] = $customer->reminder_id;
-            // }
-
-            // // Note: Make sure this runs only once at the end
-            // // check Job Chaining Bus::chain
-            // if ($lastBulkRun) {
-            //     EmailBulkRunHydrateDispatchedEmails::dispatch($lastBulkRun);
-            // }
-
-            // if ($updateLastOutBoxSent) {
-            //     // update last_sent_at for this outbox
-            //     $this->update($outbox, ['last_sent_at' => $updateLastOutBoxSent]);
-            // }
-
-            // // Delete processed back_in_stock_reminders
-            // if (!empty($deleteBackInStockReminderIds)) {
-            //     BulkDeleteBackInStockReminder::run($deleteBackInStockReminderIds);
-            //     ShopHydratePendingBackInStockReminders::run($shop);
-            //     // reset array to avoid re-deleting the same IDs
-            //     $deleteBackInStockReminderIds = [];
             // }
         }
     }
