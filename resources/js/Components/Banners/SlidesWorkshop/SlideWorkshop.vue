@@ -96,7 +96,7 @@ defineExpose({
                             <component 
                                 :is="getComponent(fieldData['type'])" 
                                 :model-value="fieldData.type == 'slideBackground' ? props.modelValue  :  getValue(fieldData.name)"
-                                @update:modelValue="fieldData.type == 'slideBackground' ?  props.modelValue = $event : setValue(fieldData.name, $event)"
+                                @update:modelValue="fieldData.type == 'slideBackground' ?  (emit('update:modelValue', $event), console.log('aaaaaaa', $event)) : setValue(fieldData.name, $event)"
                                 :fieldName="fieldData.name" 
                                 :fieldData="fieldData" 
                                 :key="fieldData.type+index+fieldData.label" 
