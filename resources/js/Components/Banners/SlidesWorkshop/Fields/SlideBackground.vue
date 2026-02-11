@@ -176,7 +176,7 @@ const screenViewChange = (v:string) => {
 
                     <div class="flex items-center gap-x-2">
                         <!-- upload -->
-                        <Button style="secondary" size="xs" class="relative">
+                        <Button type="secondary" size="xs" class="relative">
                             <FontAwesomeIcon icon="fas fa-upload" />
                             {{ trans(`Upload image ${screenView}`) }}
 
@@ -196,7 +196,7 @@ const screenViewChange = (v:string) => {
 
                         <!-- gallery -->
                         <Button
-                            style="tertiary"
+                            type="tertiary"
                             icon="fal fa-photo-video"
                             label="Gallery"
                             size="xs"
