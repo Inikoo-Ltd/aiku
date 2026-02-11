@@ -101,7 +101,7 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
 <template>
     <div>
         <Button
-            :label="trans('Select Trolley')"
+            :label="trans('Start Picking')"
             @click="() => isOpenModal = true" 
             icon="fal fa-dolly-flatbed-alt"
         />

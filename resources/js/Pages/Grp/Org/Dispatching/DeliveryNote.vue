@@ -22,7 +22,6 @@ import {
     faTired,
     faFilePdf,
     faBoxOpen,
-    faExclamation,
     faExclamationTriangle,
 } from "@fal";
 import { faArrowRight, faCheck, faEye, faStar, faTimes } from "@fas";
