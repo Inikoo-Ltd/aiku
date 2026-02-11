@@ -10,19 +10,17 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Exception;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Enums\HumanResources\Clocking\ClockingActionEnum;
-use Illuminate\Validation\Rules\Enum;
 use Illuminate\Support\Facades\DB;
-use App\Actions\HumanResources\Timesheet\StoreTimesheet;
-use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
-use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Auth;
-use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
+use App\Actions\HumanResources\Clocking\StoreClocking;
+use App\Actions\HumanResources\ClockingMachine\StoreQrScanLog;
+use App\Models\HumanResources\TimeTracker;
 
 class ValidateClockingMachineQrCode
 {
     use AsAction;
 
-    public function handle(string $qrCodeToken, ?float $userLat = null, ?float $userLng = null, ?string $type = null): ClockingMachine
+    public function handle(string $qrCodeToken, ?float $userLat = null, ?float $userLng = null): array
     {
         $clockingMachine = null;
 
@@ -65,11 +63,16 @@ class ValidateClockingMachineQrCode
                 $userLng
             );
 
-            DB::transaction(function () use ($clockingMachine, $userLat, $userLng) {
-                $this->processClocking($clockingMachine, $userLat, $userLng);
+            $clockingResult = DB::transaction(function () use ($clockingMachine, $userLat, $userLng) {
+                return $this->processClocking($clockingMachine, $userLat, $userLng);
             });
 
-            return $clockingMachine;
+            return [
+                'machine' => $clockingMachine,
+                'clocking' => $clockingResult['clocking'],
+                'action_type' => $clockingResult['action_type']
+            ];
+
         } catch (Exception $e) {
             StoreQrScanLog::make()->handle(
                 $clockingMachine,
@@ -84,7 +87,7 @@ class ValidateClockingMachineQrCode
         }
     }
 
-    private function processClocking(ClockingMachine $machine, ?float $lat, ?float $lng): void
+    private function processClocking(ClockingMachine $machine, ?float $lat, ?float $lng): array
     {
         $user = Auth::user();
         $employee = $user?->employees->first();
@@ -102,28 +105,33 @@ class ValidateClockingMachineQrCode
             throw new Exception(__('Scan too frequent. Please wait a moment.'));
         }
 
-        $today = Carbon::now()->format('Y-m-d');
-        $timesheet = $employee->timesheets()->where('date', $today)->first();
+        $clocking = StoreClocking::run(
+            generator: $employee,
+            parent: $machine,
+            subject: $employee,
+            modelData: [
+                'clocked_at' => now(),
+            ]
+        );
 
-        if (!$timesheet) {
-            $timesheet = StoreTimesheet::make()->handle($employee, ['date' => $today]);
+        $timeTracker = null;
+        if ($clocking->time_tracker_id) {
+            $timeTracker = TimeTracker::find($clocking->time_tracker_id);
         }
 
-        $clocking = new Clocking();
-        $clocking->group_id = $employee->group_id;
-        $clocking->organisation_id = $employee->organisation_id;
-        $clocking->workplace_id = $machine->workplace_id;
-        $clocking->timesheet_id = $timesheet->id;
-        $clocking->clocking_machine_id = $machine->id;
-        $clocking->subject_type = $employee->getMorphClass();
-        $clocking->subject_id = $employee->id;
+        $actionType = null;
+        if ($timeTracker) {
+            if ($timeTracker->start_clocking_id == $clocking->id) {
+                $actionType = ClockingActionEnum::CLOCK_IN;
+            } elseif ($timeTracker->end_clocking_id == $clocking->id) {
+                $actionType = ClockingActionEnum::CLOCK_OUT;
+            }
+        }
 
-        $clocking->type = ClockingTypeEnum::CLOCKING_MACHINE;
-        $clocking->clocked_at = now();
-
-        $clocking->save();
-
-        AddClockingToTimeTracker::make()->handle($timesheet, $clocking);
+        return [
+            'clocking' => $clocking,
+            'action_type' => $actionType
+        ];
     }
 
     private function validateCoordinates(array $config, float $userLat, float $userLng): void
@@ -167,10 +175,12 @@ class ValidateClockingMachineQrCode
         $token = $data['qr_code'];
         $lat   = $data['latitude'] ?? null;
         $lng   = $data['longitude'] ?? null;
-        $type  = $data['type'] ?? null;
 
         try {
-            $machine = $this->handle($token, $lat, $lng, $type);
+            $result = $this->handle($token, $lat, $lng);
+            $machine = $result['machine'];
+            $clocking = $result['clocking'];
+            $actionType = $result['action_type'];
 
             return response()->json([
                 'success' => true,
@@ -179,6 +189,10 @@ class ValidateClockingMachineQrCode
                     'id' => $machine->id,
                     'name' => $machine->name,
                     'workplace_id' => $machine->workplace_id
+                ],
+                'clocking' => [
+                    'clocked_at' => $clocking->clocked_at,
+                    'type' => $actionType,
                 ]
             ]);
         } catch (Exception $e) {
@@ -195,7 +209,6 @@ class ValidateClockingMachineQrCode
             'qr_code'   => ['required', 'string'],
             'latitude'  => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
-            'type'    => ['required', new Enum(ClockingActionEnum::class)],
         ];
     }
 }
