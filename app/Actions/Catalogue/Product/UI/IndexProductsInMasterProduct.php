@@ -42,7 +42,7 @@ class IndexProductsInMasterProduct extends OrgAction
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', 'organisations.id');
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.master_product_id', $masterAsset->id);
-        $queryBuilder->where('shops.state','!=',ShopStateEnum::CLOSED->value);
+        $queryBuilder->where('shops.state', '!=', ShopStateEnum::CLOSED->value);
 
         $queryBuilder
             ->defaultSort('products.code')

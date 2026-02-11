@@ -98,7 +98,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 ];
             }
 
-            if($product->country_of_origin) {
+            if ($product->country_of_origin) {
                 $attributes = [
                     [
                         'id' => 0,

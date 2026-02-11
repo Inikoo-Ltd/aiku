@@ -248,33 +248,33 @@ class ShowMasterProduct extends GrpAction
                 ],
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
-                    fn() => GetMasterProductShowcase::run($masterAsset)
-                    : Inertia::lazy(fn() => GetMasterProductShowcase::run($masterAsset)),
+                    fn () => GetMasterProductShowcase::run($masterAsset)
+                    : Inertia::lazy(fn () => GetMasterProductShowcase::run($masterAsset)),
 
                 'salesData' => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
-                    fn() => GetMasterProductTimeSeriesData::run($masterAsset)
-                    : Inertia::lazy(fn() => GetMasterProductTimeSeriesData::run($masterAsset)),
+                    fn () => GetMasterProductTimeSeriesData::run($masterAsset)
+                    : Inertia::lazy(fn () => GetMasterProductTimeSeriesData::run($masterAsset)),
 
                 MasterAssetTabsEnum::TRADE_UNITS->value => $this->tab == MasterAssetTabsEnum::TRADE_UNITS->value ?
-                    fn() => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
-                    : Inertia::lazy(fn() => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
 
                 MasterAssetTabsEnum::IMAGES->value => $this->tab == MasterAssetTabsEnum::IMAGES->value ?
-                    fn() => GetMasterProductImages::run($masterAsset)
-                    : Inertia::lazy(fn() => GetMasterProductImages::run($masterAsset)),
+                    fn () => GetMasterProductImages::run($masterAsset)
+                    : Inertia::lazy(fn () => GetMasterProductImages::run($masterAsset)),
 
                 MasterAssetTabsEnum::SALES->value => $this->tab == MasterAssetTabsEnum::SALES->value ?
-                    fn() => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))
-                    : Inertia::lazy(fn() => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
+                    fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => MasterAssetTimeSeriesResource::collection(IndexMasterAssetTimeSeries::run($masterAsset, MasterAssetTabsEnum::SALES->value))),
 
                 MasterAssetTabsEnum::HISTORY->value => $this->tab == MasterAssetTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))),
+                    fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))),
 
 
                 MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
-                    fn() => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn() => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))),
+                    fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))),
 
             ]
         )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value, masterAsset: $masterAsset))
