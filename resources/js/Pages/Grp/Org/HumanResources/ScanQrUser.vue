@@ -6,6 +6,10 @@ import axios from 'axios'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faArrowLeft } from "@fal";
+
+library.add(faArrowLeft);
 
 const type = ref<'check_in' | 'check_out' | null>(null)
 const lat = ref<number | null>(null)
@@ -31,12 +35,7 @@ const detectMyLocation = () => {
     )
 }
 
-// const startCamera = () => { if (canOpenCamera.value) cameraOn.value = true }
 const startCamera = async () => {
-    console.log("Start camera clicked")
-    console.log("Type:", type.value)
-    console.log("LatLng:", lat.value, lng.value)
-
     if (!canOpenCamera.value) {
         console.warn("Camera blocked — missing type or location")
         return
@@ -44,9 +43,7 @@ const startCamera = async () => {
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-        console.log("Camera permission granted", stream)
 
-        // Stop dummy stream (vue-qrcode-reader will reopen)
         stream.getTracks().forEach(t => t.stop())
 
         cameraOn.value = true
@@ -58,8 +55,14 @@ const startCamera = async () => {
 
 const stopCamera = () => cameraOn.value = false
 
-const onDecode = async (result: string) => {
-    if (result === lastResult.value) return
+interface DetectedCode {
+    rawValue: string
+}
+
+const onDetect = async (detectedCodes: DetectedCode[]) => {
+    const result = detectedCodes[0]?.rawValue
+    // if (!result || result === lastResult.value) return
+
     lastResult.value = result
     loading.value = true
 
@@ -76,6 +79,7 @@ const onDecode = async (result: string) => {
             text: trans('Success Scan QR'),
             type: 'success',
         })
+
         stopCamera()
     } catch (e: any) {
         notify({
@@ -83,6 +87,7 @@ const onDecode = async (result: string) => {
             text: trans(`${e.response?.data?.message}`),
             type: 'error',
         })
+
         errorMsg.value = e.response?.data?.message || "QR invalid"
         stopCamera()
     } finally {
@@ -90,24 +95,20 @@ const onDecode = async (result: string) => {
     }
 }
 
-// const onInit = (p: Promise<void>) => p.catch(() => errorMsg.value = "Camera error")
-const onInit = (promise: Promise<void>) => {
-    promise
-        .then(() => console.log("QrcodeStream camera initialized"))
-        .catch((err) => {
-            console.error("QrcodeStream init error:", err)
+const onStreamError = (err: Error) => {
+    console.error("Camera Error:", err)
 
-            if (err.name === "NotAllowedError") {
-                errorMsg.value = "Camera permission denied"
-            } else if (err.name === "NotFoundError") {
-                errorMsg.value = "No camera found"
-            } else if (err.name === "NotSupportedError") {
-                errorMsg.value = "HTTPS required for camera"
-            } else {
-                errorMsg.value = "Camera error"
-            }
-        })
+    if (err.name === "NotAllowedError") {
+        errorMsg.value = "Camera permission denied"
+    } else if (err.name === "NotFoundError") {
+        errorMsg.value = "No camera found"
+    } else if (err.name === "NotSupportedError") {
+        errorMsg.value = "HTTPS required"
+    } else {
+        errorMsg.value = "Camera error"
+    }
 }
+
 </script>
 
 <template>
@@ -154,15 +155,30 @@ const onInit = (promise: Promise<void>) => {
 
             <div class="flex justify-between items-center text-white p-4">
                 <h3 class="font-semibold">{{ trans("Scan QR Code") }}</h3>
-                <button @click="stopCamera" class="text-2xl">✕</button>
+                <Button @click="stopCamera" class="text-2xl" type="tertiary" :icon="faArrowLeft" />
             </div>
 
-            <div class="flex-1 flex items-center justify-center">
-                <div class="w-full max-w-xl aspect-square">
-                    <QrcodeStream @decode="onDecode" @init="onInit" :paused="loading" />
+            <div class="flex-1 flex items-center justify-center relative">
+                <div class="w-full max-w-xl aspect-square relative">
+
+                    <QrcodeStream @detect="onDetect" @error="onStreamError" :paused="loading" :formats="['qr_code']" />
+
+                    <!-- TARGET OVERLAY -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none ">
+                        <div class="scanner-frame">
+
+                            <!-- 4 CORNERS -->
+                            <span class="corner tl"></span>
+                            <span class="corner tr"></span>
+                            <span class="corner bl"></span>
+                            <span class="corner br"></span>
+
+                            <!-- SCAN LINE -->
+                            <div class="scan-line"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-
             <div class="text-center text-white pb-6 text-sm opacity-70">
                 {{ trans("Align QR code inside the frame") }}
             </div>
@@ -172,3 +188,81 @@ const onInit = (promise: Promise<void>) => {
         <div v-if="errorMsg" class="text-red-500 text-sm mt-2 text-center">{{ errorMsg }}</div>
     </div>
 </template>
+<style scoped>
+.scanner-frame {
+    position: relative;
+    width: 260px;
+    height: 260px;
+}
+
+/* ===== CORNERS ===== */
+.corner {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-color: white;
+}
+
+.tl {
+    top: 0;
+    left: 0;
+    border-top: 5px solid;
+    border-left: 5px solid;
+    border-top-left-radius: 12px;
+}
+
+.tr {
+    top: 0;
+    right: 0;
+    border-top: 5px solid;
+    border-right: 5px solid;
+    border-top-right-radius: 12px;
+}
+
+.bl {
+    bottom: 0;
+    left: 0;
+    border-bottom: 5px solid;
+    border-left: 5px solid;
+    border-bottom-left-radius: 12px;
+}
+
+.br {
+    bottom: 0;
+    right: 0;
+    border-bottom: 5px solid;
+    border-right: 5px solid;
+    border-bottom-right-radius: 12px;
+}
+
+/* ===== SCAN LINE ===== */
+.scan-line {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00ff88, transparent);
+    box-shadow: 0 0 8px #00ff88;
+    animation: scanMove 2s linear infinite;
+}
+
+@keyframes scanMove {
+    0% {
+        top: 0;
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 100%;
+        opacity: 0;
+    }
+}
+</style>
