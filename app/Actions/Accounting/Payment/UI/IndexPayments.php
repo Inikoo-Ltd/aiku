@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Payment\UI;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\UI\ShowOrgPaymentServiceProvider;
+use App\Actions\Accounting\Payment\WithPaymentSubNavigation;
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccount\WithPaymentAccountSubNavigation;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
@@ -42,8 +43,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPayments extends OrgAction
 {
-    use WithPaymentAccountSubNavigation;
     use WithAccountingSubNavigation;
+    use WithPaymentAccountSubNavigation;
+    use WithPaymentSubNavigation;
 
     private Fulfilment|Group|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice|Customer $parent;
 
@@ -295,6 +297,8 @@ class IndexPayments extends OrgAction
             $subNavigation = $this->getSubNavigation($this->parent);
         } elseif ($this->parent instanceof Shop) {
             $subNavigation = $this->getSubNavigationShop($this->parent);
+        } elseif ($this->parent instanceof Organisation) {
+            $subNavigation = $this->getPaymentSubNavigation($this->parent);
         }
 
         return Inertia::render(

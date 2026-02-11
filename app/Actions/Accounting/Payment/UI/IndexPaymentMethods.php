@@ -7,6 +7,7 @@
 
 namespace App\Actions\Accounting\Payment\UI;
 
+use App\Actions\Accounting\Payment\WithPaymentSubNavigation;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
@@ -24,6 +25,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexPaymentMethods extends OrgAction
 {
+    use WithPaymentSubNavigation;
+
+    protected Organisation $parent;
+
     public function handle(Organisation $parent, ?string $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
@@ -86,7 +91,7 @@ class IndexPaymentMethods extends OrgAction
     {
         $routeName       = $request->route()->getName();
         $routeParameters = $request->route()->originalParameters();
-        $subNavigation   = null;
+        $subNavigation   = $this->getPaymentSubNavigation($this->parent);
 
         return Inertia::render(
             'Org/Accounting/PaymentMethods',
