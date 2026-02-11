@@ -99,7 +99,7 @@ const props = defineProps<{
     masterRoute?: routeType
     is_external_shop?: boolean
     product_state?: boolean
-    taxonomy: {
+   /*  taxonomy: {
         department?: {
             name: string
             tooltip: string
@@ -116,7 +116,7 @@ const props = defineProps<{
                 parameters: Record<string, string>
             }
         }
-    }
+    } */
     webpage_canonical_url?: string
     sales?: {}
     salesData?: object
@@ -148,18 +148,17 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         content: ProductContent,
     }
-    console.log(currentTab.value)
     return components[currentTab.value]
 })
 
 // Warning flag
-const showMissingTaxonomyMessage = computed(() => {
+/* const showMissingTaxonomyMessage = computed(() => {
     if(props.is_external_shop) {
         return false
     }
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
-
+ */
 
 </script>
 
@@ -203,9 +202,9 @@ const showMissingTaxonomyMessage = computed(() => {
     </PageHeading>
 
 
-    <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">
+    <!-- <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">
         {{trans('Both department and family data are missing in taxonomy.')}}
-    </Message>
+    </Message> -->
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
