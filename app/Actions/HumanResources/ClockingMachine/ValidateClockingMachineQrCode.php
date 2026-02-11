@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Actions\HumanResources\Clocking\StoreClocking;
 use App\Actions\HumanResources\ClockingMachine\StoreQrScanLog;
 use App\Models\HumanResources\TimeTracker;
+use App\Models\HumanResources\WorkSchedule;
 
 class ValidateClockingMachineQrCode
 {
@@ -63,6 +64,8 @@ class ValidateClockingMachineQrCode
                 $userLng
             );
 
+            $workingHours = $this->getWorkingHours($clockingMachine);
+
             $clockingResult = DB::transaction(function () use ($clockingMachine, $userLat, $userLng) {
                 return $this->processClocking($clockingMachine, $userLat, $userLng);
             });
@@ -70,7 +73,8 @@ class ValidateClockingMachineQrCode
             return [
                 'machine' => $clockingMachine,
                 'clocking' => $clockingResult['clocking'],
-                'action_type' => $clockingResult['action_type']
+                'action_type' => $clockingResult['action_type'],
+                'working_hours' => $workingHours
             ];
 
         } catch (Exception $e) {
@@ -134,6 +138,32 @@ class ValidateClockingMachineQrCode
         ];
     }
 
+    private function getWorkingHours(ClockingMachine $machine): ?array
+    {
+        // dd($machine);
+        $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
+            ->where('schedulable_id', $machine->organisation_id)
+            ->where('is_active', true)
+            ->first();
+
+
+        if (!$schedule) {
+            return null;
+        }
+        $todayIso = Carbon::now()->dayOfWeekIso;
+        $todaySchedule = $schedule->days->where('day_of_week', $todayIso)->first();
+
+        if (!$todaySchedule || !$todaySchedule->is_working_day) {
+            return null;
+        }
+
+        return [
+            'start' => $todaySchedule->start_time,
+            'end' => $todaySchedule->end_time,
+            'name' => $schedule->name
+        ];
+    }
+
     private function validateCoordinates(array $config, float $userLat, float $userLng): void
     {
         $targetCoords = $config['coordinates'] ?? null;
@@ -181,6 +211,7 @@ class ValidateClockingMachineQrCode
             $machine = $result['machine'];
             $clocking = $result['clocking'];
             $actionType = $result['action_type'];
+            $workingHours = $result['working_hours'];
 
             return response()->json([
                 'success' => true,
@@ -190,6 +221,7 @@ class ValidateClockingMachineQrCode
                     'name' => $machine->name,
                     'workplace_id' => $machine->workplace_id
                 ],
+                'working_hours' => $workingHours,
                 'clocking' => [
                     'clocked_at' => $clocking->clocked_at,
                     'id' => $clocking->id,
