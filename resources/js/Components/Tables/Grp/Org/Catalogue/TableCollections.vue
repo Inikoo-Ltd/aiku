@@ -504,6 +504,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         </template>
 
+        <template #cell(name)="{ item }">
+            <Link :href="collectionRoute(item) as string" class="primaryLink">
+                {{ item["name"] }}
+            </Link>
+        </template>
 
         <template #cell(actions)="{ item }">
             <div class="flex gap-x-2 gap-y-2">

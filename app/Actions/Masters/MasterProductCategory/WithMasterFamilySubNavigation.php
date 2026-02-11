@@ -23,7 +23,12 @@ trait WithMasterFamilySubNavigation
 
         $routeProducts = [
             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
-            'parameters' => request()->route()->originalParameters()
+            'parameters' => array_merge(
+                request()->route()->originalParameters(),
+                [
+                    'index_elements[status]' => 'active'
+                ]
+            )
         ];
 
         if (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_families.show", "grp.masters.master_shops.show.master_families.master_products.index"])) {
@@ -34,7 +39,12 @@ trait WithMasterFamilySubNavigation
 
             $routeProducts = [
                 'name'       => 'grp.masters.master_shops.show.master_families.master_products.index',
-                'parameters' => request()->route()->originalParameters()
+                'parameters' => array_merge(
+                    request()->route()->originalParameters(),
+                    [
+                        'index_elements[status]' => 'active'
+                    ]
+                )
             ];
         } elseif (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_departments.show.master_families.show", "grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index"])) {
             $routeFamily = [
@@ -44,7 +54,12 @@ trait WithMasterFamilySubNavigation
 
             $routeProducts = [
                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
-                'parameters' => request()->route()->originalParameters()
+                'parameters' => array_merge(
+                    request()->route()->originalParameters(),
+                    [
+                        'index_elements[status]' => 'active'
+                    ]
+                )
             ];
         } elseif (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_sub_departments.master_families.show", "grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index"])) {
             $routeFamily = [
@@ -54,29 +69,34 @@ trait WithMasterFamilySubNavigation
 
             $routeProducts = [
                 'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index',
-                'parameters' => request()->route()->originalParameters()
+                'parameters' => array_merge(
+                    request()->route()->originalParameters(),
+                    [
+                        'index_elements[status]' => 'active'
+                    ]
+                )
             ];
         }
 
         return [
             [
-                'isAnchor'   => true,
+                'isAnchor' => true,
                 'label'    => __('Master Family'),
-                'route'     => $routeFamily,
+                'route'    => $routeFamily,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
                     'tooltip' => __('Family')
                 ]
             ],
-             [
-                 'label'    => __('Master Products'),
-                 'number'   => $masterFamily->stats->number_current_master_assets,
-                 'route'     => $routeProducts,
-                 'leftIcon' => [
-                     'icon'    => ['fal', 'fa-cube'],
-                     'tooltip' => __('Products')
-                 ]
-             ],
+            [
+                'label'    => __('Master Products'),
+                'number'   => $masterFamily->stats->number_current_master_assets,
+                'route'    => $routeProducts,
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-cube'],
+                    'tooltip' => __('Products')
+                ]
+            ],
         ];
     }
 }
