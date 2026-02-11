@@ -15,7 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Trolley;
 
-class AttachDeliveryNoteToTrolley extends OrgAction
+class AttachTrolleyToDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;

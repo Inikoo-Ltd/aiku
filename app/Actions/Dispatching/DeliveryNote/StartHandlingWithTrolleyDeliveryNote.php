@@ -9,7 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Dispatching\Trolley\AttachDeliveryNoteToTrolley;
+use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Trolley;
@@ -28,7 +28,7 @@ class StartHandlingWithTrolleyDeliveryNote extends OrgAction
         }
 
         if ($trolley) {
-            AttachDeliveryNoteToTrolley::run($trolley, $deliveryNote);
+            AttachTrolleyToDeliveryNote::run($trolley, $deliveryNote);
         }
         StartHandlingDeliveryNote::run($deliveryNote, $user);
 

@@ -165,6 +165,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
  * @property-read Collection<int, Sowing> $sowings
+ * @property-read Collection<int, \App\Models\Dispatching\Trolley> $trolleys
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
@@ -340,6 +341,11 @@ class DeliveryNote extends Model implements Auditable
             'delivery_note_id',
             'picking_session_id'
         );
+    }
+
+    public function trolleys(): BelongsToMany
+    {
+        return $this->belongsToMany(Trolley::class, 'delivery_note_has_trolleys');
     }
 
 }

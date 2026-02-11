@@ -173,7 +173,7 @@ class ShowDeliveryNote extends OrgAction
         return $actions;
     }
 
-    public function wrappedActions(DeliveryNote $deliveryNote, ActionRequest $request): array
+    public function wrappedActions(DeliveryNote $deliveryNote): array
     {
         $showCancel = true;
 
@@ -424,6 +424,15 @@ class ShowDeliveryNote extends OrgAction
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
         $order     = $deliveryNote->orders->first();
 
+        $trolleys = [];
+        foreach ($deliveryNote->trolleys as $trolley) {
+            $trolleys[] = [
+                'id'   => $trolley->id,
+                'slug' => $trolley->slug,
+                'name' => $trolley->name,
+            ];
+        }
+
         return [
             'state'                        => $deliveryNote->state,
             'state_icon'                   => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
@@ -531,6 +540,7 @@ class ShowDeliveryNote extends OrgAction
                 ]
 
             ],
+            'trolleys'                     => $trolleys
         ];
     }
 
@@ -649,7 +659,7 @@ class ShowDeliveryNote extends OrgAction
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions'         => $actions,
-                'wrapped_actions' => $this->wrappedActions($deliveryNote, $request),
+                'wrapped_actions' => $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
             'tabs'          => [
@@ -735,8 +745,8 @@ class ShowDeliveryNote extends OrgAction
             ],
 
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
-                fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))),
+                fn() => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
+                : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))),
             'shop'                               => [
                 'type' => $deliveryNote->shop?->type?->value,
             ]
@@ -771,23 +781,23 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+                    fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+                    fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
 
             ];
         }
 
         return [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+                fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
+                : Inertia::lazy(fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
 
         ];
     }

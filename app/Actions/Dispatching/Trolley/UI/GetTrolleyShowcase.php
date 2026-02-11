@@ -9,9 +9,7 @@
 
 namespace App\Actions\Dispatching\Trolley\UI;
 
-use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Dispatching\Trolley;
-use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetTrolleyShowcase
