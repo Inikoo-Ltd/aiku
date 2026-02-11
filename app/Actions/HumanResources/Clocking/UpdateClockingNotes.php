@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\HumanResources\ClockingMachine;
+namespace App\Actions\HumanResources\Clocking;
 
 use App\Models\HumanResources\Clocking;
 use Lorisleiva\Actions\ActionRequest;
