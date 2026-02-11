@@ -5,6 +5,7 @@
 
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
+import { Link } from '@inertiajs/vue3'
 import { useLocaleStore } from "@/Stores/locale"
 
 const locale = useLocaleStore();
@@ -18,9 +19,9 @@ defineProps<{
 <template>
 	<Table :resource="data" :name="tab" class="mt-5">
 		<template #cell(method)="{ item }">
-			<div class="font-medium text-gray-700">
+			<Link :href="item.href" class="primaryLink">
 				{{ item.method || '-' }}
-			</div>
+			</Link>
 		</template>
 
 		<template #cell(number_payments)="{ item }">

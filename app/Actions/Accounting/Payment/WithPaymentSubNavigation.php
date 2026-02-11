@@ -18,14 +18,14 @@ trait WithPaymentSubNavigation
                 'label' => __('Payments'),
                 'route' => [
                     'name'       => 'grp.org.accounting.payments.index',
-                    'parameters' => [$parent->group->slug, $parent->slug]
+                    'parameters' => [$parent->slug]
                 ],
             ],
             [
                 'label' => __('Payment Methods'),
                 'route' => [
                     'name'       => 'grp.org.accounting.payments.methods.index',
-                    'parameters' => [$parent->group->slug, $parent->slug]
+                    'parameters' => [$parent->slug]
                 ],
             ],
         ];

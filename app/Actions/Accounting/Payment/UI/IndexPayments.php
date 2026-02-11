@@ -57,6 +57,10 @@ class IndexPayments extends OrgAction
             });
         });
 
+        $methodFilter = AllowedFilter::callback('method', function ($query, $value) {
+            $query->where('payments.method', $value);
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -128,7 +132,7 @@ class IndexPayments extends OrgAction
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
             ->allowedSorts(['reference', 'status', 'type', 'date', 'amount', 'payment_account_name', 'method'])
             ->withBetweenDates(['date'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $methodFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

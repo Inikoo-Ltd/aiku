@@ -38,6 +38,7 @@ class IndexPaymentMethods extends OrgAction
         $queryBuilder = QueryBuilder::for(Payment::class);
         $queryBuilder->where('payments.organisation_id', $parent->id);
         $queryBuilder->leftJoin('currencies', 'payments.currency_id', 'currencies.id');
+        $queryBuilder->leftJoin('organisations', 'payments.organisation_id', 'organisations.id');
         $queryBuilder->whereNotNull('payments.method');
 
         return $queryBuilder
@@ -48,9 +49,10 @@ class IndexPaymentMethods extends OrgAction
                 DB::raw("SUM(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN payments.amount ELSE 0 END) as total_sales"),
                 DB::raw("COUNT(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN 1 END) as number_success"),
                 DB::raw("ROUND((COUNT(CASE WHEN payments.status = '" . PaymentStatusEnum::SUCCESS->value . "' THEN 1 END) * 100.0 / COUNT(*)), 2) as success_rate"),
-                'currencies.code as currency_code'
+                'currencies.code as currency_code',
+                'organisations.slug as organisation_slug'
             ])
-            ->groupBy('payments.method', 'currencies.code')
+            ->groupBy('payments.method', 'currencies.code', 'organisations.slug')
             ->allowedSorts(['method', 'number_payments', 'total_sales', 'number_success', 'success_rate'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

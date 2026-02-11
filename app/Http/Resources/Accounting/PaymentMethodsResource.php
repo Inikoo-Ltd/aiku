@@ -16,6 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $number_success
  * @property float $success_rate
  * @property string $currency_code
+ * @property string $organisation_slug
  */
 class PaymentMethodsResource extends JsonResource
 {
@@ -28,6 +29,12 @@ class PaymentMethodsResource extends JsonResource
             'number_success'   => (int) $this->number_success,
             'success_rate'     => number_format((float) $this->success_rate, 2, '.', ''),
             'currency_code'    => $this->currency_code,
+            'href'             => route('grp.org.accounting.payments.index', [
+                'organisation' => $this->organisation_slug,
+                'filter' => [
+                    'method' => $this->method
+                ]
+            ]),
         ];
     }
 }
