@@ -112,6 +112,7 @@ class IndexPayments extends OrgAction
                 'payments.status',
                 'payments.date',
                 'payments.amount',
+                'payments.method',
                 'payment_accounts.name as payment_account_name',
                 'payment_accounts.slug as payment_accounts_slug',
                 'payment_service_providers.slug as payment_service_providers_slug',
@@ -123,7 +124,7 @@ class IndexPayments extends OrgAction
             ])
             ->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
-            ->allowedSorts(['reference', 'status', 'type', 'date', 'amount', 'payment_account_name'])
+            ->allowedSorts(['reference', 'status', 'type', 'date', 'amount', 'payment_account_name', 'method'])
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -199,6 +200,7 @@ class IndexPayments extends OrgAction
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
                 $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
             }
+            $table->column(key: 'method', label: __('Method'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
         };
