@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-
 namespace App\Actions\HumanResources\Timesheet\UI;
 
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
@@ -34,6 +33,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Models\HumanResources\WorkSchedule;
+use App\Models\HumanResources\QrScanLog;
+use Illuminate\Support\Carbon;
 
 class IndexTimesheets extends OrgAction
 {
@@ -56,9 +58,11 @@ class IndexTimesheets extends OrgAction
 
         if ($parent instanceof Organisation) {
             $query->where('timesheets.organisation_id', $parent->id);
+            $timezone = $parent->timezone->name ?? 'UTC';
         } elseif ($parent instanceof Employee) {
             $query->where('timesheets.subject_type', 'Employee')
                 ->where('timesheets.subject_id', $parent->id);
+            $timezone = $parent->organisation->timezone->name ?? 'UTC';
         } elseif ($parent instanceof Group) {
             $query->where('timesheets.group_id', $parent->id);
         } else {
@@ -70,8 +74,10 @@ class IndexTimesheets extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $query->with(['subject.jobPositions']);
+
         if ($isTodayTimesheet) {
-            $query->whereDate('timesheets.date', now()->format('Y-m-d'));
+            $query->whereDate('timesheets.date', now()->setTimezone($timezone)->format('Y-m-d'));
         }
 
         $query->withFilterPeriod('date');
@@ -99,16 +105,133 @@ class IndexTimesheets extends OrgAction
         }
 
         $baseQuery = $this->statsQuery->clone();
+        $total = (clone $baseQuery)->count();
+        $noClockOut = (clone $baseQuery)->where('number_open_time_trackers', '>', 0)->count();
+
+
+        $organisationId = null;
+        if ($this->parent instanceof Organisation) {
+            $organisationId = $this->parent->id;
+            $timezone = $this->parent->timezone->name ?? 'UTC';
+        } elseif ($this->parent instanceof Employee) {
+            $organisationId = $this->parent->organisation_id;
+            $timezone = $this->parent->organisation->timezone->name ?? 'UTC';
+        }
+
+        $invalidScanCount = 0;
+        if ($organisationId) {
+            $invalidQuery = QrScanLog::where('organisation_id', $organisationId)
+                ->where('status', 'failed')
+                ->whereNotNull('employee_id');
+            $dateFilter = request()->input('filter.date');
+
+            if ($dateFilter) {
+                if (is_string($dateFilter) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFilter)) {
+                    $invalidQuery->whereDate('scanned_at', $dateFilter);
+                }
+            }
+
+            if (request()->has('filter.date')) {
+                $dates = explode(',', request()->input('filter.date'));
+                if (count($dates) == 2) {
+                    $invalidQuery->whereBetween('scanned_at', [Carbon::parse($dates[0])->startOfDay(), Carbon::parse($dates[1])->endOfDay()]);
+                } else {
+                    $invalidQuery->whereDate('scanned_at', request()->input('filter.date'));
+                }
+            }
+
+            $invalidScanCount = $invalidQuery->count();
+        }
+
+
+        $schedule = null;
+        if ($organisationId) {
+            $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
+                ->where('schedulable_id', $organisationId)
+                ->where('is_active', true)
+                ->with('days')
+                ->first();
+        }
+
+
+        if (!$schedule) {
+            return [
+                'on_time' => 0,
+                'late_clock_in' => 0,
+                'early_clock_out' => 0,
+                'no_clock_out' => $noClockOut,
+                'no_clock_in' => 0,
+                'invalid' => 0,
+                'absent' => 0,
+                'total' => $total,
+            ];
+        }
+
+        $scheduleMap = $schedule->days->keyBy('day_of_week');
+
+        $timesheets = (clone $baseQuery)->select(['date', 'start_at', 'end_at', 'number_open_time_trackers'])->get();
+
+        $lateClockIn = 0;
+        $earlyClockOut = 0;
+        $onTime = 0;
+
+        foreach ($timesheets as $ts) {
+
+            $dayOfWeek = $ts->date->dayOfWeekIso;
+            $daySchedule = $scheduleMap->get($dayOfWeek);
+
+            if (!$daySchedule || !$daySchedule->is_working_day) {
+                continue;
+            }
+
+            $startAt = $ts->start_at
+                ?->copy()
+                ->shiftTimezone('UTC')      // betulin label dulu
+                ->setTimezone($timezone);
+            $endAt = $ts->end_at
+                ?->copy()
+                ->shiftTimezone('UTC')
+                ->setTimezone($timezone);
+
+            $scheduledStart = $ts->date
+                ->copy()
+                ->setTimezone($timezone)
+                ->setTimeFromTimeString($daySchedule->start_time);
+
+            $scheduledEnd = $ts->date
+                ->copy()
+                ->setTimezone($timezone)
+                ->setTimeFromTimeString($daySchedule->end_time);
+
+            $isLate = false;
+
+            if ($startAt) {
+                if ($startAt->gt($scheduledStart->copy()->addMinutes(1))) {
+                    $lateClockIn++;
+                    $isLate = true;
+                }
+            }
+
+            if ($ts->number_open_time_trackers == 0 && $endAt) {
+                if ($endAt->lt($scheduledEnd->copy()->subMinutes(1))) {
+                    $earlyClockOut++;
+                }
+            }
+
+            if (!$isLate && $startAt) {
+                $onTime++;
+            }
+        }
 
         return [
-            'on_time' => 0,
-            'late_clock_in' => 0,
-            'early_clock_out' => 0,
-            'no_clock_out' => (clone $baseQuery)->where('number_open_time_trackers', '>', 0)->count(),
-            'no_clock_in' => 0,
-            'invalid' => 0,
-            'absent' => 0,
-            'total' => (clone $baseQuery)->count(),
+            'on_time' => $onTime,
+            'late_clock_in' => $lateClockIn,
+            'early_clock_out' => $earlyClockOut,
+            'no_clock_out' => $noClockOut,
+            'no_clock_in' => 0, // Placeholder
+            'invalid' => $invalidScanCount,
+            'absent' => 0, // Placeholder (Butuh query ke Employee yg TIDAK punya timesheet di hari kerja)
+            'total' => $total,
         ];
     }
 
@@ -172,14 +295,19 @@ class IndexTimesheets extends OrgAction
     public function jsonResponse(LengthAwarePaginator $timesheets): AnonymousResourceCollection
     {
 
-        $timesheets->setCollection(
-            $timesheets->getCollection()->map(function ($timesheet) {
-            $timesheet->job_position = $timesheet->subject->jobPositions->pluck('name')->join(', ') ?: '-';
-            $timesheet->clock_in_count = $timesheet->number_time_trackers;
-            $timesheet->clock_out_count = $timesheet->number_time_trackers - $timesheet->number_open_time_trackers;
+        $timesheets->through(function ($timesheet) {
+
+            $jobPositions = '-';
+
+            if ($timesheet->subject_type === 'Employee' && $timesheet->subject) {
+                $jobPositions = $timesheet->subject->job_title;
+            }
+            $timesheet->setAttribute('job_position', $jobPositions ?: '-');
+            $timesheet->setAttribute('clock_in_count', $timesheet->number_time_trackers);
+            $timesheet->setAttribute('clock_out_count', $timesheet->number_time_trackers - $timesheet->number_open_time_trackers);
+
             return $timesheet;
-            })
-        );
+        });
 
         return TimesheetsResource::collection($timesheets);
     }
@@ -192,7 +320,7 @@ class IndexTimesheets extends OrgAction
         }
 
         if (empty($this->tab)) {
-            $this->tab = TimesheetsTabsEnum::ALL_EMPLOYEES->value; // Default tab
+            $this->tab = TimesheetsTabsEnum::ALL_EMPLOYEES->value;
         }
 
 
@@ -214,12 +342,12 @@ class IndexTimesheets extends OrgAction
                 ],
 
                 TimesheetsTabsEnum::ALL_EMPLOYEES->value => $this->tab == TimesheetsTabsEnum::ALL_EMPLOYEES->value
-                    ? fn() => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))
-                    : Inertia::lazy(fn() => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))),
+                    ? fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))
+                    : Inertia::lazy(fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))),
 
                 TimesheetsTabsEnum::PER_EMPLOYEE->value => $this->tab == TimesheetsTabsEnum::PER_EMPLOYEE->value
-                    ? fn() => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))
-                    : Inertia::lazy(fn() => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))),
+                    ? fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))
+                    : Inertia::lazy(fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))),
             ]
         )
             ->table($this->tableStructure($this->parent, null, TimesheetsTabsEnum::ALL_EMPLOYEES->value))
