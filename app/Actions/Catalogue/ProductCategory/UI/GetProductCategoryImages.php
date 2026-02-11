@@ -23,7 +23,8 @@ class GetProductCategoryImages
     public function handle(ProductCategory $productCategory): array
     {
         return [
-            'id' => $productCategory->id,
+            'editable'            => !$productCategory->master_product_category_id,
+            'id'                  => $productCategory->id,
             'images_category_box' => $this->getSingleImageData($productCategory),
             'images_update_route' => [
                 'method'     => 'patch',
@@ -44,10 +45,10 @@ class GetProductCategoryImages
                 'name'       => 'grp.models.product_category.delete_images',
                 'parameters' => [
                     'productCategory' => $productCategory->id,
-                    'media'   => ''
+                    'media'           => ''
                 ],
             ],
-            'images' => ImagesResource::collection(IndexProductCategoryImages::run($productCategory))->resolve(),
+            'images'              => ImagesResource::collection(IndexProductCategoryImages::run($productCategory))->resolve(),
 
         ];
     }

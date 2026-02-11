@@ -27,6 +27,7 @@ export interface StatsBoxTS {
         icon: Icon
         route?: routeType
         tooltip: string
+        customClass: string
     }
     metas?: {
         hide: boolean

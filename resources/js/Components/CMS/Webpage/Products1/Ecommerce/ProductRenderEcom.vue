@@ -213,7 +213,7 @@ defineExpose({
         </div>
 
         
-        <div class="xpx-3 mt-auto">
+        <div class="mt-auto">
             <Prices2
                 v-if="layout?.iris?.is_logged_in"
                 :product="product"

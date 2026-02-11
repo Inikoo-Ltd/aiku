@@ -12,6 +12,8 @@ use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
+use App\Actions\Accounting\MontanaInvoices\UI\IndexMontanaInvoicesReport;
+use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [IndexInvoices::class, 'inShop'])->name('index');
@@ -27,3 +29,6 @@ Route::get('/refunds/{refund}', [ShowRefund::class, 'inShop'])->name('refunds.sh
 Route::get('/invoices-unpaid', [IndexInvoices::class, 'unpaidInShop'])->name('unpaid.index');
 Route::get('/invoices-paid', [IndexInvoices::class, 'paidInShop'])->name('paid.index');
 Route::get('/invoices-deleted', [IndexDeletedInvoices::class, 'inShop'])->name('deleted.index');
+
+Route::get('/invoices-sage', [IndexSageInvoicesReport::class, 'inShop'])->name('sage.index');
+Route::get('/invoices-montana', [IndexMontanaInvoicesReport::class, 'inShop'])->name('montana.index');

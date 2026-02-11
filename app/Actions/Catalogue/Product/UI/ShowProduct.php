@@ -13,7 +13,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
-use App\Actions\Comms\BackInStockReminder\UI\IndexProductBackInStockReminders;
+use App\Actions\Comms\BackInStockReminder\UI\ProductHasBackInStockReminders;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -26,7 +26,7 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ExternalShop\ProductInExternalTabsEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
+use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -399,8 +399,8 @@ class ShowProduct extends OrgAction
                     : Inertia::lazy(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
 
                 ProductTabsEnum::REMINDERS->value => $this->tab == ProductTabsEnum::REMINDERS->value ?
-                    fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
-                    : Inertia::lazy(fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
+                    fn () => ProductHasBackInStockRemindersResource::collection(ProductHasBackInStockReminders::run($product))
+                    : Inertia::lazy(fn () => ProductHasBackInStockRemindersResource::collection(ProductHasBackInStockReminders::run($product))),
 
                 ProductTabsEnum::ATTACHMENTS->value => $this->tab == ProductTabsEnum::ATTACHMENTS->value ?
                     fn () => GetProductAttachment::run($product)
@@ -474,7 +474,7 @@ class ShowProduct extends OrgAction
 
         if (!$isExternalShop) {
             $productPage = $productPage
-                ->table(IndexProductBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
+                ->table(ProductHasBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
                 ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value))
                 ->table(IndexProductImages::make()->tableStructure($product, ProductTabsEnum::IMAGES->value));
         }
@@ -567,6 +567,25 @@ class ShowProduct extends OrgAction
                     ],
                     $suffix,
                     ' ('.__('Orphan').')'
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show'   =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Pending Back-in-Stock').')'
                 )
             ),
             'grp.org.shops.show.catalogue.products.out_of_stock_products.show' =>

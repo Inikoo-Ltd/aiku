@@ -17,6 +17,7 @@ use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
@@ -148,7 +149,9 @@ class IndexFamilies extends OrgAction
                 abort(419);
             }
         } elseif (class_basename($parent) == 'MasterProductCategory') {
-            $queryBuilder->where('product_categories.master_product_category_id', $parent->id);
+
+            $queryBuilder->where('product_categories.master_product_category_id', $parent->id)
+            ->where('shops.state', '!=',ShopStateEnum::CLOSED->value);
         }
 
         $selects = [

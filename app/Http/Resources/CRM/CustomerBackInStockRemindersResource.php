@@ -69,6 +69,7 @@ class CustomerBackInStockRemindersResource extends JsonResource
         return [
             'id'                   => $this->id,
             'code'                 => $this->code,
+            'slug'                 => $this->slug,
             'name'                 => $this->name,
             'stock'                => $this->available_quantity,
             'price'                => $this->price,

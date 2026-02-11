@@ -28,6 +28,7 @@ use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
+use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
@@ -165,6 +166,7 @@ use App\Models\Ordering\SalesChannel;
  * @property-read LaravelCollection<int, Appointment> $appointments
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Asset> $assets
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read LaravelCollection<int, Brand> $brands
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, CustomerClient> $clients
@@ -747,6 +749,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function platformStats(): HasMany
     {
         return $this->hasMany(ShopPlatformStats::class);
+    }
+
+    public function backInStockReminders(): HasMany
+    {
+        return $this->hasMany(BackInStockReminder::class);
     }
 
     public function tags(): BelongsToMany
