@@ -14,9 +14,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\RetinaApiAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Http\Response;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class GetDataFeedsCsv extends RetinaApiAction
 {
@@ -40,4 +38,3 @@ class GetDataFeedsCsv extends RetinaApiAction
             ->header('Content-Disposition', 'inline; filename="portfolio_data_feed.csv"');
     }
 }
-

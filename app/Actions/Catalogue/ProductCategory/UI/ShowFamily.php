@@ -43,7 +43,7 @@ class ShowFamily extends OrgAction
 
     public function handle(ProductCategory $family): ProductCategory
     {
-        if($family->type!=ProductCategoryTypeEnum::FAMILY){
+        if ($family->type != ProductCategoryTypeEnum::FAMILY) {
             abort(404);
         }
 
