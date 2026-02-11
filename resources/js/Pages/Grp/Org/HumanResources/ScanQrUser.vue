@@ -7,11 +7,15 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft } from "@fal";
+import { faTimes } from "@fal";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faArrowLeft);
+library.add(faTimes);
 
-const type = ref<'check_in' | 'check_out' | null>(null)
+interface DetectedCode {
+    rawValue: string
+}
+
 const lat = ref<number | null>(null)
 const lng = ref<number | null>(null)
 const mapZoom = ref(15)
@@ -22,7 +26,7 @@ const errorMsg = ref<string | null>(null)
 const lastResult = ref<string | null>(null)
 
 const hasLocation = computed(() => lat.value !== null && lng.value !== null)
-const canOpenCamera = computed(() => hasLocation.value && type.value)
+const canOpenCamera = computed(() => hasLocation.value)
 
 const detectMyLocation = () => {
     errorMsg.value = null
@@ -55,10 +59,6 @@ const startCamera = async () => {
 
 const stopCamera = () => cameraOn.value = false
 
-interface DetectedCode {
-    rawValue: string
-}
-
 const onDetect = async (detectedCodes: DetectedCode[]) => {
     const result = detectedCodes[0]?.rawValue
     // if (!result || result === lastResult.value) return
@@ -71,7 +71,6 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
             qr_code: result,
             latitude: lat.value,
             longitude: lng.value,
-            type: type.value
         })
 
         notify({
@@ -117,23 +116,9 @@ const onStreamError = (err: Error) => {
 
             <h2 class="text-2xl font-bold mb-6">{{ trans("Employee Clocking") }}</h2>
 
-            <!-- STEP 1 -->
             <div class="mb-6">
-                <p class="text-sm font-semibold text-gray-500 mb-2">{{ trans("STEP 1 — Choose Action") }}</p>
-                <div class="grid grid-cols-2 gap-3">
-                    <Button label="Check In" type="green"
-                        :class="type === 'check_in' ? 'ring-4 ring-green-200' : 'opacity-70'" @click="type = 'check_in'"
-                        full />
-                    <Button label="Check Out" type="red"
-                        :class="type === 'check_out' ? 'ring-4 ring-red-200' : 'opacity-70'" @click="type = 'check_out'"
-                        full />
-                </div>
-            </div>
-
-            <!-- STEP 2 -->
-            <div class="mb-6">
-                <p class="text-sm font-semibold text-gray-500 mb-2">{{ trans("STEP 2 — Your Location") }}</p>
-                <Button label="Detect My Location" type="secondary" @click="detectMyLocation" :disabled="!type" full />
+                <p class="text-sm font-semibold text-gray-500 mb-2">{{ trans("Detect Location") }}</p>
+                <Button label="Detect My Location" type="secondary" @click="detectMyLocation" full />
 
                 <div v-if="hasLocation" class="mt-3 h-48 rounded-xl overflow-hidden border shadow">
                     <LMap :zoom="mapZoom" :center="[lat, lng]" style="height:100%">
@@ -155,7 +140,7 @@ const onStreamError = (err: Error) => {
 
             <div class="flex justify-between items-center text-white p-4">
                 <h3 class="font-semibold">{{ trans("Scan QR Code") }}</h3>
-                <Button @click="stopCamera" class="text-2xl" type="tertiary" :icon="faArrowLeft" />
+                <Button @click="stopCamera" class="!text-white text-2xl" type="tertiary" :icon="faTimes" />
             </div>
 
             <div class="flex-1 flex items-center justify-center relative">
