@@ -36,6 +36,9 @@ const notes = ref<string>("")
 const scanTime = ref<string | null>(null)
 const now = new Date().toLocaleString()
 const clockType = ref<'clock_in' | 'clock_out' | null>(null)
+const clockingId = ref<number | null>(null)
+const workingHours = ref<{ start: string; end: string } | null>(null)
+
 
 const detectMyLocation = () => {
     errorMsg.value = null
@@ -71,7 +74,6 @@ const stopCamera = () => cameraOn.value = false
 
 const onDetect = async (detectedCodes: DetectedCode[]) => {
     const result = detectedCodes[0]?.rawValue
-    // if (!result || result === lastResult.value) return
 
     lastResult.value = result
     loading.value = true
@@ -85,6 +87,8 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 
         clockType.value = data.clocking?.type
         scanTime.value = useFormatTime(data.clocking?.clocked_at, { formatTime: 'hms' })
+        clockingId.value = data.clocking?.id
+        workingHours.value = data.working_hours ?? null
         showSuccessModal.value = true
         stopCamera()
     } catch (e: any) {
@@ -121,16 +125,35 @@ const modalTitle = computed(() => {
     return trans('Scan successful')
 })
 
+const workingHoursFormatted = computed(() => {
+    if (!workingHours.value) return '-'
+
+    const start = useFormatTime(workingHours.value.start, { formatTime: 'HH:mm' })
+    const end = useFormatTime(workingHours.value.end, { formatTime: 'HH:mm' })
+
+    return `${start} - ${end}`
+})
+
 
 const submitNotes = async () => {
+    if (!clockingId.value) return
+
     try {
-        await axios.post(route('grp.models.clocking-machine.qr.notes'), {
-            notes: notes.value,
-            // qr_code: lastResult.value
-        })
+        await axios.patch(
+            route('grp.models.clocking-machine.clocking.notes.update', clockingId.value),
+            {
+                notes: notes.value
+            }
+        )
 
         showSuccessModal.value = false
         notes.value = ''
+        clockingId.value = null
+        notify({
+            title: trans('Success'),
+            text: trans(`submit notes`),
+            type: 'success',
+        })
     } catch (e: any) {
         notify({
             title: trans('Failed submit notes'),
@@ -230,8 +253,7 @@ const submitNotes = async () => {
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">{{ trans("Working Office Hour ") }}</span>
-                        <!-- <span class="font-semibold text-gray-800">{{ scanTime ?? '-' }}</span> -->
-                        <span class="font-semibold text-gray-800">08:00 - 17:00</span>
+                        <span class="font-semibold text-gray-800">{{ workingHoursFormatted }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">{{ trans("Scan Time") }}</span>
