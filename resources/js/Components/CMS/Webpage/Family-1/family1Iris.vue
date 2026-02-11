@@ -63,6 +63,14 @@ const bestOffer = computed(() => {
 const _popoverInfoCircle = ref<InstanceType<any> | null>(null)
 const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
+const cleanedDescription = computed(() => {
+  const html = props.fieldValue.family.description || ''
+
+  // remove <h1>...</h1>
+  return html.replace(/<h1[^>]*>.*?<\/h1>/gis, '')
+})
+
+
 </script>
 
 <template>
@@ -76,12 +84,9 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
           <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.family?.offers_data }}</pre>
         </div>
          
-        <div class="mt-4">
-
-        </div>
         <!-- Offer: list offers -->
         <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
-            class="flex flex-col md:flex-row gap-x-4 gap-y-1 md:gap-y-2 mb-3 offers"
+            class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
         >
 
             <!-- <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
@@ -114,11 +119,11 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
         <!-- Main Description -->
         <div
-            v-if="fieldValue.family.description"
+            v-if="cleanedDescription"
             id="description-family-1-iris"
             xstyle="{ marginTop: 0 }"
-            v-html="fieldValue.family.description"
-            class="mt-4 text-justify"
+            v-html="cleanedDescription"
+            class="mt-6 text-justify"
         />
 
       <!-- Read More Extra Description -->

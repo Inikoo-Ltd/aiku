@@ -166,6 +166,7 @@ use App\Models\Ordering\SalesChannel;
  * @property-read LaravelCollection<int, Appointment> $appointments
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Asset> $assets
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read LaravelCollection<int, Brand> $brands
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, CustomerClient> $clients
