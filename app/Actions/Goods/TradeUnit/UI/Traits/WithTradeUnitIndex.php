@@ -111,7 +111,7 @@ trait WithTradeUnitIndex
 
     protected function addColumnQuantityPlain(
         InertiaTable $table,
-        string $label = 'quantity',
+        string $label = 'Quantity',
         bool $sortable = true,
         bool $searchable = true
     ): void {
