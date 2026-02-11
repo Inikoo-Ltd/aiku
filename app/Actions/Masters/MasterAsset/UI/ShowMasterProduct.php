@@ -160,6 +160,18 @@ class ShowMasterProduct extends GrpAction
                             'tooltip' => __('Master Family'),
                             'icon'    => ['fal', 'folder']
                         ] : [],
+                        $masterAsset->masterFamily && !$masterAsset->masterDepartment && !$masterAsset->masterSubDepartment ? [
+                            'label'   => $masterAsset->masterFamily ? $masterAsset->masterFamily->name : 'family',
+                            'to'      => [
+                                'name'       => 'grp.masters.master_shops.show.master_families.show',
+                                'parameters' => [
+                                    'masterShop'   => $masterAsset->masterShop->slug,
+                                    'masterFamily' => $masterAsset->masterFamily->slug,
+                                ]
+                            ],
+                            'tooltip' => __('Master Family'),
+                            'icon'    => ['fal', 'folder']
+                        ] : [],
                         [
                             'label'   => $masterAsset->code,
                             'to'      => [

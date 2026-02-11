@@ -4,7 +4,6 @@ import WidgetShops from "./Widget/WidgetShops.vue";
 import WidgetOrganisations from "./Widget/WidgetOrganisations.vue";
 import RegistrationsWithOrders from "@/Components/DataDisplay/Dashboard/Widget/RegistrationsWithOrders.vue";
 import RegistrationsWithoutOrders from "@/Components/DataDisplay/Dashboard/Widget/RegistrationsWithoutOrders.vue";
-import TopPerformers from "@/Components/Shop/TopPerformers.vue";
 
 const props = defineProps<{
 	intervals: {
@@ -67,9 +66,4 @@ const hasRegistrationsWithoutOrders = computed(() => {
             :intervals="props.intervals"
         />
     </div>
-
-    <TopPerformers
-        :packers="props.tableData?.top_performance?.top_packers?.[props.intervals.value]"
-        :pickers="props.tableData?.top_performance?.top_pickers?.[props.intervals.value]"
-    />
 </template>

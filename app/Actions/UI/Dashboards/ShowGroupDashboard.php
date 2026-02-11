@@ -9,7 +9,6 @@
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
-use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
@@ -63,8 +62,6 @@ class ShowGroupDashboard extends OrgAction
             }
         }
 
-        $topPerformanceStats = GetTopPerformanceStats::run($group, $performanceDates[0], $performanceDates[1]);
-
         $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
 
         $tabsBox = $this->getTabsBox($group);
@@ -90,8 +87,7 @@ class ShowGroupDashboard extends OrgAction
                             'current_tab' => $currentTab,
                             'tabs'        => GroupDashboardSalesTableTabsEnum::navigation(),
                             'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData),
-                            'charts'      => [], // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
-                            'top_performance' => $topPerformanceStats,
+                            'charts'      => [],
                         ]
                     ],
                     'blocks_2'    => [
