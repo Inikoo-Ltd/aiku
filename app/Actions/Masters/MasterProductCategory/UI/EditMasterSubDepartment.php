@@ -113,12 +113,28 @@ class EditMasterSubDepartment extends OrgAction
                                 'description' => [
                                     'type'  => 'textEditor',
                                     'label' => __('Description'),
-                                    'value' => $masterProductCategory->description
+                                    'value' => $masterProductCategory->description,
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
+                                    'toogle'  => [
+                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                    ],
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
                                     'label' => __('Extra description'),
-                                    'value' => $masterProductCategory->description_extra
+                                    'value' => $masterProductCategory->description_extra,
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
+                                    'toogle'  => [
+                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                    ],
                                 ],
                             ]
                         ],

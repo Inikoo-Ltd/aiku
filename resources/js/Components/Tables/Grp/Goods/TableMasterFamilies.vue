@@ -217,8 +217,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
         @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
         checkboxKey='id' :isChecked="(item) => selectedFamily.includes(item.id)" ref="_table">
         <template #cell(image_thumbnail)="{ item: collection }">
-            <div class="flex justify-center">
-                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            <div class="flex justify-center items-center">
+                <Image v-if="collection['image_thumbnail']" :src="collection['image_thumbnail']" imageCover class="object-contain w-10 aspect-square rounded-md flex justify-center items-center overflow-hidden shadow" />
+                <div v-else v-tooltip="trans('No image available')" class="flex items-center justify-center border border-gray-300 w-10 aspect-square rounded-md">
+                    <FontAwesomeIcon icon="fal fa-image" class="opacity-50 text-sm" fixed-width aria-hidden="true" />
+                </div>
             </div>
         </template>
         <template #add-on-button>
