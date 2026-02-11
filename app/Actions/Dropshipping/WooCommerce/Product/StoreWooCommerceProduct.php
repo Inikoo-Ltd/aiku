@@ -84,25 +84,32 @@ class StoreWooCommerceProduct extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
+            $attributes = [];
             $dimensions = [];
-            if (! blank($product->marketing_dimensions)) {
+            $w = Arr::get($product->marketing_dimensions, 'w');
+            $h = Arr::get($product->marketing_dimensions, 'h');
+            $l = Arr::get($product->marketing_dimensions, 'l');
+
+            if ($w && $h && $l) {
                 $dimensions = [
-                    'width' => (string) Arr::get($product->marketing_dimensions, 'w'),
-                    'height' => (string) Arr::get($product->marketing_dimensions, 'h'),
-                    'length' => (string) Arr::get($product->marketing_dimensions, 'l')
+                    'width' => (string) $w,
+                    'height' => (string) $h,
+                    'length' => (string) $l
                 ];
             }
 
-            $attributes = [
-                [
-                    'id' => 0,
-                    'name' => 'Country of Origin',
-                    'position' => 0,
-                    'visible' => true,
-                    'variation' => false,
-                    'options' => [$product->country_of_origin]
-                ]
-            ];
+            if($product->country_of_origin) {
+                $attributes = [
+                    [
+                        'id' => 0,
+                        'name' => 'Country of Origin',
+                        'position' => 0,
+                        'visible' => true,
+                        'variation' => false,
+                        'options' => [$product->country_of_origin]
+                    ]
+                ];
+            }
 
             if (! blank($customAttributes)) {
                 foreach ($customAttributes as $key => $attr) {
