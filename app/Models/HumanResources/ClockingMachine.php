@@ -50,6 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property array<array-key, mixed> $config
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
  * @property-read Group $group

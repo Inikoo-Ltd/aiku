@@ -121,6 +121,7 @@ const props = defineProps<{
     sales?: {}
     salesData?: object
     is_single_trade_unit?: boolean
+    reminders?: {}
     trade_unit_slug?: string
 }>()
 

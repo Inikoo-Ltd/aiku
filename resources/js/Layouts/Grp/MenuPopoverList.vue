@@ -55,13 +55,18 @@ const sortedShowareList = computed(() => {
                         showare.slug == layout.organisationsState?.[layout.currentParams.organisation]?.[`current${capitalize(navKey)}`] && (navKey == layout.organisationsState?.[layout.currentParams.organisation]?.currentType)
                             ? 'navigationDropdownActive'
                             : 'rounded text-slate-600 hover:bg-slate-200/30 cursor-pointer',
-                        'group flex gap-x-2 w-full justify-between items-center px-2 py-2 text-sm',
+                        'group flex gap-x-2 w-full justify-between items-center px-2 py-1.5 text-sm',
                     ]">
                 <!-- <div class="h-5 rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-50">
                             <Image v-show="imageSkeleton[idxSH]" :src="item.logo" @onLoadImage="() => imageSkeleton[idxSH] = true"/>
                             <div v-show="!imageSkeleton[idxSH]" class="skeleton w-5 h-5"/>
                         </div> -->
-                <div class="font-semibold">{{ showare.label }}</div>
+                <div class="flex flex-col font-semibold">
+                    <div>{{ showare.label }}</div>
+                    <div v-if="showare.website_domain" v-tooltip="trans('Website domain')" class="w-fit opacity-60 italic text-xs">
+                        {{ showare.website_domain }}
+                    </div>
+                </div>
                 <FontAwesomeIcon v-if="showare.type === 'b2b'" icon='fal fa-fax' class='text-sm text-gray-400'
                     v-tooltip="trans('E-commerce')" aria-hidden='true' />
                 <FontAwesomeIcon v-if="showare.type === 'dropshipping'" icon='fal fa-parachute-box'

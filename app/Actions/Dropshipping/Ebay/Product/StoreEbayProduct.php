@@ -220,13 +220,7 @@ class StoreEbayProduct extends RetinaAction
                 'sku' => Arr::get($inventoryItem, 'sku')
             ]);
 
-            if (Arr::get($offerExist, 'offers.0.status', '') !== "PUBLISHED") {
-                $productResult = $ebayUser->storeProduct($inventoryItem);
-
-                if ($handleError($productResult)) {
-                    return;
-                }
-            }
+            $productResult = $ebayUser->storeProduct($inventoryItem);
 
             if (Arr::get($offerExist, 'offers.0')) {
                 $offer = Arr::get($offerExist, 'offers.0');

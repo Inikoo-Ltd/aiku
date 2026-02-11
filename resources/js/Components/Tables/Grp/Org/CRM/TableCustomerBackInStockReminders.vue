@@ -22,7 +22,7 @@ function backInStockRoute(backInStockReminder: BackInStockRemainder) {
         [
             (route().params as RouteParams).organisation,
             (route().params as RouteParams).shop,
-            backInStockReminder.product_slug
+            backInStockReminder.slug
         ])
 }
 

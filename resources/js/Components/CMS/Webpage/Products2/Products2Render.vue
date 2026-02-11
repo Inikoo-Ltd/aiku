@@ -150,7 +150,7 @@ defineExpose({
                     </slot>
 
                     <!-- Section: Discounts -->
-                    <div class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10 offer hidden md:block">
+                    <div class="absolute md:bottom-4 lg:bottom-0 xl:bottom-0 bottom-0 left-0 text-gray-500 text-xl z-10 offer ">
                          <DiscountByType :offers_data="product?.product_offers_data" template="max_discount" />
                     </div>
 
@@ -255,7 +255,8 @@ defineExpose({
                             :hasInBasket="hasInBasket"
                             :product="product"
                             :addToBasketRoute="addToBasketRoute"
-                            :updateBasketQuantityRoute="updateBasketQuantityRoute"
+                            xxxxupdateBasketQuantityRoute="updateBasketQuantityRoute"
+                            :updateBasketQuantityRoute="addToBasketRoute" 
                             :buttonStyleHover="buttonStyleHover"
                             :buttonStyle="buttonStyle"
                             :icon="button?.icon"
@@ -312,7 +313,7 @@ defineExpose({
 </template>
 
 <style scoped>
-.offer :deep(.offer-trigger-label) {
-    @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-[10px] sm:px-1.5 sm:py-1 sm:text-xxs md:px-2 md:py-1;
+.offer :deep(.offer-max-discount) {
+    @apply bg-[#A80000] border border-red-900 text-gray-100 w-fit flex items-center rounded-sm px-1 py-0.5 text-xxs sm:px-1.5 sm:py-1 sm:text-sm md:px-2 md:py-1 font-medium;
 }
 </style>

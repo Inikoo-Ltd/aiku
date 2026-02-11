@@ -5,12 +5,12 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\SalesChannels\UI;
+namespace App\Actions\Ordering\SalesChannel\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Http\Resources\SalesChannels\SalesChannelsResource;
+use App\Http\Resources\Ordering\SalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
@@ -43,10 +43,11 @@ class IndexSalesChannels extends OrgAction
         $selects = [
             'id',
             'name',
+            'slug',
             'code',
             'type',
             'is_active',
-            // 'show_in_dashboard'
+            'show_in_dashboard'
         ];
 
         $timeSeriesData = $query->withTimeSeriesAggregation(
@@ -84,7 +85,7 @@ class IndexSalesChannels extends OrgAction
             $table->betweenDates(['date']);
 
             $table->column(key: 'is_active', label: '', canBeHidden: false, type: 'icon');
-            // $table->column(key: 'show_in_dashboard', label: '', canBeHidden: false, type: 'icon');
+            $table->column(key: 'show_in_dashboard', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'refunds', label: __('Refunds'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

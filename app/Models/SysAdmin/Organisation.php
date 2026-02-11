@@ -262,6 +262,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read LaravelCollection<int, Webpage> $webpages
  * @property-read LaravelCollection<int, Website> $websites
+ * @property-read LaravelCollection<int, WorkSchedule> $workSchedules
  * @property-read LaravelCollection<int, Workplace> $workplaces
  * @method static \Database\Factories\SysAdmin\OrganisationFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organisation newModelQuery()

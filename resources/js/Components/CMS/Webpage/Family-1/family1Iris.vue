@@ -63,6 +63,14 @@ const bestOffer = computed(() => {
 const _popoverInfoCircle = ref<InstanceType<any> | null>(null)
 const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
+const cleanedDescription = computed(() => {
+  const html = props.fieldValue.family.description || ''
+
+  // remove <h1>...</h1>
+  return html.replace(/<h1[^>]*>.*?<\/h1>/gis, '')
+})
+
+
 </script>
 
 <template>
@@ -111,10 +119,10 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
         <!-- Main Description -->
         <div
-            v-if="fieldValue.family.description"
+            v-if="cleanedDescription"
             id="description-family-1-iris"
             xstyle="{ marginTop: 0 }"
-            v-html="fieldValue.family.description"
+            v-html="cleanedDescription"
             class="mt-6 text-justify"
         />
 
@@ -154,7 +162,7 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
     }
 
 .offers :deep(.offer-max-discount) {
-  @apply bg-red-700 border border-red-900 text-gray-100 w-fit flex items-center
+  @apply bg-[#A80000] border border-red-900 text-gray-100 w-fit flex items-center
     rounded-sm px-1 py-0.5 text-xl
     sm:px-1.5 sm:py-1 sm:text-xl
     md:px-2 md:py-1;

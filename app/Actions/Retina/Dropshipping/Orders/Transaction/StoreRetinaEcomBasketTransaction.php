@@ -3,6 +3,7 @@
 namespace App\Actions\Retina\Dropshipping\Orders\Transaction;
 
 use App\Actions\Iris\Basket\StoreEcomOrder;
+use App\Actions\Traits\InteractsWithOrderInBasket;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
@@ -15,9 +16,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaEcomBasketTransaction extends IrisAction
 {
+    use InteractsWithOrderInBasket;
+
+    /**
+     * @throws \Throwable
+     */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
-        $order = $customer->orderInBasket;
+        $order = $this->getOrderInBasket($customer);
 
         if (!$order) {
             $order = StoreEcomOrder::make()->action($customer);
@@ -45,6 +51,9 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
         ];
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Product $product, ActionRequest $request): Transaction
     {
         $customer = $request->user()->customer;

@@ -9,7 +9,6 @@
 namespace App\Actions\Discounts\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Discounts\OfferCampaign\UI\GetOfferCampaignsTimeSeriesStats;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
@@ -53,19 +52,20 @@ class ShowDiscountsDashboard extends OrgAction
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
+        $performanceDates = [null, null];
 
-        $timeSeriesStats = [];
         if ($saved_interval === DateIntervalEnum::CUSTOM) {
             $rangeInterval = Arr::get($userSettings, 'range_interval', '');
             if ($rangeInterval) {
                 $dates = explode('-', $rangeInterval);
                 if (count($dates) === 2) {
-                    $timeSeriesStats = GetOfferCampaignsTimeSeriesStats::run($this->shop, $dates[0], $dates[1]);
+                    $performanceDates = [$dates[0], $dates[1]];
                 }
             }
-        } else {
-            $timeSeriesStats = GetOfferCampaignsTimeSeriesStats::run($this->shop);
         }
+
+        $timeSeriesData = GetDiscountsDashboardTimeSeriesData::run($this->shop, $performanceDates[0], $performanceDates[1]);
+        $offerCampaignTimeSeriesStats = $timeSeriesData['offerCampaigns'];
 
         return Inertia::render(
             'Org/Discounts/DiscountsDashboard',
@@ -109,8 +109,8 @@ class ShowDiscountsDashboard extends OrgAction
                     'tables'      => [
                         'offer_campaigns' => [
                             'header' => json_decode(DashboardHeaderOffersResource::make($this->shop)->toJson(), true),
-                            'body'   => json_decode(DashboardOffersResource::collection($timeSeriesStats)->toJson(), true),
-                            'totals' => json_decode(DashboardTotalOffersResource::make($timeSeriesStats)->toJson(), true),
+                            'body'   => json_decode(DashboardOffersResource::collection($offerCampaignTimeSeriesStats)->toJson(), true),
+                            'totals' => json_decode(DashboardTotalOffersResource::make($offerCampaignTimeSeriesStats)->toJson(), true),
                         ],
                     ],
                 ],

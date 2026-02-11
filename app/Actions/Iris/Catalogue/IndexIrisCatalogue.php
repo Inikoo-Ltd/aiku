@@ -171,10 +171,10 @@ class IndexIrisCatalogue extends IrisAction
         $parentKey = Arr::pull($modelData, 'parent_key');
         $scope = Arr::pull($modelData, 'scope');
 
-        if(!$prefix){
+        if (!$prefix) {
             $prefix = $scope;
         }
-        
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($scope) {
 
             $tableName = match ($scope) {
@@ -196,7 +196,7 @@ class IndexIrisCatalogue extends IrisAction
         };
 
         InertiaTable::updateQueryBuilderParameters($prefix);
-        
+
         $additionalSortableKeys = match ($scope) {
             'department' => [
                 'number_current_families',
@@ -275,7 +275,7 @@ class IndexIrisCatalogue extends IrisAction
 
             foreach ($columns as $column) {
                 $table->column(key: $column['key'], label: $column['label'], tooltip: __('current ' . strtolower($column['label'])), sortable: $column['sortable']);
-            };
+            }
 
             $table->column(key: 'url', label: __('Go To Url'), align: 'right');
         };

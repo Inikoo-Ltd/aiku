@@ -46,7 +46,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $order_id
  * @property int|null $transaction_id
  * @property int|null $recurring_bill_transaction_id
- * @property numeric $quantity
+ * @property numeric|null $quantity
  * @property numeric $gross_amount
  * @property numeric $net_amount
  * @property string|null $profit_amount

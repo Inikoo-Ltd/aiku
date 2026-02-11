@@ -55,9 +55,13 @@ const onUpdateQuantity = async (newVal?: number) => {
             }
         )
         
-        if (response.status !== 200) {
-            
-        }
+        set(layout, ['family_page', 'productInBasket', 'list', props.product.id], {
+            quantity_ordered: selectedQuantity,
+            quantity_ordered_new: selectedQuantity,
+            transactions_id: props.product.transaction_id,
+        })
+
+
         console.log('Response axios:', response.data)
 
         setStatus('success')
