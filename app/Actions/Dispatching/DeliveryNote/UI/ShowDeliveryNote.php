@@ -171,17 +171,7 @@ class ShowDeliveryNote extends OrgAction
         } else {
             $actions[] = [
                 'type'    => 'button',
-                'style'   => 'save',
-                'tooltip' => __('Set as waiting'),
-                'label'   => __('Set as waiting'),
                 'key'     => 'set-for-waiting',
-                'route'   => [
-                    'method'     => 'patch',
-                    'name'       => 'grp.models.delivery_note.state.handling_blocked_with_picking_bay',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ]
             ];
         }
 

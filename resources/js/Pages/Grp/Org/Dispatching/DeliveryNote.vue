@@ -58,6 +58,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import ButtonSelectBaysAndWaiting from "@/Components/DeliveryNote/ButtonSelectBaysAndWaiting.vue"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes);
@@ -430,6 +431,17 @@ onMounted(() => {
 					<Button @click="changeModel" :label="action.label" :type="action.style" />
 				</template>
 			</ModalConfirmationDelete>
+		</template>
+
+		<!-- Button: Select trolley (only for Ecom) -->
+		<template
+			#button-set-for-waiting="{ action }"
+			v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"
+		>
+			<ButtonSelectBaysAndWaiting
+				:warehouse="warehouse"
+				:deliveryNote="delivery_note"
+			/>
 		</template>
 
 		<!-- Button: Select trolley (only for Ecom) -->
