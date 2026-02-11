@@ -304,6 +304,11 @@ class EditProduct extends OrgAction
                     'value'         => $product->description,
                     'reviewed'      => $product->is_description_reviewed,
                     'information' => __('This show in product webpage'),
+                    'toogle'  => [
+                            'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                            'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                            'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                    ],
                 ]
                 : [
                     'type'        => 'textEditor',
@@ -311,6 +316,11 @@ class EditProduct extends OrgAction
                     'information' => __('This show in product webpage'),
                     'options'     => [
                         'counter' => true,
+                    ],
+                    'toogle'  => [
+                            'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                            'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                            'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                     ],
                     'value'       => $product->description
                 ],
@@ -326,6 +336,11 @@ class EditProduct extends OrgAction
                     'value'         => $product->description_extra,
                     'reviewed'      => $product->is_description_extra_reviewed,
                     'information' => __('This above product specification in product webpage'),
+                    'toogle'  => [
+                            'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                            'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                            'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                    ],
 
                 ] : [
                     'type'        => 'textEditor',
@@ -334,7 +349,12 @@ class EditProduct extends OrgAction
                     'options'     => [
                         'counter' => true,
                     ],
-                    'value'       => $product->description_extra
+                    'value'       => $product->description_extra,
+                    'toogle'  => [
+                            'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                            'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                            'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                    ],
                 ]
         ];
 

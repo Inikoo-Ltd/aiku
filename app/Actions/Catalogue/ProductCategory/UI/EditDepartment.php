@@ -173,12 +173,25 @@ class EditDepartment extends OrgAction
                                                 'languages'     => $languages,
                                                 'mode'          => 'single',
                                                 'value'         => $department->description,
-                                                'reviewed'      => $department->is_description_reviewed
+                                                'reviewed'      => $department->is_description_reviewed,
+                                                'toogle'  => [
+                                                        'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                ],
                                             ]
                                             : [
                                                 'type'  => 'textEditor',
                                                 'label' => __('Description'),
-                                                'value' => $department->description
+                                                'value' => $department->description,
+                                                'options' => [
+                                                    'counter' => true,
+                                                ],
+                                                'toogle'  => [
+                                                        'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                ],
                                             ],
                                         'description_extra' => $department->masterProductCategory
                                             ? [
@@ -190,13 +203,25 @@ class EditDepartment extends OrgAction
                                                 'languages'     => $languages,
                                                 'mode'          => 'single',
                                                 'value'         => $department->description_extra,
-                                                'reviewed'      => $department->is_description_extra_reviewed
-
+                                                'reviewed'      => $department->is_description_extra_reviewed,
+                                                'toogle'  => [
+                                                        'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                ]
                                             ]
                                             : [
                                                 'type'  => 'textEditor',
                                                 'label' => __('Extra description'),
-                                                'value' => $department->description_extra
+                                                'value' => $department->description_extra,
+                                                'options' => [
+                                                    'counter' => true,
+                                                ],
+                                                'toogle'  => [
+                                                        'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                                ],
                                             ],
                                     ]
                                 ],

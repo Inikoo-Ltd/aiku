@@ -173,21 +173,26 @@ class EditMasterProduct extends GrpAction
                         ],
                         'value'   => $masterProduct->name
                     ],
-                    'description_title' => [
+                   /*  'description_title' => [
                         'type'    => 'input',
                         'label'   => __('Description title'),
                         'options' => [
                             'counter' => true,
                         ],
                         'value'   => $masterProduct->description_title
-                    ],
+                    ], */
                     'description'       => [
                         'type'    => 'textEditor',
                         'label'   => __('Description'),
                         'options' => [
                             'counter' => true,
                         ],
-                        'value'   => $masterProduct->description
+                        'value'   => $masterProduct->description,
+                        'toogle'  => [
+                                'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                        ],
                     ],
                     'description_extra' => [
                         'type'    => 'textEditor',
@@ -195,7 +200,12 @@ class EditMasterProduct extends GrpAction
                         'options' => [
                             'counter' => true,
                         ],
-                        'value'   => $masterProduct->description_extra
+                        'value'   => $masterProduct->description_extra,
+                        'toogle'  => [
+                                'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                        ],
                     ],
                 ]
             ],

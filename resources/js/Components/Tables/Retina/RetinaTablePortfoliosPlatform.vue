@@ -1439,7 +1439,9 @@ const compTableFilterForSale = computed(() => {
 					class="w-full"
 					:placeholder="trans('Enter text')"
 					:toogle="[
-						'heading',
+						'heading1',
+						'heading2',
+						'heading3',
 						'fontSize',
 						'bold',
 						'italic',
