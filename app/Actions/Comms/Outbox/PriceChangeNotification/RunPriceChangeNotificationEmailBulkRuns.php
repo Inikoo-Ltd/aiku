@@ -57,7 +57,7 @@ class RunPriceChangeNotificationEmailBulkRuns
         $outboxes = $queryOutbox->get();
 
         $currentDateTime = Carbon::now()->utc();
-        $last24Hours = now()->subHours(48);
+        $last24Hours = now()->subHours(24);
 
         /**
          * check following steps :
@@ -122,7 +122,7 @@ class RunPriceChangeNotificationEmailBulkRuns
             $baseQuery->groupBy('customers.id');
 
             $baseQuery->orderBy('customers.id');
-            
+
             $updateLastOutBoxSent = null;
 
             // create email bulk run
@@ -213,7 +213,7 @@ class RunPriceChangeNotificationEmailBulkRuns
         $html .= '
         <tr style="border-bottom:1px solid #e5e7eb;">
             <th align="left" style="color:#555;">' . __('Product') . '</th>
-            <th align="center" style="color:#555;">' . __('New stock') . ' (' . $date . ')</th>
+            <th align="center" style="color:#555;">' . __('New price') . ' (' . $date . ')</th>
         </tr>';
 
         foreach ($productIds as $productId) {
@@ -228,7 +228,11 @@ class RunPriceChangeNotificationEmailBulkRuns
                 'original'
             );
 
-            $stock = $dataProduct->available_quantity ?? 0;
+            $currency = $dataProduct->currency;
+            $currencySymbol = $currency?->symbol ?? '$';
+            $fractionDigit = $currency?->fraction_digit ?? 2;
+            $formattedPrice = number_format($dataProduct->price ?? 0, $fractionDigit);
+            $displayPrice = $currencySymbol . $formattedPrice;
 
 
             if ($dataProduct->webpage) {
@@ -269,7 +273,7 @@ class RunPriceChangeNotificationEmailBulkRuns
                     <td align="center"
                         style="font-weight:600;
                                color:#16a34a;">'
-                    . $stock .
+                    . $displayPrice .
                     '</td>
                 </tr>';
             }
