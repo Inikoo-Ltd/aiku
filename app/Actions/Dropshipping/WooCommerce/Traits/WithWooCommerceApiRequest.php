@@ -2,6 +2,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Traits;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -582,6 +583,23 @@ trait WithWooCommerceApiRequest
     public function listWooCommerceWebhooks(): array
     {
         return $this->makeWooCommerceRequest('GET', 'webhooks');
+    }
+
+    /**
+     * List all registered WooCommerce webhooks
+     *
+     * @return array List of webhooks
+     */
+    public function getProductSettings(): array
+    {
+        return $this->makeWooCommerceRequest('GET', 'settings/products');
+    }
+
+    public function getProductWeightSettings(): string
+    {
+        $response = $this->makeWooCommerceRequest('GET', 'settings/products/woocommerce_weight_unit');
+
+        return Arr::get($response, 'value', 'kg');
     }
 
     public function checkConnection(): bool
