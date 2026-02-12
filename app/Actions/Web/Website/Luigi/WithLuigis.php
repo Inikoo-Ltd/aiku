@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 trait WithLuigis
 {
@@ -108,6 +109,8 @@ trait WithLuigis
                 'https://live.luigisbox.tech/'.$endPoint
             );
 
+
+        Sentry::captureMessage('Luigi Box API Request: XX '.$response->body());
 
         if ($response->failed()) {
             Log::error('Failed to send request to Luigis Box API: '.$response->body(), [
