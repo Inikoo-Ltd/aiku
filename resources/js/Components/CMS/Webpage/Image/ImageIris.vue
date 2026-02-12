@@ -57,11 +57,21 @@ const layout = inject('layout', {})
 
 const getHref = (index: number) => {
   const image = props.fieldValue?.value?.images?.[index]
-  return image?.link_data?.url || image?.link_data?.workshop_url || ''
+  return (
+    image?.link_data?.url ||
+    image?.link_data?.workshop_url ||
+    image?.link_data?.href ||
+    ''
+  )
 }
 
-const getHrefFromImageData = (image: {}) => {
-  return image?.link_data?.url || ''
+const getHrefFromImageData = (image: any) => {
+  return (
+    image?.link_data?.url ||
+    image?.link_data?.href ||
+    image?.link_data?.workshop_url ||
+    ''
+  )
 }
 
 const getTarget = (index: number) => {
@@ -201,11 +211,12 @@ const idxSlideLoading = ref<number | null>(null)
         <div v-for="(image, index) in fieldValue?.value?.images || []" :key="index"
           class="group relative hover:bg-white/40 flex flex-col h-full">
           <component
-            :is="getHrefFromImageData(image) ? image.link_data?.target === '_self' && image.link_data.type === 'internal' ? Link : 'a' : 'div'"
+            :is="getHrefFromImageData(image) ? LinkIris : 'div'"
             :href="getHrefFromImageData(image) || undefined"
             :target="image.link_data?.target"
             rel="noopener noreferrer"
             class="block w-full h-full"
+            :type="image.link_data?.type"
             @start="() => idxSlideLoading = index"
             @finish="() => idxSlideLoading = null"
           >
