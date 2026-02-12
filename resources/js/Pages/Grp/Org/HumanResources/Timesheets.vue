@@ -25,7 +25,6 @@ const props = defineProps<{
         late_clock_in: number,
         early_clock_out: number,
         no_clock_out: number,
-        no_clock_in: number,
         invalid: number,
         absent: number,
         total: number
@@ -93,8 +92,7 @@ function periodLabel(period: any) {
     </PageHeading>
     <!-- STATISTICS CARDS SECTION -->
     <div class="mt-4 bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6">
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-center divide-x divide-gray-100">
-
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center divide-x divide-gray-100">
             <div class="px-2">
                 <div class="text-lg font-bold text-blue-600">{{ statistics.on_time }}</div>
                 <div class="text-xs text-gray-500 mt-1">On time</div>
@@ -116,14 +114,6 @@ function periodLabel(period: any) {
                     <font-awesome-icon :icon="['fal', 'info-circle']" class="text-gray-400 text-[10px]" />
                 </div>
                 <div class="text-xs text-gray-500 mt-1">No clock out</div>
-            </div>
-
-            <div class="px-2">
-                <div class="text-lg font-bold text-blue-600 flex justify-center items-center gap-1">
-                    {{ statistics.no_clock_in }}
-                    <font-awesome-icon :icon="['fal', 'info-circle']" class="text-gray-400 text-[10px]" />
-                </div>
-                <div class="text-xs text-gray-500 mt-1">No clock in</div>
             </div>
 
             <div class="px-2">

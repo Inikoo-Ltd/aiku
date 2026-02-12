@@ -46,6 +46,19 @@ class IndexTimesheets extends OrgAction
     private Group|Employee|Organisation|Guest $parent;
     private $statsQuery;
 
+    protected function resolvePeriodRange(): ?array
+    {
+        $period = request()->input('employees_period');
+
+        if (!$period || !is_array($period)) {
+            return [
+                now()->startOfMonth(),
+                now()->endOfMonth(),
+            ];
+        }
+        return PeriodEnum::toDateRange($period);
+    }
+
     public function handle(Group|Organisation|Employee|Guest $parent, ?string $prefix = null, bool $isTodayTimesheet = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -65,9 +78,12 @@ class IndexTimesheets extends OrgAction
             $timezone = $parent->organisation->timezone->name ?? 'UTC';
         } elseif ($parent instanceof Group) {
             $query->where('timesheets.group_id', $parent->id);
+            $timezone = 'UTC';
         } else {
             $query->where('subject_type', 'Guest')->where('subject_id', $parent->id);
+            $timezone = 'UTC';
         }
+
         $query->leftjoin('organisations', 'timesheets.organisation_id', '=', 'organisations.id');
 
         if ($prefix) {
@@ -81,6 +97,10 @@ class IndexTimesheets extends OrgAction
         }
 
         $query->withFilterPeriod('date');
+        [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
+        if ($from && $to) {
+            $query->whereBetween('timesheets.date', [$from, $to]);
+        }
 
         $this->statsQuery = $query->clone();
 
@@ -105,9 +125,14 @@ class IndexTimesheets extends OrgAction
         }
 
         $baseQuery = $this->statsQuery->clone();
+
+        [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
+        if ($from && $to) {
+            $baseQuery->whereBetween('timesheets.date', [$from, $to]);
+        }
+
         $total = (clone $baseQuery)->count();
         $noClockOut = (clone $baseQuery)->where('number_open_time_trackers', '>', 0)->count();
-
 
         $organisationId = null;
         if ($this->parent instanceof Organisation) {
@@ -116,6 +141,8 @@ class IndexTimesheets extends OrgAction
         } elseif ($this->parent instanceof Employee) {
             $organisationId = $this->parent->organisation_id;
             $timezone = $this->parent->organisation->timezone->name ?? 'UTC';
+        } else {
+            $timezone = 'UTC';
         }
 
         $invalidScanCount = 0;
@@ -123,21 +150,12 @@ class IndexTimesheets extends OrgAction
             $invalidQuery = QrScanLog::where('organisation_id', $organisationId)
                 ->where('status', 'failed')
                 ->whereNotNull('employee_id');
-            $dateFilter = request()->input('filter.date');
 
-            if ($dateFilter) {
-                if (is_string($dateFilter) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFilter)) {
-                    $invalidQuery->whereDate('scanned_at', $dateFilter);
-                }
-            }
-
-            if (request()->has('filter.date')) {
-                $dates = explode(',', request()->input('filter.date'));
-                if (count($dates) == 2) {
-                    $invalidQuery->whereBetween('scanned_at', [Carbon::parse($dates[0])->startOfDay(), Carbon::parse($dates[1])->endOfDay()]);
-                } else {
-                    $invalidQuery->whereDate('scanned_at', request()->input('filter.date'));
-                }
+            if ($from && $to) {
+                $invalidQuery->whereBetween('scanned_at', [
+                    Carbon::parse($from, $timezone)->startOfDay()->utc(),
+                    Carbon::parse($to, $timezone)->endOfDay()->utc(),
+                ]);
             }
 
             $invalidScanCount = $invalidQuery->count();
@@ -160,8 +178,7 @@ class IndexTimesheets extends OrgAction
                 'late_clock_in' => 0,
                 'early_clock_out' => 0,
                 'no_clock_out' => $noClockOut,
-                'no_clock_in' => 0,
-                'invalid' => 0,
+                'invalid' => $invalidScanCount,
                 'absent' => 0,
                 'total' => $total,
             ];
@@ -169,13 +186,14 @@ class IndexTimesheets extends OrgAction
 
         $scheduleMap = $schedule->days->keyBy('day_of_week');
 
-        $timesheets = (clone $baseQuery)->select(['date', 'start_at', 'end_at', 'number_open_time_trackers'])->get();
-
+        $timesheets = (clone $baseQuery)
+            ->setEagerLoads([])
+            ->select(['timesheets.date', 'timesheets.start_at', 'timesheets.end_at', 'timesheets.number_open_time_trackers']);
         $lateClockIn = 0;
         $earlyClockOut = 0;
         $onTime = 0;
 
-        foreach ($timesheets as $ts) {
+        foreach ($timesheets->cursor() as $ts) {
 
             $dayOfWeek = $ts->date->dayOfWeekIso;
             $daySchedule = $scheduleMap->get($dayOfWeek);
@@ -186,36 +204,35 @@ class IndexTimesheets extends OrgAction
 
             $startAt = $ts->start_at
                 ?->copy()
-                ->shiftTimezone('UTC')      // betulin label dulu
                 ->setTimezone($timezone);
+
             $endAt = $ts->end_at
                 ?->copy()
-                ->shiftTimezone('UTC')
                 ->setTimezone($timezone);
 
-            $scheduledStart = $ts->date
-                ->copy()
-                ->setTimezone($timezone)
-                ->setTimeFromTimeString($daySchedule->start_time);
+            if ($startAt) {
+                $scheduledStart = $startAt->copy()->setTime(
+                    $daySchedule->start_time->hour,
+                    $daySchedule->start_time->minute,
+                    $daySchedule->start_time->second ?? 0,
+                );
 
-            $scheduledEnd = $ts->date
-                ->copy()
-                ->setTimezone($timezone)
-                ->setTimeFromTimeString($daySchedule->end_time);
+                $scheduledEnd = $startAt->copy()->setTime(
+                    $daySchedule->end_time->hour,
+                    $daySchedule->end_time->minute,
+                    $daySchedule->end_time->second ?? 0,
+                );
+            }
 
             $isLate = false;
 
-            if ($startAt) {
-                if ($startAt->gt($scheduledStart->copy()->addMinutes(1))) {
-                    $lateClockIn++;
-                    $isLate = true;
-                }
+            if ($startAt && $startAt->gt($scheduledStart->copy()->addMinutes(1))) {
+                $lateClockIn++;
+                $isLate = true;
             }
 
-            if ($ts->number_open_time_trackers == 0 && $endAt) {
-                if ($endAt->lt($scheduledEnd->copy()->subMinutes(1))) {
-                    $earlyClockOut++;
-                }
+            if ($ts->number_open_time_trackers == 0 && $endAt && $endAt->lt($scheduledEnd->copy()->subMinutes(1))) {
+                $earlyClockOut++;
             }
 
             if (!$isLate && $startAt) {
@@ -228,9 +245,8 @@ class IndexTimesheets extends OrgAction
             'late_clock_in' => $lateClockIn,
             'early_clock_out' => $earlyClockOut,
             'no_clock_out' => $noClockOut,
-            'no_clock_in' => 0, // Placeholder
             'invalid' => $invalidScanCount,
-            'absent' => 0, // Placeholder (Butuh query ke Employee yg TIDAK punya timesheet di hari kerja)
+            'absent' => 0,
             'total' => $total,
         ];
     }
