@@ -120,7 +120,6 @@ function openOnlineModal(event: MouseEvent, item: any) {
 function collectionRoute(collection: Collection) {
     const currentRoute = route().current()
 
-    console.log(currentRoute)
 
     if (currentRoute === "grp.org.shops.show.catalogue.collections.show" ||
         currentRoute === "grp.org.shops.show.catalogue.collections.index" ||

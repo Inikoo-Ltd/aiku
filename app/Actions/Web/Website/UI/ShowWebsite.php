@@ -172,6 +172,7 @@ class ShowWebsite extends OrgAction
                 ]
             ];
         }
+
         return Inertia::render(
             'Org/Web/Website',
             [
@@ -237,8 +238,8 @@ class ShowWebsite extends OrgAction
                         ]
                     ],
                 ],
-                'migrated' => $website->migrated,
-                'luigi_data' => [
+                'migrated'        => $website->migrated,
+                'luigi_data'      => [
                     'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
                     'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
                     'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
@@ -248,24 +249,32 @@ class ShowWebsite extends OrgAction
 
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
                     WebsiteResource::make($website)->getArray(),
-                    ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']],
-                    ['stats' => $stats, 'content_blog_stats' => $content_blog_stats, 'website_type' => $website->shop->type],
-                    ['pic' => User::permission("web.{$website->shop_id}.edit")->get()],
+                    [
+                        'layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']
+                    ],
+                    [
+                        'stats'              => $stats,
+                        'content_blog_stats' => $content_blog_stats,
+                        'website_type'       => $website->shop->type
+                    ],
+                    [
+                        'pic' => null,// todo this is wrong User::permission("web.{$website->shop_id}.edit")->get()
+                    ],
                 )
-                    : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
+                    : Inertia::lazy(fn() => WebsiteResource::make($website)->getArray()),
 
 
                 WebsiteTabsEnum::CHANGELOG->value => $this->tab == WebsiteTabsEnum::CHANGELOG->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($website))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($website))),
+                    fn() => HistoryResource::collection(IndexHistory::run($website))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($website))),
 
                 WebsiteTabsEnum::EXTERNAL_LINKS->value => $this->tab == WebsiteTabsEnum::EXTERNAL_LINKS->value ?
-                    fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))
-                    : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
+                    fn() => ExternalLinksResource::collection(IndexExternalLinks::run($website))
+                    : Inertia::lazy(fn() => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
 
                 WebsiteTabsEnum::REDIRECTS->value => $this->tab == WebsiteTabsEnum::REDIRECTS->value ?
-                    fn () => RedirectsResource::collection(IndexRedirects::run($website))
-                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($website))),
+                    fn() => RedirectsResource::collection(IndexRedirects::run($website))
+                    : Inertia::lazy(fn() => RedirectsResource::collection(IndexRedirects::run($website))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))

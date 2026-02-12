@@ -718,9 +718,9 @@ const onChangeInsurance = async (val: boolean) => {
                             iconRight="fas fa-arrow-right"
                             :label="trans('Place order')"
                             :routeTarget="routes?.pay_with_balance"
-                            class="w-full"
                             full
-                            :size="screenType === 'mobile' ? 'lg' : ''"
+                            :size="screenType === 'mobile' ? 'xl' : ''"
+                            :key="screenType + 'pay_with_balance'"
                         >
                         </ButtonWithLink>
                         <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
@@ -742,10 +742,10 @@ const onChangeInsurance = async (val: boolean) => {
                                 order: props?.order?.slug
                             }
                         }"
-                        class="w-full"
                         full
-                        :size="screenType === 'mobile' ? 'lg' : ''"
-                    />
+                        :size="screenType === 'mobile' ? 'xl' : ''"
+                        :key="screenType + 'go_to_checkout'"
+                        />
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
                     <div class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>

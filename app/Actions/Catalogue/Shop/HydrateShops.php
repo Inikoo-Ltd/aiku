@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAdjustments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAverageClv;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBrands;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
@@ -106,6 +107,7 @@ class HydrateShops
         ShopHydrateRentals::run($shop);
         ShopHydrateCrmStats::run($shop);
         ShopHydrateAdjustments::run($shop);
+        ShopHydrateAverageClv::run($shop);
 
         ShopHydrateOrderStateCreating::run($shop->id);
         ShopHydrateOrderStateSubmitted::run($shop->id);

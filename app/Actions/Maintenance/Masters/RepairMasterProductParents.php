@@ -27,7 +27,11 @@ class RepairMasterProductParents extends OrgAction
      */
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
-        $masterFamily        = $masterAsset->masterFamily;
+        $masterFamily = $masterAsset->masterFamily;
+        if (!$masterFamily) {
+            return $masterAsset;
+        }
+
         $masterDepartment    = $masterFamily->masterDepartment;
         $masterSubDepartment = $masterFamily->masterSubDepartment;
 
