@@ -57,6 +57,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProspects;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePurges;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTags;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopProductCategory;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopUps;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVariants;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
@@ -108,6 +109,7 @@ class HydrateShops
         ShopHydrateCrmStats::run($shop);
         ShopHydrateAdjustments::run($shop);
         ShopHydrateAverageClv::run($shop);
+        ShopHydrateTopProductCategory::run($shop);
 
         ShopHydrateOrderStateCreating::run($shop->id);
         ShopHydrateOrderStateSubmitted::run($shop->id);
