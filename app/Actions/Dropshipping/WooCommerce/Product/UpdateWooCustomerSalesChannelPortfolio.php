@@ -9,10 +9,11 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
@@ -29,6 +30,13 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
+        /** @var WooCommerceUser $wooCommerceUser */
+        $wooCommerceUser = $customerSalesChannel->user;
+
+        if(! $wooCommerceUser ) {
+            return;
+        }
+
         $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
             ->whereNotNull('platform_product_id')
             ->where('item_type', 'Product')
@@ -46,11 +54,66 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
             }
         }
 
-        // modify this so you call api only one time
-        foreach ($portfoliosID as $portfolioId) {
-            $portfolio = Portfolio::find($portfolioId);
-            if ($portfolio) {
-                UpdateWooPortfolio::run($portfolio->id);
+        foreach (collect($portfoliosID)->chunk(100) as $portfolioIdChunk) {
+            $productData = [];
+            foreach ($portfolioIdChunk as $portfolio) {
+                $portfolio = Portfolio::find($portfolio);
+
+                if (!$portfolio || $portfolio->platform_product_id == null || !$portfolio->customerSalesChannel || !$portfolio->platform_status) {
+                    return;
+                }
+
+                /** @var Product $product */
+                $product = $portfolio->item;
+
+                $availableQuantity = $product->available_quantity ?? 0;
+
+                if (! $product->is_for_sale) {
+                    $availableQuantity = 0;
+                }
+
+                if ($customerSalesChannel->max_quantity_advertise > 0) {
+                    $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
+                }
+
+                $productData['update'][] =
+                    [
+                        "id" => $portfolio->platform_product_id,
+                        "stock_quantity" => $availableQuantity
+                    ];
+            }
+
+            $stockUpdated = $wooCommerceUser->batchUpdateWooCommerceProducts($productData);
+
+            if ($wooPortfolioUpdated = Arr::get($stockUpdated, 'update')) {
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => null
+                ]);
+            } else {
+                $ban = true;
+                $rawMessage = Arr::get($stockUpdated, '0');
+
+                if (is_array($rawMessage)) {
+                    $rawMessage = json_encode($rawMessage);
+                }
+
+                if (is_string($rawMessage)) {
+                    $messageData = json_decode(Arr::get($stockUpdated, '0'), true);
+                    $message = $rawMessage;
+
+                    if ($messageData) {
+                        $message = Arr::get($messageData, 'message');
+                        if (Arr::get($messageData, 'code') == 'rest_invalid_param' || Arr::get($messageData, 'code') == 'woocommerce_rest_product_invalid_id' || Arr::get($messageData, 'data.status') == 404 || Arr::get($messageData, 'data.status') == 400) {
+                            $ban = false;
+                        }
+                    }
+
+                    if ($ban) {
+                        $customerSalesChannel->update([
+                            'ban_stock_update_util' => now()->addSeconds(10)
+                        ]);
+                    }
+                }
             }
         }
     }
