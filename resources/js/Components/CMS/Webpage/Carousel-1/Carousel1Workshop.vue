@@ -123,11 +123,22 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') scrollRight()
 }
 
+const activeEditorIndex = ref<number | null>(null)
+
+const onEditorFocus = (key: string, index: number) => {
+  activeEditorIndex.value = index
+  sendMessageToParent('activeChildBlock', key)
+}
+
+const onEditorBlur = () => {
+  activeEditorIndex.value = null
+}
+
 
 </script>
 
 <template>
-  <div id="carousel" class="relative overflow-hidden">
+  <div id="carousel" class="relative">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
@@ -138,12 +149,12 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
         <FontAwesomeIcon :icon="faChevronLeft" />
       </button>
 
-      <div class="mx-24 overflow-hidden">
+      <div class="mx-24">
         <Swiper v-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
           :space-between="spaceBetween" :breakpoints="breakpoints" :autoplay="false" @swiper="onSwiper" class="w-full">
 
           <SwiperSlide v-for="(data, index) in modelValue.carousel_data.cards" :key="index"
-            class="!flex !justify-center !items-center">
+            class="!flex !justify-center !items-center" :style="{ zIndex: activeEditorIndex === index ? 99 : 1 }">
             <div class="space-card flex justify-center items-center w-full h-full">
               <div class="card flex flex-col h-full">
                 <div class="flex flex-1 flex-col">
@@ -173,7 +184,7 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
                   <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
                     class="p-4 flex flex-col flex-1 justify-between">
                     <div class="text-center leading-relaxed">
-                      <EditorV2 v-model="data.text" @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
+                      <EditorV2 v-model="data.text" @focus="() => onEditorFocus(bKeys[1], index)" @blur="onEditorBlur"
                         @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
                           name: webpageData.images_upload_route.name,
                           parameters: {
@@ -181,6 +192,7 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
                             modelHasWebBlocks: blockData?.id,
                           },
                         }" />
+
                     </div>
                   </div>
 

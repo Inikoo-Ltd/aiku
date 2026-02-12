@@ -45,7 +45,12 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 			...getStyles(fieldValue.container?.properties, screenType),
 		}">
 			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
-				<div class="relative cursor-pointer overflow-hidden w-full" 
+				<component 
+					:is="fieldValue?.image?.link?.href ? LinkIris : 'div'" 
+					:href="fieldValue?.image?.link?.href" 
+					:target="fieldValue?.image?.link?.target"
+					:type="fieldValue?.image?.link?.type"
+					class="relative cursor-pointer overflow-hidden w-full" 
 				:class="[
 					!fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]',
 					isImageLeft ? 'order-1' : 'order-2']"
@@ -58,7 +63,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 						:height="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.height"
 						:width="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.width"
 						/>
-				</div>
+				</component>
 
 				<div class="flex flex-col justify-center m-auto p-4" :class="isImageLeft ? 'order-2' : 'order-1'"
 					:style="getStyles(fieldValue?.text_block?.properties, screenType)">

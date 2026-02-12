@@ -64,7 +64,6 @@ const onPickImage = (res:any) => {
     closeModal()
 }
 
-
 </script>
 
 <template>
@@ -152,6 +151,7 @@ const onPickImage = (res:any) => {
                     />
 
                 </div>
+
             </div>
 
 

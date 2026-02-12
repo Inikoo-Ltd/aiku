@@ -6,7 +6,6 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Actions\Helpers\RequestResponseLogs\GetRequestResponseLogs;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\Web\Webpage\BreakWebpageVarnishCache;
@@ -100,8 +99,6 @@ Route::middleware(["auth", "two_fa"])->group(function () {
     Route::get('ban/varnish', BreakAllWebsitesVarnishCache::class)->name('varnish');
     Route::get('ban/varnish/webpage/{webpage}', BreakWebpageVarnishCache::class)->name('varnish.webpage');
     Route::get('ban/varnish/website/{website}', BreakWebsiteVarnishCache::class)->name('varnish.website');
-
-    Route::get('hidden/request-response-logs', GetRequestResponseLogs::class)->name('hidden.request_response_logs');
 
     Route::get('/notifications', IndexNotification::class)->name('notifications');
     Route::prefix("overview")

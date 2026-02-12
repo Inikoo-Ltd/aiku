@@ -752,7 +752,7 @@ const saveTradeUnits = (value, product) => {
             <div class="whitespace-nowrap">
                 <Link :href="(masterProductRoute(product) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
                     :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
+                <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
                 {{ product["code"] }}
