@@ -151,7 +151,7 @@ class IndexFamilies extends OrgAction
         } elseif (class_basename($parent) == 'MasterProductCategory') {
 
             $queryBuilder->where('product_categories.master_product_category_id', $parent->id)
-            ->where('shops.state', '!=',ShopStateEnum::CLOSED->value);
+            ->where('shops.state', '!=', ShopStateEnum::CLOSED->value);
         }
 
         $selects = [

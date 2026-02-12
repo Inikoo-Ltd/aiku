@@ -13,6 +13,8 @@ import { faPlus, faMinus } from '@fas'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import Blueprint from './Blueprint'
 import { sendMessageToParent } from "@/Composables/Workshop"
+import { ref, nextTick } from "vue"
+
 
 library.add(faPlus, faMinus)
 
@@ -28,9 +30,15 @@ const emits = defineEmits<{
   (e: "update:modelValue", value: string): void
   (e: "autoSave"): void
 }>()
-
+const disclosureBtns = ref<any[]>([])
 const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
+
+const openDisclosure = async (index: number) => {
+  await nextTick()
+  const btn = disclosureBtns.value[index]
+  if (btn) btn.click()
+}
 </script>
 
 <template>
@@ -48,22 +56,29 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
           :class="index !== 0 ? 'border-t border-gray-200' : ''" v-slot="{ open }">
           <dt class="flex items-start justify-between gap-2 px-4 py-3">
             <div class="flex-1">
-              <EditorV2 v-model="faq.label" @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
-                name: webpageData?.images_upload_route?.name ?? '',
-                parameters: { modelHasWebBlocks: blockData?.id ?? '' }
-              }" />
+              <DisclosureButton class="flex w-full" :ref="el => disclosureBtns[index] = el">
+                <EditorV2 v-model="faq.label" @focus="openDisclosure(index)"
+                  @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
+                    name: webpageData?.images_upload_route?.name ?? '',
+                    parameters: { modelHasWebBlocks: blockData?.id ?? '' }
+                  }" />
+              </DisclosureButton>
             </div>
+
             <DisclosureButton class="ml-2 flex h-8 w-8 items-center justify-center transition">
               <font-awesome-icon :icon="open ? 'minus' : 'plus'" />
             </DisclosureButton>
           </dt>
-          <DisclosurePanel as="dd" class="px-4 pb-4 text-base text-gray-600 transition-all duration-300 ease-in-out">
-            <EditorV2 v-model="faq.description" @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
-              name: webpageData?.images_upload_route?.name ?? '',
-              parameters: { modelHasWebBlocks: blockData?.id ?? '' }
-            }" />
+
+          <DisclosurePanel class="px-4 pb-4 text-base text-gray-600">
+            <EditorV2 v-model="faq.description" @focus="openDisclosure(index)"
+              @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
+                name: webpageData?.images_upload_route?.name ?? '',
+                parameters: { modelHasWebBlocks: blockData?.id ?? '' }
+              }" />
           </DisclosurePanel>
         </Disclosure>
+
       </dl>
     </div>
   </div>

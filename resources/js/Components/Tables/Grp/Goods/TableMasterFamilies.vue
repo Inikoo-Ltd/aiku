@@ -20,14 +20,24 @@ import Image from "@/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { routeType } from "@/types/route";
 
-const props = defineProps<{
-    data: object,
+const props = withDefaults(defineProps<{
+    data: object
     tab?: string
-}>();
+    isCheckBox?: boolean
+    routes: {
+        dataList: routeType
+        submitAttach: routeType
+        detach: routeType
+    }
+}>(), {
+    isCheckBox: true
+})
+
 
 const locale = inject("locale", aikuLocaleStructure)
-
+const isLoadingDetach = ref<string[]>([])
 const selectedFamily = ref([])
 const _table = ref(null)
 const visibleDialog = ref(false);
@@ -178,7 +188,7 @@ const onSaveChangeParent = async () => {
 };
 
 
-const onCheckedAll = (handle: { allChecked: boolean, data: Array<{id: number}> }) => {
+const onCheckedAll = (handle: { allChecked: boolean, data: Array<{ id: number }> }) => {
     if (handle.allChecked) {
         // Set selectedFamily with all data.id values
         selectedFamily.value = handle.data.map(item => item.id);
@@ -213,12 +223,18 @@ const getIntervalStateColor = (isPositive: boolean) => {
 </script>
 
 <template>
-    <Table @onCheckedAll="onCheckedAll" :resource="data" :name="tab" class="mt-5" :isCheckBox="true" :key="tableKey"
-        @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
-        checkboxKey='id' :isChecked="(item) => selectedFamily.includes(item.id)" ref="_table">
+    <Table @onCheckedAll="onCheckedAll" :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckBox"
+        :key="tableKey" @onChecked="(item) => onChangeCheked(true, item)"
+        @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'
+        :isChecked="(item) => selectedFamily.includes(item.id)" ref="_table">
         <template #cell(image_thumbnail)="{ item: collection }">
-            <div class="flex justify-center">
-                <Image :src="collection['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
+            <div class="flex justify-center items-center">
+                <Image v-if="collection['image_thumbnail']" :src="collection['image_thumbnail']" imageCover
+                    class="object-contain w-10 aspect-square rounded-md flex justify-center items-center overflow-hidden shadow" />
+                <div v-else v-tooltip="trans('No image available')"
+                    class="flex items-center justify-center border border-gray-300 w-10 aspect-square rounded-md">
+                    <FontAwesomeIcon icon="fal fa-image" class="opacity-50 text-sm" fixed-width aria-hidden="true" />
+                </div>
             </div>
         </template>
         <template #add-on-button>
@@ -230,18 +246,18 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(master_shop_code)="{ item: department }">
             <Link v-tooltip="department.master_shop_name" :href="masterShopRoute(department) as string"
                 class="secondaryLink">
-            {{ department["master_shop_code"] }}
+                {{ department["master_shop_code"] }}
             </Link>
         </template>
 
         <template #cell(master_department_code)="{ item: department }">
             <Link v-if="department.master_department_slug" v-tooltip="department.master_department_name"
                 :href="masterDepartmentRoute(department) as string" class="secondaryLink">
-            {{ department["master_department_code"] }}
+                {{ department["master_department_code"] }}
             </Link>
         </template>
 
-         <template #cell(master_sub_department_code)="{ item: subdepartment }">
+        <template #cell(master_sub_department_code)="{ item: subdepartment }">
             <Link v-if="subdepartment.master_sub_department_slug" v-tooltip="subdepartment.master_sub_department_name"
                 :href="masterSubDepartmentRoute(subdepartment) as string" class="secondaryLink">
                 {{ subdepartment["master_sub_department_code"] }}
@@ -255,84 +271,54 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(sales_delta)="{ item }">
             <div v-if="item.sales_delta">
                 <span>{{ item.sales_delta.formatted }}</span>
-                <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
-                    class="text-xxs md:text-sm"
-                    :class="[
+                <FontAwesomeIcon :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm" :class="[
                         getIntervalChangesIcon(item.sales_delta.is_positive).class,
                         getIntervalStateColor(item.sales_delta.is_positive),
-                    ]"
-                    fixed-width
-                    aria-hidden="true"
-                />
+                    ]" fixed-width aria-hidden="true" />
             </div>
             <div v-else>
-                <FontAwesomeIcon
-                    :icon="faMinus"
-                    class="text-xxs md:text-sm"
-                    fixed-width
-                    aria-hidden="true"
-                />
-                <FontAwesomeIcon
-                    :icon="faMinus"
-                    class="text-xxs md:text-sm"
-                    fixed-width
-                    aria-hidden="true"
-                />
-                <FontAwesomeIcon
-                    :icon="faEquals"
-                    class="text-xxs md:text-sm"
-                    fixed-width
-                    aria-hidden="true"
-                />
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
             </div>
         </template>
 
         <template #cell(invoices_delta)="{ item }">
             <div v-if="item.invoices_delta">
                 <span>{{ item.invoices_delta.formatted }}</span>
-                <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
-                    class="text-xxs md:text-sm"
-                    :class="[
+                <FontAwesomeIcon :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm" :class="[
                         getIntervalChangesIcon(item.invoices_delta.is_positive).class,
                         getIntervalStateColor(item.invoices_delta.is_positive),
-                    ]"
-                    fixed-width
-                    aria-hidden="true"
-                />
+                    ]" fixed-width aria-hidden="true" />
             </div>
             <div v-else>
-                <FontAwesomeIcon
-                    :icon="faMinus"
-                    class="text-xxs md:text-sm"
-                    fixed-width
-                    aria-hidden="true"
-                />
-                <FontAwesomeIcon
-                    :icon="faMinus"
-                    class="text-xxs md:text-sm"
-                    fixed-width
-                    aria-hidden="true"
-                />
-                <FontAwesomeIcon
-                    :icon="faEquals"
-                    class="text-xxs md:text-sm"
-                    fixed-width
-                    aria-hidden="true"
-                />
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
             </div>
         </template>
 
         <template #cell(code)="{ item: family }">
             <Link :href="familyRoute(family)" class="primaryLink">
-            {{ family["code"] }}
+                {{ family["code"] }}
             </Link>
         </template>
 
         <template #cell(products)="{ item: family }">
             <Link :href="ProductRoute(family)" class="primaryLink">
-            {{ family["products"] }}
+                {{ family["products"] }}
+            </Link>
+        </template>
+
+        <template #cell(actions)="{ item }">
+            <Link v-if="routes?.detach?.name" as="button"
+                :href="route(routes.detach.name, { ...routes.detach.parameters, family: item.id })"
+                :method="routes.detach.method" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
         </template>
     </Table>
@@ -346,12 +332,12 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     masterShop: (route().params as RouteParams).masterShop
                 }
             }" :required="true" valueProp="id" type_label="department-and-sub-department" labelProp="code"
-            v-model="selectedParentId" />
+                v-model="selectedParentId" />
         </div>
 
         <div class="flex justify-end gap-2 mt-4">
             <Button type="tertiary" label="Cancel" @click="visibleDialog = false" />
-            <Button type="save" label="Save" @click="onSaveChangeParent"  :loading="loadingChangeParent"/>
+            <Button type="save" label="Save" @click="onSaveChangeParent" :loading="loadingChangeParent" />
         </div>
     </Dialog>
 

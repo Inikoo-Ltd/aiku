@@ -28,11 +28,13 @@ trait WithInvoicesExport
             $totalShipping = $invoice->order?->shipping_amount ?? 0;
 
             $totalNet = $totalItemsNet + $totalShipping;
+            
+            $invoiceTransactions = $invoice->invoiceTransactions()->with('model')->get();
 
             if ($invoice->customer->is_fulfilment) {
-                $transactionModel = $invoice->invoiceTransactions;
+                $transactionModel = $invoiceTransactions;
             } else {
-                $transactionModel = $invoice->invoiceTransactions->where('model_type', 'Product');
+                $transactionModel = $invoiceTransactions->where('model_type', 'Product');
             }
 
             $transactions = $transactionModel->map(function ($transaction) {
@@ -97,19 +99,22 @@ trait WithInvoicesExport
             $deliveryNote = $invoice->order?->deliveryNotes?->first();
             $filename = $invoice->slug . '-' . now()->format('Y-m-d');
             $pdf      = PDF::loadView('invoices.templates.pdf.invoice', [
-                'shop'          => $invoice->shop,
-                'invoice'       => $invoice,
-                'deliveryNote'  => $deliveryNote,
-                'deliveryAddress'  => $deliveryNote?->deliveryAddress,
-                'context'       => $invoice->original_invoice_id ? 'Refund' : 'Invoice',
-                'transactions'  => $transactions,
-                'totalNet'      => number_format($totalNet, 2, '.', ''),
-                'refunds'       => $refundData
+                'shop'              => $invoice->shop,
+                'invoice'           => $invoice,
+                'deliveryNote'      => $deliveryNote,
+                'deliveryAddress'   => $deliveryNote?->deliveryAddress,
+                'context'           => $invoice->original_invoice_id ? 'Refund' : 'Invoice',
+                'transactions'      => $transactions,
+                'totalNet'          => number_format($totalNet, 2, '.', ''),
+                'refunds'           => $refundData,
+                'country_of_origin' => true,
+                'weight'            => true,
+                'commodity_codes'   => true,
             ], [], $config);
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);
 
-            if (!$isAttachIsdocToPdf) {
+            if ($isAttachIsdocToPdf) {
                 try {
                     $outputFile = AttacheIsDocToInvoicePdf::make()->handle($invoice, $pdf, $filename);
                     return response()->file($outputFile, [

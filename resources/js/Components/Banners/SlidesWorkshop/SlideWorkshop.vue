@@ -5,27 +5,19 @@
   -->
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch } from '@fal'
-import TextAlign from './Fields/TextAlign.vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
-
-import Toogle from './Fields/PrimitiveToggle.vue'
-import PrimitiveInput from './Fields/PrimitiveInput.vue'
-import Select from './Fields/PrimitiveSelect.vue'
-import Radio from './Fields/PrimitiveRadio.vue'
-import SlideBackground from "./Fields/SlideBackground.vue"
-import Corners from "@/Components/Banners/SlidesWorkshop/Fields/Corners/Corners.vue"
-import Colorpicker from '@/Components/Banners/SlidesWorkshop/Fields/ColorPicker.vue'
-import SelectFont from '@/Components/Banners/SlidesWorkshop/Fields/SelectFont.vue'
 import { routeType } from '@/types/route'
+import { getComponent } from '@/Composables/getBannerFields'
+import { get, set, cloneDeep } from "lodash-es"
 
 
 library.add(faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch)
 const props = defineProps<{
-    currentComponentBeenEdited: Object
+    modelValue: any
     blueprint: Array
     remove : Function
     common: any
@@ -33,23 +25,30 @@ const props = defineProps<{
     uploadRoutes: routeType
 }>()
 
-const getComponent = (componentName: string) => {
-    const components: any = {
-        'text': PrimitiveInput,
-        'radio': Radio,
-        'slideBackground': SlideBackground,
-        'corners': Corners,
-        'colorpicker' : Colorpicker,
-        'select': Select,
-        'selectFont': SelectFont,
-        'textAlign': TextAlign,
-        'toogle':Toogle
-    };
-    return components[componentName]
-};
-
+const emit = defineEmits(["update:modelValue"])
 
 const current = ref(0);
+
+const getValue = (fieldName: string | string[]) => {
+  if (Array.isArray(fieldName)) {
+    return get(props.modelValue, fieldName)
+  }
+  return props.modelValue?.[fieldName]
+}
+
+
+const setValue = (fieldName: string | string[], value: any) => {
+  const cloned = cloneDeep(props.modelValue || {})
+
+  if (Array.isArray(fieldName)) {
+    set(cloned, fieldName, value)
+  } else {
+    cloned[fieldName] = value
+  }
+
+  emit("update:modelValue", cloned)
+}
+
 
 defineExpose({
     current,
@@ -96,7 +95,8 @@ defineExpose({
                         <div class="relative flex-grow">
                             <component 
                                 :is="getComponent(fieldData['type'])" 
-                                :data="currentComponentBeenEdited"
+                                :model-value="fieldData.type == 'slideBackground' ? props.modelValue  :  getValue(fieldData.name)"
+                                @update:modelValue="fieldData.type == 'slideBackground' ?  (emit('update:modelValue', $event), console.log('aaaaaaa', $event)) : setValue(fieldData.name, $event)"
                                 :fieldName="fieldData.name" 
                                 :fieldData="fieldData" 
                                 :key="fieldData.type+index+fieldData.label" 
