@@ -32,7 +32,20 @@ const props = defineProps<{
 
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+const handleTabUpdate = (tabSlug: string) => {
+    const url = new URL(window.location.href)
+    url.searchParams.forEach((_, key) => {
+        if (key.startsWith('timesheets_')) {
+            url.searchParams.delete(key)
+        }
+    })
+
+    url.searchParams.set('tab', tabSlug)
+    window.history.replaceState({}, '', url)
+
+    useTabChange(tabSlug, currentTab)
+}
+
 
 const component = computed(() => {
 
@@ -42,11 +55,6 @@ const component = computed(() => {
     };
     return components[currentTab.value as keyof typeof components];
 
-});
-
-const currentData = computed(() => {
-    const key = currentTab.value;
-    return (props as Record<string, any>)[key];
 });
 </script>
 
