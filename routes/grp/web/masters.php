@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
+use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
 use App\Actions\Catalogue\Shop\StoreShopFromMaster;
 use App\Actions\Masters\MasterAsset\Json\GetSelectedMasterProductDetails;
 use App\Actions\Catalogue\Shop\UI\CreateShopFromMaster;
@@ -221,6 +222,10 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('/master-sub-departments/create', CreateMasterSubDepartment::class)->name('create');
                 Route::get('{masterSubDepartment}', ShowMasterSubDepartment::class)->name('show');
                 Route::get('{masterSubDepartment}/edit', EditMasterSubDepartment::class)->name('edit');
+
+                Route::prefix('/{masterSubDepartment}/sub-departments')->as('sub_departments_in_shop.')->group(function () {
+                    Route::get('', [IndexSubDepartments::class, 'inMasterSubDepartment'])->name('index');
+                });
 
                 Route::prefix('/{masterSubDepartment}/families')->as('master_families.')->group(function () {
                     Route::get('', [IndexMasterFamilies::class, 'inMasterSubDepartment'])->name('index');

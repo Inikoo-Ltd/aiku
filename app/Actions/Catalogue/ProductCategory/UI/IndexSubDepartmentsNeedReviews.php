@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
@@ -200,7 +201,12 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+            if($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $table
+                    ->column(key: 'shop_code', label: __('Shop'), sortable: true);
+            }
+            $table
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'webpage_state', label:['fal', 'fa-browser'], type: 'icon', canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'is_name_reviewed', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_description_title_reviewed', label: __('Description Title'), canBeHidden: false, sortable: true, searchable: true)

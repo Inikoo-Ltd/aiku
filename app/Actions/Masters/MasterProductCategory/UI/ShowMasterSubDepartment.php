@@ -298,6 +298,39 @@ class ShowMasterSubDepartment extends GrpAction
                     $suffix
                 )
             ),
+            'grp.masters.master_shops.show.master_sub_departments.sub_departments_in_shop.index'   => 
+            array_merge(
+                ShowMasterShop::make()->getBreadcrumbs($masterSubDepartment->masterShop),
+                $headCrumb(
+                    $masterSubDepartment,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                ),
+                [
+                    [
+                        'type'              => 'simple',
+                        'simple'            => [
+                            'route' => [
+                                'name' => 'grp.masters.master_shops.show.master_sub_departments.sub_departments_in_shop.index',
+                                'parameters' => $routeParameters,
+                            ],
+                            'label' => __('Sub Departments in Shop'),
+                            'icon'  => 'fal fa-bars',
+                        ],
+                    ],
+                ]
+            ),
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',

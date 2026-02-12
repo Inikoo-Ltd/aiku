@@ -80,45 +80,69 @@ function subDepartmentRoute(SubDepartment: SubDepartmentx) {
 
 function familiesRoute(SubDepartment: SubDepartmentx) {
     const currentRoute = route().current();
-    if (currentRoute === "grp.org.shops.show.catalogue.departments.show.sub_departments.index") {
-        return route(
-            "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index",
-            [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).shop,
-                (route().params as RouteParams).department,
-                SubDepartment.slug])
-    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.index") {
-        return route(
-            "grp.org.shops.show.catalogue.sub_departments.show.families.index",
-            [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).shop,
-                SubDepartment.slug
-            ]
-        )
+    switch(currentRoute) {
+        case "grp.org.shops.show.catalogue.departments.show.sub_departments.index":
+            return route(
+                "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).department,
+                    SubDepartment.slug])
+        case "grp.masters.master_shops.show.master_sub_departments.sub_departments_in_shop.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.families.index",
+                [
+                    SubDepartment.organisation_slug,
+                    SubDepartment.shop_slug,
+                    SubDepartment.slug
+                ]
+            )
+        case "grp.org.shops.show.catalogue.sub_departments.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.families.index",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    SubDepartment.slug
+                ]
+            )
+        default:
+            return ""
     }
 }
 
 function productsRoute(SubDepartment: SubDepartmentx) {
     const currentRoute = route().current();
-    if (currentRoute === "grp.org.shops.show.catalogue.departments.show.sub_departments.index") {
-        return route(
-            "grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.index",
-            [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).shop,
-                (route().params as RouteParams).department,
-                SubDepartment.slug])
-    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.index") {
-        return route(
-            "grp.org.shops.show.catalogue.sub_departments.show.products.index",
-            [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).shop,
-                SubDepartment.slug
-            ]
-        )
+    switch(currentRoute) {
+        case "grp.masters.master_shops.show.master_sub_departments.sub_departments_in_shop.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.products.index",
+                [
+                    SubDepartment.organisation_slug,
+                    SubDepartment.shop_slug,
+                    SubDepartment.slug
+                ]
+            )
+        case "grp.org.shops.show.catalogue.departments.show.sub_departments.index":
+            return route(
+                "grp.org.shops.show.catalogue.departments.show.sub_departments.show.products.index",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).department,
+                    SubDepartment.slug])
+        case "grp.org.shops.show.catalogue.sub_departments.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.products.index",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    SubDepartment.slug
+                ]
+            )
+        default:
+            return ""
     }
 }
 

@@ -23,6 +23,11 @@ trait WithMasterSubDepartmentSubNavigation
             'parameters' => request()->route()->originalParameters()
         ];
 
+        $routeSubDepartmentInShop = [
+            'name'       => 'grp.masters.master_shops.show.master_sub_departments.sub_departments_in_shop.index',
+            'parameters' => request()->route()->originalParameters()
+        ];
+
         $routeFamilies = [
             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
             'parameters' => request()->route()->originalParameters()
@@ -58,6 +63,15 @@ trait WithMasterSubDepartmentSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
                     'tooltip' => __('Sub-department')
+                ]
+            ],
+            [
+                'label'    => __('Sub-department in Shop'),
+                'number'   => $masterSubDepartment->stats->number_current_sub_departments,
+                'route'     => $routeSubDepartmentInShop,
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-shop'],
+                    'tooltip' => __('Sub Departments in Shop')
                 ]
             ],
             [

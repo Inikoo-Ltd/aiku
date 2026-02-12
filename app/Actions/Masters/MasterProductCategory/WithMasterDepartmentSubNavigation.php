@@ -37,8 +37,8 @@ trait WithMasterDepartmentSubNavigation
                     'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-folder-download'],
-                    'tooltip' => __('Master sub-departments')
+                    'icon'    => ['fal', 'fa-store'],
+                    'tooltip' => __('Departments in Shop')
                 ]
             ],
             [

@@ -10,8 +10,12 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
+use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -21,6 +25,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -35,10 +40,12 @@ class IndexSubDepartments extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithDepartmentSubNavigation;
+    use WithMasterSubDepartmentSubNavigation;
+    
+    private bool $accessFromMaster = false;
 
-    private Shop|ProductCategory|Organisation $parent;
+    private Shop|ProductCategory|Organisation|MasterProductCategory $parent;
     private bool $sales = true;
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
@@ -57,6 +64,15 @@ class IndexSubDepartments extends OrgAction
         return $this->handle(parent: $department, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterSubDepartment;
+        $this->accessFromMaster = true;
+        $this->initialisationFromGroup($masterShop->group, $request)->withTab(ProductCategoryTabsEnum::values());
+
+        return $this->handle(parent: $masterSubDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
+
+    }
 
     public function handle(Shop|ProductCategory|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
@@ -209,7 +225,9 @@ class IndexSubDepartments extends OrgAction
                 ->withModelOperations($modelOperations);
 
             if ($sales) {
-                $table->column(key: 'code', label: __('Code'), sortable: true)
+                $table
+                    ->column(key: 'shop_code', label: __('Shop'), sortable: true)
+                    ->column(key: 'code', label: __('Code'), sortable: true)
                     ->column(key: 'sales', label: __('Sales'), sortable: true, align: 'right')
                     ->column(key: 'sales_delta', label: __('Δ 1Y'), align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
@@ -243,6 +261,22 @@ class IndexSubDepartments extends OrgAction
         $subNavigation = null;
         if ($this->parent instanceof ProductCategory && $this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $subNavigation = $this->getDepartmentSubNavigation($this->parent);
+        } else if ($this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $subNavigation = $this->getMasterSubDepartmentSubNavigation($this->parent);
+        }
+
+        $breadcrumbs = null;
+        if ($this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $breadcrumbs = ShowMasterSubDepartment::make()->getBreadcrumbs(
+                $this->parent,
+                $request->route()->getName(),
+                $request->route()->originalParameters()
+            );
+        } else {
+            $breadcrumbs = $this->getBreadcrumbs(
+                $request->route()->getName(),
+                $request->route()->originalParameters()
+            );
         }
 
         $navigation = ProductCategoryTabsEnum::navigation();
@@ -274,10 +308,7 @@ class IndexSubDepartments extends OrgAction
         return Inertia::render(
             'Org/Catalogue/SubDepartments',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $breadcrumbs,
                 'navigation'  => $modelNavigation,
                 'title'       => __('sub-departments'),
                 'pageHead'    => [
@@ -287,7 +318,7 @@ class IndexSubDepartments extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => [
-                        $this->canEdit && is_null($this->shop->master_shop_id) && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.index' ? [
+                        $this->canEdit && isset($this->shop) && is_null($this->shop->master_shop_id) && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New Sub-department'),
