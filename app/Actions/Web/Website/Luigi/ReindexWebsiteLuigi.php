@@ -25,21 +25,27 @@ class ReindexWebsiteLuigi
     /**
      * @throws \Exception
      */
-    public function handle(Website $website, ?Command $command=null): void
+    public function handle(Website $website, ?Command $command = null): void
     {
+        $command?->info("Reindexing website ".$website->domain);
+
         $accessToken = $this->getAccessToken($website);
         if (count($accessToken) < 2) {
             Log::error('Luigis Box access token is not configured properly');
+            $command?->error("Luigis Box access token is not configured properly");
 
             return;
         }
+
+        $command?->info("Starting reindexing");
+
 
         $website->webpages()
             ->with('model')
             ->where('state', 'live')
             ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
             ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
-            ->chunk(1000, function ($webpages) use ($website,$command) {
+            ->chunk(1000, function ($webpages) use ($website, $command) {
                 $objects = [];
                 foreach ($webpages as $webpage) {
                     $object = $this->getObjectFromWebpage($webpage);
@@ -52,7 +58,7 @@ class ReindexWebsiteLuigi
                     'objects' => $objects
                 ];
                 $compressed = count($objects) >= 1000;
-                $command?->info("Reindexing website $website->domain with ".count($objects)." objects");
+                $command?->info("Reindexing webpages $website->domain with ".count($objects)." objects");
                 try {
                     $this->request($website, '/v1/content', $body, 'post', $compressed);
                 } catch (Exception $e) {
@@ -76,7 +82,7 @@ class ReindexWebsiteLuigi
         } else {
             $website = Website::first();
         }
-        $this->handle($website,$command);
+        $this->handle($website, $command);
 
         return 0;
     }
