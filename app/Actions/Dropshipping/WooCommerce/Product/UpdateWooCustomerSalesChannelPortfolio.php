@@ -9,16 +9,23 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateWooCustomerSalesChannelPortfolio
+class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
 {
     use AsAction;
 
 
     public string $jobQueue = 'woo';
+
+    public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): string
+    {
+        return $customerSalesChannel->id;
+    }
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
