@@ -33,9 +33,13 @@ const layout: any = inject("layout", {})
           :class="index !== 0 ? 'border-t border-gray-200' : ''" v-slot="{ open }">
           <dt class="flex items-start justify-between gap-2 px-4 py-3">
             <div class="flex-1">
-              <div v-html="faq.label"></div>
+              <DisclosureButton class="flex w-full">
+                <div v-html="faq.label"></div>
+              </DisclosureButton>
+
             </div>
-            <DisclosureButton class="ml-2 flex h-8 w-8 items-center justify-center  transition" :name="'disclosure-button-' + index">
+            <DisclosureButton class="ml-2 flex h-8 w-8 items-center justify-center  transition"
+              :name="'disclosure-button-' + index">
               <font-awesome-icon :icon="open ? 'minus' : 'plus'" />
             </DisclosureButton>
           </dt>
