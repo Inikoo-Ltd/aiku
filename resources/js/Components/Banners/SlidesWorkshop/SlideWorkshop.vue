@@ -76,7 +76,6 @@ defineExpose({
 
 <template>
     <div class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x w-full">
-
         <!-- Left Tab: Navigation -->
         <aside class="py-0 lg:col-span-3 lg:h-full">
             <nav role="navigation" class="space-y-1">
@@ -112,7 +111,6 @@ defineExpose({
                         <ScreenView :show-list="fieldData.useIn || []" v-model="screenView" />
 
                     </dt>
-
 
                     <!-- Fields: Top left, Top middle, etc -->
                     <dd class="flex text-sm text-gray-700 sm:mt-0 w-full">

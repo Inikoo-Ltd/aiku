@@ -1,45 +1,56 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n";
-import { ref, computed, watch, reactive } from "vue";
-import { get, set, isNull } from 'lodash-es';
-import { faLock } from "@fas";
-import { faTimes } from "@fal";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import CornersType from "./CornersType.vue";
-library.add(faLock, faTimes);
+import { trans } from "laravel-vue-i18n"
+import { ref, computed } from "vue"
+import { get, set, isNull, cloneDeep } from "lodash-es"
+import { faLock } from "@fas"
+import { faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import CornersType from "./CornersType.vue"
+
+library.add(faLock, faTimes)
 
 const props = defineProps<{
-    data: any
-    fieldName: string | []
+    modelValue: any
+    fieldName: string | string[]
     options?: any
     fieldData?: {
-        placeholder: string
-        readonly: boolean
-        copyButton: boolean
-    }
-    common?: any
-    modelValue: {}
-}>()
+        placeholder: string;
+        readonly: boolean;
+        copyButton: boolean;
+    };
+    common?: any;
+}>();
 
-const emits = defineEmits();
+const emits = defineEmits(["update:modelValue"])
 
-const setFormValue = (data: Object, fieldName: String) => {
-    if (Array.isArray(fieldName)) {
-        return getNestedValue(data, fieldName);
-    } else {
-        return data[fieldName];
-    }
-};
 
-const getNestedValue = (obj: Object, keys: Array) => {
+const getNestedValue = (obj: any, keys: string[]) => {
     return keys.reduce((acc, key) => {
-        if (acc && typeof acc === "object" && key in acc) return acc[key];
-        return null;
-    }, obj);
-};
-const cornersValue = ref(setFormValue(props.data, props.fieldName));
-const section = reactive({});
+        if (acc && typeof acc === "object" && key in acc) return acc[key]
+        return null
+    }, obj)
+}
+
+const getFormValue = (data: any, fieldName: string | string[]) => {
+    if (Array.isArray(fieldName)) return getNestedValue(data, fieldName)
+    return data?.[fieldName]
+}
+
+
+const cornersValue = computed({
+    get() {
+        return props.modelValue
+    },
+    set(val) {
+        console.log('finalData to emit:', val)
+        emits("update:modelValue", val)
+    }
+})
+
+
+
+const section = ref<any>(null)
+
 
 const cornersSection = ref([
     {
@@ -58,12 +69,12 @@ const cornersSection = ref([
         id: "topRight",
     },
     {
-        label: trans("Bottom left"),
+        label: trans("bottom left"),
         valueForm: get(cornersValue.value, [`bottomLeft`]),
         id: "bottomLeft",
     },
     {
-        label: trans("Bottom middle"),
+        label: trans("Bottom Middle"),
         valueForm: get(cornersValue.value, [`bottomMiddle`]),
         id: "bottomMiddle",
     },
@@ -74,85 +85,78 @@ const cornersSection = ref([
     },
 ]);
 
-const cornerSideClick = (value) => {
-    Object.assign(section, value);
-};
+const cornerSideClick = (value: any) => {
+    section.value = cloneDeep(value)
+}
 
-watch(section, (newValue) => {
-    updateFormValue(newValue);
-});
+const updateFormValue = (newValue: any) => {
+    if(!section.value) return;
+    const newCorners = {
+        ...cornersValue.value,
+        [section.value.id]: newValue,
+    }
+    cornersValue.value = newCorners
+}
 
-const updateFormValue = (newValue) => {
-    const newData = {
-        [newValue.id]: newValue.valueForm,
-    };
-    cornersValue.value = { ...cornersValue.value, ...newData };
-    let target = { ...props.data };
+const clear = (sec: any) => {
+    const newCorners = cloneDeep(cornersValue.value)
+    delete newCorners[section.value.id]
 
-    set(target, props.fieldName, cornersValue.value);
-    // emits("update:data", target);
-};
-
-
-const clear=(section)=>{
-    delete cornersValue.value[section.id]
+    cornersValue.value = newCorners
+    section.value = null
 }
 
 </script>
 
 <template>
-    <div class="">
-        <div>
-            <div class="mb-1">
-                Select side:
-            </div>
-
-            <div class="grid grid-cols-3 gap-0.5 h-full bg-amber-400 border border-gray-300" >
-                <div v-for="(cornerSection, index) in cornersSection"
-                    :key="cornerSection.id"
-                    class="relative overflow-hidden flex items-center justify-center flex-grow text-base font-semibold py-4"
-                    :class="[ common &&
-                    get(common,['corners',cornerSection.id]) &&  !isNull(common.corners[cornerSection.id])
-                            ? 'cursor-not-allowed bg-gray-200 text-red-500'
-                            : get(section, 'id') == cornerSection.id
-                            ? 'bg-amber-300 text-gray-600 cursor-pointer'
-                            : 'bg-gray-100 hover:bg-gray-200 text-gray-400 cursor-pointer',
-                    ]"
-                    @click="
-                        () => {
-                            common && get(common,['corners',cornerSection.id])  &&  !isNull(common.corners[cornerSection.id]) ? null : cornerSideClick(cornerSection);
-                        }
-                    "
-                >
-                    <div
-                        v-if="
-                            common &&
-                            get(common,['corners',cornerSection.id]) &&  !isNull(common.corners[cornerSection.id])
-                        "
-                        class="isolate text-sm italic"
-                    >
-                        <div class="">
-                            <font-awesome-icon
-                                :icon="['fas', 'lock']"
-                                class="mr-2"
-                            />
-                            Already used in common
-                        </div>
+    <div class="space-y-6">
+        <!-- grid container -->
+        <div class="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+            <div class="grid grid-cols-3 gap-2">
+                <div v-for="cornerSection in cornersSection" :key="cornerSection.id"
+                    class="relative flex items-center justify-center rounded-lg border text-sm font-medium h-20 transition-all duration-150 select-none"
+                    :class="[
+                        common &&
+                            get(common, ['corners', cornerSection.id]) &&
+                            !isNull(common.corners[cornerSection.id])
+                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-70'
+                            : get(section, 'id') === cornerSection.id
+                                ? 'bg-amber-100 border-amber-400 text-amber-700 shadow-inner'
+                                : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-amber-50 hover:border-amber-300 hover:text-gray-700 cursor-pointer'
+                    ]" @click="
+            () => {
+                common &&
+                    get(common, ['corners', cornerSection.id]) &&
+                    !isNull(common.corners[cornerSection.id])
+                    ? null
+                    : cornerSideClick(cornerSection)
+            }
+        ">
+                    <!-- locked -->
+                    <div v-if="
+                        common &&
+                        get(common, ['corners', cornerSection.id]) &&
+                        !isNull(common.corners[cornerSection.id])
+                    " class="flex flex-col items-center gap-1 text-xs">
+                        <font-awesome-icon :icon="['fas', 'lock']" class="text-gray-400" />
+                        <span class="italic">Used in common</span>
                     </div>
-                    <span v-else class="capitalize">{{ cornerSection.label }}</span>
+
+                    <!-- label -->
+                    <span v-else class="capitalize tracking-wide">
+                        {{ cornerSection.label }}
+                    </span>
                 </div>
             </div>
         </div>
-        
-        <div v-if="Object.keys(section).length" class="mt-8">
-            <div class="mb-1">
-                Select component to put in {{ section.label }} corner:
-            </div>
-            
-            <CornersType
-                :section="section"
-                :fieldData="fieldData"
-                @clear="clear"
+
+        <!-- editor -->
+        <div v-if="section" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <CornersType 
+                :modelValue="modelValue[section.id]" 
+                :fieldData="fieldData" 
+                @update:modelValue="updateFormValue" 
+                @clear="clear" 
             />
         </div>
     </div>

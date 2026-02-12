@@ -48,8 +48,8 @@ export default {
                 {
                     name: ["layout", "corners"],
                     type: "corners",
-                    label: null,
-                    value: null,
+                    label: trans("Corners"),
+                    value: ["layout", "corners"],
                     optionType: ["cornerText", "linkButton", "ribbon", 'clear'],
                 },
             ],
