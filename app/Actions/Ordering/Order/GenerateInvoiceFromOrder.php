@@ -48,6 +48,7 @@ class GenerateInvoiceFromOrder extends OrgAction
     {
         return DB::transaction(function () use ($order) {
             $billingAddress = $order->billingAddress;
+            $oldOrder = $order;
             $updatedData    = [];
             if ($order->deliveryNotes) {
                 $updatedData = $this->recalculateTotals($order);

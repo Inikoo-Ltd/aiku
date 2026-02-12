@@ -151,9 +151,9 @@ class ShowMasterDepartment extends GrpAction
                     fn () => GetMasterProductCategoryContent::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryContent::run($masterDepartment)),
 
-                MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
-                    fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
+                // MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
+                //     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
+                //     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
 
                 'salesData' => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryTimeSeriesData::run($masterDepartment)
@@ -174,7 +174,7 @@ class ShowMasterDepartment extends GrpAction
 
             ]
         )
-            ->table(IndexDepartments::make()->tableStructure(parent: $masterDepartment, prefix: MasterDepartmentTabsEnum::DEPARTMENTS->value, sales:false))
+            // ->table(IndexDepartments::make()->tableStructure(parent: $masterDepartment, prefix: MasterDepartmentTabsEnum::DEPARTMENTS->value, sales:false))
             ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterDepartmentTabsEnum::SALES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterDepartmentTabsEnum::HISTORY->value));
     }
@@ -188,8 +188,6 @@ class ShowMasterDepartment extends GrpAction
 
         $headCrumb = function (MasterProductCategory $department, array $routeParameters, ?string $suffix) {
             return [
-
-
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
@@ -203,7 +201,6 @@ class ShowMasterDepartment extends GrpAction
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
 
             ];
@@ -211,6 +208,39 @@ class ShowMasterDepartment extends GrpAction
 
 
         return match ($routeName) {
+            'grp.masters.master_shops.show.master_departments.show.departments_in_shop.index'   => 
+            array_merge(
+                ShowMasterShop::make()->getBreadcrumbs($parent),
+                $headCrumb(
+                    $masterDepartment,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.index',
+                            'parameters' => Arr::only($routeParameters, ['masterShop']),
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                ),
+                [
+                    [
+                        'type'              => 'simple',
+                        'simple'            => [
+                            'route' => [
+                                'name' => 'grp.masters.master_shops.show.master_departments.show.departments_in_shop.index',
+                                'parameters' => $routeParameters,
+                            ],
+                            'label' => __('Departments in Shop'),
+                            'icon'  => 'fal fa-bars',
+                        ],
+                    ],
+                ]
+            ),
             'grp.masters.master_departments.show', 'grp.masters.master_departments.show.master_sub_departments.index', 'grp.masters.master_departments.show.master_families.index' =>
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
@@ -277,8 +307,6 @@ class ShowMasterDepartment extends GrpAction
                         'model' => [
                             'name'       => 'grp.masters.master_shops.show.master_departments.show',
                             'parameters' => $routeParameters
-
-
                         ]
                     ],
                     $suffix

@@ -18,7 +18,7 @@ enum MasterDepartmentTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case CONTENT = 'content';
-    case DEPARTMENTS = 'departments';
+    // case DEPARTMENTS = 'departments';
     case SALES = 'sales';
     case HISTORY = 'history';
     case IMAGES = 'images';
@@ -31,10 +31,10 @@ enum MasterDepartmentTabsEnum: string
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
-            MasterDepartmentTabsEnum::DEPARTMENTS => [
-                'title' => __('Departments in shop'),
-                'icon'  => 'fal fa-store',
-            ],
+            // MasterDepartmentTabsEnum::DEPARTMENTS => [
+            //     'title' => __('Departments in shop'),
+            //     'icon'  => 'fal fa-store',
+            // ],
 
             MasterDepartmentTabsEnum::IMAGES => [
                 'title' => __('Media'),

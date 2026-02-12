@@ -10,8 +10,11 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -22,6 +25,7 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -35,13 +39,23 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDepartments extends OrgAction
 {
+    use WithMasterDepartmentSubNavigation;
     use WithCollectionSubNavigation;
     use WithCatalogueAuthorisation;
 
-    private Group|Shop|ProductCategory|Organisation|Collection $parent;
+    private Group|Shop|ProductCategory|Organisation|Collection|MasterProductCategory $parent;
 
     private bool $sales = true;
+    private bool $accessFromMaster = false;
 
+    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterDepartment;
+        $this->accessFromMaster = true;
+        $this->initialisationFromGroup($masterShop->group, $request)->withTab(ProductCategoryTabsEnum::values());
+
+        return $this->handle($masterDepartment);
+    }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
@@ -210,11 +224,15 @@ class IndexDepartments extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
             if ($sales) {
-                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                if (class_basename($parent) == 'MasterProductCategory') {
+                    $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+                }
+                $table
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
             } else {
                 if (class_basename($parent) == 'MasterProductCategory') {
                     $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
@@ -252,7 +270,25 @@ class IndexDepartments extends OrgAction
         $subNavigation = null;
         if ($this->parent instanceof Collection) {
             $subNavigation = $this->getCollectionSubNavigation($this->parent);
+        } else if ($this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
         }
+
+        $breadcrumbs = null;
+        if ($this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            $breadcrumbs = ShowMasterDepartment::make()->getBreadcrumbs(
+                $this->parent->masterShop, 
+                $this->parent,
+                $request->route()->getName(),
+                $request->route()->originalParameters()
+            );
+        } else {
+            $breadcrumbs = $this->getBreadcrumbs(
+                $request->route()->getName(),
+                $request->route()->originalParameters()
+            );
+        }
+
         $title      = __('Departments');
         $model      = '';
         $icon       = [
@@ -306,10 +342,7 @@ class IndexDepartments extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Departments',
             [
-                'breadcrumbs'                         => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs'                         => $breadcrumbs,
                 'title'                               => __('Departments'),
                 'pageHead'                            => [
                     'title'         => $title,

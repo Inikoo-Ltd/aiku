@@ -31,6 +31,15 @@ trait WithCatalogueAuthorisation
                     'shops-view'.$this->organisation->id,
                 ]
             );
+        } if ($this->accessFromMaster) {
+            $isWebMaster = $request->user()->authTo(
+                ["group-webmaster.view"]
+            );
+
+            $this->canEdit = $isWebMaster;
+            $this->canDelete = $isWebMaster;
+
+            return $isWebMaster;
         } else {
             $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
             $this->canDelete = $request->user()->authTo("products.{$this->shop->id}.edit");

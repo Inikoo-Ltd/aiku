@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\Catalogue\Shop\StoreShopFromMaster;
 use App\Actions\Masters\MasterAsset\Json\GetSelectedMasterProductDetails;
 use App\Actions\Catalogue\Shop\UI\CreateShopFromMaster;
@@ -123,6 +124,10 @@ Route::name("master_shops")->prefix('master-shops')
 
                 Route::prefix('{masterDepartment}')->name('show')->group(function () {
                     Route::get('', ShowMasterDepartment::class);
+                    
+                    Route::prefix('department')->as('.departments_in_shop.')->group(function () {
+                        Route::get('', [IndexDepartments::class, 'inMasterDepartment'])->name('index');
+                    });
 
 
                     Route::prefix('master-families')->as('.master_families.')->group(function () {

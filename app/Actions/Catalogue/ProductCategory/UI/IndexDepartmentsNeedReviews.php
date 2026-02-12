@@ -187,13 +187,17 @@ class IndexDepartmentsNeedReviews extends OrgAction
                             'count' => 0,
                     ]
                 )
-
-
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+            if ($parent instanceof MasterProductCategory) {
+                $table
+                    ->column(key: 'shop_code', label: 'Shop', canBeHidden: false, sortable: true);
+            }
+
+            $table
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'webpage_state', label:['fal', 'fa-browser'], type: 'icon', canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'is_name_reviewed', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_description_title_reviewed', label: __('Description Title'), canBeHidden: false, sortable: true, searchable: true)
