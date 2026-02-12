@@ -209,6 +209,14 @@ return [
         ],
 
         'default' => [
+            'url'      => env('REDIS_DEFAULT_URL'),
+            'host'     => env('REDIS_DEFAULT_HOST', '127.0.0.1'),
+            'username' => env('REDIS_DEFAULT_USERNAME'),
+            'password' => env('REDIS_DEFAULT_PASSWORD'),
+            'port'     => env('REDIS_DEFAULT_PORT', '6379'),
+            'database' => env('REDIS_DEFAULT_DB', '0'),
+        ],
+        'horizon' => [
             'url'      => env('REDIS_HORIZON_URL'),
             'host'     => env('REDIS_HORIZON_HOST', '127.0.0.1'),
             'username' => env('REDIS_HORIZON_USERNAME'),

@@ -70,7 +70,6 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
                     <div class="flex justify-center my-4">
                         <Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
                             :label="modelValue?.button?.text" @click.stop="() => {
-                                console.log('sssss')
                                 sendMessageToParent('activeBlock', indexBlock)
                                 sendMessageToParent('activeChildBlock', bKeys[0])
                             }" />

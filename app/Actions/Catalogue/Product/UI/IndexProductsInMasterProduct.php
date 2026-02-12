@@ -59,6 +59,7 @@ class IndexProductsInMasterProduct extends OrgAction
                 'products.unit',
                 'products.units',
                 'products.asset_id',
+                'products.master_product_id',
                 'products.available_quantity',
                 'shops.name as shop_name',
                 'shops.code as shop_code',

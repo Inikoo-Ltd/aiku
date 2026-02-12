@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 trait WithLuigis
 {
@@ -86,16 +87,19 @@ trait WithLuigis
             'Authorization'   => "Hello $publicKey:$signature",
         ];
 
+        Log::info('compressed: ' . $compressed);
+        $bodyToPrint = 'encoded body';
         if ($compressed) {
             $header['Content-Encoding'] = 'gzip';
             $body                       = gzencode(json_encode($body), 9);
         } else {
             $body = json_encode($body);
+            $bodyToPrint = $body;
         }
 
         Log::info('Starting request to Luigi Box API ' . $publicKey . ' (' . $date . ')...');
-        Log::info('Headers', $header);
-        Log::info('Body', ['body' => $body]);
+        Log::info('Headers: ', $header);
+        Log::info('Body: ', ['body' => $bodyToPrint]);
 
         Log::info('Loading...');
         $response = Http::withHeaders($header)
@@ -105,6 +109,8 @@ trait WithLuigis
                 'https://live.luigisbox.tech/'.$endPoint
             );
 
+
+        Sentry::captureMessage('Luigi Box API Request: XX '.$response->body());
 
         if ($response->failed()) {
             Log::error('Failed to send request to Luigis Box API: '.$response->body(), [
