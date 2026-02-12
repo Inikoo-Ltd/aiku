@@ -87,6 +87,7 @@ class IndexFamiliesInCollection extends OrgAction
                 'product_categories.created_at',
                 'product_categories.image_id',
                 'product_categories.updated_at',
+                'product_categories.master_product_category_id',
                 'product_category_sales_intervals.sales_grp_currency_all as sales_all',
                 'product_category_ordering_intervals.invoices_all as invoices_all',
 

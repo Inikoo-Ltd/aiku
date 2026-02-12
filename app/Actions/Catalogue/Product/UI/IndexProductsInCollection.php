@@ -88,6 +88,7 @@ class IndexProductsInCollection extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
+                'products.master_product_id'
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
