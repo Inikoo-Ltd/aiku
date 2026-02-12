@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website\Luigi;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Website;
 use Exception;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,7 +25,7 @@ class ReindexWebsiteLuigi
     /**
      * @throws \Exception
      */
-    public function handle(Website $website): void
+    public function handle(Website $website, ?Command $command=null): void
     {
         $accessToken = $this->getAccessToken($website);
         if (count($accessToken) < 2) {
@@ -38,7 +39,7 @@ class ReindexWebsiteLuigi
             ->where('state', 'live')
             ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
             ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
-            ->chunk(1000, function ($webpages) use ($website) {
+            ->chunk(1000, function ($webpages) use ($website,$command) {
                 $objects = [];
                 foreach ($webpages as $webpage) {
                     $object = $this->getObjectFromWebpage($webpage);
@@ -51,6 +52,7 @@ class ReindexWebsiteLuigi
                     'objects' => $objects
                 ];
                 $compressed = count($objects) >= 1000;
+                $command?->info("Reindexing website $website->domain with ".count($objects)." objects");
                 try {
                     $this->request($website, '/v1/content', $body, 'post', $compressed);
                 } catch (Exception $e) {
@@ -74,7 +76,7 @@ class ReindexWebsiteLuigi
         } else {
             $website = Website::first();
         }
-        $this->handle($website);
+        $this->handle($website,$command);
 
         return 0;
     }
