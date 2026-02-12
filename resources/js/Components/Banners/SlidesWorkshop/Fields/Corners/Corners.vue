@@ -10,16 +10,17 @@ import CornersType from "./CornersType.vue";
 library.add(faLock, faTimes);
 
 const props = defineProps<{
-    data: any;
-    fieldName: string | [];
-    options?: any;
+    data: any
+    fieldName: string | []
+    options?: any
     fieldData?: {
-        placeholder: string;
-        readonly: boolean;
-        copyButton: boolean;
-    };
-    common?: any;
-}>();
+        placeholder: string
+        readonly: boolean
+        copyButton: boolean
+    }
+    common?: any
+    modelValue: {}
+}>()
 
 const emits = defineEmits();
 
@@ -42,12 +43,12 @@ const section = reactive({});
 
 const cornersSection = ref([
     {
-        label: trans("top left"),
+        label: trans("Top left"),
         valueForm: get(cornersValue.value, [`topLeft`]),
         id: "topLeft",
     },
     {
-        label: trans("top Middle"),
+        label: trans("Top middle"),
         valueForm: get(cornersValue.value, [`topMiddle`]) || get(cornersValue.value, [`topBottom`]),
         id: "topMiddle",
     },
@@ -57,12 +58,12 @@ const cornersSection = ref([
         id: "topRight",
     },
     {
-        label: trans("bottom left"),
+        label: trans("Bottom left"),
         valueForm: get(cornersValue.value, [`bottomLeft`]),
         id: "bottomLeft",
     },
     {
-        label: trans("Bottom Middle"),
+        label: trans("Bottom middle"),
         valueForm: get(cornersValue.value, [`bottomMiddle`]),
         id: "bottomMiddle",
     },
@@ -100,47 +101,59 @@ const clear=(section)=>{
 </script>
 
 <template>
-    <div class="space-y-8">
-        <div class="grid grid-cols-3 gap-0.5 h-full bg-amber-400 border border-gray-300" >
-            <div v-for="(cornerSection, index) in cornersSection"
-                :key="cornerSection.id"
-                class="relative overflow-hidden flex items-center justify-center flex-grow text-base font-semibold py-4"
-                :class="[ common &&
-                get(common,['corners',cornerSection.id]) &&  !isNull(common.corners[cornerSection.id])
-                        ? 'cursor-not-allowed bg-gray-200 text-red-500'
-                        : get(section, 'id') == cornerSection.id
-                        ? 'bg-amber-300 text-gray-600 cursor-pointer'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-400 cursor-pointer',
-                ]"
-                @click="
-                    () => {
-                        common && get(common,['corners',cornerSection.id])  &&  !isNull(common.corners[cornerSection.id]) ? null : cornerSideClick(cornerSection);
-                    }
-                "
-            >
-                <div
-                    v-if="
-                        common &&
-                        get(common,['corners',cornerSection.id]) &&  !isNull(common.corners[cornerSection.id])
+    <div class="">
+        <div>
+            <div class="mb-1">
+                Select side:
+            </div>
+
+            <div class="grid grid-cols-3 gap-0.5 h-full bg-amber-400 border border-gray-300" >
+                <div v-for="(cornerSection, index) in cornersSection"
+                    :key="cornerSection.id"
+                    class="relative overflow-hidden flex items-center justify-center flex-grow text-base font-semibold py-4"
+                    :class="[ common &&
+                    get(common,['corners',cornerSection.id]) &&  !isNull(common.corners[cornerSection.id])
+                            ? 'cursor-not-allowed bg-gray-200 text-red-500'
+                            : get(section, 'id') == cornerSection.id
+                            ? 'bg-amber-300 text-gray-600 cursor-pointer'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-400 cursor-pointer',
+                    ]"
+                    @click="
+                        () => {
+                            common && get(common,['corners',cornerSection.id])  &&  !isNull(common.corners[cornerSection.id]) ? null : cornerSideClick(cornerSection);
+                        }
                     "
-                    class="isolate text-sm italic"
                 >
-                    <div class="">
-                        <font-awesome-icon
-                            :icon="['fas', 'lock']"
-                            class="mr-2"
-                        />
-                        Already used in common
+                    <div
+                        v-if="
+                            common &&
+                            get(common,['corners',cornerSection.id]) &&  !isNull(common.corners[cornerSection.id])
+                        "
+                        class="isolate text-sm italic"
+                    >
+                        <div class="">
+                            <font-awesome-icon
+                                :icon="['fas', 'lock']"
+                                class="mr-2"
+                            />
+                            Already used in common
+                        </div>
                     </div>
+                    <span v-else class="capitalize">{{ cornerSection.label }}</span>
                 </div>
-                <span v-else class="capitalize">{{ cornerSection.label }}</span>
             </div>
         </div>
-        <CornersType
-            v-if="Object.keys(section).length"
-            :section="section"
-            :fieldData="fieldData"
-            @clear="clear"     
-        />
+        
+        <div v-if="Object.keys(section).length" class="mt-8">
+            <div class="mb-1">
+                Select component to put in {{ section.label }} corner:
+            </div>
+            
+            <CornersType
+                :section="section"
+                :fieldData="fieldData"
+                @clear="clear"
+            />
+        </div>
     </div>
 </template>

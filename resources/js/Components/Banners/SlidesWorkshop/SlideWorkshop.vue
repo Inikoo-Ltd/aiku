@@ -20,7 +20,7 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 library.add(faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch)
 const props = defineProps<{
     modelValue: any
-    blueprint: Array
+    blueprint: []
     remove: Function
     common: any
     bannerType?: string
@@ -114,14 +114,24 @@ defineExpose({
                     </dt>
 
 
-                    <!-- Fields -->
+                    <!-- Fields: Top left, Top middle, etc -->
                     <dd class="flex text-sm text-gray-700 sm:mt-0 w-full">
                         <div class="relative flex-grow">
-                            <component :is="getComponent(fieldData['type'])" :model-value="getValue(fieldData)"
-                                @update:modelValue="setValue(fieldData, $event)" :fieldName="fieldData.name"
-                                :fieldData="fieldData" :key="fieldData.type + index + fieldData.label" :counter="false"
-                                :common="common" :uploadRoutes="uploadRoutes" :bannerType="bannerType">
-                            </component>
+                            <!-- <pre>{{ fieldData.name }}</pre>
+                            <pre>{{ props.modelValue }}</pre>
+                            <pre>{{ fieldData }}</pre> -->
+                            <component
+                                :is="getComponent(fieldData.type)"
+                                :model-value="getValue(fieldData)"
+                                @update:modelValue="setValue(fieldData, $event)"
+                                :fieldName="fieldData.name"
+                                :fieldData="fieldData"
+                                :key="fieldData.type + index + fieldData.label"
+                                :counter="false"
+                                :common="common"
+                                :uploadRoutes="uploadRoutes"
+                                :bannerType="bannerType"
+                            />
                         </div>
                     </dd>
                 </dl>
