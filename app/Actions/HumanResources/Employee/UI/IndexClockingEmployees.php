@@ -9,6 +9,14 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use Illuminate\Support\Facades\Auth;
+use App\Services\QueryBuilder;
+use App\Models\HumanResources\Timesheet;
+use App\Http\Resources\HumanResources\TimesheetsResource;
+use App\Models\HumanResources\WorkSchedule;
+use App\Models\HumanResources\QrScanLog;
+use Illuminate\Support\Carbon;
+use App\Enums\Helpers\Period\PeriodEnum;
 
 class IndexClockingEmployees extends OrgAction
 {
@@ -16,9 +24,37 @@ class IndexClockingEmployees extends OrgAction
 
     public function handle(ActionRequest $request): Response
     {
-
+        $this->tab = $request->input('tab');
         if (!$this->tab) {
             $this->tab = ClockingEmployeesTabsEnum::SCAN_QR_CODE->value;
+        }
+        $user = Auth::user();
+        $employee = $user?->employees->first();
+        $timesheetsData = [];
+        $statistics = [];
+        if ($this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value) {
+            $query = QueryBuilder::for(Timesheet::class)
+                ->where('subject_type', 'Employee')
+                ->where('subject_id', $employee->id)
+                ->with(['subject.jobPositions']);
+
+            $timezone = $employee->organisation->timezone->name ?? 'UTC';
+
+            [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
+            if ($from && $to) {
+                $query->whereBetween('timesheets.date', [$from, $to]);
+            }
+
+            $statsQuery = $query->clone();
+            $statistics = $this->getStatistics($employee, $statsQuery, $timezone, $from, $to);
+
+            $timesheets = $query
+                ->defaultSort('date')
+                ->allowedSorts(['date', 'working_duration', 'breaks_duration'])
+                ->paginate(request()->input('per_page', 15))
+                ->withQueryString();
+
+            $timesheetsData = TimesheetsResource::collection($timesheets);
         }
 
         return Inertia::render(
@@ -48,9 +84,10 @@ class IndexClockingEmployees extends OrgAction
 
                 ClockingEmployeesTabsEnum::TIMESHEETS->value => $this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value
                     ? fn () => [
-                        'timesheets' => []
+                        'timesheets' => $timesheetsData,
+                        'statistics' => $statistics,
                     ]
-                    : Inertia::lazy(fn () => ['status' => 'loaded_lazy']),
+                    : Inertia::lazy(fn () => ['status' => 'loaded_lazy', 'timesheets' => $timesheetsData, 'statistics' => $statistics]),
             ]
         );
     }
@@ -76,5 +113,140 @@ class IndexClockingEmployees extends OrgAction
                 ]
             ]
         );
+    }
+
+    protected function resolvePeriodRange(): ?array
+    {
+        $period = request()->input('employees_period');
+
+        if (!$period || !is_array($period)) {
+            // Default: Month
+            return [
+                now()->startOfMonth(),
+                now()->endOfMonth(),
+            ];
+        }
+        return PeriodEnum::toDateRange($period);
+    }
+
+    protected function getStatistics($employee, $statsQuery, $timezone, $from, $to): array
+    {
+        if (!$statsQuery) {
+            return [];
+        }
+
+        $baseQuery = $statsQuery->clone();
+
+        $total = (clone $baseQuery)->count();
+        $noClockOut = (clone $baseQuery)->where('number_open_time_trackers', '>', 0)->count();
+
+        $organisationId = $employee->organisation_id;
+
+        $invalidScanCount = 0;
+        if ($organisationId) {
+            $invalidQuery = QrScanLog::where('organisation_id', $organisationId)
+                ->where('status', 'failed')
+                ->where('employee_id', $employee->id);
+
+            if ($from && $to) {
+                $invalidQuery->whereBetween('scanned_at', [
+                    Carbon::parse($from, $timezone)->startOfDay()->utc(),
+                    Carbon::parse($to, $timezone)->endOfDay()->utc(),
+                ]);
+            }
+
+            $invalidScanCount = $invalidQuery->count();
+        }
+
+        $schedule = null;
+        if ($organisationId) {
+            $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
+                ->where('schedulable_id', $organisationId)
+                ->where('is_active', true)
+                ->with('days')
+                ->first();
+        }
+
+        if (!$schedule) {
+            return [
+                'on_time' => 0,
+                'late_clock_in' => 0,
+                'early_clock_out' => 0,
+                'no_clock_out' => $noClockOut,
+                'invalid' => $invalidScanCount,
+                'absent' => 0,
+                'total' => $total,
+            ];
+        }
+
+        $scheduleMap = $schedule->days->keyBy('day_of_week');
+
+        $timesheetsQuery = (clone $baseQuery)
+            ->setEagerLoads([])
+            ->select(['timesheets.date', 'timesheets.start_at', 'timesheets.end_at', 'timesheets.number_open_time_trackers']);
+
+        $lateClockIn = 0;
+        $earlyClockOut = 0;
+        $onTime = 0;
+
+        foreach ($timesheetsQuery->cursor() as $ts) {
+
+            $dayOfWeek = $ts->date->dayOfWeekIso;
+            $daySchedule = $scheduleMap->get($dayOfWeek);
+
+            if (!$daySchedule || !$daySchedule->is_working_day) {
+                continue;
+            }
+
+            $startAt = $ts->start_at
+                ?->copy()
+                ->setTimezone($timezone);
+
+            $endAt = $ts->end_at
+                ?->copy()
+                ->setTimezone($timezone);
+
+            $scheduledStart = null;
+            $scheduledEnd = null;
+
+            if ($startAt) {
+                $scheduledStart = $startAt->copy()->setTime(
+                    $daySchedule->start_time->hour,
+                    $daySchedule->start_time->minute,
+                    $daySchedule->start_time->second ?? 0,
+                );
+
+                $scheduledEnd = $startAt->copy()->setTime(
+                    $daySchedule->end_time->hour,
+                    $daySchedule->end_time->minute,
+                    $daySchedule->end_time->second ?? 0,
+                );
+            }
+
+            $isLate = false;
+
+            if ($scheduledStart && $startAt && $startAt->gt($scheduledStart->copy()->addMinutes(1))) {
+                $lateClockIn++;
+                $isLate = true;
+            }
+
+            if ($scheduledEnd && $ts->number_open_time_trackers == 0 && $endAt && $endAt->lt($scheduledEnd->copy()->subMinutes(1))) {
+                $earlyClockOut++;
+            }
+
+            if (!$isLate && $startAt) {
+                $onTime++;
+            }
+        }
+
+        return [
+            'on_time' => $onTime,
+            'late_clock_in' => $lateClockIn,
+            'early_clock_out' => $earlyClockOut,
+            'no_clock_out' => $noClockOut,
+            'invalid' => $invalidScanCount,
+            'absent' => 0,
+            'total' => $total,
+        ];
     }
 }
