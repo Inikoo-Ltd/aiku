@@ -291,62 +291,62 @@ class ShowProduct extends OrgAction
 
         $componentData = [
             ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
-                fn() => GetProductShowcase::run($product)
-                : Inertia::lazy(fn() => GetProductShowcase::run($product)),
+                fn () => GetProductShowcase::run($product)
+                : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
             'salesData' => $this->tab == ProductTabsEnum::SHOWCASE->value ?
-                fn() => GetProductTimeSeriesData::run($product)
-                : Inertia::lazy(fn() => GetProductTimeSeriesData::run($product)),
+                fn () => GetProductTimeSeriesData::run($product)
+                : Inertia::lazy(fn () => GetProductTimeSeriesData::run($product)),
 
             ProductTabsEnum::SALES->value => $this->tab == ProductTabsEnum::SALES->value
                 ?
-                fn() => $product->asset
+                fn () => $product->asset
                     ? AssetTimeSeriesResource::collection(IndexAssetTimeSeries::run($product->asset, ProductTabsEnum::SALES->value))
                     : AssetTimeSeriesResource::collection(new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20))
-                : Inertia::lazy(fn() => $product->asset
+                : Inertia::lazy(fn () => $product->asset
                     ? AssetTimeSeriesResource::collection(IndexAssetTimeSeries::run($product->asset, ProductTabsEnum::SALES->value))
                     : AssetTimeSeriesResource::collection(new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20))),
 
             ProductTabsEnum::TRADE_UNITS->value => $this->tab == ProductTabsEnum::TRADE_UNITS->value ?
-                fn() => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
-                : Inertia::lazy(fn() => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
+                fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
+                : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
 
             ProductTabsEnum::STOCKS->value => $this->tab == ProductTabsEnum::STOCKS->value ?
-                fn() => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
-                : Inertia::lazy(fn() => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
+                fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
+                : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
             ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
-                fn() => HistoryResource::collection(IndexHistory::run($product))
-                : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($product))),
+                fn () => HistoryResource::collection(IndexHistory::run($product))
+                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
 
             ProductTabsEnum::CUSTOMERS->value => $this->tab == ProductTabsEnum::CUSTOMERS->value ?
-                fn() => CustomersResource::collection(IndexCustomers::run($product))
-                : Inertia::lazy(fn() => CustomersResource::collection(IndexCustomers::run($product))),
+                fn () => CustomersResource::collection(IndexCustomers::run($product))
+                : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($product))),
         ];
 
         if (!$isExternalShop) {
             $componentData = array_merge($componentData, [
                 ProductTabsEnum::CONTENT->value => $this->tab == ProductTabsEnum::CONTENT->value ?
-                    fn() => GetProductContent::run($product)
-                    : Inertia::lazy(fn() => GetProductContent::run($product)),
+                    fn () => GetProductContent::run($product)
+                    : Inertia::lazy(fn () => GetProductContent::run($product)),
 
 
                 ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
-                    fn() => GetProductImages::run($product)
-                    : Inertia::lazy(fn() => GetProductImages::run($product)),
+                    fn () => GetProductImages::run($product)
+                    : Inertia::lazy(fn () => GetProductImages::run($product)),
 
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
-                    fn() => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
-                    : Inertia::lazy(fn() => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
+                    fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
+                    : Inertia::lazy(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
 
                 ProductTabsEnum::REMINDERS->value => $this->tab == ProductTabsEnum::REMINDERS->value ?
-                    fn() => ProductHasBackInStockRemindersResource::collection(ProductHasBackInStockReminders::run($product))
-                    : Inertia::lazy(fn() => ProductHasBackInStockRemindersResource::collection(ProductHasBackInStockReminders::run($product))),
+                    fn () => ProductHasBackInStockRemindersResource::collection(ProductHasBackInStockReminders::run($product))
+                    : Inertia::lazy(fn () => ProductHasBackInStockRemindersResource::collection(ProductHasBackInStockReminders::run($product))),
 
                 ProductTabsEnum::ATTACHMENTS->value => $this->tab == ProductTabsEnum::ATTACHMENTS->value ?
-                    fn() => GetProductAttachment::run($product)
-                    : Inertia::lazy(fn() => GetProductAttachment::run($product)),
+                    fn () => GetProductAttachment::run($product)
+                    : Inertia::lazy(fn () => GetProductAttachment::run($product)),
             ]);
         }
 

@@ -207,4 +207,8 @@ const onSubmitAddItem = async (idProduct: number[]) => {
     background: transparent;
     border: none;
 }
+
+:deep(.p-breadcrumb-list > li.p-breadcrumb-separator:first-child) {
+    display: none !important;
+}
 </style>

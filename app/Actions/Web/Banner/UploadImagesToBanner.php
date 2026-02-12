@@ -24,6 +24,19 @@ class UploadImagesToBanner extends OrgAction
     {
         $this->initialisationFromShop($banner->shop, $request);
 
-        return $this->handle($banner->group, 'banner', $this->validatedData);
+        $medias = $this->handle($banner->group, 'banner', $this->validatedData);
+
+        if ($medias->isNotEmpty()) {
+            $firstMedia = $medias->first();
+
+            $currentData = is_array($banner->data) ? $banner->data : [];
+            $currentData['unpublished_image_id'] = $firstMedia->id;
+
+            $banner->image_id = $firstMedia->id;
+            $banner->data = $currentData;
+            $banner->save();
+        }
+
+        return $medias;
     }
 }

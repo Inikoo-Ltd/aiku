@@ -19,6 +19,7 @@ import { faRocketLaunch } from '@far'
 import { faAsterisk } from '@fas'
 import { faSpinnerThird } from '@fad'
 import { trans } from "laravel-vue-i18n"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 library.add(faAsterisk, faRocketLaunch, faUser, faUserFriends, faSpinnerThird)
 
@@ -172,17 +173,18 @@ onBeforeUnmount(() => {
 
 <template>
 <Head :title="capitalize(title)" />
-
 <PageHeading :data="pageHead">
     <template #afterTitle2>
-        <ConditionIcon v-if="status" :state="status" class="text-xl" />
+        <!-- {{ status }} -->
+        <!-- <ConditionIcon v-if="status" :state="status" class="text-xl" /> -->
 
         <Button
-            v-else
+            vxlse
+            v-tooltip="useFormatTime(banner.updated_at, {formatTime: 'hms'})"
             @click="saveBanner"
             type="tertiary"
             :label="trans('Save')"
-            icon="fas fa-save"
+            :icon="status === 'success' ? 'fal fa-check' : 'fas fa-save'"
             size="sm"
             :loading="status === 'loading'"
         />

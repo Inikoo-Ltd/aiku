@@ -86,16 +86,19 @@ trait WithLuigis
             'Authorization'   => "Hello $publicKey:$signature",
         ];
 
+        Log::info('xxxx', ['compressed' => $compressed]);
+        $bodyToPrint = 'encoded body';
         if ($compressed) {
             $header['Content-Encoding'] = 'gzip';
             $body                       = gzencode(json_encode($body), 9);
         } else {
             $body = json_encode($body);
+            $bodyToPrint = $body;
         }
 
         Log::info('Starting request to Luigi Box API ' . $publicKey . ' (' . $date . ')...');
         Log::info('Headers', $header);
-        Log::info('Body', ['body' => $body]);
+        Log::info('Body', ['body' => $bodyToPrint]);
 
         Log::info('Loading...');
         $response = Http::withHeaders($header)
