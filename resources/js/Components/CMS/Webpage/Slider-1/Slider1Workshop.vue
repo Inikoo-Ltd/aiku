@@ -217,7 +217,6 @@ onBeforeUnmount(stopAutoMove)
 
 /* hover opacity + zoom 1.5x */
 .group:hover .slider-image{
-  transform: scale(1.3);
   opacity:.55;
   z-index:5;
 }

@@ -18,6 +18,7 @@ use App\Actions\Traits\HasBucketAttachment;
 use App\Helpers\NaturalLanguage;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Models\Goods\TradeUnit;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class GetMasterProductShowcase
@@ -106,9 +107,9 @@ class GetMasterProductShowcase
             ->pluck('quantity', 'trade_unit_id')
             ->toArray();
 
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
+        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
             return array_merge(
-                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / $packedIn[$tradeUnit->id])), $packedIn[$tradeUnit->id])],
+                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / Arr::get($packedIn, $tradeUnit->id, 1))), Arr::get($packedIn, $tradeUnit->id, 1))],
                 GetTradeUnitShowcase::run($tradeUnit)
             );
         })->toArray();

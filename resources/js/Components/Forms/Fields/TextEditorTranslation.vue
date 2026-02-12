@@ -31,6 +31,7 @@ const props = defineProps<{
     show_follow_master?: boolean
     follow_master?: boolean
     languages: Record<string, Language>
+    toogle?: string[]
   }
   updateRoute: {
     name: string
@@ -167,7 +168,7 @@ const generateTranslateAI = async () => {
 
             <div class="flex-1 pr-10  rounded-md  ">
               <div class="bg-gray-50 border p-2 rounded-md">
-                <EditorV2 v-model="props.form[props.fieldName]" :key="key">
+                <EditorV2 v-model="props.form[props.fieldName]" :key="key" :toogle="fieldData.toogle">
                   <template #editor-content="{ editor }">
                     <EditorContent :editor="editor" class="focus:outline-none text-sm text-gray-700
                  whitespace-pre-wrap leading-6 min-h-[5rem]" />
