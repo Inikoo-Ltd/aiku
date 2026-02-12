@@ -43,20 +43,16 @@ class StoreRefundInvoiceTransaction extends OrgAction
             if (!$isRefundAll) {
                 CalculateInvoiceTotals::run($refund);
             }
-
             return $invoiceTransaction;
         }
 
         $totalTrRefunded = $invoiceTransaction->transactionRefunds->where('in_process', false)->sum('net_amount');
-
         if (abs($netAmount) == $invoiceTransaction->net_amount && !Arr::has($modelData, 'is_tax_only')) {
             $netAmount = (abs($netAmount) - abs($totalTrRefunded)) * -1;
-
             if ($netAmount == 0) {
                 if (!$isRefundAll) {
                     CalculateInvoiceTotals::run($refund);
                 }
-
                 return $invoiceTransaction;
             }
         }
@@ -121,7 +117,10 @@ class StoreRefundInvoiceTransaction extends OrgAction
     public function rules(): array
     {
         return [
-            'net_amount' => ['required', 'numeric', 'gte:0'],
+            'net_amount' => ['sometimes', 'numeric', 'gte:0'],
+            'tax_amount' => ['sometimes', 'numeric', 'gte:0'],
+            'amount_total' => ['sometimes', 'numeric', 'gte:0'],
+            'is_tax_only' => ['sometimes', 'boolean'],
         ];
     }
 

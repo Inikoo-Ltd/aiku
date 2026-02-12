@@ -24,6 +24,7 @@ use App\Enums\UI\Accounting\RefundInProcessTabsEnum;
 use App\Enums\UI\Accounting\RefundTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\PaymentsResource;
+use App\Http\Resources\Accounting\RefundInProcessTaxOnlyTransactionsResource;
 use App\Http\Resources\Accounting\RefundInProcessTransactionsResource;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundTransactionsResource;
@@ -38,6 +39,8 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -219,7 +222,7 @@ class ShowRefund extends OrgAction
                 'key'   => 'refund_all',
                 'route' => [
                     'method'     => 'post',
-                    'name'       => 'grp.models.refund.refund_all',
+                    'name'       => $refund->is_tax_only ? 'grp.models.refund.refund_all.taxes' : 'grp.models.refund.refund_all',
                     'parameters' => [
                         'refund' => $refund->id,
                     ]
@@ -243,7 +246,7 @@ class ShowRefund extends OrgAction
 
 
         $props = [
-            'title'       => __('refund'),
+            'title'       => $refund->is_tax_only ? __('Tax Refund') : __('Refund'),
             'breadcrumbs' => $this->getBreadcrumbs(
                 $refund,
                 $request->route()->getName(),
@@ -255,7 +258,7 @@ class ShowRefund extends OrgAction
             ],
             'pageHead'    => [
                 'subNavigation' => $subNavigation,
-                'model'         => __('refund'),
+                'model'         => $refund->is_tax_only ? __('Tax Refund') : __('Refund'),
                 'title'         => $refund->reference,
                 'icon'          => [
                     'icon'  => 'fal fa-arrow-circle-left',
@@ -272,9 +275,7 @@ class ShowRefund extends OrgAction
                 'current'    => $this->tab,
                 'navigation' => $refund->in_process ? RefundInProcessTabsEnum::navigation() : RefundTabsEnum::navigation()
             ],
-
-
-            'order_summary' => [
+            'order_summary' => array_filter([
                 array_filter([
                     $refund->shop->fulfilment || $refund->services_amount > 0 ? [
                         'label'       => __('Services'),
@@ -291,7 +292,7 @@ class ShowRefund extends OrgAction
                         'price_total' => $refund->rental_amount
                     ] : [],
                 ]),
-                [
+                $refund->is_tax_only ? null : [
                     [
                         'label'       => __('Net'),
                         'price_total' => $refund->net_amount
@@ -309,9 +310,7 @@ class ShowRefund extends OrgAction
                         'price_total' => $refund->total_amount
                     ],
                 ],
-            ],
-
-
+            ]),
             'box_stats'        => array_merge($this->getBoxStats($refund), [
                 'refund_id' => $refund->id
             ]),
@@ -334,8 +333,7 @@ class ShowRefund extends OrgAction
                 ]
             ] : null,
             'invoice_refund'   => RefundResource::make($refund),
-
-
+            'is_tax_only'      => $refund->is_tax_only,
         ];
 
         if ($refund->in_process) {
@@ -343,13 +341,12 @@ class ShowRefund extends OrgAction
                 $props,
                 [
                     RefundInProcessTabsEnum::ITEMS->value => $this->tab == RefundInProcessTabsEnum::ITEMS->value ?
-                        fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value))
-                        : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, RefundInProcessTabsEnum::ITEMS->value))),
-
+                        fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value), $refund->is_tax_only)
+                        : Inertia::lazy(fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value), $refund->is_tax_only)),
 
                     RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value => $this->tab == RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value ?
-                        fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))
-                        : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))),
+                        fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value), $refund->is_tax_only)
+                        : Inertia::lazy(fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value), $refund->is_tax_only)),
 
                     RefundInProcessTabsEnum::HISTORY->value => $this->tab == RefundInProcessTabsEnum::HISTORY->value ?
                         fn () => HistoryResource::collection(IndexHistory::run($refund))
@@ -382,7 +379,6 @@ class ShowRefund extends OrgAction
             );
         }
 
-
         $inertia = Inertia::render(
             'Org/Accounting/Refund',
             $props
@@ -402,12 +398,19 @@ class ShowRefund extends OrgAction
         return $inertia;
     }
 
+    public function getTransactionsInProcessCollection(LengthAwarePaginator $transactions, bool $isTaxOnly): AnonymousResourceCollection
+    {
+        if ($isTaxOnly) {
+            return RefundInProcessTaxOnlyTransactionsResource::collection($transactions);
+        }
+
+        return RefundInProcessTransactionsResource::collection($transactions);
+    }
 
     public function jsonResponse(Invoice $invoice): RefundResource
     {
         return new RefundResource($invoice);
     }
-
 
     public function getBreadcrumbs(Invoice $refund, string $routeName, array $routeParameters, string $suffix = ''): array
     {
@@ -435,9 +438,8 @@ class ShowRefund extends OrgAction
             ];
         };
 
-
-
         return match ($routeName) {
+            'grp.org.accounting.invoices.show.refunds.show',
             'grp.org.shops.show.ordering.orders.show.invoices.show.refunds.show'
             =>
             array_merge(
@@ -459,7 +461,6 @@ class ShowRefund extends OrgAction
                     ],
                 ]
             ),
-
             'grp.org.shops.show.ordering.orders.show.refunds.show'
             =>
             array_merge(
@@ -481,7 +482,6 @@ class ShowRefund extends OrgAction
                     ],
                 ]
             ),
-
             'grp.org.fulfilments.show.operations.invoices.refunds.show'
             => array_merge(
                 ShowFulfilment::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment'])),
@@ -708,8 +708,6 @@ class ShowRefund extends OrgAction
                     $suffix
                 ),
             ),
-
-
             default => []
         };
     }
@@ -738,7 +736,6 @@ class ShowRefund extends OrgAction
             return null;
         }
 
-
         return match ($routeName) {
             'grp.org.accounting.refunds.show' => [
                 'label' => $refund->reference,
@@ -751,8 +748,6 @@ class ShowRefund extends OrgAction
 
                 ]
             ],
-
-
             'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show' => [
                 'label' => $refund->reference,
                 'route' => [

@@ -28,6 +28,7 @@ library.add(faArrowAltCircleLeft, faSave, falSave, faExclamationCircle, faMinus,
 const props = defineProps<{
     data: {}
     tab: string
+    is_tax_only?: boolean
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -37,14 +38,21 @@ const _formCell = ref({})
 const isLoadingQuantity = ref<number[]>([])
 const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: FormData) => {
     let tempValue = toRaw(amount.refund_amount)
+
+    const refundParam = props.is_tax_only ? {
+        tax_amount: amount.refund_amount,
+        amount_total: amount.refund_amount,
+        is_tax_only: true as const,
+    } : {
+        net_amount: amount.refund_amount,
+    };
+
     router[routeRefund.method || 'post'](
         route(
             routeRefund.name,
             routeRefund.parameters
         ),
-        {
-            net_amount: amount.refund_amount
-        },
+        refundParam,
         {
             preserveScroll: true,
             onStart : () =>{
