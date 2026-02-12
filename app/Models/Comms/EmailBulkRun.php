@@ -123,5 +123,23 @@ class EmailBulkRun extends Model
         return $this->hasMany(EmailBulkRunRecipient::class);
     }
 
+    public function sender(): string
+    {
+        if (app()->environment('production')) {
+            /** @var Shop $parent */
+            $parent = $this->shop;
+            //todo we need to set up sender and very SES etc
+            //   $sender = $parent->senderEmail->email_address;
+            $sender = $parent?->email;
+        } else {
+            $sender = config('app.email_address_in_non_production_env');
+        }
 
+        return $sender;
+    }
+
+    public function senderName(): string
+    {
+        return $this->shop?->name ?? '';
+    }
 }

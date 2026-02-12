@@ -10,6 +10,8 @@ namespace App\Actions\Comms\Outbox\PriceChangeNotification;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\EmailBulkRun\StoreEmailBulkRun;
+use App\Actions\Comms\EmailBulkRun\StoreEmailBulkRunRecipient;
+use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRun;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
@@ -36,9 +38,13 @@ class RunPriceChangeNotificationEmailBulkRuns
     use WithActionUpdate;
 
     public string $commandSignature = 'run:price-change-notification';
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'default-long';
 
 
+    public function tags(): array
+    {
+        return ['price_change_notification'];
+    }
     public function handle(): void
     {
 
@@ -51,7 +57,7 @@ class RunPriceChangeNotificationEmailBulkRuns
         $outboxes = $queryOutbox->get();
 
         $currentDateTime = Carbon::now()->utc();
-        $last24Hours = now()->subHours(24);
+        $last24Hours = now()->subHours(48);
 
         /**
          * check following steps :
@@ -116,11 +122,7 @@ class RunPriceChangeNotificationEmailBulkRuns
             $baseQuery->groupBy('customers.id');
 
             $baseQuery->orderBy('customers.id');
-            //  Log the query
-            // \Log::info($baseQuery->toRawSql());
-
-
-            $lastBulkRun = null;
+            
             $updateLastOutBoxSent = null;
 
             // create email bulk run
@@ -132,11 +134,14 @@ class RunPriceChangeNotificationEmailBulkRuns
 
 
             $baseQuery->chunk(250, function ($customers) use ($emailBulkRun, $outbox) {
+
                 $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
 
                 foreach ($customers as $customer) {
+
                     if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
-                        StoreDispatchedEmail::run(
+
+                        $dispatchedEmail = StoreDispatchedEmail::run(
                             $emailBulkRun,
                             $customer,
                             [
@@ -144,6 +149,19 @@ class RunPriceChangeNotificationEmailBulkRuns
                                 'outbox_id'     => $outbox->id,
                                 'email_address' => $customer->email,
                                 'provider'      => DispatchedEmailProviderEnum::SES,
+                                'data->additional_data' => [
+                                    'products' => $this->generateProductLinks($customer->product_ids)
+                                ]
+                            ]
+                        );
+
+                        StoreEmailBulkRunRecipient::run(
+                            $emailBulkRun,
+                            [
+                                'dispatched_email_id' => $dispatchedEmail->id,
+                                'recipient_type'      => class_basename($customer),
+                                'recipient_id'        => $customer->id,
+                                'channel'             => $emailDeliveryChannel->id,
                             ]
                         );
                     }
@@ -153,55 +171,18 @@ class RunPriceChangeNotificationEmailBulkRuns
                 UpdateEmailDeliveryChannel::run(
                     $emailDeliveryChannel,
                     [
-                        'number_emails' => $emailBulkRun->dispatchedEmails()->where('channel', $emailDeliveryChannel->id)->count()
+                        'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count()
                     ]
                 );
                 SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
             });
 
-            // foreach ($baseQuery-> as $customer) {
-            //     $processedCount++;
-
-            //     if ($lastCustomer === null) {
-            //         $lastCustomer = $customer;
-            //     }
-
-            //     // running code for sending email
-            //     if ($lastCustomer->id !== $customer->id) {
-            //         $bulkRun = $this->upsertEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
-            //         $additionalData = [
-            //             'products' => $this->generateProductLinks($productData),
-            //         ];
-            //         // SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
-
-            //         $lastBulkRun = $bulkRun;
-
-            //         $lastCustomer = $customer;
-            //         $productData = []; // Reset for new customer
-
-            //         // Update last sent time for this outbox
-            //         $updateLastOutBoxSent = $currentDateTime;
-            //     }
-
-            //     $productData[] = [
-            //         'product_id' => $customer->product_id,
-            //     ];
-
-            //     if ($processedCount === $totalCustomers) {
-            //         // Process the last batch
-            //         $bulkRun = $this->upsertEmailBulkRuns($lastCustomer, $outbox->code, $currentDateTime->toDateTimeString());
-            //         $additionalData = [
-            //             'products' => $this->generateProductLinks($productData),
-            //         ];
-            //         // SendBackToStockToCustomerEmail::dispatch($lastCustomer, $outbox->code, $additionalData, $bulkRun);
-            //         // reset product data
-            //         $productData = [];
-            //         $lastBulkRun = $bulkRun;
-
-            //         // Update last sent time for this outbox
-            //         $updateLastOutBoxSent = $currentDateTime;
-            //     }
-            // }
+            UpdateEmailBulkRun::run(
+                $emailBulkRun,
+                [
+                    'recipients_stored_at' => now()
+                ]
+            );
         }
     }
 
@@ -210,8 +191,15 @@ class RunPriceChangeNotificationEmailBulkRuns
         $this->run();
     }
 
-    public function generateProductLinks(array $productData): string
+    public function generateProductLinks(string $productIds): string
     {
+        try {
+            $productIds = explode(',', $productIds);
+        } catch (\Throwable $th) {
+            \Log::error('Error parsing product IDs: ' . $th->getMessage());
+            return '';
+        }
+
         $date = Carbon::now()->format('d M y');
 
         $html = '';
@@ -228,8 +216,8 @@ class RunPriceChangeNotificationEmailBulkRuns
             <th align="center" style="color:#555;">' . __('New stock') . ' (' . $date . ')</th>
         </tr>';
 
-        foreach ($productData as $product) {
-            $dataProduct = Product::find($product['product_id']);
+        foreach ($productIds as $productId) {
+            $dataProduct = Product::find($productId);
 
             if (!$dataProduct) {
                 continue;
