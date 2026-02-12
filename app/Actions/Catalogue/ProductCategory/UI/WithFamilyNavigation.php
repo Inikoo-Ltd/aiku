@@ -33,6 +33,7 @@ trait WithFamilyNavigation
         switch ($routeName) {
             case 'grp.org.shops.show.catalogue.departments.show.families.show':
             case 'grp.org.shops.show.catalogue.departments.show.families.edit':
+            case 'grp.org.shops.show.catalogue.departments.show.families.show.products.index':
                 $query->where('department_id', $model->department_id);
                 break;
             case 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show':
@@ -59,6 +60,7 @@ trait WithFamilyNavigation
         return match ($routeName) {
             'grp.org.shops.show.catalogue.departments.show.families.index',
             'grp.org.shops.show.catalogue.departments.show.families.show',
+            'grp.org.shops.show.catalogue.departments.show.families.show.products.index',
             'grp.org.shops.show.catalogue.departments.show.families.edit' => [
                 'organisation' => $family->organisation->slug,
                 'shop'         => $family->shop->slug,

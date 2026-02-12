@@ -24,7 +24,8 @@ class GetMasterProductImages
     public function handle(MasterAsset $masterAsset): array
     {
         return [
-            'id' => $masterAsset->id,
+            'id'                  => $masterAsset->id,
+            'editable'            => !$masterAsset->is_single_trade_unit,
             'bucket_images'       => $masterAsset->bucket_images,
             'images_category_box' => $this->getImagesData($masterAsset),
             'images_update_route' => [
@@ -46,10 +47,10 @@ class GetMasterProductImages
                 'name'       => 'grp.models.master_asset.delete_images',
                 'parameters' => [
                     'masterAsset' => $masterAsset->id,
-                    'media'   => ''
+                    'media'       => ''
                 ],
             ],
-            'images' => ImagesResource::collection(IndexMasterProductImages::run($masterAsset))->resolve(),
+            'images'              => ImagesResource::collection(IndexMasterProductImages::run($masterAsset))->resolve(),
 
         ];
     }

@@ -206,7 +206,7 @@ onMounted(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <div v-if="mini_breadcrumbs.length" class="bg-white px-4 py-2 w-full border-gray-200 border-b overflow-x-auto">
+    <div  class="bg-white px-4 py-2 w-full border-gray-200 border-b overflow-x-auto breadcrumbs-container">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
@@ -247,4 +247,11 @@ onMounted(() => {
     background: transparent;
     border: none;
 }
+
+
+:deep(.p-breadcrumb-list > li.p-breadcrumb-separator:first-child) {
+    display: none !important;
+}
 </style>
+
+

@@ -100,6 +100,7 @@ beforeEach(function () {
 
 
 test('can show fulfilment website', function () {
+    $this->withoutExceptionHandling();
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -121,6 +122,7 @@ test('can show fulfilment website', function () {
 });
 
 test('can show fulfilment website (tab showcase)', function () {
+    $this->withoutExceptionHandling();
     $website = $this->fulfilmentWebsite;
 
     $response = get(

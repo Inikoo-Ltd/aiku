@@ -25,7 +25,7 @@ class UpdateInventoryInWooPortfolio
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
-        $platform              = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
+        $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
 
         if ($customerSalesChannel === null) {
             $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
@@ -73,21 +73,38 @@ class UpdateInventoryInWooPortfolio
                     ->get();
 
 
+                $applicablePortfolios = [];
+                $notApplicablePortfolios = [];
                 $first = true;
                 /** @var Portfolio $portfolio */
-                foreach ($portfolios as $portfolio) {
-                    if ($this->checkIfApplicable($portfolio)) {
-                        if ($first) {
-                            $wooCommerceUser->setTimeout(45);
-                            UpdateWooPortfolio::run($portfolio->id);
-                            $first = false;
-                        } else {
-                            // Add jitter to spread API calls and avoid bursts
-                            $delaySeconds = random_int(1, 120);
-                            UpdateWooPortfolio::dispatch($portfolio->id)->delay(now()->addSeconds($delaySeconds));
+                foreach ($portfolios->chunk(100) as $portfolioChunk) {
+                    foreach ($portfolioChunk as $portfolio) {
+                        if ($this->checkIfApplicable($portfolio)) {
+                            if ($first) {
+                                /*$wooCommerceUser->setTimeout(45);
+                                UpdateWooPortfolio::run($portfolio->id);*/
+
+                                $applicablePortfolios[] = $portfolio;
+
+                                $first = false;
+                            } else {
+                                $notApplicablePortfolios[] = $portfolio;
+                                // Add jitter to spread API calls and avoid bursts
+                                /*$delaySeconds = random_int(1, 120);
+                                UpdateWooPortfolio::dispatch($portfolio->id)->delay(now()->addSeconds($delaySeconds));*/
+                            }
                         }
                     }
 
+                    if (count($applicablePortfolios)) {
+                        BulkUpdateWooPortfolio::run($applicablePortfolios);
+                    }
+
+                    if (count($notApplicablePortfolios)) {
+                        $delaySeconds = random_int(1, 120);
+                        BulkUpdateWooPortfolio::dispatch($notApplicablePortfolios)
+                            ->delay(now()->addSeconds($delaySeconds));
+                    }
                 }
             } else {
                 $customerSalesChannel->update([
@@ -101,7 +118,6 @@ class UpdateInventoryInWooPortfolio
     public function checkIfApplicable(Portfolio $portfolio): bool
     {
         $applicable = false;
-
 
 
         if (!$portfolio->stock_last_updated_at) {

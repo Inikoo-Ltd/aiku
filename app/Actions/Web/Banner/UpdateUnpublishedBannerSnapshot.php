@@ -30,12 +30,10 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
         $layout = Arr::pull($modelData, 'layout');
 
 
-
         list($layout, $slides) = ParseBannerLayout::run($layout);
 
 
         data_set($modelData, 'layout', $layout);
-
 
         if ($slides) {
             $existingSlides = Slide::where('snapshot_id', $snapshot->id)->get()->pluck('ulid')->toArray();

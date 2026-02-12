@@ -130,19 +130,24 @@ class EditMasterFamily extends OrgAction
                                     'label' => __('Name'),
                                     'value' => $masterProductCategory->name
                                 ],
-                                'description_title' => [
+                                /* 'description_title' => [
                                     'type'    => 'input',
                                     'label'   => __('Description title'),
                                     'options' => [
                                         'counter' => true,
                                     ],
                                     'value'   => $masterProductCategory->description_title
-                                ],
+                                ], */
                                 'description'       => [
                                     'type'    => 'textEditor',
                                     'label'   => __('Description'),
                                     'options' => [
                                         'counter' => true,
+                                    ],
+                                    'toogle'  => [
+                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description
                                 ],
@@ -151,6 +156,11 @@ class EditMasterFamily extends OrgAction
                                     'label'   => __('Extra description'),
                                     'options' => [
                                         'counter' => true,
+                                    ],
+                                    'toogle'  => [
+                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description_extra
                                 ],

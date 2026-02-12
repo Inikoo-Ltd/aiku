@@ -100,7 +100,7 @@ onMounted(() => {
                 </div>
             </div>
             
-            <div class="py-4 px-4" id="recommendation-crb-1-iris">
+            <div class="py-4 px-3 md:px-12" id="recommendation-crb-1-iris">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"

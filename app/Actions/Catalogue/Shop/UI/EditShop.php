@@ -343,11 +343,11 @@ class EditShop extends OrgAction
                                         'key_value' => 'stand_alone_invoice_numbers'
                                     ],
                                     'format' => [
-                                        'label' => __('format'),
+                                        'label' => __('Format'),
                                         'key_value' => 'stand_alone_invoice_numbers_format'
                                     ],
                                     'sequence' => [
-                                        'label' => __('sequence'),
+                                        'label' => __('Last incremental number'),
                                         'key_value' => 'stand_alone_invoice_numbers_serial'
                                     ],
                                 ],
@@ -361,7 +361,7 @@ class EditShop extends OrgAction
                                         'key_value' => 'stand_alone_refund_numbers_format'
                                     ],
                                     'sequence' => [
-                                        'label' => __('Sequence'),
+                                        'label' => __('Last incremental number'),
                                         'key_value' => 'stand_alone_refund_numbers_serial'
                                     ],
                                 ],

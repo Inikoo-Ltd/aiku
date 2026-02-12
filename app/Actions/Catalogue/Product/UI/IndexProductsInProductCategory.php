@@ -138,6 +138,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'variant.slug as variant_slug',
                 'variant.code as variant_code',
                 'products.is_variant_leader as is_variant_leader',
+                'products.master_product_id',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 

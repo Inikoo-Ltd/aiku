@@ -84,27 +84,34 @@ class StoreWooCommerceProduct extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
+            $attributes = [];
             $dimensions = [];
-            if(! blank($product->marketing_dimensions)) {
+            $w = Arr::get($product->marketing_dimensions, 'w');
+            $h = Arr::get($product->marketing_dimensions, 'h');
+            $l = Arr::get($product->marketing_dimensions, 'l');
+
+            if ($w && $h && $l) {
                 $dimensions = [
-                    'width' => Arr::get($product->marketing_dimensions, 'w'),
-                    'height' => Arr::get($product->marketing_dimensions, 'h'),
-                    'length' => Arr::get($product->marketing_dimensions, 'l')
+                    'width' => (string) $w,
+                    'height' => (string) $h,
+                    'length' => (string) $l
                 ];
             }
 
-            $attributes = [
-                [
-                    'id' => 0,
-                    'name' => 'Country of Origin',
-                    'position' => 0,
-                    'visible' => true,
-                    'variation' => false,
-                    'options' => [$product->country_of_origin]
-                ]
-            ];
+            if ($product->country_of_origin) {
+                $attributes = [
+                    [
+                        'id' => 0,
+                        'name' => 'Country of Origin',
+                        'position' => 0,
+                        'visible' => true,
+                        'variation' => false,
+                        'options' => [$product->country_of_origin]
+                    ]
+                ];
+            }
 
-            if(! blank($customAttributes)) {
+            if (! blank($customAttributes)) {
                 foreach ($customAttributes as $key => $attr) {
                     $attributes[] = [
                         'id' => 0,
@@ -119,7 +126,7 @@ class StoreWooCommerceProduct extends RetinaAction
 
             $ingredients = explode(',', $product->marketing_ingredients);
 
-            if(! blank($ingredients)) {
+            if (! blank($ingredients)) {
                 $attributes[] = [
                     'id' => 0,
                     'name' => 'Ingredients',

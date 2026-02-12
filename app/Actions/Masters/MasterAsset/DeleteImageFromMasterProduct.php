@@ -8,14 +8,10 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\Catalogue\Product\DeleteImagesFromProduct;
-use App\Actions\Goods\TradeUnit\DeleteImageFromTradeUnit;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithImageColumns;
-use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterAsset;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImageFromMasterProduct extends GrpAction
@@ -24,6 +20,10 @@ class DeleteImageFromMasterProduct extends GrpAction
 
     public function handle(MasterAsset $masterAsset, Media $media, bool $updateDependants = false): MasterAsset
     {
+        if ($masterAsset->is_single_trade_unit) {
+            return $masterAsset;
+        }
+
         $masterAsset->images()->detach($media->id);
 
         $updateData = [];
@@ -38,37 +38,11 @@ class DeleteImageFromMasterProduct extends GrpAction
             $masterAsset->update($updateData);
         }
 
-        if ($updateDependants && $masterAsset->is_single_trade_unit) {
-            $this->updateDependants($masterAsset, $media);
+        if ($updateDependants && !$masterAsset->is_single_trade_unit) {
+            UpdateMasterProductImages::make()->updateDependants($masterAsset);
         }
 
         return $masterAsset;
-    }
-
-    public function updateDependants(MasterAsset $seedMasterAsset, Media $media): void
-    {
-        $tradeUnit = $seedMasterAsset->tradeUnits->first();
-        DeleteImageFromTradeUnit::run($tradeUnit, $media);
-
-        foreach (
-            DB::table('model_has_trade_units')
-                ->select('model_type', 'model_id')
-                ->where('trade_unit_id', $tradeUnit->id)
-                ->whereIn('model_type', ['MasterAsset', 'Product'])
-                ->get() as $modelsData
-        ) {
-            if ($modelsData->model_type == 'MasterAsset' && $modelsData->model_id != $seedMasterAsset->id) {
-                $masterAsset = MasterAsset::find($modelsData->model_id);
-                if ($masterAsset && $masterAsset->is_single_trade_unit) {
-                    DeleteImageFromMasterProduct::run($masterAsset, $media);
-                }
-            } elseif ($modelsData->model_type == 'Product') {
-                $product = Product::find($modelsData->model_id);
-                if ($product && $product->is_single_trade_unit) {
-                    DeleteImagesFromProduct::run($product, $media);
-                }
-            }
-        }
     }
 
 

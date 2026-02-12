@@ -27,6 +27,7 @@ use App\Actions\Accounting\Payment\ExportPayments;
 use App\Actions\Accounting\Payment\ShowTopUpReceipt;
 use App\Actions\Accounting\Payment\UI\CreatePayment;
 use App\Actions\Accounting\Payment\UI\EditPayment;
+use App\Actions\Accounting\Payment\UI\IndexPaymentMethods;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\Payment\UI\ShowPayment;
 use App\Actions\Accounting\PaymentAccount\ExportPaymentAccounts;
@@ -82,6 +83,7 @@ Route::get('/accounts/{paymentAccount}/payments', [IndexPayments::class, 'inPaym
 Route::get('/accounts/{paymentAccount}/payments/{payment}', [ShowPayment::class, 'inPaymentAccount'])->name('payment-accounts.show.payments.show');
 Route::get('/accounts/{paymentAccount}/payments/{payment}/edit', [EditPayment::class, 'inPaymentAccount'])->name('payment-accounts.show.payments.edit');
 Route::get('/payments/export', ExportPayments::class)->name('payments.export');
+Route::get('/payments/methods', IndexPaymentMethods::class)->name('payments.methods.index');
 Route::get('/payments', [IndexPayments::class, 'inOrganisation'])->name('payments.index');
 Route::get('/payments/{payment}', [ShowPayment::class, 'inOrganisation'])->name('payments.show');
 Route::get('/payments/{payment}/topUpReceipt/{topUp}', [ShowTopUpReceipt::class, 'inOrganisation'])->name('payments.topUp.pdf');
