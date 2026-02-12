@@ -56,9 +56,6 @@ class RunPriceChangeNotificationEmailBulkRuns
         $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at');
         $outboxes = $queryOutbox->get();
 
-        $currentDateTime = Carbon::now()->utc();
-        $last24Hours = now()->subHours(24);
-
         /**
          * check following steps :
          * 1. check channel still active or not
@@ -77,6 +74,10 @@ class RunPriceChangeNotificationEmailBulkRuns
             if (!$shop->is_aiku) {
                 continue;
             }
+
+
+            $currentDateTime = Carbon::now()->utc();
+            $last24Hours = Carbon::now()->utc()->subHours(24);
 
             $emailongoingRun = $outbox->emailOngoingRun;
 
@@ -107,10 +108,15 @@ class RunPriceChangeNotificationEmailBulkRuns
             });
 
             // check product
-            $baseQuery->join('products', function ($join) use ($last24Hours) {
+            $baseQuery->join('products', function ($join) use ($last24Hours, $lastOutBoxSent) {
                 $join->on('portfolios.item_id', '=', 'products.id');
                 $join->where('products.is_for_sale', true);
                 $join->where('products.price_updated_at', '>', $last24Hours);
+
+                if ($lastOutBoxSent) {
+                    $join->where('products.price_updated_at', '>', $lastOutBoxSent);
+                }
+
                 $join->whereNull('products.deleted_at');
             });
 
@@ -122,8 +128,6 @@ class RunPriceChangeNotificationEmailBulkRuns
             $baseQuery->groupBy('customers.id');
 
             $baseQuery->orderBy('customers.id');
-
-            $updateLastOutBoxSent = null;
 
             // create email bulk run
             $emailBulkRun = StoreEmailBulkRun::make()->action($emailongoingRun, [
@@ -183,6 +187,9 @@ class RunPriceChangeNotificationEmailBulkRuns
                     'recipients_stored_at' => now()
                 ]
             );
+
+            // update last outbox sent
+            $this->update($outbox, ['last_sent_at' => $currentDateTime]);
         }
     }
 
