@@ -17,7 +17,7 @@ class SetPackedWithPickingBaysDeliveryNote extends OrgAction
 {
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
-        $pickingBay = data_get($modelData, 'picking_bay');
+        $pickingBay = data_get($modelData, 'picked_bay');
         dd("maybe can copy from SetDeliveryNoteStateAsPacked. selected picking bay: $pickingBay");
     }
 
@@ -25,7 +25,7 @@ class SetPackedWithPickingBaysDeliveryNote extends OrgAction
     public function rules(): array
     {
         return [
-            'picking_bay' => ['required', 'string'],
+            'picked_bay' => ['required', 'string'],
         ];
     }
 

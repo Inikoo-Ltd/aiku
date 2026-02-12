@@ -49,11 +49,11 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');
         Route::patch('handling-blocked', UpdateDeliveryNoteStateToHandlingBlocked::class)->name('handling_blocked');
-        Route::patch('handling-blocked-with-picking-bay', UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay::class)->name('handling_blocked_with_picking_bay');
+        Route::patch('handling-blocked-with-picked-bay', UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay::class)->name('handling_blocked_with_picked_bay');
         Route::patch('packing', UpdateDeliveryNoteStateToPacking::class)->name('packing');
         Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
         Route::patch('packed', FinishPackDeliveryNote::class)->name('packed');
-        Route::patch('packed-with-picking-bay', SetPackedWithPickingBaysDeliveryNote::class)->name('packed_with_picking_bay');
+        Route::patch('packed-with-picked-bay', SetPackedWithPickingBaysDeliveryNote::class)->name('packed_with_picked_bay');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
         Route::patch('dispatched', DispatchDeliveryNote::class)->name('dispatched');
         Route::patch('rollback', UndispatchDeliveryNote::class)->name('rollback');

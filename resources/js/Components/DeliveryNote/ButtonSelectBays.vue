@@ -63,13 +63,13 @@ const submitSelectBay = (bayId?: number|null) => {
     // Section: Submit
     router.patch(
         route(
-            'grp.models.delivery_note.state.packed_with_picking_bay',
+            'grp.models.delivery_note.state.packed_with_picked_bay',
             {
                 deliveryNote: props.deliveryNote.id
             }
         ),
         {
-            picking_bay: bayId
+            picked_bay: bayId
         },
         {
             preserveScroll: true,

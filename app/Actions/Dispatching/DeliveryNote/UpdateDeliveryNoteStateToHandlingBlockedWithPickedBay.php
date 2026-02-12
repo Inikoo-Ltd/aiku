@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay extends OrgAction
@@ -25,8 +26,20 @@ class UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay extends OrgAction
     }
 
 
+    public function rules(): array
+    {
+        return [
+            'picked_bay' => [
+                'required',
+                'integer',
+                Rule::exists('picked_bays', 'id')->where('organisation_id', $this->organisation->id)
+            ],
+        ];
+    }
+
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
+        dd($request->all());
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
