@@ -29,9 +29,7 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
     {
         $layout = Arr::pull($modelData, 'layout');
 
-
         list($layout, $slides) = ParseBannerLayout::run($layout);
-
 
         data_set($modelData, 'layout', $layout);
 
@@ -50,7 +48,7 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
                 if ($slide) {
                     UpdateSlide::run(
                         $slide,
-                        Arr::only($slideData, ['layout', 'imageData'])
+                        Arr::only($slideData, ['layout', 'image_id', 'mobile_image_id', 'tablet_image_id'])
                     );
                 } else {
                     data_set($slideData, 'ulid', $ulid);
@@ -79,7 +77,6 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
         return $banner;
     }
 
-
     public function rules(): array
     {
         return [
@@ -93,7 +90,6 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
             'layout',
             $this->only(['type', 'delay', 'common', 'components', 'navigation'])
         );
-
     }
 
     public function asController(Banner $banner, ActionRequest $request): Banner

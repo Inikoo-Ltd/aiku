@@ -81,6 +81,8 @@ class DashboardOrganisationSalesResource extends JsonResource
                 'registrations' => $routeTargets['registrations'],
                 'registrations_minified' => $routeTargets['registrations'],
                 'registrations_delta',
+                'registrations_with_orders',
+                'registrations_without_orders',
                 'invoices' => $routeTargets['invoices'],
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
