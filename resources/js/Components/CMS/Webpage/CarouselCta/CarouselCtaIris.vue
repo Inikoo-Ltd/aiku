@@ -51,8 +51,14 @@ const layout: any = inject("layout", {})
             ...getStyles(data.container?.properties, screenType),
           }">
             <div class="grid grid-cols-1 md:grid-cols-2 w-full">
-              <div class="relative w-full cursor-pointer overflow-hidden h-[250px] md:h-[400px]"
-                  :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
+              <component 
+                  :is="data?.image?.link?.href ? LinkIris : 'div'" 
+                  :href="data?.image?.link?.href" 
+                  :target="data?.image?.link?.target"
+                  :type="data?.image?.link?.type"  
+                  class="relative w-full cursor-pointer overflow-hidden h-[250px] md:h-[400px]"
+                  :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
+              >
                 <Image 
                   :src="data.image.source" 
                   :imageCover="true" 
@@ -62,7 +68,7 @@ const layout: any = inject("layout", {})
                   :height="getStyles(fieldValue?.image?.container?.properties, screenType,false)?.height"
                   :width="getStyles(fieldValue?.image?.container?.properties, screenType,false)?.width"
                 />
-              </div>
+              </component>
 
               <div class="flex flex-col justify-center m-auto p-4"
                 :style="getStyles(data?.text_block?.properties, screenType)">
