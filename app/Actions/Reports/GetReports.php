@@ -82,6 +82,12 @@ class GetReports extends OrgAction
                 'route' => route('grp.org.reports.packer-performance', $organisation),
                 'count' => IndexPackerPerformanceReport::make()->inReports($organisation),
             ],
+            [
+                'name'  => __('Packaging Reports'),
+                'icon'  => 'fal fa-boxes',
+                'route' => route('grp.org.reports.packaging', $organisation),
+                'count' => 4,
+            ],
         ];
     }
 }

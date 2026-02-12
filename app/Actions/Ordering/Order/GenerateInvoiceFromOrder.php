@@ -97,7 +97,7 @@ class GenerateInvoiceFromOrder extends OrgAction
             foreach ($transactions as $transaction) {
                 $data = [
                     'tax_category_id' => $transaction->order->tax_category_id,
-                    'quantity'        => $transaction->quantity_ordered,
+                    'quantity'        => $transaction->quantity_ordered ?? 0,
                     'gross_amount'    => $transaction->gross_amount,
                     'net_amount'      => $transaction->net_amount,
                 ];

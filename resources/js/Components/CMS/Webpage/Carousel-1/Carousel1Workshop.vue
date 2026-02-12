@@ -139,66 +139,59 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
       </button>
 
       <div class="mx-24 overflow-hidden">
-          <Swiper v-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping" 
-        :space-between="spaceBetween" :breakpoints="breakpoints" :autoplay="modelValue.carousel_data.carousel_setting?.interval && modelValue.carousel_data.carousel_setting?.autoplay
-          ? {
-            delay: modelValue.carousel_data.carousel_setting.interval,
-            disableOnInteraction: false,
-            pauseOnMouseEnter: true
-          }
-          : false" @swiper="onSwiper" class="w-full">
+        <Swiper v-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
+          :space-between="spaceBetween" :breakpoints="breakpoints" :autoplay="false" @swiper="onSwiper" class="w-full">
 
-       <SwiperSlide
-  v-for="(data, index) in modelValue.carousel_data.cards"
-  :key="index"
-  class="!flex !justify-center !items-center"
->
-  <div class="space-card flex justify-center items-center w-full h-full">
-            <div class="card flex flex-col h-full">
-              <div class="flex flex-1 flex-col">
+          <SwiperSlide v-for="(data, index) in modelValue.carousel_data.cards" :key="index"
+            class="!flex !justify-center !items-center">
+            <div class="space-card flex justify-center items-center w-full h-full">
+              <div class="card flex flex-col h-full">
+                <div class="flex flex-1 flex-col">
 
-                <!-- Image -->
-                <div class="flex justify-center overflow-visible"
-                  :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)" @click.stop="() => {
-                    sendMessageToParent('activeBlock', indexBlock)
-                    sendMessageToParent('activeChildBlock', bKeys[2])
-                    sendMessageToParent('activeChildBlockArray', index)
-                    sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
-                  }"
-                  @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })">
-                  <div class="overflow-hidden w-full flex items-center justify-center"
-                    :style="{ ...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
-                    <Image v-if="data?.image?.source" :src="data.image.source" :alt="data.image.alt || `image-${index}`"
-                      class="w-full h-full flex justify-center items-center" />
-                    <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
-                      <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+                  <!-- Image -->
+                  <div class="flex justify-center overflow-visible"
+                    :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)"
+                    @click.stop="() => {
+                      sendMessageToParent('activeBlock', indexBlock)
+                      sendMessageToParent('activeChildBlock', bKeys[2])
+                      sendMessageToParent('activeChildBlockArray', index)
+                      sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
+                    }"
+                    @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })">
+                    <div class="overflow-hidden w-full flex items-center justify-center"
+                      :style="{ ...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
+                      <Image v-if="data?.image?.source" :src="data.image.source"
+                        :alt="data.image.alt || `image-${index}`"
+                        class="w-full h-full flex justify-center items-center" />
+                      <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
+                        <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <!-- Text -->
-                <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
-                  class="p-4 flex flex-col flex-1 justify-between">
-                  <div class="text-center leading-relaxed">
-                    <EditorV2 v-model="data.text" @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-                      @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
-                        name: webpageData.images_upload_route.name,
-                        parameters: {
-                          ...webpageData.images_upload_route.parameters,
-                          modelHasWebBlocks: blockData?.id,
-                        },
-                      }" />
+                  <!-- Text -->
+                  <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
+                    class="p-4 flex flex-col flex-1 justify-between">
+                    <div class="text-center leading-relaxed">
+                      <EditorV2 v-model="data.text" @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
+                        @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
+                          name: webpageData.images_upload_route.name,
+                          parameters: {
+                            ...webpageData.images_upload_route.parameters,
+                            modelHasWebBlocks: blockData?.id,
+                          },
+                        }" />
+                    </div>
                   </div>
-                </div>
 
+                </div>
               </div>
             </div>
-          </div>
-        </SwiperSlide>
-      </Swiper>
+          </SwiperSlide>
+        </Swiper>
 
       </div>
-    
+
       <button v-if="swiperInstance?.allowSlideNext" ref="nextEl"
         class="absolute right-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">

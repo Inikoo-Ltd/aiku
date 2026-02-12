@@ -52,9 +52,10 @@ class UpdateMasterFamilyMasterDepartment extends OrgAction
         DB::table('master_assets')
             ->where('master_family_id', $masterFamily->id)
             ->update([
-                'master_department_id'     => $masterFamily->department_id,
+                'master_department_id'     => $masterFamily->master_department_id,
                 'master_sub_department_id' => null
             ]);
+
 
         foreach (ProductCategory::where('master_product_category_id', $masterFamily->id)->get() as $family) {
             CloneProductCategoryParentsFromMaster::run($family);

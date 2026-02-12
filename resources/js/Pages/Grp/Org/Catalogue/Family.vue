@@ -167,4 +167,8 @@ const showDialog = ref(false)
     background: transparent;
     border: none;
 }
+
+:deep(.p-breadcrumb-list > li.p-breadcrumb-separator:first-child) {
+    display: none !important;
+}
 </style>

@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFrom
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -90,6 +91,7 @@ trait WithProductOrgStocks
         }
 
         $product->tradeUnits()->sync($tradeUnits);
+        ModelHydrateSingleTradeUnits::run($product);
 
         ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
         ProductHydrateBarcodeFromTradeUnit::dispatch($product);

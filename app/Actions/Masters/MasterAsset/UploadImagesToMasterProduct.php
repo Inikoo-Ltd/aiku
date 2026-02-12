@@ -11,9 +11,7 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
-use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UploadImagesToMasterProduct extends GrpAction
@@ -24,43 +22,11 @@ class UploadImagesToMasterProduct extends GrpAction
     public function handle(MasterAsset $model, string $scope, array $modelData, bool $updateDependants = false): array
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
-        if ($updateDependants && $model->is_single_trade_unit) {
-            $this->updateDependants($model, $medias, $scope);
+        if ($updateDependants && !$model->is_single_trade_unit) {
+            UpdateMasterProductImages::make()->updateDependants($model);
         }
 
         return $medias;
-    }
-
-    public function updateDependants(MasterAsset $seedMasterAsset, array $medias, string $scope): void
-    {
-        $tradeUnit = $seedMasterAsset->tradeUnits->first();
-        foreach ($medias as $media) {
-            $this->attachMediaToModel($tradeUnit, $media, $scope);
-        }
-
-        foreach (
-            DB::table('model_has_trade_units')
-                ->select('model_type', 'model_id')
-                ->where('trade_unit_id', $tradeUnit->id)
-                ->whereIn('model_type', ['MasterAsset', 'Product'])
-                ->get() as $modelsData
-        ) {
-            if ($modelsData->model_type == 'MasterAsset' && $modelsData->model_id != $seedMasterAsset->id) {
-                $masterAsset = MasterAsset::find($modelsData->model_id);
-                if ($masterAsset && $masterAsset->is_single_trade_unit) {
-                    foreach ($medias as $media) {
-                        $this->attachMediaToModel($masterAsset, $media, $scope);
-                    }
-                }
-            } elseif ($modelsData->model_type == 'Product') {
-                $product = Product::find($modelsData->model_id);
-                if ($product && $product->is_single_trade_unit) {
-                    foreach ($medias as $media) {
-                        $this->attachMediaToModel($product, $media, $scope);
-                    }
-                }
-            }
-        }
     }
 
     public function rules(): array

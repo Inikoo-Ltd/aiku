@@ -266,7 +266,15 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [product.organisation_slug, product.shop_slug, product.slug])
-
+        case "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]
+            )
         default:
             if (product.asset_id) {
                 return route(
@@ -275,6 +283,18 @@ function productRoute(product: Product) {
             } else return ""
 
     }
+}
+
+const productHasPendingReminderRoute = (product: Product) => {
+        return route(
+            "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                shop: (route().params as RouteParams).shop,
+                product: product.slug,
+                tab: 'reminders'
+            }
+        )
 }
 
 function masterProductRoute(product: {}) {
@@ -732,7 +752,7 @@ const saveTradeUnits = (value, product) => {
             <div class="whitespace-nowrap">
                 <Link :href="(masterProductRoute(product) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
                     :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
+                <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
                 {{ product["code"] }}
@@ -842,9 +862,17 @@ const saveTradeUnits = (value, product) => {
                     </button>
                 </span>
             </div>
-
         </template>
 
+        <template #cell(number_of_distinct_reminders)="{ item }">
+            <Link :href="productHasPendingReminderRoute(item)" class="primaryLink">
+                {{ item['number_of_distinct_reminders'] }}
+            </Link>
+        </template>
+
+        <template #cell(available_quantity)="{ item }">
+            {{ item['available_quantity'] ?? 0 }}
+        </template>
 
         <template #checkbox="data">
             <FontAwesomeIcon

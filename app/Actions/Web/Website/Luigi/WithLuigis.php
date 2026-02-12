@@ -23,6 +23,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -61,6 +62,9 @@ trait WithLuigis
         if ($parent instanceof Website) {
             $website = $parent;
         } else {
+            if ($parent->model_type == 'Product') {
+                Log::info('Product Code: '.$parent->slug);
+            }
             $website = $parent->website;
         }
         $accessToken = $this->getAccessToken($website);
@@ -89,6 +93,11 @@ trait WithLuigis
             $body = json_encode($body);
         }
 
+        Log::info('Starting request to Luigi Box API ' . $publicKey . ' (' . $date . ')...');
+        Log::info('Headers', $header);
+        Log::info('Body', ['body' => $body]);
+
+        Log::info('Loading...');
         $response = Http::withHeaders($header)
             ->retry(3, 100)
             ->withBody($body, $content_type)
@@ -98,7 +107,14 @@ trait WithLuigis
 
 
         if ($response->failed()) {
+            Log::error('Failed to send request to Luigis Box API: '.$response->body(), [
+                'ResponseBody'      => $response->body(),
+            ]);
             throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
+        } else {
+            Log::info('Successfully sent request to Luigis Box API', [
+                'ResponseBody'      => $response->body(),
+            ]);
         }
 
     }
