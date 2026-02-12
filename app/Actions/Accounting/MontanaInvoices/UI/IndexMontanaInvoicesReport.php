@@ -2,11 +2,14 @@
 
 namespace App\Actions\Accounting\MontanaInvoices\UI;
 
+use App\Actions\Accounting\Invoice\WithInvoicesSubNavigation;
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\UI\Reports\IndexReports;
 use App\Http\Resources\Accounting\MontanaInvoiceResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -19,9 +22,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMontanaInvoicesReport extends OrgAction
 {
-    private int $records;
+    use WithInvoicesSubNavigation;
 
-    public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
+    private int $records;
+    private Organisation|Shop $parent;
+
+    public function handle(Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -37,7 +43,14 @@ class IndexMontanaInvoicesReport extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Invoice::class);
-        $queryBuilder->where('invoices.organisation_id', $organisation->id)->where('invoices.in_process', false);
+
+        if ($parent instanceof Organisation) {
+            $queryBuilder->where('invoices.organisation_id', $parent->id);
+        } else {
+            $queryBuilder->where('invoices.shop_id', $parent->id);
+        }
+
+        $queryBuilder->where('invoices.in_process', false);
         $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
         $queryBuilder->leftJoin('currencies', 'invoices.currency_id', '=', 'currencies.id');
         $queryBuilder->leftJoin('addresses', 'customers.address_id', '=', 'addresses.id');
@@ -87,9 +100,9 @@ class IndexMontanaInvoicesReport extends OrgAction
             ->paginate(perPage: 50);
     }
 
-    public function tableStructure(Organisation $organisation, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($organisation, $prefix) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
@@ -139,33 +152,61 @@ class IndexMontanaInvoicesReport extends OrgAction
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
+        $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation);
     }
 
-    public function inReports(Organisation $organisation): int
+    public function inReports(Organisation|Shop $parent): int
     {
-        return $this->handle($organisation)->total();
+        return $this->handle($parent)->total();
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop);
     }
 
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
+        if ($this->parent instanceof Shop) {
+            return Inertia::render(
+                'Org/Reports/MontanaInvoicesReport',
+                [
+                    'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                    'title'       => __('Montana Invoices Report'),
+                    'pageHead'    => [
+                        'title'         => __('Montana Invoices Export Report'),
+                        'icon'          => [
+                            'title' => __('Montana Invoices'),
+                            'icon'  => 'fal fa-file-invoice'
+                        ],
+                        'subNavigation' => $this->getInvoicesNavigation($this->parent)
+                    ],
+                    'data'        => MontanaInvoiceResource::collection($invoices),
+                ]
+            )->table($this->tableStructure());
+        }
+
         return Inertia::render(
             'Org/Reports/MontanaInvoicesReport',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Montana Invoices Report'),
                 'pageHead'    => [
-                    'title'         => __('Montana Invoices Export Report'),
-                    'icon'          => [
+                    'title' => __('Montana Invoices Export Report'),
+                    'icon'  => [
                         'title' => __('Montana Invoices'),
                         'icon'  => 'fal fa-file-invoice'
                     ],
                 ],
                 'data'        => MontanaInvoiceResource::collection($invoices),
             ]
-        )->table($this->tableStructure($this->organisation));
+        )->table($this->tableStructure());
     }
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
@@ -175,6 +216,25 @@ class IndexMontanaInvoicesReport extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
+        if ($this->parent instanceof Shop) {
+            return array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'icon'  => 'fal fa-file-invoice',
+                            'label' => __('Montana Invoices'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.dashboard.invoices.montana.index',
+                                'parameters' => $routeParameters
+                            ]
+                        ]
+                    ],
+                ],
+            );
+        }
+
         return array_merge(
             IndexReports::make()->getBreadcrumbs($routeName, $routeParameters),
             [

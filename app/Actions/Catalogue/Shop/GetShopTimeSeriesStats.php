@@ -90,6 +90,7 @@ class GetShopTimeSeriesStats
 
             $shopData = array_merge($shop->toArray(), $stats, $registrationsData, [
                 'slug' => $shop->slug ?? 'unknown',
+                'type' => $shop->type,
                 'organisation_slug' => $shop->organisation->slug ?? 'unknown',
                 'group_slug' => $shop->group->slug ?? 'unknown',
                 'shop_currency_code' => $shop->currency->code ?? 'GBP',

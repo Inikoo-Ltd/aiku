@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\ProductResource;
@@ -159,8 +160,6 @@ class ShowCatalogue extends OrgAction
                     'icon'  => 'fal fa-folder-tree',
                     "color" => "#a3e635",
                     'value' => $shop->stats->number_current_departments,
-
-
                     'metaRight' => [
                         'tooltip' => __('Sub Departments'),
                         'icon'    => [
@@ -355,7 +354,7 @@ class ShowCatalogue extends OrgAction
                                 'parameters' => [
                                     'organisation'    => $shop->organisation->slug,
                                     'shop'            => $shop->slug,
-                                    'elements[state]' => 'discontinuing'
+                                    'index_elements[state]' => 'discontinuing'
                                 ]
                             ],
                         ],
@@ -372,7 +371,7 @@ class ShowCatalogue extends OrgAction
                                 'parameters' => [
                                     'organisation'    => $shop->organisation->slug,
                                     'shop'            => $shop->slug,
-                                    'elements[state]' => 'discontinued'
+                                    'index_elements[state]' => 'discontinued'
                                 ]
                             ],
                         ],
@@ -461,13 +460,28 @@ class ShowCatalogue extends OrgAction
                         'icon'            => 'fal fa-cube',
                         "backgroundColor" => "#ff000011",
                         'value'           => $shop->stats->number_products_status_out_of_stock,
+                        'metaRight' => $shop->type == ShopTypeEnum::EXTERNAL ? null : [
+                            'tooltip' => __('Back In Stock Reminders'),
+                            'customClass'   => 'border border-red-500',
+                            'icon'    => [
+                                'icon'  => 'fal fa-mail-bulk',
+                                'class' => 'mr-1'
+                            ],
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.index',
+                                'parameters' => [
+                                    'organisation' => $shop->organisation->slug,
+                                    'shop'         => $shop->slug
+                                ]
+                            ],
+                            'count'   => $shop->stats->number_current_sub_departments,
+                        ],
                     ],
                 ])
 
             ]
         );
     }
-
 
     public function jsonResponse(Shop $shop): ShopResource
     {

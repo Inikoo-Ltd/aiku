@@ -147,6 +147,22 @@ if (!function_exists('cleanUtf8')) {
     }
 }
 
+if (!function_exists('resolveTimezoneHeader')) {
+    function resolveTimezoneHeader(?string $timezone = null): string
+    {
+        $timezone = $timezone ?? request()->header('X-Timezone');
+
+        if (!is_string($timezone) || $timezone === '') {
+            return 'UTC';
+        }
+
+        if (in_array($timezone, \DateTimeZone::listIdentifiers(), true)) {
+            return $timezone;
+        }
+
+        return 'UTC';
+    }
+}
 
 if (!function_exists('percentage')) {
     function percentage($quantity, $total, int|null $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false): string

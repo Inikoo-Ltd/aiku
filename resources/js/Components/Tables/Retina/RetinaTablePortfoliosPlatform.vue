@@ -1137,7 +1137,7 @@ const compTableFilterForSale = computed(() => {
 		<template #cell(delete)="{ item }" v-if="!disabled">
 			<div class="flex gap-2">
 				<Button
-					v-if="(isEbay || !item.platform_status) && !disableButtons(item)"
+					v-if="isEbay && !disableButtons(item)"
 					v-tooltip="trans('Edit detail of the product')"
 					type="tertiary"
 					:style="'white-w-outline'"
@@ -1439,7 +1439,9 @@ const compTableFilterForSale = computed(() => {
 					class="w-full"
 					:placeholder="trans('Enter text')"
 					:toogle="[
-						'heading',
+						'heading1',
+						'heading2',
+						'heading3',
 						'fontSize',
 						'bold',
 						'italic',
@@ -1480,7 +1482,7 @@ const compTableFilterForSale = computed(() => {
 					:loading="isLoadingSubmitErrorTitle" />
 				<Button
 					@click="() => submitUpdateAndUploadProduct(selectedEditProduct, 'publish')"
-					:label="trans('Save & Upload')"
+					:label="trans('Save & Publish')"
 					full
 					:loading="isLoadingSubmitErrorTitle" />
 			</div>

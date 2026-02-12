@@ -29,6 +29,13 @@ export const retinaLayoutStructure = {
     currentQuery: {} as {[key: string]: string},
     currentPlatform: "", // string
 
+    family_page: {
+        productInBasket: {
+            isLoading: false,
+            list: {} as { [key: number]: { quantity_ordered: number|null, quantity_ordered_new: number|null, transactions_id: number|null } }[]  // list of quantity_ordered from each products
+        }
+    },
+
     leftSidebar: {
         show: true,
     },

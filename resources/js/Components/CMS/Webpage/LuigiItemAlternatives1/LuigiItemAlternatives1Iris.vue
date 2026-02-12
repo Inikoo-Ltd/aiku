@@ -98,7 +98,7 @@ const isFetched = ref(false)
 
 
 const fetchRecommenders = async () => {
-    const userId = layout.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
+    const userId = layout.iris.is_logged_in ? layout.iris_variables?.customer_id?.toString() : Cookies.get('_lb')
     
     try {
         isLoadingFetch.value = true
@@ -189,6 +189,7 @@ const fetchRecommendersToGetProducts = async () => {
 
 onMounted(() => {
     console.log('wwwwwwwwwwwwww$$$$$$$$$$', layout)
+    console.log('wwwwwwwwwwwwww+++ logged', layout.iris.is_logged_in)
     console.log('wwwwwwwwwwwwww............', layout.iris_variables.customer_id)
     console.log('wwwwwwwwwwwwwwwwwwwwwwww', layout.user?.customer_id?.toString())
     console.log('wwwwwwwwwwwwww----------', Cookies.get('_lb'))

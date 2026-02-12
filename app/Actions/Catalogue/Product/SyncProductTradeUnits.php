@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFrom
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Support\Arr;
@@ -35,6 +36,7 @@ class SyncProductTradeUnits
         }
 
         $product->tradeUnits()->sync($tradeUnits);
+        ModelHydrateSingleTradeUnits::run($product);
 
         ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
         ProductHydrateBarcodeFromTradeUnit::dispatch($product);
@@ -53,7 +55,6 @@ class SyncProductTradeUnits
         }
 
         $product->refresh();
-
         SyncProductOrgStocksFromTradeUnits::run($product);
 
         return $product;

@@ -5,7 +5,7 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\SalesChannels\UI;
+namespace App\Actions\Ordering\SalesChannel\UI;
 
 use App\Actions\OrgAction;
 use App\Models\Ordering\SalesChannel;
@@ -30,7 +30,12 @@ class ShowSalesChannel extends OrgAction
                             'style' => 'edit',
                             'icon'  => 'fal fa-pencil',
                             'label' => __('Edit'),
-                            'route' => []
+                            'route' => [
+                                'name'       => 'grp.sales_channels.edit',
+                                'parameters' => [
+                                    'salesChannel' => $salesChannel->slug
+                                ]
+                            ]
                         ]
                     ]
                 ],

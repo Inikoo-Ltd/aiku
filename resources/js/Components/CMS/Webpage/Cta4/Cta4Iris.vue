@@ -9,10 +9,11 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FieldValue } from "@/types/webpageTypes"
-import { inject } from 'vue'
+import { inject, computed } from 'vue'
 import { faCube, faLink, faImage } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
+import { get, isPlainObject } from 'lodash-es'
 
 library.add(faCube, faLink, faImage)
 
@@ -24,6 +25,17 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
+
+const valueForField = computed(() => {
+	const rawVal = get(props.fieldValue, ['column_position'])
+	if (!isPlainObject(rawVal)) return rawVal
+
+	const view = props.screenType!
+	return rawVal?.[view] ?? rawVal?.desktop ?? 'Image-right'
+})
+
+const isImageRight = computed(() => valueForField.value === 'Image-right')
+
 </script>
 
 <template>
@@ -32,11 +44,17 @@ const layout: any = inject("layout", {})
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType),
 		}">
-			<div class="grid w-full grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 min-h-[auto] md:min-h-[400px]">
+			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
 				<!-- 🖼️ Image Block -->
-				<div class="relative w-full cursor-pointer overflow-hidden order-1 mx-auto md:order-2 md:aspect-auto flex justify-center items-center md:block"
-					:class="!fieldValue.image.source ? '' : ' h-[250px] sm:h-[300px] md:h-[400px]'"
-					:style="getStyles(fieldValue.image.properties, screenType)">
+				<component 
+					:is="fieldValue?.image?.link?.href ? LinkIris : 'div'" 
+					:href="fieldValue?.image?.link?.href" 
+					:target="fieldValue?.image?.link?.target"
+					:type="fieldValue?.image?.link?.type" 
+					class="relative cursor-pointer overflow-hidden w-full" 
+					:class="[ !fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]', isImageRight ? 'order-2' : 'order-1']" 
+					:style="getStyles(fieldValue.image.properties, screenType)"
+				>
 					<Image :src="fieldValue.image.source" :imageCover="true"
 						:alt="fieldValue.image.alt || 'Image preview'"
 						class="w-full h-full object-cover md:absolute md:inset-0"
@@ -44,11 +62,11 @@ const layout: any = inject("layout", {})
 						:height="getStyles(fieldValue?.image?.properties, screenType, false)?.height"
 						:width="getStyles(fieldValue?.image?.properties, screenType, false)?.width"
 						/>
-				</div>
+				</component>
 
 
 				<!-- 📝 Text & Button Block -->
-				<div class="flex flex-col justify-center m-auto order-2 md:order-1"
+				<div class="flex flex-col justify-center m-auto p-4" :class="isImageRight ? 'order-1' : 'order-2'"
 					:style="getStyles(fieldValue?.text_block?.properties, screenType)">
 					<div class="max-w-xl w-full">
 						<div v-html="fieldValue.text" class="mb-6"></div>

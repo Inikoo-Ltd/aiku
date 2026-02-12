@@ -10,6 +10,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from "@/Components/CMS/Webpage/CtaVideo1/Blueprint"
+import { get, isPlainObject } from 'lodash-es'
 
 library.add(faCube, faLink, faImage, faVideo)
 
@@ -91,6 +92,16 @@ const videoEmbedCode = computed(() => {
 })
 
 
+const valueForField = computed(() => {
+	const rawVal = get(props.modelValue, ['column_position'])
+	if (!isPlainObject(rawVal)) return rawVal
+
+	const view = props.screenType!
+	return rawVal?.[view] ?? rawVal?.desktop ?? 'video-right'
+})
+
+const isVideoRight = computed(() => valueForField.value === 'video-right')
+
 
 watch(
 	() => videoEmbedCode.value,
@@ -114,7 +125,7 @@ watch(
 
 <template>
 	<div id="cta-video-1">
-		<div class="grid grid-cols-1 md:grid-cols-2" :style="{
+		<div class="grid grid-cols-1 md:grid-cols-2 w-full" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType)
 		}">
@@ -122,7 +133,7 @@ watch(
 			<div @click="() => {
 				sendMessageToParent('activeBlock', indexBlock)
 				sendMessageToParent('activeChildBlock', bKeys[0])
-			}">
+			}" :class="!isVideoRight ? 'order-1' : 'order-2'">
 				<div class="w-full flex justify-center items-center min-h-[200px]"
 					:style="getStyles(modelValue?.video?.video_setup?.container?.properties, screenType)">
 
@@ -138,14 +149,10 @@ watch(
 						<iframe class="w-full aspect-video" :src="videoSource" frameborder="0" allowfullscreen />
 					</template>
 
-					<template
-						v-else-if="!isVideoByUrl && videoEmbedCode">
-						<div 
-							class="w-full h-auto" 
-							v-html="videoEmbedCode"
-							:style="getStyles(modelValue.video.video_setup?.properties, screenType)"
-						>
-					    </div>
+					<template v-else-if="!isVideoByUrl && videoEmbedCode">
+						<div class="w-full h-auto" v-html="videoEmbedCode"
+							:style="getStyles(modelValue.video.video_setup?.properties, screenType)">
+						</div>
 					</template>
 
 					<template v-else>
@@ -155,18 +162,19 @@ watch(
 			</div>
 
 			<!-- 📝 Text & Button Block -->
-			<div class="flex flex-col justify-center"
+			<div class="flex flex-col justify-center m-auto p-4" :class="!isVideoRight ? 'order-2' : 'order-1'"
 				:style="getStyles(modelValue?.text_block?.properties, screenType)">
 				<div class="max-w-xl mx-auto w-full" @click="() => {
 					sendMessageToParent('activeBlock', indexBlock)
 				}">
-					<Editor v-if="modelValue?.text" v-model="modelValue.text"  @update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
-						name: webpageData.images_upload_route.name,
-						parameters: {
-							...webpageData.images_upload_route.parameters,
-							modelHasWebBlocks: blockData?.id,
-						}
-					}" />
+					<Editor v-if="modelValue?.text" v-model="modelValue.text"
+						@update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
+							name: webpageData.images_upload_route.name,
+							parameters: {
+								...webpageData.images_upload_route.parameters,
+								modelHasWebBlocks: blockData?.id,
+							}
+						}" />
 
 					<div v-if="modelValue?.button?.show !== false" class="flex justify-center">
 						<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"

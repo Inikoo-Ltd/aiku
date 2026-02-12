@@ -12,6 +12,7 @@ use App\Actions\Retina\Fulfilment\Dropshipping\WithInCustomerSalesChannelAuthori
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\UI\CRM\RetinaCustomerClientsTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dropshipping\CustomerClient;
@@ -70,7 +71,7 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
-        $this->initialisation($request);
+        $this->initialisation($request)->withTab(RetinaCustomerClientsTabsEnum::values());
 
         return $this->handle($customerSalesChannel);
     }
@@ -190,11 +191,17 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                     'actions'    => $actions
 
                 ],
-                'data'        => CustomerClientResource::collection($customerClients),
+
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => RetinaCustomerClientsTabsEnum::navigation(),
+                ],
+
+                'active'        => CustomerClientResource::collection($customerClients),
                 'upload_spreadsheet' => $spreadsheetRoute
 
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure(prefix: $this->tab));
     }
 
     public function getBreadcrumbs($routeName, $routeParameters): array

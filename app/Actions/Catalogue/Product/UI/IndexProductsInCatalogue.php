@@ -23,6 +23,7 @@ use App\Http\Resources\Catalogue\ExternalShop\ProductInExternalShopResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -44,7 +45,7 @@ class IndexProductsInCatalogue extends OrgAction
     private string $bucket;
 
 
-    public function getElementGroups(Shop $shop, $bucket = null): array
+    public function getElementGroups(Shop|MasterAsset $shop, $bucket = null): array
     {
         return [
 

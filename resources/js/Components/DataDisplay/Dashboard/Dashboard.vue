@@ -61,6 +61,23 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			}"
 		/>
 
+		<DashboardTable
+            v-if="props.dashboard?.super_blocks?.[0]?.blocks_2?.[0]?.tables?.[props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab]"
+			class="border-t border-gray-200"
+			:idTable="props.dashboard?.super_blocks?.[0]?.blocks_2[0]?.id"
+			:tableData="{
+				...props.dashboard?.super_blocks?.[0]?.blocks_2[0],
+				current_tab: props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab
+			}"
+			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
+			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
+			:showTabs="false"
+			@onChangeTab="(val) => {
+				set(props, 'dashboard.super_blocks[0].blocks[0].current_tab', val)
+			}"
+		/>
+
 		<DashboardWidget
             v-if="props.dashboard?.super_blocks?.[0]?.blocks"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"

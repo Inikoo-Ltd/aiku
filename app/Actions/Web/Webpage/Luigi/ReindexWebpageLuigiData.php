@@ -22,7 +22,7 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
     use AsAction;
     use WithLuigis;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'urgent';
 
     public function getJobUniqueId(int|null $webpageId): string
     {

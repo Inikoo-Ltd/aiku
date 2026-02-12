@@ -5,12 +5,12 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\SalesChannels\UI;
+namespace App\Actions\Ordering\SalesChannel\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Http\Resources\SalesChannels\SalesChannelsResource;
+use App\Http\Resources\Ordering\SalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;

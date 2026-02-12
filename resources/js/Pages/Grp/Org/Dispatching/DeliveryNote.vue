@@ -55,6 +55,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes);
@@ -126,6 +127,7 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
+	history: {}
 }>();
 
 
@@ -134,6 +136,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
+		history: TableHistories,
         pickings: TablePickings
     };
 

@@ -1,78 +1,68 @@
 <script setup lang="ts">
-
-// import { RadioGroup, RadioGroupLabel, RadioGroupOption, RadioGroupDescription } from '@headlessui/vue'
-import { ref, watch } from 'vue'
-import { set , isEqual, get } from 'lodash-es'
+import { ref, watch, computed } from "vue"
+import { get, isEqual } from "lodash-es"
 
 const props = defineProps<{
-    fieldName?: string | [];
-    fieldData?:Object
-    data?: Object;
-    radioValue?: Object | String;
+  modelValue?: any
+  fieldData?: any
+  radioValue?: any
 }>()
-const emit = defineEmits()
 
+const emit = defineEmits(["update:modelValue", "onChange"])
 
-const setFormValue = (data: Object, fieldName: String) => {
-    if (Array.isArray(fieldName)) {
-        return getNestedValue(data, fieldName);
-    } else {
-        return get(acc,key,get(props,['fieldData','defaultValue']))
+// resolve default
+const initial = computed(() => {
+  if (props.modelValue !== undefined) return props.modelValue
+  if (props.radioValue !== undefined) return props.radioValue
+  return get(props, ["fieldData", "defaultValue"], null)
+})
+
+const value = ref(initial.value)
+
+// sync from parent
+watch(
+  () => props.modelValue,
+  v => {
+    if (!isEqual(v, value.value)) {
+      value.value = v
     }
-}
+  }
+)
 
-const getNestedValue = (obj: Object, keys: Array) => {
-    return keys.reduce((acc, key) => {
-        if (acc && typeof acc === 'object' && key in acc) return get(acc,key,get(props,['fieldData','defaultValue']))
-        return props.fieldData.defaultValue ? props.fieldData.defaultValue : null;
-    }, obj);
-}
-
-
-const value = ref(props.data ? setFormValue(props.data, props.fieldName) : get(props,'radioValue',get(props,['fieldData','defaultValue'])))
-
-watch(value, (newValue) => {
-    emit('onChange', newValue);
-    updateFormValue(newValue);
-});
-
-
-
-
-const updateFormValue = (newValue) => {
-    let target = { ...props.data };
-
-    if (Array.isArray(props.fieldName)) {
-        set(target, props.fieldName, newValue);
-    } else {
-        target[props.fieldName] = newValue;
-    }
-
-    // Emit an event to notify the parent component
-    emit('input', target);
-};
+// emit to parent
+watch(value, newValue => {
+  emit("update:modelValue", newValue)
+  emit("onChange", newValue)
+})
 
 </script>
 
 <template>
-    <div>
-        <fieldset class="select-none">
-            <legend class="sr-only"></legend>
-            <div class="flex items-center gap-x-5 gap-y-1 flex-wrap">
+  <div>
+    <fieldset class="select-none">
+      <legend class="sr-only"></legend>
 
-                <!-- Radio: Default -->
-                <label :for="option.label + index" v-for="(option, index) in fieldData.options"
-                    :key="option.label + index" class="inline-flex items-center gap-x-1.5 cursor-pointer py-1">
-                    <input v-model="value" :id="option.label + index" :key="option.label + index"
-                        :name="option.value" type="radio" :value="option.value" :checked="isEqual(value,option.value)"
-                        class="h-4 w-4 border-gray-300 text-gray-600 focus:ring-0 focus:outline-none focus:ring-transparent cursor-pointer" />
-                    <div class="flex items-center gap-x-1.5">
-                        <span v-if="option.label" class="font-light text-sm text-gray-400">
-                            {{ option.label }}
-                        </span>
-                    </div>
-                </label>
-            </div>
-        </fieldset>
-    </div>
+      <div class="flex items-center gap-x-5 gap-y-1 flex-wrap">
+        <label
+          v-for="(option, index) in fieldData?.options"
+          :key="option.label + index"
+          :for="option.label + index"
+          class="inline-flex items-center gap-x-1.5 cursor-pointer py-1"
+        >
+          <input
+            v-model="value"
+            type="radio"
+            :id="option.label + index"
+            :value="option.value"
+            :checked="isEqual(value, option.value)"
+            class="h-4 w-4 border-gray-300 text-gray-600 focus:ring-0 focus:outline-none cursor-pointer"
+          />
+
+          <span v-if="option.label" class="font-light text-sm text-gray-400">
+            {{ option.label }}
+          </span>
+        </label>
+      </div>
+    </fieldset>
+  </div>
 </template>

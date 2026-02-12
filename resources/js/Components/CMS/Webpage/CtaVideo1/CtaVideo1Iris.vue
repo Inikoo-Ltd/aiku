@@ -9,6 +9,7 @@ import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from "@/Components/CMS/Webpage/Cta1/Blueprint"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { get, isPlainObject } from 'lodash-es'
 
 library.add(faCube, faLink, faImage, faVideo)
 
@@ -81,6 +82,16 @@ const videoEmbedCode = computed(() => {
 
 let stopWatcher: (() => void) | null = null
 
+const valueForField = computed(() => {
+  const rawVal = get(props.fieldValue, ['column_position'])
+  if (!isPlainObject(rawVal)) return rawVal
+
+  const view = props.screenType!
+  return rawVal?.[view] ?? rawVal?.desktop ?? 'video-right'
+})
+
+const isVideoRight = computed(() => valueForField.value === 'video-right')
+
 onMounted(() => {
   stopWatcher = watch(
     () => videoEmbedCode.value,
@@ -109,54 +120,50 @@ const layout: any = inject("layout", {})
 
 
 <template>
+  <div id="cta-video-1">
+    <div class="grid grid-cols-1 md:grid-cols-2" :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(fieldValue.container?.properties, screenType)
+    }">
+      <!-- 🖼️ Image Block -->
+      <div :class="!isVideoRight ? 'order-1' : 'order-2'">
+        <div>
+          <div class="w-full flex justify-center items-center min-h-[200px]"
+            :style="getStyles(fieldValue?.video?.video_setup?.container?.properties, screenType)">
 
-	<div id="cta-video-1">
-		<div class="grid grid-cols-1 md:grid-cols-2" :style="{
-			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-			...getStyles(fieldValue.container?.properties, screenType)
-		}">
-			<!-- 🖼️ Image Block -->
-			<div>
-				<div @click="() => sendMessageToParent('activeChildBlock', Blueprint?.blueprint?.[0]?.key?.join('-'))">
-					<div class="w-full flex justify-center items-center min-h-[200px]"
-						:style="getStyles(fieldValue?.video?.video_setup?.container?.properties, screenType)">
-
-						<template
-							v-if="isVideoByUrl && videoSource">
-							<!-- <video class="w-full h-auto" controls :src="videoSource"
+            <template v-if="isVideoByUrl && videoSource">
+              <!-- <video class="w-full h-auto" controls :src="videoSource"
 								v-bind="fieldValue.video.video_setup.attributes"
 								:style="getStyles(fieldValue.video.video_setup?.properties, screenType)"></video> -->
-								<iframe class="w-full aspect-video" :src="videoSource" frameborder="0" allowfullscreen />
-						</template>
+              <iframe class="w-full aspect-video" :src="videoSource" frameborder="0" allowfullscreen />
+            </template>
 
-						<template
-							v-else-if="!isVideoByUrl && videoEmbedCode">
-							<div class="w-full h-auto" v-html="videoEmbedCode"
-								:style="getStyles(fieldValue.video.video_setup?.properties, screenType)"></div>
-						</template>
+            <template v-else-if="!isVideoByUrl && videoEmbedCode">
+              <div class="w-full h-auto" v-html="videoEmbedCode"
+                :style="getStyles(fieldValue.video.video_setup?.properties, screenType)"></div>
+            </template>
 
-						<template v-else>
-							<FontAwesomeIcon :icon="['fas', 'video']" class="text-gray-400 text-6xl" />
-						</template>
-					</div>
-				</div>
-			</div>
+            <template v-else>
+              <FontAwesomeIcon :icon="['fas', 'video']" class="text-gray-400 text-6xl" />
+            </template>
+          </div>
+        </div>
+      </div>
 
-			<!-- 📝 Text & Button Block -->
-			<div class="flex flex-col justify-center"
-				:style="getStyles(fieldValue?.text_block?.properties, screenType)">
-				<div class="max-w-xl mx-auto w-full">
-					<div v-html="fieldValue.text" class="mb-6"></div>
+      <!-- 📝 Text & Button Block -->
+      <div class="flex flex-col justify-center" :class="!isVideoRight ? 'order-2' : 'order-1'"
+        :style="getStyles(fieldValue?.text_block?.properties, screenType)">
+        <div class="max-w-xl mx-auto w-full">
+          <div v-html="fieldValue.text" class="mb-6"></div>
 
-					<div v-if="fieldValue?.button?.show !== false" class="flex justify-center">
-						<a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
-							typeof="button">
-							<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-								:label="fieldValue?.button?.text" />
-						</a>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+          <div v-if="fieldValue?.button?.show !== false" class="flex justify-center">
+            <a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget" typeof="button">
+              <Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"s
+                :label="fieldValue?.button?.text" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
