@@ -47,7 +47,7 @@ return [
     |
     */
 
-    'use' => 'default',
+    'use' => 'horizon',
 
     /*
     |--------------------------------------------------------------------------
@@ -105,9 +105,9 @@ return [
     */
 
     'trim' => [
-        'recent'        => (int)env('HORIZON_RECENT_TRIM', 60),
-        'pending'       => (int)env('HORIZON_RECENT_TRIM', 60),
-        'completed'     => (int)env('HORIZON_RECENT_TRIM', 60),
+        'recent'        => (int)env('HORIZON_RECENT_TRIM', 20),
+        'pending'       => (int)env('HORIZON_PENDING_TRIM', 60),
+        'completed'     => (int)env('HORIZON_COMPLETED_TRIM', 15),
         'recent_failed' => (int)env('HORIZON_FAILED_TRIM', 1440),
         'failed'        => (int)env('HORIZON_FAILED_TRIM', 10080),
         'monitored'     => (int)env('HORIZON_FAILED_TRIM', 1440),
