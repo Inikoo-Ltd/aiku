@@ -17,17 +17,12 @@ use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\QrScanLog;
 use Illuminate\Support\Carbon;
 use App\Enums\Helpers\Period\PeriodEnum;
-use App\Models\SysAdmin\Group;
 use App\Models\HumanResources\Employee;
-use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\Guest;
 use App\InertiaTable\InertiaTable;
 
 class IndexClockingEmployees extends OrgAction
 {
     use AsAction;
-
-    private Group|Employee|Organisation|Guest $parent;
 
     public function handle(ActionRequest $request): Response
     {
