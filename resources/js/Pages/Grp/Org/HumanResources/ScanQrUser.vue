@@ -34,11 +34,11 @@ const canOpenCamera = computed(() => hasLocation.value)
 const showSuccessModal = ref(false)
 const notes = ref<string>("")
 const scanTime = ref<string | null>(null)
+const scanTimeRaw = ref<string | null>(null)
 const now = new Date().toLocaleString()
 const clockType = ref<'clock_in' | 'clock_out' | null>(null)
 const clockingId = ref<number | null>(null)
 const workingHours = ref<{ start: string; end: string } | null>(null)
-
 
 const detectMyLocation = () => {
     errorMsg.value = null
@@ -86,6 +86,8 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
         })
 
         clockType.value = data.clocking?.type
+
+        scanTimeRaw.value = data.clocking?.clocked_at
         scanTime.value = useFormatTime(data.clocking?.clocked_at, { formatTime: 'hms' })
         clockingId.value = data.clocking?.id
         workingHours.value = data.working_hours ?? null
@@ -125,6 +127,15 @@ const modalTitle = computed(() => {
     return trans('Scan successful')
 })
 
+const attendanceStatus = computed(() => {
+    if (!scanTimeRaw.value || !workingHours.value?.start) return null
+
+    const scan = new Date(scanTimeRaw.value)
+    const start = new Date(workingHours.value.start)
+
+    return scan > start ? 'late' : 'ontime'
+})
+
 const workingHoursFormatted = computed(() => {
     if (!workingHours.value) return '-'
 
@@ -133,7 +144,6 @@ const workingHoursFormatted = computed(() => {
 
     return `${start} - ${end}`
 })
-
 
 const submitNotes = async () => {
     if (!clockingId.value) return
@@ -245,6 +255,20 @@ const submitNotes = async () => {
 
                 <!-- INFO -->
                 <div class="text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">{{ trans("Status") }}</span>
+                        <span class="font-semibold"
+                            :class="attendanceStatus === 'late' ? 'text-red-600' : 'text-green-600'">
+                            {{
+                                attendanceStatus === 'late'
+                                    ? trans('Late')
+                                    : attendanceStatus === 'ontime'
+                                        ? trans('On Time')
+                                        : '-'
+                            }}
+                        </span>
+                    </div>
+
                     <div class="flex justify-between">
                         <span class="text-gray-500">{{ trans("Schedule ") }}</span>
                         <span class="font-semibold text-gray-800">
