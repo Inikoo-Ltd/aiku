@@ -17,24 +17,32 @@ use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\QrScanLog;
 use Illuminate\Support\Carbon;
 use App\Enums\Helpers\Period\PeriodEnum;
-use App\Models\HumanResources\Employee;
+use Closure;
 use App\InertiaTable\InertiaTable;
+use App\Actions\HumanResources\WithEmployeeSubNavigation;
 
 class IndexClockingEmployees extends OrgAction
 {
     use AsAction;
+    use WithEmployeeSubNavigation;
+    protected ?string $tab = null;
 
-    public function handle(ActionRequest $request): Response
+    public function handle(ActionRequest $request): array
     {
         $this->tab = $request->input('tab');
         if (!$this->tab) {
             $this->tab = ClockingEmployeesTabsEnum::SCAN_QR_CODE->value;
         }
+        $tab = $request->input('tab') ?? ClockingEmployeesTabsEnum::SCAN_QR_CODE->value;
+
         $user = Auth::user();
         $employee = $user?->employees->first();
-        $timesheetsData = [];
+
+        $timesheetsData = collect();
         $statistics = [];
-        if ($this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value) {
+
+        if ($this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value && $employee) {
+
             $query = QueryBuilder::for(Timesheet::class)
                 ->where('subject_type', 'Employee')
                 ->where('subject_id', $employee->id)
@@ -43,11 +51,13 @@ class IndexClockingEmployees extends OrgAction
             $timezone = $employee->organisation->timezone->name ?? 'UTC';
 
             [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
+
             if ($from && $to) {
                 $query->whereBetween('timesheets.date', [$from, $to]);
             }
 
-            $statsQuery = $query->clone();
+            $statsQuery = clone $query;
+
             $statistics = $this->getStatistics($employee, $statsQuery, $timezone, $from, $to);
 
             $timesheets = $query
@@ -56,9 +66,51 @@ class IndexClockingEmployees extends OrgAction
                 ->paginate(request()->input('per_page', 15))
                 ->withQueryString();
 
-            $timesheetsData = TimesheetsResource::collection($timesheets);
+            $timesheetsData = $timesheets;
         }
 
+        return [
+            'tab' =>  $tab,
+            'timesheets' => $timesheetsData,
+            'statistics' => $statistics,
+        ];
+    }
+
+    public function tableStructure($prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+
+            if ($prefix) {
+                $table->name($prefix)->pageName($prefix . 'Page');
+            }
+
+            foreach ($this->getPeriodFilters() as $periodFilter) {
+                $table->periodFilters($periodFilter['elements']);
+            }
+
+            $table
+                ->withGlobalSearch()
+                ->withEmptyState([
+                    'title' => __('No timesheets found'),
+                    'count' => 0
+                ])
+                ->column(key: 'date', label: __('Date'), sortable: true)
+                ->column(key: 'subject_name', label: __('Name'))
+                ->column(key: 'job_position', label: __('Job Position'))
+                ->column(key: 'start_at', label: __('Start At'), sortable: true)
+                ->column(key: 'end_at', label: __('End At'), sortable: true)
+                ->column(key: 'working_duration', label: __('Working'))
+                ->column(key: 'breaks_duration', label: __('Breaks'))
+                ->column(key: 'clock_in_count', label: __('Clock In Count'))
+                ->column(key: 'clock_out_count', label: __('Clock Out Count'))
+                ->column(key: 'number_time_trackers', label: __('Time Trackers'))
+                ->column(key: 'number_open_time_trackers', label: __('Open Trackers'));
+            $table->defaultSort('-date');
+        };
+    }
+
+    public function htmlResponse(array $data, ActionRequest $request): Response
+    {
         return Inertia::render(
             'Org/HumanResources/ClockingEmployees',
             [
@@ -72,33 +124,39 @@ class IndexClockingEmployees extends OrgAction
                     'title' => __('Clock In/Out'),
                     'model' => __('Clocking'),
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => ClockingEmployeesTabsEnum::navigation()
+                'tabs' => [
+                    'current'       => $data['tab'],
+                    'navigation'    => ClockingEmployeesTabsEnum::navigation(),
                 ],
+                ClockingEmployeesTabsEnum::SCAN_QR_CODE->value =>
+                $data['tab'] == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value
+                    ? fn() => ['status' => 'ready_to_scan']
+                    : Inertia::lazy(fn() => ['status' => 'loaded_lazy']),
 
-
-                ClockingEmployeesTabsEnum::SCAN_QR_CODE->value => $this->tab == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value
-                    ? fn () => [
-                        'status' => 'ready_to_scan',
+                ClockingEmployeesTabsEnum::TIMESHEETS->value =>
+                $data['tab'] === ClockingEmployeesTabsEnum::TIMESHEETS->value
+                    ? fn() => [
+                        'data' => TimesheetsResource::collection($data['timesheets']),
+                        'statistics' => $data['statistics'],
                     ]
-                    : Inertia::lazy(fn () => ['status' => 'loaded_lazy']),
-
-                ClockingEmployeesTabsEnum::TIMESHEETS->value => $this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value
-                    ? fn () => [
-                        'timesheets' => $timesheetsData,
-                        'statistics' => $statistics,
-                    ]
-                    : Inertia::lazy(fn () => ['status' => 'loaded_lazy', 'timesheets' => $timesheetsData, 'statistics' => $statistics]),
+                    : Inertia::lazy(fn() => [
+                        'data' => TimesheetsResource::collection($data['timesheets']),
+                        'statistics' => $data['statistics'],
+                    ]),
             ]
         )
-            ->table($this->tableStructure($employee));
+            ->table(
+                $this->tableStructure(
+                    ClockingEmployeesTabsEnum::TIMESHEETS->value
+                )
+            );
     }
 
-    public function asController(ActionRequest $request): Response
+    public function asController(ActionRequest $request): array
     {
         return $this->handle($request);
     }
+
 
     public function getBreadcrumbs(ActionRequest $request): array
     {
@@ -251,37 +309,6 @@ class IndexClockingEmployees extends OrgAction
             'absent' => 0,
             'total' => $total,
         ];
-    }
-
-    public function tableStructure(Employee $employee): \Closure
-    {
-        return function (InertiaTable $table) use ($employee) {
-
-            $table
-                ->withGlobalSearch()
-                ->column(key: 'date', label: __('Date'), sortable: true);
-
-            foreach ($this->getPeriodFilters() as $periodFilter) {
-                $table->periodFilters($periodFilter['elements']);
-            }
-
-            $table->column(key: 'subject_name', label: __('Name'), sortable: true, searchable: true);
-            $table->column(key: 'job_position', label: __('Job Position'));
-
-            $table->column(key: 'start_at', label: __('Start At'), sortable: true)
-                ->column(key: 'end_at', label: __('End At'), sortable: true);
-
-            $table->column(key: 'working_duration', label: __('Working'), sortable: true)
-                ->column(key: 'breaks_duration', label: __('Breaks'), sortable: true);
-
-            $table->column(key: 'clock_in_count', label: __('Clock In Count'))
-                ->column(key: 'clock_out_count', label: __('Clock Out Count'));
-
-            $table->column(key: 'number_time_trackers', label: __('Time Trackers'));
-            $table->column(key: 'number_open_time_trackers', label: __('Open Trackers'));
-
-            $table->defaultSort('date');
-        };
     }
 
     protected function getPeriodFilters(): array

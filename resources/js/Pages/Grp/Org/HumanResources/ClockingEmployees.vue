@@ -14,6 +14,7 @@ import { useTabChange } from "@/Composables/tab-change";
 import ScanQrUser from './ScanQrUser.vue';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faEnvelope, faIdCard, faPhone, faSignature, faUser, faBuilding, faBirthdayCake, faVenusMars, faHashtag, faHeading, faHospitalUser, faClock, faPaperclip, faTimes, faCameraRetro, faQrcode } from '@fal';
+import TableTimesheetsEmployee from '@/Components/Tables/Grp/Org/HumanResources/TableTimesheetsEmployee.vue';
 
 library.add(faEnvelope, faIdCard, faPhone, faSignature, faUser, faBuilding, faBirthdayCake, faVenusMars, faHashtag, faHeading, faHospitalUser, faClock, faPaperclip, faTimes, faCameraRetro, faQrcode);
 
@@ -36,7 +37,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
 
     const components = {
-        timesheets: "",
+        timesheets: TableTimesheetsEmployee,
         scan_qr_code: ScanQrUser,
     };
     return components[currentTab.value as keyof typeof components];
@@ -54,5 +55,6 @@ const currentData = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="currentData" :tab="currentTab"></component>
+    <component :is="component" :data="timesheets?.data" :statistics="timesheets?.statistics" :tab="currentTab">
+    </component>
 </template>
