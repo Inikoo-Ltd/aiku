@@ -184,8 +184,6 @@ trait WithWooCommerceApiRequest
 
                 return $data;
             } else {
-                Log::error('WooCommerce API Error, status'.$response->status().' body:'.$response->body());
-
                 return [$response->body()];
             }
         } catch (ConnectionException $e) {
