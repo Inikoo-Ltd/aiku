@@ -802,24 +802,22 @@ class Shop extends Model implements HasMedia, Auditable
     {
         $shopSchedule = $this->workSchedules()->where('is_active', true)->first();
         if ($shopSchedule) {
-            return [
-                'schedule' => $shopSchedule,
-                'timezone' => $this->timezone->name ?? config('app.timezone'),
-            ];
+            return $this->formatSchedule($shopSchedule, $this->timezone->name);
         }
 
         $orgSchedule = $this->organisation->workSchedules()->where('is_active', true)->first();
-        // dd($orgSchedule);
         if ($orgSchedule) {
-            return [
-                'schedule' => $orgSchedule,
-                'timezone' => $this->organisation->timezone->name ?? config('app.timezone'),
-            ];
+            return $this->formatSchedule($orgSchedule, $this->organisation->timezone->name);
         }
 
+        return $this->formatSchedule(null, $this->timezone->name ?? $this->organisation->timezone->name);
+    }
+
+    protected function formatSchedule(?WorkSchedule $schedule, ?string $timezone): array
+    {
         return [
-            'schedule' => null,
-            'timezone' => $this->timezone->name ?? $this->organisation->timezone->name ?? config('app.timezone'),
+            'schedule' => $schedule,
+            'timezone' => $timezone ?? config('app.timezone'),
         ];
     }
 }
