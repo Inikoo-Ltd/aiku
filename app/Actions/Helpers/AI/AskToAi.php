@@ -24,50 +24,60 @@ class AskToAi extends OrgAction
         }
 
         try {
-            $driverName = config('auto-translations.default_driver', 'chatgpt5');
-            $driverConfig = config("auto-translations.drivers.{$driverName}");
-            $apiKey = $driverConfig['api_key'] ?? null;
-
-            if (empty($apiKey)) {
-                $apiKey = config('askbot-laravel.openai_api_key');
-            }
+            $apiKey = $this->getApiKey();
 
             if (empty($apiKey)) {
                 Log::error("AskToAi: Missing API Key (checked auto-translations and askbot config)");
                 return null;
             }
 
-            $url = 'https://api.openai.com/v1/chat/completions';
-
-            $response = Http::withToken($apiKey)
-                ->timeout(30)
-                ->post($url, [
-                    'model' => $model,
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => 'You are a helpful CRM assistant. Provide a concise response based on the user prompt.'
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $prompt
-                        ],
-                    ],
-                    'temperature' => 0.3,
-                ]);
-
-            if (!$response->successful()) {
-                $errorMsg = "AskToAi API Error: " . $response->body();
-                Log::error($errorMsg);
-                return null;
-            }
-
-            $content = $response->json('choices.0.message.content');
-            return trim($content);
+            return $this->sendRequest($apiKey, $model, $prompt);
         } catch (Throwable $e) {
-            $errorMsg = "AskToAi Exception: " . $e->getMessage();
-            Log::error($errorMsg);
+            Log::error("AskToAi Exception: " . $e->getMessage());
             return null;
         }
+    }
+
+    private function getApiKey(): ?string
+    {
+        $driverName = config('auto-translations.default_driver', 'chatgpt5');
+        $driverConfig = config("auto-translations.drivers.{$driverName}");
+        $apiKey = $driverConfig['api_key'] ?? null;
+
+        if (empty($apiKey)) {
+            $apiKey = config('askbot-laravel.openai_api_key');
+        }
+
+        return $apiKey;
+    }
+
+    private function sendRequest(string $apiKey, string $model, string $prompt): ?string
+    {
+        $url = 'https://api.openai.com/v1/chat/completions';
+
+        $response = Http::withToken($apiKey)
+            ->timeout(30)
+            ->post($url, [
+                'model' => $model,
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => 'You are a helpful CRM assistant. Provide a concise response based on the user prompt.'
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => $prompt
+                    ],
+                ],
+                'temperature' => 0.3,
+            ]);
+
+        if (!$response->successful()) {
+            Log::error("AskToAi API Error: " . $response->body());
+            return null;
+        }
+
+        $content = $response->json('choices.0.message.content');
+        return trim($content);
     }
 }
