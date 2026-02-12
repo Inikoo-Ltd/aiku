@@ -440,6 +440,7 @@ class ShowRefund extends OrgAction
 
         return match ($routeName) {
             'grp.org.accounting.invoices.show.refunds.show',
+            'grp.org.shops.show.dashboard.invoices.show.refunds.show',
             'grp.org.shops.show.ordering.orders.show.invoices.show.refunds.show'
             =>
             array_merge(

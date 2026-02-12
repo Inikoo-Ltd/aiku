@@ -13,7 +13,7 @@ import InputNumber from 'primevue/inputnumber'
 import { get, set } from 'lodash-es'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faSave as falSave, faExclamationCircle, faMinus, faPlus, faArrowCircleLeft, faTrash, faTrashAlt } from '@fal'
+import { faSave as falSave, faExclamationCircle, faMinus, faPlus, faArrowCircleLeft, faTrash, faTrashAlt, faEmptySet, faStarChristmas } from '@fal'
 import { faSave } from '@fad'
 import { faArrowAltCircleLeft } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -270,7 +270,14 @@ const productRoute = (item) => {
                                 :currency="item.currency_code"
                                 :step="item.original_item_net_price"
                                 @refund="(form) => onClickQuantity(item.refund_route, item.rowIndex, form)"
-                            />
+                            >
+                                <template #decrementicon v-if="is_tax_only">
+                                    <FontAwesomeIcon :icon="faEmptySet" v-tooltip="trans('Set value to 0')"/>
+                                </template>
+                                <template #incrementicon v-if="is_tax_only">
+                                    <FontAwesomeIcon :icon="faStarChristmas" v-tooltip="trans('Set value to max amount')"/>
+                                </template>
+                            </ActionCell>
 
                             <!-- <Button :style="'negative'" :icon="faTrash" @click="" ></Button> -->
                             <FontAwesomeIcon
