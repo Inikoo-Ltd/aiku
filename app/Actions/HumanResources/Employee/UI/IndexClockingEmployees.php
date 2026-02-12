@@ -17,10 +17,17 @@ use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\QrScanLog;
 use Illuminate\Support\Carbon;
 use App\Enums\Helpers\Period\PeriodEnum;
+use App\Models\SysAdmin\Group;
+use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\Guest;
+use App\InertiaTable\InertiaTable;
 
 class IndexClockingEmployees extends OrgAction
 {
     use AsAction;
+
+    private Group|Employee|Organisation|Guest $parent;
 
     public function handle(ActionRequest $request): Response
     {
@@ -89,7 +96,8 @@ class IndexClockingEmployees extends OrgAction
                     ]
                     : Inertia::lazy(fn () => ['status' => 'loaded_lazy', 'timesheets' => $timesheetsData, 'statistics' => $statistics]),
             ]
-        );
+        )
+            ->table($this->tableStructure($employee));
     }
 
     public function asController(ActionRequest $request): Response
@@ -247,6 +255,52 @@ class IndexClockingEmployees extends OrgAction
             'invalid' => $invalidScanCount,
             'absent' => 0,
             'total' => $total,
+        ];
+    }
+
+    public function tableStructure(Employee $employee): \Closure
+    {
+        return function (InertiaTable $table) use ($employee) {
+
+            $table
+                ->withGlobalSearch()
+                ->column(key: 'date', label: __('Date'), sortable: true);
+
+            foreach ($this->getPeriodFilters() as $periodFilter) {
+                $table->periodFilters($periodFilter['elements']);
+            }
+
+            $table->column(key: 'subject_name', label: __('Name'), sortable: true, searchable: true);
+            $table->column(key: 'job_position', label: __('Job Position'));
+
+            $table->column(key: 'start_at', label: __('Start At'), sortable: true)
+                ->column(key: 'end_at', label: __('End At'), sortable: true);
+
+            $table->column(key: 'working_duration', label: __('Working'), sortable: true)
+                ->column(key: 'breaks_duration', label: __('Breaks'), sortable: true);
+
+            $table->column(key: 'clock_in_count', label: __('Clock In Count'))
+                ->column(key: 'clock_out_count', label: __('Clock Out Count'));
+
+            $table->column(key: 'number_time_trackers', label: __('Time Trackers'));
+            $table->column(key: 'number_open_time_trackers', label: __('Open Trackers'));
+
+            $table->defaultSort('date');
+        };
+    }
+
+    protected function getPeriodFilters(): array
+    {
+        $elements = array_merge_recursive(
+            PeriodEnum::labels(),
+            PeriodEnum::date()
+        );
+
+        return [
+            'employees_period' => [
+                'label'    => __('Period'),
+                'elements' => $elements
+            ],
         ];
     }
 }

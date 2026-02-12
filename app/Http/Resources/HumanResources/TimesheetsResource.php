@@ -12,6 +12,7 @@ namespace App\Http\Resources\HumanResources;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
+use App\Models\HumanResources\Employee;
 
 /**
  * @property int $id
@@ -30,6 +31,11 @@ class TimesheetsResource extends JsonResource
     {
 
 
+        $jobPosition = null;
+        if ($this->resource->relationLoaded('subject') && $this->subject instanceof Employee) {
+            $jobPosition = $this->subject->job_title ?? null;
+        }
+
         return [
             'id'                        => $this->id,
             'date'                      => $this->date,
@@ -41,7 +47,7 @@ class TimesheetsResource extends JsonResource
             'number_time_trackers'      => $this->number_time_trackers,
             'number_open_time_trackers' => $this->number_open_time_trackers,
 
-            'job_position'              => $this->job_position ?? null,
+            'job_position'              => $jobPosition,
             'clock_in_count'            => $this->clock_in_count ?? $this->number_time_trackers,
             'clock_out_count'           => $this->clock_out_count ?? ($this->number_time_trackers - $this->number_open_time_trackers),
 
