@@ -43,6 +43,8 @@ class IndexClockingEmployees extends OrgAction
 
         if ($this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value && $employee) {
 
+            InertiaTable::updateQueryBuilderParameters(ClockingEmployeesTabsEnum::TIMESHEETS->value);
+
             $query = QueryBuilder::for(Timesheet::class)
                 ->where('subject_type', 'Employee')
                 ->where('subject_id', $employee->id)
@@ -97,10 +99,10 @@ class IndexClockingEmployees extends OrgAction
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'subject_name', label: __('Name'))
                 ->column(key: 'job_position', label: __('Job Position'))
-                ->column(key: 'start_at', label: __('Start At'), sortable: true)
-                ->column(key: 'end_at', label: __('End At'), sortable: true)
-                ->column(key: 'working_duration', label: __('Working'))
-                ->column(key: 'breaks_duration', label: __('Breaks'))
+                ->column(key: 'start_at', label: __('Start At'))
+                ->column(key: 'end_at', label: __('End At'))
+                ->column(key: 'working_duration', label: __('Working'), sortable: true)
+                ->column(key: 'breaks_duration', label: __('Breaks'), sortable: true)
                 ->column(key: 'clock_in_count', label: __('Clock In Count'))
                 ->column(key: 'clock_out_count', label: __('Clock Out Count'))
                 ->column(key: 'number_time_trackers', label: __('Time Trackers'))
@@ -178,7 +180,7 @@ class IndexClockingEmployees extends OrgAction
 
     protected function resolvePeriodRange(): ?array
     {
-        $period = request()->input('employees_period');
+        $period = request()->input('timesheets_period');
 
         if (!$period || !is_array($period)) {
             // Default: Month
