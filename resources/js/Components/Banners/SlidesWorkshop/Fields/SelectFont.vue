@@ -59,7 +59,7 @@ watch(value, (v) => {
       <template #singlelabel="{ value }">
         <div class="multiselect-single-label text-gray-600">
           <span :style="`font-family:${value.value}`">
-            {{ value.value }}
+            {{ value.label }}
           </span>
         </div>
       </template>
