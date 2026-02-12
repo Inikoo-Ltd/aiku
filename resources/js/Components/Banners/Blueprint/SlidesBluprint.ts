@@ -34,6 +34,7 @@ export default {
                 {
                     name: ["layout", "link"],
                     type: "text",
+                    information: trans('Link to visit when the slide clicked'),
                     label: trans("Link"),
                     value: ["layout", "link"],
                     placeholder: "https://www.example.com",

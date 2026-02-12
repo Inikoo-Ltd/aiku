@@ -14,6 +14,7 @@ import { routeType } from '@/types/route'
 import { getComponent } from '@/Composables/getBannerFields'
 import { get, set, cloneDeep } from "lodash-es"
 import ScreenView from '@/Components/ScreenView.vue'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 
 
 library.add(faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch)
@@ -105,6 +106,7 @@ defineExpose({
                         class="text-sm font-medium text-gray-500 flex justify-between items-start py-3">
                         <div class="inline-flex items-start leading-none">
                             <span>{{ fieldData.label }}</span>
+                            <InformationIcon v-if="fieldData.information" :information="fieldData.information" class="ml-1" />
                         </div>
 
                         <ScreenView :show-list="fieldData.useIn || []" v-model="screenView" />
