@@ -57,7 +57,7 @@ class ShowSidebarWorkshop extends OrgAction
                         'tooltip' => __('Header'),
                         'icon'    => 'fal fa-browser'
                     ],
-                    'meta'          => [
+                    /* 'meta'          => [
                         [
                             'key'      => 'website',
                             'label'    => $website->domain,
@@ -65,7 +65,7 @@ class ShowSidebarWorkshop extends OrgAction
                                 'icon' => 'fal fa-globe'
                             ]
                         ]
-                    ],
+                    ], */
                     'actions'       => $this->getActions($website, 'grp.models.website.publish.sidebar')
 
                 ],
