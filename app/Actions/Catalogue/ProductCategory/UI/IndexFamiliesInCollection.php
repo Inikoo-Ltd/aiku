@@ -87,6 +87,7 @@ class IndexFamiliesInCollection extends OrgAction
                 'product_categories.created_at',
                 'product_categories.image_id',
                 'product_categories.updated_at',
+                'product_categories.web_images',
                 'product_categories.master_product_category_id',
                 'product_category_sales_intervals.sales_grp_currency_all as sales_all',
                 'product_category_ordering_intervals.invoices_all as invoices_all',
@@ -119,9 +120,10 @@ class IndexFamiliesInCollection extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
-
+            $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+          
 
 
         };
