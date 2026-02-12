@@ -70,6 +70,13 @@ class DashboardShopSalesResource extends JsonResource
             ]
         ];
 
+        $registrationsColumns = $this->getDashboardColumnsFromArray($data, [
+            'registrations' => $routeTargets['registrations'],
+            'registrations_minified' => $routeTargets['registrations'],
+        ]);
+
+        $registrationsColumns = $this->addRegistrationsTooltip($registrationsColumns, $data);
+
         $columns = array_merge(
             $columns,
             $this->getDashboardColumnsFromArray($data, [
@@ -82,8 +89,9 @@ class DashboardShopSalesResource extends JsonResource
                 'invoices' => $routeTargets['invoices'],
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
-                'registrations' => $routeTargets['registrations'],
-                'registrations_minified' => $routeTargets['registrations'],
+            ]),
+            $registrationsColumns,
+            $this->getDashboardColumnsFromArray($data, [
                 'registrations_delta',
                 'sales',
                 'sales_minified',
@@ -103,5 +111,29 @@ class DashboardShopSalesResource extends JsonResource
             'columns' => $columns,
             'colour'  => $data['colour'] ?? '',
         ];
+    }
+
+    private function addRegistrationsTooltip(array $columns, array $data): array
+    {
+        $intervals = ['tdy', 'ld', '3d', '1w', '1m', '1q', '1y', 'all', 'ytd', 'qtd', 'mtd', 'wtd', 'lm', 'lw', 'ctm'];
+
+        foreach (['registrations', 'registrations_minified'] as $columnKey) {
+            if (isset($columns[$columnKey])) {
+                foreach ($intervals as $interval) {
+                    if (isset($columns[$columnKey][$interval])) {
+                        $withOrders = $data["registrations_with_orders_{$interval}"] ?? 0;
+                        $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
+
+                        $columns[$columnKey][$interval]['tooltip'] = sprintf(
+                            'With orders: %s | Without orders: %s',
+                            number_format($withOrders),
+                            number_format($withoutOrders)
+                        );
+                    }
+                }
+            }
+        }
+
+        return $columns;
     }
 }
