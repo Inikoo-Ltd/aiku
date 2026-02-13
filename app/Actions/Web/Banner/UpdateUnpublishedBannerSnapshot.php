@@ -45,17 +45,12 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
 
             foreach ($slides as $ulid => $slideData) {
                 $slide = Slide::where('ulid', $ulid)->first();
+
                 if ($slide) {
-                    UpdateSlide::run(
-                        $slide,
-                        Arr::only($slideData, ['layout', 'image_id', 'mobile_image_id', 'tablet_image_id'])
-                    );
+                    UpdateSlide::run($slide, $slideData);
                 } else {
                     data_set($slideData, 'ulid', $ulid);
-                    StoreSlide::run(
-                        snapshot: $snapshot,
-                        modelData: $slideData,
-                    );
+                    StoreSlide::run(snapshot: $snapshot, modelData: $slideData);
                 }
             }
         }
@@ -86,10 +81,7 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $this->set(
-            'layout',
-            $this->only(['type', 'delay', 'common', 'components', 'navigation'])
-        );
+        $this->set('layout', $this->only(['type', 'delay', 'common', 'components', 'navigation']));
     }
 
     public function asController(Banner $banner, ActionRequest $request): Banner

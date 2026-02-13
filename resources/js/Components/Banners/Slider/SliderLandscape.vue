@@ -125,10 +125,7 @@ onMounted(() => {
                     :slidesPerView="1"
                     :centeredSlides="true"
                     :loop="data.components.filter((item)=>item.ulid).length > 1"
-                    :autoplay="{
-                        delay: data.delay,
-                        disableOnInteraction: false,
-                    }"
+                    :autoplay="false"
                     :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
                         clickable: true,
                         renderBullet: (index, className) => {
