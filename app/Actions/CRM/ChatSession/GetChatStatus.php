@@ -46,9 +46,8 @@ class GetChatStatus
 
     public function asController(ActionRequest $request): JsonResponse
     {
-
         $shop = Shop::findOrFail($request->validated('shop_id'));
-        $chatSession = ChatSession::findOrFail($request->validated('ulid'));
+        $chatSession = ChatSession::where('ulid', $request->validated('ulid'))->get()->first();
 
         $config = $this->handle($shop, $chatSession);
 
