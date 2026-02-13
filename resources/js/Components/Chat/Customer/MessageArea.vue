@@ -243,7 +243,7 @@ const groupedMessages = computed(() => {
 })
 
 const sendMessage = async () => {
-    if (!props.isLoggedIn && !guestProfileSubmitted.value) return
+    // if (!guestProfileSubmitted.value) return
     if (props.isRating) return
 
     const text = input.value.trim()

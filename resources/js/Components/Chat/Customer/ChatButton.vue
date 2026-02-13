@@ -176,9 +176,14 @@ const getMessages = async (loadMore = false) => {
             messagesLocal.value.unshift(...fetched)
         }
 
-        if (res.data?.data?.session_status === "closed") {
+        const sessionStatus = res.data?.data?.session_status
+
+        if (sessionStatus === "closed") {
             isRating.value = true
             rating.value = res.data?.data?.rating ?? 0
+        } else {
+            isRating.value = false
+            rating.value = 0
         }
     } finally {
         isLoadingMore.value = false
@@ -195,7 +200,6 @@ const sendMessage = async ({
     file?: File | null
 }) => {
     if (!chatSession.value?.ulid) return
-
     const tempId = `tmp-${crypto.randomUUID()}`
 
     const localMessage: LocalChatMessage = {
@@ -360,7 +364,6 @@ const toggle = async () => {
         unreadCount.value = 0
 
         isCheckingStatus.value = true
-
         try {
             let session = loadChatSession()
 
