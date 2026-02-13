@@ -54,7 +54,6 @@ const allItems = computed(() => [
   ...(props.fieldValue?.families || []),
 ])
 
-/* ---------------- mobile tuned perRow ---------------- */
 const perRow = computed(() => {
   const cfg = props.fieldValue?.settings?.per_row
 
@@ -75,7 +74,7 @@ const spaceBetween = computed(() => {
   return 24
 })
 
-/* ---------------- navigation ---------------- */
+
 function scrollLeft() {
   if (swiperInstance.value?.slidePrev) swiperInstance.value.slidePrev()
 }
@@ -130,7 +129,7 @@ const tryInitNavigation = async () => {
 
 watch([prevEl, nextEl, swiperInstance], tryInitNavigation, { immediate: true })
 
-/* ---------------- equal height ---------------- */
+
 async function computeMaxHeight() {
   await nextTick()
   if (!containerRef.value) return
@@ -183,7 +182,6 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
       <div class="flex items-center gap-4 w-full">
         <div class="relative flex-1 overflow-hidden">
 
-          <!-- LEFT ARROW (desktop/tablet only) -->
           <button
             v-if="props.screenType !== 'mobile' && swiperInstance?.allowSlidePrev"
             ref="prevEl"
@@ -194,7 +192,6 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
             <FontAwesomeIcon :icon="['fas','chevron-circle-left']" />
           </button>
 
-          <!-- SWIPER -->
           <div class="swiper-mask">
             <Swiper
               @swiper="(s:any)=> swiperInstance = s"
@@ -227,7 +224,6 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
             </Swiper>
           </div>
 
-          <!-- RIGHT ARROW -->
           <button
             v-if="props.screenType !== 'mobile' && swiperInstance?.allowSlideNext"
             ref="nextEl"
