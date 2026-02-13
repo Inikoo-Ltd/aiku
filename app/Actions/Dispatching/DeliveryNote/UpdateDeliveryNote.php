@@ -16,7 +16,6 @@ use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateIntrastatExportMetrics;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -70,16 +69,11 @@ class UpdateDeliveryNote extends OrgAction
                 $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
                 $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 
-                // Trigger Intrastat metrics hydration for EU deliveries
                 if ($deliveryNote->state === DeliveryNoteStateEnum::DISPATCHED && $deliveryNote->delivery_country_id) {
                     $deliveryCountry = Country::find($deliveryNote->delivery_country_id);
-                    if ($deliveryCountry
-                        && Country::isInEU($deliveryCountry->code)
-                        && $deliveryCountry->code !== $deliveryNote->organisation->country_code) {
-                        OrganisationHydrateIntrastatExportMetrics::dispatch(
-                            $deliveryNote->organisation,
-                            $deliveryNote->dispatched_at ?? now()
-                        )->delay($this->hydratorsDelay);
+
+                    if ($deliveryCountry && Country::isInEU($deliveryCountry->code) && $deliveryCountry->code !== $deliveryNote->organisation->country_code) {
+                        // Todo: Put Process Intrastat Export and Import Time Series
                     }
                 }
             }

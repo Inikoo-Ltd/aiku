@@ -91,8 +91,9 @@ class GetMasterProductShowcase
             ],
             'availability_status' => [
                 'is_for_sale'            => $masterAsset->is_for_sale,
-                'product'                => $product->toArray(),
-                'total_product_for_sale' => $product->where('is_for_sale', true)->count(),
+                'status'                 => $masterAsset->status,
+                'total_products'         => $masterAsset->stats->number_assets,
+                'total_product_for_sale' => $masterAsset->stats->number_current_assets,
                 'from_trade_unit'        => $masterAsset->not_for_sale_from_trade_unit,
                 'parentLink'             => $parentLink,
             ],

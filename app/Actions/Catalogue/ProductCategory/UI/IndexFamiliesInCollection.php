@@ -123,7 +123,7 @@ class IndexFamiliesInCollection extends OrgAction
             $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-          
+
 
 
         };

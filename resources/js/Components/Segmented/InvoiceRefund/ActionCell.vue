@@ -62,10 +62,14 @@ defineExpose({
         :step="step"
       >
         <template #decrementicon>
-          <FontAwesomeIcon :icon="['fal', 'minus']" aria-hidden="true" />
+          <slot name="decrementicon">
+            <FontAwesomeIcon :icon="['fal', 'minus']" aria-hidden="true" />
+          </slot>
         </template>
         <template #incrementicon>
-          <FontAwesomeIcon :icon="['fal', 'plus']" aria-hidden="true" />
+          <slot name="incrementicon">
+            <FontAwesomeIcon :icon="['fal', 'plus']" aria-hidden="true" />
+          </slot>
         </template>
       </InputNumber>
     </div>

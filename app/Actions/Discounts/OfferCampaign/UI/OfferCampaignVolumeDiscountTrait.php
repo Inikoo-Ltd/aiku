@@ -42,6 +42,7 @@ trait OfferCampaignVolumeDiscountTrait
                     'actions' => app()->environment('local') ? [
                         [
                             'type'  => 'button',
+                            'icon'  => 'fal fa-gift',
                             'label' => __('Free Gift'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'free_gift', request()->route()->getName()),

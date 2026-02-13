@@ -7,6 +7,8 @@ import { useLocaleStore } from "@/Stores/locale"
 import { trans } from "laravel-vue-i18n"
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import Discount from "@/Components/Utils/Label/Discount.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faInfoCircle } from "@far"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -54,7 +56,7 @@ const closePopover = (close: any): void => {
                     @mouseleave="closePopover(close)">
                     <!-- Retail -->
                     <div class="flex flex-col text-left col-span-4">
-                        <span class="text-sm font-medium text-gray-600 xmb-1">{{ trans('Retail Price') }} </span>
+                        <span class="text-sm font-medium text-gray-600 xmb-1 w-fit" v-tooltip="trans('Recommended Retail Price')">{{ trans('Retail Price') }}</span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
                                 {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp_per_unit || 0) }}
@@ -93,15 +95,14 @@ const closePopover = (close: any): void => {
 
                 <!-- Retail Price -->
                 <div class="flex justify-between items-center text-sm">
-                    <span class="text-gray-700">{{ trans('Retail Price') }}</span>
+                    <span class="text-gray-700">{{ trans('Recommended Retail Price') }}</span>
                     <div class="flex items-center gap-4 text-right">
                         <span class="font-semibold text-gray-900 min-w-[90px] text-end">
                             {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp) }} / <span v-if="fieldValue.product.units != 1">{{trans('Outer') }}</span><span v-else>{{ fieldValue.product.unit }}</span>
                         </span>
                         <span v-if="fieldValue.product.units != 1"
                             class="text-xs text-gray-500 border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit.toFixed(2)) }} / {{
-                                fieldValue.product.unit }}
+                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit.toFixed(2)) }} / {{ fieldValue.product.unit }}
                         </span>
                     </div>
                 </div>

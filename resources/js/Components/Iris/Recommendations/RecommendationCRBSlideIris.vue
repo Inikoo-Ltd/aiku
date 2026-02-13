@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 //import { useFormatTime, useRangeFromNow } from '@/Composables/useFormatTime'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
@@ -11,7 +12,7 @@ import { Link } from '@inertiajs/vue3'
 //import { formatDistance } from 'date-fns'
 import { trans } from 'laravel-vue-i18n'
 import { SwiperSlide } from 'swiper/vue'
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 
 const props = defineProps<{
     product: LastOrderedProduct
@@ -22,6 +23,7 @@ const locale = inject('locale', aikuLocaleStructure)
 
 const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
 
+const isLoadingVisit = ref(false)
 </script>
 
 <template>
@@ -30,7 +32,10 @@ const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
             <!-- Section: Image -->
             <component :is="product.canonical_url ? Link : 'div'"
                 :href="product.canonical_url"
-                class="group max-w-[220px] flex justify-center mx-auto rounded aspect-square w-full overflow-hidden">
+                class="group max-w-[220px] flex justify-center mx-auto rounded aspect-square w-full overflow-hidden"
+                @start="() => isLoadingVisit = true"
+                @finish="() => isLoadingVisit = false">
+            >
                 <Image
                     :src="product.image"
                     :alt="product.name"
@@ -64,6 +69,13 @@ const firstName = props.product?.customer_contact_name?.split(" ")?.[0];
                 <div class="text-center text-xxs md:text-sm text-gray-400 italic">
                     {{ useFormatTime(product.submitted_at) }}
                 </div>
+            </div>
+
+            
+            <!-- LOADING -->
+            <div v-if="isLoadingVisit"
+                class="absolute inset-0 z-10 grid place-items-center bg-black/50 text-white text-4xl">
+                <LoadingIcon />
             </div>
         </div>
     </div>

@@ -52,6 +52,7 @@ import SeeAlso1Iris from "@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue"
 import family1Iris from "@/Components/CMS/Webpage/Family-1/family1Iris.vue"
 import FamiliesIris1 from "@/Components/CMS/Webpage/Families1/FamiliesIris1.vue"
 import FamiliesIris2 from "@/Components/CMS/Webpage/Families2/FamiliesIris2.vue"
+import FamiliesIris3 from "@/Components/CMS/Webpage/Families3/FamiliesIris3.vue"
 
 import Department1Iris from "@/Components/CMS/Webpage/Department1/Department1Iris.vue"
 
@@ -135,6 +136,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"family-1": family1Iris,
 		"families-1": FamiliesIris1,
 		"families-2": FamiliesIris2,
+		"families-3": FamiliesIris3,
 
 		//product
 		"product-1": shop_type === "b2b"

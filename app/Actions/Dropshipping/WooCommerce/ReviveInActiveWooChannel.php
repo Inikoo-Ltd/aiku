@@ -8,39 +8,43 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\Dropshipping\WooCommerce\Product\CheckWooPortfolio;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\WooCommerceUser;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReviveInActiveWooChannel
+class ReviveInActiveWooChannel extends OrgAction
 {
     use asAction;
     use WithActionUpdate;
 
-    public string $commandSignature = 'woo:revive_in_active_channel';
-
-    public function asCommand(): void
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-        $this->handle();
+        DB::transaction(function () use ($customerSalesChannel) {
+            $this->update($customerSalesChannel, [
+                'status' => CustomerSalesChannelStatusEnum::OPEN
+            ]);
+
+            $reviveWooUser = WooCommerceUser::where('customer_sales_channel_id', $customerSalesChannel->id)->restore();
+
+            if ($reviveWooUser) {
+                CheckWooChannel::run($customerSalesChannel->user);
+            } else {
+                throw ValidationException::withMessages(['message' => __('Unable to revive WooCommerce channel')]);
+            }
+        });
     }
 
-    public function handle(): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
-        $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
+        $this->initialisation($customerSalesChannel->organisation, $request);
 
-        $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
-            ->where('platform_status', false)
-            ->get();
-
-        /** @var CustomerSalesChannel $customerSalesChannel */
-        foreach ($customerSalesChannels as $customerSalesChannel) {
-            if ($customerSalesChannel->user) {
-                CheckWooChannel::run($customerSalesChannel->user);
-
-                echo $customerSalesChannel->name . "\n";
-            }
-        }
+        $this->handle($customerSalesChannel);
     }
 }

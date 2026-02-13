@@ -227,6 +227,26 @@ const isModalAddress = ref(false)
                     </template>
                 </ModalConfirmation>
 
+                <ModalConfirmation
+                    v-if="data?.customer_sales_channel?.status === 'closed' && data?.customer_sales_channel?.platform_id === 3"
+                    :routeYes="{
+                        name: 'grp.models.woo.revive',
+                        parameters: {
+                            customerSalesChannel: data?.customer_sales_channel?.id,
+                        },
+                        method: 'post'
+                    }"
+                    :description="trans('Are you sure you want to revive channel')"
+                    xisFullLoading
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button @click.stop="changeModel" label="Revive Channel" type="tertiary"
+                                icon="fal fa-clock">
+
+                        </Button>
+                    </template>
+                </ModalConfirmation>
+
                 <ModalConfirmationDelete
                     v-if="!data?.customer_sales_channel?.can_connect_to_platform && data?.customer_sales_channel?.status !== 'closed'"
                     :routeDelete="{

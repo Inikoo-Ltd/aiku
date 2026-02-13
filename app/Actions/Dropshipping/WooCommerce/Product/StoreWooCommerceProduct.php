@@ -137,6 +137,15 @@ class StoreWooCommerceProduct extends RetinaAction
                 ];
             }
 
+            $weightOption = Arr::get($wooCommerceUser->settings, 'weight_option', 'kg');
+
+            $weight = match ($weightOption) {
+                'kg' => round($product->gross_weight / 1000, 3),
+                'oz' => round($product->gross_weight * 0.035274, 2),
+                'lbs' => round($product->gross_weight * 0.00220462, 2),
+                default => $product->gross_weight
+            };
+
             $wooCommerceProduct = [
                 'name'              => $portfolio->customer_product_name,
                 'type'              => 'simple',
@@ -150,7 +159,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 'manage_stock'      => !is_null($availableQuantity),
                 'stock_status'      => Arr::get($product, 'stock_status', 'instock'),
                 'sku'               => $portfolio->sku,
-                'weight'            => (string)($product->gross_weight / 1000),
+                'weight'            => (string) $weight,
                 'dimensions'        => $dimensions,
                 'status'            => $this->mapProductStateToWooCommerce($product->status->value),
                 'attributes'        => $attributes
@@ -171,7 +180,12 @@ class StoreWooCommerceProduct extends RetinaAction
 
             if (is_string(Arr::get($result, '0'))) {
                 if (json_decode(Arr::get($result, '0', ''), true)['code'] === 'product_invalid_sku') {
-                    throw new \Exception(trans('Invalid or duplicated SKU: SKU already exists'));
+
+                    $duplicatedProducts = $wooCommerceUser->getWooCommerceProducts([
+                        'sku' => $portfolio->sku
+                    ]);
+
+                    data_set($result, 'id', Arr::get($duplicatedProducts, '0.id'));
                 }
             }
 

@@ -10,6 +10,7 @@
 namespace App\Actions\Web\WebBlock;
 
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -20,8 +21,18 @@ class GetWebBlockRecommendationsCRB
     public function handle(Webpage $webpage, array $webBlock): array
     {
         // Recommendations: Customer Recently Bought
-
         $family = null;
+
+        // Page: Family
+        if ($webpage->model instanceof ProductCategory) {
+            $family = [
+                'id'    => $webpage->model->id,
+                'slug'  => $webpage->model->slug,
+            ];
+
+            data_set($webBlock, 'web_block.layout.data.fieldValue.family', $family);
+        }
+
         if ($webpage->model->family_id) {
             $family = [
                 'id'    => $webpage->model->family_id,
@@ -32,7 +43,7 @@ class GetWebBlockRecommendationsCRB
             data_set($webBlock, 'web_block.layout.data.fieldValue.family', $family);
         }
 
-        // If Product page
+        // Page: Product
         if ($webpage->model instanceof Product) {
             $product = [
                 'id'    => $webpage->model->id
