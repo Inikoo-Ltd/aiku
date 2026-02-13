@@ -16,6 +16,7 @@ import Family3Render from './Families3Render.vue'
 import { getStyles } from '@/Composables/styles'
 import { sendMessageToParent } from '@/Composables/Workshop'
 import LinkIris from "@/Components/Iris/LinkIris.vue"
+import { fontWeight } from "html2canvas/dist/types/css/property-descriptors/font-weight"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -216,6 +217,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
                     :data="item"
                     :style="{
                       ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
+                      fontWeight : 600
                     }"
                     :screenType="props.screenType"
                   />
