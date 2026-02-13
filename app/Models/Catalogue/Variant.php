@@ -145,6 +145,12 @@ class Variant extends Model implements Auditable, HasMedia
         return $this->hasMany(Product::class, 'variant_id');
     }
 
+    public function allProductForSale(): HasMany
+    {
+        return $this->hasMany(Product::class, 'variant_id')
+                ->where('is_for_sale', true);
+    }
+
     public function leaderProduct(): HasOne
     {
         return $this->hasOne(Product::class, 'id', 'leader_id');
