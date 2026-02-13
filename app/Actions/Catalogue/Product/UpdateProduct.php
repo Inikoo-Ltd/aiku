@@ -56,12 +56,13 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-        // hack because in tests $product->getChanges() do not work
+        // Note laravel wasChanged do not work! for this action, no idea why need to use $oldData
         $oldState = $product->state;
 
         $webpageData = [];
         $newData     = [];
         $oldData     = $product->toArray();
+
 
         if (Arr::has($modelData, 'webpage_title')) {
             $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
@@ -162,9 +163,8 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::hasAny($changed, ['is_for_sale']) || $oldState != $product->state) {
-            $product = ProductHydrateAvailableQuantity::run($product);
-        }
+
+
 
         if ($product->webpage && !empty($webpageData)) {
             UpdateWebpage::make()->action($product->webpage, $webpageData);
@@ -178,7 +178,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if (Arr::has($changed, 'is_for_sale') && $product->webpage) {
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  && $product->webpage) {
             if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
                 ReopenWebpage::run($product->webpage);
             }
@@ -195,7 +195,7 @@ class UpdateProduct extends OrgAction
         }
 
 
-        if (Arr::has($changed, 'is_for_sale') || $newData) {
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  || $newData) {
             $product->auditEvent    = 'update';
             $product->isCustomEvent = true;
 
@@ -329,6 +329,10 @@ class UpdateProduct extends OrgAction
 
         if ($oldHistoricProduct != $product->current_historic_asset_id) {
             UpdateHistoricProductInBasketTransactions::dispatch($product);
+        }
+
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  || $oldState != $product->state) {
+            $product = ProductHydrateAvailableQuantity::run($product);
         }
 
         return $product;

@@ -28,7 +28,7 @@ trait WithInvoicesExport
             $totalShipping = $invoice->order?->shipping_amount ?? 0;
 
             $totalNet = $totalItemsNet + $totalShipping;
-            
+
             $invoiceTransactions = $invoice->invoiceTransactions()->with('model')->get();
 
             if ($invoice->customer->is_fulfilment) {
