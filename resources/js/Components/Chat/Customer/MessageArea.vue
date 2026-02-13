@@ -401,17 +401,27 @@ const initSocket = () => {
 
 watch(
     () => chatSession.value?.ulid,
-    async () => {
+    async (newUlid) => {
+        if (!newUlid) return
+
         agentTypingUser.value = null
-        if (chatChannel) chatChannel.stopListening(".typing")
+
+        if (chatChannel) {
+            chatChannel.stopListening(".typing")
+        }
+
         initSocket()
-        await getMediaUrl(chatSession.value!.ulid)
+        await getMediaUrl(newUlid)
     }
 )
 
+
 onMounted(async () => {
-    initSocket()
-    await getMediaUrl(chatSession.value!.ulid)
+    if (chatSession.value?.ulid) {
+        initSocket()
+        await getMediaUrl(chatSession.value.ulid)
+    }
+
     emit("mounted")
     scrollToBottom()
 })

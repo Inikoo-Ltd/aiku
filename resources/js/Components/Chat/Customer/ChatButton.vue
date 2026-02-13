@@ -334,8 +334,8 @@ const forceScrollBottom = () => {
 }
 
 const initChat = async () => {
-    // const session = await createSession()
-    // if (!session) return
+    const session = await createSession()
+    if (!session) return
     await getMessages()
     initWebSocket()
     forceScrollBottom()
@@ -437,7 +437,6 @@ const startNewSession = async () => {
 }
 
 const handleOfflineSession = (sessionData: ChatSessionData) => {
-    console.log("sessiondataoffline", sessionData)
     chatSession.value = sessionData
     saveChatSession(sessionData)
 }
