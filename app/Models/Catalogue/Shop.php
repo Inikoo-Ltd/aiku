@@ -30,6 +30,7 @@ use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\EmailTemplate;
+use App\Models\Comms\ExternalEmailRecipient;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
@@ -819,5 +820,10 @@ class Shop extends Model implements HasMedia, Auditable
             'schedule' => $schedule,
             'timezone' => $timezone ?? config('app.timezone'),
         ];
+    }
+
+    public function externalEmailRecipients(): HasMany
+    {
+        return $this->hasMany(ExternalEmailRecipient::class);
     }
 }
