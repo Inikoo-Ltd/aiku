@@ -409,7 +409,7 @@ function variantRoute(product: MasterProduct): string {
             organisation: params.organisation,
             shop: params.shop,
             subDepartment: params.subDepartment,
-            family: params.family,
+            family: params.family ?? product.family_slug,
             variant: product.variant_slug,
         }
     )
@@ -781,7 +781,6 @@ const saveTradeUnits = (value, product) => {
             </div>
         </template>
 
-
         <template #cell(variant_slug)="{ item: product }">
             <Link v-if="product.variant_slug" :href="variantRoute(product) as string"
                 class="inline-block" v-tooltip="product.is_variant_leader
@@ -789,6 +788,7 @@ const saveTradeUnits = (value, product) => {
                     : trans('Follower product of ') + product.variant_code">
                 <span class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
+               
                border transition-colors duration-150" :class="product.is_variant_leader
                 ? 'bg-yellow-50 border-yellow-200'
                 : 'bg-gray-50 border-gray-200'">
@@ -802,6 +802,11 @@ const saveTradeUnits = (value, product) => {
                     </span>
                 </span>
             </Link>
+            <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
+               rounded-md text-medium font-medium
+               border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
+                -
+            </span>
         </template>
 
         <template #cell(shop_code)="{ item: product }">

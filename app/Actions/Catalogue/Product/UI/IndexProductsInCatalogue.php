@@ -160,6 +160,16 @@ class IndexProductsInCatalogue extends OrgAction
                     ")
                 )
                 ->groupBy('products.id');
+        } else {
+            $queryBuilder
+                ->leftJoin('variants', 'variants.id', 'products.variant_id')
+                ->leftJoin('product_categories', 'product_categories.id', 'products.family_id')
+                ->addSelect([
+                    'variants.slug as variant_slug',
+                    'variants.code as variant_code',
+                    'products.is_variant_leader',
+                    'product_categories.slug as family_slug',
+                ]);
         }
 
         return $queryBuilder->allowedSorts([
@@ -171,7 +181,8 @@ class IndexProductsInCatalogue extends OrgAction
             'price',
             'rrp',
             'units',
-            'available_quantity'
+            'available_quantity',
+            'variant_slug'
         ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -227,6 +238,9 @@ class IndexProductsInCatalogue extends OrgAction
             if ($shop->type == ShopTypeEnum::EXTERNAL) {
                 $table
                     ->column(key: 'product_org_stocks', label: __('SKU'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
+            }else{
+                $table
+                    ->column(key: 'variant_slug', label: __('Variant'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
             }
 
             $table
@@ -372,6 +386,7 @@ class IndexProductsInCatalogue extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
+                'variantSlugs'                 => $shop->type != ShopTypeEnum::EXTERNAL ? ProductsResource::collection($products)->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [], 
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => $this->displayProductsShopTypeDependant($products, $shop)
                     : Inertia::lazy(fn () => $this->displayProductsShopTypeDependant($products, $shop)),

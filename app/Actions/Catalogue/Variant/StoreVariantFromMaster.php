@@ -53,6 +53,7 @@ class StoreVariantFromMaster extends OrgAction
                 $isLeader = $leaderProduct->id == $product->id;
                 $product->updateQuietly([
                     'variant_id'        => $variant->id,
+                    'is_for_sale'       => true,
                     'is_main'           => $isLeader,
                     'is_variant_leader' => $isLeader,
                     'is_minion_variant' => !$isLeader

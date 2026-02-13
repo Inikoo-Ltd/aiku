@@ -404,7 +404,9 @@ class ShowProduct extends OrgAction
                     'luigisbox_private_key' => Arr::get($productWeb->website->settings, "luigisbox.private_key"),
                     'luigisbox_lbx_code'    => Arr::get($productWeb->website->settings, "luigisbox.lbx_code"),
                 ] : [],
-                ...$componentData
+                ...$componentData,
+                'variant'       => $product->variant,
+                'is_variant_leader' => $product->is_variant_leader,
             ]
         )
             ->table(IndexAssetTimeSeries::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
