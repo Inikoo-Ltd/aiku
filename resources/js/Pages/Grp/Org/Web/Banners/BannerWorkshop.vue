@@ -10,7 +10,6 @@ import { debounce } from "lodash-es"
 import { useBannerHash } from "@/Composables/useBannerHash"
 import Publish from "@/Components/Utils/Publish.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
