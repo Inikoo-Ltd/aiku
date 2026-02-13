@@ -15,11 +15,7 @@ class ExternalEmailRecipient extends Model
 {
     use InShop;
 
-    protected $fillable = [
-        'name',
-        'email',
-    ];
-
+    protected $guarded = [];
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
