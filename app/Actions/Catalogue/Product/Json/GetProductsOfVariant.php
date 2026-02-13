@@ -20,7 +20,9 @@ class GetProductsOfVariant extends IrisAction
     public function handle(Variant $variant): array
     {
         return [
-            'products' => $variant->allProduct
+            'products' => 
+                // $variant->allProduct
+                $variant->allProductForSale
                 ->map(
                     fn ($product) =>
                     ProductOfVariantResource::make($product)
