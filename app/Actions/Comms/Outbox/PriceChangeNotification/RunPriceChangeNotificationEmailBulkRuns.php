@@ -17,6 +17,7 @@ use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -56,18 +57,6 @@ class RunPriceChangeNotificationEmailBulkRuns
         $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at');
         $outboxes = $queryOutbox->get();
 
-        /**
-         * check following steps :
-         * 1. check channel still active or not
-         * 2. check product still active or not
-         * 3. check the product price change
-         * 4. check the product is_for_sale
-         * 5. check the product state
-         * 6. check table historic asset to check the product price change
-         * 7. optimize the query
-         * 8. make sure unsubscribe is working
-         *
-         */
         /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
             $shop = $outbox->shop;
@@ -104,7 +93,8 @@ class RunPriceChangeNotificationEmailBulkRuns
 
             $baseQuery->join('customer_sales_channels', function ($join) {
                 $join->on('portfolios.customer_sales_channel_id', '=', 'customer_sales_channels.id')
-                    ->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN);
+                    ->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN)
+                    ->where('customer_sales_channels.platform_status', true);
             });
 
             // check product
@@ -112,6 +102,10 @@ class RunPriceChangeNotificationEmailBulkRuns
                 $join->on('portfolios.item_id', '=', 'products.id');
                 $join->where('products.is_for_sale', true);
                 $join->where('products.price_updated_at', '>', $last24Hours);
+                $join->whereIn('products.state', [
+                    ProductStateEnum::ACTIVE,
+                    ProductStateEnum::DISCONTINUING,
+                ]);
 
                 if ($lastOutBoxSent) {
                     $join->where('products.price_updated_at', '>', $lastOutBoxSent);
