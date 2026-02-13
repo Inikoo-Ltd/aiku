@@ -81,6 +81,7 @@ class ChatSessionListResource extends JsonResource
                 'created_at' => null,
                 'is_read' => true,
             ],
+            'metadata' => $this->metadata ?? [],
 
             'web_user' => $webUser ? [
                 'id' => $webUser->id,
