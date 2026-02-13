@@ -23,8 +23,10 @@ use Exception;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 trait WithLuigis
 {
@@ -61,6 +63,9 @@ trait WithLuigis
         if ($parent instanceof Website) {
             $website = $parent;
         } else {
+            if ($parent->model_type == 'Product') {
+                Log::info('Product Code: '.$parent->slug);
+            }
             $website = $parent->website;
         }
         $accessToken = $this->getAccessToken($website);
@@ -82,13 +87,21 @@ trait WithLuigis
             'Authorization'   => "Hello $publicKey:$signature",
         ];
 
+        Log::info('compressed: ' . $compressed);
+        $bodyToPrint = 'encoded body';
         if ($compressed) {
             $header['Content-Encoding'] = 'gzip';
             $body                       = gzencode(json_encode($body), 9);
         } else {
             $body = json_encode($body);
+            $bodyToPrint = $body;
         }
 
+        Log::info('Starting request to Luigi Box API ' . $publicKey . ' (' . $date . ')...');
+        Log::info('Headers: ', $header);
+        Log::info('Body: ', ['body' => $bodyToPrint]);
+
+        Log::info('Loading...');
         $response = Http::withHeaders($header)
             ->retry(3, 100)
             ->withBody($body, $content_type)
@@ -97,8 +110,17 @@ trait WithLuigis
             );
 
 
+        Sentry::captureMessage('Luigi Box API Request: XX '.$response->body());
+
         if ($response->failed()) {
+            Log::error('Failed to send request to Luigis Box API: '.$response->body(), [
+                'ResponseBody'      => $response->body(),
+            ]);
             throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
+        } else {
+            Log::info('Successfully sent request to Luigis Box API', [
+                'ResponseBody'      => $response->body(),
+            ]);
         }
 
     }

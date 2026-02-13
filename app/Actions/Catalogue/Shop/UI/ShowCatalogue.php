@@ -354,7 +354,7 @@ class ShowCatalogue extends OrgAction
                                 'parameters' => [
                                     'organisation'    => $shop->organisation->slug,
                                     'shop'            => $shop->slug,
-                                    'elements[state]' => 'discontinuing'
+                                    'index_elements[state]' => 'discontinuing'
                                 ]
                             ],
                         ],
@@ -371,7 +371,7 @@ class ShowCatalogue extends OrgAction
                                 'parameters' => [
                                     'organisation'    => $shop->organisation->slug,
                                     'shop'            => $shop->slug,
-                                    'elements[state]' => 'discontinued'
+                                    'index_elements[state]' => 'discontinued'
                                 ]
                             ],
                         ],

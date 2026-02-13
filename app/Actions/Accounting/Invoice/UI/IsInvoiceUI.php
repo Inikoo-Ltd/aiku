@@ -311,10 +311,10 @@ trait IsInvoiceUI
                     'type'  => 'button',
                     'style' => 'edit',
                     'icon'  => 'fal fa-plus',
-                    'label' => __('Create tax only refund'),
+                    'label' => __('Create tax refund'),
                     'route' => [
                         'method'     => 'post',
-                        'name'       => 'grp.models.refund.refund_tax',
+                        'name'       => 'grp.models.refund.create_tax_refund',
                         'parameters' => [
                             'invoice' => $invoice->id,
 

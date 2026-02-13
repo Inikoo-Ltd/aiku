@@ -26,6 +26,7 @@ use App\Http\Resources\Web\WebsiteResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -171,6 +172,7 @@ class ShowWebsite extends OrgAction
                 ]
             ];
         }
+
         return Inertia::render(
             'Org/Web/Website',
             [
@@ -236,8 +238,8 @@ class ShowWebsite extends OrgAction
                         ]
                     ],
                 ],
-                'migrated' => $website->migrated,
-                'luigi_data' => [
+                'migrated'        => $website->migrated,
+                'luigi_data'      => [
                     'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
                     'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
                     'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
@@ -247,8 +249,17 @@ class ShowWebsite extends OrgAction
 
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
                     WebsiteResource::make($website)->getArray(),
-                    ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']],
-                    ['stats' => $stats, 'content_blog_stats' => $content_blog_stats, 'website_type' => $website->shop->type],
+                    [
+                        'layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']
+                    ],
+                    [
+                        'stats'              => $stats,
+                        'content_blog_stats' => $content_blog_stats,
+                        'website_type'       => $website->shop->type
+                    ],
+                    [
+                        'pic' => null,// todo this is wrong User::permission("web.{$website->shop_id}.edit")->get()
+                    ],
                 )
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 

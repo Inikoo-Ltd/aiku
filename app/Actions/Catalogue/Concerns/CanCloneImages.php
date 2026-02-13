@@ -11,22 +11,19 @@ namespace App\Actions\Catalogue\Concerns;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImages;
 use App\Actions\Catalogue\Product\UpdateProductWebImages;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 
 trait CanCloneImages
 {
-    public function getJobUniqueId(Product $product): string
-    {
-        return $product->id;
-    }
-
-    protected function cloneImages(TradeUnit|MasterProductCategory|MasterAsset|Model $source, Product|ProductCategory|Model $target): void
+    protected function cloneImages(TradeUnit|MasterProductCategory|MasterAsset|MasterCollection|Model $source, Product|ProductCategory|Collection|Model $target): void
     {
         $images   = [];
         $position = 1;

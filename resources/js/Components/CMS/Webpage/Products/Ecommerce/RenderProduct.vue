@@ -298,7 +298,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="relative" >
+    <div class="relative w-full" >
     <component 
         :is="getProductsRenderB2bComponent(code)" 
         :product="product"

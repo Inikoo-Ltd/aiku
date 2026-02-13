@@ -12,6 +12,8 @@ namespace App\Actions\Api\Retina\Dropshipping\Product;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\ProductsApiResource;
 use App\Actions\RetinaApiAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Services\QueryBuilder;
@@ -64,6 +66,8 @@ class GetProducts extends RetinaApiAction
         }
 
         $query->where('products.is_for_sale', true);
+        $query->where('products.status', ProductStatusEnum::FOR_SALE);
+        $query->where('products.state', ProductStateEnum::ACTIVE);
 
         $query->where('products.shop_id', $this->shop->id)
             ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {

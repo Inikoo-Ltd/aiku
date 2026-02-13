@@ -112,17 +112,17 @@ function offerRoute(offer: {}) {
     <div class="pb-8 m-5">
         <div class="space-y-4">
             <Message
-                v-if="!data.family.data.description || !data.family.data.description_title || !data.family.data.description_extra && actions"
+                v-if="!data.family?.data.description || !data.family?.data.description_title || !data.family?.data.description_extra && actions"
                 severity="error" closable>
                 <template #icon>
                     <FontAwesomeIcon :icon="faInfoCircle" />
                 </template>
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">
-                        <span v-if="!data.family.data.description_title">{{ trans("Description Title is missing")
+                        <span v-if="!data.family?.data.description_title">{{ trans("Description Title is missing")
                             }}.</span>
-                        <span v-if="!data.family.data.description">{{ trans("Description is missing") }}.</span>
-                        <span v-if="!data.family.data.description_extra">{{ trans("Extra description is missing")
+                        <span v-if="!data.family?.data.description">{{ trans("Description is missing") }}.</span>
+                        <span v-if="!data.family?.data.description_extra">{{ trans("Extra description is missing")
                             }}.</span>
                     </div>
                     {{ trans("Please") }}
@@ -137,7 +137,7 @@ function offerRoute(offer: {}) {
 
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
-                <ProductCategoryCard :data="data.family.data"  />
+                <ProductCategoryCard :data="data.family?.data"  />
             </div>
 
             <div class="col-span-1 md:col-span-2 lg:col-span-4 offer">
@@ -157,10 +157,10 @@ function offerRoute(offer: {}) {
                 <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
 
                 <!-- Product State Stats -->
-                <ProductCategoryStats v-if="data.family.data.stats" :stats="data.family.data.stats" />
+                <ProductCategoryStats v-if="data.family?.data.stats" :stats="data.family?.data.stats" />
 
                 <!-- Review Content -->
-                <ReviewContent v-if="!isMaster" :data="data.family.data"  />
+                <ReviewContent v-if="!isMaster" :data="data.family?.data"  />
             </div>
         </div>
     </div>

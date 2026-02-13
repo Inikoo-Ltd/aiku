@@ -55,9 +55,9 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                 'master_product_categories.slug',
                 'master_product_categories.code',
                 'master_product_categories.name',
+                'master_product_categories.status',
                 'master_product_categories.description',
                 'master_product_categories.created_at',
-                'master_product_categories.image_id',
                 'master_product_categories.updated_at',
                 'master_product_categories.web_images',
 
@@ -86,11 +86,12 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                         'count' => 0,
                     ]
                 )
-                ->withGlobalSearch()
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+                ->withGlobalSearch();
 
 
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+            $table->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($action) {
                 $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);

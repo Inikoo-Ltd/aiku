@@ -120,7 +120,6 @@ function openOnlineModal(event: MouseEvent, item: any) {
 function collectionRoute(collection: Collection) {
     const currentRoute = route().current()
 
-    console.log(currentRoute)
 
     if (currentRoute === "grp.org.shops.show.catalogue.collections.show" ||
         currentRoute === "grp.org.shops.show.catalogue.collections.index" ||
@@ -504,6 +503,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         </template>
 
+        <template #cell(name)="{ item }">
+            <Link :href="collectionRoute(item) as string" class="primaryLink">
+                {{ item["name"] }}
+            </Link>
+        </template>
 
         <template #cell(actions)="{ item }">
             <div class="flex gap-x-2 gap-y-2">
