@@ -19,12 +19,14 @@ class GetVariantAndProducts extends IrisAction
 {
     public function handle(Variant $variant): array
     {
+        // TODO HIDE allProduct, use allProductForSale
         $variant->loadMissing('allProduct');
         // $variant->loadMissing('allProductForSale');
 
         return [
             'variant_data' => $variant->data,
             'products' => ProductOfVariantResource::collection(
+                // TODO HIDE allProduct, use allProductForSale
                 $variant->allProduct
                 // $variant->allProductForSale
             )->resolve(),
