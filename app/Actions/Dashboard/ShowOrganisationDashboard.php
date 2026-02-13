@@ -11,7 +11,6 @@ namespace App\Actions\Dashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
-use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -32,7 +31,6 @@ class ShowOrganisationDashboard extends OrgAction
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
     use WithTabsBox;
-    use WithCustomRangeDashboard;
 
     public function authorize(ActionRequest $request): bool
     {
