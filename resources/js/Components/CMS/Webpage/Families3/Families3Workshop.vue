@@ -49,13 +49,25 @@ const allItems = computed(() => [
   ...(props.modelValue?.families || [])
 ])
 
-const spaceBetween = computed(() =>
-  props.screenType === 'mobile' ? 8 : 24
-)
+const perRow = computed(() => {
+  const cfg = props.fieldValue?.settings?.per_row
 
-const perRow = computed(() =>
-  props.modelValue?.settings?.per_row?.[props.screenType] || 6
-)
+  if (props.screenType === 'mobile') {
+    return cfg?.mobile ?? 2.2
+  }
+
+  if (props.screenType === 'tablet') {
+    return cfg?.tablet ?? 4
+  }
+
+  return cfg?.desktop ?? 6.5
+})
+
+const spaceBetween = computed(() => {
+  if (props.screenType === 'mobile') return 12
+  if (props.screenType === 'tablet') return 16
+  return 24
+})
 
 const slideWidth = computed(() => {
   const gap = spaceBetween.value
@@ -146,13 +158,13 @@ watch(() => props.screenType, async () => {
               v-for="(item,index) in allItems"
               :key="index"
               class="flex"
-              :style="{ width: slideWidth }"
             >
               <Family3Render
                 :data="item"
                 :screenType="props.screenType"
                 :style="{
-                  ...getStyles(props.modelValue?.card?.container?.properties, props.screenType)
+                  ...getStyles(props.modelValue?.card?.container?.properties, props.screenType),
+                   fontWeight : 600
                 }"
               />
             </SwiperSlide>
@@ -182,23 +194,5 @@ watch(() => props.screenType, async () => {
   display:none !important;
 }
 
-.swiper-mask{
-  --mask-size:48px;
 
-  -webkit-mask-image:linear-gradient(
-    to right,
-    transparent 0,
-    black var(--mask-size),
-    black calc(100% - var(--mask-size)),
-    transparent 100%
-  );
-
-  mask-image:linear-gradient(
-    to right,
-    transparent 0,
-    black var(--mask-size),
-    black calc(100% - var(--mask-size)),
-    transparent 100%
-  );
-}
 </style>

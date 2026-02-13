@@ -66,7 +66,7 @@ const perRow = computed(() => {
     return cfg?.tablet ?? 4
   }
 
-  return cfg?.desktop ?? 8.7
+  return cfg?.desktop ?? 6.5
 })
 
 const spaceBetween = computed(() => {
@@ -248,23 +248,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
   display:none!important;
 }
 
-/* desktop fade mask */
-.swiper-mask{
-  --mask-size:48px;
-  overflow:hidden;
 
-  -webkit-mask-image:linear-gradient(to right,
-    transparent 0,
-    black var(--mask-size),
-    black calc(100% - var(--mask-size)),
-    transparent 100%);
-
-  mask-image:linear-gradient(to right,
-    transparent 0,
-    black var(--mask-size),
-    black calc(100% - var(--mask-size)),
-    transparent 100%);
-}
 
 .swiper-inner{
   padding-left:48px;
@@ -274,10 +258,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 
 /* mobile optimization */
 @media (max-width:768px){
-  .swiper-mask{
-    -webkit-mask-image:none;
-    mask-image:none;
-  }
+
 
   .swiper-inner{
     padding-left:0;
