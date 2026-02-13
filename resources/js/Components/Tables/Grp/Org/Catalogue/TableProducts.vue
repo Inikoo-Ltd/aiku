@@ -27,7 +27,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
-import { faTriangle, faEquals, faMinus, faShapes, faStar} from "@fas"
+import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack} from "@fas"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
 import axios from "axios"
@@ -37,7 +37,7 @@ import { notify } from "@kyvg/vue3-notification"
 
 
 
-library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil)
+library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack)
 
 
 const props = defineProps<{
