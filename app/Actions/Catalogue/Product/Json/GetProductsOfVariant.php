@@ -20,7 +20,7 @@ class GetProductsOfVariant extends IrisAction
     public function handle(Variant $variant): array
     {
         return [
-            'products' => 
+            'products' =>
                 // TODO HIDE allProduct, use allProductForSale
                 $variant->allProduct
                 // $variant->allProductForSale
