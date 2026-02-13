@@ -33,7 +33,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
 
-        if(! $wooCommerceUser ) {
+        if (!$wooCommerceUser) {
             return;
         }
 
@@ -68,7 +68,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
 
                 $availableQuantity = $product->available_quantity ?? 0;
 
-                if (! $product->is_for_sale) {
+                if (!$product->is_for_sale) {
                     $availableQuantity = 0;
                 }
 
@@ -78,19 +78,19 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
 
                 $productData['update'][] =
                     [
-                        "id" => $portfolio->platform_product_id,
+                        "id"             => $portfolio->platform_product_id,
                         "stock_quantity" => $availableQuantity
                     ];
             }
 
             $stockUpdated = $wooCommerceUser->batchUpdateWooCommerceProducts($productData);
 
-            if ($wooPortfolioUpdated = Arr::get($stockUpdated, 'update')) {
+            if (Arr::get($stockUpdated, 'update')) {
                 $customerSalesChannel->update([
                     'ban_stock_update_util' => null
                 ]);
             } else {
-                $ban = true;
+                $ban        = true;
                 $rawMessage = Arr::get($stockUpdated, '0');
 
                 if (is_array($rawMessage)) {
@@ -99,10 +99,7 @@ class UpdateWooCustomerSalesChannelPortfolio implements ShouldBeUnique
 
                 if (is_string($rawMessage)) {
                     $messageData = json_decode(Arr::get($stockUpdated, '0'), true);
-                    $message = $rawMessage;
-
                     if ($messageData) {
-                        $message = Arr::get($messageData, 'message');
                         if (Arr::get($messageData, 'code') == 'rest_invalid_param' || Arr::get($messageData, 'code') == 'woocommerce_rest_product_invalid_id' || Arr::get($messageData, 'data.status') == 404 || Arr::get($messageData, 'data.status') == 400) {
                             $ban = false;
                         }

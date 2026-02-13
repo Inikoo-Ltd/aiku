@@ -279,6 +279,9 @@ class Product extends Model implements Auditable, HasMedia
         'scpn_number'                   => 'string',
         'offers_data'                   => 'array',
         'not_for_sale_since'            => 'datetime',
+        'is_for_sale'                   => 'boolean',
+        'not_for_sale_from_master'      => 'boolean',
+
     ];
 
     protected $attributes = [

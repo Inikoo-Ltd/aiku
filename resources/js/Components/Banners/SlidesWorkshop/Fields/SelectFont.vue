@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Multiselect from "@vueform/multiselect"
-import { ref, watch } from "vue"
+import { lowerCase, snakeCase } from "lodash-es"
+import { ref, watch, computed } from "vue"
 import {useFontFamilyList} from "@/Composables/useFont"
 
 const props = defineProps<{
@@ -16,19 +17,13 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 
+const options = useFontFamilyList
 
-function combineUniqueArrays(arr1, arr2) {
-  const combined = [...arr1]
-
-  arr2.forEach(item => {
-    if (!combined.some(existingItem => existingItem.slug === item.slug)) {  // Only push if font didn't exist yet
-      combined.push(item)
-    }
-  })
-
-  return combined;
-}
-const combinedFonts = combineUniqueArrays(props.fieldData?.options || [], useFontFamilyList);
+const compOptions = computed(() => {
+  return props.fieldData?.options
+    ? options.filter((opt:any) => props.fieldData.options?.includes(opt))
+    : options
+})
 
 const value = ref(props.modelValue)
 
@@ -46,7 +41,7 @@ watch(value, (v) => {
   <div class="relative">
     <Multiselect
       v-model="value"
-      :options="combinedFonts"
+      :options="compOptions"
       :placeholder="props.fieldData?.placeholder ?? 'Select option'"
       :canClear="false"
       :closeOnSelect="props.fieldData?.mode === 'multiple' ? false : true"
@@ -58,14 +53,14 @@ watch(value, (v) => {
     >
       <template #singlelabel="{ value }">
         <div class="multiselect-single-label text-gray-600">
-          <span :style="`font-family:${value.value}`">
-            {{ value.label }}
+          <span :style="`font-family:${snakeCase(lowerCase(value.value))}`">
+            {{ value.value }}
           </span>
         </div>
       </template>
 
       <template #option="{ option }">
-        <span :style="`font-family:${option.value}`">
+        <span :style="`font-family:${snakeCase(lowerCase(option.value))}`">
           {{ option.label }}
         </span>
       </template>

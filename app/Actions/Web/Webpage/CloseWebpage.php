@@ -16,6 +16,7 @@ use App\Actions\Web\Webpage\Luigi\DeleteLuigiContent;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -31,16 +32,23 @@ class CloseWebpage extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
-        StoreRedirect::make()->action(
-            $webpage,
-            [
-                'type' => Arr::get($modelData, 'redirect_type', RedirectTypeEnum::PERMANENT->value),
-                'to_webpage_id' => Arr::get($modelData, 'to_webpage_id'),
-            ]
-        );
+        $redirect = Redirect::where('website_id', $webpage->website_id)->where('from_path', $webpage->url)->first();
+        if (!$redirect) {
+            $redirect = Redirect::where('website_id', $webpage->website_id)->where('from_url', $webpage->canonical_url)->first();
+        }
+        if (!$redirect) {
+            StoreRedirect::make()->action(
+                $webpage,
+                [
+                    'type'          => Arr::get($modelData, 'redirect_type', RedirectTypeEnum::PERMANENT->value),
+                    'to_webpage_id' => Arr::get($modelData, 'to_webpage_id'),
+                ]
+            );
+        }
 
         $webpage->update([
-            'state' => WebpageStateEnum::CLOSED->value,
+            'state'               => WebpageStateEnum::CLOSED->value,
+            'redirect_webpage_id' => Arr::get($modelData, 'to_webpage_id')
         ]);
         $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
 
