@@ -492,14 +492,14 @@ onMounted(async () => {
 					<div class="grid grid-cols-3 gap-2 items-center">
 						<div class="text-gray-500 text-sm">{{ trans("Email") }}</div>
 						<div class="col-span-2 text-sm">
-							{{ props.session?.guest_profile?.email || "-" }}
+							{{ props.session?.web_user?.email || "-" }}
 						</div>
 					</div>
 
 					<div class="grid grid-cols-3 gap-2 items-center">
 						<div class="text-gray-500 text-sm">{{ trans("Phone") }}</div>
 						<div class="col-span-2 text-sm">
-							{{ props.session?.guest_profile?.phone || "-" }}
+							{{ props.session?.web_user?.phone || "-" }}
 						</div>
 					</div>
 
