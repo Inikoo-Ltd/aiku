@@ -33,6 +33,7 @@ const props = defineProps({
     isRating: Boolean,
     rating: Number,
     isLoggedIn: Boolean,
+    isUser: Boolean,
 })
 
 const emit = defineEmits(["send-message", "reload", "mounted", "new-session"])
@@ -507,7 +508,7 @@ defineExpose({
 
         <!-- Input -->
         <div v-if="!isRating" class="border-t p-2 flex gap-2 items-end">
-            <GuestProfileForm v-if="!isLoggedIn && !guestProfileSubmitted" :sessionUlid="session?.ulid"
+            <GuestProfileForm v-if="!isLoggedIn && !guestProfileSubmitted && !isUser" :sessionUlid="session?.ulid"
                 @submitted="onGuestProfileSubmitted" />
 
             <template v-else>

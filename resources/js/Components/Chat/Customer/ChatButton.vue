@@ -334,8 +334,8 @@ const forceScrollBottom = () => {
 }
 
 const initChat = async () => {
-    const session = await createSession()
-    if (!session) return
+    // const session = await createSession()
+    // if (!session) return
     await getMessages()
     initWebSocket()
     forceScrollBottom()
@@ -347,6 +347,7 @@ const chatHours = ref({
     end: ''
 })
 
+const isUser = ref<boolean>(false)
 const isCheckingStatus = ref(false)
 const toggle = async () => {
     open.value = !open.value
@@ -357,13 +358,26 @@ const toggle = async () => {
         isCheckingStatus.value = true
 
         try {
+            let session = loadChatSession()
+
+            if (!session) {
+                session = await createSession()
+                if (!session) {
+                    console.error("Failed to create session")
+                    return;
+                }
+            }
             const res = await axios.get(`${baseUrl}/app/api/chats/status`, {
-                params: { shop_id: layout?.iris?.shop?.id },
+                params: {
+                    shop_id: layout?.iris?.shop?.id,
+                    ulid: session.ulid
+                },
             })
 
             const config = res.data.chat_config
 
             statusChat.value = config?.is_online ?? false
+            isUser.value = config.is_metadata
 
             if (config?.schedule) {
                 chatHours.value = {
@@ -500,7 +514,7 @@ defineExpose({
                 </div>
 
                 <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat" :messages="messagesLocal"
-                    :session="chatSession" :loading="loading" :isRating="isRating" :rating="rating"
+                    :session="chatSession" :loading="loading" :isRating="isRating" :rating="rating" :isUser="isUser"
                     :isLoggedIn="isLoggedIn" @send-message="sendMessage"
                     @reload="(loadMore: any) => getMessages(loadMore)" @mounted="forceScrollBottom"
                     @new-session="startNewSession" :assignedAgent="assignedAgent" />
