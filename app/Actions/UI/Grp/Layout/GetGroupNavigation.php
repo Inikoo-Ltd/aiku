@@ -28,6 +28,7 @@ class GetGroupNavigation
             ],
             'topMenu' => []
         ];
+        $groupNavigation['clocking-machines'] = $this->getClockingMachinesNavs(); //need permission for just employees can access
 
         if ($user->hasAnyPermission(['goods.view','masters.view'])) {
             $groupNavigation['trade-units'] = $this->getTradeUnitsNavs();
@@ -51,10 +52,6 @@ class GetGroupNavigation
 
         if (app()->environment('local')) {
             $groupNavigation['sales-channels'] = $this->getSalesChannelsNavs(); // Todo: Raul please made permission for me: Aldo
-        }
-
-        if (app()->environment('local')) {
-            $groupNavigation['clocking-machines'] = $this->getClockingMachinesNavs();
         }
 
         if ($user->hasPermissionTo('group-overview')) {
