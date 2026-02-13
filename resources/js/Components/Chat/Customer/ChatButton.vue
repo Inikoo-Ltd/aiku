@@ -334,8 +334,10 @@ const forceScrollBottom = () => {
 }
 
 const initChat = async () => {
-    const session = await createSession()
-    if (!session) return
+    if (!chatSession.value?.ulid) {
+        console.error("No session available")
+        return
+    }
     await getMessages()
     initWebSocket()
     forceScrollBottom()
@@ -362,29 +364,11 @@ const toggle = async () => {
 
             if (!session) {
                 session = await createSession()
-                if (!session) {
-                    console.error("Failed to create session")
-                    return;
-                }
+                if (!session) return
+            } else {
+                chatSession.value = session
             }
-            const res = await axios.get(`${baseUrl}/app/api/chats/status`, {
-                params: {
-                    shop_id: layout?.iris?.shop?.id,
-                    ulid: session.ulid
-                },
-            })
-
-            const config = res.data.chat_config
-
-            statusChat.value = config?.is_online ?? false
-            isUser.value = config.is_metadata
-
-            if (config?.schedule) {
-                chatHours.value = {
-                    start: config.schedule.start,
-                    end: config.schedule.end
-                }
-            }
+            await checkChatStatus(session.ulid)
 
             if (statusChat.value) {
                 await initChat()
@@ -422,6 +406,38 @@ const openSessionFromHistory = async (ulid: string) => {
     forceScrollBottom()
 }
 
+const checkChatStatus = async (sessionUlid: string) => {
+    isCheckingStatus.value = true
+
+    try {
+        const res = await axios.get(`${baseUrl}/app/api/chats/status`, {
+            params: {
+                shop_id: layout?.iris?.shop?.id,
+                ulid: sessionUlid
+            },
+        })
+
+        const config = res.data.chat_config
+
+        statusChat.value = config?.is_online ?? false
+        isUser.value = config?.is_metadata ?? false
+
+        if (config?.schedule) {
+            chatHours.value = {
+                start: config.schedule.start,
+                end: config.schedule.end
+            }
+        }
+
+    } catch (e) {
+        console.error("Chat status fetch failed", e)
+        statusChat.value = false
+    } finally {
+        isCheckingStatus.value = false
+    }
+}
+
+
 const startNewSession = async () => {
     localStorage.removeItem("chat")
     stopChatWebSocket()
@@ -431,9 +447,13 @@ const startNewSession = async () => {
     const session = await createSession()
     if (!session) return
 
-    await getMessages()
-    initWebSocket()
-    forceScrollBottom()
+    await checkChatStatus(session.ulid)
+
+    if (statusChat.value) {
+        await getMessages()
+        initWebSocket()
+        forceScrollBottom()
+    }
 }
 
 const handleOfflineSession = (sessionData: ChatSessionData) => {
