@@ -8,39 +8,43 @@
 
 namespace App\Http\Resources\Dashboards;
 
-use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
-use App\Models\SysAdmin\Group;
+use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
 {
-    use WithDashboardIntervalValues;
-
-    private array $customRangeData = [];
-
-    public function setCustomRangeData(array $customRangeData): self
-    {
-        $this->customRangeData = $customRangeData;
-        return $this;
-    }
+    use WithDashboardIntervalValuesFromArray;
 
     public function toArray($request): array
     {
-        /** @var Group $group */
-        $group = $this->resource;
+        $masterShops = $this->resource;
 
-        $salesIntervals = $group->salesIntervals;
-        $orderingIntervals = $group->orderingIntervals;
-
-        if (!empty($this->customRangeData['master_shops'])) {
-            $aggregatedData = $this->aggregateMasterShopsData($this->customRangeData['master_shops']);
-
-            $salesIntervals = $this->createCustomRangeIntervalsObject($salesIntervals, $aggregatedData, 'sales', $group);
-            $orderingIntervals = $this->createCustomRangeIntervalsObject($orderingIntervals, $aggregatedData, 'ordering', $group);
+        if (empty($masterShops)) {
+            return [
+                'slug'    => 'totals',
+                'columns' => $this->getEmptyColumns(),
+            ];
         }
 
-        $routeTargets = [
+        $firstMasterShop = is_array($masterShops) ? ($masterShops[0] ?? []) : [];
 
+        $fields = [
+            'baskets_created_grp_currency',
+            'registrations',
+            'registrations_with_orders',
+            'registrations_without_orders',
+            'sales_grp_currency',
+            'invoices',
+        ];
+
+        $summedData = $this->sumIntervalValuesFromArrays($masterShops, $fields);
+
+        $summedData = array_merge([
+            'group_currency_code' => $firstMasterShop['group_currency_code'] ?? 'GBP',
+            'group_slug' => $firstMasterShop['group_slug'] ?? 'unknown',
+        ], $summedData);
+
+        $routeTargets = [
             'group' => [
                 'route_target' => [
                     'name'       => 'grp.dashboard.show',
@@ -49,13 +53,12 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
             ],
         ];
 
+        $registrationsColumns = array_merge(
+            $this->getDashboardTableColumnFromArray($summedData, 'registrations'),
+            $this->getDashboardTableColumnFromArray($summedData, 'registrations_minified')
+        );
 
-        $baskets_created_grp_currency          = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_grp_currency');
-        $baskets_created_grp_currency_minified = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_grp_currency_minified');
-        $sales_grp_currency                    = $this->getDashboardTableColumn($salesIntervals, 'sales_grp_currency');
-        $sales_grp_currency_delta              = $this->getDashboardTableColumn($salesIntervals, 'sales_grp_currency_delta');
-        $sales_grp_currency_minified           = $this->getDashboardTableColumn($salesIntervals, 'sales_grp_currency_minified');
-
+        $registrationsColumns = $this->addRegistrationsTooltip($registrationsColumns, $summedData);
 
         $columns = array_merge(
             [
@@ -73,77 +76,64 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
                     ...$routeTargets['group']
                 ]
             ],
-            $baskets_created_grp_currency,
-            $baskets_created_grp_currency_minified,
-            $this->getDashboardTableColumn($orderingIntervals, 'registrations'),
-            $this->getDashboardTableColumn($orderingIntervals, 'registrations_minified'),
-            $this->getDashboardTableColumn($orderingIntervals, 'registrations_delta'),
-            $this->getDashboardTableColumn($orderingIntervals, 'registrations_with_orders'),
-            $this->getDashboardTableColumn($orderingIntervals, 'registrations_with_orders_delta'),
-            $this->getDashboardTableColumn($orderingIntervals, 'registrations_without_orders'),
-            $this->getDashboardTableColumn($orderingIntervals, 'registrations_without_orders_delta'),
-            $this->getDashboardTableColumn($orderingIntervals, 'invoices'),
-            $this->getDashboardTableColumn($orderingIntervals, 'invoices_minified'),
-            $this->getDashboardTableColumn($orderingIntervals, 'invoices_delta'),
-            $sales_grp_currency,
-            $sales_grp_currency_minified,
-            $sales_grp_currency_delta
+            $this->getDashboardTableColumnFromArray($summedData, 'baskets_created_grp_currency'),
+            $this->getDashboardTableColumnFromArray($summedData, 'baskets_created_grp_currency_minified'),
+            $registrationsColumns,
+            $this->getDashboardTableColumnFromArray($summedData, 'registrations_delta'),
+            $this->getDashboardTableColumnFromArray($summedData, 'registrations_with_orders'),
+            $this->getDashboardTableColumnFromArray($summedData, 'registrations_with_orders_delta'),
+            $this->getDashboardTableColumnFromArray($summedData, 'registrations_without_orders'),
+            $this->getDashboardTableColumnFromArray($summedData, 'registrations_without_orders_delta'),
+            $this->getDashboardTableColumnFromArray($summedData, 'invoices'),
+            $this->getDashboardTableColumnFromArray($summedData, 'invoices_minified'),
+            $this->getDashboardTableColumnFromArray($summedData, 'invoices_delta'),
+            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency'),
+            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_minified'),
+            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_delta')
         );
 
-
         return [
-            'slug'    => $group->slug,
+            'slug'    => $summedData['group_slug'] ?? 'totals',
             'columns' => $columns
         ];
     }
 
-    private function aggregateMasterShopsData(array $masterShopsData): array
+    private function getEmptyColumns(): array
     {
-        $aggregated = [
-            'baskets_created_grp_currency_ctm'    => 0,
-            'registrations_ctm'                   => 0,
-            'registrations_with_orders_ctm'       => 0,
-            'registrations_without_orders_ctm'    => 0,
-            'sales_grp_currency_ctm'              => 0,
-            'invoices_ctm'                        => 0,
-            'baskets_created_grp_currency_ctm_ly' => 0,
-            'registrations_ctm_ly'                => 0,
-            'registrations_with_orders_ctm_ly'    => 0,
-            'registrations_without_orders_ctm_ly' => 0,
-            'sales_grp_currency_ctm_ly'           => 0,
-            'invoices_ctm_ly'                     => 0,
+        return [
+            'label' => [
+                'formatted_value' => 'All Master Shops',
+                'align'           => 'left',
+            ],
+            'label_minified' => [
+                'formatted_value' => 'All',
+                'tooltip'         => 'All Master Shops',
+                'align'           => 'left',
+            ],
         ];
+    }
 
-        foreach ($masterShopsData as $masterShopId => $masterShopData) {
-            foreach ($aggregated as $key => $value) {
-                if (isset($masterShopData[$key])) {
-                    $aggregated[$key] += (float) $masterShopData[$key];
+    private function addRegistrationsTooltip(array $columns, array $data): array
+    {
+        $intervals = ['tdy', 'ld', '3d', '1w', '1m', '1q', '1y', 'all', 'ytd', 'qtd', 'mtd', 'wtd', 'lm', 'lw', 'ctm'];
+
+        foreach (['registrations', 'registrations_minified'] as $columnKey) {
+            if (isset($columns[$columnKey])) {
+                foreach ($intervals as $interval) {
+                    if (isset($columns[$columnKey][$interval])) {
+                        $withOrders = $data["registrations_with_orders_{$interval}"] ?? 0;
+                        $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
+
+                        $columns[$columnKey][$interval]['tooltip'] = sprintf(
+                            'With orders: %s | Without orders: %s',
+                            number_format($withOrders),
+                            number_format($withoutOrders)
+                        );
+                    }
                 }
             }
         }
 
-        return $aggregated;
-    }
-
-    private function createCustomRangeIntervalsObject($originalIntervals, array $customData, string $type, Group $group): object
-    {
-        $intervalsData = [];
-
-        if ($originalIntervals) {
-            $intervalsData = $originalIntervals->toArray();
-        }
-
-        foreach ($customData as $key => $value) {
-            if ($type === 'sales' && (str_starts_with($key, 'baskets_created_') || str_starts_with($key, 'sales_'))) {
-                $intervalsData[$key] = $value;
-            } elseif ($type === 'ordering' && (str_starts_with($key, 'registrations_') || str_starts_with($key, 'invoices_'))) {
-                $intervalsData[$key] = $value;
-            }
-        }
-
-        $intervalsData['group_currency_code'] = $group->currency->code;
-        $intervalsData['group'] = $group;
-
-        return (object) $intervalsData;
+        return $columns;
     }
 }

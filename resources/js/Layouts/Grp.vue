@@ -47,7 +47,7 @@ import {
 	faRulerTriangle,
 	faRulerCombined,
 	faAtom,
-	faAtomAlt,
+	faAtomAlt, faGift,
 	faBan,
 	faSnooze,
 	faFileInvoice,
@@ -98,7 +98,7 @@ import { setColorStyleRoot } from "@/Composables/useApp"
 
 library.add(
 	faRainbow,
-	faAtomAlt,
+	faAtomAlt, faGift,
 	faOctopusDeploy,
 	faPoll,
 	faPhotoVideo, faQuestionCircle,

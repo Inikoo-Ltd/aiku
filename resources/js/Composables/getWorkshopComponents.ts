@@ -39,6 +39,7 @@ import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Dropshipping/Pro
 import SubDepartmentWorkshop1 from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Families2Workshop from '@/Components/CMS/Webpage/Families2/Families2Workshop.vue'
+import Families3Workshop from '@/Components/CMS/Webpage/Families3/Families3Workshop.vue'
 
 
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
@@ -101,6 +102,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         //family
         'families-1' : Families1Workshop,
         'families-2' : Families2Workshop,
+        'families-3' : Families3Workshop,
         'family-1': FamilyIris1,
 
         //product

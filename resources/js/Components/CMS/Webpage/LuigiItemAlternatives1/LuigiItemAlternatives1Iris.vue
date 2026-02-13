@@ -188,11 +188,11 @@ const fetchRecommendersToGetProducts = async () => {
 
 
 onMounted(() => {
-    console.log('wwwwwwwwwwwwww$$$$$$$$$$', layout)
-    console.log('wwwwwwwwwwwwww+++ logged', layout.iris.is_logged_in)
-    console.log('wwwwwwwwwwwwww............', layout.iris_variables.customer_id)
-    console.log('wwwwwwwwwwwwwwwwwwwwwwww', layout.user?.customer_id?.toString())
-    console.log('wwwwwwwwwwwwww----------', Cookies.get('_lb'))
+    // console.log('wwwwwwwwwwwwww$$$$$$$$$$', layout)
+    // console.log('wwwwwwwwwwwwww+++ logged', layout.iris.is_logged_in)
+    // console.log('wwwwwwwwwwwwww............', layout.iris_variables.customer_id)
+    // console.log('wwwwwwwwwwwwwwwwwwwwwwww', layout.user?.customer_id?.toString())
+    // console.log('wwwwwwwwwwwwww----------', Cookies.get('_lb'))
     fetchRecommenders()
     window.luigiItemAlternatives = fetchRecommenders
 })
