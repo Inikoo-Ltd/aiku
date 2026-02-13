@@ -168,6 +168,8 @@ const compIsDataFirstTimeCreated = computed(() => {
 onBeforeUnmount(() => {
     autoSave.cancel()
 })
+
+console.log(props.banner?.compiled_layout)
 </script>
 
 <template>
