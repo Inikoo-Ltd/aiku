@@ -25,8 +25,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $registrations_with_orders
  * @property int|null $registrations_without_orders
  * @property int|null $customers_invoiced
- * @property string|null $from
- * @property string|null $to
+ * @property \Illuminate\Support\Carbon|null $from
+ * @property \Illuminate\Support\Carbon|null $to
  * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -41,6 +41,11 @@ class MasterShopTimeSeriesRecord extends Model
 
     protected $guarded = [];
 
-
-
+    protected function casts(): array
+    {
+        return [
+            'from' => 'datetime',
+            'to'   => 'datetime',
+        ];
+    }
 }
