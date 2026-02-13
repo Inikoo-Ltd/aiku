@@ -100,6 +100,8 @@ const loadChatSession = () => {
 }
 
 const createSession = async (): Promise<ChatSessionData | null> => {
+    syncLoginState()
+
     const existing = loadChatSession()
     if (existing) {
         chatSession.value = existing
@@ -114,7 +116,7 @@ const createSession = async (): Promise<ChatSessionData | null> => {
             shop_id: layout?.iris?.shop?.id,
         }
 
-        if (isLoggedIn.value) {
+        if (isLoggedIn.value && layout.user?.id) {
             payload.web_user_id = layout.user?.id
         }
 
