@@ -37,6 +37,8 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
 
+        $schedule->command('queue:prune-failed --hours=168')->daily();
+
         $schedule->command('cloudflare:reload')->daily();
 
         $schedule->command('domain:check-cloudflare-status')->hourly();
