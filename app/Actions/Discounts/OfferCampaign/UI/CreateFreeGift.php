@@ -43,14 +43,16 @@ class CreateFreeGift extends OrgAction
                         [
                             'title'  => __('Create Free Gift'),
                             'fields' => [
-                                'ammount' => [
+                                'amount' => [
                                     'type'     => 'input_number',
-                                    'label'    => __('Ammount spend'),
+                                    'information'   => __('The minimum order amount to be eligible for this free gift.'),
+                                    'label'    => __('Min. amount'),
                                     'required' => true,
                                     "bind"     => [
-                                         'prefix'   => $shop->currency->symbol,
-                                         'min'      => 0
-                                    ]
+                                        'placeholder'   => 0,
+                                        'prefix'   => $shop->currency->symbol,
+                                        'min'      => 0
+                                    ],
 
                                 ],
                                 'products' => [
@@ -73,8 +75,12 @@ class CreateFreeGift extends OrgAction
                         ],
                     ],
                     'route' => [
-                        'name'       => '',
-                        'parameters' => [],
+                        'name'       => 'grp.org.shops.show.discounts.campaigns.store_free_gift',
+                        'parameters' => [
+                            'organisation'   => $organisation->slug,
+                            'shop'           => $shop->slug,
+                            'offerCampaign'  => $offerCampaign->slug,
+                        ],
                     ],
                 ],
 
