@@ -44,7 +44,8 @@ class UpdateProductIsForSaleFromAurora
         $organisationSource->initialisation($organisation);
 
 
-        $auroraProducts = DB::connection('aurora')->table('Product Dimension')->select(['Product ID', 'Product Code', 'Product Web Configuration'])->get();
+        $auroraProducts = DB::connection('aurora')->table('Product Dimension')->select(['Product ID', 'Product Code', 'Product Web Configuration'])
+            ->get();
 
         $progressBar = $command->getOutput()->createProgressBar(count($auroraProducts));
         $progressBar->setFormat('debug');
@@ -61,6 +62,7 @@ class UpdateProductIsForSaleFromAurora
                 continue;
             }
 
+
             if (!$product->variant_id) {
                 if ($auroraProduct->{'Product Web Configuration'} == 'Offline') {
                     if ($product->is_for_sale) {
@@ -75,7 +77,7 @@ class UpdateProductIsForSaleFromAurora
                         'is_for_sale' => true
                     ]);
                 }
-            } elseif ($auroraProduct->{'Product Web Configuration'} == 'Offline' && $product->is_for_sale) {
+            } elseif ($auroraProduct->{'Product Web Configuration'} == 'Offline' && !$product->is_for_sale) {
                 $command->info($product->slug.'NEW VARIANT  will be set as NOT FOR SALE *********');
                 $product->update(['is_for_sale' => true]);
             }
