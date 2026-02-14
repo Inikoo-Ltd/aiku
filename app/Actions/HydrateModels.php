@@ -43,6 +43,10 @@ class HydrateModels extends HydrateModel
             $this->hydrateMasters($command);
         }
 
+        if ($this->checkIfCanHydrate(['masters_core', 'mas_c'], $command)) {
+            $this->hydrateMastersCore($command);
+        }
+
         if ($this->checkIfCanHydrate(['goods'], $command)) {
             $this->hydrateGoods($command);
         }
@@ -136,6 +140,14 @@ class HydrateModels extends HydrateModel
     protected function hydrateMasters(Command $command): void
     {
         $command->info('Master section 📐️');
+        $command->call('hydrate:master_shops -i');
+        $command->call('hydrate:master_product_categories -i');
+        $command->call('hydrate:master_assets');
+    }
+
+    protected function hydrateMastersCore(Command $command): void
+    {
+        $command->info('Master section (core only) 📐️');
         $command->call('hydrate:master_shops');
         $command->call('hydrate:master_product_categories');
         $command->call('hydrate:master_assets');

@@ -31,10 +31,10 @@ class HydrateMasterShop extends HydrateModel
 {
     use WithNormalise;
 
-    public string $commandSignature = 'hydrate:master_shops';
+    public string $commandSignature = 'hydrate:master_shops {--i|with-intervals : Run interval hydrators}';
 
 
-    public function handle(MasterShop $masterShop): void
+    public function handle(MasterShop $masterShop, bool $withIntervals = false): void
     {
         MasterShopHydrateShops::run($masterShop);
         MasterShopHydrateMasterDepartments::run($masterShop);
@@ -42,13 +42,16 @@ class HydrateMasterShop extends HydrateModel
         MasterShopHydrateMasterFamilies::run($masterShop);
         MasterShopHydrateMasterAssets::run($masterShop);
         MasterShopHydrateMasterFamiliesWithNoDepartment::run($masterShop);
-        MasterShopHydrateInvoiceIntervals::run($masterShop->id);
         MasterShopHydrateSalesIntervals::run($masterShop->id);
         MasterShopHydrateOrders::run($masterShop->id);
-        MasterShopHydrateRegistrationIntervals::run($masterShop->id);
-        MasterShopHydrateOrderInBasketAtCreatedIntervals::run($masterShop->id);
-        MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($masterShop->id);
         MasterShopHydrateMasterCollections::run($masterShop);
+
+        if ($withIntervals) {
+            MasterShopHydrateInvoiceIntervals::run($masterShop->id);
+            MasterShopHydrateRegistrationIntervals::run($masterShop->id);
+            MasterShopHydrateOrderInBasketAtCreatedIntervals::run($masterShop->id);
+            MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($masterShop->id);
+        }
     }
 
 
@@ -61,9 +64,11 @@ class HydrateMasterShop extends HydrateModel
         $bar->setFormat('debug');
         $bar->start();
 
-        MasterShop::chunk(1000, function (Collection $models) use ($bar) {
+        $withIntervals = $command->option('with-intervals');
+
+        MasterShop::chunk(1000, function (Collection $models) use ($bar, $withIntervals) {
             foreach ($models as $model) {
-                $this->handle($model);
+                $this->handle($model, $withIntervals);
                 $bar->advance();
             }
         });

@@ -25,16 +25,15 @@ class HydrateMasterProductCategory extends HydrateModel
 {
     use WithNormalise;
 
-    public string $commandSignature = 'hydrate:master_product_categories';
+    public string $commandSignature = 'hydrate:master_product_categories {--i|with-intervals : Run interval hydrators}';
 
 
-    public function handle(MasterProductCategory $masterProductCategory): void
+    public function handle(MasterProductCategory $masterProductCategory, bool $withIntervals = false): void
     {
         MasterProductCategoryHydrateMasterFamilies::run($masterProductCategory);
         MasterDepartmentHydrateMasterAssets::run($masterProductCategory);
         MasterDepartmentHydrateDepartments::run($masterProductCategory);
         MasterDepartmentHydrateMasterSubDepartments::run($masterProductCategory);
-
         MasterFamilyHydrateMasterAssets::run($masterProductCategory);
         MasterFamilyHydrateFamilies::run($masterProductCategory);
         MasterFamilyHydrateStatus::run($masterProductCategory);
@@ -52,9 +51,11 @@ class HydrateMasterProductCategory extends HydrateModel
         $bar->setFormat('debug');
         $bar->start();
 
-        MasterProductCategory::chunk(1000, function (Collection $models) use ($bar) {
+        $withIntervals = $command->option('with-intervals');
+
+        MasterProductCategory::chunk(1000, function (Collection $models) use ($bar, $withIntervals) {
             foreach ($models as $model) {
-                $this->handle($model);
+                $this->handle($model, $withIntervals);
                 $bar->advance();
             }
         });
