@@ -9,18 +9,12 @@
 namespace App\Actions\Masters\MasterShop;
 
 use App\Actions\HydrateModel;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithNoDepartment;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrders;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\Traits\WithNormalise;
 use App\Models\Masters\MasterShop;
@@ -31,10 +25,10 @@ class HydrateMasterShop extends HydrateModel
 {
     use WithNormalise;
 
-    public string $commandSignature = 'hydrate:master_shops {--i|with-intervals : Run interval hydrators}';
+    public string $commandSignature = 'hydrate:master_shops';
 
 
-    public function handle(MasterShop $masterShop, bool $withIntervals = false): void
+    public function handle(MasterShop $masterShop): void
     {
         MasterShopHydrateShops::run($masterShop);
         MasterShopHydrateMasterDepartments::run($masterShop);
@@ -42,16 +36,7 @@ class HydrateMasterShop extends HydrateModel
         MasterShopHydrateMasterFamilies::run($masterShop);
         MasterShopHydrateMasterAssets::run($masterShop);
         MasterShopHydrateMasterFamiliesWithNoDepartment::run($masterShop);
-        MasterShopHydrateSalesIntervals::run($masterShop->id);
-        MasterShopHydrateOrders::run($masterShop->id);
         MasterShopHydrateMasterCollections::run($masterShop);
-
-        if ($withIntervals) {
-            MasterShopHydrateInvoiceIntervals::run($masterShop->id);
-            MasterShopHydrateRegistrationIntervals::run($masterShop->id);
-            MasterShopHydrateOrderInBasketAtCreatedIntervals::run($masterShop->id);
-            MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($masterShop->id);
-        }
     }
 
 
@@ -64,11 +49,9 @@ class HydrateMasterShop extends HydrateModel
         $bar->setFormat('debug');
         $bar->start();
 
-        $withIntervals = $command->option('with-intervals');
-
-        MasterShop::chunk(1000, function (Collection $models) use ($bar, $withIntervals) {
+        MasterShop::chunk(1000, function (Collection $models) use ($bar) {
             foreach ($models as $model) {
-                $this->handle($model, $withIntervals);
+                $this->handle($model);
                 $bar->advance();
             }
         });
