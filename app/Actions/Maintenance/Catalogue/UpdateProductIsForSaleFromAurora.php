@@ -13,6 +13,7 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Traits\WithOrganisationSource;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\Aurora\WithAuroraParsers;
@@ -52,6 +53,9 @@ class UpdateProductIsForSaleFromAurora
         foreach ($auroraProducts as $auroraProduct) {
             /** @var Product $product */
             $product = Product::where('source_id', $organisation->id.':'.$auroraProduct->{'Product ID'})->first();
+            if ($product->shop->state == ShopStateEnum::CLOSED) {
+                continue;
+            }
 
             if ($product) {
                 if (!$product->variant_id) {
