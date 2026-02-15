@@ -70,7 +70,6 @@ class IndexProductsInCatalogue extends OrgAction
             $this->bucket = $bucket;
         }
 
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('products.name', $value)
@@ -127,6 +126,7 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.slug',
                 'products.web_images',
                 'available_quantity',
+                'products.is_for_sale',
                 'units',
                 'unit',
                 'master_product_id',
@@ -238,7 +238,7 @@ class IndexProductsInCatalogue extends OrgAction
             if ($shop->type == ShopTypeEnum::EXTERNAL) {
                 $table
                     ->column(key: 'product_org_stocks', label: __('SKU'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
-            }else{
+            } else {
                 $table
                     ->column(key: 'variant_slug', label: __('Variant'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
             }
@@ -386,7 +386,7 @@ class IndexProductsInCatalogue extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
-                'variantSlugs'                 => $shop->type != ShopTypeEnum::EXTERNAL ? ProductsResource::collection($products)->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [], 
+                'variantSlugs'                 => $shop->type != ShopTypeEnum::EXTERNAL ? ProductsResource::collection($products)->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => $this->displayProductsShopTypeDependant($products, $shop)
                     : Inertia::lazy(fn () => $this->displayProductsShopTypeDependant($products, $shop)),
