@@ -49,6 +49,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_time_trackers_status_error
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_clocking_machines_type_qr_code
  * @property-read \App\Models\HumanResources\Workplace $workplace
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkplaceStats newQuery()
