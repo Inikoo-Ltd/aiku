@@ -13,27 +13,39 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('group_human_resources_stats', function (Blueprint $table) {
-            $table->unsignedSmallInteger('number_clocking_machines_type_qr_code')->default(0);
-        });
-        Schema::table('organisation_human_resources_stats', function (Blueprint $table) {
-            $table->unsignedSmallInteger('number_clocking_machines_type_qr_code')->default(0);
-        });
-        Schema::table('workplace_stats', function (Blueprint $table) {
-            $table->unsignedSmallInteger('number_clocking_machines_type_qr_code')->default(0);
-        });
+        if (!Schema::hasColumn('group_human_resources_stats', 'number_clocking_machines_type_qr_code')) {
+            Schema::table('group_human_resources_stats', function (Blueprint $table) {
+                $table->unsignedSmallInteger('number_clocking_machines_type_qr_code')->default(0);
+            });
+        }
+        if (!Schema::hasColumn('organisation_human_resources_stats', 'number_clocking_machines_type_qr_code')) {
+            Schema::table('organisation_human_resources_stats', function (Blueprint $table) {
+                $table->unsignedSmallInteger('number_clocking_machines_type_qr_code')->default(0);
+            });
+        }
+        if (!Schema::hasColumn('workplace_stats', 'number_clocking_machines_type_qr_code')) {
+            Schema::table('workplace_stats', function (Blueprint $table) {
+                $table->unsignedSmallInteger('number_clocking_machines_type_qr_code')->default(0);
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('group_human_resources_stats', function (Blueprint $table) {
-            $table->dropColumn('number_clocking_machines_type_qr_code');
-        });
-        Schema::table('organisation_human_resources_stats', function (Blueprint $table) {
-            $table->dropColumn('number_clocking_machines_type_qr_code');
-        });
-        Schema::table('workplace_stats', function (Blueprint $table) {
-            $table->dropColumn('number_clocking_machines_type_qr_code');
-        });
+        if (Schema::hasColumn('group_human_resources_stats', 'number_clocking_machines_type_qr_code')) {
+            Schema::table('group_human_resources_stats', function (Blueprint $table) {
+                $table->dropColumn('number_clocking_machines_type_qr_code');
+            });
+        }
+        if (Schema::hasColumn('organisation_human_resources_stats', 'number_clocking_machines_type_qr_code')) {
+            Schema::table('organisation_human_resources_stats', function (Blueprint $table) {
+                $table->dropColumn('number_clocking_machines_type_qr_code');
+            });
+        }
+        if (Schema::hasColumn('workplace_stats', 'number_clocking_machines_type_qr_code')) {
+            Schema::table('workplace_stats', function (Blueprint $table) {
+                $table->dropColumn('number_clocking_machines_type_qr_code');
+            });
+        }
     }
 };
