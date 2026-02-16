@@ -24,13 +24,15 @@ class UpdateLeave extends OrgAction
 
     public function handle(Leave $leave, array $modelData): Leave
     {
-        if (isset($modelData['attachments'])) {
+        if (isset($modelData['attachments']) && !empty($modelData['attachments'])) {
             $leave->clearMediaCollection('attachments');
 
             foreach ($modelData['attachments'] as $file) {
-                $media = $leave->addMedia($file)->toMediaCollection('attachments');
-                $media->ulid = Str::ulid();
-                $media->save();
+                if ($file && is_object($file) && method_exists($file, 'getClientOriginalName')) {
+                    $media = $leave->addMedia($file)->toMediaCollection('attachments');
+                    $media->ulid = Str::ulid();
+                    $media->save();
+                }
             }
         }
 
