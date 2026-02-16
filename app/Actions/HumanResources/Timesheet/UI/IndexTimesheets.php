@@ -448,7 +448,7 @@ class IndexTimesheets extends OrgAction
         };
     }
 
-    protected function applyStatusFilter(QueryBuilder $query, Group|Organisation|Employee|Guest $parent, string $timezone): void {
+    protected function applyStatusFilter(QueryBuilder $query,Group|Organisation|Employee|Guest $parent,string $timezone): void {
         $status = request()->input('timesheet_status');
 
         if (!$status) {
@@ -534,33 +534,31 @@ class IndexTimesheets extends OrgAction
                 );
             }
 
-            $isLate = false;
+            $isLateClockIn = false;
+            $isEarlyClockOut = false;
 
             if (
-                $status === 'late_clock_in'
+                $scheduledStart
                 && $startAt
-                && $scheduledStart
                 && $startAt->gt($scheduledStart->copy()->addMinutes(1))
             ) {
-                $matchingIds[] = $ts->id;
-                $isLate = true;
+                $isLateClockIn = true;
             }
 
             if (
-                $status === 'early_clock_out'
+                $scheduledEnd
                 && $ts->number_open_time_trackers == 0
                 && $endAt
-                && $scheduledEnd
                 && $endAt->lt($scheduledEnd->copy()->subMinutes(1))
             ) {
-                $matchingIds[] = $ts->id;
+                $isEarlyClockOut = true;
             }
 
-            if (
-                $status === 'on_time'
-                && !$isLate
-                && $startAt
-            ) {
+            if ($status === 'late_clock_in' && $isLateClockIn) {
+                $matchingIds[] = $ts->id;
+            } elseif ($status === 'early_clock_out' && $isEarlyClockOut) {
+                $matchingIds[] = $ts->id;
+            } elseif ($status === 'on_time' && !$isLateClockIn && $startAt) {
                 $matchingIds[] = $ts->id;
             }
         }
