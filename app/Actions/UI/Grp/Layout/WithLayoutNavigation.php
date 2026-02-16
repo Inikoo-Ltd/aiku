@@ -229,6 +229,26 @@ trait WithLayoutNavigation
 
                             ]
                         ],
+                        [
+                            'label' => __('Leave Requests'),
+                            'icon'  => ['fal', 'fa-calendar-minus'],
+                            'root'  => 'grp.org.hr.leaves.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.leaves.index',
+                                'parameters' => [$organisation->slug],
+
+                            ]
+                        ],
+                        [
+                            'label' => __('Adjustments'),
+                            'icon'  => ['fal', 'fa-edit'],
+                            'root'  => 'grp.org.hr.adjustments.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.adjustments.index',
+                                'parameters' => [$organisation->slug],
+
+                            ]
+                        ],
 
 
 
