@@ -546,6 +546,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         'customerSalesChannel' => $customerSalesChannel->id
                     ]
                 ],
+                'history'  => [
+                    'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.bulk_import_history',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->slug
+                    ]
+                ],
                 'download' => [
                     'name'       => $downloadRoute,
                     'parameters' => [

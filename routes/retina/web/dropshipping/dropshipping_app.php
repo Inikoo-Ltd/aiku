@@ -47,6 +47,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ExportTemplateRetinaPor
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ReconnectRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\RedirectRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaRecentCustomerSalesChannelPortfolioUploads;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
@@ -69,6 +70,9 @@ Route::get('export-template-portfolios', ExportTemplateRetinaPortfolios::class)-
 
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
+    Route::get('{customerSalesChannel}/upload-portfolio-history', IndexRetinaRecentCustomerSalesChannelPortfolioUploads::class)
+        ->name('portfolios.bulk_import_history');
+
     Route::get('/', IndexRetinaDropshippingCustomerSalesChannels::class)->name('index');
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
 

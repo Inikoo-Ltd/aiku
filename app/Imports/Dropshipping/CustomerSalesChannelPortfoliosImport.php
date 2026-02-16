@@ -54,7 +54,7 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
         ];
 
         try {
-            $product = Product::where('slug', $modelData['sku'])->first();
+            $product = Product::where('code', $modelData['sku'])->first();
 
             if (! Portfolio::where('customer_sales_channel_id', $this->customerSalesChannel->id)
                 ->where('item_id', $product->id)
@@ -79,7 +79,7 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
                 'max:64',
                 'string',
                 Rule::notIn(['export', 'create', 'upload']),
-                Rule::exists('products', 'slug')
+                Rule::exists('products', 'code')
             ],
             'title'                    => ['nullable']
         ];
