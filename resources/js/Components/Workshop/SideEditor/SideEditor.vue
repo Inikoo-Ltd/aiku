@@ -37,7 +37,8 @@ const props = withDefaults(defineProps<{
     editable?:boolean
 }>(), {
     panelOpen: null,
-    modelType: 'edit'
+    modelType: 'edit',
+    editable : true
 })
 
 const modelValue = defineModel()

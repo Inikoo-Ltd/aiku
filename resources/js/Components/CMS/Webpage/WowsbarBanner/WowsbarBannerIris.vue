@@ -22,7 +22,7 @@ console.log('sdsff',props)
 </script>
 
 <template>
-    <div id="banner">
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'banner'"  component="banner">
         <div :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)

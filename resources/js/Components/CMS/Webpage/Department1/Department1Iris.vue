@@ -18,7 +18,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div v-if="props.fieldValue?.departments"  class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
+  <div v-if="props.fieldValue?.departments" :id="fieldValue?.id ? fieldValue?.id  : 'department-1'"  component="department-1"  class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
     <div v-for="(item, index) in props.fieldValue?.departments" :key="index">
       <DepartmentRender :data="item" />
     </div>

@@ -55,7 +55,7 @@ const emits = defineEmits<{
 </script>
 
 <template>
-	<div id="step-2">
+	<div :id="fieldValue?.id ? fieldValue?.id  : 'step-2'"  component="step-2">
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType),

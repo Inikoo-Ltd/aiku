@@ -3,6 +3,12 @@ import { trans } from "laravel-vue-i18n"
 export default {
     blueprint: [
         {
+			label: "# Id ",
+			key: ["id"],
+			type: "text",
+			information : 'id selector is used to select one unique element!'
+		},
+        {
             key: ["settings", "container", "properties", "background"],
             name: "Background",
             type: "background",

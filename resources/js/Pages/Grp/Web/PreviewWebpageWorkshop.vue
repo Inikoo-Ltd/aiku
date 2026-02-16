@@ -165,7 +165,7 @@ watch(filterBlock, () => {
                 </div>
 
                 <!-- Dynamic Block -->
-                 <div :class="!editable ? 'pointer-events-none select-none' : ''">
+                 <div :class="editable ? 'pointer-events-none select-none' : ''">
                   <component 
                     :code="block.type" 
                     :is="getComponent(block.type,{shop_type: layout?.retina?.type})" 
