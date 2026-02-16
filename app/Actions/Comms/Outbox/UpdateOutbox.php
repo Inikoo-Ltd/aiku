@@ -51,7 +51,10 @@ class UpdateOutbox extends OrgAction
             'name'       => ['sometimes', 'required', 'string'],
             'subject'    => ['sometimes', 'required', 'string'],
             'days_after' => ['sometimes', 'required', 'integer', 'gt:0'],
-            'send_time'  => ['sometimes', 'required', 'date_format:H:i:s']
+            'send_time'  => ['sometimes', 'required', 'date_format:H:i:s'],
+            'threshold'  => ['sometimes', 'required', 'integer', 'gt:0'],
+            'interval'   => ['sometimes', 'required', 'integer', 'gt:0'],
+            'is_applicable' => ['sometimes', 'required', 'boolean'],
         ];
     }
 

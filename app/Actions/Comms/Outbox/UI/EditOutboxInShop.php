@@ -76,6 +76,62 @@ class EditOutboxInShop extends OrgAction
                     // ],
                 ]
             ];
+        } elseif (in_array($outbox->code, [OutboxCodeEnum::BASKET_LOW_STOCK])) {
+            $fields = [
+                [
+                    'title' => '',
+                    'fields' => [
+                        'subject' => [
+                            'type' => 'input',
+                            'label' => __('subject'),
+                            'placeholder' => __('Email subject'),
+                            'required' => false,
+                            'value' => $outbox->emailOngoingRun?->email?->subject,
+                        ],
+                    ]
+                ],
+                [
+                    'title' => '',
+                    'fields' => [
+                        'threshold' => [
+                            'type' => 'input',
+                            'label' => __('Low Stock Threshold'),
+                            'placeholder' => __('Low Stock Threshold'),
+                            'required' => false,
+                            'value' => $outbox->threshold,
+                        ],
+                    ]
+                ],
+                [
+                    'title' => '',
+                    'fields' => [
+                        'interval' => [
+                            'type' => 'input',
+                            'label' => __('Cooldown Period'),
+                            'placeholder' => __('Cooldown Period'),
+                            'required' => false,
+                            'value' => $outbox->interval,
+                        ],
+                    ]
+                ],
+                [
+                    'title' => '',
+                    'fields' => [
+                        'is_applicable' => [
+                            'type' => 'select',
+                            'label' => __('Notification active'),
+                            'placeholder' => __('Notification active'),
+                            'options' => [
+                                ['label' => __('Yes'), 'value' => true],
+                                ['label' => __('No'), 'value' => false],
+                            ],
+                            'required' => true,
+                            'mode' => 'single',
+                            'value' => $outbox->is_applicable,
+                        ],
+                    ]
+                ]
+            ];
         } else {
             $fields[] = [
                 'title' => '',
@@ -116,13 +172,13 @@ class EditOutboxInShop extends OrgAction
                 ],
                 'formData' => [
                     'blueprint' =>
+                    [
                         [
-                            [
-                                "label"   => __("Settings"),
-                                "icon"    => "fa-light fa-sliders-h",
-                                'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
-                            ]
-                        ],
+                            "label"   => __("Settings"),
+                            "icon"    => "fa-light fa-sliders-h",
+                            'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
+                        ]
+                    ],
                     'args' => [
                         'updateRoute' => [
                             'name' => 'grp.models.shop.outboxes.update',
@@ -328,5 +384,4 @@ class EditOutboxInShop extends OrgAction
 
         return $this->handle($outbox, $request);
     }
-
 }
