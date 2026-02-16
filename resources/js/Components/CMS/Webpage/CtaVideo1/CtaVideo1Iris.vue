@@ -120,7 +120,7 @@ const layout: any = inject("layout", {})
 
 
 <template>
-  <div id="cta-video-1">
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'cta-video-1'"  component="cta-video-1"  >
     <div class="grid grid-cols-1 md:grid-cols-2" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType)
