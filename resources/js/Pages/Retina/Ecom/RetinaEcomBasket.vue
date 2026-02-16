@@ -719,7 +719,7 @@ const onChangeInsurance = async (val: boolean) => {
                             :label="trans('Place order')"
                             :routeTarget="routes?.pay_with_balance"
                             full
-                            :size="screenType === 'mobile' ? 'xl' : ''"
+                            :size="screenType === 'mobile' ? 'xl' : undefined"
                             :key="screenType + 'pay_with_balance'"
                         >
                         </ButtonWithLink>
@@ -743,7 +743,7 @@ const onChangeInsurance = async (val: boolean) => {
                             }
                         }"
                         full
-                        :size="screenType === 'mobile' ? 'xl' : ''"
+                        :size="screenType === 'mobile' ? 'xl' : undefined"
                         :key="screenType + 'go_to_checkout'"
                         />
                 </div>

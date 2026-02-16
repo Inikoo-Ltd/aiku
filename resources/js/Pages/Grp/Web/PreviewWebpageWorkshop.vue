@@ -30,6 +30,7 @@ const props = defineProps<{
     color: string[]
   }
   luigisbox_tracker_id?: string
+  editable : boolean
 }>()
 let layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
@@ -142,7 +143,7 @@ watch(filterBlock, () => {
                 @click="() => sendMessageToParent('activeBlock', idx)">
                 <!-- Toolbar Controls -->
                 <div v-if="activeBlock === idx" class="trapezoid-button" @click.stop>
-                  <div class="flex">
+                  <div class="flex" v-if="editable">
                     <div v-tooltip="trans('Add Block Before')"
                       class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition"
                       @click="() => sendMessageToParent('addBlock', { type: 'before', parentIndex: idx })">
@@ -164,18 +165,21 @@ watch(filterBlock, () => {
                 </div>
 
                 <!-- Dynamic Block -->
-                <component 
-                  :code="block.type" 
-                  :is="getComponent(block.type,{shop_type: layout?.retina?.type})" 
-                  class="w-full" 
-                  :webpageData="data" 
-                  :blockData="block"
-                  :index-block="idx" 
-                  :key="key" 
-                  v-model="block.web_block.layout.data.fieldValue"
-                  :screenType="screenType"
-                  @autoSave="() => updateData(block)"
-                />
+                 <div :class="editable ? 'pointer-events-none select-none' : ''">
+                  <component 
+                    :code="block.type" 
+                    :is="getComponent(block.type,{shop_type: layout?.retina?.type})" 
+                    class="w-full" 
+                    :webpageData="data" 
+                    :blockData="block"
+                    :index-block="idx" 
+                    :key="key" 
+                    v-model="block.web_block.layout.data.fieldValue"
+                    :screenType="screenType"
+                    @autoSave="() => updateData(block)"
+                  />
+                 </div>
+            
               </section>
             </template>
           </TransitionGroup>

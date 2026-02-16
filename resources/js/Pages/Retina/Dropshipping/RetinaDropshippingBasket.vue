@@ -39,7 +39,7 @@ import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhon
 import {Currency} from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
-import {faSpinnerThird, faCheck} from '@far'
+import {faSpinnerThird, faCheck, faCross, faTimesCircle} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DropshippingSummaryBasket from '@/Components/Retina/Dropshipping/DropshippingSummaryBasket.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
@@ -617,16 +617,19 @@ const onChangeInsurance = async (val: boolean) => {
 
     <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
-        <ProductsSelectorAutoSelect
-            :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
-            :routeFetch="props.routes.select_products"
-            :isLoadingSubmit
-            @submit="(products: {}) => onAddProducts(products)"
-            :listLoadingProducts
-            withQuantity
-        >
-        </ProductsSelectorAutoSelect>
+
+        <!-- close button -->
+        <button @click="isModalProductListOpen = false" class="absolute top-3 right-3 z-50 flex items-center justify-center 
+               w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 
+               text-gray-600 hover:text-black transition">
+            <FontAwesomeIcon :icon="faTimes" />
+        </button>
+
+        <ProductsSelectorAutoSelect :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
+            :routeFetch="props.routes.select_products" :isLoadingSubmit
+            @submit="(products: {}) => onAddProducts(products)" :listLoadingProducts withQuantity />
     </Modal>
+
 
 
     <UploadExcel

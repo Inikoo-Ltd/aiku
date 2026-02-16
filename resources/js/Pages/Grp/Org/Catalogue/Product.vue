@@ -88,6 +88,7 @@ const props = defineProps<{
     stocks?: {}
     images?: {}
     attachments?: {}
+    family_slug : string
     luigi_data: {
         webpage_id: string
         last_reindexed: string
@@ -163,6 +164,20 @@ const component = computed(() => {
 })
  */
 
+
+const routeVariant = () => {
+    return route(
+        'grp.org.shops.show.catalogue.families.show.variants.show',
+        {
+            organisation: (route().params as RouteParams).organisation,
+            shop: (route().params as RouteParams).shop,
+            family: props.family_slug,
+            variant: props.variant.slug,
+        }
+    )
+}
+
+
 </script>
 
 <template>
@@ -183,7 +198,10 @@ const component = computed(() => {
                 />
             </Link>
             <!-- TODO PLEASE CHANGE TO HAVE LINK TO VARIANT -->
-            <FontAwesomeIcon v-if="variant" :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" v-tooltip="trans('Go to Variant')"/>
+            <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
+                <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
+            </Link>
+            
         </template>
 
         <template #button-reindex>

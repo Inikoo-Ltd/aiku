@@ -295,6 +295,15 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+        $this->logSchedule(
+            $schedule->command('delete:debug-webhook 10')->daily()->sentryMonitor(
+                monitorSlug: 'DeleteDebugWebhookPeriodically',
+            ),
+            name: 'DeleteDebugWebhookPeriodically',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
         //        $this->logSchedule(
         //            $schedule->command('faire:orders')->hourly()->sentryMonitor(
         //                monitorSlug: 'GetFaireOrders',
