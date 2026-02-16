@@ -42,6 +42,8 @@ trait WithUpdateModelImage
         if ($model->getMedia($collection, ['checksum' => $checksum])->count() == 0) {
             $model->update([$field => null]);
 
+            $ulid = Str::ulid();
+
             /** @var Media $media */
             $media = $model->addMedia($imagePath)
                 ->preservingOriginal()
@@ -50,7 +52,6 @@ trait WithUpdateModelImage
                         [
                             'checksum' => $checksum,
                             'group_id' => group()->id,
-                            'ulid'     => Str::ulid()
                         ],
                         $properties
                     )
@@ -58,6 +59,10 @@ trait WithUpdateModelImage
                 ->usingName($originalFilename)
                 ->usingFileName(hash('crc32b', $checksum).'.'.$extension)
                 ->toMediaCollection($collection);
+
+            $media->ulid = $ulid;
+            $media->save();
+
             $media->refresh();
             UpdateIsAnimatedMedia::run($media, $imagePath);
             MediaHydrateDimensions::run($media);
