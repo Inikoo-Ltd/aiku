@@ -62,8 +62,6 @@ class RunBasketLowStockEmailBulkRuns
             $currentDateTime = Carbon::now()->utc();
             $intervalInHours = Carbon::now()->utc()->subHours($outbox->interval);
 
-            $emailongoingRun = $outbox->emailOngoingRun;
-
             $lastOutBoxSent = $outbox->last_sent_at;
 
             $outboxThreshold = $outbox->threshold;
@@ -121,10 +119,16 @@ class RunBasketLowStockEmailBulkRuns
 
             $baseQuery->orderBy('customers.id');
 
+            $totalItems = $baseQuery->clone()->count();
+
             // Log the query for debugging
             // \Log::info($baseQuery->toRawSql());
 
-            $emailBulkRun = $this->upsertEmailBulkRunForBasketLowStock($outbox, $currentDateTime->toDateTimeString());
+            if ($totalItems > 0) {
+                $emailBulkRun = $this->upsertEmailBulkRunForBasketLowStock($outbox, $currentDateTime->toDateTimeString());
+            } else {
+                return;
+            }
 
 
             $baseQuery->chunk(250, function ($customers) use ($emailBulkRun, $outbox) {
