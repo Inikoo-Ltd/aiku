@@ -32,6 +32,11 @@ use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheet;
 use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheets;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\HumanResources\Timesheet\UI\ShowTimesheet;
+use App\Actions\HumanResources\Overtime\UI\IndexOvertime;
+use App\Actions\HumanResources\Overtime\UI\IndexOvertimeTypes;
+use App\Actions\HumanResources\Overtime\StoreOvertimeType;
+use App\Actions\HumanResources\Overtime\UpdateOvertimeType;
+use App\Actions\HumanResources\Overtime\DeleteOvertimeType;
 use App\Actions\HumanResources\Workplace\UI\CreateWorkplace;
 use App\Actions\HumanResources\Workplace\UI\EditWorkplace;
 use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
@@ -119,9 +124,13 @@ Route::prefix('clocking-machines')->as('clocking_machines.')->group(function () 
     Route::get('{clockingMachine}/edit', EditClockingMachine::class)->name('edit');
 });
 
-
-
 Route::get('/clocking', IndexClockings::class)->name('clockings.index');
 Route::get('/clocking/create', CreateClocking::class)->name('clockings.create');
 Route::get('/clocking/{clocking}', ShowClocking::class)->name('clockings.show');
 Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.edit');
+
+Route::get('/overtime', IndexOvertime::class)->name('overtime.index');
+Route::get('/overtime-types', IndexOvertimeTypes::class)->name('overtime_types.index');
+Route::post('/overtime-types/store', StoreOvertimeType::class)->name('overtime_types.store');
+Route::patch('/overtime-types/{overtimeType}', UpdateOvertimeType::class)->name('overtime_types.update');
+Route::delete('/overtime-types/{overtimeType}', DeleteOvertimeType::class)->name('overtime_types.delete');

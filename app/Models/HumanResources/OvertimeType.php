@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\HumanResources\Overtime;
+namespace App\Models\HumanResources;
 
 use App\Enums\HumanResources\Overtime\OvertimeCategoryEnum;
 use App\Enums\HumanResources\Overtime\OvertimeCompensationTypeEnum;

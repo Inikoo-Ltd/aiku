@@ -229,6 +229,16 @@ trait WithLayoutNavigation
 
                             ]
                         ],
+                        [
+                            'label' => __('Overtime'),
+                            'icon'  => ['fal', 'fa-stopwatch'],
+                            'root'  => 'grp.org.hr.overtime.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.overtime.index',
+                                'parameters' => [$organisation->slug],
+
+                            ]
+                        ],
 
 
 

@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Models\HumanResources\Overtime;
+namespace App\Models\HumanResources;
 
 use App\Enums\HumanResources\Overtime\OvertimeRequestSourceEnum;
 use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
-use App\Models\HumanResources\Employee;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
