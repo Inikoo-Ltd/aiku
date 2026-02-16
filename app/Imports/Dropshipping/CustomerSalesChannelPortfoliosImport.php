@@ -19,6 +19,7 @@ use App\Models\Fulfilment\StoredItem;
 use App\Models\Helpers\Upload;
 use Exception;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -55,6 +56,10 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
 
         try {
             $product = Product::where('code', $modelData['sku'])->first();
+
+            if(! $product->is_for_sale) {
+                throw ValidationException::withMessages(['sku' => 'Product is not for sale.']);
+            }
 
             if (! Portfolio::where('customer_sales_channel_id', $this->customerSalesChannel->id)
                 ->where('item_id', $product->id)

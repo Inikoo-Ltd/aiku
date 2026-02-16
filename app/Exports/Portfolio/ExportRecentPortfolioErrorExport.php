@@ -8,9 +8,6 @@
 
 namespace App\Exports\Portfolio;
 
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Fulfilment\StoredItem;
 use App\Models\Helpers\Upload;
 use App\Models\Helpers\UploadRecord;
 use Illuminate\Support\Arr;
