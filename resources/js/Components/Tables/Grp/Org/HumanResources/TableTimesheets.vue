@@ -18,25 +18,27 @@ defineProps<{
 const locale = useLocaleStore()
 
 const timesheetRoute = (timesheet: Timesheet) => {
+    const params = route().params as Record<string, string | undefined>
+
     switch (route().current()) {
         case "grp.org.hr.employees.show":
-            return route(
+            return (route as any)(
                 "grp.org.hr.employees.show.timesheets.show",
-                [route().params["organisation"],
-                route().params["employee"],
+                [params["organisation"],
+                params["employee"],
                 timesheet.id])
         case "grp.overview.hr.timesheets.index":
-            return route(
+            return (route as any)(
                 "grp.org.hr.timesheets.show",
                 [
                     timesheet.organisation_slug,
                     timesheet.id
                 ])
         default:
-            return route(
+            return (route as any)(
                 "grp.org.hr.timesheets.show",
                 [
-                    route().params["organisation"],
+                    params["organisation"],
                     timesheet.id
                 ])
     }
@@ -46,7 +48,6 @@ const timesheetRoute = (timesheet: Timesheet) => {
 
 <template>
     <Table :resource="data" class="mt-5" :name="tab">
-
         <!-- Column: Date -->
         <template #cell(date)="{ item: timesheet }">
             <div class="text-gray-500">
