@@ -190,7 +190,7 @@ onMounted(async () => {
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'" id="product-iris-1-ecom"
+    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'"  component="product-ecom-1"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',

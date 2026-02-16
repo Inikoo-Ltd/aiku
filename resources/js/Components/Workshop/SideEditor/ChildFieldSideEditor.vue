@@ -9,6 +9,7 @@ const props = defineProps<{
         replaceForm : Array<any>
     }
     uploadImageRoute?: routeType
+    editable? : boolean
 }>()
 
 const emits = defineEmits<{
@@ -29,6 +30,7 @@ const openPanel = ref(0)
                     :modelValue="modelValue"
                     :uploadImageRoute="uploadImageRoute" 
                     @update:modelValue="e =>   emits('update:modelValue', e)"
+                    editable
                 />
             </template>
         </Accordion>
@@ -39,6 +41,7 @@ const openPanel = ref(0)
                 :modelValue="modelValue"
                 :uploadImageRoute="uploadImageRoute" 
                 @update:modelValue="e =>  emits('update:modelValue', e)"
+                editable
             />
         </div>
     </div>

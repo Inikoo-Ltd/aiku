@@ -98,18 +98,18 @@ const isFutureDatePassed = (futureDate: string) => {
         </AccordionHeader>
 
         <AccordionContent class="p-4">
-            <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)"
+            <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)" :editable="editable"
                 :blueprint="blueprint" :uploadImageRoute="uploadImageRoute" @update:model-value="(e)=>onPropertyUpdate(blueprint.key,e)" />
 
             <RenderFields v-else :modelValue="modelValue" :blueprint="blueprint"
                 :uploadImageRoute="uploadImageRoute"
-                @update:modelValue="onPropertyUpdate" :modelType="modelType"  :editable="editable" />
+                @update:modelValue="onPropertyUpdate" :modelType="modelType" :editable="editable" />
         </AccordionContent>
     </AccordionPanel>
 
     <!-- Non-accordion mode -->
     <div v-else class="mt-0 mb-2 pb-3">
-        <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)"
+        <ChildFieldSideEditor v-if="hasCustomForm" :modelValue="getFormValue(modelValue, blueprint.key)" :editable="editable"
             :blueprint="blueprint" :uploadImageRoute="uploadImageRoute"  @update:model-value="(e)=>onPropertyUpdate(blueprint.key,e)" />
 
 
