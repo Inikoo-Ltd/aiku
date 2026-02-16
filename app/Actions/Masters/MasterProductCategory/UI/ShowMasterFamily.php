@@ -180,6 +180,28 @@ class ShowMasterFamily extends GrpAction
                 );
 
 
+        $stateIcon= $masterFamily->status
+            ? [
+                'tooltip' => __('Active'),
+                'icon'    => 'fas fa-check-circle',
+                'class'   => 'text-green-400'
+            ]
+            : [
+                'tooltip' => __('Closed'),
+                'icon'    => 'fas fa-times-circle',
+                'class'   => 'text-red-400'
+            ];
+
+
+        if($masterFamily->stats->number_master_assets==0 && $masterFamily->stats->number_families==0 ){
+            $stateIcon=[
+                'tooltip' => __('Empty'),
+                'icon'    => 'fas fa-cactus',
+                'class'   => 'text-yellow-400'
+            ];
+        }
+
+
         return Inertia::render(
             'Masters/MasterFamily',
             [
@@ -242,17 +264,7 @@ class ShowMasterFamily extends GrpAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('Department')
                     ],
-                    'iconRight'     => $masterFamily->status
-                        ? [
-                            'tooltip' => __('Active'),
-                            'icon'    => 'fas fa-check-circle',
-                            'class'   => 'text-green-400'
-                        ]
-                        : [
-                            'tooltip' => __('Closed'),
-                            'icon'    => 'fas fa-times-circle',
-                            'class'   => 'text-red-400'
-                        ],
+                    'iconRight'     =>$stateIcon,
                     'actions'       => [
                         $this->canEdit ? [
                             'type'  => 'button',

@@ -10,6 +10,7 @@ import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
+import PureInput from '../Pure/PureInput.vue'
 
 const props = defineProps<{
     shop_data: {
@@ -20,10 +21,12 @@ const props = defineProps<{
 
 const isOpenModal = ref(false)
 
+const offerLabel = ref('')
 const typeOffer = ref('quantity')
 const offerQtyItems = ref(0)
 const offerAmount = ref(0)
 const discountPercentage = ref()
+const offerCategoryId = ref(null)
 
 const isLoadingSubmit = ref(false)
 const submitCategoryOffer = () => {
@@ -35,6 +38,7 @@ const submitCategoryOffer = () => {
             offerCampaign: 'co-se',
         }),
         {
+            name: offerLabel.value,
             type: typeOffer.value,
             offer_qty_items: offerQtyItems.value,
             offer_amount: offerAmount.value,
@@ -56,7 +60,7 @@ const submitCategoryOffer = () => {
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to set location"),
+                    text: trans("Failed to submit the data, please try again"),
                     type: "error"
                 })
             },
@@ -90,17 +94,31 @@ const submitCategoryOffer = () => {
                         <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle"/>
 
+                            {{ trans('Offer name') }}:
+                        </label>
+
+                        <div class="pl-4">
+                            <PureInput v-model="offerLabel" :placeholder="trans('Enter offer name')" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle"/>
+
                             {{ trans('Select category') }}:
                         </label>
 
                         <div class="pl-4">
                             <PureMultiselectInfiniteScroll
+                                v-model="offerCategoryId"
                                 :fetchRoute="{
                                     name: 'grp.json.shop.product_categories',
                                     parameters: {
                                         shop: props.shop_data.slug
                                     }
                                 }"
+                                required
                                 :placeholder="trans('Select category from the list')"
                             />
                         </div>
@@ -125,7 +143,7 @@ const submitCategoryOffer = () => {
                                 <InputNumber
                                     :modelValue="offerQtyItems"
                                     @input="(e) => offerQtyItems = e.value"
-                                    inputId="integeronly"
+                                    inputId="offer_quantity_item"
                                     :placeholder="trans('Enter number')"
                                     :disabled="typeOffer !== 'quantity'"
                                     :min="0"
@@ -140,7 +158,7 @@ const submitCategoryOffer = () => {
                                 </div>
                                 <InputNumber
                                     v-model="offerAmount"
-                                    inputId="currency-us"
+                                    inputId="offer_amount"
                                     mode="currency"
                                     :currency="props.shop_data.currency_code"
                                     locale="en-US"
@@ -159,8 +177,9 @@ const submitCategoryOffer = () => {
 
                         <div class="pl-4">
                             <InputNumber
-                                v-model="discountPercentage"
-                                inputId="integeronly"
+                                :modelValue="discountPercentage"
+                                @input="(e) => discountPercentage = e.value"
+                                inputId="offer_discount"
                                 :placeholder="trans('Enter percentage')"
                                 suffix="%"
                                 :min="0"
@@ -170,7 +189,7 @@ const submitCategoryOffer = () => {
                     </div>
                 </div>
 
-                <div class="mt-8 flex justify-end space-x-4">
+                <div class="pl-4 mt-8 flex justify-end gap-x-4">
                     <Button
                         @click="isOpenModal = false"
                         type="cancel"
@@ -181,6 +200,7 @@ const submitCategoryOffer = () => {
                         :label="trans('Save')"
                         @click="submitCategoryOffer"
                         :isLoading="isLoadingSubmit"
+                        :disabled="!offerCategoryId || !offerLabel || !discountPercentage || (typeOffer === 'quantity' && !offerQtyItems) || (typeOffer === 'amount' && !offerAmount)"
                     >
                     </Button>
                 </div>

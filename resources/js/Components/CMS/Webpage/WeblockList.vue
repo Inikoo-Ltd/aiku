@@ -123,9 +123,12 @@ onMounted(() => {
 								/>
 							</div>
 
-							<div class="min-h-1/4 h-auto flex items-center justify-center text-sm font-semibold px-2 truncate text-wrap text-center">
+							<div
+								class="min-h-[25%] flex items-center justify-center text-sm font-semibold px-2 text-center leading-tight line-clamp-2">
 								{{ block.name }}
+								<span v-if="layout?.app?.environment === 'local'">({{ block.code }})</span>
 							</div>
+
 						</div>
 					</div>
 				</TabPanel>

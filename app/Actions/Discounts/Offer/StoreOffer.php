@@ -93,7 +93,7 @@ class StoreOffer extends OrgAction
     {
         $rules = [
             'code'         => [
-                'sometimes', // 'required',
+                'required',
                 new IUnique(
                     table: 'offers',
                     extraConditions: [
@@ -104,14 +104,14 @@ class StoreOffer extends OrgAction
                 'max:64',
                 'alpha_dash'
             ],
-            'name'         => ['sometimes', 'max:250', 'string'], // 'required',
+            'name'         => ['required', 'max:250', 'string'],
             'label'        => ['sometimes', 'nullable', 'max:1028', 'string'],
             'data'         => ['sometimes', 'required'],
             'settings'     => ['sometimes', 'required'],
             'trigger_data' => ['sometimes', 'required'],
             'start_at'     => ['sometimes', 'date'],
             'end_at'       => ['sometimes', 'nullable', 'date'],
-            'type'         => ['sometimes', 'string'], // 'required',
+            'type'         => ['required', 'string'],
             'offer_qty_items'     => ['sometimes', 'integer'],
             'offer_amount'        => ['sometimes', 'decimal:0,2'],
             'discount_percentage' => ['sometimes', 'integer', 'between:0,100'],

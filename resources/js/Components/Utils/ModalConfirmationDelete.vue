@@ -13,6 +13,7 @@ import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "../Pure/PureInput.vue"
 import Textarea from "primevue/textarea"
+import { notify } from "@kyvg/vue3-notification"
 library.add(faTimes, faExclamationTriangle, faAsterisk)
 
 const props = defineProps<{
@@ -79,6 +80,13 @@ const onClickDelete = () => {
 			onSuccess: () => {
 				isOpenModal.value = false
 				emits("success")
+			},
+			onError: (e) => {
+				notify({
+					title: trans("Something went wrong"),
+					text: e.message || "Please try again later or contact administrator.",
+					type: "error",
+				})
 			},
 			onFinish: () => {
 				if (props.isFullLoading) {
