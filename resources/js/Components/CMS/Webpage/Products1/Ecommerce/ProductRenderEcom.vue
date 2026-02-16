@@ -129,39 +129,39 @@ defineExpose({
                     <slot name="image" :product="product">
 
                         <!-- MOBILE -->
-<div v-if="images.length" class="md:hidden w-full h-full">
+                            <div v-if="images.length" class="md:hidden w-full h-full">
 
-    <!-- swipe -->
-    <div 
-        v-if="images.length > 1"
-        class="flex w-full h-full overflow-x-auto snap-x snap-mandatory scroll-smooth
-               [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-    >
-        <div 
-            v-for="(img, i) in images" 
-            :key="i" 
-            class="w-full h-full flex-shrink-0 snap-start"
-        >
-            <Image 
-                :src="img" 
-                :alt="product.name"
-                class="w-full h-full"
-                :style="{ objectFit: 'contain', objectPosition: 'center' }"
-            />
-        </div>
-    </div>
+                                <!-- swipe -->
+                                <div 
+                                    v-if="images.length > 1"
+                                    class="flex w-full h-full overflow-x-auto snap-x snap-mandatory scroll-smooth
+                                        [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                                >
+                                    <div 
+                                        v-for="(img, i) in images" 
+                                        :key="i" 
+                                        class="w-full h-full flex-shrink-0 snap-start"
+                                    >
+                                        <Image 
+                                            :src="img" 
+                                            :alt="product.name"
+                                            class="w-full h-full"
+                                            :style="{ objectFit: 'contain', objectPosition: 'center' }"
+                                        />
+                                    </div>
+                                </div>
 
-    <!-- single image -->
-    <div v-else class="w-full h-full">
-        <Image 
-            :src="images[0]" 
-            :alt="product.name"
-            class="w-full h-full"
-            :style="{ objectFit: 'contain', objectPosition: 'center' }"
-        />
-    </div>
+                                <!-- single image -->
+                                <div v-else class="w-full h-full">
+                                    <Image 
+                                        :src="images[0]" 
+                                        :alt="product.name"
+                                        class="w-full h-full"
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }"
+                                    />
+                                </div>
 
-</div>
+                            </div>
 
 
 
