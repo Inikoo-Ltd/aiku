@@ -61,7 +61,7 @@ class RedoOrganisationTimeSeries
     public function asCommand(Command $command): int
     {
         $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
+        $tableName = new $this->model()->getTable();
         $query     = $this->prepareQuery($tableName, $command);
         $count     = $query->count();
         $bar       = $command->getOutput()->createProgressBar($count);
