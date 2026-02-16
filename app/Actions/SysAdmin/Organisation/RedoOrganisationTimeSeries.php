@@ -29,20 +29,24 @@ class RedoOrganisationTimeSeries
     public function handle(Organisation $organisation, array $frequencies, bool $async = true): void
     {
         $firstInvoicedDate = DB::table('invoices')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->min('date');
+        $firstOrderDate = DB::table('orders')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->min('created_at');
+        $firstDeliveryNoteDate = DB::table('delivery_notes')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->min('date');
+        $firstCustomerRegistrationDate = DB::table('customers')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->min('registered_at');
 
-        if ($firstInvoicedDate && ($firstInvoicedDate < $organisation->created_at)) {
-            $organisation->update(['created_at' => $firstInvoicedDate]);
+        $firstActivityDate = collect([
+            $firstInvoicedDate,
+            $firstOrderDate,
+            $firstDeliveryNoteDate,
+            $firstCustomerRegistrationDate,
+        ])->filter()->min();
+
+        if ($firstActivityDate && ($firstActivityDate < $organisation->created_at)) {
+            $organisation->update(['created_at' => $firstActivityDate]);
         }
 
         $from = $organisation->created_at->toDateString();
 
-        $to = DB::table('invoices')->where('organisation_id', $organisation->id)->whereNull('deleted_at')->max('date');
-
-        if (!$to) {
-            $to = now();
-        }
-
-        $to = Carbon::parse($to)->toDateString();
+        $to = now()->toDateString();
 
         if ($from != null && $to != null) {
             foreach ($frequencies as $frequency) {
