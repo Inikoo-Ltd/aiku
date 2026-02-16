@@ -295,10 +295,10 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'bulk_import_product' => [
                     'title' => [
-                        'label' => __("Bulk Edit Customer's SKU"),
-                        'information' => __('The list of column file: stored_items')
+                        'label' => __("Bulk Import Portfolios"),
+                        'information' => __('The list of column file: portfolios')
                     ],
-                    'progressDescription'   => __('Editing stored item'),
+                    'progressDescription'   => __('Importing portfolios'),
                     'upload_spreadsheet' => $this->buildUploadSpreadsheetConfig($this->customerSalesChannel)
                 ],
 
@@ -534,7 +534,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
         return [
             'event'           => 'action-progress',
-            'channel'         => 'retina.personal.'.$customerSalesChannel->id,
+            'channel'         => 'retina.personal.'.$this->webUser->id,
             'required_fields' => ['sku', 'title'],
             'template'        => [
                 'label' => 'Download template (.xlsx)',

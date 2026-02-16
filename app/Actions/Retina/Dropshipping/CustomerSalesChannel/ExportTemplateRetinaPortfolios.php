@@ -10,7 +10,6 @@ namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithExportData;
-use App\Exports\Portfolio\DropshippingClientTemplateExport;
 use App\Exports\Portfolio\PortfolioTemplateExport;
 use Lorisleiva\Actions\ActionRequest;
 use Maatwebsite\Excel\Facades\Excel;
@@ -29,7 +28,8 @@ class ExportTemplateRetinaPortfolios extends RetinaAction
 
         $fileName = 'dropshipping_portfolio_template.' . $type;
 
-        return Excel::download(new DropshippingClientTemplateExport(), $fileName);    }
+        return Excel::download(new PortfolioTemplateExport(), $fileName);
+    }
 
     /**
      * @throws \Throwable
