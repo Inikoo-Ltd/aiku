@@ -5,21 +5,94 @@ namespace App\Actions\HumanResources\Overtime\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
+use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
+use App\InertiaTable\InertiaTable;
+use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\OvertimeRequest;
+use App\Models\HumanResources\OvertimeType;
 use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOvertime extends OrgAction
 {
     use WithHumanResourcesAuthorisation;
 
-    public function handle(Organisation $organisation): array
+    public function handle(Organisation $organisation, ?string $prefix = null): LengthAwarePaginator
     {
-        return [];
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereAnyWordStartWith('employees.alias', $value)
+                    ->orWhereAnyWordStartWith('overtime_types.name', $value)
+                    ->orWhereAnyWordStartWith('overtime_requests.reason', $value);
+            });
+        });
+
+        $queryBuilder = QueryBuilder::for(OvertimeRequest::class)
+            ->where('overtime_requests.organisation_id', $organisation->id)
+            ->join('employees', 'employees.id', '=', 'overtime_requests.employee_id')
+            ->join('overtime_types', 'overtime_types.id', '=', 'overtime_requests.overtime_type_id')
+            ->select([
+                'overtime_requests.id',
+                'employees.alias as employee_name',
+                'overtime_types.name as overtime_type_name',
+                'overtime_requests.requested_date',
+                'overtime_requests.requested_start_at',
+                'overtime_requests.requested_end_at',
+                'overtime_requests.requested_duration_minutes',
+                'overtime_requests.status',
+            ]);
+
+        return $queryBuilder
+            ->defaultSort('-requested_date')
+            ->allowedSorts([
+                'requested_date',
+                'requested_start_at',
+                'requested_end_at',
+                'requested_duration_minutes',
+                'status',
+            ])
+            ->allowedFilters([
+                $globalSearch,
+                'requested_date',
+                'status',
+            ])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
-    public function htmlResponse(array $payload, ActionRequest $request): Response
+    public function tableStructure(?string $prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table
+                    ->name($prefix)
+                    ->pageName($prefix.'Page');
+            }
+
+            $table
+                ->withGlobalSearch()
+                ->column(key: 'employee_name', label: __('Employee'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'overtime_type_name', label: __('Overtime type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'requested_date', label: __('Date'), canBeHidden: false, sortable: true)
+                ->column(key: 'requested_start_at', label: __('Start'), canBeHidden: true, sortable: true)
+                ->column(key: 'requested_end_at', label: __('End'), canBeHidden: true, sortable: true)
+                ->column(key: 'requested_duration_minutes', label: __('Minutes'), canBeHidden: true, sortable: true)
+                ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true)
+                ->defaultSort('-requested_date');
+        };
+    }
+
+    public function htmlResponse(LengthAwarePaginator $overtimeRequests, ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/HumanResources/Overtime',
@@ -39,6 +112,15 @@ class IndexOvertime extends OrgAction
                         'title' => __('Overtime')
                     ],
                     'title'         => __('Overtime'),
+                    'actions'       => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'key'   => 'overtime request',
+                            'label' => __('New overtime request'),
+                            'icon'  => ['fal', 'fa-plus'],
+                        ],
+                    ],
                     'subNavigation' => [
                         [
                             'label'    => __('Overview'),
@@ -64,11 +146,36 @@ class IndexOvertime extends OrgAction
                         ],
                     ],
                 ],
+                'data'               => $overtimeRequests,
+                'employeeOptions'    => $this->organisation->employees()
+                    ->orderBy('alias')
+                    ->get()
+                    ->map(fn (Employee $employee) => [
+                        'value' => $employee->id,
+                        'label' => $employee->alias,
+                    ])
+                    ->values(),
+                'overtimeTypeOptions' => OvertimeType::query()
+                    ->where('organisation_id', $this->organisation->id)
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get()
+                    ->map(fn (OvertimeType $overtimeType) => [
+                        'value' => $overtimeType->id,
+                        'label' => $overtimeType->name,
+                    ])
+                    ->values(),
+                'statusOptions'      => collect(OvertimeRequestStatusEnum::labels())
+                    ->map(fn ($label, $value) => [
+                        'value' => $value,
+                        'label' => $label,
+                    ])
+                    ->values(),
             ]
-        );
+        )->table($this->tableStructure());
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): array
+    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($organisation, $request);
 
