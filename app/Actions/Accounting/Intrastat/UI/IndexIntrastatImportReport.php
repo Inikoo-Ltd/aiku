@@ -10,9 +10,9 @@ namespace App\Actions\Accounting\Intrastat\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Reports\IndexReports;
-use App\Http\Resources\Accounting\IntrastatImportMetricsResource;
+use App\Http\Resources\Accounting\IntrastatImportTimeSeriesRecordResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Accounting\IntrastatImportMetrics;
+use App\Models\Accounting\IntrastatImportTimeSeriesRecord;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -24,6 +24,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexIntrastatImportReport extends OrgAction
 {
@@ -38,7 +39,7 @@ class IndexIntrastatImportReport extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereWith('intrastat_import_metrics.tariff_code', $value);
+                $query->whereWith('intrastat_import_time_series.tariff_code', $value);
             });
         });
 
@@ -46,45 +47,76 @@ class IndexIntrastatImportReport extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(IntrastatImportMetrics::class);
-        $queryBuilder->where('intrastat_import_metrics.organisation_id', $organisation->id);
+        $queryBuilder = QueryBuilder::for(IntrastatImportTimeSeriesRecord::class);
+        $queryBuilder->where('intrastat_import_time_series_records.organisation_id', $organisation->id);
+        $queryBuilder->where('intrastat_import_time_series_records.frequency', 'D');
 
-        $queryBuilder->leftJoin('countries', 'intrastat_import_metrics.country_id', '=', 'countries.id');
-        $queryBuilder->leftJoin('tax_categories', 'intrastat_import_metrics.tax_category_id', '=', 'tax_categories.id');
+        $queryBuilder->join('intrastat_import_time_series', 'intrastat_import_time_series_records.intrastat_import_time_series_id', '=', 'intrastat_import_time_series.id');
+        $queryBuilder->leftJoin('countries', 'intrastat_import_time_series.country_id', '=', 'countries.id');
+        $queryBuilder->leftJoin('tax_categories', 'intrastat_import_time_series.tax_category_id', '=', 'tax_categories.id');
 
-        $this->records = $queryBuilder->count('intrastat_import_metrics.id');
+        $this->records = $queryBuilder->count('intrastat_import_time_series_records.id');
 
         $queryBuilder
-            ->defaultSort('-date')
-            ->allowedSorts(['date', 'tariff_code', 'quantity', 'value_org_currency', 'weight'])
+            ->defaultSort('-intrastat_import_time_series_records.from')
+            ->allowedSorts([
+                AllowedSort::callback('date', function ($query, $direction) {
+                    $direction = strtolower($direction);
+                    if (!in_array($direction, ['asc', 'desc'])) {
+                        $direction = 'desc';
+                    }
+                    return $query->orderBy('intrastat_import_time_series_records.from', $direction);
+                }),
+                AllowedSort::callback('quantity', function ($query, $direction) {
+                    $direction = strtolower($direction);
+                    if (!in_array($direction, ['asc', 'desc'])) {
+                        $direction = 'asc';
+                    }
+                    return $query->orderBy('intrastat_import_time_series_records.quantity', $direction);
+                }),
+                AllowedSort::callback('value_org_currency', function ($query, $direction) {
+                    $direction = strtolower($direction);
+                    if (!in_array($direction, ['asc', 'desc'])) {
+                        $direction = 'asc';
+                    }
+                    return $query->orderBy('intrastat_import_time_series_records.value_org_currency', $direction);
+                }),
+                AllowedSort::callback('weight', function ($query, $direction) {
+                    $direction = strtolower($direction);
+                    if (!in_array($direction, ['asc', 'desc'])) {
+                        $direction = 'asc';
+                    }
+                    return $query->orderBy('intrastat_import_time_series_records.weight', $direction);
+                }),
+            ])
             ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['date'])
+            ->withBetweenDates(['from'])
             ->withPaginator($prefix)
             ->withQueryString();
 
         return $queryBuilder
             ->select([
-                'intrastat_import_metrics.id',
-                'intrastat_import_metrics.date',
-                'intrastat_import_metrics.tariff_code',
-                'intrastat_import_metrics.country_id',
-                'intrastat_import_metrics.tax_category_id',
-                'intrastat_import_metrics.quantity',
-                'intrastat_import_metrics.value_org_currency',
-                'intrastat_import_metrics.weight',
-                'intrastat_import_metrics.supplier_deliveries_count',
-                'intrastat_import_metrics.parts_count',
-                'intrastat_import_metrics.invoices_count',
-                'intrastat_import_metrics.supplier_tax_numbers',
-                'intrastat_import_metrics.valid_tax_numbers_count',
-                'intrastat_import_metrics.invalid_tax_numbers_count',
-                'intrastat_import_metrics.mode_of_transport',
-                'intrastat_import_metrics.delivery_terms',
-                'intrastat_import_metrics.nature_of_transaction',
+                'intrastat_import_time_series_records.id',
+                'intrastat_import_time_series_records.from as date',
+                'intrastat_import_time_series.tariff_code',
+                'intrastat_import_time_series.country_id',
+                'intrastat_import_time_series.tax_category_id',
+                'intrastat_import_time_series_records.quantity',
+                'intrastat_import_time_series_records.value_org_currency',
+                'intrastat_import_time_series_records.weight',
+                'intrastat_import_time_series_records.supplier_deliveries_count',
+                'intrastat_import_time_series_records.parts_count',
+                'intrastat_import_time_series_records.invoices_count',
+                'intrastat_import_time_series_records.valid_tax_numbers_count',
+                'intrastat_import_time_series_records.invalid_tax_numbers_count',
                 'countries.name as country_name',
                 'countries.code as country_code',
                 'tax_categories.name as tax_category_name',
-                DB::raw("'" . $organisation->currency->code . "' as currency_code")
+                DB::raw("'" . $organisation->currency->code . "' as currency_code"),
+                DB::raw("NULL as supplier_tax_numbers"),
+                DB::raw("NULL as mode_of_transport"),
+                DB::raw("NULL as delivery_terms"),
+                DB::raw("NULL as nature_of_transaction")
             ])
             ->paginate(perPage: 50);
     }
@@ -105,7 +137,7 @@ class IndexIntrastatImportReport extends OrgAction
                         'count'       => $this->records,
                     ]
                 )
-                ->betweenDates(['date']);
+                ->betweenDates(['from']);
 
             $table
                 ->column(key: 'date', label: __('Date'), sortable: true)
@@ -156,7 +188,7 @@ class IndexIntrastatImportReport extends OrgAction
                         'icon'  => 'fal fa-file-import'
                     ],
                 ],
-                'data'        => IntrastatImportMetricsResource::collection($metrics),
+                'data'        => IntrastatImportTimeSeriesRecordResource::collection($metrics),
                 'filters'     => [
                     'countries' => $euCountries,
                 ],
@@ -166,7 +198,7 @@ class IndexIntrastatImportReport extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $metrics): AnonymousResourceCollection
     {
-        return IntrastatImportMetricsResource::collection($metrics);
+        return IntrastatImportTimeSeriesRecordResource::collection($metrics);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
