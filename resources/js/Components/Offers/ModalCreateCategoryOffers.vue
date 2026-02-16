@@ -29,8 +29,10 @@ const isLoadingSubmit = ref(false)
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.discounts.category-offers.store', {
-            shop: props.shop_data.slug
+        route('grp.org.shops.show.discounts.offers.campaigns.store', {
+            organisation: 'sk',
+            shop: 'se',
+            offerCampaign: 'co-se',
         }),
         {
             type: typeOffer.value,
@@ -41,7 +43,7 @@ const submitCategoryOffer = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingSubmit.value = true
             },
             onSuccess: () => {
@@ -90,7 +92,7 @@ const submitCategoryOffer = () => {
 
                             {{ trans('Select category') }}:
                         </label>
-                        
+
                         <div class="pl-4">
                             <PureMultiselectInfiniteScroll
                                 :fetchRoute="{
@@ -130,7 +132,7 @@ const submitCategoryOffer = () => {
                                     :suffix="' ' + (offerQtyItems > 1 ? trans('items') : trans('item'))"
                                 />
                             </div>
-                            
+
                             <div class="space-y-2">
                                 <div class="flex items-center gap-2">
                                     <RadioButton v-model="typeOffer" inputId="type-amount" name="amount" value="amount" size="small" />
@@ -183,7 +185,7 @@ const submitCategoryOffer = () => {
                     </Button>
                 </div>
 
-                
+
             </div>
         </Modal>
     </div>
