@@ -132,6 +132,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWoo
 use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -705,6 +706,7 @@ Route::post('{customerSalesChannel:id}/shopify-batch-all', CreateNewBulkPortfoli
 Route::post('{customerSalesChannel:id}/woo-batch-upload', StoreBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/woo-batch-match', MatchBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/woo-batch-all', StoreBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_all')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/revive', ReviveInActiveWooChannel::class)->name('woo.revive')->withoutScopedBindings();
 
 Route::post('{customerSalesChannel:id}/ebay-batch-upload', StoreBulkNewProductToCurrentEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings();

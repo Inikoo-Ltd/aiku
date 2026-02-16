@@ -46,10 +46,15 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 		}">
 			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
 				<!-- 🖼️ Image Block -->
-				<div class="relative cursor-pointer overflow-hidden w-full" :class="[
-					!fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]',
-					isImageRight ? 'order-2' : 'order-1'
-				]" :style="getStyles(fieldValue.image.properties, screenType)">
+				<component 
+					:is="fieldValue?.image?.link?.href ? LinkIris : 'div'" 
+					:href="fieldValue?.image?.link?.href" 
+					:target="fieldValue?.image?.link?.target"
+					:type="fieldValue?.image?.link?.type" 
+					class="relative cursor-pointer overflow-hidden w-full" 
+					:class="[ !fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]', isImageRight ? 'order-2' : 'order-1']" 
+					:style="getStyles(fieldValue.image.properties, screenType)"
+				>
 					<Image :src="fieldValue.image.source" :imageCover="true"
 						:alt="fieldValue.image.alt || 'Image preview'"
 						class="w-full h-full object-cover md:absolute md:inset-0"
@@ -57,7 +62,7 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 						:height="getStyles(fieldValue?.image?.properties, screenType, false)?.height"
 						:width="getStyles(fieldValue?.image?.properties, screenType, false)?.width"
 						/>
-				</div>
+				</component>
 
 
 				<!-- 📝 Text & Button Block -->

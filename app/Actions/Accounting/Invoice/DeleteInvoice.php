@@ -21,6 +21,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Dropshipping\Platform\ProcessPlatformTimeSeriesRecords;
+use App\Actions\Masters\MasterShop\ProcessMasterShopTimeSeriesRecords;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
@@ -126,6 +127,23 @@ class DeleteInvoice extends OrgAction
                 },
                 $invoiceDate->toDateString(),
             )->delay($this->hydratorsDelay);
+        }
+
+        if ($invoice->master_shop_id) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                ProcessMasterShopTimeSeriesRecords::dispatch(
+                    $invoice->master_shop_id,
+                    $frequency,
+                    match ($frequency) {
+                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
+                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
+                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
+                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
+                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
+                    },
+                    $invoiceDate->toDateString(),
+                )->delay($this->hydratorsDelay);
+            }
         }
 
         $invoiceCategory = $invoice->invoiceCategory;

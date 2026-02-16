@@ -10,7 +10,6 @@ import { debounce } from "lodash-es"
 import { useBannerHash } from "@/Composables/useBannerHash"
 import Publish from "@/Components/Utils/Publish.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -19,6 +18,7 @@ import { faRocketLaunch } from '@far'
 import { faAsterisk } from '@fas'
 import { faSpinnerThird } from '@fad'
 import { trans } from "laravel-vue-i18n"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 library.add(faAsterisk, faRocketLaunch, faUser, faUserFriends, faSpinnerThird)
 
@@ -168,21 +168,24 @@ const compIsDataFirstTimeCreated = computed(() => {
 onBeforeUnmount(() => {
     autoSave.cancel()
 })
+
+console.log(props.banner?.compiled_layout)
 </script>
 
 <template>
 <Head :title="capitalize(title)" />
-
 <PageHeading :data="pageHead">
     <template #afterTitle2>
-        <ConditionIcon v-if="status" :state="status" class="text-xl" />
+        <!-- {{ status }} -->
+        <!-- <ConditionIcon v-if="status" :state="status" class="text-xl" /> -->
 
         <Button
-            v-else
+            vxlse
+            v-tooltip="useFormatTime(banner.updated_at, {formatTime: 'hms'})"
             @click="saveBanner"
             type="tertiary"
             :label="trans('Save')"
-            icon="fas fa-save"
+            :icon="status === 'success' ? 'fal fa-check' : 'fas fa-save'"
             size="sm"
             :loading="status === 'loading'"
         />

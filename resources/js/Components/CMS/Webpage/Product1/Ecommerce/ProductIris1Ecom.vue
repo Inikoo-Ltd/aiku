@@ -346,24 +346,25 @@ onMounted(async () => {
                 
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
-                    <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">
-                        <EcomAddToBasketv2 
-                            v-if="product.stock"  
-                            v-model:product="product"  
-                            :customerData="customerData"
-                            :key="keyCustomer" 
-                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" 
-                        />
+
+                    <!-- ONLY show when NOT coming soon -->
+                    <div v-if="product.status !== 'coming-soon' && layout?.iris?.is_logged_in" class="w-full">
+                        <EcomAddToBasketv2 v-if="product.stock" v-model:product="product" :customerData="customerData"
+                            :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+
                         <div v-else>
-                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled full />
+                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled
+                                full />
                         </div>
                     </div>
 
-                    <LinkIris v-else :href="urlLoginWithRedirect()"
+                    <!-- LOGIN BUTTON (only if not coming soon) -->
+                    <LinkIris v-else-if="product.status !== 'coming-soon'" :href="urlLoginWithRedirect()"
                         class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
+
                 </div>
 
                 

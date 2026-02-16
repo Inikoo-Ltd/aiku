@@ -69,6 +69,24 @@ class ShowVariant extends OrgAction
                 'products'           => $masterProductInVariant
             ];
 
+        $action = [
+            [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('Webpage'),
+                'icon'  => ["fal", "fa-browser"],
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.show',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop'         => $this->shop->slug,
+                        'website'      => $this->shop->website->slug,
+                        'webpage'      => $variant->leaderProduct->webpage->slug
+                    ]
+                ]
+            ],
+        ];
+
         return Inertia::render(
             'Org/Catalogue/Variant',
             [
@@ -85,11 +103,13 @@ class ShowVariant extends OrgAction
                         'icon'  => ['fal', 'fa-shapes'],
                         'title' => __('Variant')
                     ],
+                    'actions'    => $action,
                 ],
                 'tabs'                    => [
                     'current'    => $this->tab,
                     'navigation' => VariantTabsEnum::navigation()
                 ],
+                'webpage_canonical_url' => $variant->leaderProduct->webpage->canonical_url,
                 'masterRoute'        => [
                     'name'      => 'grp.masters.master_shops.show.master_families.master_variants.show',
                     'parameters' => [

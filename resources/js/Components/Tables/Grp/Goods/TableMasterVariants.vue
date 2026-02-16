@@ -68,10 +68,14 @@ const formatOptions = (value) => {
         </div>
       </template> 
       <template #cell(number_used_slots)="{ item }">
-        {{ trans(':_used_slot out of :_max_slot slots has been filled', {_used_slot: item.number_used_slots, _max_slot: item.number_max_slots}) }}
+        <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-medium font-medium border transition-colors duration-150 cursor-pointer"> 
+          <span :class="item.number_used_slots == item.number_max_slots  ? 'text-green-500' : 'text-red-500'"> {{ item.number_used_slots }} </span> / {{ item.number_max_slots }} {{ trans(' Slots') }}
+        </span>
       </template> 
       <template #cell(number_used_slots_for_sale)="{ item }"> 
-        {{ trans(':_used_slot products is set for sale', {_used_slot: item.number_used_slots_for_sale}) }}
+        <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-medium font-medium border transition-colors duration-150 cursor-pointer"> 
+          <span :class="item.number_used_slots_for_sale == item.product_list.length ? 'text-green-500' : 'text-red-500'"> {{ item.number_used_slots_for_sale }} </span> / {{ item.product_list.length }} {{ trans(' Products for sale') }}
+        </span>
       </template>
     </Table>
 </template>

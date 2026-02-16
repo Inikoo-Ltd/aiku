@@ -246,6 +246,8 @@ class ShowMasterProduct extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => MasterAssetTabsEnum::navigation()
                 ],
+                'masterVariant'        => $masterAsset->masterVariant,
+                'is_variant_leader'    => $masterAsset->is_variant_leader,
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductShowcase::run($masterAsset)

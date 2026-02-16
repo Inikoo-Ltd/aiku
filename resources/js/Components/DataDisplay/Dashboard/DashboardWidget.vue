@@ -2,8 +2,8 @@
 import { inject, computed } from "vue";
 import WidgetShops from "./Widget/WidgetShops.vue";
 import WidgetOrganisations from "./Widget/WidgetOrganisations.vue";
-import RegistrationsWithOrders from "@/Components/DataDisplay/Dashboard/Widget/RegistrationsWithOrders.vue";
-import RegistrationsWithoutOrders from "@/Components/DataDisplay/Dashboard/Widget/RegistrationsWithoutOrders.vue";
+import WidgetTopListedProducts from "./Widget/WidgetTopListedProducts.vue";
+import WidgetTopSoldProducts from "./Widget/WidgetTopSoldProducts.vue";
 
 const props = defineProps<{
 	intervals: {
@@ -15,6 +15,19 @@ const props = defineProps<{
 		value: string
 	}
     tableData: {}
+    topListedProducts?: Array<{
+        id: number
+        code: string
+        name: string
+        total_listed: number
+    }>
+    topSoldProducts?: Array<{
+        id: number
+        code: string
+        name: string
+        total_sold: number
+        total_amount: number
+    }>
 }>()
 
 const layout = inject('layout')
@@ -32,14 +45,12 @@ const totalsColumns = computed(() => {
     return null
 })
 
-const hasRegistrationsWithOrders = computed(() => {
-    const value = totalsColumns.value?.registrations_with_orders?.[props.intervals.value]?.raw_value
-    return value && Number(value) > 0
+const currentTab = computed(() => {
+    return props.tableData?.current_tab || ''
 })
 
-const hasRegistrationsWithoutOrders = computed(() => {
-    const value = totalsColumns.value?.registrations_without_orders?.[props.intervals.value]?.raw_value
-    return value && Number(value) > 0
+const showProductWidgets = computed(() => {
+    return currentTab.value === 'global_dropshipping' && (props.topListedProducts || props.topSoldProducts)
 })
 </script>
 
@@ -55,15 +66,13 @@ const hasRegistrationsWithoutOrders = computed(() => {
             :tableData="props.tableData"
             :intervals="props.intervals"
         />
-        <RegistrationsWithOrders
-            v-if="hasRegistrationsWithOrders"
-            :tableData="props.tableData"
-            :intervals="props.intervals"
+        <WidgetTopListedProducts
+            v-if="showProductWidgets && props.topListedProducts"
+            :products="props.topListedProducts"
         />
-        <RegistrationsWithoutOrders
-            v-if="hasRegistrationsWithoutOrders"
-            :tableData="props.tableData"
-            :intervals="props.intervals"
+        <WidgetTopSoldProducts
+            v-if="showProductWidgets && props.topSoldProducts"
+            :products="props.topSoldProducts"
         />
     </div>
 </template>

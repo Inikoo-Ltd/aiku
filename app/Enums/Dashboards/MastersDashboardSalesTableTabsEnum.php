@@ -8,10 +8,10 @@
 
 namespace App\Enums\Dashboards;
 
-use App\Actions\Dashboard\IndexMasterShopsSalesTable;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 use App\Http\Resources\Dashboards\DashboardHeaderShopsSalesResource;
+use App\Http\Resources\Dashboards\DashboardMasterShopSalesInGroupResource;
 use App\Http\Resources\Dashboards\DashboardTotalGroupMasterShopsSalesResource;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
@@ -35,8 +35,9 @@ enum MastersDashboardSalesTableTabsEnum: string
         };
     }
 
-    public function table(Group $group, ?array $customRangeData = null): array
+    public function table(Group $group, array $timeSeriesData = []): array
     {
+        $masterShopTimeSeriesStats = $timeSeriesData['masterShops'] ?? [];
 
         $header = match ($this) {
             MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => json_decode(DashboardHeaderShopsSalesResource::make($group)->toJson(), true),
@@ -45,16 +46,11 @@ enum MastersDashboardSalesTableTabsEnum: string
         Arr::set($header, 'columns.label.formatted_value', __('Master Shop'));
 
         $body = match ($this) {
-            MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => IndexMasterShopsSalesTable::make()->action($group, $customRangeData),
+            MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => json_decode(DashboardMasterShopSalesInGroupResource::collection($masterShopTimeSeriesStats)->toJson(), true),
         };
 
         $totals = match ($this) {
-            MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => json_decode(
-                DashboardTotalGroupMasterShopsSalesResource::make($group)
-                    ->setCustomRangeData($customRangeData ?? [])
-                    ->toJson(),
-                true
-            ),
+            MastersDashboardSalesTableTabsEnum::MASTER_SHOPS => json_decode(DashboardTotalGroupMasterShopsSalesResource::make($masterShopTimeSeriesStats)->toJson(), true),
         };
 
         return [
@@ -64,10 +60,10 @@ enum MastersDashboardSalesTableTabsEnum: string
         ];
     }
 
-    public static function tables(Group $group, ?array $customRangeData = null): array
+    public static function tables(Group $group, array $timeSeriesData = []): array
     {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($group, $customRangeData) {
-            return [$case->value => $case->table($group, $customRangeData)];
+        return collect(self::cases())->mapWithKeys(function ($case) use ($group, $timeSeriesData) {
+            return [$case->value => $case->table($group, $timeSeriesData)];
         })->all();
     }
 }

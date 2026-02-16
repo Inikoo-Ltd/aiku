@@ -7,14 +7,34 @@ export default {
             icon: ["fal", "fa-image"],
             fields: [
                 {
+                    name: ["layout","backgroundType"],
+                    type: "radio",
+                    label: trans("Background Type"),
+                    value: ["layout","backgroundType"],
+                    useIn: ["desktop", "tablet", "mobile"],
+                    options: [
+                        { label: trans("Image"), value: "image" },
+                        { label: trans("Color"), value: "color" },
+                    ]
+                },
+                {
                     name: "image",
                     type: "slideBackground",
                     label: trans("Image"),
+                    useIn: ["desktop", "tablet", "mobile"],
                     value: ["image"],
+                },
+                {
+                    name: ["layout","background"],
+                    type: "color-background",
+                    label: trans("Background Color"),
+                    useIn: ["desktop", "tablet", "mobile"],
+                    value: ["layout","background"],
                 },
                 {
                     name: ["layout", "link"],
                     type: "text",
+                    information: trans('Link to visit when the slide clicked'),
                     label: trans("Link"),
                     value: ["layout", "link"],
                     placeholder: "https://www.example.com",
@@ -28,8 +48,8 @@ export default {
                 {
                     name: ["layout", "corners"],
                     type: "corners",
-                    label: null,
-                    value: null,
+                    label: trans("Corners"),
+                    value: ["layout", "corners"],
                     optionType: ["cornerText", "linkButton", "ribbon", 'clear'],
                 },
             ],
@@ -66,24 +86,6 @@ export default {
                     type: "selectFont",
                     label: trans("Font Family"),
                     value: ["layout", "centralStage", "style", "fontFamily"],
-                    options: [
-                        "Arial",
-                        "Avenir",
-                        "Bunya",
-                        "Cardinal",
-                        "Comfortaa",
-                        "Lobster",
-                        "Laila",
-                        "Port Lligat Slab",
-                        "Playfair",
-                        "Raleway",
-                        "Roman Melikhov",
-                        "Shoemaker",
-                        "Source Sans Pro",
-                        "Quicksand",
-                        "Times New Roman",
-                        "Yatra One"
-                    ],
                 },
                 {
                     name: ["layout", "centralStage", "textAlign"],

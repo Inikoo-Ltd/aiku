@@ -53,7 +53,9 @@ const LBInitSearchResult = async () => {
                 'tag',
             ],
             DefaultFilters: {
-                availability: 1,  // Filter out of stock products
+                availability: 1,
+                // stock_qty: '1|',  // Filter out of stock products
+                
             },
             Translations: {
                 [usedLocale]: {
