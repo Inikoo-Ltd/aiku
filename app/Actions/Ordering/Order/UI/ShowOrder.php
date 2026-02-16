@@ -221,10 +221,6 @@ class ShowOrder extends OrgAction
             $wrapped_actions = [
                 [
                     'type'    => 'button',
-                    'icon'    => 'fal fa-pencil',
-                    'style'   => 'tertiary',
-                    'tooltip' => __('Edit the order reference'),
-                    'label'   => __('Edit'),
                     'route'   => [
                         'name'       => 'grp.org.shops.show.ordering.orders.edit',
                         'parameters' => [
