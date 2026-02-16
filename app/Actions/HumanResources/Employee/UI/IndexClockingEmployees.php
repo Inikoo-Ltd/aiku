@@ -62,6 +62,8 @@ class IndexClockingEmployees extends OrgAction
 
             $statistics = $this->getStatistics($employee, $statsQuery, $timezone, $from, $to);
 
+            $this->applyStatusFilter($query, $employee, $timezone);
+
             $timesheets = $query
                 ->defaultSort('date')
                 ->allowedSorts(['date', 'working_duration', 'breaks_duration'])
@@ -326,5 +328,124 @@ class IndexClockingEmployees extends OrgAction
                 'elements' => $elements
             ],
         ];
+    }
+
+        protected function applyStatusFilter(QueryBuilder $query, $employee, string $timezone): void
+    {
+        $status = request()->input('timesheet_status');
+
+        if (!$status) {
+            return;
+        }
+
+        if (!in_array($status, ['on_time', 'late_clock_in', 'early_clock_out', 'no_clock_out'], true)) {
+            return;
+        }
+
+        if ($status === 'no_clock_out') {
+            $query->where('timesheets.number_open_time_trackers', '>', 0);
+
+            return;
+        }
+
+        $organisationId = $employee->organisation_id;
+
+        if (!$organisationId) {
+            return;
+        }
+
+        $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
+            ->where('schedulable_id', $organisationId)
+            ->where('is_active', true)
+            ->with('days')
+            ->first();
+
+        if (!$schedule) {
+            return;
+        }
+
+        $scheduleMap = $schedule->days->keyBy('day_of_week');
+
+        $baseQuery = $query->clone()
+            ->setEagerLoads([])
+            ->select([
+                'timesheets.id',
+                'timesheets.date',
+                'timesheets.start_at',
+                'timesheets.end_at',
+                'timesheets.number_open_time_trackers',
+            ]);
+
+        $matchingIds = [];
+
+        foreach ($baseQuery->cursor() as $ts) {
+            $dayOfWeek = $ts->date->dayOfWeekIso;
+            $daySchedule = $scheduleMap->get($dayOfWeek);
+
+            if (!$daySchedule || !$daySchedule->is_working_day) {
+                continue;
+            }
+
+            $startAt = $ts->start_at
+                ?->copy()
+                ->setTimezone($timezone);
+
+            $endAt = $ts->end_at
+                ?->copy()
+                ->setTimezone($timezone);
+
+            $scheduledStart = null;
+            $scheduledEnd = null;
+
+            if ($startAt) {
+                $scheduledStart = $startAt->copy()->setTime(
+                    $daySchedule->start_time->hour,
+                    $daySchedule->start_time->minute,
+                    $daySchedule->start_time->second ?? 0,
+                );
+
+                $scheduledEnd = $startAt->copy()->setTime(
+                    $daySchedule->end_time->hour,
+                    $daySchedule->end_time->minute,
+                    $daySchedule->end_time->second ?? 0,
+                );
+            }
+
+            $isLate = false;
+
+            if (
+                $status === 'late_clock_in'
+                && $scheduledStart
+                && $startAt
+                && $startAt->gt($scheduledStart->copy()->addMinutes(1))
+            ) {
+                $matchingIds[] = $ts->id;
+                $isLate = true;
+            }
+
+            if (
+                $status === 'early_clock_out'
+                && $scheduledEnd
+                && $ts->number_open_time_trackers == 0
+                && $endAt
+                && $endAt->lt($scheduledEnd->copy()->subMinutes(1))
+            ) {
+                $matchingIds[] = $ts->id;
+            }
+
+            if (
+                $status === 'on_time'
+                && !$isLate
+                && $startAt
+            ) {
+                $matchingIds[] = $ts->id;
+            }
+        }
+
+        if (!empty($matchingIds)) {
+            $query->whereIn('timesheets.id', $matchingIds);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
     }
 }
