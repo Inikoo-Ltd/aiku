@@ -96,6 +96,11 @@ class Upload extends Model implements Auditable
         return $this->belongsTo(User::class);
     }
 
+    public function parent(): BelongsTo
+    {
+        return $this->morphTo();
+    }
+
     public function webUser(): BelongsTo
     {
         return $this->belongsTo(WebUser::class);

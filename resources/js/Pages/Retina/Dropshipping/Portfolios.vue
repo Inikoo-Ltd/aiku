@@ -55,6 +55,21 @@ import PureProgressBar from "@/Components/PureProgressBar.vue"
 import { set } from "lodash-es"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { EditorContent } from "@tiptap/vue-3"
+import UploadExcel from "@/Components/Upload/UploadExcel.vue"
+import { UploadPallet } from "@/types/Pallet"
+
+interface UploadSection {
+	title: {
+		label: string
+		information: string
+	}
+	progressDescription: string
+	upload_spreadsheet: UploadPallet
+	preview_template: {
+		header: string[]
+		rows: {}[]
+	}
+}
 
 library.add(
 	faFileExcel,
@@ -87,6 +102,7 @@ const props = defineProps<{
 			add_button?: string
 		}
 	}
+	bulk_import_product: UploadSection
 	products: TableTS
 	logs: {}
 	routes: {
@@ -206,6 +222,7 @@ const downloadUrl = (type: string, extraParams: Record<string, unknown> = {}) =>
 
 const _popover = ref()
 const _clone_popover = ref()
+const _import_modal = ref(false)
 const _export_popover = ref()
 
 // Method: Platform reconnect
@@ -988,6 +1005,16 @@ const layout = inject("layout", layoutStructure)
 					</template>
 				</VTooltip>
 			</div>
+
+			<Button
+				@click="(e) => _import_modal = true"
+				v-tooltip="trans('Import from xlsx file')"
+				:icon="faUpload"
+				xloading="!!isLoadingSpecificChannel.length"
+				class="!px-2 h-full"
+				type="tertiary"
+				key=""
+				v-if="!customer_sales_channel?.ban_stock_update_until && !routes?.syncAllRoute" />
 
 			<Button
 				@click="() => (isOpenModalPortfolios = true)"
@@ -1908,4 +1935,12 @@ const layout = inject("layout", layoutStructure)
 			</div>
 		</div>
 	</Modal>
+	<UploadExcel
+		v-if="bulk_import_product"
+		v-model="_import_modal"
+		:title="bulk_import_product.title"
+		:progressDescription="bulk_import_product.progressDescription"
+		:preview_template="bulk_import_product.preview_template"
+		:upload_spreadsheet="bulk_import_product.upload_spreadsheet"
+	/>
 </template>
