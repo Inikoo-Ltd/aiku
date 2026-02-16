@@ -98,6 +98,9 @@ const dataToSend = props.body ?? props.routeTarget?.body
                 :iconRotation
                 :injectStyle
             >
+                <template #default>
+                    <slot name="button_default" :isLoadingVisit />
+                </template>
                 <template #loading>
                     <slot name="loading" />
                 </template>

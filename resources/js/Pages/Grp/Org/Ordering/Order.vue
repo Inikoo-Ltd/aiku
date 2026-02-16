@@ -1124,6 +1124,26 @@ const recalculateVat = async () => {
                 v-tooltip="trans('Create return')" />
         </template>
 
+        <!-- Button Wrapped: Edit -->
+        <template #wrapped-0="{ action }">
+            <ButtonWithLink
+                type="tertiary"
+                :tooltip="trans('Edit the order reference')"
+                full
+                :routeTarget="action.route"
+            >
+                <template #button_default="{ isLoadingVisit }">
+                    <div class="flex items-center justify-between w-full gap-x-2">
+                        <div class="w-fit">
+                            <LoadingIcon v-if="isLoadingVisit" />
+                            <FontAwesomeIcon v-else icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
+                        </div>
+                        <div class="w-full">{{ trans('Edit') }}</div>
+                    </div>
+                </template>
+            </ButtonWithLink>
+        </template>
+
         <template #wrapped-add-note="{ action }">
             <!-- Button: Add Notes -->
             <div class="w-full">
@@ -1171,22 +1191,40 @@ const recalculateVat = async () => {
                     :title="trans('Are you sure you want to rollback the Order??')"
                     :description="trans('The state of the Order will go back to finalised state.')" isFullLoading
                     :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                    <template #default="{ changeModel }">
-                        <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo"
-                            :tooltip="trans('Rollback the dispatch')" />
+                    <template #default="{ changeModel, isLoadingdelete }">
+                        <Button @click="changeModel"
+                            type="negative"
+                            :tooltip="trans('Rollback the dispatch')"
+                            full
+                        >
+                            <div class="flex items-center justify-between w-full gap-x-2">
+                                <div class="w-fit">
+                                    <LoadingIcon v-if="isLoadingdelete" />
+                                    <FontAwesomeIcon v-else icon="fas fa-undo" class="" fixed-width aria-hidden="true" />
+                                </div>
+                                <div class="w-full">{{ trans('Undispatch') }}</div>
+                            </div>
+                        </Button>
                     </template>
                 </ModalConfirmationDelete>
 
                 <!-- Button: Proforma Invoice -->
                 <Button
                     v-if="proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))"
-                    @click="() => isOpenModalProforma = true" type="tertiary" :label="trans('Proforma Invoice')"
-                    icon="fal fa-download"
+                    @click="() => isOpenModalProforma = true" type="tertiary"
                     full
-                />
+                >
+                    <div class="flex items-center justify-between w-full gap-x-2">
+                        <div class="w-fit">
+                            <FontAwesomeIcon icon="fal fa-download" class="" fixed-width aria-hidden="true" />
+                        </div>
+                        <div class="w-full">{{ trans('Proforma Invoice') }}</div>
+                    </div>
+                </Button>
 
             </div>
             
+            <!-- Button: Undo to basket -->
             <ModalConfirmationDelete
                 v-if="data?.data?.state === 'submitted'"
                 :description="trans('This will move the order back to basket, allowing customer to edit the order again. Are you sure?')"
@@ -1201,15 +1239,21 @@ const recalculateVat = async () => {
                     },
                     method: 'patch'
                 }">
-                <template #default="{ changeModel }">
-                    <ButtonWithLink
+                <template #default="{ changeModel, isLoadingdelete }">
+                    <Button
                         v-tooltip="trans('Set the Order back to basket')"
                         @click="changeModel"
-                        icon="fal fa-undo-alt"
                         type="negative"
-                        :label="trans('Undo to basket')"
                         full
-                    />
+                    >
+                        <div class="flex items-center justify-between w-full gap-x-2">
+                            <div class="w-fit">
+                                <LoadingIcon v-if="isLoadingdelete" />
+                                <FontAwesomeIcon v-else icon="fal fa-undo-alt" class="" fixed-width aria-hidden="true" />
+                            </div>
+                            <div class="w-full">{{ trans('Undo to basket') }}</div>
+                        </div>
+                    </Button>
                 </template>
             </ModalConfirmationDelete>
         </template>
