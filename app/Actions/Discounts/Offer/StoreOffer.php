@@ -82,12 +82,18 @@ class StoreOffer extends OrgAction
         );
     }
 
+    public function inCategoryOffers(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        dd($this->validatedData);
+    }
 
     public function rules(): array
     {
         $rules = [
             'code'         => [
-                'required',
+                'sometimes', // 'required',
                 new IUnique(
                     table: 'offers',
                     extraConditions: [
@@ -98,14 +104,17 @@ class StoreOffer extends OrgAction
                 'max:64',
                 'alpha_dash'
             ],
-            'name'         => ['required', 'max:250', 'string'],
+            'name'         => ['sometimes', 'max:250', 'string'], // 'required',
             'label'        => ['sometimes', 'nullable', 'max:1028', 'string'],
             'data'         => ['sometimes', 'required'],
             'settings'     => ['sometimes', 'required'],
             'trigger_data' => ['sometimes', 'required'],
             'start_at'     => ['sometimes', 'date'],
             'end_at'       => ['sometimes', 'nullable', 'date'],
-            'type'         => ['required', 'string'],
+            'type'         => ['sometimes', 'string'], // 'required',
+            'offer_qty_items'     => ['sometimes', 'integer'],
+            'offer_amount'        => ['sometimes', 'decimal:0,2'],
+            'discount_percentage' => ['sometimes', 'integer', 'between:0,100'],
             'trigger_type' => ['sometimes', Rule::in(['Order'])],
             'allowances'   => ['sometimes', 'nullable', 'array'],
             'duration'     => ['sometimes', Rule::enum(OfferDurationEnum::class)],

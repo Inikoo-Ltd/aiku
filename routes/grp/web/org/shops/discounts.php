@@ -38,4 +38,5 @@ Route::name("offers.")->prefix('offers')
         Route::get('{offer}/edit', EditOffer::class)->name('edit');
         Route::post('store', StoreOffer::class)->name('store');
         Route::patch('{offer}/update', [UpdateOffer::class, 'inShop'])->name('update');
+        Route::post('campaigns/{offerCampaign}/store', [StoreOffer::class, 'inCategoryOffers'])->name('campaigns.store');
     });
