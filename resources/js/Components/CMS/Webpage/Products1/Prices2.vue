@@ -151,7 +151,7 @@ const _popoverProfit = ref(null)
             <template v-if="product.product_offers_data?.number_offers > 0">
                 <div
                     v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
-                    class="flex flex-col w-fit break-safe"
+                    class="flex flex-col w-fit break-safe discount"
                 >
                     <MemberPriceLabel
                         v-if="layout?.user?.gr_data?.customer_is_gr"
@@ -210,10 +210,16 @@ const _popoverProfit = ref(null)
 
 
 <style scoped>
-
 .text-primary {
   color: var(--theme-color-4) !important;
 }
+
+.discount :deep(.offer-trigger-label) {
+  @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
+  border-color:var(--theme-color-4) !important;
+  color: var(--theme-color-4) !important;
+}
+
 
 .break-safe{
   overflow-wrap:anywhere;

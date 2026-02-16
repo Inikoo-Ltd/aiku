@@ -292,7 +292,7 @@ onMounted(async () => {
                 <!-- Section: Member/Non Member label, Profit -->
                 <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in">
                     <template v-if="product.offers_data?.number_offers > 0">
-                        <div class="flex flex-col w-fit offers">
+                        <div class="flex flex-col w-1/2 offers">
                             <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
                                 <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" :offer="bestOffer" />
                                 <NonMemberPriceLabel v-else :product />
@@ -726,6 +726,16 @@ onMounted(async () => {
     rounded-sm px-1 py-0.5 text-sm
     sm:px-1.5 sm:py-1 sm:text-sm
     md:px-2 md:py-1;
+}
+
+.offers :deep(.offer-trigger-label) {
+  @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
+  border-color:var(--theme-color-4) !important;
+  color: var(--theme-color-4) !important;
+}
+
+.offers :deep(.member-badge) {
+    @apply bg-gray-400 rounded px-2 py-0.5 text-xs md:text-sm text-white w-fit;
 }
 
 </style>

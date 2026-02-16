@@ -177,7 +177,7 @@ const routeVariant = () => {
     )
 }
 
-console.log(props)
+
 </script>
 
 <template>
