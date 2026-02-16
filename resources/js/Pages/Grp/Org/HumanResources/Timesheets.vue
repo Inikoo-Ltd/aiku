@@ -11,6 +11,7 @@ import { useTabChange } from '@/Composables/tab-change'
 // Import Icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faInfoCircle } from '@fal'
+import { trans } from 'laravel-vue-i18n'
 library.add(faInfoCircle)
 
 const props = defineProps<{
@@ -116,17 +117,21 @@ function applyStatus(status: string | null) {
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center divide-x divide-gray-100">
             <button type="button" @click="applyStatus('on_time')" class="px-2">
                 <div class="text-lg font-bold text-blue-600">{{ statistics.on_time }}</div>
-                <div class="text-xs text-gray-500 mt-1">On time</div>
+                <div class="text-xs text-gray-500 mt-1">{{ trans("On time") }}</div>
             </button>
 
             <button type="button" @click="applyStatus('late_clock_in')" class="px-2">
                 <div class="text-lg font-bold text-blue-600">{{ statistics.late_clock_in }}</div>
-                <div class="text-xs text-gray-500 mt-1">Late clock in</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ trans("Late clock in") }}
+                </div>
             </button>
 
             <button type="button" @click="applyStatus('early_clock_out')" class="px-2">
                 <div class="text-lg font-bold text-blue-600">{{ statistics.early_clock_out }}</div>
-                <div class="text-xs text-gray-500 mt-1">Early clock out</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ trans("Early clock out") }}
+                </div>
             </button>
 
             <button type="button" @click="applyStatus('no_clock_out')" class="px-2">
@@ -134,24 +139,31 @@ function applyStatus(status: string | null) {
                     {{ statistics.no_clock_out }}
                     <font-awesome-icon :icon="['fal', 'info-circle']" class="text-gray-400 text-[10px]" />
                 </div>
-                <div class="text-xs text-gray-500 mt-1">No clock out</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ trans("No clock out") }}
+                </div>
             </button>
 
             <button type="button" @click="applyStatus('invalid')" class="px-2">
                 <div class="text-lg font-bold text-blue-600">{{ statistics.invalid }}</div>
-                <div class="text-xs text-gray-500 mt-1">Invalid</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ trans("Invalid") }}
+                </div>
             </button>
 
             <button type="button" @click="applyStatus(null)" class="px-2 border-r-0 lg:border-r">
                 <div class="text-lg font-bold text-blue-600">{{ statistics.absent }}</div>
-                <div class="text-xs text-gray-500 mt-1">Absent</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ trans("Absent") }}
+                </div>
             </button>
 
             <button type="button" @click="applyStatus(null)" class="px-2 border-l border-gray-200">
                 <div class="text-lg font-bold text-gray-800">{{ statistics.total }}</div>
-                <div class="text-xs text-gray-500 mt-1">Total Logs</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ trans("Total Logs") }}
+                </div>
             </button>
-
         </div>
     </div>
     <!-- TABLE -->

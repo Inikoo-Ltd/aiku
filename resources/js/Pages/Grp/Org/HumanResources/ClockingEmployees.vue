@@ -9,7 +9,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading";
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import { computed, defineAsyncComponent, ref } from "vue";
+import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import ScanQrUser from './ScanQrUser.vue';
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -35,7 +35,7 @@ let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => {
     const url = new URL(window.location.href)
     url.searchParams.forEach((_, key) => {
-        if (key.startsWith('timesheets_')) {
+        if (key.startsWith('timesheets_') || key === 'timesheet_status') {
             url.searchParams.delete(key)
         }
     })
@@ -45,7 +45,6 @@ const handleTabUpdate = (tabSlug: string) => {
 
     useTabChange(tabSlug, currentTab)
 }
-
 
 const component = computed(() => {
 
