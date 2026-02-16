@@ -290,6 +290,8 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
+    Route::post('unsuspend', UnSuspendRetinaCustomerSalesChannel::class)->name('portfolios.bulk_import');
+
     Route::patch('unsuspend', UnSuspendRetinaCustomerSalesChannel::class)->name('unsuspend');
     Route::patch('sync-portfolios-manually', SyncRetinaCustomerSalesChannelPortfolioManually::class)->name('sync_portfolios_manual');
     Route::patch('test-connection', TestConnectionWooCommerceUser::class)->name('test_connection');

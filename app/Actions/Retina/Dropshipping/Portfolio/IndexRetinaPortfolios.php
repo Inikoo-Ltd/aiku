@@ -29,6 +29,8 @@ use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
+use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -291,6 +293,15 @@ class IndexRetinaPortfolios extends RetinaAction
                     'navigation' => CustomerSalesChannelPortfolioTabsEnum::navigation()
                 ],
 
+                'bulk_import_product' => [
+                    'title' => [
+                        'label' => __("Bulk Edit Customer's SKU"),
+                        'information' => __('The list of column file: stored_items')
+                    ],
+                    'progressDescription'   => __('Editing stored item'),
+                    'upload_spreadsheet' => $this->buildUploadSpreadsheetConfig($this->customerSalesChannel)
+                ],
+
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
                     'bulk_unlink'               => [
@@ -516,5 +527,32 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ]
             );
+    }
+    protected function buildUploadSpreadsheetConfig(CustomerSalesChannel $customerSalesChannel): array
+    {
+        $downloadRoute = 'retina.dropshipping.portfolio_template.export';
+
+        return [
+            'event'           => 'action-progress',
+            'channel'         => 'retina.personal.'.$customerSalesChannel->id,
+            'required_fields' => ['sku', 'title'],
+            'template'        => [
+                'label' => 'Download template (.xlsx)',
+            ],
+            'route'           => [
+                'upload'   => [
+                    'name'       => 'retina.models.customer_sales_channel.portfolios.bulk_import',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->id
+                    ]
+                ],
+                'download' => [
+                    'name'       => $downloadRoute,
+                    'parameters' => [
+                        'type'               => 'xlsx'
+                    ]
+                ],
+            ],
+        ];
     }
 }
