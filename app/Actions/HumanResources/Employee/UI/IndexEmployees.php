@@ -169,12 +169,12 @@ class IndexEmployees extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'job_title', label: __('job title'), canBeHidden: false);
+                ->column(key: 'job_title', label: __('Job Title'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
             }
             if (class_basename($parent) == 'Organisation') {
-                $table->column(key: 'positions', label: __('responsibilities'), canBeHidden: false);
+                $table->column(key: 'positions', label: __('Responsibilities'), canBeHidden: false);
             }
             $table->defaultSort('slug');
         };
