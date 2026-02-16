@@ -10,12 +10,10 @@
 namespace App\Imports\Dropshipping;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
-use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
 use App\Imports\WithImport;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Fulfilment\StoredItem;
 use App\Models\Helpers\Upload;
 use Exception;
 use Illuminate\Validation\Rule;
@@ -25,6 +23,7 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
+use Throwable;
 
 class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
 {
@@ -57,7 +56,7 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
         try {
             $product = Product::where('code', $modelData['sku'])->first();
 
-            if(! $product->is_for_sale) {
+            if (! $product->is_for_sale) {
                 throw ValidationException::withMessages(['sku' => 'Product is not for sale.']);
             }
 
@@ -70,7 +69,7 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
             }
 
             $this->setRecordAsCompleted($uploadRecord);
-        } catch (Exception|\Throwable $e) {
+        } catch (Throwable $e) {
             $this->setRecordAsFailed($uploadRecord, [$e->getMessage()]);
         }
     }

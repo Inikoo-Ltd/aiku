@@ -32,10 +32,10 @@ use Illuminate\Support\Carbon;
  * @property int $number_records
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Organisation $organisation
  * @property-read Country $country
- * @property-read TaxCategory|null $taxCategory
+ * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\IntrastatImportTimeSeriesRecord> $records
+ * @property-read TaxCategory|null $taxCategory
  * @method static Builder<static>|IntrastatImportTimeSeries newModelQuery()
  * @method static Builder<static>|IntrastatImportTimeSeries newQuery()
  * @method static Builder<static>|IntrastatImportTimeSeries query()

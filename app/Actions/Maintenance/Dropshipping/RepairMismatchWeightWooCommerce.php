@@ -15,7 +15,6 @@ use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairMismatchWeightWooCommerce
@@ -31,13 +30,13 @@ class RepairMismatchWeightWooCommerce
         foreach ($portfolios as $portfolio) {
             $product = $portfolio->item;
 
-            if(! $product) {
+            if (! $product) {
                 continue;
             }
 
             $fetchedPortfolio = $wooCommerceUser->getWooCommerceProduct($portfolio->platform_product_id, false);
 
-            if(! Arr::get($fetchedPortfolio, 'id')) {
+            if (! Arr::get($fetchedPortfolio, 'id')) {
                 continue;
             }
 
@@ -48,7 +47,7 @@ class RepairMismatchWeightWooCommerce
                 default => $product->gross_weight
             };
 
-            if((float) Arr::get($fetchedPortfolio, 'weight') !== $weight) {
+            if ((float) Arr::get($fetchedPortfolio, 'weight') !== $weight) {
                 $collected['update'][] = [
                     'weight' => $weight,
                     'id' => $portfolio->platform_product_id

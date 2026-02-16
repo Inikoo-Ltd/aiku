@@ -180,7 +180,7 @@ class ShowMasterFamily extends GrpAction
                 );
 
 
-        $stateIcon= $masterFamily->status
+        $stateIcon = $masterFamily->status
             ? [
                 'tooltip' => __('Active'),
                 'icon'    => 'fas fa-check-circle',
@@ -193,8 +193,8 @@ class ShowMasterFamily extends GrpAction
             ];
 
 
-        if($masterFamily->stats->number_master_assets==0 && $masterFamily->stats->number_families==0 ){
-            $stateIcon=[
+        if ($masterFamily->stats->number_master_assets == 0 && $masterFamily->stats->number_families == 0) {
+            $stateIcon = [
                 'tooltip' => __('Empty'),
                 'icon'    => 'fas fa-cactus',
                 'class'   => 'text-yellow-400'
@@ -264,7 +264,7 @@ class ShowMasterFamily extends GrpAction
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('Department')
                     ],
-                    'iconRight'     =>$stateIcon,
+                    'iconRight'     => $stateIcon,
                     'actions'       => [
                         $this->canEdit ? [
                             'type'  => 'button',

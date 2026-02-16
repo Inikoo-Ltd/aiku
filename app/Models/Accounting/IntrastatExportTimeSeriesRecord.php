@@ -24,25 +24,25 @@ use Illuminate\Support\Carbon;
  * @property int $intrastat_export_time_series_id
  * @property int $organisation_id
  * @property string $frequency
- * @property string $quantity
- * @property string $value_org_currency
- * @property int $weight
- * @property int $delivery_notes_count
- * @property int $products_count
- * @property int $invoices_count
- * @property string|null $delivery_note_type
- * @property array|null $partner_tax_numbers
- * @property int $valid_tax_numbers_count
- * @property int $invalid_tax_numbers_count
- * @property string|null $mode_of_transport
- * @property string|null $delivery_terms
- * @property string|null $nature_of_transaction
+ * @property string|null $quantity
+ * @property string|null $value_org_currency
+ * @property int|null $weight
+ * @property int|null $delivery_notes_count
+ * @property int|null $products_count
+ * @property int|null $invoices_count
+ * @property DeliveryNoteTypeEnum|null $delivery_note_type
+ * @property array<array-key, mixed>|null $partner_tax_numbers
+ * @property int|null $valid_tax_numbers_count
+ * @property int|null $invalid_tax_numbers_count
+ * @property IntrastatTransportModeEnum|null $mode_of_transport
+ * @property IntrastatDeliveryTermsEnum|null $delivery_terms
+ * @property IntrastatNatureOfTransactionEnum|null $nature_of_transaction
  * @property Carbon|null $from
  * @property Carbon|null $to
  * @property string|null $period
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read IntrastatExportTimeSeries $intrastatExportTimeSeries
+ * @property-read \App\Models\Accounting\IntrastatExportTimeSeries $intrastatExportTimeSeries
  * @property-read Organisation $organisation
  * @method static Builder<static>|IntrastatExportTimeSeriesRecord newModelQuery()
  * @method static Builder<static>|IntrastatExportTimeSeriesRecord newQuery()
