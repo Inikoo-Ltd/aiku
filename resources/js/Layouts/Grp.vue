@@ -79,6 +79,7 @@ import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import {
 	faAsterisk as fasAsterisk,
 	faBoxHeart,
+	faBadgePercent,
 	faExclamation,
 	faInfo,
 	faPlay,
@@ -164,7 +165,8 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot
+	faShare, faUndoAlt, faRobot,
+	faBadgePercent
 )
 
 provide("layout", useLayoutStore())
