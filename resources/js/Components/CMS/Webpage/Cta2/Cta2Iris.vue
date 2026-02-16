@@ -36,7 +36,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-	<div id="cta2">
+	<div :id="fieldValue?.id ? fieldValue?.id  : 'cta2'"  component="cta2" >
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType)

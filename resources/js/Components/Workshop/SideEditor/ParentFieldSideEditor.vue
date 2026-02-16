@@ -32,6 +32,7 @@ const props = withDefaults(defineProps<{
     }
     modelType?: string
     uploadImageRoute?: routeType
+    editable?:boolean
 }>(), {
     modelType: 'edit'
 })
@@ -102,7 +103,7 @@ const isFutureDatePassed = (futureDate: string) => {
 
             <RenderFields v-else :modelValue="modelValue" :blueprint="blueprint"
                 :uploadImageRoute="uploadImageRoute"
-                @update:modelValue="onPropertyUpdate" :modelType="modelType" />
+                @update:modelValue="onPropertyUpdate" :modelType="modelType"  :editable="editable" />
         </AccordionContent>
     </AccordionPanel>
 
@@ -118,6 +119,7 @@ const isFutureDatePassed = (futureDate: string) => {
             :uploadImageRoute="uploadImageRoute"
             @update:modelValue="onPropertyUpdate" 
             :modelType="modelType" 
+            :editable="editable"
         />
     </div>
 </template>

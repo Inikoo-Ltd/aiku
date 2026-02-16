@@ -34,6 +34,7 @@ const props = withDefaults(defineProps<{
     }
     panelOpen?: number|null|string
     modelType?: string // 'edit'|'filter'
+    editable?:boolean
 }>(), {
     panelOpen: null,
     modelType: 'edit'
@@ -102,6 +103,7 @@ onMounted(() => {
                 :key="field.key"
                 @update:modelValue="e =>  emits('update:modelValue', e)"
                 :modelType="type"
+                :editable="editable"
             />
         </Accordion>
     </div>

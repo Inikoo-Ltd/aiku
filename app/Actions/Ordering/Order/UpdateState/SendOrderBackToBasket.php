@@ -50,6 +50,13 @@ class SendOrderBackToBasket extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
+
+        /** @var Order $order */
+        $order = $order->customer->orders()->where('state', OrderStateEnum::CREATING->value)->first();
+        if($order){
+            $validator->errors()->add('state', 'You already have an order in basket');
+        }
+
         if ($this->order->state != OrderStateEnum::SUBMITTED) {
             $validator->errors()->add('state', 'You only can return to basket if current status is submitted');
         }
