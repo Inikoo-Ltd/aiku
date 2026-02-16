@@ -112,10 +112,15 @@ const submitEdit = () => {
 		}),
 		{
 			preserveScroll: true,
+			forceFormData: true,
 			onSuccess: () => {
 				isEditModalOpen.value = false
 				editForm.reset()
 				selectedLeave.value = null
+			},
+			onError: (errors) => {
+				console.error(errors)
+				isSubmitting.value = false
 			},
 			onFinish: () => {
 				isSubmitting.value = false
@@ -381,7 +386,7 @@ const submitEdit = () => {
 							class="w-full border border-gray-300 rounded-lg px-3 py-2"
 							accept=".pdf,.jpg,.jpeg,.png" />
 						<p class="text-xs text-gray-500 mt-1">
-							{{ trans("Upload medical certificate (PDF, JPG, PNG)") }}
+							{{ trans("Upload Medical Certificate (PDF, JPG, PNG)") }}
 						</p>
 						<p v-if="editForm.errors.attachments" class="text-sm text-red-500 mt-1">
 							{{ editForm.errors.attachments }}
@@ -390,7 +395,7 @@ const submitEdit = () => {
 
 					<div class="flex justify-end gap-3 pt-4">
 						<Button @click="closeEditModal" :label="trans('Cancel')" type="tertiary" />
-						<Button type="submit" :label="trans('Save')" :loading="isSubmitting" />
+						<Button @click="submitEdit" :label="trans('Save')" :loading="isSubmitting" />
 					</div>
 				</form>
 			</div>
