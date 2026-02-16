@@ -162,6 +162,19 @@ function refreshModalData() {
     disableClone.value = tableData.value.data.length === 0
 }
 
+const routeVariant = () => {
+    return route(
+        'grp.masters.master_shops.show.master_families.master_variants.show',
+        {
+            masterShop: (route().params as RouteParams).masterShop,
+            masterFamily: props.masterAsset.master_family.slug,
+            masterVariant: props.masterVariant.slug
+        }
+    )
+}
+
+console.log(props)
+
 watch(() => currentTab.value, (value) => {
     if (value === "products") {
         refreshModalData()
@@ -199,7 +212,10 @@ onMounted(() => {
                 />
             </Link>
             <!-- TODO PLEASE CHANGE TO HAVE LINK TO MASTER VARIANT -->
-            <FontAwesomeIcon v-if="masterVariant" :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" v-tooltip="trans('Go to Master Variant')"/>
+               <Link v-if="masterVariant" :href="routeVariant()" v-tooltip="trans('Go to Master Variant')">
+                   <FontAwesomeIcon  :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
+               </Link>
+         
         </template>
 
         <template #button-assign="{ action }">

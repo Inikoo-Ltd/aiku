@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Accounting\IntrastatExportTimeSeries\ProcessIntrastatExportTimeSeriesRecords;
+use App\Actions\Accounting\IntrastatImportTimeSeries\ProcessIntrastatImportTimeSeriesRecords;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
@@ -21,6 +23,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Country;
@@ -73,7 +76,37 @@ class UpdateDeliveryNote extends OrgAction
                     $deliveryCountry = Country::find($deliveryNote->delivery_country_id);
 
                     if ($deliveryCountry && Country::isInEU($deliveryCountry->code) && $deliveryCountry->code !== $deliveryNote->organisation->country_code) {
-                        // Todo: Put Process Intrastat Export and Import Time Series
+                        $deliveryDate = \Carbon\Carbon::parse($deliveryNote->date);
+
+                        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                            ProcessIntrastatExportTimeSeriesRecords::dispatch(
+                                $deliveryNote->organisation_id,
+                                $frequency,
+                                match ($frequency) {
+                                    TimeSeriesFrequencyEnum::YEARLY => $deliveryDate->copy()->startOfYear()->toDateString(),
+                                    TimeSeriesFrequencyEnum::QUARTERLY => $deliveryDate->copy()->startOfQuarter()->toDateString(),
+                                    TimeSeriesFrequencyEnum::MONTHLY => $deliveryDate->copy()->startOfMonth()->toDateString(),
+                                    TimeSeriesFrequencyEnum::WEEKLY => $deliveryDate->copy()->startOfWeek()->toDateString(),
+                                    TimeSeriesFrequencyEnum::DAILY => $deliveryDate->toDateString()
+                                },
+                                $deliveryDate->toDateString(),
+                            )->delay($this->hydratorsDelay);
+                        }
+
+                        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                            ProcessIntrastatImportTimeSeriesRecords::dispatch(
+                                $deliveryNote->organisation_id,
+                                $frequency,
+                                match ($frequency) {
+                                    TimeSeriesFrequencyEnum::YEARLY => $deliveryDate->copy()->startOfYear()->toDateString(),
+                                    TimeSeriesFrequencyEnum::QUARTERLY => $deliveryDate->copy()->startOfQuarter()->toDateString(),
+                                    TimeSeriesFrequencyEnum::MONTHLY => $deliveryDate->copy()->startOfMonth()->toDateString(),
+                                    TimeSeriesFrequencyEnum::WEEKLY => $deliveryDate->copy()->startOfWeek()->toDateString(),
+                                    TimeSeriesFrequencyEnum::DAILY => $deliveryDate->toDateString()
+                                },
+                                $deliveryDate->toDateString(),
+                            )->delay($this->hydratorsDelay);
+                        }
                     }
                 }
             }

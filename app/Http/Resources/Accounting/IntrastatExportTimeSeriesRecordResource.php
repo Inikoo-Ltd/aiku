@@ -8,15 +8,19 @@
 
 namespace App\Http\Resources\Accounting;
 
+use App\Enums\Accounting\Intrastat\IntrastatDeliveryTermsEnum;
+use App\Enums\Accounting\Intrastat\IntrastatNatureOfTransactionEnum;
+use App\Enums\Accounting\Intrastat\IntrastatTransportModeEnum;
+use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class IntrastatExportMetricsResource extends JsonResource
+class IntrastatExportTimeSeriesRecordResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
             'id'                        => $this->id,
-            'date'                      => $this->date?->format('Y-m-d'),
+            'date'                      => $this->date ? Carbon::parse($this->date)->format('Y-m-d') : null,
             'tariff_code'               => $this->tariff_code,
             'country'                   => [
                 'id'   => $this->country_id,
@@ -38,18 +42,44 @@ class IntrastatExportMetricsResource extends JsonResource
             'partner_tax_numbers'       => $this->partner_tax_numbers,
             'valid_tax_numbers_count'   => $this->valid_tax_numbers_count,
             'invalid_tax_numbers_count' => $this->invalid_tax_numbers_count,
-            'mode_of_transport'         => [
-                'value' => $this->mode_of_transport?->value,
-                'label' => $this->mode_of_transport?->label(),
-            ],
-            'delivery_terms'            => [
-                'value' => $this->delivery_terms?->value,
-                'label' => $this->delivery_terms?->label(),
-            ],
-            'nature_of_transaction'     => [
-                'value' => $this->nature_of_transaction?->value,
-                'label' => $this->nature_of_transaction?->label(),
-            ],
+            'mode_of_transport'         => $this->formatEnum($this->mode_of_transport, IntrastatTransportModeEnum::class),
+            'delivery_terms'            => $this->formatEnum($this->delivery_terms, IntrastatDeliveryTermsEnum::class),
+            'nature_of_transaction'     => $this->formatEnum($this->nature_of_transaction, IntrastatNatureOfTransactionEnum::class),
+        ];
+    }
+
+    private function formatEnum($value, string $enumClass): array
+    {
+        if ($value === null) {
+            return [
+                'value' => null,
+                'label' => null,
+            ];
+        }
+
+        // If it's already an enum instance
+        if ($value instanceof $enumClass) {
+            return [
+                'value' => $value->value,
+                'label' => $value->label(),
+            ];
+        }
+
+        // If it's a string, convert to enum
+        if (is_string($value)) {
+            $enum = $enumClass::tryFrom($value);
+            if ($enum) {
+                return [
+                    'value' => $enum->value,
+                    'label' => $enum->label(),
+                ];
+            }
+        }
+
+        // Fallback
+        return [
+            'value' => $value,
+            'label' => $value,
         ];
     }
 }

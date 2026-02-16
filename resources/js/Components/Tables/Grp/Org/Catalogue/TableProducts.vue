@@ -802,11 +802,11 @@ const saveTradeUnits = (value, product) => {
                     </span>
                 </span>
             </Link>
-            <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
+        <!--     <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
                border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
                 -
-            </span>
+            </span> -->
         </template>
 
         <template #cell(shop_code)="{ item: product }">
