@@ -10,11 +10,9 @@ import Table from "@/Components/Table/Table.vue"
 import { DeliveryNote } from "@/types/delivery-note"
 import { DialogTitle, Tab } from "@headlessui/vue"
 import type { Table as TableTS } from "@/types/Table"
-import { inject, ref } from "vue"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { ref } from "vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
-import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -26,7 +24,7 @@ import { faTruck } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTruck)
 
-const props = defineProps<{
+defineProps<{
 	data: TableTS
 	tab?: string
 }>()
