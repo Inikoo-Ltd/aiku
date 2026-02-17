@@ -31,8 +31,7 @@ const props = defineProps<{
 	tab?: string
 }>()
 
-const locale = useLocaleStore()
-const layout = inject("layout", layoutStructure)
+
 
 function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 	console.log(route().current())
