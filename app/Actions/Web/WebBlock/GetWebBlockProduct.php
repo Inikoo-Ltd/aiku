@@ -21,13 +21,13 @@ class GetWebBlockProduct
 {
     use AsObject;
 
-    public function handle(Webpage $webpage, array $webBlock): array
+    public function handle(Webpage $webpage, array $webBlock, bool $isIris=true): array
     {
 
         /** @var Product $product */
         $product = $webpage->model;
 
-        if (!$product->is_for_sale && !($product->is_variant_leader)) {
+        if ($isIris && !$product->is_for_sale && !($product->is_variant_leader)) {
             abort(404);
         }
 
