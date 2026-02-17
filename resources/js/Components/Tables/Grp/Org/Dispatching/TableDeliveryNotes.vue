@@ -219,7 +219,7 @@ const generateRouteDeliveryNote = (id: string) => {
 		</template>
 
 		<template #cell(effective_weight)="{ item: deliveryNote }">
-			{{ deliveryNote.effective_weight }} g
+			{{ deliveryNote.effective_weight }}
 		</template>
 
 		<template #cell(customer_name)="{ item: deliveryNote }">
