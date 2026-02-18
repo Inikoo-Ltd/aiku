@@ -33,7 +33,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
         $to   .= ' 23:59:59';
 
         $platform = Platform::find($platformId);
-        $shop = Shop::find($shopId);
+        $shop     = Shop::find($shopId);
 
         if (!$platform && !$shop) {
             return;
@@ -52,6 +52,8 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to): void
     {
+        $processedPeriods = [];
+
         $results = DB::table('invoices')
             ->where('invoices.platform_id', $timeSeries->platform_id)
             ->where('invoices.shop_id', $shop->id)
@@ -130,43 +132,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                 $period     = $result->year;
             }
 
-            $channels = DB::table('customer_sales_channels')
-                ->where('platform_id', $timeSeries->platform_id)
-                ->where('shop_id', $shop->id)
-                ->where('status', CustomerSalesChannelStatusEnum::OPEN)
-                ->where('created_at', '>=', $periodFrom)
-                ->where('created_at', '<=', $periodTo)
-                ->whereNull('deleted_at')
-                ->count();
-
-            $customers = DB::table('customer_sales_channels')
-                ->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
-                ->where('customer_sales_channels.platform_id', $timeSeries->platform_id)
-                ->where('customer_sales_channels.shop_id', $shop->id)
-                ->where('customer_sales_channels.created_at', '>=', $periodFrom)
-                ->where('customer_sales_channels.created_at', '<=', $periodTo)
-                ->whereNull('customer_sales_channels.deleted_at')
-                ->distinct('customer_sales_channels.customer_id')
-                ->count('customer_sales_channels.customer_id');
-
-            $portfolios = DB::table('portfolios')
-                ->where('portfolios.item_type', 'Product')
-                ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
-                ->where('portfolios.platform_id', $timeSeries->platform_id)
-                ->where('portfolios.shop_id', $shop->id)
-                ->where('portfolios.created_at', '>=', $periodFrom)
-                ->where('portfolios.created_at', '<=', $periodTo)
-                ->whereNull('portfolios.last_removed_at')
-                ->distinct('portfolios.item_id')
-                ->count('portfolios.item_id');
-
-            $customerClients = DB::table('customer_clients')
-                ->where('platform_id', $timeSeries->platform_id)
-                ->where('shop_id', $shop->id)
-                ->where('created_at', '>=', $periodFrom)
-                ->where('created_at', '<=', $periodTo)
-                ->whereNull('deleted_at')
-                ->count();
+            [$channels, $customers, $portfolios, $customerClients] = $this->getPeriodMetrics($timeSeries, $shop, $periodFrom, $periodTo);
 
             $timeSeries->records()->updateOrCreate(
                 [
@@ -189,6 +155,174 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'customer_clients'   => $customerClients,
                 ]
             );
+
+            $processedPeriods[] = $period;
         }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $shop, $from, $to, $processedPeriods);
+    }
+
+    protected function getPeriodMetrics(PlatformTimeSeries $timeSeries, Shop $shop, Carbon $periodFrom, Carbon $periodTo): array
+    {
+        $channels = DB::table('customer_sales_channels')
+            ->where('platform_id', $timeSeries->platform_id)
+            ->where('shop_id', $shop->id)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->where('created_at', '>=', $periodFrom)
+            ->where('created_at', '<=', $periodTo)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $customers = DB::table('customer_sales_channels')
+            ->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
+            ->where('customer_sales_channels.platform_id', $timeSeries->platform_id)
+            ->where('customer_sales_channels.shop_id', $shop->id)
+            ->where('customers.registered_at', '>=', $periodFrom)
+            ->where('customers.registered_at', '<=', $periodTo)
+            ->whereNull('customers.deleted_at')
+            ->distinct('customer_sales_channels.customer_id')
+            ->count('customer_sales_channels.customer_id');
+
+        $portfolios = DB::table('portfolios')
+            ->where('portfolios.item_type', 'Product')
+            ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
+            ->where('portfolios.platform_id', $timeSeries->platform_id)
+            ->where('portfolios.shop_id', $shop->id)
+            ->where('portfolios.created_at', '>=', $periodFrom)
+            ->where('portfolios.created_at', '<=', $periodTo)
+            ->where('portfolios.status', true)
+            ->whereNull('portfolios.last_removed_at')
+            ->distinct('portfolios.item_id')
+            ->count('portfolios.item_id');
+
+        $customerClients = DB::table('customer_clients')
+            ->where('platform_id', $timeSeries->platform_id)
+            ->where('shop_id', $shop->id)
+            ->where('created_at', '>=', $periodFrom)
+            ->where('created_at', '<=', $periodTo)
+            ->whereNull('deleted_at')
+            ->count();
+
+        return [$channels, $customers, $portfolios, $customerClients];
+    }
+
+    protected function processPeriodsWithoutInvoices(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = $this->getNonInvoicePeriods($timeSeries, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $periodFrom = $periodData['from'];
+            $periodTo   = $periodData['to'];
+            $period     = $periodData['period'];
+
+            [$channels, $customers, $portfolios, $customerClients] = $this->getPeriodMetrics($timeSeries, $shop, $periodFrom, $periodTo);
+
+            $hasActivity = $channels > 0
+                || $customers > 0
+                || $portfolios > 0
+                || $customerClients > 0;
+
+            if (!$hasActivity) {
+                continue;
+            }
+
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'platform_time_series_id' => $timeSeries->id,
+                    'shop_id'                 => $shop->id,
+                    'period'                  => $period,
+                    'frequency'               => $timeSeries->frequency->singleLetter(),
+                ],
+                [
+                    'organisation_id'    => $shop->organisation_id,
+                    'from'               => $periodFrom,
+                    'to'                 => $periodTo,
+                    'sales'              => 0,
+                    'sales_org_currency' => 0,
+                    'sales_grp_currency' => 0,
+                    'invoices'           => 0,
+                    'channels'           => $channels,
+                    'customers'          => $customers,
+                    'portfolios'         => $portfolios,
+                    'customer_clients'   => $customerClients,
+                ]
+            );
+        }
+    }
+
+    protected function getNonInvoicePeriods(PlatformTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
+    {
+        $periods   = [];
+        $startDate = Carbon::parse($from)->startOfDay();
+        $endDate   = Carbon::parse($to)->endOfDay();
+
+        if ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
+            $current = $startDate->copy();
+            while ($current <= $endDate) {
+                $period = $current->format('Y-m-d');
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfDay(),
+                        'to'     => $current->copy()->endOfDay(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addDay();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
+            $current = $startDate->copy()->startOfWeek();
+            while ($current <= $endDate) {
+                $period = $current->isoFormat('GGGG').' W'.str_pad($current->isoWeek(), 2, '0', STR_PAD_LEFT);
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfWeek(),
+                        'to'     => $current->copy()->endOfWeek(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addWeek();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
+            $current = $startDate->copy()->startOfMonth();
+            while ($current <= $endDate) {
+                $period = $current->year.'-'.str_pad($current->month, 2, '0', STR_PAD_LEFT);
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfMonth(),
+                        'to'     => $current->copy()->endOfMonth(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addMonth();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
+            $current = $startDate->copy()->startOfQuarter();
+            while ($current <= $endDate) {
+                $period = $current->year.' Q'.$current->quarter;
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfQuarter(),
+                        'to'     => $current->copy()->endOfQuarter(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addQuarter();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
+            $current = $startDate->copy()->startOfYear();
+            while ($current <= $endDate) {
+                $period = (string) $current->year;
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfYear(),
+                        'to'     => $current->copy()->endOfYear(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addYear();
+            }
+        }
+
+        return $periods;
     }
 }
