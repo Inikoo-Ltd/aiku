@@ -78,6 +78,11 @@
                 src="https://scripts.luigisbox.tech/{{ Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script>
     @endif
 
+    <style>
+        #jsd-widget {
+            bottom: 38px !important;
+        }
+    </style>
 </head>
 <body class="font-sans antialiased h-full">
 
