@@ -9,7 +9,10 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { trans } from 'laravel-vue-i18n'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTrash } from "@fal";
 
+library.add(faTrash);
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
@@ -124,6 +127,7 @@ const modalTitle = computed(() =>
             <div class="flex justify-end gap-2">
                 <Button
                     type="secondary"
+                    label="Edit"
                     icon="fal fa-pencil"
                     size="xs"
                     v-tooltip="trans('Edit overtime type')"
@@ -145,7 +149,8 @@ const modalTitle = computed(() =>
                     <template #default="{ changeModel }">
                         <Button
                             type="negative"
-                            icon="fal fa-trash"
+                            label="Delete"
+                            :icon="faTrash"
                             size="xs"
                             v-tooltip="trans('Delete overtime type')"
                             @click="changeModel()"

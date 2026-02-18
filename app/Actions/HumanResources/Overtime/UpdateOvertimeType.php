@@ -83,6 +83,12 @@ class UpdateOvertimeType extends OrgAction
 
     public function htmlResponse(OvertimeType $overtimeType): RedirectResponse
     {
-        return Redirect::back()->with('success', __('Overtime type updated successfully.'));
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Overtime type successfully updated.'),
+        ]);
+
+        return Redirect::back();
     }
 }

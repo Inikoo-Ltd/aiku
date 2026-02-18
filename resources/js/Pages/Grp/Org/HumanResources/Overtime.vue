@@ -10,6 +10,10 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { trans } from 'laravel-vue-i18n'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTrash, faEdit, faCheck, faTimes } from "@fal";
+
+library.add(faTrash, faEdit, faCheck, faTimes)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -52,6 +56,25 @@ const form = useForm<{
     status: 'pending',
 })
 
+const formatDuration = (minutes?: number | null): string => {
+    if (!minutes) {
+        return '-'
+    }
+
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+
+    if (hours && remainingMinutes) {
+        return `${hours}h ${remainingMinutes}m`
+    }
+
+    if (hours) {
+        return `${hours}h`
+    }
+
+    return `${remainingMinutes}m`
+}
+
 const openRequestModal = () => {
     form.reset()
     form.clearErrors()
@@ -91,9 +114,21 @@ const submitRequest = () => {
 
     <div class="mt-4">
         <Table :resource="data">
+            <template #cell(employee_name)="{ item }">
+                <span class="whitespace-nowrap">
+                    {{ item.employee_name }}
+                </span>
+            </template>
+
             <template #cell(requested_date)="{ item }">
                 <span class="whitespace-nowrap">
                     {{ useFormatTime(item.requested_date) }}
+                </span>
+            </template>
+
+            <template #cell(approver_name)="{ item }">
+                <span class="whitespace-nowrap">
+                    {{ item.approver_name ?? '—' }}
                 </span>
             </template>
 
@@ -103,9 +138,15 @@ const submitRequest = () => {
                 </span>
             </template>
 
-            <template #cell(requested_end_at)="{ item }">
+            <template #cell(requested_duration_minutes)="{ item }">
                 <span class="whitespace-nowrap">
-                    {{ useFormatTime(item.requested_end_at, { formatTime: 'hm' }) }}
+                    {{ formatDuration(item.requested_duration_minutes) }}
+                </span>
+            </template>
+
+            <template #cell(lieu_requested_minutes)="{ item }">
+                <span class="whitespace-nowrap">
+                    {{ formatDuration(item.lieu_requested_minutes) }}
                 </span>
             </template>
 
@@ -121,6 +162,23 @@ const submitRequest = () => {
                         </span>
                     </template>
                 </Tag>
+            </template>
+
+            <template #cell(options)>
+                <div class="flex gap-2">
+                    <Button type="transparent" size="xs" :icon="faEdit">
+                        {{ trans('Edit') }}
+                    </Button>
+                    <Button type="positive" size="xs" :icon="faCheck">
+                        {{ trans('Approve') }}
+                    </Button>
+                    <Button type="warning" size="xs" :icon="faTimes">
+                        {{ trans('Reject') }}
+                    </Button>
+                    <Button type="negative" size="xs" :icon="faTrash">
+                        {{ trans('Delete') }}
+                    </Button>
+                </div>
             </template>
         </Table>
     </div>

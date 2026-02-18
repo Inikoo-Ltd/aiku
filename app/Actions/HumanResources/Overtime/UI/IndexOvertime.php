@@ -31,7 +31,8 @@ class IndexOvertime extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('employees.alias', $value)
+                $query->whereAnyWordStartWith('staff.alias', $value)
+                    ->orWhereAnyWordStartWith('approver.alias', $value)
                     ->orWhereAnyWordStartWith('overtime_types.name', $value)
                     ->orWhereAnyWordStartWith('overtime_requests.reason', $value);
             });
@@ -39,17 +40,26 @@ class IndexOvertime extends OrgAction
 
         $queryBuilder = QueryBuilder::for(OvertimeRequest::class)
             ->where('overtime_requests.organisation_id', $organisation->id)
-            ->join('employees', 'employees.id', '=', 'overtime_requests.employee_id')
+            ->join('employees as staff', 'staff.id', '=', 'overtime_requests.employee_id')
+            ->leftJoin('employees as approver', 'approver.id', '=', 'overtime_requests.approved_by_employee_id')
             ->join('overtime_types', 'overtime_types.id', '=', 'overtime_requests.overtime_type_id')
             ->select([
                 'overtime_requests.id',
-                'employees.alias as employee_name',
+                'overtime_requests.employee_id',
+                'overtime_requests.overtime_type_id',
+                'staff.alias as employee_name',
+                'approver.alias as approver_name',
                 'overtime_types.name as overtime_type_name',
                 'overtime_requests.requested_date',
                 'overtime_requests.requested_start_at',
                 'overtime_requests.requested_end_at',
                 'overtime_requests.requested_duration_minutes',
+                'overtime_requests.lieu_requested_minutes',
                 'overtime_requests.status',
+                'overtime_requests.approved_at',
+                'overtime_requests.rejected_at',
+                'overtime_requests.source',
+                'overtime_requests.id as options',
             ]);
 
         return $queryBuilder
@@ -59,6 +69,7 @@ class IndexOvertime extends OrgAction
                 'requested_start_at',
                 'requested_end_at',
                 'requested_duration_minutes',
+                'lieu_requested_minutes',
                 'status',
             ])
             ->allowedFilters([
@@ -81,13 +92,62 @@ class IndexOvertime extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'employee_name', label: __('Employee'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'overtime_type_name', label: __('Overtime type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'requested_date', label: __('Date'), canBeHidden: false, sortable: true)
-                ->column(key: 'requested_start_at', label: __('Start'), canBeHidden: true, sortable: true)
-                ->column(key: 'requested_end_at', label: __('End'), canBeHidden: true, sortable: true)
-                ->column(key: 'requested_duration_minutes', label: __('Minutes'), canBeHidden: true, sortable: true)
-                ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true)
+                ->column(
+                    key: 'requested_date',
+                    label: __('Requested'),
+                    canBeHidden: false,
+                    sortable: true
+                )
+                ->column(
+                    key: 'employee_name',
+                    label: __('Staff member'),
+                    canBeHidden: false,
+                    sortable: true,
+                    searchable: true
+                )
+                ->column(
+                    key: 'approver_name',
+                    label: __('Approver'),
+                    canBeHidden: true,
+                    sortable: true,
+                    searchable: true
+                )
+                ->column(
+                    key: 'requested_start_at',
+                    label: __('From'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'requested_duration_minutes',
+                    label: __('Duration'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'lieu_requested_minutes',
+                    label: __('Lieu requested'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'overtime_type_name',
+                    label: __('Overtime type'),
+                    canBeHidden: false,
+                    sortable: true,
+                    searchable: true
+                )
+                ->column(
+                    key: 'status',
+                    label: __('Status'),
+                    canBeHidden: false,
+                    sortable: true
+                )
+                ->column(
+                    key: 'options',
+                    label: __('Options'),
+                    canBeHidden: false
+                )
                 ->defaultSort('-requested_date');
         };
     }

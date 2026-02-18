@@ -90,7 +90,13 @@ class StoreOvertimeRequest extends OrgAction
 
     public function htmlResponse(OvertimeRequest $overtimeRequest): RedirectResponse
     {
-        return Redirect::back()->with('success', __('Overtime request created successfully.'));
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Overtime request successfully created.'),
+        ]);
+
+        return Redirect::back();
     }
 
     public function action(Organisation $organisation, array $modelData): OvertimeRequest

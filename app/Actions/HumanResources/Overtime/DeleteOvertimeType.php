@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Actions\HumanResources\Overtime;
 
 use App\Actions\OrgAction;
@@ -34,6 +33,12 @@ class DeleteOvertimeType extends OrgAction
 
     public function htmlResponse(): RedirectResponse
     {
-        return Redirect::back()->with('success', __('Overtime type deleted successfully.'));
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Overtime type successfully deleted.'),
+        ]);
+
+        return Redirect::back();
     }
 }
