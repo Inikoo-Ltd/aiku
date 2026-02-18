@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Table from '@/Components/Table/Table.vue'
 import Modal from '@/Components/Utils/Modal.vue'
+import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Tag from '@/Components/Tag.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -231,9 +232,24 @@ const submitRequest = () => {
                     <Button type="warning" size="xs" :icon="faTimes">
                         {{ trans('Reject') }}
                     </Button>
-                    <Button type="negative" size="xs" :icon="faTrash">
-                        {{ trans('Delete') }}
-                    </Button>
+                    <ModalConfirmationDelete
+                        :routeDelete="{
+                            name: 'grp.org.hr.overtime_requests.delete',
+                            parameters: { ...route().params, overtimeRequest: item.id },
+                        }"
+                    >
+                        <template #default="{ changeModel, isLoadingdelete }">
+                            <Button
+                                type="negative"
+                                size="xs"
+                                :icon="faTrash"
+                                :loading="isLoadingdelete"
+                                @click="changeModel"
+                            >
+                                {{ trans('Delete') }}
+                            </Button>
+                        </template>
+                    </ModalConfirmationDelete>
                 </div>
             </template>
         </Table>

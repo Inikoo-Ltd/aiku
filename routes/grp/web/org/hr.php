@@ -47,6 +47,7 @@ use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use Illuminate\Support\Facades\Route;
+use App\Actions\HumanResources\Overtime\DeleteOvertimeRequest;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
@@ -134,7 +135,8 @@ Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.ed
 Route::get('/overtime', IndexOvertime::class)->name('overtime.index');
 Route::get('/overtime-types', IndexOvertimeTypes::class)->name('overtime_types.index');
 Route::post('/overtime-requests', StoreOvertimeRequest::class)->name('overtime_requests.store');
-Route::patch('/overtime-requests/{overtimeRequest}', UpdateOvertimeRequest::class)->name('overtime_requests.update');
+Route::patch('/overtime-requests/{overtimeRequest}/update', UpdateOvertimeRequest::class)->name('overtime_requests.update');
+Route::delete('/overtime-requests/{overtimeRequest}/delete', DeleteOvertimeRequest::class)->name('overtime_requests.delete');
 Route::post('/overtime-types/store', StoreOvertimeType::class)->name('overtime_types.store');
 Route::patch('/overtime-types/{overtimeType}', UpdateOvertimeType::class)->name('overtime_types.update');
 Route::delete('/overtime-types/{overtimeType}', DeleteOvertimeType::class)->name('overtime_types.delete');
