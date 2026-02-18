@@ -32,8 +32,8 @@ class WorkScheduleDay extends Model
     protected $casts = [
         'day_of_week'    => 'integer',
         'is_working_day' => 'boolean',
-        'start_time'     => 'datetime:H:i:s',
-        'end_time'       => 'datetime:H:i:s',
+        'start_time'     => 'string',
+        'end_time'       => 'string',
     ];
 
     public function workSchedule(): BelongsTo

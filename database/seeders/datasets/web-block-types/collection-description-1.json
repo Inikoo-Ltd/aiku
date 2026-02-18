@@ -1,0 +1,14 @@
+{
+	"slug": "collection-description-1",
+	"scope": "webpage",
+	"code": "collection-description-1",
+	"name": "collection-description-1",
+	"category": "",
+	"fixed": true,
+	"icon": ["fal", "folder"],
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
+	"data": {
+		"fieldValue": {}
+	}
+}

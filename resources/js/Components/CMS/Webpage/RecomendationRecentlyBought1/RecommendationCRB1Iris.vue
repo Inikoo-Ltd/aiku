@@ -86,7 +86,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div id="recommendation-customer-recently-bought-1-iris" class="w-full pb-6 px-4" :style="{
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'recommendation-customer-recently-bought-1-iris'"  component="recommendation-customer-recently-bought-1-iris"  class="w-full pb-6 px-4" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'

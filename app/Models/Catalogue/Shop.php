@@ -30,6 +30,7 @@ use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\EmailTemplate;
+use App\Models\Comms\ExternalEmailRecipient;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
@@ -98,6 +99,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Ordering\SalesChannel;
+use App\Models\HumanResources\WorkSchedule;
 
 /**
  * App\Models\Catalogue\Shop
@@ -790,5 +792,38 @@ class Shop extends Model implements HasMedia, Auditable
     public function emailTemplates(): HasMany
     {
         return $this->hasMany(EmailTemplate::class);
+    }
+
+    public function workSchedules(): MorphMany
+    {
+        return $this->morphMany(WorkSchedule::class, 'schedulable');
+    }
+
+    public function getEffectiveWorkSchedule(): array
+    {
+        $shopSchedule = $this->workSchedules()->where('is_active', true)->first();
+        if ($shopSchedule) {
+            return $this->formatSchedule($shopSchedule, $this->timezone->name);
+        }
+
+        $orgSchedule = $this->organisation->workSchedules()->where('is_active', true)->first();
+        if ($orgSchedule) {
+            return $this->formatSchedule($orgSchedule, $this->organisation->timezone->name);
+        }
+
+        return $this->formatSchedule(null, $this->timezone->name ?? $this->organisation->timezone->name);
+    }
+
+    protected function formatSchedule(?WorkSchedule $schedule, ?string $timezone): array
+    {
+        return [
+            'schedule' => $schedule,
+            'timezone' => $timezone ?? config('app.timezone'),
+        ];
+    }
+
+    public function externalEmailRecipients(): HasMany
+    {
+        return $this->hasMany(ExternalEmailRecipient::class);
     }
 }

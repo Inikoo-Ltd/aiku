@@ -32,6 +32,7 @@ import { twBreakPoint } from "@/Composables/useWindowSize"
 import { DeliveryNoteItem } from "@/types/delivery-note-item"
 import { RouteParams } from "@/types/route-params"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+import state from "pusher-js/src/core/http/state"
 
 library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes)
 
@@ -169,6 +170,11 @@ onMounted(() => {
             <Link :href="showOrgStockRoute(item)" class="secondaryLink">
             {{ item.org_stock_code }}
             </Link>
+        </template>
+
+        <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
+            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+
         </template>
 
         <template #cell(delivery_note_reference)="{ item }">

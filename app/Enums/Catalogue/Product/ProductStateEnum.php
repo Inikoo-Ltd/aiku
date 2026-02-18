@@ -57,14 +57,14 @@ enum ProductStateEnum: string
         if (!$bucket || $bucket == 'all') {
             return [
                 'in_process'    => __('In Process'),
-                'active'        => __('Can be Reordered'),
+                'active'        => __('Active'),
                 'discontinuing' => __('Discontinuing'),
                 'discontinued'  => __('Discontinued'),
             ];
         }
         if ($bucket == 'current') {
             return [
-                'active'        => __('Can be Reordered'),
+                'active'        => __('Active'),
                 'discontinuing' => __('Discontinuing'),
             ];
         }

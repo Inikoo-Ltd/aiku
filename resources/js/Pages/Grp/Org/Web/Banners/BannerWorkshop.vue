@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, usePage } from "@inertiajs/vue3"
+import { Head, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { ref, onBeforeMount, watch, onBeforeUnmount, computed, inject, shallowRef } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -10,7 +10,6 @@ import { debounce } from "lodash-es"
 import { useBannerHash } from "@/Composables/useBannerHash"
 import Publish from "@/Components/Utils/Publish.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -169,6 +168,8 @@ const compIsDataFirstTimeCreated = computed(() => {
 onBeforeUnmount(() => {
     autoSave.cancel()
 })
+
+console.log(props.banner?.compiled_layout)
 </script>
 
 <template>

@@ -11,31 +11,26 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateBestSellerProduct;
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateImages;
-use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateInvoiceIntervals;
-use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSales;
-use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Catalogue\ProductCategory;
 
 class HydrateFamilies
 {
     use WithHydrateCommand;
+
     public string $commandSignature = 'hydrate:families {organisations?*} {--S|shop= shop slug} {--s|slugs=} ';
 
     public function __construct()
     {
-        $this->model = ProductCategory::class;
+        $this->model       = ProductCategory::class;
         $this->restriction = 'family';
     }
 
     public function handle(ProductCategory $productCategory): void
     {
         FamilyHydrateProducts::run($productCategory);
-        ProductCategoryHydrateSales::run($productCategory);
         ProductCategoryHydrateImages::run($productCategory);
         FamilyHydrateBestSellerProduct::run($productCategory);
-        ProductCategoryHydrateInvoiceIntervals::run($productCategory->id);
-        ProductCategoryHydrateSalesIntervals::run($productCategory->id);
     }
 
 }

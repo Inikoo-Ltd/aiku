@@ -28,7 +28,7 @@ class ChatSessionResource extends JsonResource
             'priority' => $chatSession->priority->value,
             'shop_id'  => $chatSession->shop_id,
             'shop_name' => $chatSession->shop ? $chatSession->shop->name : null,
-            'contact_name' => $chatSession->webUser ? $chatSession->webUser->contact_name : null,
+            'contact_name' => $chatSession->webUser ? $chatSession->webUser->contact_name : $webUser?->customer?->contact_name ?? $chatSession->username ?? 'Guest',
         ];
     }
 

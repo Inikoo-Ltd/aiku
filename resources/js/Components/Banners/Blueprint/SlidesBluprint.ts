@@ -7,14 +7,34 @@ export default {
             icon: ["fal", "fa-image"],
             fields: [
                 {
+                    name: ["layout","backgroundType"],
+                    type: "radio",
+                    label: trans("Background Type"),
+                    value: ["layout","backgroundType"],
+                    useIn: ["desktop", "tablet", "mobile"],
+                    options: [
+                        { label: trans("Image"), value: "image" },
+                        { label: trans("Color"), value: "color" },
+                    ]
+                },
+                {
                     name: "image",
                     type: "slideBackground",
                     label: trans("Image"),
+                    useIn: ["desktop", "tablet", "mobile"],
                     value: ["image"],
+                },
+                {
+                    name: ["layout","background"],
+                    type: "color-background",
+                    label: trans("Background Color"),
+                    useIn: ["desktop", "tablet", "mobile"],
+                    value: ["layout","background"],
                 },
                 {
                     name: ["layout", "link"],
                     type: "text",
+                    information: trans('Link to visit when the slide clicked'),
                     label: trans("Link"),
                     value: ["layout", "link"],
                     placeholder: "https://www.example.com",
@@ -28,8 +48,8 @@ export default {
                 {
                     name: ["layout", "corners"],
                     type: "corners",
-                    label: null,
-                    value: null,
+                    label: trans("Corners"),
+                    value: ["layout", "corners"],
                     optionType: ["cornerText", "linkButton", "ribbon", 'clear'],
                 },
             ],
@@ -66,24 +86,6 @@ export default {
                     type: "selectFont",
                     label: trans("Font Family"),
                     value: ["layout", "centralStage", "style", "fontFamily"],
-                    options: [
-                        { "label": "Arial", "value": "Arial, sans-serif", "slug": "arial" },
-                        { "label": "Avenir", "value": "Avenir, sans-serif", "slug": "avenir" },
-                        { "label": "Bunya", "value": "Bunya, sans-serif", "slug": "bunya" },
-                        { "label": "Cardinal", "value": "Cardinal, sans-serif", "slug": "cardinal" },
-                        { "label": "Comfortaa", "value": "Comfortaa, sans-serif", "slug": "comfortaa" },
-                        { "label": "Lobster", "value": "Lobster, cursive", "slug": "lobster" },
-                        { "label": "Laila", "value": "Laila, sans-serif", "slug": "laila" },
-                        { "label": "Port Lligat Slab", "value": "Port Lligat Slab, serif", "slug": "port-lligat-slab" },
-                        { "label": "Playfair", "value": "Playfair, serif", "slug": "playfair" },
-                        { "label": "Raleway", "value": "Raleway, sans-serif", "slug": "raleway" },
-                        { "label": "Roman Melikhov", "value": "Roman Melikhov, serif", "slug": "roman-melikhov" },
-                        { "label": "Shoemaker", "value": "Shoemaker, serif", "slug": "shoemaker" },
-                        { "label": "Source Sans Pro", "value": "Source Sans Pro, sans-serif", "slug": "source-sans-pro" },
-                        { "label": "Quicksand", "value": "Quicksand, sans-serif", "slug": "quicksand" },
-                        { "label": "Times New Roman", "value": "Times New Roman, serif", "slug": "times-new-roman" },
-                        { "label": "Yatra One", "value": "Yatra One, serif", "slug": "yatra-one" }
-                    ],
                 },
                 {
                     name: ["layout", "centralStage", "textAlign"],

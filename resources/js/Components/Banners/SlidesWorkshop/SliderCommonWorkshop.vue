@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, inject } from "vue"
 import { get, set, cloneDeep } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
 import { getComponent } from "@/Composables/getBannerFields"
@@ -23,33 +23,53 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(["update:modelValue"])
-
-const current = ref(0)
-
+const screenView = inject('screenView')
+const current = ref(0);
 const setCurrent = (key: number) => {
   current.value = key
 }
 
-
-const getValue = (fieldName: string | string[]) => {
-  if (Array.isArray(fieldName)) {
-    return get(props.modelValue, fieldName)
-  }
-  return props.modelValue?.[fieldName]
+const getValue = (fieldData: string | string[]) => {
+    const rawVal = get(props.modelValue, fieldData.name)
+    const view = screenView.value!
+    return rawVal?.[view] ?? rawVal?.desktop ?? rawVal ?? null
 }
 
 
-const setValue = (fieldName: string | string[], value: any) => {
-  const cloned = cloneDeep(props.modelValue || {})
 
-  if (Array.isArray(fieldName)) {
-    set(cloned, fieldName, value)
-  } else {
-    cloned[fieldName] = value
-  }
+const setValue = (fieldData: any, value: any) => {
+    const cloned = cloneDeep(props.modelValue || {})
+    const fieldName = fieldData.name
 
-  emit("update:modelValue", cloned)
+    // responsive field (desktop/tablet/mobile)
+    if (Array.isArray(fieldData.useIn) && fieldData.useIn.length > 0) {
+        const responsiveValue = get(cloned, fieldName) || {}
+
+        set(cloned, fieldName, {
+            ...responsiveValue,
+            [screenView.value]: value
+        })
+
+        console.log('cloned after set:', cloned);
+
+        emit("update:modelValue", cloned)
+        return
+    }
+
+    // nested path array
+    if (Array.isArray(fieldName)) {
+        set(cloned, fieldName, value)
+    } else {
+        cloned[fieldName] = value
+    }
+
+    emit("update:modelValue", cloned)
 }
+
+defineExpose({
+    current,
+});
+
 
 </script>
 
@@ -94,8 +114,8 @@ const setValue = (fieldName: string | string[], value: any) => {
                         <div class="relative flex-grow">
                             <component 
                                 :is="getComponent(fieldData['type'])" 
-                                :model-value="getValue(fieldData.name)"
-                                @update:modelValue="setValue(fieldData.name, $event)"
+                                :model-value="getValue(fieldData)"
+                                @update:modelValue="setValue(fieldData, $event)"
                                 :data="modelValue"
                                 :fieldName="fieldData.name" 
                                 :fieldData="fieldData" 

@@ -23,7 +23,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-  <div id="disclosure">
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'disclosure'"  component="disclosure">
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType)

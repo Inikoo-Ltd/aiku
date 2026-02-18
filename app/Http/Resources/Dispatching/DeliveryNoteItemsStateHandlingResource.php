@@ -37,6 +37,11 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $packedIn = $this->packed_in;
+        if ($packedIn == null) {
+            $packedIn = 1;
+        }
+
         $requiredFactionalData =
             riseDivisor(
                 divideWithRemainder(
@@ -102,6 +107,13 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
+        $packedInMessage = '';
+        if ($packedIn == 1) {
+            $packedInMessage = '('.__('Individually packed').')';
+        } elseif ($packedIn > 1) {
+            $packedInMessage = '('.__('Pack of').": $packedIn".")";
+        }
+
         return [
             'id'                           => $this->id,
             'is_picked'                    => $isPicked,
@@ -128,6 +140,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'warehouse_area'               => $warehouseArea,
             'batch_code'                   => $this->batch_code,
             'expiry_date'                  => $this->expiry_date,
+            'packed_in_message'            => $packedInMessage,
 
 
             'upsert_picking_route' => [

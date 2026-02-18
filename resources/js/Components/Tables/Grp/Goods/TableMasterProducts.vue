@@ -331,8 +331,6 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </Link>
         </template>
 
-
-
         <template #cell(variant_slug)="{ item: masterProduct }">
             <Link v-if="masterProduct.variant_slug" :href="masterVarinatRoute(masterProduct) as string"
                 class="inline-block" v-tooltip="masterProduct.is_variant_leader
@@ -353,6 +351,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </span>
                 </span>
             </Link>
+            <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
+               rounded-md text-medium font-medium
+               border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
+                -
+            </span>
         </template>
 
         <template #cell(name)="{ item: masterProduct }">

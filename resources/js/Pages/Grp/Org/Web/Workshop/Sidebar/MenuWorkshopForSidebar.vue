@@ -13,6 +13,8 @@ import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import SideMenuWorkshop from "./SideMenuWorkshopForSidebar.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { trans } from "laravel-vue-i18n"
 import {
 	faChevronRight,
 	faSignOutAlt,
@@ -24,8 +26,8 @@ import {
 	faBars,
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
-import { faCommentsDollar } from "@fal"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
+import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 
 library.add(
 	faChevronRight,
@@ -112,6 +114,61 @@ watch(currentView, (newValue) => {
 })
 
 
+// Section: Save (auto)
+const statusSave = ref<null | 'loading' | 'success' | 'error'>(null)
+let statusTimeout: ReturnType<typeof setTimeout> | null = null
+const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
+    statusSave.value = newStatus
+    if (statusTimeout) clearTimeout(statusTimeout)
+    if (newStatus === 'success' || newStatus === 'error') {
+        statusTimeout = setTimeout(() => {
+            statusSave.value = null
+        }, 3000)
+    }
+}
+
+let controller: AbortController | null = null
+const autoSave = async (value: any) => {
+	console.log("Auto saving parents...", value)
+	if (controller) {
+		controller.abort()
+	}
+
+	controller = new AbortController()
+
+	setStatus('loading')
+	try {
+		const response = await axios.patch(
+			route(props.autosaveRoute.name, props.autosaveRoute.parameters),
+			{ layout: value },
+			{ signal: controller.signal }
+		)
+		setStatus('success')
+		Navigation.value = {...value}
+		sendToIframe({ key: "reload", value: {} })
+	} catch (error: any) {
+		if (
+			axios.isCancel(error) ||
+			error.name === "CanceledError" ||
+			error.message === "canceled"
+		) {
+			console.log("Autosave request cancelled")
+			return
+		}
+
+		notify({
+			title: "Something went wrong.",
+			text: error.message,
+			type: "error",
+		})
+		setStatus('error')
+	} finally {
+		if (controller && !controller.signal.aborted) {
+			controller = null
+		}
+	}
+}
+
 </script>
 
 <template>
@@ -127,6 +184,19 @@ watch(currentView, (newValue) => {
 				<FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
 			</div>
 		</template -->
+
+		<template #afterTitle2>
+            <ConditionIcon v-if="statusSave" :state="statusSave" class="text-xl" />
+            <Button
+                v-else
+                @click="() => autoSave(data?.sidebar)"
+                type="tertiary"
+                :label="trans('Save')"
+                icon="fas fa-save"
+                size="xs"
+                :loading="statusSave === 'loading'"
+            />
+        </template>
 	</PageHeading>
 
 	<div class="h-[85vh] grid grid-cols-12 gap-4 p-3">

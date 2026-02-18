@@ -212,6 +212,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'data'                 => 'array',
         'status'               => 'boolean',
         'variant_is_visible'   => 'boolean',
+
         'fetched_at'           => 'datetime',
         'last_fetched_at'      => 'datetime',
         'discontinued_at'      => 'datetime',

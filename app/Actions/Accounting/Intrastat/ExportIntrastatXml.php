@@ -3,7 +3,7 @@
 namespace App\Actions\Accounting\Intrastat;
 
 use App\Actions\OrgAction;
-use App\Models\Accounting\IntrastatExportMetrics;
+use App\Models\Accounting\IntrastatExportTimeSeriesRecord;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
@@ -22,8 +22,10 @@ class ExportIntrastatXml extends OrgAction
 
     public function handle(Organisation $organisation, array $filters): string
     {
-        $query = IntrastatExportMetrics::where('organisation_id', $organisation->id)
-            ->with(['country', 'taxCategory']);
+        $query = IntrastatExportTimeSeriesRecord::where('intrastat_export_time_series_records.organisation_id', $organisation->id)
+            ->where('intrastat_export_time_series_records.frequency', 'D')
+            ->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id')
+            ->with(['intrastatExportTimeSeries.country', 'intrastatExportTimeSeries.taxCategory']);
 
         if (!empty($filters['between']['date'])) {
             $raw = $filters['between']['date'];
@@ -32,7 +34,7 @@ class ExportIntrastatXml extends OrgAction
             $start = Carbon::createFromFormat('Ymd', $start)->format('Y-m-d');
             $end   = Carbon::createFromFormat('Ymd', $end)->format('Y-m-d');
 
-            $query->whereBetween('date', [$start, $end]);
+            $query->whereBetween('intrastat_export_time_series_records.from', [$start, $end]);
         }
 
         if (!empty($filters['elements']['vat_status'])) {
@@ -42,21 +44,23 @@ class ExportIntrastatXml extends OrgAction
 
             if (count($vatStatuses) === 1) {
                 if (in_array('with_vat', $vatStatuses)) {
-                    $query->whereHas('taxCategory', function ($q) {
+                    $query->whereHas('intrastatExportTimeSeries.taxCategory', function ($q) {
                         $q->where('rate', '>', 0.0);
                     });
                 } elseif (in_array('without_vat', $vatStatuses)) {
                     $query->where(function ($q) {
-                        $q->whereHas('taxCategory', function ($subQuery) {
+                        $q->whereHas('intrastatExportTimeSeries.taxCategory', function ($subQuery) {
                             $subQuery->where('rate', '=', 0.0);
                         })
-                        ->orWhereNull('tax_category_id');
+                        ->orWhereNull('intrastat_export_time_series.tax_category_id');
                     });
                 }
             }
         }
 
-        $metrics = $query->orderBy('date')->get();
+        $metrics = $query->select('intrastat_export_time_series_records.*')
+            ->orderBy('intrastat_export_time_series_records.from')
+            ->get();
 
         if (!empty($filters['between']['date'])) {
             [$start, $end] = explode('-', $filters['between']['date']);
@@ -74,8 +78,8 @@ class ExportIntrastatXml extends OrgAction
 
         foreach ($metrics as $metric) {
             $item = $xml->addChild('Item');
-            $item->addChild('TariffCode', htmlspecialchars($metric->tariff_code));
-            $item->addChild('DestinationCountry', $metric->country->code);
+            $item->addChild('TariffCode', htmlspecialchars($metric->intrastatExportTimeSeries->tariff_code));
+            $item->addChild('DestinationCountry', $metric->intrastatExportTimeSeries->country->code);
 
             $qty = $item->addChild('Quantity', number_format($metric->quantity, 2, '.', ''));
             $qty->addAttribute('unit', 'pieces');
@@ -86,11 +90,11 @@ class ExportIntrastatXml extends OrgAction
             $weight = $item->addChild('Weight', number_format($metric->weight / 1000, 2, '.', ''));
             $weight->addAttribute('unit', 'kg');
 
-            if ($metric->taxCategory) {
-                $item->addChild('TaxCategory', htmlspecialchars($metric->taxCategory->name));
+            if ($metric->intrastatExportTimeSeries->taxCategory) {
+                $item->addChild('TaxCategory', htmlspecialchars($metric->intrastatExportTimeSeries->taxCategory->name));
             }
 
-            $item->addChild('Date', $metric->date->format('Y-m-d'));
+            $item->addChild('Date', $metric->from->format('Y-m-d'));
         }
 
         $dom = new \DOMDocument('1.0', 'UTF-8');

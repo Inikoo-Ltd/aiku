@@ -63,7 +63,7 @@ const onSubmitSubscribe = async () => {
 
 <template>
 	<div
-		class="flex flex-wrap justify-between"
+		class="flex flex-wrap justify-between" :id="fieldValue?.id ? fieldValue?.id  : 'user-subscribe'"  component="user-subscribe"
 		:style="getStyles(fieldValue.container?.properties, screenType)">
 		<div class="mx-auto px-10 md:px-8 py-14">
 			<div class="mt-0 xl:mt-0 w-fit mx-auto">

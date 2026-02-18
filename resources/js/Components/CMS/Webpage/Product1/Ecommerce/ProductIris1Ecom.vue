@@ -190,7 +190,7 @@ onMounted(async () => {
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'" id="product-iris-1-ecom"
+    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'"  component="product-ecom-1"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -292,7 +292,7 @@ onMounted(async () => {
                 <!-- Section: Member/Non Member label, Profit -->
                 <div class="flex justify-between mt-1" v-if="layout?.iris?.is_logged_in">
                     <template v-if="product.offers_data?.number_offers > 0">
-                        <div class="flex flex-col w-fit offers">
+                        <div class="flex flex-col w-1/2 offers">
                             <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
                                 <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" :offer="bestOffer" />
                                 <NonMemberPriceLabel v-else :product />
@@ -346,24 +346,25 @@ onMounted(async () => {
                 
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
-                    <div v-if="layout?.iris?.is_logged_in && product.status !== 'coming-soon'" class="w-full">
-                        <EcomAddToBasketv2 
-                            v-if="product.stock"  
-                            v-model:product="product"  
-                            :customerData="customerData"
-                            :key="keyCustomer" 
-                            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" 
-                        />
+
+                    <!-- ONLY show when NOT coming soon -->
+                    <div v-if="product.status !== 'coming-soon' && layout?.iris?.is_logged_in" class="w-full">
+                        <EcomAddToBasketv2 v-if="product.stock" v-model:product="product" :customerData="customerData"
+                            :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+
                         <div v-else>
-                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled full />
+                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled
+                                full />
                         </div>
                     </div>
 
-                    <LinkIris v-else :href="urlLoginWithRedirect()"
+                    <!-- LOGIN BUTTON (only if not coming soon) -->
+                    <LinkIris v-else-if="product.status !== 'coming-soon'" :href="urlLoginWithRedirect()"
                         class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
+
                 </div>
 
                 
@@ -725,6 +726,16 @@ onMounted(async () => {
     rounded-sm px-1 py-0.5 text-sm
     sm:px-1.5 sm:py-1 sm:text-sm
     md:px-2 md:py-1;
+}
+
+.offers :deep(.offer-trigger-label) {
+  @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
+  border-color:var(--theme-color-4) !important;
+  color: var(--theme-color-4) !important;
+}
+
+.offers :deep(.member-badge) {
+    @apply bg-gray-400 rounded px-2 py-0.5 text-xs md:text-sm text-white w-fit;
 }
 
 </style>

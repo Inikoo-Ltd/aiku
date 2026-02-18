@@ -174,7 +174,15 @@ class ShowOrgStock extends OrgAction
 
 
             'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
-            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit', 'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit', 'maya.org.warehouses.show.inventory.org_stocks.edit' =>
+            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show',
+            'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit',
+            'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit',
+            'maya.org.warehouses.show.inventory.org_stocks.edit' =>
             array_merge(
                 (new ShowInventoryDashboard())->getBreadcrumbs($routeParameters),
                 $headCrumb(

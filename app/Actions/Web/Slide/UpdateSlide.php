@@ -17,7 +17,7 @@ class UpdateSlide
 
     public function handle(Slide $slide, array $modelData): Slide
     {
-        $this->update($slide, $modelData, ['layout', 'image_id', 'mobile_image_id', 'tablet_image_id']);
+        $this->update($slide, $modelData);
 
         return $slide;
     }

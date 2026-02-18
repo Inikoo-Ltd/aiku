@@ -15,7 +15,6 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SubDepartmentHydrateProducts implements ShouldBeUnique
@@ -31,7 +30,6 @@ class SubDepartmentHydrateProducts implements ShouldBeUnique
 
     public function handle(ProductCategory $subDepartment): void
     {
-
         if ($subDepartment->type !== ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             return;
         }
@@ -53,13 +51,19 @@ class SubDepartmentHydrateProducts implements ShouldBeUnique
             )
         );
 
-        $stats['number_current_products'] = Arr::get($stats, 'number_products_state_active', 0) +
-            Arr::get($stats, 'number_products_state_discontinuing', 0);
+        $numberCurrentProductsActiveForSale = Product::where('sub_department_id', $subDepartment->id)->where('is_for_sale', true)
+            ->where('state', ProductStateEnum::ACTIVE)
+            ->count();
+        $numberCurrentProductsDiscontinuingForSale = Product::where('sub_department_id', $subDepartment->id)->where('is_for_sale', true)
+            ->where('state', ProductStateEnum::DISCONTINUING)
+            ->count();
+
+        $stats['number_current_products'] = $numberCurrentProductsActiveForSale + $numberCurrentProductsDiscontinuingForSale;
 
         UpdateProductCategory::make()->action(
             $subDepartment,
             [
-                'state' => $this->getProductCategoryState($stats)
+                'state' => $this->getProductCategoryState($stats, $numberCurrentProductsActiveForSale, $numberCurrentProductsDiscontinuingForSale)
             ]
         );
 
