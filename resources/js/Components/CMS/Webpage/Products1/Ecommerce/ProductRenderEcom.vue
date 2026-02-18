@@ -171,7 +171,7 @@ defineExpose({
                             class="hidden md:block relative w-full h-full overflow-hidden group"
                         >
                             <div 
-                                class="flex w-full h-full transition-transform duration-700 ease-out"
+                                class="flex w-full h-full"
                                 :class="images.length > 1 ? 'group-hover:-translate-x-full' : ''"
                             >
 
