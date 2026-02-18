@@ -721,6 +721,7 @@ const onChangeInsurance = async (val: boolean) => {
                             full
                             :size="screenType === 'mobile' ? 'xl' : undefined"
                             :key="screenType + 'pay_with_balance'"
+                            :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
                         >
                         </ButtonWithLink>
                         <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
@@ -745,7 +746,8 @@ const onChangeInsurance = async (val: boolean) => {
                         full
                         :size="screenType === 'mobile' ? 'xl' : undefined"
                         :key="screenType + 'go_to_checkout'"
-                        />
+                        :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                    />
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
                     <div class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
