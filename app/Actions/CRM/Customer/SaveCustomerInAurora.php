@@ -46,7 +46,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
 
         $shopSourceId = explode(':', $customer->shop->source_id);
 
-        if(!$shopSourceId){
+        if (!$shopSourceId) {
             return;
         }
 

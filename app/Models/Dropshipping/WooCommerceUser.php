@@ -44,7 +44,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $error_response
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DebugWebhooks> $debugWebhooks
  * @property-read \App\Models\SysAdmin\Group $group
