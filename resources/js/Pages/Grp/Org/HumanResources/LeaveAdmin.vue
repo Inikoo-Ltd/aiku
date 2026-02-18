@@ -253,7 +253,7 @@ const submitEdit = () => {
 			<template #cell(actions)="{ item: leave }">
 				<div v-if="leave.status === 'pending'" class="flex gap-2">
 					<Button
-						v-if="leave.type === 'medical'"
+						v-if="leave.type === 'medical' && (!leave.attachments || leave.attachments.length === 0)"
 						@click="openEditModal(leave)"
 						:label="trans('Edit')"
 						size="xs"
