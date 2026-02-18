@@ -40,13 +40,12 @@ class PdfDeliveryNote extends OrgAction
             'customer'        => $deliveryNote->customer,
             'shopAddress'     => $shop->address->formatted_address,
             'deliveryAddress' => $deliveryNote->deliveryAddress->formatted_address,
-
-            'items' => $deliveryNote->deliveryNoteItems,
+            'items'           => $deliveryNote->deliveryNoteItems,
         ]);
 
-        return response($pdf->stream($filename . '.pdf'), 200)
+        return response($pdf->stream($filename.'.pdf'), 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
+            ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
     }
 
 

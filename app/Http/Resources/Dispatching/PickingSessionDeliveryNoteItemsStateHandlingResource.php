@@ -48,6 +48,11 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $packedIn = $this->packed_in;
+        if ($packedIn == null) {
+            $packedIn = 1;
+        }
+
         $requiredFactionalData = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors($this->quantity_required)
@@ -113,6 +118,12 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
+        $packedInMessage = '';
+        if ($packedIn == 1) {
+            $packedInMessage = '('.__('Individually packed').')';
+        } elseif ($packedIn > 1) {
+            $packedInMessage = '('.__('Pack of').": $packedIn".")";
+        }
 
         return [
             'id'                                => $this->id,
@@ -150,6 +161,8 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'expiry_date'                       => $this->expiry_date,
 
             'warehouse_area'       => $warehouseArea,
+            'packed_in_message'            => $packedInMessage,
+
             'upsert_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',
                 'parameters' => [
