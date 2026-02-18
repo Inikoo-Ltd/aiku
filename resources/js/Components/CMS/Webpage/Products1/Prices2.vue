@@ -96,12 +96,11 @@ const _popoverProfit = ref(null)
 </script>
 
 <template>
-    <div
-        class="font-sans border-t xborder-b border-gray-200 mt-1 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm break-safe">
+    <div class="font-sans border-t xborder-b border-gray-200 mt-1 p-1 px-0 mb-1 gap-1 tabular-nums text-sm break-safe">
         <div>
             <div class="flex justify-between">
                 <div>
-                    <div class="text-xs">
+                    <div class="text-xs mb-1">
                         {{ trans("Price") }}
                         <span class="text-gray-500 text-xxs">({{ trans("Excl. Vat") }})</span>
                     </div>
@@ -121,62 +120,80 @@ const _popoverProfit = ref(null)
                     <div v-else class="font-bold text-sm leading-4 break-words">
                         {{ locale.currencyFormat(currency?.code, product.price) }}
 
-                        <span v-if="product.price_per_unit > 0" class="block">
-                            ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/
+                        <span v-if="product.price_per_unit > 0" class="text-xs">
+                            <!--  ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }} -->
+                            ({{ product.price_per_unit }}/
                             <span class="font-normal">{{ product.unit }}</span>)
                         </span>
                     </div>
                 </div>
 
-                <div v-if="product?.rrp_per_unit > 0"
+                <!-- <div v-if="product?.rrp_per_unit > 0"
                     v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"
                     class="flex flex-col text-right break-safe">
                     <div class="text-xs">{{ trans("RRP") }}:</div>
                     <div class="font-bold text-xs break-safe">
                         {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
-                        <!-- <span class="font-normal">{{ product.unit}}</span> -->
+                        <span class="font-normal">{{ product.unit}}</span>
                     </div>
-                </div>
+                </div> -->
             </div>
 
             <!-- Price: Gold Member -->
-            <div v-if="product.discounted_price" class="text-primary font-bold text-sm break-safe">
+            <div v-if="product.discounted_price" class="text-primary font-bold text-sm break-safe mt-2">
                 <span v-if="product.units == 1">
                     {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/
                     <span class="font-normal">{{ product.unit }}</span>
                 </span>
                 <span v-else>
                     {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
-                    ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/
-                    <span class="font-normal">{{ product.unit }}</span>)
+                    <span class="text-xs">
+                        <!-- ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }} -->
+                        ({{ product.discounted_price_per_unit }}/
+                        <span class="font-normal">{{ product.unit }}</span>)
+                    </span>
                 </span>
             </div>
+
             <div v-else class="h-5"></div>
 
             <!-- Section: Profit + Offer -->
-            <NonMemberPriceLabel
-                v-if="!layout?.user?.gr_data?.customer_is_gr && product.product_offers_data?.number_offers > 0"
-                :product />
+            <div class="mt-1">
+                <NonMemberPriceLabel
+                    v-if="!layout?.user?.gr_data?.customer_is_gr && product.product_offers_data?.number_offers > 0"
+                    :product />
+            </div>
 
-            <div class="mt-0 flex justify-between gap-x-2">
-                <template v-if="product.product_offers_data?.number_offers > 0">
-                    <div v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
-                        class="flex flex-col w-fit break-safe discount">
-                        <!-- member only -->
-                        <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr"
-                            :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)" />
 
-                        <DiscountByType
-                            v-if="(product.stock && basketButton && !product.is_coming_soon && !layout?.user?.gr_data?.customer_is_gr)"
-                            :offers_data="product?.product_offers_data" :template="'products_triggers_label'" />
-                    </div>
-                    <div v-else />
-                </template>
+            <div class="mt-2 flex justify-between gap-x-2">
+                <div class="flex flex-col justify-end">
+                    <template v-if="product.product_offers_data?.number_offers > 0">
+                        <div v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
+                            class="flex flex-col w-fit break-safe discount">
+                            <!-- member only -->
+                            <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr"
+                                :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)" />
 
-                <div v-else />
+                            <DiscountByType
+                                v-if="(product.stock && basketButton && !product.is_coming_soon && !layout?.user?.gr_data?.customer_is_gr)"
+                                :offers_data="product?.product_offers_data" :template="'products_triggers_label'" />
+                        </div>
+                    </template>
+                </div>
+
 
                 <!-- Profit -->
                 <div class="flex justify-end text-right flex-col text-xs break-safe">
+
+                    <div v-if="product?.rrp_per_unit > 0"
+                        v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"
+                        class="flex flex-col text-right break-safe mb-2">
+                        <div class="text-xs">{{ trans("RRP") }}:</div>
+                        <div class="font-bold text-xs break-safe">
+                            {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
+                        </div>
+                    </div>
+
                     <div class="whitespace-nowrap break-safe">
                         <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
                             @mouseleave="_popoverProfit?.hide" class="ml-1 cursor-pointer opacity-60 hover:opacity-100">
@@ -185,11 +202,11 @@ const _popoverProfit = ref(null)
                         {{ trans("Profit") }}:
                     </div>
 
-                    <div class="font-bold text-green-700 text-xxs break-safe">
+                    <div class="font-bold text-green-700 text-xs break-safe">
                         ({{ layout?.user?.gr_data?.customer_is_gr ? product?.discounted_margin : product?.margin }})
                     </div>
 
-                    <Popover ref="_popoverProfit"   :style="{ width: '385px' }" class="py-1 px-2 text-xxs">
+                    <Popover ref="_popoverProfit" :style="{ width: '385px' }" class="py-1 px-2 text-xxs">
                         <ProfitCalculationList :product="product" />
                     </Popover>
                 </div>
