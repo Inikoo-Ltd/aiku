@@ -13,14 +13,13 @@ use App\Models\Web\Webpage;
 trait WithGetWebpageWebBlocks
 {
     use WithFillIrisWebBlocks;
+
     public function getWebBlocks(Webpage $webpage, array $webBlocks): array
     {
         $parsedWebBlocks = [];
 
         foreach ($webBlocks as $key => $webBlock) {
-
-            $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, false);
-
+            $parsedWebBlocks = $this->fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, false, false);
         }
 
         return $parsedWebBlocks;

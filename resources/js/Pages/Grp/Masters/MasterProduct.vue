@@ -5,7 +5,7 @@ import {
     faCube, faFileInvoice, faFolder, faFolderOpen, faAtom, faFolderTree,
     faChartLine, faShoppingCart, faStickyNote, faMoneyBillWave
 } from "@fal"
-import { faCheckCircle, faSave } from "@fas"
+import { faCheckCircle, faSave, faShapes, faStar } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -56,6 +56,8 @@ const props = defineProps<{
     tradeUnits : {}
     is_single_trade_unit?: boolean
     trade_unit_slug?: string
+    masterVariant?: {}
+    is_variant_leader?: boolean
 }>()
 
 const layout = inject('layout', {});
@@ -160,6 +162,19 @@ function refreshModalData() {
     disableClone.value = tableData.value.data.length === 0
 }
 
+const routeVariant = () => {
+    return route(
+        'grp.masters.master_shops.show.master_families.master_variants.show',
+        {
+            masterShop: (route().params as RouteParams).masterShop,
+            masterFamily: props.masterAsset.master_family.slug,
+            masterVariant: props.masterVariant.slug
+        }
+    )
+}
+
+console.log(props)
+
 watch(() => currentTab.value, (value) => {
     if (value === "products") {
         refreshModalData()
@@ -191,12 +206,16 @@ onMounted(() => {
                     </div>
                 </div>
             </component>
-
             <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
                 <FontAwesomeIcon
                     icon="fal fa-atom"
                 />
             </Link>
+            <!-- TODO PLEASE CHANGE TO HAVE LINK TO MASTER VARIANT -->
+               <Link v-if="masterVariant" :href="routeVariant()" v-tooltip="trans('Go to Master Variant')">
+                   <FontAwesomeIcon  :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
+               </Link>
+         
         </template>
 
         <template #button-assign="{ action }">

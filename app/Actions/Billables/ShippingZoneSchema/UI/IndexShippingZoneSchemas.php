@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ShippingZoneSchemasResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Billables\ShippingZoneSchema;
@@ -23,7 +22,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -116,7 +114,7 @@ class IndexShippingZoneSchemas extends OrgAction
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'zones', label: __('zones'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'first_used', label: __('first used'), canBeHidden: false);
@@ -125,11 +123,6 @@ class IndexShippingZoneSchemas extends OrgAction
             $table->column(key: 'number_orders', label: __('orders'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
         };
-    }
-
-    public function jsonResponse(LengthAwarePaginator $shippingZoneSchemas): AnonymousResourceCollection
-    {
-        return ProductsResource::collection($shippingZoneSchemas);
     }
 
     public function htmlResponse(LengthAwarePaginator $shippingZoneSchemas, ActionRequest $request): Response
@@ -144,7 +137,7 @@ class IndexShippingZoneSchemas extends OrgAction
         $afterTitle = null;
         $iconRight  = null;
 
-        $actions =  [
+        $actions = [
             [
                 'type'    => 'button',
                 'style'   => 'create',
@@ -158,11 +151,11 @@ class IndexShippingZoneSchemas extends OrgAction
         ];
 
         if ($this->parent instanceof Shop) {
-
             $subNavigation = $this->getShippingZoneSchemaSubNavigation($this->parent);
         } elseif ($this->parent instanceof Group) {
             $actions = null;
         }
+
         return Inertia::render(
             'Org/Catalogue/Shippings',
             [
@@ -180,7 +173,6 @@ class IndexShippingZoneSchemas extends OrgAction
                     'subNavigation' => $subNavigation,
                 ]),
                 'data'        => ShippingZoneSchemasResource::collection($shippingZoneSchemas),
-
 
 
             ]

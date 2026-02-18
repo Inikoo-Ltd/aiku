@@ -22,6 +22,7 @@ class AssetTimeSeriesResource extends JsonResource
         return [
             'id' => $this->id,
             'period' => $this->formatPeriod($this->from, $this->to, $frequencyEnum),
+            'filter_date' => $this->formatFilterDate($this->from, $this->to),
             'sales' => (float) $this->sales,
             'invoices' => (int) $this->invoices,
             'refunds' => (int) $this->refunds,
@@ -42,5 +43,14 @@ class AssetTimeSeriesResource extends JsonResource
             TimeSeriesFrequencyEnum::QUARTERLY => 'Q' . $from->quarter . ' ' . $from->format('Y'),
             TimeSeriesFrequencyEnum::YEARLY => $from->format('Y'),
         };
+    }
+
+    protected function formatFilterDate(?Carbon $from, ?Carbon $to): string
+    {
+        if (!$from || !$to) {
+            return '-';
+        }
+
+        return $from->format('Ymd') . '-' . $to->format('Ymd');
     }
 }

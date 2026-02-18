@@ -19,6 +19,7 @@ import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.v
 import { faTimes } from "@fal"
 import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { setColorStyleRoot } from "@/Composables/useApp"
 library.add(faTimes, faSearch)
 
 defineOptions({ layout: WebPreview })
@@ -81,6 +82,7 @@ onMounted(() => {
     layout.app.theme = props?.layout?.color,
     layout.app.webpage_layout = props?.layout
     updateIrisLayout(isPreviewLoggedIn.value)
+    setColorStyleRoot(props.layout?.color)
     window.addEventListener('message', (event) => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
         if (event.data.key === 'isPreviewMode') isPreviewMode.value = event.data.value

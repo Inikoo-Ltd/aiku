@@ -59,6 +59,8 @@ class StorePortfolio extends OrgAction
             $rrp = $rrp + $addedValue;
         }
 
+        $customerProductName = Arr::get($modelData, 'customer_product_name', $item->name);
+
         data_set($modelData, 'last_added_at', now(), overwrite: false);
         data_set($modelData, 'group_id', $customerSalesChannel->group_id);
         data_set($modelData, 'organisation_id', $customerSalesChannel->organisation_id);
@@ -70,7 +72,7 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'item_type', class_basename($item));
         data_set($modelData, 'item_code', $item instanceof StoredItem ? $item->reference : $item->code);
         data_set($modelData, 'item_name', $item->name);
-        data_set($modelData, 'customer_product_name', $item->name);
+        data_set($modelData, 'customer_product_name', $customerProductName);
         data_set($modelData, 'customer_description', $item->description);
         data_set($modelData, 'selling_price', $rrp);
         data_set($modelData, 'customer_price', $rrp);

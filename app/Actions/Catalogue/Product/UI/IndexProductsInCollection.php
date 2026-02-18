@@ -72,7 +72,6 @@ class IndexProductsInCollection extends OrgAction
         $queryBuilder->join('collection_has_models', function ($join) {
             $join->on('products.id', '=', 'collection_has_models.model_id')
                 ->where('collection_has_models.model_type', '=', 'Product');
-
         });
         $queryBuilder->where('collection_has_models.collection_id', '=', $collection->id);
 
@@ -89,6 +88,7 @@ class IndexProductsInCollection extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
+                'products.is_for_sale',
                 'products.web_images',
                 'available_quantity',
                 'units',
@@ -126,10 +126,8 @@ class IndexProductsInCollection extends OrgAction
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-
         };
     }
-
 
 
 }

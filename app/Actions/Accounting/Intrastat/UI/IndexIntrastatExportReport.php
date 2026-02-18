@@ -10,10 +10,9 @@ namespace App\Actions\Accounting\Intrastat\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Reports\IndexReports;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
-use App\Http\Resources\Accounting\IntrastatExportMetricsResource;
+use App\Http\Resources\Accounting\IntrastatExportTimeSeriesRecordResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Accounting\IntrastatExportMetrics;
+use App\Models\Accounting\IntrastatExportTimeSeriesRecord;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -25,6 +24,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexIntrastatExportReport extends OrgAction
 {
@@ -38,21 +38,27 @@ class IndexIntrastatExportReport extends OrgAction
 
     protected function getElementGroups(Organisation $organisation, ?array $dateFilter = null): array
     {
-        $ordersQuery = IntrastatExportMetrics::where('organisation_id', $organisation->id)
-            ->where('delivery_note_type', DeliveryNoteTypeEnum::ORDER->value)
-            ->where('invoices_count', '>', 0);
+        $ordersQuery = IntrastatExportTimeSeriesRecord::where('intrastat_export_time_series_records.organisation_id', $organisation->id)
+            ->where('intrastat_export_time_series_records.frequency', 'D')
+            ->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id');
 
-        $replacementsQuery = IntrastatExportMetrics::where('organisation_id', $organisation->id)
-            ->where('delivery_note_type', DeliveryNoteTypeEnum::REPLACEMENT->value);
+        $replacementsQuery = IntrastatExportTimeSeriesRecord::where('intrastat_export_time_series_records.organisation_id', $organisation->id)
+            ->where('intrastat_export_time_series_records.frequency', 'D')
+            ->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id');
 
-        $withVatQuery = IntrastatExportMetrics::where('organisation_id', $organisation->id)
-            ->whereHas('taxCategory', function ($query) {
-                $query->whereIn('type', ['standard', 'special']);
-            });
+        $withVatQuery = IntrastatExportTimeSeriesRecord::where('intrastat_export_time_series_records.organisation_id', $organisation->id)
+            ->where('intrastat_export_time_series_records.frequency', 'D')
+            ->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id')
+            ->join('tax_categories', 'intrastat_export_time_series.tax_category_id', '=', 'tax_categories.id')
+            ->whereIn('tax_categories.type', ['standard', 'special']);
 
-        $withoutVatQuery = IntrastatExportMetrics::where('organisation_id', $organisation->id)
-            ->whereHas('taxCategory', function ($query) {
-                $query->where('type', 'eu_vtc');
+        $withoutVatQuery = IntrastatExportTimeSeriesRecord::where('intrastat_export_time_series_records.organisation_id', $organisation->id)
+            ->where('intrastat_export_time_series_records.frequency', 'D')
+            ->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id')
+            ->leftJoin('tax_categories', 'intrastat_export_time_series.tax_category_id', '=', 'tax_categories.id')
+            ->where(function ($q) {
+                $q->where('tax_categories.type', 'eu_vtc')
+                  ->orWhereNull('intrastat_export_time_series.tax_category_id');
             });
 
         if ($dateFilter && !empty($dateFilter['date'])) {
@@ -61,10 +67,10 @@ class IndexIntrastatExportReport extends OrgAction
             $start = \Carbon\Carbon::createFromFormat('Ymd', $start)->format('Y-m-d');
             $end   = \Carbon\Carbon::createFromFormat('Ymd', $end)->format('Y-m-d');
 
-            $ordersQuery->whereBetween('date', [$start, $end]);
-            $replacementsQuery->whereBetween('date', [$start, $end]);
-            $withVatQuery->whereBetween('date', [$start, $end]);
-            $withoutVatQuery->whereBetween('date', [$start, $end]);
+            $ordersQuery->whereBetween('intrastat_export_time_series_records.from', [$start, $end]);
+            $replacementsQuery->whereBetween('intrastat_export_time_series_records.from', [$start, $end]);
+            $withVatQuery->whereBetween('intrastat_export_time_series_records.from', [$start, $end]);
+            $withoutVatQuery->whereBetween('intrastat_export_time_series_records.from', [$start, $end]);
         }
 
         return [
@@ -82,12 +88,8 @@ class IndexIntrastatExportReport extends OrgAction
                     ],
                 ],
                 'engine' => function ($query, $elements) {
-                    if (in_array('orders', $elements) && !in_array('replacements', $elements)) {
-                        $query->where('delivery_note_type', DeliveryNoteTypeEnum::ORDER->value)
-                              ->where('invoices_count', '>', 0);
-                    } elseif (in_array('replacements', $elements) && !in_array('orders', $elements)) {
-                        $query->where('delivery_note_type', DeliveryNoteTypeEnum::REPLACEMENT->value);
-                    }
+                    // Note: delivery_note_type filtering not available in time series
+                    // This filter is currently disabled
                 }
             ],
             'vat_status' => [
@@ -105,13 +107,14 @@ class IndexIntrastatExportReport extends OrgAction
                 ],
                 'engine' => function ($query, $elements) {
                     if (in_array('with_vat', $elements) && !in_array('without_vat', $elements)) {
-                        $query->whereHas('taxCategory', function ($q) {
-                            $q->whereIn('type', ['standard', 'special']);
-                        });
+                        $query->join('tax_categories as tc_filter', 'intrastat_export_time_series.tax_category_id', '=', 'tc_filter.id')
+                              ->whereIn('tc_filter.type', ['standard', 'special']);
                     } elseif (in_array('without_vat', $elements) && !in_array('with_vat', $elements)) {
-                        $query->whereHas('taxCategory', function ($q) {
-                            $q->where('type', 'eu_vtc');
-                        });
+                        $query->leftJoin('tax_categories as tc_filter', 'intrastat_export_time_series.tax_category_id', '=', 'tc_filter.id')
+                              ->where(function ($q) {
+                                  $q->where('tc_filter.type', 'eu_vtc')
+                                    ->orWhereNull('intrastat_export_time_series.tax_category_id');
+                              });
                     }
                 }
             ],
@@ -126,7 +129,7 @@ class IndexIntrastatExportReport extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereWith('intrastat_export_metrics.tariff_code', $value);
+                $query->whereWith('intrastat_export_time_series.tariff_code', $value);
             });
         });
 
@@ -134,27 +137,24 @@ class IndexIntrastatExportReport extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(IntrastatExportMetrics::class);
-        $queryBuilder->where('intrastat_export_metrics.organisation_id', $organisation->id);
+        $queryBuilder = QueryBuilder::for(IntrastatExportTimeSeriesRecord::class);
+        $queryBuilder->where('intrastat_export_time_series_records.organisation_id', $organisation->id);
+        $queryBuilder->where('intrastat_export_time_series_records.frequency', 'D');
 
-        $queryBuilder->leftJoin('countries', 'intrastat_export_metrics.country_id', '=', 'countries.id');
-        $queryBuilder->leftJoin('tax_categories', 'intrastat_export_metrics.tax_category_id', '=', 'tax_categories.id');
+        $queryBuilder->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id');
+        $queryBuilder->leftJoin('countries', 'intrastat_export_time_series.country_id', '=', 'countries.id');
+        $queryBuilder->leftJoin('tax_categories', 'intrastat_export_time_series.tax_category_id', '=', 'tax_categories.id');
 
         if ($this->bucket == 'orders') {
-            $queryBuilder->where('delivery_note_type', DeliveryNoteTypeEnum::ORDER->value)
-                         ->where('invoices_count', '>', 0);
+            // Note: delivery_note_type filtering not available in time series
         } elseif ($this->bucket == 'replacements') {
-            $queryBuilder->where('delivery_note_type', DeliveryNoteTypeEnum::REPLACEMENT->value);
+            // Note: delivery_note_type filtering not available in time series
         } elseif ($this->bucket == 'with_vat') {
-            $queryBuilder->whereHas('taxCategory', function ($query) {
-                $query->where('rate', '>', 0.0);
-            });
+            $queryBuilder->whereIn('tax_categories.type', ['standard', 'special']);
         } elseif ($this->bucket == 'without_vat') {
             $queryBuilder->where(function ($query) {
-                $query->whereHas('taxCategory', function ($q) {
-                    $q->where('rate', '=', 0.0);
-                })
-                ->orWhereNull('tax_category_id');
+                $query->where('tax_categories.type', 'eu_vtc')
+                      ->orWhereNull('intrastat_export_time_series.tax_category_id');
             });
         } elseif ($this->bucket == 'all') {
             foreach ($this->getElementGroups($organisation, $dateFilter) as $key => $elementGroup) {
@@ -167,40 +167,69 @@ class IndexIntrastatExportReport extends OrgAction
             }
         }
 
-        $this->records = $queryBuilder->count('intrastat_export_metrics.id');
+        $this->records = $queryBuilder->count('intrastat_export_time_series_records.id');
 
         $queryBuilder
-            ->defaultSort('-date')
-            ->allowedSorts(['date', 'tariff_code', 'quantity', 'value_org_currency', 'weight'])
+            ->defaultSort('-intrastat_export_time_series_records.from')
+            ->allowedSorts([
+                AllowedSort::callback('date', function ($query, $direction) {
+                    $direction = strtolower($direction);
+                    if (!in_array($direction, ['asc', 'desc'])) {
+                        $direction = 'desc';
+                    }
+                    return $query->orderBy('intrastat_export_time_series_records.from', $direction);
+                }),
+                AllowedSort::callback('quantity', function ($query, $direction) {
+                    $direction = strtolower($direction);
+                    if (!in_array($direction, ['asc', 'desc'])) {
+                        $direction = 'asc';
+                    }
+                    return $query->orderBy('intrastat_export_time_series_records.quantity', $direction);
+                }),
+                AllowedSort::callback('value_org_currency', function ($query, $direction) {
+                    $direction = strtolower($direction);
+                    if (!in_array($direction, ['asc', 'desc'])) {
+                        $direction = 'asc';
+                    }
+                    return $query->orderBy('intrastat_export_time_series_records.value_org_currency', $direction);
+                }),
+                AllowedSort::callback('weight', function ($query, $direction) {
+                    $direction = strtolower($direction);
+                    if (!in_array($direction, ['asc', 'desc'])) {
+                        $direction = 'asc';
+                    }
+                    return $query->orderBy('intrastat_export_time_series_records.weight', $direction);
+                }),
+            ])
             ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['date'])
+            ->withBetweenDates(['from'])
             ->withPaginator($prefix)
             ->withQueryString();
 
         return $queryBuilder
             ->select([
-                'intrastat_export_metrics.id',
-                'intrastat_export_metrics.date',
-                'intrastat_export_metrics.tariff_code',
-                'intrastat_export_metrics.country_id',
-                'intrastat_export_metrics.tax_category_id',
-                'intrastat_export_metrics.delivery_note_type',
-                'intrastat_export_metrics.quantity',
-                'intrastat_export_metrics.value_org_currency',
-                'intrastat_export_metrics.weight',
-                'intrastat_export_metrics.delivery_notes_count',
-                'intrastat_export_metrics.products_count',
-                'intrastat_export_metrics.invoices_count',
-                'intrastat_export_metrics.partner_tax_numbers',
-                'intrastat_export_metrics.valid_tax_numbers_count',
-                'intrastat_export_metrics.invalid_tax_numbers_count',
-                'intrastat_export_metrics.mode_of_transport',
-                'intrastat_export_metrics.delivery_terms',
-                'intrastat_export_metrics.nature_of_transaction',
+                'intrastat_export_time_series_records.id',
+                'intrastat_export_time_series_records.from as date',
+                'intrastat_export_time_series.tariff_code',
+                'intrastat_export_time_series.country_id',
+                'intrastat_export_time_series.tax_category_id',
+                'intrastat_export_time_series_records.quantity',
+                'intrastat_export_time_series_records.value_org_currency',
+                'intrastat_export_time_series_records.weight',
+                'intrastat_export_time_series_records.delivery_notes_count',
+                'intrastat_export_time_series_records.products_count',
                 'countries.name as country_name',
                 'countries.code as country_code',
                 'tax_categories.name as tax_category_name',
-                DB::raw("'" . $organisation->currency->code . "' as currency_code")
+                DB::raw("'" . $organisation->currency->code . "' as currency_code"),
+                'intrastat_export_time_series_records.invoices_count',
+                'intrastat_export_time_series_records.partner_tax_numbers',
+                'intrastat_export_time_series_records.valid_tax_numbers_count',
+                'intrastat_export_time_series_records.invalid_tax_numbers_count',
+                'intrastat_export_time_series_records.delivery_note_type',
+                'intrastat_export_time_series_records.mode_of_transport',
+                'intrastat_export_time_series_records.delivery_terms',
+                'intrastat_export_time_series_records.nature_of_transaction'
             ])
             ->paginate(perPage: 50);
     }
@@ -221,7 +250,7 @@ class IndexIntrastatExportReport extends OrgAction
                         'count'       => $this->records,
                     ]
                 )
-                ->betweenDates(['date']);
+                ->betweenDates(['from']);
 
             if ($bucket == 'all') {
                 foreach ($this->getElementGroups($organisation, $dateFilter) as $key => $elementGroup) {
@@ -286,7 +315,7 @@ class IndexIntrastatExportReport extends OrgAction
                         'icon'  => 'fal fa-file-export'
                     ],
                 ],
-                'data'        => IntrastatExportMetricsResource::collection($metrics),
+                'data'        => IntrastatExportTimeSeriesRecordResource::collection($metrics),
                 'filters'     => [
                     'countries' => $euCountries,
                 ],
@@ -296,7 +325,7 @@ class IndexIntrastatExportReport extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $metrics): AnonymousResourceCollection
     {
-        return IntrastatExportMetricsResource::collection($metrics);
+        return IntrastatExportTimeSeriesRecordResource::collection($metrics);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

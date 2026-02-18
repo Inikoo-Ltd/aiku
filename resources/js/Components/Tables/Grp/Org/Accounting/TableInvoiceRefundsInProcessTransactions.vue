@@ -13,7 +13,7 @@ import InputNumber from 'primevue/inputnumber'
 import { get, set } from 'lodash-es'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faSave as falSave, faExclamationCircle, faMinus, faPlus, faArrowCircleLeft, faTrash, faTrashAlt } from '@fal'
+import { faSave as falSave, faExclamationCircle, faMinus, faPlus, faArrowCircleLeft, faTrash, faTrashAlt, faEmptySet, faStarChristmas } from '@fal'
 import { faSave } from '@fad'
 import { faArrowAltCircleLeft } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -28,6 +28,7 @@ library.add(faArrowAltCircleLeft, faSave, falSave, faExclamationCircle, faMinus,
 const props = defineProps<{
     data: {}
     tab: string
+    is_tax_only?: boolean
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -37,14 +38,21 @@ const _formCell = ref({})
 const isLoadingQuantity = ref<number[]>([])
 const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: FormData) => {
     let tempValue = toRaw(amount.refund_amount)
+
+    const refundParam = props.is_tax_only ? {
+        tax_amount: amount.refund_amount,
+        amount_total: amount.refund_amount,
+        is_tax_only: true as const,
+    } : {
+        net_amount: amount.refund_amount,
+    };
+
     router[routeRefund.method || 'post'](
         route(
             routeRefund.name,
             routeRefund.parameters
         ),
-        {
-            net_amount: amount.refund_amount
-        },
+        refundParam,
         {
             preserveScroll: true,
             onStart : () =>{
@@ -262,7 +270,14 @@ const productRoute = (item) => {
                                 :currency="item.currency_code"
                                 :step="item.original_item_net_price"
                                 @refund="(form) => onClickQuantity(item.refund_route, item.rowIndex, form)"
-                            />
+                            >
+                                <template #decrementicon v-if="is_tax_only">
+                                    <FontAwesomeIcon :icon="faEmptySet" v-tooltip="trans('Set value to 0')"/>
+                                </template>
+                                <template #incrementicon v-if="is_tax_only">
+                                    <FontAwesomeIcon :icon="faStarChristmas" v-tooltip="trans('Set value to max amount')"/>
+                                </template>
+                            </ActionCell>
 
                             <!-- <Button :style="'negative'" :icon="faTrash" @click="" ></Button> -->
                             <FontAwesomeIcon

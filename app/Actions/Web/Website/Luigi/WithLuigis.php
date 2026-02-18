@@ -26,7 +26,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 trait WithLuigis
 {
@@ -52,7 +51,7 @@ trait WithLuigis
     /**
      * @throws \Exception
      */
-    private function request(Website|Webpage $parent, string $endPoint, array $body, string $method = 'post', $compressed = false): void
+    private function request(Website|Webpage $parent, string $endPoint, array $body, string $method = 'post', $compressed = false): array
     {
         $content_type = 'application/json; charset=utf-8';
 
@@ -100,17 +99,21 @@ trait WithLuigis
         Log::info('Starting request to Luigi Box API ' . $publicKey . ' (' . $date . ')...');
         Log::info('Headers: ', $header);
         Log::info('Body: ', ['body' => $bodyToPrint]);
-
         Log::info('Loading...');
-        $response = Http::withHeaders($header)
-            ->retry(3, 100)
-            ->withBody($body, $content_type)
-            ->{strtolower($method)}(
-                'https://live.luigisbox.tech/'.$endPoint
-            );
+
+        try {
+            $response = Http::withHeaders($header)
+                ->retry(3, 100)
+                ->withBody($body, $content_type)
+                ->{strtolower($method)}(
+                    'https://live.luigisbox.tech/'.$endPoint
+                );
+        } catch (\Exception $e) {
+            throw new Exception('Failed to call Luigis Box API: '.$e->getMessage());
+
+        }
 
 
-        Sentry::captureMessage('Luigi Box API Request: XX '.$response->body());
 
         if ($response->failed()) {
             Log::error('Failed to send request to Luigis Box API: '.$response->body(), [
@@ -121,6 +124,7 @@ trait WithLuigis
             Log::info('Successfully sent request to Luigis Box API', [
                 'ResponseBody'      => $response->body(),
             ]);
+            return json_decode($response->body(), true);
         }
 
     }
@@ -422,7 +426,7 @@ trait WithLuigis
                 "slug"            => $this->getIdentity($webpage),
                 "title"           => $webpage->title,
                 "web_url"         => $webpage->getCanonicalUrl(),
-                "availability"    => intval($product->state == ProductStateEnum::ACTIVE && $product->available_quantity > 0 && $product->is_main && $product->is_for_sale),
+                "availability"    => intval($product->state == ProductStateEnum::ACTIVE && $product->is_main && $product->is_for_sale),
                 "stock_qty"       => $product->available_quantity ?? 0,
                 "price"           => (float)$product->price ?? 0,
                 "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,

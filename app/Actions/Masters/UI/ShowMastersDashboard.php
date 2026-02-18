@@ -12,7 +12,6 @@ use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
-use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -27,7 +26,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowMastersDashboard extends OrgAction
 {
-    use WithCustomRangeDashboard;
     use WithDashboard;
     use WithDashboardCurrencyTypeSettings;
     use WithDashboardIntervalOption;
@@ -56,8 +54,28 @@ class ShowMastersDashboard extends OrgAction
             $currentTab = Arr::first(MastersDashboardSalesTableTabsEnum::values());
         }
 
-        $customRangeData = $this->setupCustomRange($userSettings, $group);
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+
+        $performanceDates = [null, null];
+        if ($saved_interval === DateIntervalEnum::CUSTOM) {
+            $rangeInterval = Arr::get($userSettings, 'range_interval', '');
+            if ($rangeInterval) {
+                $dates = explode('-', $rangeInterval);
+                if (count($dates) === 2) {
+                    $performanceDates = [$dates[0], $dates[1]];
+                }
+            }
+        } elseif ($saved_interval !== DateIntervalEnum::ALL) {
+            $intervalString = DashboardIntervalFilters::run($saved_interval);
+            if ($intervalString) {
+                $dates = explode('-', $intervalString);
+                if (count($dates) === 2) {
+                    $performanceDates = [$dates[0], $dates[1]];
+                }
+            }
+        }
+
+        $timeSeriesData = GetMastersDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
 
         $dashboard = [
             'super_blocks' => [
@@ -86,8 +104,8 @@ class ShowMastersDashboard extends OrgAction
                             'type'        => 'table',
                             'current_tab' => $currentTab,
                             'tabs'        => MastersDashboardSalesTableTabsEnum::navigation(),
-                            'tables'      => MastersDashboardSalesTableTabsEnum::tables($group, $customRangeData),
-                            'charts'      => [], // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
+                            'tables'      => MastersDashboardSalesTableTabsEnum::tables($group, $timeSeriesData),
+                            'charts'      => [],
                         ],
                     ],
                 ],

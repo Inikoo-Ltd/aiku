@@ -36,7 +36,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-  <div id="carousel-cta">
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'carousel-cta'"  component="carousel-cta" >
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType)

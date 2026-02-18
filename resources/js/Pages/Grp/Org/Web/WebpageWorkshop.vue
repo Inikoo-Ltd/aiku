@@ -62,6 +62,7 @@ const props = defineProps<{
   webBlockTypes: Root
   url: string
   luigi_tracker_id: string
+  editable : boolean
 }>();
 
 provide('isInWorkshop', true);
@@ -671,10 +672,20 @@ console.log('props_workshop',props)
     <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[20]">
       <!-- Sidebar Content -->
       <div v-show="!fullScreen">
-        <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"
-          :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock" @add="addNewBlock"
-          @order="sendOrderBlock" @setVisible="setHideBlock" @onSaveSiteSettings="onSaveSiteSettings"
-          @onDuplicateBlock="duplicateBlock" v-model:selectedTab="selectedTab"
+        <WebpageSideEditor 
+          ref="_WebpageSideEditor" 
+          v-model="isModalBlockList" 
+          :webpage="data"
+          :webBlockTypes="webBlockTypes" 
+          v-model:selectedTab="selectedTab"
+          :editable="editable"
+          @update="onSaveWorkshop" 
+          @delete="sendDeleteBlock" 
+          @add="addNewBlock"
+          @order="sendOrderBlock" 
+          @setVisible="setHideBlock" 
+          @onSaveSiteSettings="onSaveSiteSettings"
+          @onDuplicateBlock="duplicateBlock"
           @update:selected-tab="(e) => selectedTab = e" />
       </div>
 

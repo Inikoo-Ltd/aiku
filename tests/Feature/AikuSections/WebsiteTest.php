@@ -392,7 +392,7 @@ test('store redirect', function (Webpage $webpage) {
     expect($redirect)->toBeInstanceOf(Redirect::class)
         ->and($redirect->type)->toBe(RedirectTypeEnum::PERMANENT)
         ->and($redirect->from_path)->toBe($webpage->url)
-        ->and($redirect->from_url)->toBe('https://'.$redirect->website->domain.'/'.$webpage->url);
+        ->and($redirect->from_url)->toBe('https://www.'.$redirect->website->domain.'/'.$webpage->url);
 
     return $redirect;
 })->depends('create webpage');
