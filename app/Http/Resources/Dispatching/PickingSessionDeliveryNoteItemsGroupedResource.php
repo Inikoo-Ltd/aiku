@@ -20,6 +20,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $delivery_note_internal_notes
  * @property mixed $delivery_note_shipping_notes
  * @property mixed $delivery_note_reference
+ * @property mixed $packed_in
+ * @property mixed $delivery_note_is_premium_dispatch
+ * @property mixed $delivery_note_has_extra_packing
  */
 class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
 {
