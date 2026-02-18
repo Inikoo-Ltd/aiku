@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\UI\CreateOffer;
 use App\Actions\Discounts\OfferCampaign\StoreFreeGift;
-use App\Actions\Discounts\OfferCampaign\UI\CreateFreeGift;
+use App\Actions\Discounts\OfferCampaign\UI\CreateVolGrGift;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
@@ -26,7 +26,7 @@ Route::name("campaigns.")->prefix('campaigns')
         Route::get('', IndexOfferCampaigns::class)->name('index');
         Route::get('{offerCampaign}', ShowOfferCampaign::class)->name('show');
         Route::get('{offerCampaign}/edit', EditDummy::class)->name('edit');
-        Route::get('{offerCampaign}/free-gift', CreateFreeGift::class)->name('free_gift');
+        Route::get('{offerCampaign}/free-gift', CreateVolGrGift::class)->name('free_gift');
         Route::post('{offerCampaign}/store-free-gift', StoreFreeGift::class)->name('store_free_gift');
     });
 
