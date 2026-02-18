@@ -12,7 +12,7 @@ import { faClipboard, faSpinner, faPencil, faDownload, faFileExport, faPlus as f
 import { faArrowLeft, faTrashAlt, faPersonDolly, faTimes } from "@far";
 import { faPlus, faSave, faUpload, faTrashUndoAlt, faThLarge, faRocket, faMinus } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { inject } from "vue";
+import { computed, inject } from "vue";
 import { Icon } from "@/types/Utils/Icon";
 
 const layout: any = inject("layout", {});
@@ -37,6 +37,7 @@ const props = withDefaults(defineProps<{
   injectStyle? : object|null
   iconRightRotation?: number | string
   iconRotation?: number | string
+  nativeType?: "button" | "submit" | "reset"
 }>(), {
   size: "m",
   capitalize: false,
@@ -161,10 +162,22 @@ const getActionIcon = (icon: any) => {
   }
 };
 
+const nativeButtonType = computed(() => {
+  if (props.nativeType !== undefined) {
+    return props.nativeType
+  }
+
+  if (props.type === "submit" || props.type === "reset" || props.type === "button") {
+    return props.type
+  }
+
+  return "button"
+})
+
 </script>
 
 <template>
-  <button type="button"  :style="injectStyle ?? {}"
+  <button :type="nativeButtonType"  :style="injectStyle ?? {}"
           class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
           :class="[
             full ? 'w-full justify-center' : 'xmin-w-max',

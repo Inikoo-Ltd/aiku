@@ -62,14 +62,37 @@ const statusIcons: Record<string, string> = {
 }
 
 const approveLeave = (leave: any) => {
+	const orgId = route().params.organisation
+	console.log("Approving leave:", leave.id, "organisation:", orgId)
+	console.log(
+		"Route:",
+		route("grp.org.hr.leaves.approve", { organisation: orgId, leave: leave.id })
+	)
+
+	if (!orgId) {
+		console.error("No organisation ID found!")
+		alert("Error: Cannot find organisation ID")
+		return
+	}
+
 	router.post(
 		route("grp.org.hr.leaves.approve", {
-			organisation: route().params.organisation,
+			organisation: orgId,
 			leave: leave.id,
 		}),
 		{},
 		{
 			preserveScroll: true,
+			onBefore: () => {
+				console.log("Sending approve request...")
+			},
+			onSuccess: () => {
+				console.log("Approve successful!")
+			},
+			onError: (errors) => {
+				console.error("Approve errors:", errors)
+				alert("Error: " + JSON.stringify(errors))
+			},
 		}
 	)
 }
@@ -82,18 +105,32 @@ const openRejectModal = (leave: any) => {
 const submitReject = () => {
 	if (!selectedLeave.value) return
 
+	const orgId = route().params.organisation
+	console.log("Rejecting leave:", selectedLeave.value.id, "organisation:", orgId)
+
+	if (!orgId) {
+		console.error("No organisation ID found!")
+		alert("Error: Cannot find organisation ID")
+		return
+	}
+
 	isSubmitting.value = true
 	rejectForm.post(
 		route("grp.org.hr.leaves.reject", {
-			organisation: route().params.organisation,
+			organisation: orgId,
 			leave: selectedLeave.value.id,
 		}),
 		{
 			preserveScroll: true,
 			onSuccess: () => {
+				console.log("Reject successful!")
 				isRejectModalOpen.value = false
 				rejectForm.reset()
 				selectedLeave.value = null
+			},
+			onError: (errors) => {
+				console.error("Reject errors:", errors)
+				alert("Error: " + JSON.stringify(errors))
 			},
 			onFinish: () => {
 				isSubmitting.value = false
@@ -123,18 +160,23 @@ const closeEditModal = () => {
 const submitEdit = () => {
 	if (!selectedLeave.value) return
 
+	const orgId = route().params.organisation
 	isSubmitting.value = true
 	editForm.post(
 		route("grp.org.hr.leaves.update", {
-			organisation: route().params.organisation,
+			organisation: orgId,
 			leave: selectedLeave.value.id,
 		}),
 		{
 			preserveScroll: true,
+			forceFormData: true,
 			onSuccess: () => {
 				isEditModalOpen.value = false
 				editForm.reset()
 				selectedLeave.value = null
+			},
+			onError: (errors) => {
+				console.error("Edit errors:", errors)
 			},
 			onFinish: () => {
 				isSubmitting.value = false
@@ -263,7 +305,11 @@ const submitEdit = () => {
 
 				<div class="flex justify-end gap-3 pt-4">
 					<Button @click="closeRejectModal" :label="trans('Cancel')" type="tertiary" />
-					<Button type="submit" :label="trans('Reject')" :loading="isSubmitting" />
+						<Button
+							type="primary"
+							nativeType="submit"
+							:label="trans('Reject')"
+							:loading="isSubmitting" />
 				</div>
 			</form>
 		</div>
@@ -305,7 +351,11 @@ const submitEdit = () => {
 
 				<div class="flex justify-end gap-3 pt-4">
 					<Button @click="closeEditModal" :label="trans('Cancel')" type="tertiary" />
-					<Button type="submit" :label="trans('Save')" :loading="isSubmitting" />
+					<Button
+						type="primary"
+						nativeType="submit"
+						:label="trans('Save')"
+						:loading="isSubmitting" />
 				</div>
 			</form>
 		</div>

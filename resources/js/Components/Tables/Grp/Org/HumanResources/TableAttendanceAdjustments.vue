@@ -49,12 +49,22 @@ const formatTime = (dateString: string | null) => {
 }
 
 const submitAdjustment = () => {
+	console.log(
+		"Submitting adjustment form, route:",
+		route("grp.clocking_employees.adjustments.store")
+	)
 	isSubmitting.value = true
 	adjustmentForm.post(route("grp.clocking_employees.adjustments.store"), {
 		preserveScroll: true,
+		forceFormData: true,
 		onSuccess: () => {
+			console.log("Adjustment submitted successfully")
 			isCreateModalOpen.value = false
 			adjustmentForm.reset()
+		},
+		onError: (errors) => {
+			console.error("Adjustment submission errors:", errors)
+			isSubmitting.value = false
 		},
 		onFinish: () => {
 			isSubmitting.value = false
@@ -120,7 +130,9 @@ const closeCreateModal = () => {
 
 			<template #cell(reason)="{ item: adjustment }">
 				<div class="max-w-xs">
-					<span class="text-gray-600 text-sm truncate block">{{ adjustment.reason }}</span>
+					<span class="text-gray-600 text-sm truncate block">{{
+						adjustment.reason
+					}}</span>
 					<span
 						v-if="adjustment.status === 'rejected' && adjustment.approval_comment"
 						class="text-red-600 text-xs truncate block mt-1">
@@ -220,10 +232,11 @@ const closeCreateModal = () => {
 							@click="closeCreateModal"
 							:label="trans('Cancel')"
 							type="tertiary" />
-						<Button
-							type="submit"
-							:label="trans('Submit Request')"
-							:loading="isSubmitting" />
+							<Button
+								type="primary"
+								nativeType="submit"
+								:label="trans('Submit Request')"
+								:loading="isSubmitting" />
 					</div>
 				</form>
 			</div>

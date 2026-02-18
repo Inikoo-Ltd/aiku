@@ -72,12 +72,19 @@ const statusIcons: Record<string, string> = {
 }
 
 const submitLeave = () => {
+	console.log("Submitting leave form, route:", route("grp.clocking_employees.leaves.store"))
 	isSubmitting.value = true
 	leaveForm.post(route("grp.clocking_employees.leaves.store"), {
 		preserveScroll: true,
+		forceFormData: true,
 		onSuccess: () => {
+			console.log("Leave submitted successfully")
 			isCreateModalOpen.value = false
 			leaveForm.reset()
+		},
+		onError: (errors) => {
+			console.error("Leave submission errors:", errors)
+			isSubmitting.value = false
 		},
 		onFinish: () => {
 			isSubmitting.value = false
@@ -352,10 +359,11 @@ const submitEdit = () => {
 							@click="closeCreateModal"
 							:label="trans('Cancel')"
 							type="tertiary" />
-						<Button
-							type="submit"
-							:label="trans('Submit Request')"
-							:loading="isSubmitting" />
+							<Button
+								type="primary"
+								nativeType="submit"
+								:label="trans('Submit Request')"
+								:loading="isSubmitting" />
 					</div>
 				</form>
 			</div>
@@ -395,7 +403,10 @@ const submitEdit = () => {
 
 					<div class="flex justify-end gap-3 pt-4">
 						<Button @click="closeEditModal" :label="trans('Cancel')" type="tertiary" />
-						<Button @click="submitEdit" :label="trans('Save')" :loading="isSubmitting" />
+						<Button
+							@click="submitEdit"
+							:label="trans('Save')"
+							:loading="isSubmitting" />
 					</div>
 				</form>
 			</div>

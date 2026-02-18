@@ -196,7 +196,11 @@ const closeRejectModal = () => {
 
 				<div class="flex justify-end gap-3 pt-4">
 					<Button @click="closeRejectModal" :label="trans('Cancel')" type="tertiary" />
-					<Button type="submit" :label="trans('Reject')" :loading="isSubmitting" />
+						<Button
+							type="primary"
+							nativeType="submit"
+							:label="trans('Reject')"
+							:loading="isSubmitting" />
 				</div>
 			</form>
 		</div>
