@@ -19,33 +19,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property int $image_id
  */
-class WebBlockDepartmentsResource extends JsonResource
+class WebBlockProductCategoryDescriptionResource extends JsonResource
 {
     use HasSelfCall;
 
     public function toArray($request): array
     {
 
-
-        $imageSources = null;
-        $media        = Media::find($this->image_id);
-        if ($media) {
-            $width  = 0;
-            $height = 0;
-
-
-            $image        = $media->getImage()->resize($width, $height);
-            $imageSources = GetPictureSources::run($image);
-        }
-
-
         return [
-            'slug'  => $this->slug,
-            'code'  => $this->code,
-            'name'  => $this->name,
-            'image' => $imageSources
-
-
+            'id'                => $this->id,
+            'slug'              => $this->slug,
+            'code'              => $this->code,
+            'name'              => $this->name,
+            'description'       => $this->description,
+            'description_title' => $this->description_title,
+            'description_extra' => $this->description_extra,
         ];
     }
 }

@@ -583,6 +583,7 @@ const onChangeInsurance = async (val: boolean) => {
                     :routeTarget="routes?.pay_with_balance"
                     class="w-full"
                     full
+                    :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
                 >
                 </ButtonWithLink>
 
@@ -607,6 +608,7 @@ const onChangeInsurance = async (val: boolean) => {
                 }"
                 class="w-full"
                 full
+                :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
             />
         </div>
         <div v-else class="w-72 pt-5 text-sm">

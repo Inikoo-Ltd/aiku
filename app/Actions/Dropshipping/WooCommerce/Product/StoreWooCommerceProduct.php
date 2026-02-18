@@ -185,7 +185,7 @@ class StoreWooCommerceProduct extends RetinaAction
                         'sku' => $portfolio->sku
                     ]);
 
-                    data_set($result, 'id', Arr::get($duplicatedProducts, '0.id'));
+                    $result = Arr::get($duplicatedProducts, '0');
                 }
             }
 

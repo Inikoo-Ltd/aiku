@@ -46,6 +46,9 @@ class SaveCustomerInAurora implements ShouldBeUnique
 
         $shopSourceId = explode(':', $customer->shop->source_id);
 
+        if(!$shopSourceId){
+            return;
+        }
 
         $customerAuroraId = null;
 
@@ -136,6 +139,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
 
             $chunkSize = 100;
             $count     = 0;
+
 
             $totalCustomers = Customer::whereNull('source_id')->count();
 
