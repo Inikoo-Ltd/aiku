@@ -10,20 +10,20 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateFreeGift extends OrgAction
+class CreateVolGrGift extends OrgAction
 {
     public function handle(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
             [
-                'title'       => __('Free Gift'),
+                'title'       => __('Vol/GR Gift'),
                 'breadcrumbs' => $this->getBreadcrumbs(request()->route()->getName(), request()->route()->originalParameters()),
                 'pageHead'    => [
-                    'title'   => __('Free Gift'),
+                    'title'   => __('Vol/GR Gift'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-gift'],
-                        'title' => __('Free Gift')
+                        'title' => __('Vol/GR Gift')
                     ],
                     'actions'      => [
                         [
@@ -31,7 +31,7 @@ class CreateFreeGift extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => preg_replace('/free_gift$/', 'show', request()->route()->getName()),
+                                'name'       => preg_replace('/vol_gr_gift$/', 'show', request()->route()->getName()),
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ]
                         ]
@@ -41,11 +41,11 @@ class CreateFreeGift extends OrgAction
                     'fullLayout' => true,
                     'blueprint'  => [
                         [
-                            'title'  => __('Create Free Gift'),
+                            'title'  => __('Set up Vol/GR Gift'),
                             'fields' => [
                                 'amount' => [
                                     'type'     => 'input_number',
-                                    'information'   => __('The minimum order amount to be eligible for this free gift.'),
+                                    'information'   => __('The minimum order amount to be eligible for this Vol/GR Gift.'),
                                     'label'    => __('Min. amount'),
                                     'required' => true,
                                     "bind"     => [
@@ -64,10 +64,9 @@ class CreateFreeGift extends OrgAction
                                     'label-prop' => "name",
                                     'type_label' => 'product',
                                     'fetchRoute' => [
-                                        'name'       => 'grp.org.shops.show.catalogue.products.all_products.index',
+                                        'name'       => 'grp.json.shop.products_for_vol_gr_gift',
                                         'parameters' => [
-                                            'organisation' => $organisation->slug,
-                                            'shop'         => $shop->slug,
+                                            'shop'         => $shop->id,
                                         ],
                                     ],
                                 ],
@@ -75,7 +74,7 @@ class CreateFreeGift extends OrgAction
                         ],
                     ],
                     'route' => [
-                        'name'       => 'grp.org.shops.show.discounts.campaigns.store_free_gift',
+                        'name'       => 'grp.org.shops.show.discounts.campaigns.store_vol_gr_gift',
                         'parameters' => [
                             'organisation'   => $organisation->slug,
                             'shop'           => $shop->slug,
@@ -102,7 +101,7 @@ class CreateFreeGift extends OrgAction
                 'type'   => 'simple',
                 'simple' => [
                     'icon'  => 'fal fa-gift',
-                    'label' => __('Free Gift'),
+                    'label' => __('Vol/GR Gift'),
                     'route' => [
                         'name'       => $routeName,
                         'parameters' => $routeParameters

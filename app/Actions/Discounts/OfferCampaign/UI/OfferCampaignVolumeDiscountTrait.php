@@ -43,9 +43,9 @@ trait OfferCampaignVolumeDiscountTrait
                         [
                             'type'  => 'button',
                             'icon'  => 'fal fa-gift',
-                            'label' => __('Free Gift'),
+                            'label' => __('Vol/GR Gift'),
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'free_gift', request()->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'vol_gr_gift', request()->route()->getName()),
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ]
                         ]
