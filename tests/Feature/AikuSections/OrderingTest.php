@@ -128,14 +128,14 @@ beforeEach(function () {
         $this->organisation,
         $this->user,
         $this->shop
-    ) = createShop();
+        ) = createShop();
 
     $this->group = $this->organisation->group;
 
     list(
         $this->tradeUnit,
         $this->product
-    ) = createProduct($this->shop);
+        ) = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
 
@@ -149,15 +149,15 @@ beforeEach(function () {
 });
 
 test('store shipping country action', function () {
+    $countryId = Country::where('iso3', 'FRA')->first()->id;
     // Ensure migration exists (in case snapshot DB was loaded)
     $shippingCountry = StoreShippingCountry::make()->action($this->shop, [
-        'country_id' => Country::first()->id,
+        'country_id' => $countryId
     ]);
     $this->shop->refresh();
     expect($shippingCountry)->toBeInstanceOf(ShippingCountry::class)
         ->and($this->shop->stats->number_shipping_countries)->toBe(1);
 });
-
 
 
 test('update shipping country action', function () {
@@ -167,10 +167,10 @@ test('update shipping country action', function () {
     expect($shippingCountry)->toBeInstanceOf(ShippingCountry::class);
 
     $updated = UpdateShippingCountry::make()->action($shippingCountry, [
-        'territories' => ['A','B']
+        'territories' => ['A', 'B']
     ]);
 
-    expect($updated->fresh()->territories)->toBe(['A','B']);
+    expect($updated->fresh()->territories)->toBe(['A', 'B']);
 });
 
 test('delete shipping country action dispatches hydrator and removes model', function () {
@@ -233,14 +233,16 @@ test('UI Edit Order', function () {
     $adminGuest = createAdminGuest($this->group);
     actingAs($adminGuest->getUser());
 
-    $response = get(route(
-        'grp.org.shops.show.ordering.orders.edit',
-        [
-            'organisation' => $this->organisation->slug,
-            'shop' => $this->shop->slug,
-            'order' => $order->slug,
-        ]
-    ));
+    $response = get(
+        route(
+            'grp.org.shops.show.ordering.orders.edit',
+            [
+                'organisation' => $this->organisation->slug,
+                'shop'         => $this->shop->slug,
+                'order'        => $order->slug,
+            ]
+        )
+    );
 
     $response->assertOk();
     $response->assertInertia(function (AssertableInertia $page) use ($order) {
@@ -267,10 +269,10 @@ test('get order products', function (Order $order) {
     // Create a transaction if needed (may not be necessary if the order already has products)
     $order->transactions->first()
         ?: StoreTransaction::make()->action(
-            $order,
-            $this->product->historicAsset,
-            Transaction::factory()->definition()
-        );
+        $order,
+        $this->product->historicAsset,
+        Transaction::factory()->definition()
+    );
 
     $order->refresh();
 
@@ -724,7 +726,7 @@ test('UI create asset shipping', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'New schema')
                     ->etc()
             )
@@ -743,7 +745,7 @@ test('UI show asset shipping', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $shippingZoneSchema->name)
                     ->etc()
             )
@@ -763,7 +765,7 @@ test('UI edit asset shipping', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $shippingZoneSchema->name)
                     ->etc()
             )
@@ -782,7 +784,7 @@ test('UI show ordering backlog', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'Orders backlog')
                     ->etc()
             );
@@ -800,7 +802,7 @@ test('UI index ordering purges', function () {
             ->has('data')
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'Purges')
                     ->etc()
             );
@@ -815,7 +817,7 @@ test('UI create ordering purge', function () {
             ->component('CreateModel')
             ->where('title', 'New purge')
             ->has('breadcrumbs', 4)
-            ->has('formData', fn ($page) => $page
+            ->has('formData', fn($page) => $page
                 ->where('route', [
                     'name'       => 'grp.models.purge.store',
                     'parameters' => [
@@ -825,7 +827,7 @@ test('UI create ordering purge', function () {
                 ->etc())
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', 'New purge')
                     ->etc()
             );
@@ -841,7 +843,7 @@ test('UI edit ordering purge', function () {
             ->component('EditModel')
             ->where('title', 'Purge')
             ->has('breadcrumbs', 3)
-            ->has('formData', fn ($page) => $page
+            ->has('formData', fn($page) => $page
                 ->where('args', [
                     'updateRoute' => [
                         'name'       => 'grp.models.purge.update',
@@ -852,7 +854,7 @@ test('UI edit ordering purge', function () {
                 ->etc())
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $purge->scheduled_at->toISOString())
                     ->etc()
             );
@@ -951,7 +953,7 @@ test('Pay order creates payment and attaches to order', function () {
 
     $order->refresh();
 
-    expect($payment->amount)->toBe((string) $amount)
+    expect($payment->amount)->toBe((string)$amount)
         ->and($payment->reference)->toBe($reference)
         ->and($order->payments()->where('payments.id', $payment->id)->exists())->toBeTrue();
 });
@@ -979,8 +981,8 @@ test('Pay order with accounts payment account creates credit transaction', funct
     $paymentAccount->is_accounts = true;
     $paymentAccount->save();
 
-    $amount    = 75.00;
-    $payment   = PayOrder::make()->action($order, $paymentAccount, [
+    $amount  = 75.00;
+    $payment = PayOrder::make()->action($order, $paymentAccount, [
         'amount' => $amount,
         'status' => PaymentStatusEnum::SUCCESS,
         'state'  => PaymentStateEnum::COMPLETED,
@@ -989,7 +991,7 @@ test('Pay order with accounts payment account creates credit transaction', funct
     $payment->refresh();
 
     expect($payment->creditTransaction)->not->toBeNull()
-        ->and((float) $payment->creditTransaction->amount)->toBe(-$amount)
+        ->and((float)$payment->creditTransaction->amount)->toBe(-$amount)
         ->and($payment->creditTransaction->payment_id)->toBe($payment->id);
 });
 
@@ -1004,12 +1006,12 @@ test('Pay order attaches payment to invoice when invoice exists', function () {
     $order = StoreOrder::make()->action($this->customer, $orderData);
 
     $invoice = StoreInvoice::make()->action($order, [
-        'type' => InvoiceTypeEnum::INVOICE,
-        'currency_id' => $this->shop->currency_id,
-        'net_amount' => 0,
+        'type'         => InvoiceTypeEnum::INVOICE,
+        'currency_id'  => $this->shop->currency_id,
+        'net_amount'   => 0,
         'total_amount' => 0,
         'gross_amount' => 0,
-        'tax_amount' => 0,
+        'tax_amount'   => 0,
     ]);
 
     $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
@@ -1077,14 +1079,17 @@ test('order is_shipping_tbc becomes true when shipping zone price type is TBC', 
     // Create a shipping zone schema and a zone with nested orders.price.type
     $schema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
 
-    $zone = StoreShippingZone::make()->action($schema, array_merge(
-        ShippingZone::factory()->definition(),
-        [
-            'price' => [
-                'type' => 'TBC',
-            ],
-        ]
-    ));
+    $zone = StoreShippingZone::make()->action(
+        $schema,
+        array_merge(
+            ShippingZone::factory()->definition(),
+            [
+                'price' => [
+                    'type' => 'TBC',
+                ],
+            ]
+        )
+    );
 
     // Attach zone to order
     $order->update(['shipping_zone_id' => $zone->id]);
@@ -1099,18 +1104,21 @@ test('order is_shipping_tbc becomes false when shipping zone price type is not T
     $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
 
     $schema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
-    $zone   = StoreShippingZone::make()->action($schema, array_merge(
-        ShippingZone::factory()->definition(),
-        [
-            'price' => [
-                'orders' => [
-                    'price' => [
-                        'type' => 'FIXED',
+    $zone   = StoreShippingZone::make()->action(
+        $schema,
+        array_merge(
+            ShippingZone::factory()->definition(),
+            [
+                'price' => [
+                    'orders' => [
+                        'price' => [
+                            'type' => 'FIXED',
+                        ],
                     ],
                 ],
-            ],
-        ]
-    ));
+            ]
+        )
+    );
 
     $order->update(['shipping_zone_id' => $zone->id, 'is_shipping_tbc' => true]);
 
@@ -1125,7 +1133,7 @@ test('command updates is_shipping_tbc to true for TBC zone', function () {
     $schema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'Schema A',
     ]);
-    $zone = StoreShippingZone::make()->action($schema, [
+    $zone   = StoreShippingZone::make()->action($schema, [
         'code'        => 'TBC-ZONE',
         'name'        => 'TBC Zone',
         'status'      => true,
@@ -1151,7 +1159,7 @@ test('command updates is_shipping_tbc to false for non-TBC zone', function () {
     $schema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'Schema B',
     ]);
-    $zone = StoreShippingZone::make()->action($schema, [
+    $zone   = StoreShippingZone::make()->action($schema, [
         'code'        => 'FLAT-ZONE',
         'name'        => 'Flat Zone',
         'status'      => true,
@@ -1183,7 +1191,6 @@ test('order is_shipping_tbc false when no shipping zone present', function () {
 });
 
 it('hydrates order tracking numbers from multiple delivery notes and shipments', function () {
-
     $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
 
     // Create the first delivery note
@@ -1211,40 +1218,40 @@ it('hydrates order tracking numbers from multiple delivery notes and shipments',
     /** @var Shipper $shipper */
     $shipper = Shipper::factory()->create([
         'organisation_id' => $this->organisation->id,
-        'group_id' => $this->organisation->group_id,
-        'code' => 'SHIPPER1',
+        'group_id'        => $this->organisation->group_id,
+        'code'            => 'SHIPPER1',
     ]);
 
     // Create shipments for DN1
     $shipment1 = Shipment::factory()->create([
-        'tracking' => 'TRACK1',
-        'group_id' => $this->organisation->group_id,
+        'tracking'        => 'TRACK1',
+        'group_id'        => $this->organisation->group_id,
         'organisation_id' => $this->organisation->id,
-        'shipper_id' => $shipper->id,
+        'shipper_id'      => $shipper->id,
     ]);
     $dn1->shipments()->attach($shipment1);
 
     $shipment2 = Shipment::factory()->create([
-        'tracking' => 'TRACK2',
-        'group_id' => $this->organisation->group_id,
+        'tracking'        => 'TRACK2',
+        'group_id'        => $this->organisation->group_id,
         'organisation_id' => $this->organisation->id,
-        'shipper_id' => $shipper->id,
+        'shipper_id'      => $shipper->id,
     ]);
     $dn1->shipments()->attach($shipment2);
 
     // Create a shipment for DN2
     $shipment3 = Shipment::factory()->create([
-        'tracking' => 'TRACK3',
-        'group_id' => $this->organisation->group_id,
+        'tracking'        => 'TRACK3',
+        'group_id'        => $this->organisation->group_id,
         'organisation_id' => $this->organisation->id,
-        'shipper_id' => $shipper->id,
+        'shipper_id'      => $shipper->id,
     ]);
     $dn2->shipments()->attach($shipment3);
 
     // Create a shipment with 'na' tracking for DN2 (should be ignored)
     $shipmentNA = Shipment::factory()->create([
-        'tracking' => 'na',
-        'group_id' => $this->organisation->group_id,
+        'tracking'        => 'na',
+        'group_id'        => $this->organisation->group_id,
         'organisation_id' => $this->organisation->id,
     ]);
     $dn2->shipments()->attach($shipmentNA);
@@ -1259,7 +1266,6 @@ it('hydrates order tracking numbers from multiple delivery notes and shipments',
 });
 
 it('nullifies order tracking number when no shipments exist', function () {
-
     $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
     $order->update(['tracking_number' => 'OLD_TRACKING']);
     $order->deliveryNotes->each->delete();
@@ -1280,7 +1286,6 @@ test('get iris basket transactions in collection action', function () {
     $this->product->containedByCollections()->attach($collection, ['model_type' => 'Product', 'type' => 'Product']);
 
 
-
     // Case 2: With basket, but no transactions for this product
     $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
     $this->customer->update(['current_order_in_basket_id' => $basket->id]);
@@ -1291,9 +1296,9 @@ test('get iris basket transactions in collection action', function () {
         ->and($result[$this->product->id]['quantity_ordered'])->toBe(0);
 
     // Case 3: With basket and transactions
-    $transactionData = Transaction::factory()->definition();
+    $transactionData                     = Transaction::factory()->definition();
     $transactionData['quantity_ordered'] = 5;
-    $transactionData['order_id'] = $basket->id;
+    $transactionData['order_id']         = $basket->id;
     StoreTransaction::make()->action($basket, $this->product->currentHistoricProduct, $transactionData);
 
     $result = GetIrisBasketTransactionsInCollection::run($this->customer->fresh(), $collection);
