@@ -14,7 +14,6 @@ use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
@@ -35,27 +34,36 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
     /**
      * @throws \Exception
      */
-    public function handle(int|null $webpageId): void
+    public function handle(int|null $webpageId): array
     {
-
         if ($webpageId == null) {
-            return;
+            return [
+                'status'  => 'error',
+                'message' => 'Webpage ID is required.'
+            ];
         }
         $webpage = Webpage::find($webpageId);
         if (!$webpage) {
-            return;
+            return [
+                'status'  => 'error',
+                'message' => 'Webpage not found.'
+            ];
         }
 
         $accessToken = $this->getAccessToken($webpage->website);
         if (count($accessToken) < 2) {
-            Log::error("Luigi's Box access token is not configured properly for website {$webpage->website->name}.");
-
-            return;
+            return [
+                'status'  => 'error',
+                'message' => 'No access token found.'
+            ];
         }
 
 
         if ($webpage->type != WebpageTypeEnum::CATALOGUE && $webpage->type != WebpageTypeEnum::BLOG) {
-            return;
+            return [
+                'status'  => 'error',
+                'message' => 'Webpage type is not supported.'
+            ];
         }
 
         $objects[] = $this->getObjectFromWebpage($webpage);
@@ -64,9 +72,18 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
             'objects' => $objects
         ];
         try {
-            $this->request($webpage, '/v1/content', $body);
+            $return = $this->request($webpage, '/v1/content', $body);
+
+            return [
+                'status'  => 'success',
+                'message' => 'Webpage reindexed successfully.',
+                'data'    => $return
+            ];
         } catch (Exception $e) {
-            print "Failed to reindex webpage $webpage->id: ".$e->getMessage()."\n";
+            return [
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ];
         }
     }
 
