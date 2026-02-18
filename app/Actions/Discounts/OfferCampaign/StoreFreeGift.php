@@ -24,20 +24,20 @@ class StoreFreeGift extends OrgAction
 
     public function handle(OfferCampaign $offerCampaign, $modelData): OfferCampaign
     {
-
         dd($modelData);
     }
 
     public function rules(): array
     {
         return [
-            'amount'        => ['numeric', 'required'],
-            'products'      => ['required', 'array'],
+            'amount'   => ['numeric', 'required'],
+            'products' => ['required', 'array'],
         ];
     }
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): OfferCampaign
     {
+        dd($request->all());
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($offerCampaign, $this->validatedData);
