@@ -12,22 +12,29 @@ use App\Actions\OrgAction;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\ActionRequest;
 
-class ReindexWebpageLuigiAsync extends OrgAction
+class ReindexWebpageLuigi extends OrgAction
 {
     /**
      * @throws \Exception
      */
-    public function handle(Webpage $webpage): void
+    public function handle(Webpage $webpage): array
     {
-        ReindexWebpageLuigiData::run($webpage->id);
+        return ReindexWebpageLuigiData::run($webpage->id);
+    }
+
+
+    public function jsonResponse(array $response): array
+    {
+        return $response;
     }
 
     /**
      * @throws \Exception
      */
-    public function asController(Webpage $webpage, ActionRequest $request): void
+    public function asController(Webpage $webpage, ActionRequest $request): array
     {
         $this->initialisation($webpage->organisation, $request);
-        $this->handle($webpage);
+
+        return $this->handle($webpage);
     }
 }

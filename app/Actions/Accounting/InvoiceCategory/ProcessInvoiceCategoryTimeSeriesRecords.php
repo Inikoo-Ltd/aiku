@@ -49,6 +49,8 @@ class ProcessInvoiceCategoryTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(InvoiceCategoryTimeSeries $timeSeries, string $from, string $to): void
     {
+        $processedPeriods = [];
+
         $results = DB::table('invoices')
             ->where('invoices.invoice_category_id', $timeSeries->invoice_category_id)
             ->where('invoices.in_process', false)
@@ -171,6 +173,115 @@ class ProcessInvoiceCategoryTimeSeriesRecords implements ShouldBeUnique
                     'refunds'                    => $result->refunds,
                 ]
             );
+
+            $processedPeriods[] = $period;
         }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+    }
+
+    protected function processPeriodsWithoutInvoices(InvoiceCategoryTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = $this->getNonInvoicePeriods($timeSeries, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'invoice_category_time_series_id' => $timeSeries->id,
+                    'period'                          => $periodData['period'],
+                    'frequency'                       => $timeSeries->frequency->singleLetter()
+                ],
+                [
+                    'from'                       => $periodData['from'],
+                    'to'                         => $periodData['to'],
+                    'sales'                      => 0,
+                    'sales_org_currency'         => 0,
+                    'sales_grp_currency'         => 0,
+                    'lost_revenue'               => 0,
+                    'lost_revenue_org_currency'  => 0,
+                    'lost_revenue_grp_currency'  => 0,
+                    'customers_invoiced'         => 0,
+                    'invoices'                   => 0,
+                    'refunds'                    => 0,
+                ]
+            );
+        }
+    }
+
+    protected function getNonInvoicePeriods(InvoiceCategoryTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
+    {
+        $periods = [];
+
+        $startDate = Carbon::parse($from)->startOfDay();
+        $endDate   = Carbon::parse($to)->endOfDay();
+
+        if ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
+            $current = $startDate->copy();
+            while ($current <= $endDate) {
+                $period = $current->format('Y-m-d');
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfDay(),
+                        'to'     => $current->copy()->endOfDay(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addDay();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
+            $current = $startDate->copy()->startOfWeek();
+            while ($current <= $endDate) {
+                $period = $current->isoFormat('GGGG').' W'.str_pad($current->isoWeek(), 2, '0', STR_PAD_LEFT);
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfWeek(),
+                        'to'     => $current->copy()->endOfWeek(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addWeek();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
+            $current = $startDate->copy()->startOfMonth();
+            while ($current <= $endDate) {
+                $period = $current->year.'-'.str_pad($current->month, 2, '0', STR_PAD_LEFT);
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfMonth(),
+                        'to'     => $current->copy()->endOfMonth(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addMonth();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
+            $current = $startDate->copy()->startOfQuarter();
+            while ($current <= $endDate) {
+                $period = $current->year.' Q'.$current->quarter;
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfQuarter(),
+                        'to'     => $current->copy()->endOfQuarter(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addQuarter();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
+            $current = $startDate->copy()->startOfYear();
+            while ($current <= $endDate) {
+                $period = (string) $current->year;
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfYear(),
+                        'to'     => $current->copy()->endOfYear(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addYear();
+            }
+        }
+
+        return $periods;
     }
 }

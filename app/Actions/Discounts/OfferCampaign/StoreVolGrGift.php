@@ -17,22 +17,22 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreFreeGift extends OrgAction
+class StoreVolGrGift extends OrgAction
 {
     use AsAction;
     use WithAttributes;
 
     public function handle(OfferCampaign $offerCampaign, $modelData): OfferCampaign
     {
-
         dd($modelData);
     }
 
     public function rules(): array
     {
         return [
-            'amount'        => ['numeric', 'required'],
-            'products'      => ['required', 'array'],
+            'amount'   => ['numeric', 'required'],
+            'products' => ['required', 'array'],
+            'default'  => ['required', 'nullable', 'integer']
         ];
     }
 
