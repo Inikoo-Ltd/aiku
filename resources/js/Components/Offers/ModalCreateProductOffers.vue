@@ -118,7 +118,7 @@ const resetForm = () => {
 
                         <div class="pl-4">
                             <PureMultiselectInfiniteScroll v-model="offerCategoryId" :fetchRoute="{
-                                name: 'grp.json.shop.products',
+                                name: 'grp.json.shop.products_for_website_workshop',
                                 parameters: {
                                     shop: (route().params as any).shop
                                 }
