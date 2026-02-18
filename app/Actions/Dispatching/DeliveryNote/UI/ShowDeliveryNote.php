@@ -109,6 +109,7 @@ class ShowDeliveryNote extends OrgAction
 
         return $this->handle($deliveryNote);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
@@ -117,14 +118,24 @@ class ShowDeliveryNote extends OrgAction
 
         return $this->handle($deliveryNote);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
-    public function inOrderInCustomerClientInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
-    {
+    public function inOrderInCustomerClientInCustomerInShop(
+        Organisation $organisation,
+        Shop $shop,
+        Customer $customer,
+        CustomerSalesChannel $customerSalesChannel,
+        CustomerClient $customerClient,
+        Order $order,
+        DeliveryNote $deliveryNote,
+        ActionRequest $request
+    ): DeliveryNote {
         $this->parent = $customer;
         $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
 
         return $this->handle($deliveryNote);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inOrderInPlatformInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
@@ -148,7 +159,7 @@ class ShowDeliveryNote extends OrgAction
                 'style'   => 'save',
                 'tooltip' => __('Set as packed'),
                 'label'   => __('Set as packed'),
-                'key'     => 'action',
+                'key'     => 'set-as-packed',
                 'route'   => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.delivery_note.state.packed',
@@ -157,12 +168,17 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ]
             ];
+        } else {
+            $actions[] = [
+                'type'    => 'button',
+                'key'     => 'set-for-waiting',
+            ];
         }
 
         return $actions;
     }
 
-    public function wrappedActions(DeliveryNote $deliveryNote, ActionRequest $request): array
+    public function wrappedActions(DeliveryNote $deliveryNote): array
     {
         $showCancel = true;
 
@@ -230,14 +246,14 @@ class ShowDeliveryNote extends OrgAction
 
         return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
-                [
-                    'type'      => 'button',
-                    'style'     => 'save',
-                    'tooltip'   => __('Unassigned'),
-                    'label'     => __('Put in Queue'),
-                    'iconRight' => 'fas fa-arrow-right',
-                    'key'       => 'to-queue',
-                ],
+                //                [
+                //                    'type'      => 'button',
+                //                    'style'     => 'save',
+                //                    'tooltip'   => __('Unassigned'),
+                //                    'label' => __('Put in Queue'),
+                //                    'iconRight' => 'fas fa-arrow-right',
+                //                    'key'       => 'to-queue',
+                //                ],
                 [
                     'type'    => 'button',
                     'style'   => 'save',
@@ -413,13 +429,22 @@ class ShowDeliveryNote extends OrgAction
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
         $order     = $deliveryNote->orders->first();
 
+        $trolleys = [];
+        foreach ($deliveryNote->trolleys as $trolley) {
+            $trolleys[] = [
+                'id'   => $trolley->id,
+                'slug' => $trolley->slug,
+                'name' => $trolley->name,
+            ];
+        }
+
         return [
-            'state'            => $deliveryNote->state,
-            'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
-            'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
-            'is_collection'    => (bool)$deliveryNote->collection_address_id,
-            'is_replacement'   => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT,
-            'customer'         => array_merge(
+            'state'                        => $deliveryNote->state,
+            'state_icon'                   => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
+            'state_label'                  => $deliveryNote->state->labels()[$deliveryNote->state->value],
+            'is_collection'                => (bool)$deliveryNote->collection_address_id,
+            'is_replacement'               => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT,
+            'customer'                     => array_merge(
                 CustomerResource::make($deliveryNote->customer)->getArray(),
                 [
                     'addresses' => [
@@ -435,16 +460,16 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ]
             ),
-            'customer_client'  => $deliveryNote->customerClient,
-            'platform'         => [
+            'customer_client'              => $deliveryNote->customerClient,
+            'platform'                     => [
                 'name' => $deliveryNote->platform?->name,
                 'logo' => $deliveryNote->customerSalesChannel?->platform?->code ? $this->getPlatformLogo($deliveryNote->customerSalesChannel->platform->code) : null,
             ],
-            'products'         => [
+            'products'                     => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
             ],
-            'order'            => [
+            'order'                        => [
                 'reference' => $order->reference,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.ordering.orders.show',
@@ -455,19 +480,19 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
-            'address'          => [
+            'address'                      => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
-            'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress),
-            'picker'           => $deliveryNote->pickerUser,
-            'packer'           => $deliveryNote->packerUser,
-            'parcels'          => $deliveryNote->parcels,
-            'external_order' => [
-                'status'     => (bool) $order->external_id,
-                'route_view_packing_slip'      => [
+            'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
+            'picker'                       => $deliveryNote->pickerUser,
+            'packer'                       => $deliveryNote->packerUser,
+            'parcels'                      => $deliveryNote->parcels,
+            'external_order'               => [
+                'status'                  => (bool)$order->external_id,
+                'route_view_packing_slip' => [
                     'name'       => 'grp.org.shops.show.ordering.faire_packing_slip.download',
                     'parameters' => [
                         'organisation' => $deliveryNote->organisation->slug,
@@ -476,8 +501,8 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ]
             ],
-            'shipments'        => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
-            'shipments_routes' => [
+            'shipments'                    => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
+            'shipments_routes'             => [
                 'submit_route' => [
                     'name'       => 'grp.models.delivery_note.shipment.store',
                     'parameters' => [
@@ -499,7 +524,7 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
-            'shop_type'       => $deliveryNote->shop->type,
+            'shop_type'                    => $deliveryNote->shop->type,
             'shipping_fields'              => [
                 'company_name' => $deliveryNote->company_name,
                 'contact_name' => $deliveryNote->contact_name,
@@ -513,13 +538,14 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ],
             'shipping_fields_update_route' => [
-                'name'          => 'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
-                'parameters'    => [
+                'name'       => 'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
+                'parameters' => [
                     'deliveryNote' => $deliveryNote->id,
-                    'shipper_id'    => null
+                    'shipper_id'   => null
                 ]
 
             ],
+            'trolleys'                     => $trolleys
         ];
     }
 
@@ -628,17 +654,17 @@ class ShowDeliveryNote extends OrgAction
                 'next'     => $this->getNext($deliveryNote, $request),
             ],
             'pageHead'      => [
-                'title'      => $deliveryNote->reference,
-                'model'      => $model,
-                'icon'       => [
+                'title'           => $deliveryNote->reference,
+                'model'           => $model,
+                'icon'            => [
                     'icon'  => 'fal fa-truck',
                     'title' => __('Delivery note')
                 ],
-                'afterTitle' => [
+                'afterTitle'      => [
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
-                'actions'    => $actions,
-                'wrapped_actions' => $this->wrappedActions($deliveryNote, $request),
+                'actions'         => $actions,
+                'wrapped_actions' => $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
             'tabs'          => [
@@ -647,12 +673,14 @@ class ShowDeliveryNote extends OrgAction
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
 
-            'address'                      => [
+            'address' => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
+
+
             'timelines'           => $this->getTimeline($deliveryNote),
             'box_stats'           => $this->getBoxStats($deliveryNote),
             'notes'               => $this->getDeliveryNoteNotes($deliveryNote),
@@ -722,8 +750,13 @@ class ShowDeliveryNote extends OrgAction
             ],
 
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))),
+                fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
+                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))),
+            'shop'                               => [
+                'type' => $deliveryNote->shop?->type?->value,
+            ]
+
+
         ];
 
 

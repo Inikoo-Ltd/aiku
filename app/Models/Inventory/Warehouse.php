@@ -79,7 +79,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Inventory\PickedBay> $pickedBays
  * @property-read Collection<int, PickingRoute> $pickingRoutes
  * @property-read Collection<int, \App\Models\Inventory\PickingSession> $pickingSessions
- * @property-read Collection<int, \App\Models\Inventory\PickingTrolley> $pickingTrolleys
  * @property-read Collection<int, Role> $roles
  * @property-read \App\Models\Inventory\WarehouseStats|null $stats
  * @property-read Collection<int, \App\Models\Inventory\WarehouseTimeSeries> $timeSeries
@@ -228,9 +227,9 @@ class Warehouse extends Model implements Auditable
         return $this->hasMany(PickingSession::class);
     }
 
-    public function pickingTrolleys(): HasMany
+    public function trolleys(): HasMany
     {
-        return $this->hasMany(PickingTrolley::class);
+        return $this->hasMany(Trolley::class);
     }
 
     public function pickedBays(): HasMany

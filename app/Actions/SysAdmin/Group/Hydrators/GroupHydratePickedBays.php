@@ -30,7 +30,7 @@ class GroupHydratePickedBays implements ShouldBeUnique
         $allPickedBays = $group->pickedBays()->count();
         $currentPickedBays = $group->pickedBays()->where('status', true)->count();
         $usedPickedBays = $group->pickedBays()->where('status', true)
-            ->whereNotNull('delivery_note_id')->count();
+            ->whereNotNull('current_delivery_note_id')->count();
 
 
         $stats = [

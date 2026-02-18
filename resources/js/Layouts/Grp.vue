@@ -73,9 +73,10 @@ import {
 	faCheckDouble,
 	faSmile,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot,
+	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
+import { faViruses } from "@fad"
 import {
 	faAsterisk as fasAsterisk,
 	faBoxHeart,
@@ -87,7 +88,7 @@ import {
 	faStar,
 	faCheckCircle,
 	faTimesCircle,
-	faSkull as fasSkull,
+	faSkull as fasSkull, faMonument
 } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
@@ -96,6 +97,7 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
+import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 
 library.add(
 	faRainbow,
@@ -115,6 +117,7 @@ library.add(
 	faExclamationTriangle,
 	faSunset,
 	faChair,
+	falMonument,
 	faSkull,
 	faSkullCow,
 	faToggleOn,
@@ -165,7 +168,7 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot,
+	faShare, faUndoAlt,faRobot,faMonument, faDollyFlatbedAlt, faViruses,
 	faBadgePercent
 )
 
@@ -175,7 +178,6 @@ provide("isMovePallet", true)
 
 initialiseApp()
 
-const StackedComponents = defineAsyncComponent(() => import("@/Layouts/Grp/StackedComponents.vue"))
 
 const layout = useLayoutStore()
 const sidebarOpen = ref(false)

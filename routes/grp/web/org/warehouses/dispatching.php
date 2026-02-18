@@ -13,12 +13,20 @@ use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehousePalletReturn;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehouseStoredItemReturn;
+use App\Actions\Dispatching\PickedBay\UI\CreatePickedBay;
+use App\Actions\Dispatching\PickedBay\UI\EditPickedBay;
+use App\Actions\Dispatching\PickedBay\UI\IndexPickedBays;
+use App\Actions\Dispatching\PickedBay\UI\ShowPickedBay;
 use App\Actions\Dispatching\PickingSession\UI\IndexPickingSessions;
 use App\Actions\Dispatching\PickingSession\UI\ShowPickingSession;
 use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
 use App\Actions\Dispatching\Shipper\UI\ShowShipper;
+use App\Actions\Dispatching\Trolley\UI\CreateTrolley;
+use App\Actions\Dispatching\Trolley\UI\EditTrolley;
+use App\Actions\Dispatching\Trolley\UI\IndexTrolleys;
+use App\Actions\Dispatching\Trolley\UI\ShowTrolley;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use Illuminate\Support\Facades\Route;
 
@@ -69,3 +77,17 @@ Route::get('boxes', IndexBoxes::class)->name('boxes.index');
 Route::get('boxes/create', CreateBox::class)->name('boxes.create');
 Route::get('picking-sessions', IndexPickingSessions::class)->name('picking_sessions.index');
 Route::get('picking-sessions/{pickingSession}', ShowPickingSession::class)->name('picking_sessions.show');
+
+Route::prefix('trolleys')->as('trolleys.')->group(function () {
+    Route::get('', IndexTrolleys::class)->name('index');
+    Route::get('create', CreateTrolley::class)->name('create');
+    Route::get('{trolley}', ShowTrolley::class)->name('show');
+    Route::get('{trolley}/edit', EditTrolley::class)->name('edit');
+});
+
+Route::prefix('picked-bays')->as('picked_bays.')->group(function () {
+    Route::get('', IndexPickedBays::class)->name('index');
+    Route::get('create', CreatePickedBay::class)->name('create');
+    Route::get('{pickedBay}', ShowPickedBay::class)->name('show');
+    Route::get('{pickedBay}/edit', EditPickedBay::class)->name('edit');
+});

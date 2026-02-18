@@ -9,9 +9,9 @@
 
 namespace App\Actions\Dispatching\Shipper\UI;
 
-use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\UI\Dispatch\ShipperTabsEnum;
 use App\Models\Dispatching\Shipper;
 use App\Models\Inventory\Warehouse;
@@ -107,7 +107,7 @@ class ShowShipper extends OrgAction
             'grp.org.warehouses.show.dispatching.shippers.edit',
             'grp.org.warehouses.show.dispatching.shippers.show',
             => array_merge(
-                ShowWarehouse::make()->getBreadcrumbs(
+                ShowDispatchHub::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'warehouse'])
                 ),
                 $headCrumb(

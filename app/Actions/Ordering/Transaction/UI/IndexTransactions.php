@@ -81,6 +81,7 @@ class IndexTransactions extends OrgAction
                 'transactions.created_at',
                 'transactions.discretionary_offer',
                 'transactions.discretionary_offer_label',
+                'transactions.is_cut_view',
                 'assets.code as asset_code',
                 'assets.name as asset_name',
                 'assets.type as asset_type',

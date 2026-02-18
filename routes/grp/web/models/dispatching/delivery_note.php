@@ -13,17 +13,23 @@ use App\Actions\Dispatching\DeliveryNote\UnpackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToHandlingBlocked;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToUnassigned;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\FinishPackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\DispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseAndDispatchDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\SetAsWaitingForPickingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\SetPackedWithPickingBaysDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\StartHandlingWithTrolleyDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteDeliveryAddress;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicking;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
+use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
@@ -34,15 +40,22 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
 
     Route::post('shipment-from-warehouse', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
+    Route::patch('trolleys', SyncDeliveryNoteTrolleys::class)->name('trolleys.sync');
+
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in_queue')->withoutScopedBindings();
         Route::patch('remove-picker', UpdateDeliveryNoteStateToUnassigned::class)->name('remove-picker');
         Route::patch('handling', StartHandlingDeliveryNote::class)->name('handling');
+        Route::patch('handling-with-trolley', StartHandlingWithTrolleyDeliveryNote::class)->name('handling_with_trolley');
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');
+        Route::patch('handling-blocked', UpdateDeliveryNoteStateToHandlingBlocked::class)->name('handling_blocked');
+        Route::patch('handling-blocked-with-picked-bay', UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay::class)->name('handling_blocked_with_picked_bay');
         Route::patch('packing', UpdateDeliveryNoteStateToPacking::class)->name('packing');
         Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
         Route::patch('packed', FinishPackDeliveryNote::class)->name('packed');
+        Route::patch('packed-with-picked-bay', SetPackedWithPickingBaysDeliveryNote::class)->name('packed_with_picked_bay');
+        Route::patch('waiting-for-picking', SetAsWaitingForPickingDeliveryNote::class)->name('waiting_for_picking');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
         Route::patch('dispatched', DispatchDeliveryNote::class)->name('dispatched');
         Route::patch('rollback', UndispatchDeliveryNote::class)->name('rollback');
