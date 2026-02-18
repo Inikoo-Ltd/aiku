@@ -217,7 +217,7 @@ class RunBasketLowStockEmailBulkRuns
         $html .= '
         <tr style="border-bottom:1px solid #e5e7eb;">
             <th align="left" style="color:#555;">' . __('Product') . '</th>
-            <th align="center" style="color:#555;">' . __('New price') . ' (' . $date . ')</th>
+            <th align="center" style="color:#555;">' . __('Available Quantity') . ' (' . $date . ')</th>
         </tr>';
 
         foreach ($displayProducts as $productId) {
@@ -232,11 +232,7 @@ class RunBasketLowStockEmailBulkRuns
                 'original'
             );
 
-            $currency = $dataProduct->currency;
-            $currencySymbol = $currency?->symbol ?? '$';
-            $fractionDigit = $currency?->fraction_digit ?? 2;
-            $formattedPrice = number_format($dataProduct->price ?? 0, $fractionDigit);
-            $displayPrice = $currencySymbol . $formattedPrice;
+            $availableQuantity = $dataProduct->available_quantity ?? 0;
 
 
             if ($dataProduct->webpage) {
@@ -277,7 +273,7 @@ class RunBasketLowStockEmailBulkRuns
                     <td align="center"
                         style="font-weight:600;
                                color:#16a34a;">'
-                    . $displayPrice .
+                    . $availableQuantity .
                     '</td>
                 </tr>';
             }
