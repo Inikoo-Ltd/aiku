@@ -270,6 +270,13 @@ const requestNotificationPermission = () => {
 	if (Notification.permission === "default") {
 		Notification.requestPermission()
 	}
+	if (Notification.permission === "denied") {
+			notify({
+				title: trans('Alert'),
+				text: trans('You must allow notification to get notif from chat'),
+				type: "error"
+			})
+		}
 }
 
 onMounted(() => {
