@@ -500,7 +500,7 @@ defineExpose({
 <template>
     <div>
         <button ref="buttonRef" @click="toggle"
-            class="fixed bottom-32 right-5 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary">
+            class="fixed bottom-36 right-5 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary">
             <FontAwesomeIcon :icon="faMessage" class="text-base" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
                bg-red-500 text-white text-[10px] font-semibold
