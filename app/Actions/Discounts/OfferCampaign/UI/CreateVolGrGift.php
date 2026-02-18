@@ -31,7 +31,7 @@ class CreateVolGrGift extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => preg_replace('/free_gift$/', 'show', request()->route()->getName()),
+                                'name'       => preg_replace('/vol_gr_gift$/', 'show', request()->route()->getName()),
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ]
                         ]
@@ -41,7 +41,7 @@ class CreateVolGrGift extends OrgAction
                     'fullLayout' => true,
                     'blueprint'  => [
                         [
-                            'title'  => __('Create Vol/GR Gift'),
+                            'title'  => __('Set up Vol/GR Gift'),
                             'fields' => [
                                 'amount' => [
                                     'type'     => 'input_number',
@@ -74,7 +74,7 @@ class CreateVolGrGift extends OrgAction
                         ],
                     ],
                     'route' => [
-                        'name'       => 'grp.org.shops.show.discounts.campaigns.store_free_gift',
+                        'name'       => 'grp.org.shops.show.discounts.campaigns.store_vol_gr_gift',
                         'parameters' => [
                             'organisation'   => $organisation->slug,
                             'shop'           => $shop->slug,

@@ -17,7 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreFreeGift extends OrgAction
+class StoreVolGrGift extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -32,12 +32,12 @@ class StoreFreeGift extends OrgAction
         return [
             'amount'   => ['numeric', 'required'],
             'products' => ['required', 'array'],
+            'default'  => ['required', 'nullable', 'integer']
         ];
     }
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): OfferCampaign
     {
-        dd($request->all());
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($offerCampaign, $this->validatedData);
