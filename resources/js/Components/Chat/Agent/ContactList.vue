@@ -303,6 +303,9 @@ const formatLastMessage = (msg: string) => {
 const tabClass = (tab: string) => {
     return activeTab.value === tab ? "tabPrimary" : "tabInactive"
 }
+onMounted(async () => {
+    await reloadContacts()
+})
 </script>
 
 <template>
