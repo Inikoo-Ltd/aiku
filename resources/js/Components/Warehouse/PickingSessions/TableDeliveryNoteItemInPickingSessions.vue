@@ -17,7 +17,7 @@ import { routeType } from "@/types/route"
 import { ref, onMounted, reactive, inject } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes } from "@fal"
-import { faSkull, faStickyNote } from "@fas"
+import { faSkull, faStickyNote, faPeopleArrows} from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -34,7 +34,7 @@ import { RouteParams } from "@/types/route-params"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import state from "pusher-js/src/core/http/state"
 
-library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes)
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows)
 
 
 defineProps<{
@@ -184,6 +184,11 @@ onMounted(() => {
                 </Link>
                 <FontAwesomeIcon v-if="item.delivery_note_is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-if="item.delivery_note_has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.delivery_note_is_for_collection" v-tooltip="trans('For Collection')" icon="fas fa-people-arrows" class="text-purple-500 animate-bounce" fixed-width aria-hidden="true" />
+
+
+
+
                 <NotesDisplay reference-field="delivery_note_reference" :item="item" :note-fields="{
                     shipping: 'delivery_note_shipping_notes',
                     customer: 'delivery_note_customer_notes',
