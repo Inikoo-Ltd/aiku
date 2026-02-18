@@ -137,6 +137,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_not_picked'               => $this->quantity_not_picked,
             'quantity_packed'                   => $this->quantity_packed,
             'quantity_dispatched'               => $this->quantity_dispatched,
+            'org_stock_id'                      => $this->org_stock_id,
             'org_stock_code'                    => $this->org_stock_code,
             'org_stock_slug'                    => $this->org_stock_slug,
             'org_stock_name'                    => $this->org_stock_name,
