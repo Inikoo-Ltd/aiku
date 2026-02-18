@@ -61,6 +61,7 @@ class ChatSession extends Model
         'closed_by' => ChatSessionClosedByTypeEnum::class,
         'closed_at' => 'datetime',
         'rating' => 'decimal:1',
+        'metadata' => 'array',
     ];
 
     protected $guarded = [];
@@ -131,4 +132,14 @@ class ChatSession extends Model
     {
         return $this->belongsTo(Language::class, 'active_user_language_id');
     }
+
+    public function isActive(): bool
+    {
+        return $this->status === ChatSessionStatusEnum::ACTIVE;
+    }
+    public function isClosed(): bool
+    {
+        return $this->status === ChatSessionStatusEnum::CLOSED;
+    }
+
 }

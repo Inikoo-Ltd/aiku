@@ -70,6 +70,7 @@ class ChatMessage extends Model implements HasMedia
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
     protected $guarded = [];

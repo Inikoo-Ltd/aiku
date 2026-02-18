@@ -85,8 +85,6 @@ class HandleRetinaInertiaRequests extends Middleware
             ])
             ->toArray() ?? [];
 
-
-
         return array_merge(
             $firstLoadOnlyProps,
             [
