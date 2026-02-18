@@ -53,20 +53,16 @@ interface Portfolio {
 const layout = inject('layout', layoutStructure)
 const locale = inject('locale', null)
 
-const hideStockUnavailable = ref(false)
 
 const isLoadingFetch = ref(false)
 const showDialog = ref(false)
 
-const queryPortfolio = ref('')
+const querySearch = ref('')
 const list = ref<Portfolio[]>([])
 const meta = ref()
 const link = ref()
 
 // const committedProducts = ref<Portfolio[]>(props.modelValue || [])
-const selectedProduct = ref<Portfolio[]>([])
-
-const activeTab = ref(0)
 
 const openDialog = () => {
     // selectedProduct.value = [...committedProducts.value]
@@ -85,7 +81,7 @@ const getProductsList = async (url?: string) => {
         const tabRoute = props.fieldData.fetchRoute
         const params: Record<string, any> = { ...tabRoute.parameters }
 
-        params['filter[global]'] = queryPortfolio.value
+        params['filter[global]'] = querySearch.value
 
         const urlToFetch = url || route(tabRoute.name, params)
 
@@ -151,7 +147,7 @@ onUnmounted(() => {
     list.value = []
     meta.value = null
     link.value = null
-    queryPortfolio.value = ''
+    querySearch.value = ''
 })
 
 const clearAll = () => {
@@ -206,7 +202,7 @@ const clearAll = () => {
 
                 <div class="mb-2">
                     <div class="pt-2">
-                        <PureInput v-model="queryPortfolio" @update:modelValue="() => debouncegetProductsList()"
+                        <PureInput v-model="querySearch" @update:modelValue="() => debouncegetProductsList()"
                             :placeholder="trans('Input to search')" />
                     </div>
 
