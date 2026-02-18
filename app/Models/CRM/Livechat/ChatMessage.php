@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property int|null $original_language_id
  * @property string|null $original_text
+ * @property array<array-key, mixed>|null $metadata
  * @property-read Media|null $attachment
  * @property-read \App\Models\CRM\Livechat\ChatSession|null $chatSession
  * @property-read Media|null $image

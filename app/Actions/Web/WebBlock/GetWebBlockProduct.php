@@ -21,7 +21,7 @@ class GetWebBlockProduct
 {
     use AsObject;
 
-    public function handle(Webpage $webpage, array $webBlock, bool $isIris=true): array
+    public function handle(Webpage $webpage, array $webBlock, bool $isIris = true): array
     {
 
         /** @var Product $product */
