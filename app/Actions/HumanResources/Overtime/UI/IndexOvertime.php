@@ -145,6 +145,12 @@ class IndexOvertime extends OrgAction
                     sortable: true
                 )
                 ->column(
+                    key: 'reason',
+                    label: __('Reason'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
                     key: 'options',
                     label: __('Options'),
                     canBeHidden: false

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $organisation_id
  * @property string $code
  * @property string $name
+ * @property string|null $color
  * @property string|null $description
  * @property OvertimeCategoryEnum $category
  * @property OvertimeCompensationTypeEnum $compensation_type

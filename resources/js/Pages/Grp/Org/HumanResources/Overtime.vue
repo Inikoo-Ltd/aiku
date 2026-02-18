@@ -5,6 +5,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Table from '@/Components/Table/Table.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
+import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Tag from '@/Components/Tag.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -221,17 +222,71 @@ const submitRequest = () => {
                 </Tag>
             </template>
 
+            <template #cell(reason)="{ item }">
+                <span class="whitespace-nowrap">
+                    {{ item.reason ?? '—' }}
+                </span>
+            </template>
+
             <template #cell(options)="{ item }">
                 <div class="flex gap-2">
                     <Button type="transparent" size="xs" :icon="faEdit" @click="() => openEditModal(item)">
                         {{ trans('Edit') }}
                     </Button>
-                    <Button type="positive" size="xs" :icon="faCheck">
-                        {{ trans('Approve') }}
-                    </Button>
-                    <Button type="warning" size="xs" :icon="faTimes">
-                        {{ trans('Reject') }}
-                    </Button>
+                    <ModalConfirmation
+                        :routeYes="{
+                            name: 'grp.org.hr.overtime_requests.approve',
+                            parameters: { ...route().params, overtimeRequest: item.id },
+                            method: 'patch',
+                        }"
+                    >
+                        <template #default="{ changeModel, isLoadingdelete }">
+                            <Button
+                                type="positive"
+                                size="xs"
+                                :icon="faCheck"
+                                :loading="isLoadingdelete"
+                                @click="changeModel"
+                            >
+                                {{ trans('Approve') }}
+                            </Button>
+                        </template>
+                        <template #btn-yes="{ clickYes, isLoadingdelete }">
+                            <Button
+                                :loading="isLoadingdelete"
+                                @click="clickYes"
+                                :label="trans('Yes, approve')"
+                                type="positive"
+                            />
+                        </template>
+                    </ModalConfirmation>
+                    <ModalConfirmation
+                        :routeYes="{
+                            name: 'grp.org.hr.overtime_requests.reject',
+                            parameters: { ...route().params, overtimeRequest: item.id },
+                            method: 'patch',
+                        }"
+                    >
+                        <template #default="{ changeModel, isLoadingdelete }">
+                            <Button
+                                type="warning"
+                                size="xs"
+                                :icon="faTimes"
+                                :loading="isLoadingdelete"
+                                @click="changeModel"
+                            >
+                                {{ trans('Reject') }}
+                            </Button>
+                        </template>
+                        <template #btn-yes="{ clickYes, isLoadingdelete }">
+                            <Button
+                                :loading="isLoadingdelete"
+                                @click="clickYes"
+                                :label="trans('Yes, reject')"
+                                type="warning"
+                            />
+                        </template>
+                    </ModalConfirmation>
                     <ModalConfirmationDelete
                         :routeDelete="{
                             name: 'grp.org.hr.overtime_requests.delete',

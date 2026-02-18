@@ -34,7 +34,6 @@ use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\HumanResources\Timesheet\UI\ShowTimesheet;
 use App\Actions\HumanResources\Overtime\UI\IndexOvertime;
 use App\Actions\HumanResources\Overtime\UI\IndexOvertimeTypes;
-use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
 use App\Actions\HumanResources\Overtime\StoreOvertimeType;
 use App\Actions\HumanResources\Overtime\UpdateOvertimeRequest;
 use App\Actions\HumanResources\Overtime\UpdateOvertimeType;
@@ -48,6 +47,9 @@ use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use Illuminate\Support\Facades\Route;
 use App\Actions\HumanResources\Overtime\DeleteOvertimeRequest;
+use App\Actions\HumanResources\Overtime\ApproveOvertimeRequest;
+use App\Actions\HumanResources\Overtime\RejectOvertimeRequest;
+use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
@@ -133,10 +135,12 @@ Route::get('/clocking/{clocking}', ShowClocking::class)->name('clockings.show');
 Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.edit');
 
 Route::get('/overtime', IndexOvertime::class)->name('overtime.index');
-Route::get('/overtime-types', IndexOvertimeTypes::class)->name('overtime_types.index');
 Route::post('/overtime-requests', StoreOvertimeRequest::class)->name('overtime_requests.store');
 Route::patch('/overtime-requests/{overtimeRequest}/update', UpdateOvertimeRequest::class)->name('overtime_requests.update');
-Route::delete('/overtime-requests/{overtimeRequest}/delete', DeleteOvertimeRequest::class)->name('overtime_requests.delete');
+Route::patch('/overtime-requests/{overtimeRequest}/approve', ApproveOvertimeRequest::class)->name('overtime_requests.approve');
+Route::patch('/overtime-requests/{overtimeRequest}/reject', RejectOvertimeRequest::class)->name('overtime_requests.reject');
+Route::delete('/overtime-requests/{overtimeRequest}', DeleteOvertimeRequest::class)->name('overtime_requests.delete');
+Route::get('/overtime-types', IndexOvertimeTypes::class)->name('overtime_types.index');
 Route::post('/overtime-types/store', StoreOvertimeType::class)->name('overtime_types.store');
 Route::patch('/overtime-types/{overtimeType}', UpdateOvertimeType::class)->name('overtime_types.update');
 Route::delete('/overtime-types/{overtimeType}', DeleteOvertimeType::class)->name('overtime_types.delete');
