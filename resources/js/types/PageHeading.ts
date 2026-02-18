@@ -55,6 +55,7 @@ export interface PageHeadingTypes {
         tooltip: string
         icon: string
         class: string
+        color?: string
         url: routeType
         icon_rotation:  90 | 180 | 270 | '90' | '180' | '270'
     }

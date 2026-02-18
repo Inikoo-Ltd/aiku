@@ -32,8 +32,6 @@ class SaveCustomerInAurora implements ShouldBeUnique
      */
     public function handle(Customer $customer): void
     {
-
-
         if (!$customer->shop->is_aiku) {
             return;
         }
@@ -122,9 +120,14 @@ class SaveCustomerInAurora implements ShouldBeUnique
         $customerID = $command->argument('customerID');
 
         if ($customerID) {
-            // Process a single customer
-            $command->info("Processing customer ID: $customerID");
-            $customer = Customer::findOrFail($customerID);
+            if (is_numeric($customerID)) {
+                $customer = Customer::findOrFail($customerID);
+            } else {
+                $customer = Customer::where('slug', $customerID)->firstOrFail();
+            }
+
+            $command->info("Processing customer: $customer->slug");
+
             $this->handle($customer);
             $command->info("Customer ID: $customerID processed successfully");
         } else {

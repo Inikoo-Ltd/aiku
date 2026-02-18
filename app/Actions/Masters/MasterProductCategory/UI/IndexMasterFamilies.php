@@ -231,7 +231,7 @@ class IndexMasterFamilies extends OrgAction
 
             // Stats
             'master_product_category_stats.number_current_families as used_in',
-            'master_product_category_stats.number_current_master_assets_type_product as products',
+            'master_product_category_stats.number_current_master_assets as products',
 
             // Shop
             'master_shops.slug as master_shop_slug',

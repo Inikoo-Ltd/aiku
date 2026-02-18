@@ -69,7 +69,7 @@ class IndexMasterProducts extends GrpAction
                         $activeMasterProducts
                     ],
                     'discontinued' => [
-                        __('Discontinued'),
+                        __('Discontinued/Not for sale'),
                         $discontinuedMasterProducts
                     ],
                 ],

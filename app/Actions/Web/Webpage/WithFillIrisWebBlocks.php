@@ -24,9 +24,8 @@ use Illuminate\Support\Arr;
 
 trait WithFillIrisWebBlocks
 {
-    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isLoggedIn)
+    public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isLoggedIn, bool $isIris = true)
     {
-
         $webBlockType = Arr::get($webBlock, 'type');
 
         if ($webBlockType === 'banner') {
@@ -42,7 +41,7 @@ trait WithFillIrisWebBlocks
         } elseif ($webBlockType == 'family-1') {
             $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'product-')) {
-            $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
         } elseif ($webBlockType == 'collections-1') { // not used
             $parsedWebBlocks[$key] = GetWebBlockCollections::run($webpage, $webBlock);
         } elseif ($webBlockType == 'see-also-1') {

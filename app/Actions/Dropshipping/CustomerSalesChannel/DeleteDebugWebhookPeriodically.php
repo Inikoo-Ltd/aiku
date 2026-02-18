@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\DebugWebhooks;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 
 class DeleteDebugWebhookPeriodically extends OrgAction
