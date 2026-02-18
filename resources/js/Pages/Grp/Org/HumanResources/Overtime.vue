@@ -25,6 +25,8 @@ const props = defineProps<{
 }>()
 
 const showRequestModal = ref(false)
+const isEditMode = ref(false)
+const editingOvertimeId = ref<number | null>(null)
 
 const hourOptions = Array.from({ length: 24 }, (_, index) =>
     index < 10 ? `0${index}` : `${index}`
@@ -76,6 +78,8 @@ const formatDuration = (minutes?: number | null): string => {
 }
 
 const openRequestModal = () => {
+    isEditMode.value = false
+    editingOvertimeId.value = null
     form.reset()
     form.clearErrors()
     form.start_hour = '00'
@@ -86,18 +90,70 @@ const openRequestModal = () => {
     showRequestModal.value = true
 }
 
+const openEditModal = (item: any) => {
+    isEditMode.value = true
+    editingOvertimeId.value = item.id ?? null
+    form.reset()
+    form.clearErrors()
+
+    form.employee_id = item.employee_id ?? null
+    form.overtime_type_id = item.overtime_type_id ?? null
+    form.requested_date = item.requested_date?.slice(0, 10) ?? ''
+    form.status = item.status ?? 'pending'
+    form.reason = item.reason ?? ''
+
+    const startAt: string | null = item.requested_start_at ?? null
+
+    if (startAt) {
+        const timePart = startAt.substring(11, 16)
+        const [hour, minute] = timePart.split(':')
+
+        form.start_hour = hour ?? '00'
+        form.start_minute = minute ?? '00'
+    } else {
+        form.start_hour = '00'
+        form.start_minute = '00'
+    }
+
+    const durationMinutes: number = item.requested_duration_minutes ?? 0
+    const durationHours = Math.floor(durationMinutes / 60)
+    const remainingMinutes = durationMinutes % 60
+
+    form.duration_hours = String(durationHours)
+    form.duration_minutes = String(remainingMinutes)
+
+    showRequestModal.value = true
+}
+
 const closeRequestModal = () => {
     showRequestModal.value = false
     form.clearErrors()
+    isEditMode.value = false
+    editingOvertimeId.value = null
 }
 
 const submitRequest = () => {
-    form.post(route('grp.org.hr.overtime_requests.store', route().params), {
-        preserveScroll: true,
-        onSuccess: () => {
-            closeRequestModal()
-        },
-    })
+    if (isEditMode.value && editingOvertimeId.value) {
+        form.patch(
+            route('grp.org.hr.overtime_requests.update', {
+                ...route().params,
+                overtimeRequest: editingOvertimeId.value,
+            }),
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    closeRequestModal()
+                },
+            }
+        )
+    } else {
+        form.post(route('grp.org.hr.overtime_requests.store', route().params), {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeRequestModal()
+            },
+        })
+    }
 }
 </script>
 
@@ -164,9 +220,9 @@ const submitRequest = () => {
                 </Tag>
             </template>
 
-            <template #cell(options)>
+            <template #cell(options)="{ item }">
                 <div class="flex gap-2">
-                    <Button type="transparent" size="xs" :icon="faEdit">
+                    <Button type="transparent" size="xs" :icon="faEdit" @click="() => openEditModal(item)">
                         {{ trans('Edit') }}
                     </Button>
                     <Button type="positive" size="xs" :icon="faCheck">

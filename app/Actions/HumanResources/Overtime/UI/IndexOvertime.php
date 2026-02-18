@@ -55,6 +55,7 @@ class IndexOvertime extends OrgAction
                 'overtime_requests.requested_end_at',
                 'overtime_requests.requested_duration_minutes',
                 'overtime_requests.lieu_requested_minutes',
+                'overtime_requests.reason',
                 'overtime_requests.status',
                 'overtime_requests.approved_at',
                 'overtime_requests.rejected_at',

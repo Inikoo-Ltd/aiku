@@ -1,0 +1,97 @@
+<?php
+
+namespace App\Actions\HumanResources\Overtime;
+
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
+use App\Models\HumanResources\OvertimeRequest;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
+
+class UpdateOvertimeRequest extends OrgAction
+{
+    use WithHumanResourcesEditAuthorisation;
+
+    protected bool $asAction = false;
+
+    public function handle(Organisation $organisation, OvertimeRequest $overtimeRequest, array $modelData): OvertimeRequest
+    {
+        $overtimeRequest->update($modelData);
+
+        return $overtimeRequest;
+    }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $date = $this->get('requested_date');
+
+        if ($date) {
+            $timezone = $this->organisation->timezone->name ?? null;
+            $date = Carbon::parse($date, $timezone)->startOfDay();
+        }
+
+        $startHour = (int) $this->get('start_hour', 0);
+        $startMinute = (int) $this->get('start_minute', 0);
+        $durationHour = (int) $this->get('duration_hours', 0);
+        $durationMinute = (int) $this->get('duration_minutes', 0);
+
+        $durationMinutes = ($durationHour * 60) + $durationMinute;
+
+        if ($date) {
+            $startAt = $date->copy()->setTime($startHour, $startMinute);
+            $this->set('requested_start_at', $startAt);
+
+            if ($durationMinutes > 0) {
+                $this->set('requested_end_at', $startAt->copy()->addMinutes($durationMinutes));
+            }
+        }
+
+        $this->set('requested_duration_minutes', $durationMinutes);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'employee_id'                => ['required', 'integer'],
+            'overtime_type_id'           => ['required', 'integer'],
+            'requested_date'             => ['required', 'date'],
+            'requested_start_at'         => ['nullable', 'date'],
+            'requested_end_at'           => ['nullable', 'date'],
+            'requested_duration_minutes' => ['required', 'integer', 'min:1'],
+            'reason'                     => ['sometimes', 'nullable', 'string'],
+            'status'                     => ['required', Rule::enum(OvertimeRequestStatusEnum::class)],
+            'lieu_requested_minutes'     => ['sometimes', 'integer', 'min:0'],
+        ];
+    }
+
+    public function asController(Organisation $organisation, OvertimeRequest $overtimeRequest, ActionRequest $request): OvertimeRequest
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation, $overtimeRequest, $this->validatedData);
+    }
+
+    public function htmlResponse(OvertimeRequest $overtimeRequest): RedirectResponse
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Overtime request successfully updated.'),
+        ]);
+
+        return Redirect::back();
+    }
+
+    public function action(Organisation $organisation, OvertimeRequest $overtimeRequest, array $modelData): OvertimeRequest
+    {
+        $this->asAction = true;
+        $this->initialisation($organisation, $modelData);
+
+        return $this->handle($organisation, $overtimeRequest, $this->validatedData);
+    }
+}

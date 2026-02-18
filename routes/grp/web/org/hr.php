@@ -36,6 +36,7 @@ use App\Actions\HumanResources\Overtime\UI\IndexOvertime;
 use App\Actions\HumanResources\Overtime\UI\IndexOvertimeTypes;
 use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
 use App\Actions\HumanResources\Overtime\StoreOvertimeType;
+use App\Actions\HumanResources\Overtime\UpdateOvertimeRequest;
 use App\Actions\HumanResources\Overtime\UpdateOvertimeType;
 use App\Actions\HumanResources\Overtime\DeleteOvertimeType;
 use App\Actions\HumanResources\Workplace\UI\CreateWorkplace;
@@ -133,6 +134,7 @@ Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.ed
 Route::get('/overtime', IndexOvertime::class)->name('overtime.index');
 Route::get('/overtime-types', IndexOvertimeTypes::class)->name('overtime_types.index');
 Route::post('/overtime-requests', StoreOvertimeRequest::class)->name('overtime_requests.store');
+Route::patch('/overtime-requests/{overtimeRequest}', UpdateOvertimeRequest::class)->name('overtime_requests.update');
 Route::post('/overtime-types/store', StoreOvertimeType::class)->name('overtime_types.store');
 Route::patch('/overtime-types/{overtimeType}', UpdateOvertimeType::class)->name('overtime_types.update');
 Route::delete('/overtime-types/{overtimeType}', DeleteOvertimeType::class)->name('overtime_types.delete');
