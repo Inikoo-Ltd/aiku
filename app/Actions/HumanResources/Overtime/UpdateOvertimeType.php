@@ -55,6 +55,7 @@ class UpdateOvertimeType extends OrgAction
                 'alpha_dash',
             ],
             'name'              => ['sometimes', 'required', 'string', 'max:128'],
+            'color'             => ['sometimes', 'nullable', 'string', 'max:128'],
             'description'       => ['sometimes', 'nullable', 'string'],
             'category'          => ['sometimes', 'required', Rule::enum(OvertimeCategoryEnum::class)],
             'compensation_type' => ['sometimes', 'required', Rule::enum(OvertimeCompensationTypeEnum::class)],

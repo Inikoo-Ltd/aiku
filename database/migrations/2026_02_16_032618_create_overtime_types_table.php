@@ -16,6 +16,7 @@ return new class () extends Migration {
 
             $table->string('code', 32);
             $table->string('name', 128);
+            $table->string('color', 128)->nullable();
             $table->text('description')->nullable();
 
             $table->string('category', 32)->default('overtime');

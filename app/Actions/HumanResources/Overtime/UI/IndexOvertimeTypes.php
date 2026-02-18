@@ -46,6 +46,7 @@ class IndexOvertimeTypes extends OrgAction
                 'overtime_types.id',
                 'overtime_types.code',
                 'overtime_types.name',
+                'overtime_types.color',
                 'overtime_types.description',
                 'overtime_types.category',
                 'overtime_types.compensation_type',
@@ -71,6 +72,7 @@ class IndexOvertimeTypes extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'color', label: __('Color'), canBeHidden: true)
                 ->column(key: 'category', label: __('Category'), canBeHidden: false, sortable: true)
                 ->column(key: 'compensation_type', label: __('Compensation type'), canBeHidden: false, sortable: true)
                 ->column(key: 'multiplier', label: __('Multiplier'), canBeHidden: true, sortable: true)

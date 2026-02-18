@@ -41,6 +41,7 @@ class StoreOvertimeType extends OrgAction
                 'alpha_dash',
             ],
             'name'              => ['required', 'string', 'max:128'],
+            'color'             => ['sometimes', 'nullable', 'string', 'max:128'],
             'description'       => ['sometimes', 'nullable', 'string'],
             'category'          => ['required', Rule::enum(OvertimeCategoryEnum::class)],
             'compensation_type' => ['required', Rule::enum(OvertimeCompensationTypeEnum::class)],

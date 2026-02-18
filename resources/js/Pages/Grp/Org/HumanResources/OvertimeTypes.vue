@@ -28,6 +28,7 @@ const editingOvertimeTypeId = ref<number | null>(null)
 const form = useForm<{
     code: string
     name: string
+    color: string | null
     description: string | null
     category: string
     compensation_type: string
@@ -36,6 +37,7 @@ const form = useForm<{
 }>({
     code: '',
     name: '',
+    color: null,
     description: null,
     category: '',
     compensation_type: '',
@@ -63,6 +65,7 @@ const openEdit = (row: any) => {
 
     form.code = row.code ?? ''
     form.name = row.name ?? ''
+    form.color = row.color ?? null
     form.description = row.description ?? null
     form.category = row.category ?? ''
     form.compensation_type = row.compensation_type ?? ''
@@ -123,6 +126,15 @@ const modalTitle = computed(() =>
     </PageHeading>
 
     <Table :resource="data" class="mt-5">
+        <template #cell(color)="{ item }">
+            <div
+                v-if="item.color"
+                class="w-6 h-6 rounded-full border border-gray-200 shadow-sm"
+                :style="{ backgroundColor: item.color }"
+            ></div>
+            <span v-else class="text-gray-400 text-sm italic">{{ trans('No color') }}</span>
+        </template>
+
         <template #cell(action)="{ item }">
             <div class="flex justify-end gap-2">
                 <Button
@@ -176,7 +188,8 @@ const modalTitle = computed(() =>
                     <input
                         v-model="form.code"
                         type="text"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        :disabled="isEditMode"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100"
                     />
                     <div v-if="form.errors.code" class="mt-1 text-sm text-red-600">
                         {{ form.errors.code }}
@@ -194,6 +207,20 @@ const modalTitle = computed(() =>
                     />
                     <div v-if="form.errors.name" class="mt-1 text-sm text-red-600">
                         {{ form.errors.name }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">
+                        {{ trans('Color') }}
+                    </label>
+                    <input
+                        v-model="form.color"
+                        type="color"
+                        class="mt-1 block w-full h-9 rounded-md border border-gray-300 p-1 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    />
+                    <div v-if="form.errors.color" class="mt-1 text-sm text-red-600">
+                        {{ form.errors.color }}
                     </div>
                 </div>
             </div>
