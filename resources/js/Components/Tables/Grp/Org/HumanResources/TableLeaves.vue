@@ -16,6 +16,7 @@ library.add(faPlus, faPaperclip, faCheckCircle, faTimesCircle, faClock, faPencil
 const props = defineProps<{
 	data: {}
 	tab?: string
+	organisation?: string | null
 	balance?: {
 		annual_days: number
 		annual_used: number
@@ -72,24 +73,26 @@ const statusIcons: Record<string, string> = {
 }
 
 const submitLeave = () => {
-	console.log("Submitting leave form, route:", route("grp.clocking_employees.leaves.store"))
 	isSubmitting.value = true
-	leaveForm.post(route("grp.clocking_employees.leaves.store"), {
-		preserveScroll: true,
-		forceFormData: true,
-		onSuccess: () => {
-			console.log("Leave submitted successfully")
-			isCreateModalOpen.value = false
-			leaveForm.reset()
-		},
-		onError: (errors) => {
-			console.error("Leave submission errors:", errors)
-			isSubmitting.value = false
-		},
-		onFinish: () => {
-			isSubmitting.value = false
-		},
-	})
+	leaveForm
+		.transform((data) => ({
+			...data,
+			organisation: props.organisation ?? undefined,
+		}))
+		.post(route("grp.clocking_employees.leaves.store"), {
+			preserveScroll: true,
+			forceFormData: true,
+			onSuccess: () => {
+				isCreateModalOpen.value = false
+				leaveForm.reset()
+			},
+			onError: () => {
+				isSubmitting.value = false
+			},
+			onFinish: () => {
+				isSubmitting.value = false
+			},
+		})
 }
 
 const closeCreateModal = () => {

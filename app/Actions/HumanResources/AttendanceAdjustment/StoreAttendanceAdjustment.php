@@ -10,6 +10,7 @@ use App\Models\HumanResources\AttendanceAdjustment;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\Timesheet;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
@@ -22,6 +23,41 @@ class StoreAttendanceAdjustment extends OrgAction
 {
     private ?Employee $employee = null;
     private ?Timesheet $timesheet = null;
+
+    private function resolveEmployee(Request $request): ?Employee
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return null;
+        }
+
+        $organisationScope = $request->input('organisation') ?? $request->route('organisation');
+        if (is_object($organisationScope)) {
+            $organisationScope = $organisationScope->slug ?? $organisationScope->id ?? null;
+        }
+
+        if ($organisationScope) {
+            $organisationScope = (string)$organisationScope;
+            $isNumericOrganisationId = ctype_digit($organisationScope);
+
+            $employee = $user->employees()
+                ->whereHas('organisation', function ($query) use ($organisationScope, $isNumericOrganisationId) {
+                    $query->where('slug', $organisationScope);
+
+                    if ($isNumericOrganisationId) {
+                        $query->orWhere('id', (int)$organisationScope);
+                    }
+                })
+                ->first();
+
+            if ($employee) {
+                return $employee;
+            }
+        }
+
+        return $user->employees()->first();
+    }
 
     public function handle(Employee $employee, array $modelData): AttendanceAdjustment
     {
@@ -72,10 +108,10 @@ class StoreAttendanceAdjustment extends OrgAction
 
     public function rules(): array
     {
-        $user = request()->user();
-        $this->employee = $user?->employees->first();
+        $this->employee = $this->resolveEmployee(request());
 
         return [
+            'organisation'        => ['nullable', 'string'],
             'timesheet_id'        => ['nullable', 'exists:timesheets,id'],
             'date'                => ['required', 'date'],
             'requested_start_at'  => ['nullable', 'date_format:H:i'],
@@ -116,8 +152,7 @@ class StoreAttendanceAdjustment extends OrgAction
 
     public function asController(ActionRequest $request): AttendanceAdjustment
     {
-        $user = request()->user();
-        $this->employee = $user?->employees->first();
+        $this->employee = $this->resolveEmployee($request);
 
         if (!$this->employee) {
             abort(404, __('Employee record not found for current user.'));

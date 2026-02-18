@@ -16,6 +16,7 @@ library.add(faPlus, faCheckCircle, faTimesCircle, faClock)
 const props = defineProps<{
 	data: {}
 	tab?: string
+	organisation?: string | null
 }>()
 
 const locale = useLocaleStore()
@@ -49,27 +50,26 @@ const formatTime = (dateString: string | null) => {
 }
 
 const submitAdjustment = () => {
-	console.log(
-		"Submitting adjustment form, route:",
-		route("grp.clocking_employees.adjustments.store")
-	)
 	isSubmitting.value = true
-	adjustmentForm.post(route("grp.clocking_employees.adjustments.store"), {
-		preserveScroll: true,
-		forceFormData: true,
-		onSuccess: () => {
-			console.log("Adjustment submitted successfully")
-			isCreateModalOpen.value = false
-			adjustmentForm.reset()
-		},
-		onError: (errors) => {
-			console.error("Adjustment submission errors:", errors)
-			isSubmitting.value = false
-		},
-		onFinish: () => {
-			isSubmitting.value = false
-		},
-	})
+	adjustmentForm
+		.transform((data) => ({
+			...data,
+			organisation: props.organisation ?? undefined,
+		}))
+		.post(route("grp.clocking_employees.adjustments.store"), {
+			preserveScroll: true,
+			forceFormData: true,
+			onSuccess: () => {
+				isCreateModalOpen.value = false
+				adjustmentForm.reset()
+			},
+			onError: () => {
+				isSubmitting.value = false
+			},
+			onFinish: () => {
+				isSubmitting.value = false
+			},
+		})
 }
 
 const closeCreateModal = () => {

@@ -44,7 +44,27 @@ class IndexClockingEmployees extends OrgAction
         $tab = $request->input('tab') ?? ClockingEmployeesTabsEnum::SCAN_QR_CODE->value;
 
         $user = Auth::user();
-        $this->employee = $user?->employees->first();
+        $this->employee = null;
+        $organisationScope = $request->input('organisation');
+
+        if ($user && $organisationScope) {
+            $organisationScope = (string)$organisationScope;
+            $isNumericOrganisationId = ctype_digit($organisationScope);
+
+            $this->employee = $user->employees()
+                ->whereHas('organisation', function ($query) use ($organisationScope, $isNumericOrganisationId) {
+                    $query->where('slug', $organisationScope);
+
+                    if ($isNumericOrganisationId) {
+                        $query->orWhere('id', (int)$organisationScope);
+                    }
+                })
+                ->first();
+        }
+
+        if (!$this->employee) {
+            $this->employee = $user?->employees->first();
+        }
 
         $timesheetsData = collect();
         $statistics = [];
@@ -129,6 +149,7 @@ class IndexClockingEmployees extends OrgAction
             'leaves' => $leavesData,
             'balance' => $balance,
             'adjustments' => $adjustmentsData,
+            'organisation' => $this->employee?->organisation?->slug,
         ];
     }
 
@@ -251,19 +272,23 @@ class IndexClockingEmployees extends OrgAction
                     ? fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
+                        'organisation' => $data['organisation'],
                     ]
                     : Inertia::lazy(fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
+                        'organisation' => $data['organisation'],
                     ]),
 
                 ClockingEmployeesTabsEnum::ADJUSTMENTS->value =>
                 $data['tab'] === ClockingEmployeesTabsEnum::ADJUSTMENTS->value
                     ? fn () => [
                         'data' => AttendanceAdjustmentResource::collection($data['adjustments']),
+                        'organisation' => $data['organisation'],
                     ]
                     : Inertia::lazy(fn () => [
                         'data' => AttendanceAdjustmentResource::collection($data['adjustments']),
+                        'organisation' => $data['organisation'],
                     ]),
             ]
         )

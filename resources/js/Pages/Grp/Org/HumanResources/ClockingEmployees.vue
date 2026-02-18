@@ -9,7 +9,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ScanQrUser from "./ScanQrUser.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -109,6 +109,13 @@ const component = computed(() => {
 		"
 		:statistics="timesheets?.statistics"
 		:balance="leaves?.balance"
+		:organisation="
+			currentTab === 'leaves'
+				? leaves?.organisation
+				: currentTab === 'adjustments'
+					? adjustments?.organisation
+					: null
+		"
 		:tab="currentTab">
 	</component>
 </template>
