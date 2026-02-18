@@ -13,10 +13,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import SettingChat from "../SettingChat.vue"
 import Dialog from 'primevue/dialog';
+import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
 
 const layout: any = inject("layout", {})
-
 const baseUrl = layout?.appUrl ?? ""
+const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
+
 const contacts = ref<Contact[]>([])
 const selectedSession = ref<SessionAPI | null>(null)
 const messages = ref<ChatMessage[]>([])
@@ -122,6 +124,8 @@ onMounted(() => {
             const duplicate = `${msg.sender_name}-${msg.text}`
 
             if (notifiedMessages.has(duplicate)) return
+
+            playNotificationSoundFile(soundUrl)
 
             if (Notification.permission === "granted") {
                 new Notification(senderDisplay, {
