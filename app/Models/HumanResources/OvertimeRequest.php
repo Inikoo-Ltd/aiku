@@ -71,6 +71,11 @@ class OvertimeRequest extends Model
         return $this->belongsTo(Employee::class, 'approved_by_employee_id');
     }
 
+    public function approver(): BelongsTo
+    {
+        return $this->approvedBy();
+    }
+
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'recorded_by_employee_id');

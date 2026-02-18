@@ -22,6 +22,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexOvertime extends OrgAction
 {
     use WithHumanResourcesAuthorisation;
+    use WithOvertimeSubNavigation;
 
     public function handle(Organisation $organisation, ?string $prefix = null): LengthAwarePaginator
     {
@@ -47,8 +48,8 @@ class IndexOvertime extends OrgAction
                 'overtime_requests.id',
                 'overtime_requests.employee_id',
                 'overtime_requests.overtime_type_id',
-                'staff.alias as employee_name',
-                'approver.alias as approver_name',
+                'staff.contact_name as employee_name',
+                'approver.contact_name as approver_name',
                 'overtime_types.name as overtime_type_name',
                 'overtime_requests.requested_date',
                 'overtime_requests.requested_start_at',
@@ -188,38 +189,16 @@ class IndexOvertime extends OrgAction
                             'icon'  => ['fal', 'fa-plus'],
                         ],
                     ],
-                    'subNavigation' => [
-                        [
-                            'label'    => __('Overview'),
-                            'route'    => [
-                                'name'       => 'grp.org.hr.overtime.index',
-                                'parameters' => $request->route()->originalParameters(),
-                            ],
-                            'leftIcon' => [
-                                'icon'    => ['fal', 'fa-chart-line'],
-                                'tooltip' => __('Overtime overview'),
-                            ],
-                        ],
-                        [
-                            'label'    => __('Overtime types'),
-                            'route'    => [
-                                'name'       => 'grp.org.hr.overtime_types.index',
-                                'parameters' => $request->route()->originalParameters(),
-                            ],
-                            'leftIcon' => [
-                                'icon'    => ['fal', 'fa-layer-group'],
-                                'tooltip' => __('Overtime types'),
-                            ],
-                        ],
-                    ],
+                    'subNavigation' => $this->getOvertimeSubNavigation($request),
                 ],
                 'data'               => $overtimeRequests,
                 'employeeOptions'    => $this->organisation->employees()
-                    ->orderBy('alias')
+                    ->orderBy('contact_name')
+                    ->where('state', 'working')
                     ->get()
                     ->map(fn (Employee $employee) => [
                         'value' => $employee->id,
-                        'label' => $employee->alias,
+                        'label' => $employee->contact_name,
                     ])
                     ->values(),
                 'overtimeTypeOptions' => OvertimeType::query()

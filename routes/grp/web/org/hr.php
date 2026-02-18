@@ -50,6 +50,7 @@ use App\Actions\HumanResources\Overtime\DeleteOvertimeRequest;
 use App\Actions\HumanResources\Overtime\ApproveOvertimeRequest;
 use App\Actions\HumanResources\Overtime\RejectOvertimeRequest;
 use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
+use App\Actions\HumanResources\Overtime\UI\DashboardOvertime;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
@@ -134,6 +135,7 @@ Route::get('/clocking/create', CreateClocking::class)->name('clockings.create');
 Route::get('/clocking/{clocking}', ShowClocking::class)->name('clockings.show');
 Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.edit');
 
+Route::get('/overtime/dashboard', DashboardOvertime::class)->name('overtime.dashboard');
 Route::get('/overtime', IndexOvertime::class)->name('overtime.index');
 Route::post('/overtime-requests', StoreOvertimeRequest::class)->name('overtime_requests.store');
 Route::patch('/overtime-requests/{overtimeRequest}/update', UpdateOvertimeRequest::class)->name('overtime_requests.update');

@@ -13,9 +13,9 @@ import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { trans } from 'laravel-vue-i18n'
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTrash, faEdit, faCheck, faTimes } from "@fal";
+import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup } from "@fal";
 
-library.add(faTrash, faEdit, faCheck, faTimes)
+library.add(faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
