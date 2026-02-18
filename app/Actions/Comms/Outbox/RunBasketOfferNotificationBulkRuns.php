@@ -16,16 +16,20 @@ use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -60,82 +64,151 @@ class RunBasketOfferNotificationBulkRuns
             }
 
             $currentDateTime = Carbon::now()->utc();
+            $intervalInHours = Carbon::now()->utc()->subHours($outbox->interval);
             $emailongoingRun = $outbox->emailOngoingRun;
+
+            $lastOutBoxSent = $outbox->last_sent_at;
+
+            $productClass = class_basename(Product::class);
 
             // Base query for customers - leave empty as requested
             $baseQuery = QueryBuilder::for(Customer::class);
             $baseQuery->where('customers.shop_id', $outbox->shop_id);
+            $baseQuery->whereNull('customers.deleted_at');
 
-            // TODO: Add customer filtering logic here based on basket offer criteria
-            // For now, getting all customers in the shop
+            // Join Order
+            $baseQuery->join('orders', function ($join) {
+                $join->on('customers.id', '=', 'orders.customer_id');
+                $join->where('orders.state', OrderStateEnum::CREATING);
+                $join->where('orders.status', OrderStatusEnum::CREATING);
+                $join->whereNull('orders.deleted_at');
+            });
 
+            // Join Transactions
+            $baseQuery->join('transactions', function ($join) {
+                $join->on('orders.id', '=', 'transactions.order_id');
+            });
+
+            // Join Products
+            $baseQuery->join('products', function ($join) use ($productClass) {
+                $join->on('transactions.model_id', '=', 'products.id');
+                $join->where('transactions.model_type', $productClass);
+                $join->where('products.is_for_sale', true);
+                $join->whereIn('products.state', [
+                    ProductStateEnum::ACTIVE,
+                    ProductStateEnum::DISCONTINUING,
+                ]);
+                $join->whereNull('products.deleted_at');
+            });
+
+            // Innermost: rank historic assets per product
+            $rankedQuery = DB::table('historic_assets')
+                ->select('model_id', 'price')
+                ->selectRaw('ROW_NUMBER() OVER (PARTITION BY model_id ORDER BY id DESC) AS rn')
+                ->where('model_type', $productClass);
+
+            // Middle: aggregate latest and second latest price per product
+            $priceComparisonQuery = DB::table(DB::raw("({$rankedQuery->toSql()}) AS ranked"))
+                ->mergeBindings($rankedQuery)
+                ->select('model_id')
+                ->selectRaw('MAX(CASE WHEN rn = 1 THEN price END) AS latest_price')
+                ->selectRaw('MAX(CASE WHEN rn = 2 THEN price END) AS second_latest_price')
+                ->groupBy('model_id');
+
+            // Outer: filter only price dropped products
+            $priceDroppedProductsQuery = DB::table(DB::raw("({$priceComparisonQuery->toSql()}) AS price_comparison"))
+                ->mergeBindings($priceComparisonQuery)
+                ->select('model_id')
+                ->whereRaw('latest_price < second_latest_price');
+
+            // Join price dropped products
+            $baseQuery->joinSub($priceDroppedProductsQuery, 'price_dropped_products', function ($join) {
+                $join->on('products.id', '=', 'price_dropped_products.model_id');
+            });
+
+            // Left join ranked historic assets (last 2 per product)
+            $rankedHistoricAssetsQuery = DB::table('historic_assets')
+                ->select('id', 'model_id')
+                ->selectRaw('ROW_NUMBER() OVER (PARTITION BY model_id ORDER BY id DESC) AS rn')
+                ->where('model_type', $productClass);
+
+            $baseQuery->leftJoinSub($rankedHistoricAssetsQuery, 'ranked_historic_assets', function ($join) {
+                $join->on('products.id', '=', 'ranked_historic_assets.model_id')
+                    ->where('ranked_historic_assets.rn', '<=', 2);
+            });
 
             $baseQuery->select(
                 'customers.id',
-                'customers.email'
+                'customers.email',
+                DB::raw('STRING_AGG(DISTINCT products.id::TEXT, \',\' ORDER BY products.id::TEXT) AS product_ids'),
+                DB::raw('STRING_AGG(ranked_historic_assets.id::TEXT, \',\' ORDER BY ranked_historic_assets.id::TEXT) AS historic_asset_ids')
             );
+            $baseQuery->groupBy('customers.id');
             $baseQuery->orderBy('customers.id');
 
+            // Log the query
+            Log::info($baseQuery->toRawSql());
+
             // create email bulk run
-            $emailBulkRun = StoreEmailBulkRun::make()->action($emailongoingRun, [
-                'scheduled_at' => now(),
-                'subject'      => now()->format('Y.m.d'),
-                'state'        => EmailBulkRunStateEnum::SCHEDULED,
-            ], 0, false);
+            // $emailBulkRun = StoreEmailBulkRun::make()->action($emailongoingRun, [
+            //     'scheduled_at' => now(),
+            //     'subject'      => now()->format('Y.m.d'),
+            //     'state'        => EmailBulkRunStateEnum::SCHEDULED,
+            // ], 0, false);
 
-            $baseQuery->chunk(250, function ($customers) use ($emailBulkRun, $outbox) {
+            // $baseQuery->chunk(250, function ($customers) use ($emailBulkRun, $outbox) {
 
-                $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
+            //     $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
 
-                foreach ($customers as $customer) {
+            //     foreach ($customers as $customer) {
 
-                    if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
+            //         if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
 
-                        $dispatchedEmail = StoreDispatchedEmail::run(
-                            $emailBulkRun,
-                            $customer,
-                            [
-                                'is_test'       => false,
-                                'outbox_id'     => $outbox->id,
-                                'email_address' => $customer->email,
-                                'provider'      => DispatchedEmailProviderEnum::SES,
-                                'data->additional_data' => [
-                                    'products' => $this->generateProductLinks($customer->product_ids)
-                                ]
-                            ]
-                        );
+            //             $dispatchedEmail = StoreDispatchedEmail::run(
+            //                 $emailBulkRun,
+            //                 $customer,
+            //                 [
+            //                     'is_test'       => false,
+            //                     'outbox_id'     => $outbox->id,
+            //                     'email_address' => $customer->email,
+            //                     'provider'      => DispatchedEmailProviderEnum::SES,
+            //                     'data->additional_data' => [
+            //                         'products' => $this->generateProductLinks($customer->product_ids)
+            //                     ]
+            //                 ]
+            //             );
 
-                        StoreEmailBulkRunRecipient::run(
-                            $emailBulkRun,
-                            [
-                                'dispatched_email_id' => $dispatchedEmail->id,
-                                'recipient_type'      => class_basename($customer),
-                                'recipient_id'        => $customer->id,
-                                'channel'             => $emailDeliveryChannel->id,
-                            ]
-                        );
-                    }
-                }
+            //             StoreEmailBulkRunRecipient::run(
+            //                 $emailBulkRun,
+            //                 [
+            //                     'dispatched_email_id' => $dispatchedEmail->id,
+            //                     'recipient_type'      => class_basename($customer),
+            //                     'recipient_id'        => $customer->id,
+            //                     'channel'             => $emailDeliveryChannel->id,
+            //                 ]
+            //             );
+            //         }
+            //     }
 
-                // After processing the chunk, update and dispatch the delivery channel
-                UpdateEmailDeliveryChannel::run(
-                    $emailDeliveryChannel,
-                    [
-                        'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count()
-                    ]
-                );
-                SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
-            });
+            //     // After processing the chunk, update and dispatch the delivery channel
+            //     UpdateEmailDeliveryChannel::run(
+            //         $emailDeliveryChannel,
+            //         [
+            //             'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count()
+            //         ]
+            //     );
+            //     SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+            // });
 
-            UpdateEmailBulkRun::run(
-                $emailBulkRun,
-                [
-                    'recipients_stored_at' => now()
-                ]
-            );
+            // UpdateEmailBulkRun::run(
+            //     $emailBulkRun,
+            //     [
+            //         'recipients_stored_at' => now()
+            //     ]
+            // );
 
-            // update last outbox sent
-            $this->update($outbox, ['last_sent_at' => $currentDateTime]);
+            // // update last outbox sent
+            // $this->update($outbox, ['last_sent_at' => $currentDateTime]);
         }
     }
 
