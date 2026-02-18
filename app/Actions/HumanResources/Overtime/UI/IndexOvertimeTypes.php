@@ -104,6 +104,30 @@ class IndexOvertimeTypes extends OrgAction
                             'icon'  => ['fal', 'fa-plus'],
                         ],
                     ],
+                    'subNavigation' => [
+                        [
+                            'label'    => __('Overview'),
+                            'route'    => [
+                                'name'       => 'grp.org.hr.overtime.index',
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
+                            'leftIcon' => [
+                                'icon'    => ['fal', 'fa-chart-line'],
+                                'tooltip' => __('Overtime overview'),
+                            ],
+                        ],
+                        [
+                            'label'    => __('Overtime types'),
+                            'route'    => [
+                                'name'       => 'grp.org.hr.overtime_types.index',
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
+                            'leftIcon' => [
+                                'icon'    => ['fal', 'fa-layer-group'],
+                                'tooltip' => __('Overtime types'),
+                            ],
+                        ],
+                    ],
                 ],
                 'data'                  => $overtimeTypes,
                 'categoryOptions'       => collect(OvertimeCategoryEnum::labels())

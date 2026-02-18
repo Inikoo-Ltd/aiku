@@ -164,9 +164,13 @@ const submitRequest = () => {
 
     <PageHeading :data="pageHead">
         <template #button-overtime-request="{ action }">
-            <Button type="create" :icon="action.icon" size="xs" @click="openRequestModal">
-                {{ action.label }}
-            </Button>
+            <Button
+                type="create"
+                :icon="action.icon"
+                size="xs"
+                :label="action.label"
+                @click="openRequestModal"
+            />
         </template>
     </PageHeading>
 
@@ -230,9 +234,13 @@ const submitRequest = () => {
 
             <template #cell(options)="{ item }">
                 <div class="flex gap-2">
-                    <Button type="transparent" size="xs" :icon="faEdit" @click="() => openEditModal(item)">
-                        {{ trans('Edit') }}
-                    </Button>
+                    <Button
+                        type="transparent"
+                        size="xs"
+                        :icon="faEdit"
+                        :label="trans('Edit')"
+                        @click="() => openEditModal(item)"
+                    />
                     <ModalConfirmation
                         :routeYes="{
                             name: 'grp.org.hr.overtime_requests.approve',
@@ -245,11 +253,10 @@ const submitRequest = () => {
                                 type="positive"
                                 size="xs"
                                 :icon="faCheck"
+                                :label="trans('Approve')"
                                 :loading="isLoadingdelete"
                                 @click="changeModel"
-                            >
-                                {{ trans('Approve') }}
-                            </Button>
+                            />
                         </template>
                         <template #btn-yes="{ clickYes, isLoadingdelete }">
                             <Button
@@ -272,11 +279,10 @@ const submitRequest = () => {
                                 type="warning"
                                 size="xs"
                                 :icon="faTimes"
+                                :label="trans('Reject')"
                                 :loading="isLoadingdelete"
                                 @click="changeModel"
-                            >
-                                {{ trans('Reject') }}
-                            </Button>
+                            />
                         </template>
                         <template #btn-yes="{ clickYes, isLoadingdelete }">
                             <Button
@@ -298,11 +304,10 @@ const submitRequest = () => {
                                 type="negative"
                                 size="xs"
                                 :icon="faTrash"
+                                :label="trans('Delete')"
                                 :loading="isLoadingdelete"
                                 @click="changeModel"
-                            >
-                                {{ trans('Delete') }}
-                            </Button>
+                            />
                         </template>
                     </ModalConfirmationDelete>
                 </div>
@@ -466,12 +471,13 @@ const submitRequest = () => {
             </div>
 
             <div class="mt-6 flex justify-end gap-2">
-                <Button type="tertiary" @click="closeRequestModal">
-                    {{ trans('Cancel') }}
-                </Button>
-                <Button type="save" :loading="form.processing" @click="submitRequest">
-                    {{ trans('Submit') }}
-                </Button>
+                <Button type="tertiary" :label="trans('Cancel')" @click="closeRequestModal" />
+                <Button
+                    type="save"
+                    :label="trans('Submit')"
+                    :loading="form.processing"
+                    @click="submitRequest"
+                />
             </div>
         </form>
     </Modal>
