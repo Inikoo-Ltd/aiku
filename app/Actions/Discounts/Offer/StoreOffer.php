@@ -82,7 +82,7 @@ class StoreOffer extends OrgAction
         );
     }
 
-    public function inCategoryOffers(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): void
+    public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): void
     {
         $this->initialisationFromShop($shop, $request);
 

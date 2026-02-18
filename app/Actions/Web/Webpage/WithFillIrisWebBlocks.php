@@ -9,9 +9,10 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\GetBanner;
+use App\Actions\Web\WebBlock\GetBlockSubDepartment;
 use App\Actions\Web\WebBlock\GetWebBlockBlog;
-use App\Actions\Web\WebBlock\GetWebBlockCollections;
-use App\Actions\Web\WebBlock\GetWebBlockDepartments;
+use App\Actions\Web\WebBlock\GetWebBlockCollection;
+use App\Actions\Web\WebBlock\GetWebBlockDepartment;
 use App\Actions\Web\WebBlock\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\GetWebBlockFamily;
 use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
@@ -30,8 +31,12 @@ trait WithFillIrisWebBlocks
 
         if ($webBlockType === 'banner') {
             $parsedWebBlocks[$key] = GetBanner::run($webBlock);
-        } elseif ($webBlockType == 'departments') { // not used
-            $parsedWebBlocks[$key] = GetWebBlockDepartments::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'department-description') {
+            $parsedWebBlocks[$key] = GetWebBlockDepartment::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'sub-department-description') {
+            $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'collection-description') {
+            $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'families-')) {
@@ -42,8 +47,6 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
-        } elseif ($webBlockType == 'collections-1') { // not used
-            $parsedWebBlocks[$key] = GetWebBlockCollections::run($webpage, $webBlock);
         } elseif ($webBlockType == 'see-also-1') {
             $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
         } elseif ($webBlockType == 'blog') {
