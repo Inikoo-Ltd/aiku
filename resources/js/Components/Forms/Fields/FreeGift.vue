@@ -220,11 +220,11 @@ const clearAll = () => {
                             <div class="flex gap-2">
                                 <div @click="selectAllProducts"
                                     :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
-                                    {{ trans("Select :number products in this page", { number: list.length }) }}
+                                    {{ trans("Select :xnumber products in this page", { xnumber: list.length }) }}
                                 </div>
                                 <div v-if="compSelectedProduct.length" @click="clearAll"
                                     class="cursor-pointer text-red-400 hover:text-red-600 hover:underline">
-                                    {{ trans('Clear :number selections', { number: compSelectedProduct.length }) }}
+                                    {{ trans('Clear :xnumber selections', { xnumber: compSelectedProduct.length }) }}
                                     <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
                                 </div>
                             </div>
