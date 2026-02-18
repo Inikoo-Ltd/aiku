@@ -80,7 +80,7 @@
 
     <style>
         #jsd-widget {
-            bottom: 40px !important;
+            bottom: 44px !important;
         }
     </style>
 </head>
