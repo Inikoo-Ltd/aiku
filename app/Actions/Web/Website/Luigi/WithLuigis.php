@@ -100,9 +100,7 @@ trait WithLuigis
         Log::info('Starting request to Luigi Box API ' . $publicKey . ' (' . $date . ')...');
         Log::info('Headers: ', $header);
         Log::info('Body: ', ['body' => $bodyToPrint]);
-
         Log::info('Loading...');
-
 
         try {
             $response = Http::withHeaders($header)
