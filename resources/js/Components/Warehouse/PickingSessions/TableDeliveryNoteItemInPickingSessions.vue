@@ -130,8 +130,8 @@ const onCloseModal = () => {
 }
 
 // Method: to find the location that Alt ed, fallback is index 0
-const findLocation = (locationsList: { location_code: string }[], selectedHehe: string) => {
-    return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
+const findLocation = (locationsList: { location_code: string }[], selectedOrgStockId: string) => {
+    return locationsList.find(x => x.location_code == selectedOrgStockId) || locationsList[0]
 }
 
 const DeliveryNoteInModal = ref(null)
@@ -444,18 +444,18 @@ onMounted(() => {
         <!-- Column: actions -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0 && pickingSession.state == 'handling'">
-                <div v-if="findLocation(itemValue.locations, proxyItem.hehe)"
+                <div v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)"
                     class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
                     <!-- Action: decrease and increase quantity -->
                     <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
                         <div class="">
                             <Transition name="spin-to-right">
-                                <div :key="findLocation(itemValue.locations, proxyItem.hehe).location_code">
-                                    <span v-if="findLocation(itemValue.locations, proxyItem.hehe)">
+                                <div :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code">
+                                    <span v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)">
                                         <Link v-tooltip="`${itemValue.warehouse_area}`"
-                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.hehe))"
+                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.org_stock_id))"
                                             class="secondaryLink">
-                                        {{ findLocation(itemValue.locations, proxyItem.hehe).location_code }}
+                                        {{ findLocation(itemValue.locations, proxyItem.org_stock_id).location_code }}
                                         </Link>
                                     </span>
                                     <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
@@ -465,7 +465,7 @@ onMounted(() => {
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
-                                        {{ Number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity ?? 0) }}
+                                        {{ Number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity ?? 0) }}
                                     </span>
 
                                     <span v-if="itemValue.locations?.length > 1" @click="() => {
@@ -485,11 +485,11 @@ onMounted(() => {
                         <div>
                             <div class="flex items-center flex-nowrap gap-x-2">
                                 <NumberWithButtonSave
-                                    v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.hehe).quantity > 0"
-                                    :key="findLocation(itemValue.locations, proxyItem.hehe).location_code" noUndoButton
+                                    v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.org_stock_id).quantity > 0"
+                                    :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code" noUndoButton
                                     @onError="(error: any) => {
                                         proxyItem.errors = Object.values(error || {})
-                                    }" :modelValue="findLocation(itemValue.locations, proxyItem.hehe).quantity_picked"
+                                    }" :modelValue="findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked"
                                     @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                     saveOnForm :routeSubmit="{
                                         name: itemValue.upsert_picking_route.name,
@@ -498,10 +498,10 @@ onMounted(() => {
                                         class: proxyItem.errors?.length ? 'errorShake' : undefined,
                                         step: 1,
                                         min: 0,
-                                        max: Math.min(findLocation(itemValue.locations, proxyItem.hehe).quantity, itemValue.quantity_required, (itemValue.quantity_to_pick + findLocation(itemValue.locations, proxyItem.hehe).quantity_picked))
+                                        max: Math.min(findLocation(itemValue.locations, proxyItem.org_stock_id).quantity, itemValue.quantity_required, (itemValue.quantity_to_pick + findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked))
                                     }" :additionalData="{
-                                        location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id,
-                                        picking_id: itemValue.pickings.find(picking => picking.location_id == findLocation(itemValue.locations, proxyItem.hehe).location_id)?.id,
+                                        location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id,
+                                        picking_id: itemValue.pickings.find(picking => picking.location_id == findLocation(itemValue.locations, proxyItem.org_stock_id).location_id)?.id,
                                     }" autoSave xxisWithRefreshModel
                                     :readonly="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked">
                                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
@@ -515,7 +515,7 @@ onMounted(() => {
                                                     preserveScroll: true,
                                                     preserveState: true,
                                                 }" :body="{
-                                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
+                                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id
                                                 }" isWithError>
                                                 <template #label>
                                                     <div>
@@ -537,7 +537,7 @@ onMounted(() => {
                                                     preserveScroll: true,
                                                     preserveState: true,
                                                 }" :body="{
-                                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
+                                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id
                                                 }" isWithError full>
                                                 <template #label>
                                                     <div>
@@ -630,7 +630,7 @@ onMounted(() => {
                     </span>
                 </label>
 
-                <RadioButton v-model="selectedItemProxy.hehe" @update:modelValue="() => {
+                <RadioButton v-model="selectedItemProxy.org_stock_id" @update:modelValue="() => {
                         onCloseModal()
                     }" :size="twBreakPoint().includes('lg') ? undefined : 'large'" :inputId="location.location_code"
                     :disabled="location.quantity <= 0" name="location" :value="location.location_code" />
