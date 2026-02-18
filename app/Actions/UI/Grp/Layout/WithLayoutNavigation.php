@@ -153,17 +153,15 @@ trait WithLayoutNavigation
                 ],
                 'topMenu' => [
                     'subSections' => [
-
                         [
-                            "tooltip" => __("Dashboard"),
-                            "icon"    => ["fal", "fa-chart-network"],
-                            "root"    => "grp.org.hr.dashboard",
-                            "route"   => [
-                                "name"       => "grp.org.hr.dashboard",
+                            'tooltip' => __('Dashboard'),
+                            'icon'    => ['fal', 'fa-chart-network'],
+                            'root'    => 'grp.org.hr.dashboard',
+                            'route'   => [
+                                'name'       => 'grp.org.hr.dashboard',
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
-
                         [
                             'tooltip' => __('Working place'),
                             'icon'    => ['fal', 'fa-building'],
@@ -171,11 +169,8 @@ trait WithLayoutNavigation
                             'route'   => [
                                 'name'       => 'grp.org.hr.workplaces.index',
                                 'parameters' => [$organisation->slug],
-
-                            ]
+                            ],
                         ],
-
-
                         [
                             'tooltip' => __('Responsibilities'),
                             'icon'    => ['fal', 'fa-clipboard-list-check'],
@@ -183,11 +178,8 @@ trait WithLayoutNavigation
                             'route'   => [
                                 'name'       => 'grp.org.hr.job_positions.index',
                                 'parameters' => [$organisation->slug],
-
-                            ]
+                            ],
                         ],
-
-
                         [
                             'label' => __('Employees'),
                             'icon'  => ['fal', 'fa-user-hard-hat'],
@@ -195,20 +187,19 @@ trait WithLayoutNavigation
                             'route' => [
                                 'name'       => 'grp.org.hr.employees.index',
                                 'parameters' => [$organisation->slug],
-
-                            ]
+                            ],
                         ],
-                        // [
-                        //     'label' => __('Calendar'),
-                        //     'icon'  => ['fal', 'fa-calendar'],
-                        //     'root'  => 'grp.org.hr.calendars.',
-                        //     'route' => [
-                        //         'name'       => 'grp.org.hr.calendars.index',
-                        //         'parameters' => [$organisation->slug],
-
-                        //     ]
-                        // ],
-
+                        /*
+                    [
+                        'label' => __('Calendar'),
+                        'icon'  => ['fal', 'fa-calendar'],
+                        'root'  => 'grp.org.hr.calendars.',
+                        'route' => [
+                            'name'       => 'grp.org.hr.calendars.index',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    */
                         [
                             'label' => __('Clocking machines'),
                             'icon'  => ['fal', 'fa-chess-clock'],
@@ -216,8 +207,7 @@ trait WithLayoutNavigation
                             'route' => [
                                 'name'       => 'grp.org.hr.clocking_machines.index',
                                 'parameters' => [$organisation->slug],
-
-                            ]
+                            ],
                         ],
                         [
                             'label' => __('Timesheets'),
@@ -226,8 +216,7 @@ trait WithLayoutNavigation
                             'route' => [
                                 'name'       => 'grp.org.hr.timesheets.index',
                                 'parameters' => [$organisation->slug],
-
-                            ]
+                            ],
                         ],
                         [
                             'label' => __('Overtime'),
@@ -236,17 +225,31 @@ trait WithLayoutNavigation
                             'route' => [
                                 'name'       => 'grp.org.hr.overtime.index',
                                 'parameters' => [$organisation->slug],
-
-                            ]
+                            ],
                         ],
-
-
-
-
-                    ]
-                ]
+                        [
+                            'label' => __('Leave Requests'),
+                            'icon'  => ['fal', 'fa-calendar-minus'],
+                            'root'  => 'grp.org.hr.leaves.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.leaves.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        [
+                            'label' => __('Adjustments'),
+                            'icon'  => ['fal', 'fa-edit'],
+                            'root'  => 'grp.org.hr.adjustments.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.adjustments.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                    ],
+                ],
             ];
         }
+
         return $navigation;
     }
 

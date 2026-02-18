@@ -13,8 +13,15 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\QueryBuilder;
 use App\Models\HumanResources\Timesheet;
 use App\Http\Resources\HumanResources\TimesheetsResource;
+use App\Http\Resources\HumanResources\LeaveResource;
+use App\Http\Resources\HumanResources\LeaveBalanceResource;
+use App\Http\Resources\HumanResources\AttendanceAdjustmentResource;
 use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\QrScanLog;
+use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\EmployeeLeaveBalance;
+use App\Models\HumanResources\Leave;
+use App\Models\HumanResources\AttendanceAdjustment;
 use Illuminate\Support\Carbon;
 use App\Enums\Helpers\Period\PeriodEnum;
 use Closure;
@@ -26,6 +33,7 @@ class IndexClockingEmployees extends OrgAction
     use AsAction;
     use WithEmployeeSubNavigation;
     protected ?string $tab = null;
+    protected ?Employee $employee = null;
 
     public function handle(ActionRequest $request): array
     {
@@ -36,21 +44,44 @@ class IndexClockingEmployees extends OrgAction
         $tab = $request->input('tab') ?? ClockingEmployeesTabsEnum::SCAN_QR_CODE->value;
 
         $user = Auth::user();
-        $employee = $user?->employees->first();
+        $this->employee = null;
+        $organisationScope = $request->input('organisation');
+
+        if ($user && $organisationScope) {
+            $organisationScope = (string)$organisationScope;
+            $isNumericOrganisationId = ctype_digit($organisationScope);
+
+            $this->employee = $user->employees()
+                ->whereHas('organisation', function ($query) use ($organisationScope, $isNumericOrganisationId) {
+                    $query->where('slug', $organisationScope);
+
+                    if ($isNumericOrganisationId) {
+                        $query->orWhere('id', (int)$organisationScope);
+                    }
+                })
+                ->first();
+        }
+
+        if (!$this->employee) {
+            $this->employee = $user?->employees->first();
+        }
 
         $timesheetsData = collect();
         $statistics = [];
+        $leavesData = collect();
+        $balance = null;
+        $adjustmentsData = collect();
 
-        if ($this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value && $employee) {
+        if ($this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value && $this->employee) {
 
             InertiaTable::updateQueryBuilderParameters(ClockingEmployeesTabsEnum::TIMESHEETS->value);
 
             $query = QueryBuilder::for(Timesheet::class)
                 ->where('subject_type', 'Employee')
-                ->where('subject_id', $employee->id)
+                ->where('subject_id', $this->employee->id)
                 ->with(['subject.jobPositions']);
 
-            $timezone = $employee->organisation->timezone->name ?? 'UTC';
+            $timezone = $this->employee->organisation->timezone->name ?? 'UTC';
 
             [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
 
@@ -60,9 +91,9 @@ class IndexClockingEmployees extends OrgAction
 
             $statsQuery = clone $query;
 
-            $statistics = $this->getStatistics($employee, $statsQuery, $timezone, $from, $to);
+            $statistics = $this->getStatistics($this->employee, $statsQuery, $timezone, $from, $to);
 
-            $this->applyStatusFilter($query, $employee, $timezone);
+            $this->applyStatusFilter($query, $this->employee, $timezone);
 
             $timesheets = $query
                 ->defaultSort('date')
@@ -73,10 +104,52 @@ class IndexClockingEmployees extends OrgAction
             $timesheetsData = $timesheets;
         }
 
+        if ($this->tab == ClockingEmployeesTabsEnum::LEAVES->value && $this->employee) {
+            InertiaTable::updateQueryBuilderParameters(ClockingEmployeesTabsEnum::LEAVES->value);
+
+            $leavesQuery = QueryBuilder::for(Leave::class)
+                ->where('employee_id', $this->employee->id)
+                ->with(['media'])
+                ->allowedSorts(['start_date', 'end_date', 'created_at'])
+                ->defaultSort('-created_at');
+
+            $leavesData = $leavesQuery->paginate(request()->input('per_page', 10))
+                ->withQueryString();
+
+            $balance = EmployeeLeaveBalance::firstOrCreate(
+                [
+                    'employee_id' => $this->employee->id,
+                    'year'        => now()->year,
+                ],
+                [
+                    'annual_days'  => 14,
+                    'medical_days' => 14,
+                    'unpaid_days'  => 0,
+                ]
+            );
+        }
+
+        if ($this->tab == ClockingEmployeesTabsEnum::ADJUSTMENTS->value && $this->employee) {
+            InertiaTable::updateQueryBuilderParameters(ClockingEmployeesTabsEnum::ADJUSTMENTS->value);
+
+            $adjustmentsQuery = QueryBuilder::for(AttendanceAdjustment::class)
+                ->where('employee_id', $this->employee->id)
+                ->with(['media'])
+                ->allowedSorts(['date', 'created_at'])
+                ->defaultSort('-date');
+
+            $adjustmentsData = $adjustmentsQuery->paginate(request()->input('per_page', 10))
+                ->withQueryString();
+        }
+
         return [
             'tab' =>  $tab,
             'timesheets' => $timesheetsData,
             'statistics' => $statistics,
+            'leaves' => $leavesData,
+            'balance' => $balance,
+            'adjustments' => $adjustmentsData,
+            'organisation' => $this->employee?->organisation?->slug,
         ];
     }
 
@@ -113,6 +186,52 @@ class IndexClockingEmployees extends OrgAction
         };
     }
 
+    public function leavesTableStructure($prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table->name($prefix)->pageName($prefix . 'Page');
+            }
+
+            $table
+                ->withGlobalSearch()
+                ->withEmptyState([
+                    'title' => __('No leave requests'),
+                    'count' => 0
+                ])
+                ->column(key: 'start_date', label: __('Start Date'), sortable: true)
+                ->column(key: 'end_date', label: __('End Date'), sortable: true)
+                ->column(key: 'type_label', label: __('Type'))
+                ->column(key: 'duration_days', label: __('Days'))
+                ->column(key: 'status_label', label: __('Status'))
+                ->column(key: 'reason', label: __('Reason'))
+                ->column(key: 'actions', label: 'Actions');
+            $table->defaultSort('-start_date');
+        };
+    }
+
+    public function adjustmentsTableStructure($prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table->name($prefix)->pageName($prefix . 'Page');
+            }
+
+            $table
+                ->withGlobalSearch()
+                ->withEmptyState([
+                    'title' => __('No adjustment requests'),
+                    'count' => 0
+                ])
+                ->column(key: 'date', label: __('Date'), sortable: true)
+                ->column(key: 'original_times', label: __('Original Times'))
+                ->column(key: 'requested_times', label: __('Requested Times'))
+                ->column(key: 'status_label', label: __('Status'))
+                ->column(key: 'reason', label: __('Reason'));
+            $table->defaultSort('-date');
+        };
+    }
+
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -134,24 +253,58 @@ class IndexClockingEmployees extends OrgAction
                 ],
                 ClockingEmployeesTabsEnum::SCAN_QR_CODE->value =>
                 $data['tab'] == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value
-                    ? fn() => ['status' => 'ready_to_scan']
-                    : Inertia::lazy(fn() => ['status' => 'loaded_lazy']),
+                    ? fn () => ['status' => 'ready_to_scan']
+                    : Inertia::lazy(fn () => ['status' => 'loaded_lazy']),
 
                 ClockingEmployeesTabsEnum::TIMESHEETS->value =>
                 $data['tab'] === ClockingEmployeesTabsEnum::TIMESHEETS->value
-                    ? fn() => [
+                    ? fn () => [
                         'data' => TimesheetsResource::collection($data['timesheets']),
                         'statistics' => $data['statistics'],
                     ]
-                    : Inertia::lazy(fn() => [
+                    : Inertia::lazy(fn () => [
                         'data' => TimesheetsResource::collection($data['timesheets']),
                         'statistics' => $data['statistics'],
+                    ]),
+
+                ClockingEmployeesTabsEnum::LEAVES->value =>
+                $data['tab'] === ClockingEmployeesTabsEnum::LEAVES->value
+                    ? fn () => [
+                        'data' => LeaveResource::collection($data['leaves']),
+                        'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
+                        'organisation' => $data['organisation'],
+                    ]
+                    : Inertia::lazy(fn () => [
+                        'data' => LeaveResource::collection($data['leaves']),
+                        'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
+                        'organisation' => $data['organisation'],
+                    ]),
+
+                ClockingEmployeesTabsEnum::ADJUSTMENTS->value =>
+                $data['tab'] === ClockingEmployeesTabsEnum::ADJUSTMENTS->value
+                    ? fn () => [
+                        'data' => AttendanceAdjustmentResource::collection($data['adjustments']),
+                        'organisation' => $data['organisation'],
+                    ]
+                    : Inertia::lazy(fn () => [
+                        'data' => AttendanceAdjustmentResource::collection($data['adjustments']),
+                        'organisation' => $data['organisation'],
                     ]),
             ]
         )
             ->table(
                 $this->tableStructure(
                     ClockingEmployeesTabsEnum::TIMESHEETS->value
+                )
+            )
+            ->table(
+                $this->leavesTableStructure(
+                    ClockingEmployeesTabsEnum::LEAVES->value
+                )
+            )
+            ->table(
+                $this->adjustmentsTableStructure(
+                    ClockingEmployeesTabsEnum::ADJUSTMENTS->value
                 )
             );
     }

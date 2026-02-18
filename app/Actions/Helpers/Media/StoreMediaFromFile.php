@@ -26,6 +26,8 @@ class StoreMediaFromFile
         }
 
 
+        $ulid = Str::ulid();
+
         $media = $model->addMedia($imageData['path'])
             ->preservingOriginal()
             ->withProperties(
@@ -34,7 +36,6 @@ class StoreMediaFromFile
                         'checksum' => $imageData['checksum'],
                         'group_id' => group()->id,
                         'type'     => $type,
-                        'ulid'     => Str::ulid()
 
                     ],
                 )
@@ -42,6 +43,9 @@ class StoreMediaFromFile
             ->usingName($imageData['originalName'])
             ->usingFileName(hash('crc32b', $imageData['checksum']).'.'.$extension)
             ->toMediaCollection($collection);
+
+        $media->ulid = $ulid;
+        $media->save();
 
         UpdateIsAnimatedMedia::run($media, $imageData['path']);
         MediaHydrateDimensions::run($media);

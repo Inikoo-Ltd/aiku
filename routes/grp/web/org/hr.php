@@ -45,6 +45,14 @@ use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
+use App\Actions\HumanResources\Leave\UI\IndexLeavesAdmin;
+use App\Actions\HumanResources\Leave\ApproveLeave;
+use App\Actions\HumanResources\Leave\ExportLeaveReport;
+use App\Actions\HumanResources\Leave\RejectLeave;
+use App\Actions\HumanResources\Leave\UpdateLeave;
+use App\Actions\HumanResources\AttendanceAdjustment\UI\IndexAttendanceAdjustmentsAdmin;
+use App\Actions\HumanResources\AttendanceAdjustment\ApproveAttendanceAdjustment;
+use App\Actions\HumanResources\AttendanceAdjustment\RejectAttendanceAdjustment;
 use Illuminate\Support\Facades\Route;
 use App\Actions\HumanResources\Overtime\DeleteOvertimeRequest;
 use App\Actions\HumanResources\Overtime\ApproveOvertimeRequest;
@@ -146,3 +154,17 @@ Route::get('/overtime-types', IndexOvertimeTypes::class)->name('overtime_types.i
 Route::post('/overtime-types/store', StoreOvertimeType::class)->name('overtime_types.store');
 Route::patch('/overtime-types/{overtimeType}', UpdateOvertimeType::class)->name('overtime_types.update');
 Route::delete('/overtime-types/{overtimeType}', DeleteOvertimeType::class)->name('overtime_types.delete');
+
+Route::prefix('leaves')->as('leaves.')->group(function () {
+    Route::get('', IndexLeavesAdmin::class)->name('index');
+    Route::get('export', [ExportLeaveReport::class, 'asController'])->name('export');
+    Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
+    Route::post('{leave}/reject', RejectLeave::class)->name('reject');
+    Route::post('{leave}', UpdateLeave::class)->name('update');
+});
+
+Route::prefix('adjustments')->as('adjustments.')->group(function () {
+    Route::get('', IndexAttendanceAdjustmentsAdmin::class)->name('index');
+    Route::post('{adjustment}/approve', ApproveAttendanceAdjustment::class)->name('approve');
+    Route::post('{adjustment}/reject', RejectAttendanceAdjustment::class)->name('reject');
+});

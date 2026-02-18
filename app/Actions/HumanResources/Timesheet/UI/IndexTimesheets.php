@@ -35,6 +35,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\QrScanLog;
+use App\Models\Catalogue\Shop;
 use Illuminate\Support\Carbon;
 
 class IndexTimesheets extends OrgAction
@@ -44,6 +45,16 @@ class IndexTimesheets extends OrgAction
     use WithTabsBox;
 
     private Group|Employee|Organisation|Guest $parent;
+
+
+    public function getTabsBox(Group|Organisation|Shop|Employee|Guest $parent): array
+    {
+        if ($parent instanceof Employee || $parent instanceof Guest) {
+            return [];
+        }
+
+        return [];
+    }
     private $statsQuery;
 
     protected function resolvePeriodRange(): ?array
