@@ -7,12 +7,21 @@ import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { faCheckCircle, faTimesCircle, faClock, faPencilAlt } from "@fal"
+import {
+	faCheckCircle,
+	faTimesCircle,
+	faClock,
+	faPencilAlt,
+	faDownload,
+	faFileExcel,
+	faFileCsv,
+} from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
-library.add(faCheckCircle, faTimesCircle, faClock, faPencilAlt)
+library.add(faCheckCircle, faTimesCircle, faClock, faPencilAlt, faDownload, faFileExcel, faFileCsv)
 
 const props = defineProps<{
 	title: string
@@ -32,8 +41,10 @@ const props = defineProps<{
 const locale = useLocaleStore()
 const isRejectModalOpen = ref(false)
 const isEditModalOpen = ref(false)
+const isExportModalOpen = ref(false)
 const selectedLeave = ref<any>(null)
 const isSubmitting = ref(false)
+const isExporting = ref(false)
 
 const rejectForm = useForm({
 	rejection_reason: "",
@@ -41,6 +52,17 @@ const rejectForm = useForm({
 
 const editForm = useForm({
 	attachments: [] as File[],
+})
+
+const exportForm = useForm({
+	from: "",
+	to: "",
+	type: "",
+	status: "",
+	department: "",
+	team: "",
+	employee_id: null as number | null,
+	format: "xlsx",
 })
 
 const statusColors: Record<string, string> = {
@@ -59,6 +81,50 @@ const statusIcons: Record<string, string> = {
 	pending: "fal fa-clock",
 	approved: "fal fa-check-circle",
 	rejected: "fal fa-times-circle",
+}
+
+const openExportModal = () => {
+	exportForm.reset()
+	isExportModalOpen.value = true
+}
+
+const closeExportModal = () => {
+	isExportModalOpen.value = false
+	exportForm.reset()
+}
+
+const submitExport = () => {
+	const orgId = route().params.organisation
+	if (!orgId) {
+		notify({
+			title: trans("Error"),
+			text: trans("Cannot find organisation ID"),
+			type: "error",
+		})
+		return
+	}
+
+	isExporting.value = true
+
+	const exportParams: Record<string, any> = {
+		organisation: orgId,
+		format: exportForm.format,
+	}
+
+	if (exportForm.from) exportParams.from = exportForm.from
+	if (exportForm.to) exportParams.to = exportForm.to
+	if (exportForm.type) exportParams.type = exportForm.type
+	if (exportForm.status) exportParams.status = exportForm.status
+	if (exportForm.department) exportParams.department = exportForm.department
+	if (exportForm.team) exportParams.team = exportForm.team
+	if (exportForm.employee_id) exportParams.employee_id = exportForm.employee_id
+
+	isExportModalOpen.value = false
+	window.location.href = route("grp.org.hr.leaves.export", exportParams)
+
+	setTimeout(() => {
+		isExporting.value = false
+	}, 1500)
 }
 
 const approveLeave = (leave: any) => {
@@ -188,7 +254,15 @@ const submitEdit = () => {
 
 <template>
 	<Head :title="title" />
-	<PageHeading :data="pageHead" />
+	<PageHeading :data="pageHead">
+		<template #other>
+			<Button
+				@click="openExportModal"
+				:label="trans('Export')"
+				type="secondary"
+				icon="fal fa-download" />
+		</template>
+	</PageHeading>
 
 	<div class="px-4 py-4">
 		<Table :resource="leaves">
@@ -253,7 +327,10 @@ const submitEdit = () => {
 			<template #cell(actions)="{ item: leave }">
 				<div v-if="leave.status === 'pending'" class="flex gap-2">
 					<Button
-						v-if="leave.type === 'medical' && (!leave.attachments || leave.attachments.length === 0)"
+						v-if="
+							leave.type === 'medical' &&
+							(!leave.attachments || leave.attachments.length === 0)
+						"
 						@click="openEditModal(leave)"
 						:label="trans('Edit')"
 						size="xs"
@@ -305,11 +382,11 @@ const submitEdit = () => {
 
 				<div class="flex justify-end gap-3 pt-4">
 					<Button @click="closeRejectModal" :label="trans('Cancel')" type="tertiary" />
-						<Button
-							type="primary"
-							nativeType="submit"
-							:label="trans('Reject')"
-							:loading="isSubmitting" />
+					<Button
+						type="primary"
+						nativeType="submit"
+						:label="trans('Reject')"
+						:loading="isSubmitting" />
 				</div>
 			</form>
 		</div>
@@ -356,6 +433,145 @@ const submitEdit = () => {
 						nativeType="submit"
 						:label="trans('Save')"
 						:loading="isSubmitting" />
+				</div>
+			</form>
+		</div>
+	</Modal>
+
+	<Modal :isOpen="isExportModalOpen" @onClose="closeExportModal" width="w-full max-w-lg">
+		<div class="p-6">
+			<h3 class="text-lg font-semibold text-gray-900 mb-4">
+				{{ trans("Export Leave Reports") }}
+			</h3>
+			<p class="text-sm text-gray-600 mb-4">
+				{{ trans("Select filters and export format for your leave report.") }}
+			</p>
+
+			<form @submit.prevent="submitExport" class="space-y-4">
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">{{
+							trans("From Date")
+						}}</label>
+						<input
+							v-model="exportForm.from"
+							type="date"
+							class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">{{
+							trans("To Date")
+						}}</label>
+						<input
+							v-model="exportForm.to"
+							type="date"
+							class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+					</div>
+				</div>
+
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">{{
+							trans("Leave Type")
+						}}</label>
+						<select
+							v-model="exportForm.type"
+							class="w-full border border-gray-300 rounded-lg px-3 py-2">
+							<option value="">{{ trans("All Types") }}</option>
+							<option
+								v-for="(label, value) in type_options"
+								:key="value"
+								:value="value">
+								{{ label }}
+							</option>
+						</select>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">{{
+							trans("Status")
+						}}</label>
+						<select
+							v-model="exportForm.status"
+							class="w-full border border-gray-300 rounded-lg px-3 py-2">
+							<option value="">{{ trans("All Statuses") }}</option>
+							<option
+								v-for="(label, value) in status_options"
+								:key="value"
+								:value="value">
+								{{ label }}
+							</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">{{
+							trans("Department")
+						}}</label>
+						<input
+							v-model="exportForm.department"
+							type="text"
+							class="w-full border border-gray-300 rounded-lg px-3 py-2"
+							:placeholder="trans('Filter by department')" />
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">{{
+							trans("Team")
+						}}</label>
+						<input
+							v-model="exportForm.team"
+							type="text"
+							class="w-full border border-gray-300 rounded-lg px-3 py-2"
+							:placeholder="trans('Filter by team')" />
+					</div>
+				</div>
+
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-1">{{
+						trans("Employee")
+					}}</label>
+					<input
+						v-model.number="exportForm.employee_id"
+						type="number"
+						class="w-full border border-gray-300 rounded-lg px-3 py-2"
+						:placeholder="trans('Filter by employee ID')" />
+				</div>
+
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-2">{{
+						trans("Export Format")
+					}}</label>
+					<div class="flex gap-4">
+						<label class="flex items-center gap-2 cursor-pointer">
+							<input
+								v-model="exportForm.format"
+								type="radio"
+								value="xlsx"
+								class="text-blue-600 focus:ring-blue-500" />
+							<FontAwesomeIcon icon="fal fa-file-excel" class="text-green-600" />
+							<span class="text-sm">{{ trans("Excel (XLSX)") }}</span>
+						</label>
+						<label class="flex items-center gap-2 cursor-pointer">
+							<input
+								v-model="exportForm.format"
+								type="radio"
+								value="csv"
+								class="text-blue-600 focus:ring-blue-500" />
+							<FontAwesomeIcon icon="fal fa-file-csv" class="text-blue-600" />
+							<span class="text-sm">{{ trans("CSV") }}</span>
+						</label>
+					</div>
+				</div>
+
+				<div class="flex justify-end gap-3 pt-4">
+					<Button @click="closeExportModal" :label="trans('Cancel')" type="tertiary" />
+					<Button
+						type="primary"
+						nativeType="submit"
+						:label="trans('Export')"
+						:loading="isExporting"
+						icon="fal fa-download" />
 				</div>
 			</form>
 		</div>

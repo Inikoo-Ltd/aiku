@@ -41,6 +41,7 @@ use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Actions\HumanResources\Leave\UI\IndexLeavesAdmin;
 use App\Actions\HumanResources\Leave\ApproveLeave;
+use App\Actions\HumanResources\Leave\ExportLeaveReport;
 use App\Actions\HumanResources\Leave\RejectLeave;
 use App\Actions\HumanResources\Leave\UpdateLeave;
 use App\Actions\HumanResources\AttendanceAdjustment\UI\IndexAttendanceAdjustmentsAdmin;
@@ -135,6 +136,7 @@ Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.ed
 
 Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('', IndexLeavesAdmin::class)->name('index');
+    Route::get('export', [ExportLeaveReport::class, 'asController'])->name('export');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
     Route::post('{leave}', UpdateLeave::class)->name('update');
