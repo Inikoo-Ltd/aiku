@@ -94,10 +94,10 @@ class EditOutboxInShop extends OrgAction
                     'title' => '',
                     'fields' => [
                         'threshold' => [
-                            'type' => 'input',
+                            'type' => 'input_number',
                             'label' => __('Low Stock Threshold'),
                             'placeholder' => __('Low Stock Threshold'),
-                            'required' => false,
+                            'required' => true,
                             'value' => $outbox->threshold,
                         ],
                     ]
@@ -106,10 +106,10 @@ class EditOutboxInShop extends OrgAction
                     'title' => '',
                     'fields' => [
                         'interval' => [
-                            'type' => 'input',
-                            'label' => __('Cooldown Period'),
-                            'placeholder' => __('Cooldown Period'),
-                            'required' => false,
+                            'type' => 'input_number',
+                            'label' => __('Cooldown Period (in hours)'),
+                            'placeholder' => __('Cooldown Period (in hours)'),
+                            'required' => true,
                             'value' => $outbox->interval,
                         ],
                     ]
@@ -121,9 +121,12 @@ class EditOutboxInShop extends OrgAction
                             'type' => 'select',
                             'label' => __('Notification active'),
                             'placeholder' => __('Notification active'),
-                            'options' => [
+                            'options' => $outbox->is_applicable ? [
                                 ['label' => __('Yes'), 'value' => true],
                                 ['label' => __('No'), 'value' => false],
+                            ] : [
+                                ['label' => __('No'), 'value' => false],
+                                ['label' => __('Yes'), 'value' => true],
                             ],
                             'required' => true,
                             'mode' => 'single',
