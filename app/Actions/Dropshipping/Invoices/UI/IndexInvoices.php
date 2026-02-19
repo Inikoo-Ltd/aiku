@@ -8,6 +8,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
+use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -15,7 +16,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoices extends OrgAction
 {
-    public function handle(Shop $shop, Platform $platform, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Shop $parent, Platform $platform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -29,7 +30,11 @@ class IndexInvoices extends OrgAction
 
         $query = QueryBuilder::for(Invoice::class);
         $query->where('invoices.in_process', false);
-        $query->where('invoices.shop_id', $shop->id);
+
+        if ($parent instanceof Shop) {
+            $query->where('invoices.shop_id', $parent->id);
+        }
+
         $query->where('invoices.platform_id', $platform->id);
         $query->where('invoices.type', InvoiceTypeEnum::INVOICE);
         $query->leftJoin('currencies', 'invoices.currency_id', 'currencies.id');

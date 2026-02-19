@@ -31,6 +31,15 @@ import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
 import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
 
+interface ChatConfig {
+    is_online: boolean
+    schedule?: {
+        start: string
+        end: string
+        timezone: string
+    }
+}
+
 library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
@@ -50,7 +59,7 @@ const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { co
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
-
+const chatConfig = usePage().props?.chat_config as ChatConfig
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
         const irisData = localStorage.getItem('iris');
@@ -95,7 +104,7 @@ const getAnnouncements = async () => {
   } catch (error: any) {
     console.error(error)
   }
-} 
+}
 
 provide('screenType', screenType)
 
@@ -113,7 +122,7 @@ onMounted(() => {
     }
 
     irisStyleVariables(theme?.color)
-    
+
 })
 
 onBeforeUnmount(() => {
@@ -282,7 +291,7 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     </notifications>
 
 
-    <ChatButton data="null" v-if="useChat" />
+    <ChatButton data="null" v-if="useChat" :chatConfig="chatConfig" />
 
 
 </template>

@@ -333,6 +333,18 @@ class SendChatMessage
             }
         }
 
+        if ($senderType === ChatSenderTypeEnum::GUEST->value && $chatSession->web_user_id) {
+            if ($chatSession->web_user_id) {
+                return [
+                    'ok' => true,
+                    'data' => [
+                        'sender_type' => ChatSenderTypeEnum::USER->value,
+                        'sender_id'   => $chatSession->web_user_id,
+                    ],
+                ];
+            }
+        }
+
         return [
             'ok' => true,
             'data' => [

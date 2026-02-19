@@ -469,4 +469,16 @@
 
     ]
   }
+  ,
+   {
+    "outboxes": [
+      "chat_notification_to_customer"
+    ],
+    "name": "Beefree blank email template",
+    "content": "beefree_blank_email_template.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  }
 ]

@@ -1,3 +1,5 @@
+import { ref } from "vue"
+
 export type NotificationSoundOptions = {
 	frequency?: number
 	volume?: number
@@ -67,4 +69,14 @@ export const buildStorageUrl = (fileName: string, baseUrl?: string) => {
 	const prefix = (baseUrl || "").replace(/\/+$/, "")
 	const path = fileName.replace(/^\/+/, "")
 	return `${prefix}/assets/${path}`
+}
+
+export const unreadCount = ref(0)
+
+export const incrementUnread = (amount: number = 1) => {
+	unreadCount.value += amount
+}
+
+export const resetUnread = () => {
+	unreadCount.value = 0
 }
