@@ -72,14 +72,15 @@ class LeavesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadin
 
         return [
             $employee?->contact_name ?? $row->employee_name,
-            $employee?->email ?? $employee?->work_email ?? '-',
             $employee?->department ?? '-',
             LeaveTypeEnum::labels()[$typeValue] ?? (string) $typeValue,
             $row->start_date->format('Y-m-d'),
             $row->end_date->format('Y-m-d'),
             $row->duration_days,
             LeaveStatusEnum::labels()[$statusValue] ?? (string) $statusValue,
+            $row->reason ?? '-',
             $approver?->name ?? '-',
+            $row->approved_at ? $row->approved_at->format('Y-m-d') : '-',
             $row->created_at->format('Y-m-d H:i:s'),
         ];
     }
@@ -88,14 +89,15 @@ class LeavesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadin
     {
         return [
             __('Employee Name'),
-            __('Employee Email'),
             __('Department'),
             __('Leave Type'),
             __('Start Date'),
             __('End Date'),
             __('Total Days'),
             __('Status'),
-            __('Approver'),
+            __('Reason/Notes'),
+            __('Approved By'),
+            __('Approved Date'),
             __('Created At'),
         ];
     }
