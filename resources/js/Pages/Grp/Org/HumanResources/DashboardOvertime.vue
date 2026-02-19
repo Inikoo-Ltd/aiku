@@ -35,6 +35,10 @@ const props = defineProps<{
             status: string
             start_time: string
             end_time: string
+            recorded_start_time: string | null
+            recorded_end_time: string | null
+            recorded_duration: number | null
+            recorded_formatted_duration: string | null
             employee_name: string
             approver_name: string
             overtime_type: string
@@ -299,12 +303,14 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                         <div class="mt-1 text-sm text-gray-900">{{ selectedOvertime.date }}</div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Duration') }}</label>
+                        <label class="block text-sm font-medium text-gray-500">{{ trans('Requested duration') }}</label>
                         <div class="mt-1 text-sm text-gray-900">{{ selectedOvertime.formatted_duration }}</div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-500">{{ trans('Time') }}</label>
-                        <div class="mt-1 text-sm text-gray-900">{{ selectedOvertime.start_time }} - {{ selectedOvertime.end_time }}</div>
+                        <label class="block text-sm font-medium text-gray-500">{{ trans('Requested time') }}</label>
+                        <div class="mt-1 text-sm text-gray-900">
+                            {{ selectedOvertime.start_time }} - {{ selectedOvertime.end_time }}
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-500">{{ trans('Overtime Type') }}</label>
@@ -316,6 +322,23 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                     <div>
                         <label class="block text-sm font-medium text-gray-500">{{ trans('Approver') }}</label>
                         <div class="mt-1 text-sm text-gray-900">{{ selectedOvertime.approver_name }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500">{{ trans('Recorded duration') }}</label>
+                        <div class="mt-1 text-sm text-gray-900">
+                            {{ selectedOvertime.recorded_formatted_duration ?? '—' }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500">{{ trans('Recorded time') }}</label>
+                        <div class="mt-1 text-sm text-gray-900">
+                            <template v-if="selectedOvertime.recorded_start_time && selectedOvertime.recorded_end_time">
+                                {{ selectedOvertime.recorded_start_time }} - {{ selectedOvertime.recorded_end_time }}
+                            </template>
+                            <template v-else>
+                                —
+                            </template>
+                        </div>
                     </div>
                 </div>
 

@@ -60,17 +60,24 @@ class DashboardOvertime extends OrgAction
                 'id' => $employee->id,
                 'name' => $employee->contact_name,
                 'overtimes' => $overtimeRequests->get($employee->id, collect())->map(function (OvertimeRequest $request) {
+                    $requestedMinutes = $request->requested_duration_minutes;
+                    $recordedMinutes = $request->recorded_duration_minutes;
+
                     return [
                         'id' => $request->id,
                         'date' => $request->requested_date->format('Y-m-d'),
                         'type_name' => $request->overtimeType->name,
                         'color' => $request->overtimeType->color,
-                        'duration' => $request->requested_duration_minutes,
-                        'formatted_duration' => floor($request->requested_duration_minutes / 60) . 'h ' . ($request->requested_duration_minutes % 60 > 0 ? ($request->requested_duration_minutes % 60) . 'm' : ''),
+                        'duration' => $requestedMinutes,
+                        'formatted_duration' => floor($requestedMinutes / 60) . 'h ' . ($requestedMinutes % 60 > 0 ? ($requestedMinutes % 60) . 'm' : ''),
                         'reason' => $request->reason,
                         'status' => $request->status,
                         'start_time' => $request->requested_start_at ? $request->requested_start_at->format('H:i') : '-',
                         'end_time' => $request->requested_end_at ? $request->requested_end_at->format('H:i') : '-',
+                        'recorded_start_time' => $request->recorded_start_at ? $request->recorded_start_at->format('H:i') : null,
+                        'recorded_end_time' => $request->recorded_end_at ? $request->recorded_end_at->format('H:i') : null,
+                        'recorded_duration' => $recordedMinutes,
+                        'recorded_formatted_duration' => $recordedMinutes ? floor($recordedMinutes / 60) . 'h ' . ($recordedMinutes % 60 > 0 ? ($recordedMinutes % 60) . 'm' : '') : null,
                         'employee_name' => $request->employee->contact_name,
                         'approver_name' => $request->approver ? $request->approver->contact_name : '-',
                         'overtime_type' => $request->overtimeType->name,
