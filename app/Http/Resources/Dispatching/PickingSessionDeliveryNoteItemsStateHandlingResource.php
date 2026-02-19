@@ -168,6 +168,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_required_fractional'      => $requiredFactionalData,
             'batch_code'                        => $this->batch_code,
             'expiry_date'                       => $this->expiry_date,
+            'delivery_note_shop_type'           => $this->shop_type,
 
             'warehouse_area'    => $warehouseArea,
             'packed_in_message' => $packedInMessage,
