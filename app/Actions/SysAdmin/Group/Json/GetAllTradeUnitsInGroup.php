@@ -2,18 +2,17 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 27 Apr 2023 16:37:19 Malaysia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Created: Thu, 19 Feb 2026 15:22:51 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterAsset\Json;
+namespace App\Actions\SysAdmin\Group\Json;
 
 use App\Actions\GrpAction;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
-use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
-use App\Models\Masters\MasterProductCategory;
+use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -21,24 +20,16 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetAllTradeUnits extends GrpAction
+class GetAllTradeUnitsInGroup extends GrpAction
 {
-    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisation(group(), $request);
 
-        return $this->handle(parent: $masterProductCategory);
+        return $this->handle($this->group);
     }
 
-    public function inExternal(Product $product, ActionRequest $request): LengthAwarePaginator
-    {
-        $parent = $product;
-        $this->initialisation($parent->group, $request);
-
-        return $this->handle(parent: $parent);
-    }
-
-    public function handle(MasterProductCategory|Product $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -48,7 +39,7 @@ class GetAllTradeUnits extends GrpAction
         });
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
-        $queryBuilder->where('trade_units.group_id', $parent->group_id);
+        $queryBuilder->where('trade_units.group_id', $group->id);
         $queryBuilder->where('status', TradeUnitStatusEnum::ACTIVE);
 
         return $queryBuilder

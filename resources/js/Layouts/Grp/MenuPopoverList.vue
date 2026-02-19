@@ -11,7 +11,7 @@ import { trans } from "laravel-vue-i18n"
 library.add(faStoreAlt)
 
 const props = defineProps<{
-    icon: string | string[]
+    // icon: string | string[]
     navKey: string  // shop | warehouse
     closeMenu: () => void
 }>()
@@ -37,7 +37,7 @@ const sortedShowareList = computed(() => {
 </script>
 
 <template>
-    <div class="px-1 py-1">
+    <div class="px-1 xpy-1">
         <!-- Show All -->
         <!-- <div @click="() => (router.visit(route(layout.navigation.org[layout.currentParams.organisation][`${navKey}s_index`].route.name, layout.navigation.org[layout.currentParams.organisation][`${navKey}s_index`].route.parameters)), closeMenu())"
             class="flex gap-x-2 items-center pl-2 py-1.5 rounded text-slate-600 hover:bg-slate-200/30 cursor-pointer">
@@ -47,7 +47,7 @@ const sortedShowareList = computed(() => {
         <hr class="w-11/12 mx-auto border-t border-gray-200 mt-1 mb-1"> -->
 
         <!-- List -->
-        <div class="max-h-52x overflow-y-auto space-y-1.5">
+        <div class="max-h-96 overflow-y-auto space-y-1.5 pr-1">
             <template v-for="(showare, idxSH) in sortedShowareList" :key="showare.id || idxSH">
                 <!-- {{showare}} -->
                 <MenuItem v-if="showare.state != 'closed'" v-slot="{ active }" as="div"
@@ -67,12 +67,14 @@ const sortedShowareList = computed(() => {
                         {{ showare.website_domain }}
                     </div>
                 </div>
-                <FontAwesomeIcon v-if="showare.type === 'b2b'" icon='fal fa-fax' class='text-sm text-gray-400'
+                <FontAwesomeIcon v-if="showare.type === 'b2b'" icon='fal fa-fax' fixed-width class='text-sm text-gray-400'
                     v-tooltip="trans('E-commerce')" aria-hidden='true' />
                 <FontAwesomeIcon v-if="showare.type === 'dropshipping'" icon='fal fa-parachute-box'
-                    class='text-sm text-gray-400' v-tooltip="trans('Dropshipping')" aria-hidden='true' />
+                    fixed-width class='text-sm text-gray-400' v-tooltip="trans('Dropshipping')" aria-hidden='true' />
                 <FontAwesomeIcon v-if="showare.type === 'fulfilment'" icon='fal fa-hand-holding-box'
-                    class='text-sm text-gray-400' v-tooltip="trans('Fulfilment')" aria-hidden='true' />
+                    fixed-width class='text-sm text-gray-400' v-tooltip="trans('Fulfilment')" aria-hidden='true' />
+                <FontAwesomeIcon v-if="showare.type === 'external'" icon='fal fa-store'
+                    fixed-width class='text-sm text-gray-400' v-tooltip="trans('External Shop')" aria-hidden='true' />
                 </MenuItem>
             </template>
         </div>

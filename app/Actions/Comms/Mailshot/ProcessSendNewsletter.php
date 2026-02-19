@@ -35,6 +35,12 @@ class ProcessSendNewsletter
 
     public function handle(Mailshot $mailshot): void
     {
+
+        // NOTE: Ensure no second wave exists when the parent mailshot has second wave disabled
+        if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
+            DeleteMailshotSecondWave::run($mailshot->secondWave);
+        }
+
         $queryBuilder = QueryBuilder::for(Customer::class)
             ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
             ->where('shop_id', $mailshot->shop_id)

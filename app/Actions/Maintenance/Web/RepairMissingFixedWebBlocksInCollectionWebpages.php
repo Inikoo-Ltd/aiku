@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Web;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
@@ -34,7 +35,6 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         $collection = $webpage->model;
 
 
-
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'families-1');
 
         if (count($countFamilyWebBlock) == 0) {
@@ -46,8 +46,15 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
             $this->createWebBlock($webpage, 'products-1');
         }
 
+        $countCollectionDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'collection-description-1');
+        if (count($countCollectionDescriptionBlock) == 0) {
+            $this->createWebBlock($webpage, 'collection-description-1');
+        }
 
         $webpage->refresh();
+        $this->setDescriptionWebBlockOnTop($webpage);
+        $webpage->refresh();
+
         UpdateWebpageContent::run($webpage);
         foreach ($webpage->webBlocks as $webBlock) {
             print $webBlock->webBlockType->code."\n";
@@ -57,8 +64,7 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
 
         if ($webpage->is_dirty) {
             if (in_array($collection->state, [
-                ProductCategoryStateEnum::ACTIVE,
-                ProductCategoryStateEnum::DISCONTINUING
+                CollectionStateEnum::ACTIVE,
             ])) {
                 $command->line('Webpage '.$webpage->code.' is dirty, publishing after upgrade');
                 PublishWebpage::make()->action(
@@ -69,6 +75,32 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
                 );
             }
         }
+    }
+
+
+    public function setDescriptionWebBlockOnTop(Webpage $webpage): void
+    {
+        $collectionDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'collection-description-1')->first()->model_has_web_blocks_id;
+        $webBlocks                     = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
+
+
+        $runningPosition = 2;
+        foreach ($webBlocks as $key => $position) {
+            if ($key == $collectionDescriptionWebBlock) {
+                $webBlocks[$key] = 1;
+            } else {
+                $webBlocks[$key] = $runningPosition;
+                $runningPosition++;
+            }
+        }
+
+
+        foreach ($webBlocks as $key => $position) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $key)
+                ->update(['position' => $position]);
+        }
+        UpdateWebpageContent::run($webpage);
     }
 
 

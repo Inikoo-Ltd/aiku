@@ -15,7 +15,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
+use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
@@ -47,6 +49,19 @@ class UnsubscribeMailshot
                     ],
                     MailshotTypeEnum::MARKETING => [
                         'is_subscribed_to_marketing' => false,
+                    ],
+                    default => []
+                };
+
+                $customerComms = $recipient->comms;
+                UpdateCustomerComms::run($customerComms, $modelData, false);
+            }
+
+            if (class_basename($parent) == class_basename(EmailBulkRun::class)) {
+
+                $modelData = match ($parent->outbox->code) {
+                    OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => [
+                        'is_subscribed_to_price_change_notification' => false,
                     ],
                     default => []
                 };

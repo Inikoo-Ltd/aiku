@@ -33,6 +33,10 @@ class SendMailShotNow extends OrgAction
             throw new \Exception('Action only available for Ukraine');
         }
 
+        if ($mailshot->is_second_wave) {
+            throw new \Exception('Action not available for second wave mailshot');
+        }
+
         if (!$mailshot->start_sending_at) {
             data_set($modelData, 'start_sending_at', now());
         }

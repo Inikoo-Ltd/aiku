@@ -13,7 +13,7 @@ library.add(faCube, faLink, faInfoCircle, faStar, faCircle, faBadgePercent, faCh
 
 const props = defineProps<{
   fieldValue: {
-    department: {
+    collection: {
       name: string
       description_title?: string
       description?: string
@@ -55,14 +55,14 @@ const toggleShowExtra = () => {
 const layout: any = inject("layout", {})
 
 const bestOffer = computed(() => {
-  return getBestOffer(props.fieldValue?.department?.offers_data)
+  return getBestOffer(props.fieldValue?.collection?.offers_data)
 })
 
 const _popoverInfoCircle = ref<InstanceType<any> | null>(null)
 const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
 const cleanedDescription = computed(() => {
-  const html = props.fieldValue.department.description || ''
+  const html = props.fieldValue.collection.description || ''
 
   // remove <h1>...</h1>
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, '')
@@ -72,51 +72,29 @@ const cleanedDescription = computed(() => {
 </script>
 
 <template>
-  <div  :id="fieldValue?.id ? fieldValue?.id  : 'department-1-iris'"  component="department-1-iris" >
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'collection-1-iris'"  component="collection-1-iris" >
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
-      aria-label="department Description Section">
+      aria-label="collection Description Section">
       
-        <!-- Section: listing Offers -->
-        <div class="hidden">
-          <pre><span class="bg-yellow-400">layout?.user?.gr_data?.customer_is_gr</span>: {{ layout?.user?.gr_data?.customer_is_gr }}</pre>
-          <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.department?.offers_data }}</pre>
-        </div>
-         
-        <!-- Offer: list offers -->
-        <div v-if="fieldValue?.department?.offers_data?.number_offers && layout.iris.is_logged_in"
-            class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
-        >
-                <DiscountByType 
-                   :offers_data="fieldValue?.department?.offers_data"
-                   :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr'  : 'max_discount'"
-                />
-
-                <DiscountByType
-                    v-if="!layout?.user?.gr_data?.customer_is_gr && bestOffer.type == 'Category Quantity Ordered Order Interval'"
-                   :offers_data="fieldValue?.department?.offers_data"
-                   :template="'triggers_labels'"
-                />
-            
-        </div>
 
         <!-- Description Title (SEO: Heading) -->
-        <h1 v-if="fieldValue.department.name" class="text-[1.5rem] leading-[2rem] font-semibold">
-            {{ fieldValue.department.name }}
+        <h1 v-if="fieldValue.collection.name" class="text-[1.5rem] leading-[2rem] font-semibold">
+            {{ fieldValue.collection.name }}
         </h1>
 
         <!-- Main Description -->
         <div
             v-if="cleanedDescription"
-            id="description-department-1-iris"
+            id="description-collection-1-iris"
             xstyle="{ marginTop: 0 }"
             v-html="cleanedDescription"
             class="mt-6 text-justify"
         />
 
       <!-- Read More Extra Description -->
-      <div v-if="fieldValue.department.description_extra" class="rounded-lg">
+      <div v-if="fieldValue.collection.description_extra" class="rounded-lg">
         <transition name="fade">
-          <div v-if="showExtra" v-html="fieldValue.department.description_extra"></div>
+          <div v-if="showExtra" v-html="fieldValue.collection.description_extra"></div>
         </transition>
         <button @click="toggleShowExtra"
           class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors py-4">
@@ -135,7 +113,7 @@ const cleanedDescription = computed(() => {
     scroll-behavior: smooth;
   }
 
-    #description-department-1-iris h1 {
+    #description-collection-1-iris h1 {
         font-size: 1.5rem;
         line-height: 2rem;
         font-weight: 600;
@@ -143,7 +121,7 @@ const cleanedDescription = computed(() => {
         margin-bottom: 1rem;
     }
 
-    #description-department-1-iris p {
+    #description-collection-1-iris p {
         margin-top: 0.5rem;
         margin-bottom: 0.5rem;
     }

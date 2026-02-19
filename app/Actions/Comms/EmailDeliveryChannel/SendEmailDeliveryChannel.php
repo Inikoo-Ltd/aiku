@@ -66,12 +66,15 @@ class SendEmailDeliveryChannel
             // Send redirect URL
             $unsubscribeUrl = route('grp.redirect_unsubscribe', $recipient->dispatchedEmail->uuid);
 
+            $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
+
             $this->sendEmailWithMergeTags(
                 $recipient->dispatchedEmail,
                 $model->sender(),
-                $model->subject,
+                $subject,
                 $emailHtmlBody,
                 $unsubscribeUrl,
+                additionalData: $recipient->dispatchedEmail->data['additional_data'] ?? [],
                 senderName: $model->senderName()
             );
         }

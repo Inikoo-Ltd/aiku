@@ -8,7 +8,6 @@ import axios from 'axios'
 import { debounce } from 'lodash-es'
 import { notify } from '@kyvg/vue3-notification'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import { sendMessageToParent } from "@/Composables/Workshop"
 import { getStyles } from "@/Composables/styles"
 import { trans } from 'laravel-vue-i18n'
 
@@ -17,7 +16,7 @@ library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCirc
 // Props
 const props = defineProps<{
   modelValue: {
-    department: {
+    collection: {
       id: number
       name: string
       description: string
@@ -45,8 +44,8 @@ const props = defineProps<{
 
 const { modelValue, webpageData, blockData } = toRefs(props)
 
-const departmentEdit = ref(false)
-const name = ref(modelValue.value.department.name || '')
+const collectionEdit = ref(false)
+const name = ref(modelValue.value.collection.name || '')
 const showExtra = ref(false)
 const layout: any = inject("layout", {})
 
@@ -58,10 +57,10 @@ const toggleShowExtra = () => {
 const saveDescription = debounce(async (key: string, value: string) => {
   try {
     const url = route('grp.models.product_category.update', {
-      productCategory: modelValue.value.department.id,
+      productCategory: modelValue.value.collection.id,
     })
     await axios.patch(url, { [key]: value })
-    departmentEdit.value = false
+    collectionEdit.value = false
   } catch (error: any) {
     console.error('Save failed:', error)
     notify({
@@ -73,7 +72,7 @@ const saveDescription = debounce(async (key: string, value: string) => {
 }, 1000)
 
 watch(name, (val) => {
-  modelValue.value.department.name = val
+  modelValue.value.collection.name = val
   saveDescription('name', val)
 })
 
@@ -82,17 +81,17 @@ watch(name, (val) => {
 </script>
 
 <template>
-  <div id="department-1">
+  <div id="collection-1">
     <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(modelValue?.container?.properties), width: 'auto' }"
       class="py-4  px-[10px] sm:px-[50px]">
 
       <!-- Description Title -->
-      <input v-model="name" type="text" placeholder="department Title"
+      <input v-model="name" type="text" placeholder="collection Title"
         class="w-full appearance-none bg-transparent border-none p-0 m-0 text-[1.5rem] leading-[2rem] font-semibold text-gray-800 focus:outline-none focus:ring-0 shadow-none" />
 
 
       <!-- Main Description Editor -->
-      <EditorV2 v-model="modelValue.department.description" placeholder="department Description"
+      <EditorV2 v-model="modelValue.collection.description" placeholder="collection Description"
         @update:model-value="(e) => saveDescription('description', e)" :uploadImageRoute="{
           name: webpageData?.images_upload_route?.name,
           parameters: { modelHasWebBlocks: blockData?.id }
@@ -102,7 +101,7 @@ watch(name, (val) => {
       <div class="rounded-lg">
         <transition name="fade">
           <div v-if="showExtra">
-            <EditorV2 v-model="modelValue.department.description_extra" placeholder="Extra Description"
+            <EditorV2 v-model="modelValue.collection.description_extra" placeholder="Extra Description"
               @update:model-value="(e) => saveDescription('description_extra', e)" :uploadImageRoute="{
                 name: webpageData?.images_upload_route?.name,
                 parameters: { modelHasWebBlocks: blockData?.id }
