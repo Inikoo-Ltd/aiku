@@ -30,7 +30,10 @@ import {
 	faTimes,
 	faCameraRetro,
 	faQrcode,
+	faPlus,
 } from "@fal"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { trans } from "laravel-vue-i18n"
 import TableTimesheetsEmployee from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheetsEmployee.vue"
 import TableLeaves from "@/Components/Tables/Grp/Org/HumanResources/TableLeaves.vue"
 import TableAttendanceAdjustments from "@/Components/Tables/Grp/Org/HumanResources/TableAttendanceAdjustments.vue"
@@ -51,7 +54,8 @@ library.add(
 	faPaperclip,
 	faTimes,
 	faCameraRetro,
-	faQrcode
+	faQrcode,
+	faPlus
 )
 
 const props = defineProps<{
@@ -69,6 +73,12 @@ const props = defineProps<{
 }>()
 
 let currentTab = ref(props.tabs.current)
+const isRequestLeaveModalOpen = ref(false)
+
+const openRequestLeaveModal = () => {
+	isRequestLeaveModalOpen.value = true
+}
+
 const handleTabUpdate = (tabSlug: string) => {
 	const url = new URL(window.location.href)
 	url.searchParams.forEach((_, key) => {
@@ -96,7 +106,16 @@ const component = computed(() => {
 
 <template>
 	<Head :title="capitalize(title)" />
-	<PageHeading :data="pageHead"></PageHeading>
+	<PageHeading :data="pageHead">
+		<template #other>
+			<Button
+				v-if="currentTab === 'leaves'"
+				:label="trans('Request Leave')"
+				icon="fal fa-plus"
+				type="create"
+				@click="openRequestLeaveModal" />
+		</template>
+	</PageHeading>
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component
 		:is="component"
@@ -116,6 +135,8 @@ const component = computed(() => {
 					? adjustments?.organisation
 					: null
 		"
-		:tab="currentTab">
+		:tab="currentTab"
+		:isRequestLeaveModalOpen="isRequestLeaveModalOpen"
+		@update:isRequestLeaveModalOpen="isRequestLeaveModalOpen = $event">
 	</component>
 </template>

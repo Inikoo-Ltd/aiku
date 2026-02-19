@@ -229,7 +229,7 @@ trait WithLayoutNavigation
                         ],
                         [
                             'label' => __('Leave Requests'),
-                            'icon'  => ['fal', 'fa-calendar-minus'],
+                            'icon'  => ['fas', 'fa-house-leave'],
                             'root'  => 'grp.org.hr.leaves.',
                             'route' => [
                                 'name'       => 'grp.org.hr.leaves.index',
@@ -238,7 +238,7 @@ trait WithLayoutNavigation
                         ],
                         [
                             'label' => __('Adjustments'),
-                            'icon'  => ['fal', 'fa-edit'],
+                            'icon'  => ['fal', 'fa-clock'],
                             'root'  => 'grp.org.hr.adjustments.',
                             'route' => [
                                 'name'       => 'grp.org.hr.adjustments.index',
