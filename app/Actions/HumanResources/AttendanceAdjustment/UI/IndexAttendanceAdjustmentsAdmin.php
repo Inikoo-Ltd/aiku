@@ -3,6 +3,7 @@
 namespace App\Actions\HumanResources\AttendanceAdjustment\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Attendance\AttendanceAdjustmentStatusEnum;
 use App\Http\Resources\HumanResources\AttendanceAdjustmentResource;
 use App\InertiaTable\InertiaTable;
@@ -19,6 +20,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexAttendanceAdjustmentsAdmin extends OrgAction
 {
+    use WithAdjustmentSubNavigation;
+
     public function handle(Organisation $organisation, ?string $prefix = null): LengthAwarePaginator
     {
         $prefix = $prefix ?? 'adjustments';
@@ -58,10 +61,21 @@ class IndexAttendanceAdjustmentsAdmin extends OrgAction
             'Org/HumanResources/AttendanceAdjustmentAdmin',
             [
                 'title' => __('Attendance Adjustments'),
-                'breadcrumbs' => $this->getBreadcrumbs(),
-                'pageHead' => [
-                    'title' => __('Attendance Adjustments'),
-                    'icon' => ['fal', 'fa-edit'],
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'pageHead'    => [
+                    'icon'          => [
+                        'icon'  => ['fal', 'fa-clock'],
+                        'title' => __('Human resources')
+                    ],
+                    'iconRight'     => [
+                        'icon'  => ['fal', 'fa-edit'],
+                        'title' => __('Adjustments')
+                    ],
+                    'title'         => __('Attendance Adjustments'),
+                    'subNavigation' => $this->getAdjustmentSubNavigation($request),
                 ],
                 'adjustments' => AttendanceAdjustmentResource::collection($adjustments),
                 'status_options' => AttendanceAdjustmentStatusEnum::labels(),
@@ -96,16 +110,31 @@ class IndexAttendanceAdjustmentsAdmin extends OrgAction
         return $this->handle($organisation);
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return [
-            [
-                'type' => 'simple',
-                'simple' => [
-                    'label' => __('Attendance Adjustments'),
-                    'route' => ['name' => 'grp.org.hr.adjustments.index', 'parameters' => [$this->organisation->slug]]
-                ]
-            ]
-        ];
+        $headCrumb = function (string $routeName, array $routeParameters) {
+            return [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name'       => $routeName,
+                            'parameters' => $routeParameters,
+                        ],
+                        'label' => __('Adjustment Requests'),
+                        'icon'  => 'fal fa-edit',
+                    ],
+                ],
+            ];
+        };
+
+        return match ($routeName) {
+            'grp.org.hr.adjustments.index' =>
+            array_merge(
+                ShowHumanResourcesDashboard::make()->getBreadcrumbs($routeParameters),
+                $headCrumb($routeName, $routeParameters)
+            ),
+            default => [],
+        };
     }
 }
