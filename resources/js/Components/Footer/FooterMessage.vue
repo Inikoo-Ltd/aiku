@@ -48,7 +48,7 @@ const onPinTab = () => {
                  bg-red-500 text-white text-[9px] font-semibold
                  rounded-full whitespace-nowrap
                  animate-pulse">
-          {{ totalUnread }}
+          New Messages ({{ totalUnread }})
         </span>
       </div>
 
