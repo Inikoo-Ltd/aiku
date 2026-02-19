@@ -152,6 +152,12 @@ onMounted(() => {
     innerWidth.value = window.innerWidth
 })
 
+const GetQuantityToPickFractional = (item) => {
+    if(item.delivery_note_shop_type == 'dropshipping'){
+        return item.quantity_to_pick_fractional_ds
+    }else return item.quantity_to_pick_fractional
+}
+
 
 </script>
 
@@ -374,8 +380,8 @@ onMounted(() => {
                                                     location_org_stock_id: findLocation(deliveryItem.locations, proxyItem.org_stock_id).id
                                                 }" isWithError>
                                                 <template #label>
-                                                    <FractionDisplay v-if="deliveryItem.quantity_to_pick_fractional"
-                                                        :fractionData="deliveryItem.quantity_to_pick_fractional" />
+                                                    <FractionDisplay v-if="GetQuantityToPickFractional(deliveryItem)"
+                                                        :fractionData="GetQuantityToPickFractional(deliveryItem)" />
                                                     <span v-else>{{ locale.number(deliveryItem.quantity_to_pick ?? 0)
                                                         }}</span>
                                                 </template>
@@ -524,8 +530,8 @@ onMounted(() => {
                                                 }" isWithError>
                                                 <template #label>
                                                     <div>
-                                                        <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
-                                                            :fractionData="itemValue.quantity_to_pick_fractional" />
+                                                        <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)"
+                                                            :fractionData="GetQuantityToPickFractional(itemValue)" />
                                                         <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
                                                             }}</span>
                                                     </div>
@@ -546,8 +552,8 @@ onMounted(() => {
                                                 }" isWithError full>
                                                 <template #label>
                                                     <div>
-                                                        <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
-                                                            :fractionData="itemValue.quantity_to_pick_fractional" />
+                                                        <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)"
+                                                            :fractionData="GetQuantityToPickFractional(itemValue)" />
                                                         <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
                                                             }}</span>
                                                     </div>

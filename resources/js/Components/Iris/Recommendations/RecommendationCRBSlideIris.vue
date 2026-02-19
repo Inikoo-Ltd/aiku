@@ -34,7 +34,7 @@ const isLoadingVisit = ref(false)
                 :href="product.canonical_url"
                 class="group max-w-[220px] flex justify-center mx-auto rounded aspect-square w-full overflow-hidden"
                 @start="() => isLoadingVisit = true"
-                @finish="() => isLoadingVisit = false">
+                @finish="() => isLoadingVisit = false"
             >
                 <Image
                     :src="product.image"

@@ -198,6 +198,13 @@ class Mailshot extends Model implements Auditable
         return $this->morphMany(EmailDeliveryChannel::class, 'model');
     }
 
+    public function secondWave(): HasOne
+    {
+        return $this->hasOne(Mailshot::class, 'parent_mailshot_id');
+    }
 
-
+    public function parentMailshot(): BelongsTo
+    {
+        return $this->belongsTo(Mailshot::class, 'parent_mailshot_id');
+    }
 }
