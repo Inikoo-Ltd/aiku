@@ -63,14 +63,5 @@ class FulfillOrderToWooCommerce extends OrgAction
                 ]
             ]
         ]);
-
-        if ($customerEmail = $order->customer?->email) {
-            $wooCommerceUser->sendOrderDetailNotification($fulfillOrderId, $customerEmail);
-            $wooCommerceUser->sendOrderInvoiceNotification($fulfillOrderId, $customerEmail);
-        }
-
-        if ($customerClientEmail = $order->customerClient?->email) {
-            $wooCommerceUser->sendOrderInvoiceNotification($fulfillOrderId, $customerClientEmail);
-        }
     }
 }

@@ -170,7 +170,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 </script>
 
 <template>
-  <div id="families-3" :key="refreshTrigger" ref="containerRef">
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'families-3'"  component="families-3" :key="refreshTrigger" ref="containerRef">
     <div
       v-if="allItems.length"
       class="px-4 py-10"

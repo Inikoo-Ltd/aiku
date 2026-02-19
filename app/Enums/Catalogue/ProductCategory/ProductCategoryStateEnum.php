@@ -61,12 +61,12 @@ enum ProductCategoryStateEnum: string
                 ]
             ],
             'inactive'      => [
-                'tooltip' => __('Inactive'),
-                'icon'    => 'fal fa-ban',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
+                'tooltip' => __('Not For Sale'),
+                'icon'    => 'fas fa-thumbtack',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
                 'app'     => [
-                    'name' => 'ban',
+                    'name' => 'thumbtack',
                     'type' => 'font-awesome-5'
                 ]
             ],

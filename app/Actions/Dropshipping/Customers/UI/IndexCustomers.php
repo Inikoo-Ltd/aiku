@@ -7,6 +7,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -14,15 +15,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomers extends OrgAction
 {
-    /**
-     * Handle listing customers under a given Shop and Platform.
-     *
-     * @param Shop $shop
-     * @param Platform $platform
-     * @param string|null $prefix
-     * @return LengthAwarePaginator
-     */
-    public function handle(Shop $shop, Platform $platform, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Group|Shop $parent, Platform $platform, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -42,7 +35,7 @@ class IndexCustomers extends OrgAction
             ->leftJoin('shops', 'customers.shop_id', '=', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', '=', 'currencies.id')
             ->where('customer_sales_channels.platform_id', $platform->id)
-            ->where('customers.shop_id', $shop->id)
+            ->whereNull('customers.deleted_at')
             ->select([
                 'customers.id',
                 'customers.name',
@@ -91,6 +84,10 @@ class IndexCustomers extends OrgAction
             'number_current_portfolios',
         ];
 
+        if ($parent instanceof Shop) {
+            $query->where('customers.shop_id', $parent->id);
+        }
+
         return $query
             ->defaultSort('-created_at')
             ->allowedSorts($allowedSorts)
@@ -100,13 +97,6 @@ class IndexCustomers extends OrgAction
             ->withQueryString();
     }
 
-    /**
-     * Table layout definition (InertiaTable)
-     *
-     * @param array|null $modelOperations
-     * @param string|null $prefix
-     * @return Closure
-     */
     public function tableStructure(?array $modelOperations = null, ?string $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {

@@ -418,6 +418,7 @@ const isLoadingVisitHistory = ref<string | null>(null)
                                 "
                                 v-for="(history, index) in compHistoryList"
                                 :key="'list' + index"
+								:target="'_blank'"
                                 :href="history?.show_route?.name
                                     ? route(history.show_route.name, history.show_route.parameters)
                                     : '#'

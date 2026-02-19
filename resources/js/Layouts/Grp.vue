@@ -79,6 +79,7 @@ import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import {
 	faAsterisk as fasAsterisk,
 	faBoxHeart,
+	faBadgePercent,
 	faExclamation,
 	faInfo,
 	faPlay,
@@ -164,7 +165,8 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot
+	faShare, faUndoAlt, faRobot,
+	faBadgePercent
 )
 
 provide("layout", useLayoutStore())
@@ -270,6 +272,13 @@ const requestNotificationPermission = () => {
 	if (Notification.permission === "default") {
 		Notification.requestPermission()
 	}
+	if (Notification.permission === "denied") {
+			notify({
+				title: trans('Alert'),
+				text: trans('You must allow notification to get notif from chat'),
+				type: "error"
+			})
+		}
 }
 
 onMounted(() => {
