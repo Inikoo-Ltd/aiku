@@ -63,6 +63,8 @@ class StoreGuestProfile
             'guest_identifier' => $chatSession->guest_identifier,
         ];
 
+        $this->storeMetadata($chatSession, $payload);
+
         StoreChatEvent::make()->customEvent(
             $chatSession,
             ChatEventTypeEnum::GUEST_PROFILE,
@@ -78,6 +80,20 @@ class StoreGuestProfile
             'message' => $chatMessage,
             'event_payload' => $payload,
         ];
+    }
+
+    private function storeMetadata(ChatSession $chatSession, array $payload): void
+    {
+        $currentMetadata = $chatSession->metadata ?? [];
+        $currentMetadata = [
+            'name' => $payload['name'],
+            'email' => $payload['email'],
+            'phone' => $payload['phone'],
+        ];
+
+        $chatSession->update([
+            'metadata' => $currentMetadata,
+        ]);
     }
 
     protected function buildSummaryText(array $data): string

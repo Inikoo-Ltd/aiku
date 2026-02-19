@@ -34,6 +34,7 @@ use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
  * @property int|null $active_user_language_id
  * @property int|null $user_language_id
  * @property int|null $agent_language_id
+ * @property array<array-key, mixed>|null $metadata
  * @property-read Language|null $activeUserLanguage
  * @property-read Language|null $agentLanguage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Livechat\ChatAssignment> $assignments
@@ -61,6 +62,7 @@ class ChatSession extends Model
         'closed_by' => ChatSessionClosedByTypeEnum::class,
         'closed_at' => 'datetime',
         'rating' => 'decimal:1',
+        'metadata' => 'array',
     ];
 
     protected $guarded = [];
@@ -131,4 +133,14 @@ class ChatSession extends Model
     {
         return $this->belongsTo(Language::class, 'active_user_language_id');
     }
+
+    public function isActive(): bool
+    {
+        return $this->status === ChatSessionStatusEnum::ACTIVE;
+    }
+    public function isClosed(): bool
+    {
+        return $this->status === ChatSessionStatusEnum::CLOSED;
+    }
+
 }

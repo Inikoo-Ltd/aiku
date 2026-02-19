@@ -33,7 +33,7 @@ const _popoverQuestionCircle = ref(null)
             </span>
         </div>
 
-        <Popover ref="_popoverQuestionCircle" class="member-popover">
+        <Popover ref="_popoverQuestionCircle" class="member-popover ">
             <div class="popover-content">
                 <p class="popover-title">{{ trans("VOLUME DISCOUNT") }}</p>
 
@@ -69,12 +69,11 @@ const _popoverQuestionCircle = ref(null)
 }
 
 .member-popover {
-    @apply py-1 px-2;
-    width: 250px;
+    @apply py-1 px-2 w-max max-w-[90vw];
 }
 
 .popover-content {
-    @apply text-xs;
+    @apply text-xs w-max max-w-[260px];
 }
 
 .popover-title {
@@ -82,6 +81,6 @@ const _popoverQuestionCircle = ref(null)
 }
 
 .popover-paragraph {
-    @apply mb-4 text-justify;
+    @apply mb-4 ;
 }
 </style>

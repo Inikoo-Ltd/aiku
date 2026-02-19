@@ -66,6 +66,8 @@ class HandleIrisInertiaRequests extends Middleware
             ];
 
 
+
+
             if (Session::get('reloadLayout') == 'remove') {
                 Session::forget('reloadLayout');
             }

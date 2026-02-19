@@ -8,9 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
-use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
