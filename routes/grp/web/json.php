@@ -269,5 +269,5 @@ Route::get('product-category/{productCategory:id}/last-ordered-products', GetLas
 
 Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
 
-Route::get('{warehouse}/trolleys/list/', ListAvailableTrolleys::class)->name('trolleys.list');
+Route::get('{warehouse}/trolleys/list/', ListAvailableTrolleys::class)->name('available_trolleys.list');
 Route::get('{warehouse}/picked-bays/list/', ListAvailablePickedBays::class)->name('picked_bays.list');

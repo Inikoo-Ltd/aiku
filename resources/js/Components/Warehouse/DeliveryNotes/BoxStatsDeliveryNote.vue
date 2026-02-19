@@ -20,6 +20,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
 import Icon from "@/Components/Icon.vue"
 import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -127,13 +128,16 @@ const props = defineProps<{
     }
     updateRoute: routeType
     replaceAllTrigger?: number
+    warehouse: {
+        slug: string
+    }
 }>()
 
 const emit = defineEmits<{
     'replace-all': []
 }>()
 
-// console.log(props.boxStats)
+console.log('vvvvvvvvvvvvvvvvv', props.boxStats)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -222,6 +226,46 @@ const updateCollection = async (e: Event) => {
 }
 
 
+// Section: Modal Edit Trolleys
+const isModalEditTrolley = ref(false)
+const isLoadingSubmitEditTrolley = ref(false)
+const newTrolleyToSubmitId = ref<number|null>(null)
+const submitChangeTrolley = () => {
+    // Section: Submit
+    router.patch(
+        route('grp.models.delivery_note.state.change_trolley', {
+            deliveryNote: props.deliveryNote.id
+        }),
+        {
+            trolley: newTrolleyToSubmitId.value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSubmitEditTrolley.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+                newTrolleyToSubmitId.value = null
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to change trolley"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitEditTrolley.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -384,17 +428,22 @@ const updateCollection = async (e: Event) => {
                         </dl>
                     </div>
 
-                    <div v-if="boxStats?.trolleys?.length" class="!mt-1.5">
+                    <!-- Section: Trolleys -->
+                    <div v-if="boxStats?.trolleys?.length" class="!mt-1.5 flex gap-x-2 items-center">
                         <dl v-tooltip="trans('Trolleys selected')"
                             class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
                                 <!-- <FontAwesomeIcon icon="" class="" fixed-width aria-hidden="true" /> -->
                                 {{ trans("Trolleys") }} ({{ boxStats?.trolleys?.length }}):
                             </dt>
-                            <dd class="text-gray-500">
-                                <pre>{{ boxStats.trolleys.map(trolley => trolley?.name ?? '-').join(', ') }}</pre>
+                            <dd class="text-gray-500 align-middle">
+                                {{ boxStats.trolleys.map(trolley => trolley?.name ?? '-').join(', ') }}
                             </dd>
                         </dl>
+
+                        <span class="opacity-50 hover:opacity-100 cursor-pointer" @click="isModalEditTrolley = true">
+                            <FontAwesomeIcon icon="fal fa-pencil" class="text-xs" fixed-width aria-hidden="true" />
+                        </span>
                     </div>
                     
                     <div class="!mt-2 border-t border-gray-300 w-full" />
@@ -653,6 +702,54 @@ const updateCollection = async (e: Event) => {
                     <Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="
 							!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)
 						" full @click="() => onSubmitParcels()" />
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Modal: change trolley -->
+        <Modal
+            :isOpen="isModalEditTrolley"
+            width="w-full max-w-2xl"
+            @close="isModalEditTrolley = false"
+        >
+            <div class="px-6">
+                <h2 class="text-2xl font-bold mxb-4 text-center">{{ trans('Change trolley') }}</h2>
+                <!-- <p class="italic mb-6 text-center opacity-70 text-sm">Enter the details to create a category offer</p> -->
+                <div class="mt-8 space-y-8">
+        
+                    <div>
+                        <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
+                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle"/>
+                            {{ trans('Select available trolley') }}:
+                        </label>
+        
+                        <div class="pl-4">
+                            <PureMultiselectInfiniteScroll
+                                v-model="newTrolleyToSubmitId"
+                                :fetchRoute="{
+                                    name: 'grp.json.available_trolleys.list',
+                                    parameters: {
+                                        warehouse: props.warehouse.slug,
+                                    }
+                                }"
+                            />
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="mt-8 flex justify-end space-x-4">
+                    <Button
+                        @click="isModalEditTrolley = false"
+                        type="cancel"
+                    />
+                    <Button
+                        full
+                        icon="fad fa-save"
+                        :label="trans('Change trolley')"
+                        @click="submitChangeTrolley"
+                        :loading="isLoadingSubmitEditTrolley"
+                    >
+                    </Button>
                 </div>
             </div>
         </Modal>

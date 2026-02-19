@@ -558,7 +558,9 @@ onMounted(() => {
 		:deliveryNote="delivery_note"
 		:updateRoute="routes.update"
 		:is_external_order
-		:shipments />
+		:shipments
+		:warehouse
+	/>
 
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 

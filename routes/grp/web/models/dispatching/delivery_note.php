@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\ChangeTrolleyDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UnpackDeliveryNote;
@@ -47,6 +48,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('remove-picker', UpdateDeliveryNoteStateToUnassigned::class)->name('remove-picker');
         Route::patch('handling', StartHandlingDeliveryNote::class)->name('handling');
         Route::patch('handling-with-trolley', StartHandlingWithTrolleyDeliveryNote::class)->name('handling_with_trolley');
+        Route::patch('change-trolley', ChangeTrolleyDeliveryNote::class)->name('change_trolley');
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');
         Route::patch('handling-blocked', UpdateDeliveryNoteStateToHandlingBlocked::class)->name('handling_blocked');

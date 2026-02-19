@@ -50,6 +50,7 @@ class IndexTrolleys extends OrgAction
                 'trolleys.id',
                 'trolleys.name',
                 'trolleys.slug',
+                'trolleys.current_delivery_note_id',
             ])
             ->defaultSort('trolleys.name')
             ->allowedSorts(['name'])
