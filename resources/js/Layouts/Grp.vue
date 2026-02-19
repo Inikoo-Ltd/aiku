@@ -47,7 +47,7 @@ import {
 	faRulerTriangle,
 	faRulerCombined,
 	faAtom,
-	faAtomAlt,
+	faAtomAlt, faGift,
 	faBan,
 	faSnooze,
 	faFileInvoice,
@@ -80,6 +80,7 @@ import { faViruses } from "@fad"
 import {
 	faAsterisk as fasAsterisk,
 	faBoxHeart,
+	faBadgePercent,
 	faExclamation,
 	faInfo,
 	faPlay,
@@ -100,7 +101,7 @@ import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 
 library.add(
 	faRainbow,
-	faAtomAlt,
+	faAtomAlt, faGift,
 	faOctopusDeploy,
 	faPoll,
 	faPhotoVideo, faQuestionCircle,
@@ -167,7 +168,8 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk,
-	faShare, faUndoAlt,faRobot,faMonument, faDollyFlatbedAlt, faViruses
+	faShare, faUndoAlt,faRobot,faMonument, faDollyFlatbedAlt, faViruses,
+	faBadgePercent
 )
 
 provide("layout", useLayoutStore())
@@ -272,6 +274,13 @@ const requestNotificationPermission = () => {
 	if (Notification.permission === "default") {
 		Notification.requestPermission()
 	}
+	if (Notification.permission === "denied") {
+			notify({
+				title: trans('Alert'),
+				text: trans('You must allow notification to get notif from chat'),
+				type: "error"
+			})
+		}
 }
 
 onMounted(() => {

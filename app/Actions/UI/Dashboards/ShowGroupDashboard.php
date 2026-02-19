@@ -103,7 +103,7 @@ class ShowGroupDashboard extends OrgAction
                         'navigation' => $tabsBox
                     ],
                 ]
-            ]
+            ],
         ];
 
         return Inertia::render(

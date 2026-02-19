@@ -37,6 +37,11 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $packedIn = $this->packed_in;
+        if ($packedIn == null) {
+            $packedIn = 1;
+        }
+
         $requiredFactionalData =
             riseDivisor(
                 divideWithRemainder(
@@ -102,32 +107,48 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
+        $packedInMessage = '';
+        if ($packedIn == 1) {
+            $packedInMessage = '('.__('Individually packed').')';
+        } elseif ($packedIn > 1) {
+            $packedInMessage = '('.__('Pack of').": $packedIn".")";
+        }
+
+        $quantityToPickFractional   = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->packed_in);
+        $quantityToPickFractionalDS = $quantityToPickFractional;
+
+        if (floor($quantityToPick) == $quantityToPick) {
+            $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
+        }
+
         return [
-            'id'                           => $this->id,
-            'is_picked'                    => $isPicked,
-            'state'                        => $this->state,
-            'state_icon'                   => $this->state->stateIcon()[$this->state->value],
-            'quantity_required'            => $this->quantity_required,
-            'quantity_to_pick'             => $quantityToPick,
-            'quantity_to_pick_fractional'  => riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->packed_in),
-            'quantity_picked'              => $this->quantity_picked,
-            'quantity_not_picked'          => $this->quantity_not_picked,
-            'quantity_packed'              => $this->quantity_packed,
-            'quantity_dispatched'          => $this->quantity_dispatched,
-            'org_stock_id'                 => $this->org_stock_id,
-            'org_stock_code'               => $this->org_stock_code,
-            'org_stock_slug'               => $this->org_stock_slug,
-            'org_stock_name'               => $this->org_stock_name,
-            'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
-            'pickings'                     => PickingResource::collection($pickings),
-            'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
-            'warning'                      => $fullWarning,
-            'is_handled'                   => $this->is_handled,
-            'is_packed'                    => $isPacked,
-            'quantity_required_fractional' => $requiredFactionalData,
-            'warehouse_area'               => $warehouseArea,
-            'batch_code'                   => $this->batch_code,
-            'expiry_date'                  => $this->expiry_date,
+            'id'                             => $this->id,
+            'is_picked'                      => $isPicked,
+            'state'                          => $this->state,
+            'state_icon'                     => $this->state->stateIcon()[$this->state->value],
+            'quantity_required'              => $this->quantity_required,
+            'quantity_to_pick'               => $quantityToPick,
+            'quantity_to_pick_fractional'    => $quantityToPickFractional,
+            'quantity_to_pick_fractional_ds' => $quantityToPickFractionalDS,
+            'quantity_picked'                => $this->quantity_picked,
+            'quantity_not_picked'            => $this->quantity_not_picked,
+            'quantity_packed'                => $this->quantity_packed,
+            'quantity_dispatched'            => $this->quantity_dispatched,
+            'org_stock_id'                   => $this->org_stock_id,
+            'org_stock_code'                 => $this->org_stock_code,
+            'org_stock_slug'                 => $this->org_stock_slug,
+            'org_stock_name'                 => $this->org_stock_name,
+            'locations'                      => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
+            'pickings'                       => PickingResource::collection($pickings),
+            'packings'                       => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
+            'warning'                        => $fullWarning,
+            'is_handled'                     => $this->is_handled,
+            'is_packed'                      => $isPacked,
+            'quantity_required_fractional'   => $requiredFactionalData,
+            'warehouse_area'                 => $warehouseArea,
+            'batch_code'                     => $this->batch_code,
+            'expiry_date'                    => $this->expiry_date,
+            'packed_in_message'              => $packedInMessage,
 
 
             'upsert_picking_route' => [

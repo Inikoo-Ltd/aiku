@@ -134,7 +134,8 @@ const props = defineProps<{
 	shop: {
 		type: string   // 'b2b', 'dropshipping'
 	}
-}>()
+	shop_type : string
+}>();
 
 
 const layout = inject('layout', layoutStructure)
@@ -557,6 +558,7 @@ onMounted(() => {
 			:tab="currentTab"
 			:routes
 			:state="delivery_note.state"
+			:shop_type="shop_type"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError" />
 	</div>

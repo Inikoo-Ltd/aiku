@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { inject, computed } from "vue";
 import WidgetShops from "./Widget/WidgetShops.vue";
 import WidgetOrganisations from "./Widget/WidgetOrganisations.vue";
 
@@ -14,21 +13,6 @@ const props = defineProps<{
 	}
     tableData: {}
 }>()
-
-const layout = inject('layout')
-
-const totalsColumns = computed(() => {
-    if (props.tableData?.tables?.organisations?.totals?.columns) {
-        return props.tableData.tables.organisations.totals.columns
-    }
-    if (props.tableData?.tables?.shops?.totals?.columns) {
-        return props.tableData.tables.shops.totals.columns
-    }
-    if (props.tableData?.tables?.master_shops?.totals?.columns) {
-        return props.tableData.tables.master_shops.totals.columns
-    }
-    return null
-})
 </script>
 
 <template>

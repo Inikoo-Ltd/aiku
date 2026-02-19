@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\OfferCampaign\UI;
 
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Discounts\OfferCampaignTabsEnum;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\History\HistoryResource;
@@ -39,12 +40,14 @@ trait OfferCampaignVolumeDiscountTrait
                         ],
                     'title'         => $offerCampaign->name,
                     'model'         => __('Offer Campaign'),
+                    'iconRight'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
                     'actions' => app()->environment('local') ? [
                         [
                             'type'  => 'button',
-                            'label' => __('Free Gift'),
+                            'icon'  => 'fal fa-gift',
+                            'label' => __('Vol/GR Gift'),
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'free_gift', request()->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'vol_gr_gift', request()->route()->getName()),
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ]
                         ]

@@ -12,7 +12,7 @@ const props = defineProps<{
 
 <template>
 	<div
-		class="relative  transition-all hidden md:block"
+		class="relative  transition-all hidden md:block" :id="fieldValue?.id ? fieldValue?.id  : 'overview'"  component="overview"
 		:style="{...getStyles(fieldValue?.container?.properties), width : '100%', height : 'auto'}">
 		<!-- Render text elements -->
 		<div v-for="(text, index) in fieldValue?.texts?.values" :key="index">

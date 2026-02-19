@@ -185,7 +185,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 </script>
 
 <template>
-  <div id="families-2" :key="refreshTrigger" ref="containerRef">
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'families-2'"  component="families-2" :key="refreshTrigger" ref="containerRef">
     <div v-if="allItems.length" class="px-4 py-10" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.fieldValue.container?.properties, props.screenType)

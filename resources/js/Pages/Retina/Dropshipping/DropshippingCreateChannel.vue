@@ -422,7 +422,7 @@ provide("goNext", goNext)
 			</div>
 
 			<!-- Section: Tiktok -->
-			<!--            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+			            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                     <img
@@ -452,7 +452,7 @@ provide("goNext", goNext)
                     </a>
 
                 </div>
-            </div>-->
+            </div>
 
 			<!-- Section: Woocommerce -->
 			<div

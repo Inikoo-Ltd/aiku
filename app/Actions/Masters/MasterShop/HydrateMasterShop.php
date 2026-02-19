@@ -9,18 +9,12 @@
 namespace App\Actions\Masters\MasterShop;
 
 use App\Actions\HydrateModel;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithNoDepartment;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrders;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\Traits\WithNormalise;
 use App\Models\Masters\MasterShop;
@@ -42,12 +36,6 @@ class HydrateMasterShop extends HydrateModel
         MasterShopHydrateMasterFamilies::run($masterShop);
         MasterShopHydrateMasterAssets::run($masterShop);
         MasterShopHydrateMasterFamiliesWithNoDepartment::run($masterShop);
-        MasterShopHydrateInvoiceIntervals::run($masterShop->id);
-        MasterShopHydrateSalesIntervals::run($masterShop->id);
-        MasterShopHydrateOrders::run($masterShop->id);
-        MasterShopHydrateRegistrationIntervals::run($masterShop->id);
-        MasterShopHydrateOrderInBasketAtCreatedIntervals::run($masterShop->id);
-        MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($masterShop->id);
         MasterShopHydrateMasterCollections::run($masterShop);
     }
 

@@ -161,11 +161,11 @@ class FetchIrisEcomBasket extends IrisAction
         $transactions = [];
         foreach ($productsData as $productData) {
             $imageData         = is_string($productData->web_images) ? json_decode($productData->web_images, true) : $productData->web_images;
-            $webImageThumbnail = Arr::get($imageData, 'main.thumbnail');
+            $webImageThumbnail = Arr::get($imageData, 'main.original');
 
             $transactions[] = [
                 'transaction_id'       => $productData->id,
-                'id'       => $productData->product_id,
+                'id'                   => $productData->product_id,
                 'net_amount'           => $productData->net_amount,
                 'gross_amount'         => $productData->gross_amount,
                 'quantity_ordered'     => $productData->quantity_ordered,
@@ -232,19 +232,23 @@ class FetchIrisEcomBasket extends IrisAction
         $orderArr['eligible_gifts'] = [  // TODO: Raul INI-887
             'is_customer_eligible_for_gift' => true,
             'selected_gift' => [
+                'id'    => 123,
                 'label' => 'Rainbow bath bomb',
                 'value' => 'rainbow_bath_bomb'
             ],
             'available_gifts' => [
                 [
+                    'id'    => 123,
                     'label' => 'Rainbow bath bomb',
                     'value' => 'rainbow_bath_bomb'
                 ],
                 [
+                    'id'    => 234,
                     'label' => 'Lavender bath bomb',
                     'value' => 'lavender_bath_bomb'
                 ],
                 [
+                    'id'    => 456,
                     'label' => 'Rose bath bomb',
                     'value' => 'rose_bath_bomb'
                 ],

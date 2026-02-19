@@ -7,25 +7,27 @@ import { ref } from 'vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { routeType } from '@/types/route'
 
+interface Gift {
+    id: number
+    label: string
+    value: string
+}
+
 const props = defineProps<{
     routeUpdate: routeType
-    selectedGift: {
-        label: string
-        value: string
-    } | null
-    giftOptions: {
-        label: string
-        value: string
-    }[]
+    selectedGift: Gift | null
+    giftOptions: Gift[]
 }>()
 
-const selectedGift = ref(props.selectedGift ?? {})
+const selectedGift = ref(props.selectedGift ?? null)
 
 const _popover = ref<InstanceType<typeof Popover> | null>(null)
 
 // Section: Charge Priority Dispatch
 const isLoadingChanged = ref(false)
-const onChangeGift = async (val: {}) => {
+const onChangeGift = async (val: Gift) => {
+
+    const dataToSend = val.id === selectedGift.value?.id ? null : val.id
     try {
         isLoadingChanged.value = true
         const response = await axios.patch(
@@ -33,7 +35,7 @@ const onChangeGift = async (val: {}) => {
                 props.routeUpdate.name,
                 props.routeUpdate.parameters
             ),
-            { gift: val.value }
+            { gift_id: dataToSend }
         )
         if (response.status !== 200) {
             

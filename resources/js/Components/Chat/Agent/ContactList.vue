@@ -13,10 +13,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import SettingChat from "../SettingChat.vue"
 import Dialog from 'primevue/dialog';
+import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
+import { incrementUnread } from "@/Composables/useNotificationSound"
 
 const layout: any = inject("layout", {})
-
 const baseUrl = layout?.appUrl ?? ""
+const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
+
 const contacts = ref<Contact[]>([])
 const selectedSession = ref<SessionAPI | null>(null)
 const messages = ref<ChatMessage[]>([])
@@ -102,6 +105,7 @@ const waitEchoReady = (callback: Function) => {
 const notifiedMessages = new Set<string>()
 const myAgentId = layout.user?.id
 const myAgentShop = layout.user?.agent_shops ?? []
+const processedUnreadIds = new Set<number>()
 
 onMounted(() => {
 
@@ -123,6 +127,11 @@ onMounted(() => {
 
             if (notifiedMessages.has(duplicate)) return
 
+            playNotificationSoundFile(soundUrl)
+            if (!processedUnreadIds.has(duplicate)) {
+                incrementUnread()
+                processedUnreadIds.add(duplicate)
+            }
             if (Notification.permission === "granted") {
                 new Notification(senderDisplay, {
                     body: msg.text ?? "New message",
@@ -299,6 +308,9 @@ const formatLastMessage = (msg: string) => {
 const tabClass = (tab: string) => {
     return activeTab.value === tab ? "tabPrimary" : "tabInactive"
 }
+onMounted(async () => {
+    await reloadContacts()
+})
 </script>
 
 <template>

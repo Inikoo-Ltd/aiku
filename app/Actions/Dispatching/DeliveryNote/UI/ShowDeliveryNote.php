@@ -683,6 +683,7 @@ class ShowDeliveryNote extends OrgAction
 
             'timelines'           => $this->getTimeline($deliveryNote),
             'box_stats'           => $this->getBoxStats($deliveryNote),
+            'shop_type'           => $deliveryNote->shop->type,
             'notes'               => $this->getDeliveryNoteNotes($deliveryNote),
             'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [

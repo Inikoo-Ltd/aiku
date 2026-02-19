@@ -97,7 +97,7 @@ class EditWebpage extends OrgAction
             'title'            => [
                 'type'        => 'input',
                 'label'       => __('Meta Title').' (& '.__('Browser title').')',
-                'information' => __('This will be used for the title seen in the browser, and meta title for SEO'),
+                'information' => __('This will be used as the title displayed in the browser, meta title for SEO, and the search feature'),
                 'options'     => [
                     'counter' => true,
                 ],

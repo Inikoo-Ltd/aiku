@@ -140,6 +140,7 @@ const props = defineProps<{
   layout: {
     group: {}
   }
+  is_tax_only?: boolean
 }>()
 
 const currentTab = ref<string>(props.tabs.current);
@@ -508,6 +509,7 @@ const getInvoiceRoute = () => {
             payments: invoice_pay.routes.payments
           }"
           :is_in_refund="true"
+          :is_tax_only="is_tax_only"
         />
     </div>
 
@@ -522,7 +524,7 @@ const getInvoiceRoute = () => {
   </div>
 
   <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-  <component :is="component" :data="props[currentTab]" :tab="currentTab" :ref="(e) => _refComponents[currentTab] = e" />
+  <component :is="component" :data="props[currentTab]" :tab="currentTab" :ref="(e) => _refComponents[currentTab] = e" :is_tax_only="is_tax_only" />
 
   <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
     <div class="isolate bg-white px-6 lg:px-8">

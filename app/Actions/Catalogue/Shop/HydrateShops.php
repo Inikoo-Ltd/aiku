@@ -18,8 +18,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotesState;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrdersDispatchedToday;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateCreating;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateFinalised;
@@ -44,9 +42,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDepartments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateEmailTemplates;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamilies;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePaymentAccounts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePayments;
@@ -55,15 +51,13 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProducts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProspects;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePurges;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTags;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopProductCategory;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopUps;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVariants;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateWebUsers;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -92,7 +86,6 @@ class HydrateShops
         ShopHydrateDepartments::run($shop);
         ShopHydrateFamilies::run($shop);
         ShopHydrateInvoices::run($shop);
-        ShopHydrateSalesIntervals::run($shop);
         ShopHydrateProducts::run($shop);
         ShopHydrateCollections::run($shop);
         ShopHydrateAssets::run($shop);
@@ -103,11 +96,11 @@ class HydrateShops
         ShopHydrateTopUps::run($shop);
         ShopHydrateCreditTransactions::run($shop);
         ShopHydrateCustomerBalances::run($shop);
-        ShopHydrateInvoiceIntervals::run($shop);
         ShopHydrateRentals::run($shop);
         ShopHydrateCrmStats::run($shop);
         ShopHydrateAdjustments::run($shop);
         ShopHydrateAverageClv::run($shop);
+        ShopHydrateTopProductCategory::run($shop);
 
         ShopHydrateOrderStateCreating::run($shop->id);
         ShopHydrateOrderStateSubmitted::run($shop->id);
@@ -120,13 +113,9 @@ class HydrateShops
 
 
         ShopHydrateDeletedInvoices::run($shop);
-        ShopHydrateOrderIntervals::run($shop);
         ShopHydrateRegistrationIntervals::run($shop->id);
-        ShopHydrateOrderIntervals::run($shop);
         ShopHydrateMailshots::run($shop);
         ShopHydrateEmailTemplates::run($shop);
-        ShopHydrateOrderInBasketAtCreatedIntervals::run($shop);
-        ShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($shop);
         ShopHydrateFamiliesWithNoDepartment::run($shop);
         ShopHydrateProductsWithNoFamily::run($shop);
         ShopHydratePolls::run($shop);
@@ -138,14 +127,10 @@ class HydrateShops
         ShopHydrateBrands::run($shop);
         ShopHydrateShippingCountries::run($shop);
 
-        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-            ShopHydratePlatformSalesIntervals::run($shop);
-        }
 
         foreach (DeliveryNoteStateEnum::cases() as $case) {
             ShopHydrateDeliveryNotesState::run($shop->id, $case);
         }
-
     }
 
 }

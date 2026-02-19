@@ -72,6 +72,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
+                'products.is_for_sale',
                 'products.gross_weight',
                 'products.rrp',
                 'available_quantity',

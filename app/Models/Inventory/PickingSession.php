@@ -13,7 +13,6 @@ use App\Actions\Utils\Abbreviate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Dispatching\Trolley;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -36,7 +35,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property PickingSessionStateEnum $state
  * @property int $number_trolleys
  * @property int $number_delivery_notes
- * @property int $numbe_trolleys_picked
  * @property int $number_delivery_notes_picked
  * @property int $number_locations
  * @property int $number_locations_picked
@@ -54,8 +52,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNotesItems
  * @property-read Group $group
  * @property-read Organisation $organisation
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\PickingSessionItem> $pickingSessionItem
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Trolley> $trolleys
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Trolley> $trolleys
  * @property-read User $user
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSession newModelQuery()
@@ -124,11 +121,6 @@ class PickingSession extends Model
     public function trolleys(): HasMany
     {
         return $this->hasMany(Trolley::class);
-    }
-
-    public function pickingSessionItem(): HasMany
-    {
-        return $this->hasMany(PickingSessionItem::class);
     }
 
     public function user(): BelongsTo

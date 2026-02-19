@@ -1124,68 +1124,138 @@ const recalculateVat = async () => {
                 v-tooltip="trans('Create return')" />
         </template>
 
-        <template #wrapped-add-note="{ action }">
-            <!-- Button: Add Notes -->
-            <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
-                <template #button="{ open }">
-                    <Button icon="fal fa-sticky-note" type="tertiary" full :label="trans('Add notes')" />
-                </template>
-                <template #content="{ close: closed }">
-                    <div class="w-[350px]">
-                        <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
-                        <div class="">
-                            <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
-                                required
-                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                valueProp="value" />
+        <!-- Button Wrapped: Edit -->
+        <template #wrapped-0="{ action }">
+            <ButtonWithLink
+                type="tertiary"
+                :tooltip="trans('Edit the order reference')"
+                full
+                :routeTarget="action.route"
+            >
+                <template #button_default="{ isLoadingVisit }">
+                    <div class="flex items-center justify-between w-full gap-x-2">
+                        <div class="w-fit">
+                            <LoadingIcon v-if="isLoadingVisit" />
+                            <FontAwesomeIcon v-else icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
                         </div>
-
-                        <div class="mt-3">
-                            <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
-                            <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                @keydown.enter="() => onSubmitNote(closed)" />
-                        </div>
-
-                        <p v-if="errorNote" class="mt-2 text-sm text-red-600">
-                            *{{ errorNote }}
-                        </p>
-
-                        <div class="flex justify-end mt-3">
-                            <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
-                                full />
-                        </div>
-
-                        <div v-if="isLoadingButton === 'submitNote'"
-                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
-                                aria-hidden="true" />
-                        </div>
+                        <div class="w-full">{{ trans('Edit') }}</div>
                     </div>
                 </template>
-            </Popover>
+            </ButtonWithLink>
+        </template>
 
-            <div class="flex flex-col gap-2">
+        <template #wrapped-add-note="{ action }">
+            <!-- Button: Add Notes -->
+            <div class="w-full">
+                <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
+                    <template #button="{ open }">
+                        <Button icon="fal fa-sticky-note" type="tertiary" full :label="trans('Add notes')" />
+                    </template>
+                    <template #content="{ close: closed }">
+                        <div class="w-[350px]">
+                            <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
+                            <div class="">
+                                <PureMultiselect v-model="noteToSubmit.selectedNote"
+                                    @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
+                                    required
+                                    :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
+                                    valueProp="value" />
+                            </div>
+                            <div class="mt-3">
+                                <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
+                                <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
+                                    @keydown.enter="() => onSubmitNote(closed)" />
+                            </div>
+                            <p v-if="errorNote" class="mt-2 text-sm text-red-600">
+                                *{{ errorNote }}
+                            </p>
+                            <div class="flex justify-end mt-3">
+                                <Button @click="() => onSubmitNote(closed)" :style="'save'"
+                                    :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
+                                    full />
+                            </div>
+                            <div v-if="isLoadingButton === 'submitNote'"
+                                class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                                <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
+                                    aria-hidden="true" />
+                            </div>
+                        </div>
+                    </template>
+                </Popover>
+            </div>
+
+            <div class="w-48 flex flex-col gap-2">
                 <!-- Button: Undispatched -->
                 <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
                     :routeDelete="routes.rollback_dispatch"
                     :title="trans('Are you sure you want to rollback the Order??')"
                     :description="trans('The state of the Order will go back to finalised state.')" isFullLoading
                     :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                    <template #default="{ changeModel }">
-                        <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo"
-                            :tooltip="trans('Rollback the dispatch')" />
+                    <template #default="{ changeModel, isLoadingdelete }">
+                        <Button @click="changeModel"
+                            type="negative"
+                            :tooltip="trans('Rollback the dispatch')"
+                            full
+                        >
+                            <div class="flex items-center justify-between w-full gap-x-2">
+                                <div class="w-fit">
+                                    <LoadingIcon v-if="isLoadingdelete" />
+                                    <FontAwesomeIcon v-else icon="fas fa-undo" class="" fixed-width aria-hidden="true" />
+                                </div>
+                                <div class="w-full">{{ trans('Undispatch') }}</div>
+                            </div>
+                        </Button>
                     </template>
                 </ModalConfirmationDelete>
 
                 <!-- Button: Proforma Invoice -->
                 <Button
                     v-if="proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))"
-                    @click="() => isOpenModalProforma = true" type="tertiary" :label="trans('Proforma Invoice')"
-                    icon="fal fa-download" />
+                    @click="() => isOpenModalProforma = true" type="tertiary"
+                    full
+                >
+                    <div class="flex items-center justify-between w-full gap-x-2">
+                        <div class="w-fit">
+                            <FontAwesomeIcon icon="fal fa-download" class="" fixed-width aria-hidden="true" />
+                        </div>
+                        <div class="w-full">{{ trans('Proforma Invoice') }}</div>
+                    </div>
+                </Button>
 
             </div>
+            
+            <!-- Button: Undo to basket -->
+            <ModalConfirmationDelete
+                v-if="data?.data?.state === 'submitted'"
+                :description="trans('This will move the order back to basket, allowing customer to edit the order again. Are you sure?')"
+                :title="trans('Undo Order back to basket?')"
+                :noLabel="trans('Yes, undo to basket')"
+                noIcon="fal fa-undo-alt"
+                class="w-full"
+                :routeDelete="{
+                    name: 'grp.models.order.send_back_to_basket',
+                    parameters: {
+                        order: data?.data.id
+                    },
+                    method: 'patch'
+                }">
+                <template #default="{ changeModel, isLoadingdelete }">
+                    <Button
+                        v-tooltip="trans('Set the Order back to basket')"
+                        @click="changeModel"
+                        type="negative"
+                        full
+                    >
+                        <div class="flex items-center justify-between w-full gap-x-2">
+                            <div class="w-fit">
+                                <LoadingIcon v-if="isLoadingdelete" />
+                                <FontAwesomeIcon v-else icon="fal fa-undo-alt" class="" fixed-width aria-hidden="true" />
+                            </div>
+                            <div class="w-full">{{ trans('Undo to basket') }}</div>
+                        </div>
+                    </Button>
+                </template>
+            </ModalConfirmationDelete>
         </template>
 
         <template #afterTitle2>

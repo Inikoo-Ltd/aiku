@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from "vue"
+import { inject, ref, computed } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
@@ -91,133 +91,167 @@ const getBestOffer = (offerId: string) => {
     return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
 }
 
+const hasOffer =
+    props.product?.product_offers_data?.number_offers > 0 &&
+    getBestOffer(props.product?.product_offers_data?.best_percentage_off?.offer_id)
+
+
+const showIntervalOffer = computed(() => {
+    return getBestOffer(props.product?.product_offers_data?.best_percentage_off?.offer_id)?.type
+        === 'Category Quantity Ordered Order Interval'
+})
+
+const showMemberPrice = computed(() => {
+    return layout?.user?.gr_data?.customer_is_gr
+})
+
+const showDiscount = computed(() => {
+    return props.basketButton
+        && !props.product.is_coming_soon
+        && !layout?.user?.gr_data?.customer_is_gr
+})
+
+const showLeftBlock = computed(() => {
+    return showMemberPrice.value || showDiscount.value
+})
+
 
 const _popoverProfit = ref(null)
 </script>
 
 <template>
-<div class="font-sans border-t xborder-b border-gray-200 mt-1 p-1 px-0 mb-1 flex flex-col gap-1 tabular-nums text-sm break-safe">
-    <div>
-        <div class="flex justify-between">
-            <div>
-                <div class="text-xs">
-                    {{ trans("Price") }}
-                    <span class="text-gray-500 text-xxs">({{ trans("Excl. Vat") }})</span>
+    <div class="font-sans border-t xborder-b border-gray-200 mt-1 p-1 px-0 mb-1 gap-1 tabular-nums text-sm break-safe">
+        <div>
+            <div class="flex justify-between">
+                <div>
+                    <div class="text-xs mb-1">
+                        {{ trans("Price") }}
+                        <span class="text-gray-500 text-xxs">({{ trans("Excl. Vat") }})</span>
+                    </div>
+
+                    <div v-if="product.units == 1"
+                        class="font-bold text-sm leading-4 inline-flex flex-wrap items-baseline">
+                        <span class="whitespace-nowrap">
+                            {{ locale.currencyFormat(currency?.code, product.price) }}/
+                        </span>
+
+                        <span class="font-normal whitespace-nowrap">
+                            {{ product.unit }}
+                        </span>
+                    </div>
+
+
+                    <div v-else class="font-bold text-sm leading-4 break-words">
+                        {{ locale.currencyFormat(currency?.code, product.price) }}
+
+                        <span v-if="product.price_per_unit > 0" class="text-xs">
+                            <!--  ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }} -->
+                            ({{ product.price_per_unit }}/
+                            <span class="font-normal">{{ product.unit }}</span>)
+                        </span>
+                    </div>
                 </div>
 
-                <div v-if="product.units == 1" class="font-bold text-sm leading-4 break-safe">
-                    {{ locale.currencyFormat(currency?.code, product.price) }}/
-                    <span class="font-normal">{{ product.unit}}</span>
-                </div>
-
-                <div v-else class="font-bold text-base leading-4 text-sm break-safe">
-                    {{ locale.currencyFormat(currency?.code, product.price) }}
-                    <span v-if="product.price_per_unit > 0">
-                        ({{ locale.currencyFormat(currency?.code, product.price_per_unit || 0) }}/
-                        <span class="font-normal">{{ product.unit}}</span>)
-                    </span>
-                </div>
+                <!-- <div v-if="product?.rrp_per_unit > 0"
+                    v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"
+                    class="flex flex-col text-right break-safe">
+                    <div class="text-xs">{{ trans("RRP") }}:</div>
+                    <div class="font-bold text-xs break-safe">
+                        {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
+                        <span class="font-normal">{{ product.unit}}</span>
+                    </div>
+                </div> -->
             </div>
 
-            <div 
-                v-if="product?.rrp_per_unit > 0"
-                v-tooltip="trans('Recommended retail price')+' ('+trans('Excl. Vat')+')'"
-                class="flex flex-col text-right break-safe"
-            >
-                <div class="text-xs">{{ trans("RRP") }}:</div>
-                <div class="font-bold text-xs break-safe">
-                    {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}/
-                    <span class="font-normal">{{ product.unit}}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Price: Gold Member -->
-        <div v-if="product.discounted_price" class="text-primary font-bold text-sm break-safe">
-            <span v-if="product.units == 1">
-                {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/
-                <span class="font-normal">{{ product.unit }}</span>
-            </span>
-            <span v-else>
-                {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
-                ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}/
-                <span class="font-normal">{{ product.unit }}</span>)
-            </span>
-        </div>
-        <div v-else class="h-5"></div>
-
-        <!-- Section: Profit + Offer -->
-        <div class="mt-0 flex justify-between gap-x-2">
-            <template v-if="product.product_offers_data?.number_offers > 0">
-                <div
-                    v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
-                    class="flex flex-col w-fit break-safe"
-                >
-                    <MemberPriceLabel
-                        v-if="layout?.user?.gr_data?.customer_is_gr"
-                        :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)"
-                    />
-
-                    <NonMemberPriceLabel v-else :product />
-
-                    <DiscountByType 
-                        v-if="(product.stock && basketButton && !product.is_coming_soon && !layout?.user?.gr_data?.customer_is_gr)"  
-                        :offers_data="product?.product_offers_data" 
-                        :template="'products_triggers_label'"
-                    />
-                </div>
-                <div v-else />
-            </template>
-
-            <div v-else />
-
-            <!-- Profit -->
-            <div class="flex justify-end text-right flex-col text-xs break-safe">
-                <div class="whitespace-nowrap break-safe">
-                    <span 
-                        @click="_popoverProfit?.toggle"
-                        @mouseenter="_popoverProfit?.show"
-                        @mouseleave="_popoverProfit?.hide"
-                        class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
-                    >
-                        <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
+            <!-- Price: Gold Member -->
+            <div v-if="product.discounted_price" class="text-primary font-bold text-sm break-safe mt-2">
+                <span v-if="product.units == 1">
+                    {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/
+                    <span class="font-normal">{{ product.unit }}</span>
+                </span>
+                <span v-else>
+                    {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
+                    <span class="text-xs">
+                        <!-- ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }} -->
+                        ({{ product.discounted_price_per_unit }}/
+                        <span class="font-normal">{{ product.unit }}</span>)
                     </span>
-                    {{ trans("Profit") }}:
+                </span>
+            </div>
+
+            <div v-else class="h-5"></div>
+
+            <!-- Section: Profit + Offer -->
+
+            <div class="mt-2" :class="hasOffer ? 'grid grid-cols-2 gap-x-2' : 'flex flex-col'">
+                <!-- LEFT: only if offer exists -->
+
+                <div :class="showLeftBlock ? 'col-span-2' : 'col-span-1'">
+                    <NonMemberPriceLabel :product
+                        v-if="!layout?.user?.gr_data?.customer_is_gr && product.product_offers_data?.number_offers > 0" />
                 </div>
 
-                <div class="font-bold text-green-700 text-xxs break-safe">
-                    ({{ layout?.user?.gr_data?.customer_is_gr ? product?.discounted_margin : product?.margin }})
+
+                <div v-if="showLeftBlock && showIntervalOffer" class="flex flex-col w-fit break-safe discount">
+                    <MemberPriceLabel v-if="showMemberPrice" :offer="bestOffer" />
+
+                    <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
+                        template="products_triggers_label" />
                 </div>
 
-                <div class="italic text-xxs break-safe">
-                    {{ locale.currencyFormat(
-                        currency?.code,
-                        (layout?.user?.gr_data?.customer_is_gr
-                            ? product?.discounted_profit_per_unit
-                            : product?.profit_per_unit) || 0
-                    ) }}/{{ product.unit }}
-                </div>
 
-                <Popover ref="_popoverProfit" :style="{ width: '450px' }" class="py-1 px-2 text-xxs">
-                    <ProfitCalculationList :product="product" />
-                </Popover>
+                <!-- RIGHT -->
+                <div :class="[
+                    hasOffer
+                        ? 'flex flex-col justify-end text-right text-xs'
+                        : 'text-xs'
+                ]">
+
+                    <div v-if="product?.rrp_per_unit > 0"
+                        v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"
+                        class="flex flex-col break-safe mb-2">
+                        <div class="text-xs">{{ trans("RRP") }}:</div>
+                        <div class="font-bold text-xs break-safe">
+                            {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
+                        </div>
+                    </div>
+
+                    <div class="whitespace-nowrap break-safe">
+                        <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
+                            @mouseleave="_popoverProfit?.hide" class="ml-1 cursor-pointer opacity-60 hover:opacity-100">
+                            <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
+                        </span>
+                        {{ trans("Profit") }}:
+                    </div>
+
+                    <div class="font-bold text-green-700 text-xs break-safe">
+                        ({{ layout?.user?.gr_data?.customer_is_gr ? product?.discounted_margin : product?.margin }})
+                    </div>
+
+                    <Popover ref="_popoverProfit" :style="{ width: '385px' }" class="py-1 px-2 text-xxs">
+                        <ProfitCalculationList :product="product" />
+                    </Popover>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
 </template>
 
 
 <style scoped>
-
 .text-primary {
-  color: var(--theme-color-4) !important;
+    color: var(--theme-color-4) !important;
 }
 
-.break-safe{
-  overflow-wrap:anywhere;
-  word-break:break-word;
+.discount :deep(.offer-trigger-label) {
+    @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
+    border-color: var(--theme-color-4) !important;
+    color: var(--theme-color-4) !important;
 }
 
+
+.break-safe {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
 </style>
