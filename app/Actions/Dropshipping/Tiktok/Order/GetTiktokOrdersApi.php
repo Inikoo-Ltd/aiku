@@ -1,0 +1,73 @@
+<?php
+
+/*
+ * Author: Artha <artha@aw-advantage.com>
+ * Created: Mon, 10 Mar 2025 16:53:20 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Dropshipping\Tiktok\Order;
+
+use App\Actions\RetinaAction;
+use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\TiktokUser;
+use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\WithAttributes;
+
+class GetTiktokOrdersApi extends RetinaAction
+{
+    use AsAction;
+    use WithAttributes;
+    use WithActionUpdate;
+
+    public string $commandSignature = 'tiktok:get-order {customerSalesChannel}';
+
+    public function handle(TiktokUser $tiktokUser): void
+    {
+        $tiktokOrders = $tiktokUser->getOrders([
+            'page_size' => 100
+        ], [
+            'status' => 'AWAITING_SHIPMENT'
+        ]);
+
+        foreach (Arr::get($tiktokOrders, 'data.orders') as $order) {
+            $existingOrder = Order::where('customer_id', $tiktokUser->customer_id)
+                ->where('platform_order_id', Arr::get($order, 'id'))
+                ->exists();
+
+            if($existingOrder) {
+                continue;
+            }
+
+            if(Arr::get($order, 'status') !== 'AWAITING_SHIPMENT') {
+                continue;
+            }
+
+            $lineItems = collect(Arr::get($order, 'line_items', []))
+                ->pluck('product_id')
+                ->filter()
+                ->toArray();
+
+            $hasOutProducts = DB::table('portfolios')
+                ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
+                ->whereIn('platform_product_id', $lineItems)
+                ->exists();
+
+            if($hasOutProducts) {
+                StoreTiktokOrder::run($tiktokUser, $order);
+            }
+        }
+    }
+
+    public function asCommand(Command $command)
+    {
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+
+        $this->handle($customerSalesChannel->user);
+    }
+}

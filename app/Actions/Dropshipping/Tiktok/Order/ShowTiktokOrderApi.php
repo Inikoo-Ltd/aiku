@@ -20,6 +20,8 @@ class ShowTiktokOrderApi extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
+    public string $commandSignature = 'tiktok:show-order {tiktokUser} {orderId}';
+
     public function handle(TiktokUser $tiktokUser, $orderId)
     {
         return $tiktokUser->getOrders([

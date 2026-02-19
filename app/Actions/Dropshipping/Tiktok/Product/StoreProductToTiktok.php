@@ -69,6 +69,10 @@ class StoreProductToTiktok extends RetinaAction
                     'unit' => "CENTIMETER",
                 ],
                 'external_product_id' => (string) $portfolio->id,
+                'identifier_code' => [
+                    'code' => (string) $product->barcode,
+                    'type' => 'EAN'
+                ],
                 'product_attributes' => [
                     [
                         'id' => "101710",

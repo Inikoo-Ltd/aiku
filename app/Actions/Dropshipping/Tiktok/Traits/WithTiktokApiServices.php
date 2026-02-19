@@ -89,6 +89,7 @@ trait WithTiktokApiServices
                 'POST' => $apiRequest->post($path, $productData),
                 'GET' => $apiRequest->get($path),
                 'PATCH' => $apiRequest->patch($path, $productData),
+                'PUT' => $apiRequest->put($path, $productData),
                 default => throw new \Exception("Unsupported HTTP method: $method"),
             };
 
@@ -121,6 +122,18 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function updateWebhook(string $eventType, string $eventAddress): array
+    {
+        $path = '/event/'.$this->version.'/webhooks';
+
+        return $this->makeApiRequest('PUT', $path, [
+            'address' => $eventAddress,
+            'event_type' => $eventType
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function uploadProductImageToTiktok(array $productData): array
     {
         $path = '/product/'.$this->version.'/images/upload';
@@ -139,13 +152,24 @@ trait WithTiktokApiServices
         ]);
     }
 
-    public function getOrders(array $params): array
+    public function getOrders(array $params = [], array $body = []): array
     {
-        $path = '/order/'.$this->version.'/orders';
+        $path = '/order/'.$this->version.'/orders/search';
+
+        return $this->makeApiRequest('POST', $path, $body, true, [
+            'content-type' => 'application/json'
+        ], true, $params);
+    }
+
+    public function getOrder(string $orderId): array
+    {
+        $path = '/order/'.$this->version.'/orders/';
 
         return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
-        ], true, $params);
+        ], true, [
+            'ids' => [$orderId]
+        ]);
     }
 
     public function getProducts(array $productData, array $params): array
