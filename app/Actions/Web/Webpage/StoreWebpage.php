@@ -140,6 +140,7 @@ class StoreWebpage extends OrgAction
                         $this->createWebBlock($webpage, 'families-1');
                         $this->createWebBlock($webpage, 'products-1');
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                        $this->createWebBlock($webpage, 'department-description-1');
                         $this->createWebBlock($webpage, 'sub-departments-1');
                         $this->createWebBlock($webpage, 'products-1');
                         $this->createWebBlock($webpage, 'families-1');
