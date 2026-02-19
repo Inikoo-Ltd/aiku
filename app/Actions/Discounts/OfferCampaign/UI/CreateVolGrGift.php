@@ -53,6 +53,7 @@ class CreateVolGrGift extends OrgAction
                                         'prefix'   => $shop->currency->symbol,
                                         'min'      => 0
                                     ],
+                                    'value' => 0,
 
                                 ],
                                 'products' => [
@@ -67,6 +68,10 @@ class CreateVolGrGift extends OrgAction
                                     ],
                                     "value" => [],
                                 ],
+                                'default'   => [
+                                    'hidden' => true,
+                                    'value' => null
+                                ]
                             ],
                         ],
                     ],

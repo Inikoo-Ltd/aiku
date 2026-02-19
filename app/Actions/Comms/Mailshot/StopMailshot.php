@@ -1,55 +1,41 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 20 Nov 2023 13:55:00 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: Friday, 6 Feb 2026 14:10:04 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
  */
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\MailshotSendChannel\MailshotSendChannelStateEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Comms\EmailDeliveryChannel;
 use App\Models\Comms\Mailshot;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class ResumeMailshot extends OrgAction
+class StopMailshot extends OrgAction
 {
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
-        if ($mailshot->state != MailshotStateEnum::STOPPED) {
+        if ($mailshot->state != MailshotStateEnum::SENDING) {
             return $mailshot;
         }
 
-
-        data_set($modelData, 'stopped_at', null);
-        data_set($modelData, 'state', MailshotStateEnum::SENDING);
-
+        data_set($modelData, 'stopped_at', now());
+        data_set($modelData, 'state', MailshotStateEnum::STOPPED);
 
         $mailshot->update($modelData);
 
         DB::table('email_delivery_channels')
             ->where('model_type', class_basename(Mailshot::class))
             ->where('model_id', $mailshot->id)
-            ->where('state', MailshotSendChannelStateEnum::STOPPED)
-            ->update(['state' => MailshotSendChannelStateEnum::READY]);
-
-
-        EmailDeliveryChannel::where('model_type', class_basename(Mailshot::class))
-            ->where('model_id', $mailshot->id)
             ->where('state', MailshotSendChannelStateEnum::READY)
-            ->chunk(1000, function ($channels) {
-                foreach ($channels as $mailshotSendChannel) {
-                    SendEmailDeliveryChannel::dispatch($mailshotSendChannel);
-                }
-            });
+            ->update(['state' => MailshotSendChannelStateEnum::STOPPED]);
 
         return $mailshot;
     }

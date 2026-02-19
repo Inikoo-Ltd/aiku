@@ -7,7 +7,10 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue";
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue";
+import { faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faHandHoldingUsd } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
 
+library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faHandHoldingUsd);
 
 const props = defineProps<{
     title: string;

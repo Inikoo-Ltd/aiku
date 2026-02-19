@@ -9,6 +9,7 @@
 namespace App\Console;
 
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
+use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
@@ -456,6 +457,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunMailshotScheduled',
                 ),
                 name: 'RunMailshotScheduled',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunMailshotSecondWave',
+                ),
+                name: 'RunMailshotSecondWave',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
