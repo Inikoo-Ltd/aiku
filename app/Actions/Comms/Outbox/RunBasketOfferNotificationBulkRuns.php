@@ -101,6 +101,7 @@ class RunBasketOfferNotificationBulkRuns
                 $join->whereNull('products.deleted_at');
             });
 
+            // Filter by price history
             // Innermost: rank historic assets per product
             $rankedQuery = DB::table('historic_assets')
                 ->select('model_id', 'price')
@@ -137,11 +138,69 @@ class RunBasketOfferNotificationBulkRuns
                     ->where('ranked_historic_assets.rn', '<=', 2);
             });
 
+            // Filter by discount offer - join with products to get their associated offers
+            $productOffersQuery = DB::table(DB::raw('(
+                SELECT
+                    product_id,
+                    STRING_AGG(offer_id::TEXT, \',\' ORDER BY offer_id) AS offer_ids
+                FROM (
+                    -- Product → Product trigger
+                    SELECT
+                        p.id AS product_id,
+                        o.id AS offer_id
+                    FROM products AS p
+                    JOIN offers AS o
+                        ON p.id = o.trigger_id 
+                       AND o.trigger_type = \'Product\'
+
+                    UNION
+
+                    -- Product → ProductCategory (family)
+                    SELECT
+                        p.id AS product_id,
+                        o.id AS offer_id
+                    FROM products AS p
+                    JOIN offers AS o
+                        ON p.family_id = o.trigger_id 
+                       AND o.trigger_type = \'ProductCategory\'
+
+                    UNION
+
+                    -- Product → ProductCategory (sub_department)
+                    SELECT
+                        p.id AS product_id,
+                        o.id AS offer_id
+                    FROM products AS p
+                    JOIN offers AS o
+                        ON p.sub_department_id = o.trigger_id 
+                       AND o.trigger_type = \'ProductCategory\'
+
+                    UNION
+
+                    -- Product → ProductCategory (department)
+                    SELECT
+                        p.id AS product_id,
+                        o.id AS offer_id
+                    FROM products AS p
+                    JOIN offers AS o
+                        ON p.department_id = o.trigger_id 
+                       AND o.trigger_type = \'ProductCategory\'
+                )
+                GROUP BY product_id
+                ORDER BY product_id
+            ) AS product_offers'));
+
+            $baseQuery->joinSub($productOffersQuery, 'product_offers', function ($join) {
+                $join->on('products.id', '=', 'product_offers.product_id');
+            });
+
+
             $baseQuery->select(
                 'customers.id',
                 'customers.email',
                 DB::raw('STRING_AGG(DISTINCT products.id::TEXT, \',\' ORDER BY products.id::TEXT) AS product_ids'),
-                DB::raw('STRING_AGG(ranked_historic_assets.id::TEXT, \',\' ORDER BY ranked_historic_assets.id::TEXT) AS historic_asset_ids')
+                DB::raw('STRING_AGG(ranked_historic_assets.id::TEXT, \',\' ORDER BY ranked_historic_assets.id::TEXT) AS historic_asset_ids'),
+                'product_offers.offer_ids'
             );
             $baseQuery->groupBy('customers.id');
             $baseQuery->orderBy('customers.id');
