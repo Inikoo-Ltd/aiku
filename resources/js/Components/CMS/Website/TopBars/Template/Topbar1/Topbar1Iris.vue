@@ -233,7 +233,7 @@ watch(
                         <FontAwesomeIcon icon="fal fa-heart" fixed-width aria-hidden="true" class="button"/>
                     </template>
                     <template #label>
-                        <div class="button" v-if="model?.favourite?.text === `{{ favourites_count }}`"
+                        <div class="button whitespace-nowrap" v-if="model?.favourite?.text === `{{ favourites_count }}`"
                             v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
                         <div class="button" v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
                             {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
@@ -256,13 +256,13 @@ watch(
                         <span v-show="false" class="button"></span>
                     </template>
                     <template #label="{ isLoadingVisit }">
-                        <span v-tooltip="trans('Number of products line')" class="button -mr-1.5"
+                        <span v-tooltip="trans('Number of products line')" class="button -mr-1.5 whitespace-nowrap"
                             v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
                         </span>
                         <LoadingIcon v-if="isLoadingVisit" />
                         <FontAwesomeIcon v-else icon="fal fa-shopping-cart" class="button" fixed-width
                             aria-hidden="true" />
-                        <span class="button" 
+                        <span class="button whitespace-nowrap" 
                             v-html="textReplaceVariables(`{{ cart_amount }} <span class='opacity-70'>({{ cart_products_amount }})</span>`, layout.iris_variables)">
                         </span>
                     </template>
@@ -282,7 +282,7 @@ watch(
                             aria-hidden="true" class="button"/>
                     </template>
                     <template #label>
-                        <span class="button">
+                        <span class="button whitespace-nowrap">
                             {{ trans("Register") }}
                         </span>
                     </template>
@@ -321,7 +321,7 @@ watch(
                     <FontAwesomeIcon icon="fal fa-sign-out" fixed-width aria-hidden="true" class="button" />
                 </template>
                 <template #label>
-                    <span class="button">
+                    <span class="button whitespace-nowrap">
                         {{ trans("Logout") }}
                     </span>
                 </template>
