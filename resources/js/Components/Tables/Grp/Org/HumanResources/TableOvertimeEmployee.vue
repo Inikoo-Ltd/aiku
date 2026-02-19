@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { useForm } from "@inertiajs/vue3"
+import { useForm, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import Tag from "@/Components/Tag.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
+import { ref, computed } from "vue"
+
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup } from "@fal";
+
+library.add(faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup)
 
 const props = defineProps<{
 	data: {}
@@ -18,6 +24,95 @@ const props = defineProps<{
 const emit = defineEmits<{
 	(e: "update:isRequestOvertimeModalOpen", value: boolean): void
 }>()
+
+const isEditMode = ref(false)
+const editingOvertimeId = ref<number | null>(null)
+
+const filterSpecificDate = ref<string>("")
+const filterMonth = ref<string>("")
+const filterYear = ref<string>("")
+
+const monthOptions = computed(() =>
+	Array.from({ length: 12 }, (_, index) => {
+		const date = new Date(2000, index, 1)
+		return {
+			value: index + 1,
+			label: date.toLocaleString("default", { month: "long" }),
+		}
+	})
+)
+
+const yearOptions = computed(() => {
+	const currentYear = new Date().getFullYear()
+	return Array.from({ length: 5 }, (_, index) => {
+		return {
+			value: currentYear - 2 + index,
+			label: String(currentYear - 2 + index),
+		}
+	})
+})
+
+const initializeFiltersFromUrl = () => {
+	const url = new URL(window.location.href)
+
+	const specificDate = url.searchParams.get("requested_date")
+	const month = url.searchParams.get("month")
+	const year = url.searchParams.get("year")
+
+	filterSpecificDate.value = specificDate ?? ""
+	filterMonth.value = month ?? ""
+	filterYear.value = year ?? ""
+}
+
+initializeFiltersFromUrl()
+
+const applyDateFilters = () => {
+	const params: Record<string, unknown> = {
+		...route().params,
+		tab: props.tab ?? "overtime",
+	}
+
+	if (filterSpecificDate.value) {
+		params.requested_date = filterSpecificDate.value
+		params.month = undefined
+		params.year = undefined
+	} else {
+		if (filterMonth.value) {
+			params.month = filterMonth.value
+		}
+
+		if (filterYear.value) {
+			params.year = filterYear.value
+		}
+
+		params.requested_date = undefined
+	}
+
+	router.get(route("grp.clocking_employees.index", params), {}, {
+		preserveState: true,
+		preserveScroll: true,
+	})
+}
+
+const resetDateFilters = () => {
+	filterSpecificDate.value = ""
+	filterMonth.value = ""
+	filterYear.value = ""
+
+	const params: Record<string, unknown> = {
+		...route().params,
+		tab: props.tab ?? "overtime",
+	}
+
+	params.requested_date = undefined
+	params.month = undefined
+	params.year = undefined
+
+	router.get(route("grp.clocking_employees.index", params), {}, {
+		preserveState: true,
+		preserveScroll: true,
+	})
+}
 
 const overtimeForm = useForm<{
 	overtime_type_id: number | null
@@ -64,20 +159,76 @@ const formatDuration = (minutes?: number | null): string => {
 	return `${remainingMinutes}m`
 }
 
-const openModal = () => {
+const extractTimeParts = (value?: string | null): { hour: string; minute: string } => {
+	if (!value) {
+		return { hour: "00", minute: "00" }
+	}
+
+	const date = new Date(value)
+
+	if (!Number.isNaN(date.getTime())) {
+		const hour = date.getHours()
+		const minute = date.getMinutes()
+		return {
+			hour: hour < 10 ? `0${hour}` : String(hour),
+			minute: minute < 10 ? `0${minute}` : String(minute),
+		}
+	}
+
+	const timePart = value.split(" ")[1] ?? value
+	const [hour, minute] = timePart.split(":")
+
+	return {
+		hour: hour?.padStart(2, "0") ?? "00",
+		minute: minute?.padStart(2, "0") ?? "00",
+	}
+}
+
+const resetFormState = () => {
 	overtimeForm.reset()
 	overtimeForm.clearErrors()
 	overtimeForm.start_hour = "00"
 	overtimeForm.start_minute = "00"
 	overtimeForm.duration_hours = "0"
 	overtimeForm.duration_minutes = "0"
+}
+
+const openModal = () => {
+	isEditMode.value = false
+	editingOvertimeId.value = null
+	resetFormState()
+	emit("update:isRequestOvertimeModalOpen", true)
+}
+
+const openEditModal = (item: any) => {
+	isEditMode.value = true
+	editingOvertimeId.value = item.id
+
+	resetFormState()
+	overtimeForm.clearErrors()
+
+	overtimeForm.overtime_type_id = item.overtime_type_id ?? null
+	overtimeForm.requested_date = item.requested_date ?? ""
+
+	const { hour, minute } = extractTimeParts(item.requested_start_at)
+	overtimeForm.start_hour = hour
+	overtimeForm.start_minute = minute
+
+	const durationMinutes = item.requested_duration_minutes ?? 0
+	const hours = Math.floor(durationMinutes / 60)
+	const minutes = durationMinutes % 60
+	overtimeForm.duration_hours = String(hours)
+	overtimeForm.duration_minutes = String(minutes)
+
+	overtimeForm.reason = item.reason ?? ""
 	emit("update:isRequestOvertimeModalOpen", true)
 }
 
 const closeModal = () => {
 	emit("update:isRequestOvertimeModalOpen", false)
-	overtimeForm.reset()
-	overtimeForm.clearErrors()
+	isEditMode.value = false
+	editingOvertimeId.value = null
+	resetFormState()
 }
 
 const submitOvertimeRequest = () => {
@@ -86,17 +237,89 @@ const submitOvertimeRequest = () => {
 			...data,
 			organisation: props.organisation ?? undefined,
 		}))
-		.post(route("grp.clocking_employees.overtime_requests.store"), {
-			preserveScroll: true,
-			onSuccess: () => {
-				closeModal()
-			},
-		})
+		.post(
+			isEditMode.value && editingOvertimeId.value
+				? route("grp.clocking_employees.overtime_requests.update", {
+						overtimeRequest: editingOvertimeId.value,
+				  })
+				: route("grp.clocking_employees.overtime_requests.store"),
+			{
+				preserveScroll: true,
+				onSuccess: () => {
+					closeModal()
+				},
+			}
+		)
 }
 </script>
 
 <template>
 	<div class="mt-4 space-y-4">
+		<div class="flex flex-col gap-3 px-4 md:flex-row md:items-center md:justify-between">
+			<div class="flex flex-wrap items-center gap-2">
+				<div class="flex items-center gap-2">
+					<label class="text-xs font-medium text-gray-600">
+						{{ trans("Date") }}
+					</label>
+					<input
+						v-model="filterSpecificDate"
+						type="date"
+						class="block rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+				</div>
+
+				<div class="flex items-center gap-2">
+					<label class="text-xs font-medium text-gray-600">
+						{{ trans("Month") }}
+					</label>
+					<select
+						v-model="filterMonth"
+						class="block rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 min-w-[7rem]">
+						<option value="">
+							{{ trans("All") }}
+						</option>
+						<option
+							v-for="month in monthOptions"
+							:key="month.value"
+							:value="month.value">
+							{{ month.label }}
+						</option>
+					</select>
+				</div>
+
+				<div class="flex items-center gap-2">
+					<label class="text-xs font-medium text-gray-600">
+						{{ trans("Year") }}
+					</label>
+					<select
+						v-model="filterYear"
+						class="block rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 min-w-[6rem]">
+						<option value="">
+							{{ trans("All") }}
+						</option>
+						<option
+							v-for="year in yearOptions"
+							:key="year.value"
+							:value="year.value">
+							{{ year.label }}
+						</option>
+					</select>
+				</div>
+
+				<Button
+					@click="applyDateFilters"
+					size="xs"
+					type="secondary"
+					:label="trans('Filter')" />
+
+				<Button
+					@click="resetDateFilters"
+					size="xs"
+					type="tertiary"
+					:label="trans('Reset')" />
+			</div>
+
+		</div>
+
 		<div class="flex justify-end px-4">
 			<Button
 				@click="openModal"
@@ -162,6 +385,16 @@ const submitOvertimeRequest = () => {
 					{{ item.reason ?? "—" }}
 				</span>
 			</template>
+
+			<template #cell(actions)="{ item }">
+				<div v-if="item.status === 'pending'">
+					<Button
+						@click="openEditModal(item)"
+						size="xs"
+						type="transparent"
+						icon="fal fa-edit" />
+				</div>
+			</template>
 		</Table>
 
 		<Modal
@@ -169,7 +402,11 @@ const submitOvertimeRequest = () => {
 			@onClose="closeModal"
 			width="w-full max-w-lg">
 			<h2 class="text-lg font-semibold text-gray-800 mb-4 p-4">
-				{{ trans("Create overtime request") }}
+				{{
+					isEditMode
+						? trans("Edit overtime request")
+						: trans("Create overtime request")
+				}}
 			</h2>
 
 			<form class="space-y-4" @submit.prevent="submitOvertimeRequest">
@@ -276,7 +513,7 @@ const submitOvertimeRequest = () => {
 					<Button
 						type="save"
 						nativeType="submit"
-						:label="trans('Submit Request')"
+						:label="isEditMode ? trans('Update Request') : trans('Submit Request')"
 						:loading="overtimeForm.processing" />
 				</div>
 			</form>

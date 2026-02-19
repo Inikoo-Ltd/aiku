@@ -173,6 +173,22 @@ class IndexClockingEmployees extends OrgAction
                     'overtime_types.name as overtime_type_name',
                 ]);
 
+            $requestedDate = $request->input('requested_date');
+            $month = $request->input('month');
+            $year = $request->input('year');
+
+            if ($requestedDate) {
+                $queryBuilder->whereDate('overtime_requests.requested_date', $requestedDate);
+            }
+
+            if ($month) {
+                $queryBuilder->whereMonth('overtime_requests.requested_date', (int) $month);
+            }
+
+            if ($year) {
+                $queryBuilder->whereYear('overtime_requests.requested_date', (int) $year);
+            }
+
             $overtimeData = $queryBuilder
                 ->defaultSort('-requested_date')
                 ->allowedSorts([
@@ -338,6 +354,11 @@ class IndexClockingEmployees extends OrgAction
                     label: __('Reason'),
                     canBeHidden: true,
                     sortable: true
+                )
+                ->column(
+                    key: 'actions',
+                    label: __('Actions'),
+                    canBeHidden: false
                 );
 
             $table->defaultSort('-requested_date');
