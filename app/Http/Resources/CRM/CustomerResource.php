@@ -82,6 +82,15 @@ class CustomerResource extends JsonResource
             ];
         }
 
+        if ($customer->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $subscriptions['price_change_notification'] = [
+                'label'           => __('Price Change Notification'),
+                'field'           => 'is_subscribed_to_price_change_notification',
+                'is_subscribed'   => $comms->is_subscribed_to_price_change_notification,
+                'unsubscribed_at' => $comms->price_change_notification_unsubscribed_at
+            ];
+        }
+
 
         return [
             'id'                  => $customer->id,

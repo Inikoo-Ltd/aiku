@@ -12,6 +12,7 @@ use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
@@ -468,6 +469,15 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
         }
+
+        // $this->logSchedule(
+        //     $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+        //         monitorSlug: 'RunPriceChangeNotificationEmailBulkRuns',
+        //     ),
+        //     name: 'RunPriceChangeNotificationEmailBulkRuns',
+        //     type: 'job',
+        //     scheduledAt: now()->format('H:i')
+        // );
     }
 
     protected function commands(): void

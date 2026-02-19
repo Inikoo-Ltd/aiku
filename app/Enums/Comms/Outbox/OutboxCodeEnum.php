@@ -51,6 +51,7 @@ enum OutboxCodeEnum: string
     case CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER = 'credit_balance_notification_for_customer';
     case CREDIT_BALANCE_NOTIFICATION_FOR_USER = 'credit_balance_notification_for_user';
     case CHAT_NOTIFICATION_TO_CUSTOMER = 'chat_notification_to_customer';
+    case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
 
 
     public function type(): OutboxTypeEnum
@@ -77,7 +78,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
-            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER
+            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
@@ -144,6 +146,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER => 'Credit balance notification for user',
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER => 'Credit balance notification for customer',
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
         };
     }
 
@@ -186,6 +189,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER => 'Credit balance notification for customer',
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER => 'Credit balance notification for user',
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
         };
     }
 
@@ -204,6 +208,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
             OutboxCodeEnum::REGISTRATION_REJECTED,
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             => ['Website'],
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::INVOICE_DELETED,
@@ -262,6 +267,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH
             => ['b2b'],
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
+            => ['dropshipping'],
 
             default => []
         };
@@ -331,7 +338,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
-            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER
+            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -375,6 +383,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::OOS_NOTIFICATION,
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
@@ -407,7 +416,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
-            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER
+            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
 
             => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
 

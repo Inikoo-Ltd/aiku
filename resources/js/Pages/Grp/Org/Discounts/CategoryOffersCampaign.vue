@@ -20,9 +20,9 @@ import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 
 
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCommentDollar, faInfoCircle } from '@fal'
+import { faCommentDollar, faInfoCircle, faTags } from '@fal'
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
-library.add( faCommentDollar, faInfoCircle )
+library.add( faCommentDollar, faInfoCircle, faTags )
 
 
 const props = defineProps<{
