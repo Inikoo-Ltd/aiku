@@ -61,6 +61,17 @@ trait HasOrderingStats
             $table->unsignedInteger('number_orders_handing_type_'.$case->snake())->default(0);
         }
 
+        $table->unsignedInteger('number_orders_type_picked')->default(0);
+        $table->unsignedInteger('number_orders_type_packing')->default(0);
+
+        foreach (OrderStateEnum::cases() as $case) {
+            if ($case->value != 'cancelled') {
+                $table->unsignedInteger('number_orders_cancelled_at_state_'.$case->snake())->default(0);
+            }
+        }
+
+        $table->unsignedInteger('number_orders_cancelled_at_state_packed')->default(0);
+
         return $table;
     }
 
@@ -82,6 +93,17 @@ trait HasOrderingStats
         foreach (OrderHandingTypeEnum::cases() as $case) {
             $table->dropColumn('number_orders_handing_type_'.$case->snake());
         }
+
+        $table->dropColumn('number_orders_type_picked');
+        $table->dropColumn('number_orders_type_packing');
+
+        foreach (OrderStateEnum::cases() as $case) {
+            if ($case->value != 'cancelled') {
+                $table->dropColumn('number_orders_cancelled_at_state_'.$case->snake());
+            }
+        }
+
+        $table->dropColumn('number_orders_cancelled_at_state_packed');
 
         return $table;
     }
@@ -124,6 +146,9 @@ trait HasOrderingStats
             $table->unsignedInteger('number_delivery_notes_type_'.$case->snake())->default(0);
         }
 
+        $table->unsignedInteger('number_delivery_notes_type_picked')->default(0);
+        $table->unsignedInteger('number_delivery_notes_type_packing')->default(0);
+
         foreach (DeliveryNoteStateEnum::cases() as $case) {
             $table->unsignedInteger('number_delivery_notes_state_'.$case->snake())->default(0);
         }
@@ -133,6 +158,8 @@ trait HasOrderingStats
                 $table->unsignedInteger('number_delivery_notes_cancelled_at_state_'.$case->snake())->default(0);
             }
         }
+
+        $table->unsignedInteger('number_delivery_notes_cancelled_at_state_packed')->default(0);
 
         $table->unsignedInteger('number_delivery_notes_state_with_out_of_stock')->default(0);
 

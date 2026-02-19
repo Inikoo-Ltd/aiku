@@ -9,15 +9,26 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Inventory\PickedBay;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetPackedWithPickingBaysDeliveryNote extends OrgAction
 {
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
-        $pickingBay = data_get($modelData, 'picked_bay');
+        $pickedBay = null;
+        if (Arr::has($modelData, 'picked_bay') && $modelData['picked_bay']) {
+            $pickedBay = PickedBay::find($modelData['picked_bay']);
+        }
+        if ($pickedBay) {
+            AttachTrolleyToDeliveryNote::run($trolley, $deliveryNote);
+        }
+
         dd("maybe can copy from SetDeliveryNoteStateAsPacked. selected picking bay id: $pickingBay");
     }
 
@@ -25,7 +36,11 @@ class SetPackedWithPickingBaysDeliveryNote extends OrgAction
     public function rules(): array
     {
         return [
-            'picked_bay' => ['required', 'numeric'],
+            'picked_bay' => [
+                'nullable',
+                'integer',
+                Rule::exists('picked_bays', 'id')->where('organisation_id', $this->organisation->id)
+            ],
         ];
     }
 

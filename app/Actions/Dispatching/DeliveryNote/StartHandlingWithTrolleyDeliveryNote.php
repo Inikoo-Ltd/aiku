@@ -23,7 +23,7 @@ class StartHandlingWithTrolleyDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote, User $user, array $modelData): DeliveryNote
     {
         $trolley = null;
-        if (Arr::has($modelData, 'trolley')) {
+        if (Arr::has($modelData, 'trolley') && $modelData['trolley']) {
             $trolley = Trolley::find($modelData['trolley']);
         }
 
