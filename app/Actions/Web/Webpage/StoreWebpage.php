@@ -133,10 +133,12 @@ class StoreWebpage extends OrgAction
                     $this->createWebBlock($webpage, 'luigi-trends-1');
                     $this->createWebBlock($webpage, 'luigi-last-seen-1');
                 } elseif ($model instanceof Collection) {
+                    $this->createWebBlock($webpage, 'collection-description-1');
                     $this->createWebBlock($webpage, 'families-1');
                     $this->createWebBlock($webpage, 'products-1');
                 } elseif ($model instanceof ProductCategory) {
                     if ($model->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                        $this->createWebBlock($webpage, 'sub-department-description-1');
                         $this->createWebBlock($webpage, 'families-1');
                         $this->createWebBlock($webpage, 'products-1');
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
