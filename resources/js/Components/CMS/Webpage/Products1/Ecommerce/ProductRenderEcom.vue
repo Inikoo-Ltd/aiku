@@ -268,7 +268,7 @@ defineExpose({
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
                     :type="typeOfLink" :id="product?.url?.id">
                     <template #default>
-                        <p class="inline-block leading-4 text-justify">
+                        <p class="inline-block leading-4">
                             <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
                             {{ product.name }}
                         </p>

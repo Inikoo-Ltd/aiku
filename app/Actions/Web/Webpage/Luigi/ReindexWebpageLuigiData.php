@@ -54,7 +54,7 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
         if (count($accessToken) < 2) {
             return [
                 'status'  => 'error',
-                'message' => 'No access token found.'
+                'message' => 'No access token found. Neither tracker ID nor private key.'
             ];
         }
 

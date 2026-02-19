@@ -26,7 +26,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 trait WithLuigis
 {
@@ -100,9 +99,7 @@ trait WithLuigis
         Log::info('Starting request to Luigi Box API ' . $publicKey . ' (' . $date . ')...');
         Log::info('Headers: ', $header);
         Log::info('Body: ', ['body' => $bodyToPrint]);
-
         Log::info('Loading...');
-
 
         try {
             $response = Http::withHeaders($header)
@@ -111,7 +108,7 @@ trait WithLuigis
                 ->{strtolower($method)}(
                     'https://live.luigisbox.tech/'.$endPoint
                 );
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             throw new Exception('Failed to call Luigis Box API: '.$e->getMessage());
 
         }

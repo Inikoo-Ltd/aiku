@@ -10,6 +10,7 @@
 namespace App\Actions\Discounts\OfferCampaign;
 
 use App\Actions\OrgAction;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Organisation;
@@ -17,13 +18,17 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreFreeGift extends OrgAction
+class StoreVolGrGift extends OrgAction
 {
     use AsAction;
     use WithAttributes;
 
     public function handle(OfferCampaign $offerCampaign, $modelData): OfferCampaign
     {
+        $offerData = [];
+        data_set($offerData, 'duration', OfferDurationEnum::PERMANENT);
+        data_set($offerData, 'type', 'VolGr Gift');
+        data_set($modelData, 'code', 'vol-gr-gift-'.$offerCampaign->shop->id);
 
         dd($modelData);
     }
@@ -31,8 +36,9 @@ class StoreFreeGift extends OrgAction
     public function rules(): array
     {
         return [
-            'amount'        => ['numeric', 'required'],
-            'products'      => ['required', 'array'],
+            'amount'   => ['numeric', 'required'],
+            'products' => ['required', 'array'],
+            'default'  => ['required', 'nullable', 'integer']
         ];
     }
 

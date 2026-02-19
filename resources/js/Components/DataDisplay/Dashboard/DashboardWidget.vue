@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { inject, computed } from "vue";
 import WidgetShops from "./Widget/WidgetShops.vue";
 import WidgetOrganisations from "./Widget/WidgetOrganisations.vue";
-import WidgetTopListedProducts from "./Widget/WidgetTopListedProducts.vue";
-import WidgetTopSoldProducts from "./Widget/WidgetTopSoldProducts.vue";
 
 const props = defineProps<{
 	intervals: {
@@ -15,43 +12,7 @@ const props = defineProps<{
 		value: string
 	}
     tableData: {}
-    topListedProducts?: Array<{
-        id: number
-        code: string
-        name: string
-        total_listed: number
-    }>
-    topSoldProducts?: Array<{
-        id: number
-        code: string
-        name: string
-        total_sold: number
-        total_amount: number
-    }>
 }>()
-
-const layout = inject('layout')
-
-const totalsColumns = computed(() => {
-    if (props.tableData?.tables?.organisations?.totals?.columns) {
-        return props.tableData.tables.organisations.totals.columns
-    }
-    if (props.tableData?.tables?.shops?.totals?.columns) {
-        return props.tableData.tables.shops.totals.columns
-    }
-    if (props.tableData?.tables?.master_shops?.totals?.columns) {
-        return props.tableData.tables.master_shops.totals.columns
-    }
-    return null
-})
-
-const currentTab = computed(() => {
-    return props.tableData?.current_tab || ''
-})
-
-const showProductWidgets = computed(() => {
-    return currentTab.value === 'global_dropshipping' && (props.topListedProducts || props.topSoldProducts)
-})
 </script>
 
 <template>
@@ -65,14 +26,6 @@ const showProductWidgets = computed(() => {
             v-if="props.tableData?.tables?.shops"
             :tableData="props.tableData"
             :intervals="props.intervals"
-        />
-        <WidgetTopListedProducts
-            v-if="showProductWidgets && props.topListedProducts"
-            :products="props.topListedProducts"
-        />
-        <WidgetTopSoldProducts
-            v-if="showProductWidgets && props.topSoldProducts"
-            :products="props.topSoldProducts"
         />
     </div>
 </template>
