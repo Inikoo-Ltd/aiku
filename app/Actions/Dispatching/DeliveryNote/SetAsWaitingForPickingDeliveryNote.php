@@ -2,7 +2,7 @@
 
 /*
  * Author: Vika Aqordi
- * Created on 30-01-2026-15h-39m
+ * Created on 18-02-2026-16h-44m
  * Github: https://github.com/aqordeon
  * Copyright: 2026
 */
@@ -13,12 +13,12 @@ use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
 
-class SetPackedWithPickingBaysDeliveryNote extends OrgAction
+class SetAsWaitingForPickingDeliveryNote extends OrgAction
 {
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
         $pickingBay = data_get($modelData, 'picked_bay');
-        dd("maybe can copy from SetDeliveryNoteStateAsPacked. selected picking bay id: $pickingBay");
+        dd("CCCCCCCCCCCCCCCCCCCCCCCCCC. selected picking bay id: $pickingBay");
     }
 
 

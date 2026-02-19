@@ -39,7 +39,7 @@ class UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay extends OrgAction
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
-        dd($request->all());
+        // dd($request->all());
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 

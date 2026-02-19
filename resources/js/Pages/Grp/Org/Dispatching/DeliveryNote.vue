@@ -57,6 +57,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
+import ButtonSetAsWaiting from "@/Components/DeliveryNote/ButtonSetAsWaiting.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonSelectBaysAndWaiting from "@/Components/DeliveryNote/ButtonSelectBaysAndWaiting.vue"
 
@@ -455,7 +456,7 @@ onMounted(() => {
 			</ButtonSelectTrolleys>
 		</template>
 
-		<!-- Button: Select trolley (only for Ecom) -->
+		<!-- Button: Select picked bays (only for Ecom) -->
 		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-as-packed="{ action }">
 			<ButtonSelectBays
 				:warehouse="warehouse"
@@ -463,6 +464,16 @@ onMounted(() => {
 			>
 
 			</ButtonSelectBays>
+		</template>
+
+		<!-- Button: Set as waiting (only for Ecom) -->
+		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-for-waiting="{ action }">
+			<ButtonSetAsWaiting
+				:warehouse="warehouse"
+				:deliveryNote="delivery_note"
+			>
+
+			</ButtonSetAsWaiting>
 		</template>
 	</PageHeading>
 
