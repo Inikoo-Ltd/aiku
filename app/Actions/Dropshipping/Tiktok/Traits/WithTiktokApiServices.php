@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Traits;
 
+use App\Models\Ordering\Order;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -122,6 +123,24 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function getShippingProviders(string $deliveryOptionId): array
+    {
+        $path = "/logistics/$this->version/delivery_options/$deliveryOptionId/shipping_providers";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getDeliveryOptions(): array
+    {
+        $path = "/logistics/$this->version/warehouses/$this->tiktok_warehouse_id/delivery_options";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function updateWebhook(string $eventType, string $eventAddress): array
     {
         $path = '/event/'.$this->version.'/webhooks';
@@ -186,6 +205,15 @@ trait WithTiktokApiServices
         $path = '/product/'.$this->version.'/products/' . $productId;
 
         return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function updateShippingInfo(string $orderId, array $shippingData): array
+    {
+        $path = "/fulfillment/$this->version/orders/$orderId/shipping_info/update";
+
+        return $this->makeApiRequest('POST', $path, $shippingData, true, [
             'content-type' => 'application/json'
         ]);
     }
