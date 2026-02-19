@@ -204,6 +204,7 @@ class CallApiApcGbShipping extends OrgAction
         $apiResponse = $response->json();
         $statusCode  = $response->status();
 
+
         $modelData = [
             'api_response' => $apiResponse,
         ];
@@ -228,9 +229,15 @@ class CallApiApcGbShipping extends OrgAction
             $modelData['tracking_urls'] = [];
 
 
-            foreach (Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.Items', []) as $item) {
-                $modelData['trackings'][] = Arr::get($item, 'TrackingNumber');
+            $itemsData = Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.Items.Item', []);
+            if (Arr::has($itemsData, 'TrackingNumber')) {
+                $modelData['trackings'][] = Arr::get($itemsData, 'TrackingNumber');
+            } else {
+                foreach ($itemsData as $item) {
+                    $modelData['trackings'][] = Arr::get($item, 'TrackingNumber');
+                }
             }
+
             $modelData['tracking'] = implode(' ', $modelData['trackings']);
         } else {
             $status = 'fail';
