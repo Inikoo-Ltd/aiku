@@ -3,10 +3,12 @@
 namespace App\Actions\HumanResources\Leave;
 
 use App\Actions\OrgAction;
+use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Leave;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\File;
@@ -39,19 +41,37 @@ class UpdateLeave extends OrgAction
         return $leave->refresh();
     }
 
-    public function asController(Leave $leave, ActionRequest $request): Leave
+    public function asController(ActionRequest $request): Leave
     {
+        $leave = $request->route('leave');
+
+        if (!$leave instanceof Leave) {
+            $leaveId = is_numeric($leave) ? (int)$leave : null;
+
+            if (!$leaveId) {
+                throw (new ModelNotFoundException())->setModel(Leave::class, [$leave]);
+            }
+
+            $leave = Leave::query()->findOrFail($leaveId);
+        }
+
         $this->initialisation($leave->organisation, $request);
 
         if ($leave->type !== LeaveTypeEnum::MEDICAL) {
             abort(403, __('Only medical leave can be edited.'));
         }
 
-        $user = $request->user();
-        $employee = $user?->employees->first();
+        if ($leave->status !== LeaveStatusEnum::PENDING) {
+            abort(403, __('Only pending medical leave can be edited.'));
+        }
 
-        if (!$employee || $leave->employee_id !== $employee->id) {
-            abort(403, __('You can only edit your own leave requests.'));
+        if (!$request->routeIs('grp.org.hr.leaves.update')) {
+            $user = $request->user();
+            $employee = $user?->employees->first();
+
+            if (!$employee || $leave->employee_id !== $employee->id) {
+                abort(403, __('You can only edit your own leave requests.'));
+            }
         }
 
         return $this->handle($leave, $this->validatedData);
