@@ -15,7 +15,6 @@ use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWarehouse;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
@@ -36,7 +35,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $picking_session_id
  * @property bool $status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\Dispatching\DeliveryNote|null $currentDeliveryNote
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\DeliveryNote> $deliveryNotes
  * @property-read Group $group
  * @property-read Organisation $organisation
@@ -72,7 +70,7 @@ class Trolley extends Model implements Auditable
     }
 
     protected array $auditInclude = [
-        'name',
+        'name','status'
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -83,10 +81,6 @@ class Trolley extends Model implements Auditable
             ->saveSlugsTo('slug');
     }
 
-    public function group(): BelongsTo
-    {
-        return $this->belongsTo(Group::class);
-    }
 
     public function getRouteKeyName(): string
     {
@@ -99,8 +93,4 @@ class Trolley extends Model implements Auditable
             ->withTimestamps();
     }
 
-    public function currentDeliveryNote(): BelongsTo
-    {
-        return $this->belongsTo(DeliveryNote::class, 'current_delivery_note_id');
-    }
 }
