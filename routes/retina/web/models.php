@@ -50,6 +50,7 @@ use App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken;
 use App\Actions\Retina\Dropshipping\Basket\DeleteRetinaBasket;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ImportBulkCustomerSalesChannelPortfolios;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\SyncRetinaCustomerSalesChannelPortfolioManually;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UnSuspendRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSalesChannel;
@@ -290,6 +291,8 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
+    Route::post('portfolios-bulk-import', ImportBulkCustomerSalesChannelPortfolios::class)->name('portfolios.bulk_import');
+
     Route::patch('unsuspend', UnSuspendRetinaCustomerSalesChannel::class)->name('unsuspend');
     Route::patch('sync-portfolios-manually', SyncRetinaCustomerSalesChannelPortfolioManually::class)->name('sync_portfolios_manual');
     Route::patch('test-connection', TestConnectionWooCommerceUser::class)->name('test_connection');

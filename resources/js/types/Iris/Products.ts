@@ -10,6 +10,7 @@ export interface ProductResource {
     id: number
     name: string
     code: string
+    state: string
     image?: {
         source: ImageTS
     }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
-import { inject, ref } from 'vue'
+import { inject, ref , computed} from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -87,6 +87,24 @@ const onClickVariant = (product: ProductResource, event : Event) => {
 
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
+const isHover = ref(false)
+const images = computed(() => {
+    if (!props.product?.web_images) return []
+
+    const arr = []
+
+    if (props.product?.web_images?.main?.gallery) {
+        arr.push(props.product.web_images.main.gallery)
+    }
+
+    if (props.product?.web_images?.all?.length) {
+         props.product.web_images.all.slice(1).forEach(img => {
+        if (img?.original) arr.push(img.original)
+    })
+    }
+
+    return arr
+})
 
 defineExpose({
  _button_variant
@@ -106,17 +124,95 @@ defineExpose({
                 :type="typeOfLink"   class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false"
             >
-                <slot name="image" :product="product">
-                    <Image
-                        v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery"
-                        :alt="product.name"
-                        :style="{ objectFit: 'contain' }"
-                        class="w-full h-full flex justify-center items-center"
-                    />
-                    <FontAwesomeIcon v-else icon="fal fa-image" class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" fixed-width aria-hidden="true" />
-                </slot>
+               <div class="relative w-full h-full">
 
-                <!-- Section: Favourite -->
+                    <slot name="image" :product="product">
+
+                        <!-- MOBILE -->
+                            <div v-if="images.length" class="md:hidden w-full h-full">
+
+                                <!-- swipe -->
+                                <div 
+                                    v-if="images.length > 1"
+                                    class="flex w-full h-full overflow-x-auto snap-x snap-mandatory scroll-smooth
+                                        [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                                >
+                                    <div 
+                                        v-for="(img, i) in images" 
+                                        :key="i" 
+                                        class="w-full h-full flex-shrink-0 snap-start"
+                                    >
+                                        <Image 
+                                            :src="img" 
+                                            :alt="product.name"
+                                            class="w-full h-full"
+                                            :style="{ objectFit: 'contain', objectPosition: 'center' }"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- single image -->
+                                <div v-else class="w-full h-full">
+                                    <Image 
+                                        :src="images[0]" 
+                                        :alt="product.name"
+                                        class="w-full h-full"
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }"
+                                    />
+                                </div>
+
+                            </div>
+
+
+
+                        <!-- DESKTOP -->
+                        <div 
+                            v-if="images.length"
+                            class="hidden md:block relative w-full h-full overflow-hidden group"
+                        >
+                            <div 
+                                class="flex w-full h-full"
+                                :class="images.length > 1 ? 'group-hover:-translate-x-full' : ''"
+                            >
+
+                                <!-- first -->
+                                <div class="w-full h-full flex-shrink-0 flex items-center justify-center">
+                                    <Image 
+                                        :src="images[0]" 
+                                        :alt="product.name"
+                                        class="max-w-full max-h-full"
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }"
+                                    />
+                                </div>
+
+                                <!-- second -->
+                                <div 
+                                    v-if="images.length > 1" 
+                                    class="w-full h-full flex-shrink-0 flex items-center justify-center"
+                                >
+                                    <Image 
+                                        :src="images[1]" 
+                                        :alt="product.name"
+                                        class="max-w-full max-h-full"
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }"
+                                    />
+                                </div>
+
+                            </div>
+                        </div>
+
+
+                        <!-- fallback -->
+                        <FontAwesomeIcon 
+                            v-if="!images.length"
+                            icon="fal fa-image" 
+                            class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" 
+                        />
+
+                    </slot>
+                </div>
+
+                                        <!-- Section: Favourite -->
                 <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
                     <div v-if="isLoadingFavourite" class="absolute right-2 top-2 text-pink-400 text-xl z-10">
                         <LoadingIcon />
@@ -172,7 +268,7 @@ defineExpose({
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
                     :type="typeOfLink" :id="product?.url?.id">
                     <template #default>
-                        <p class="inline-block leading-4 text-justify">
+                        <p class="inline-block leading-4">
                             <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
                             {{ product.name }}
                         </p>

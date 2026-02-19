@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -179,6 +180,12 @@ class UpdateProduct extends OrgAction
         }
 
         if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  && $product->webpage) {
+
+
+            if ($product->master_product_id) {
+                MasterAssetHydrateAssets::run($product->master_product_id);
+            }
+
             if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
                 ReopenWebpage::run($product->webpage);
             }

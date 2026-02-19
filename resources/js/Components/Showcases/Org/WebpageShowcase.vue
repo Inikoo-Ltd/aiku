@@ -17,7 +17,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
-import { useFormatTime } from '@/Composables/useFormatTime'
+import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -141,7 +141,7 @@ const screenModeOptions = [
       </div>
 
       <!-- Right Panel (Optional) -->
-      <div class="hidden xl:flex justify-end w-full">
+      <div class="row-start-1 xl:row-start-auto flex justify-end w-full">
         <!-- Optional sidebar -->
         <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
           <div class="space-y-2">
@@ -160,8 +160,12 @@ const screenModeOptions = [
                 </ButtonWithLink>
               </template>
             </ModalConfirmationDelete>
+            
+            <ButtonReindexWebpage
+              :webpage="data"
+            />
 
-            <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id"
+            <!-- <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id"
               :routeTarget="{
                 name: 'grp.models.webpage_luigi.reindex',
                 parameters: {
@@ -180,7 +184,7 @@ const screenModeOptions = [
                   <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
                 </div>
               </template>
-            </ButtonWithLink>
+            </ButtonWithLink> -->
           </div>
         </div>
       </div>

@@ -75,7 +75,7 @@ const getImageSlots = (layoutType: string) => {
 </script>
 
 <template>
-    <div class="flex flex-wrap" :style="getStyles(fieldValue?.container?.properties,screenType)">
+    <div class="flex flex-wrap" :id="fieldValue?.id ? fieldValue?.id  : 'text-column'"  component="text-column" :style="getStyles(fieldValue?.container?.properties,screenType)">
         <div v-for="index in getImageSlots(fieldValue?.value?.layout_type)"
             :key="`${index}-${fieldValue?.value?.images?.[index - 1]}`"
             class="group relative p-2 hover:bg-white/40"

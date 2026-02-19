@@ -122,6 +122,10 @@ const fetchProductData = async () => {
                 // Find the matching product_code[0] in response data
                 const relatedProduct = response.data.data.find(product => item.attributes.product_code[0] === product.code);
 
+                // const listKeys = Object.keys(relatedProduct?.web_images || {})
+                // const isIncludeMainImage = listKeys.includes('main')
+
+                // console.log('relatedProduct', item.attributes.product_code[0], isIncludeMainImage)
 
                 // If a match is found and the stock is greater than 0, set the iris_attributes
                 if (relatedProduct) {
@@ -130,7 +134,7 @@ const fetchProductData = async () => {
             })
 
             // Filter only available stock
-            listProductsFromLuigi.value = listProductsFromLuigi.value?.filter(prod => prod.iris_attributes.stock > 0)
+            listProductsFromLuigi.value = listProductsFromLuigi.value?.filter(prod => prod.iris_attributes?.stock > 0)
             nextTick()
 
 
@@ -152,7 +156,8 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :style="{
+    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'"  component="luigi-trends-1-iris"
+    :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'

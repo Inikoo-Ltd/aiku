@@ -143,26 +143,11 @@ class ShowCustomerSalesChannel extends OrgAction
 
         return match ($routeName) {
             'grp.org.shops.show.crm.platforms.show.customer_sales_channels.show' =>
-            array_merge(
+
                 ShowPlatform::make()->getBreadcrumbs(
                     $routeName,
                     $routeParameters
                 ),
-                $headCrumb(
-                    $customerSalesChannel,
-                    [
-
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
-                            'parameters' => $routeParameters
-                        ]
-                    ]
-                )
-            ),
             default => array_merge(
                 ShowCustomer::make()->getBreadcrumbs(
                     $routeName,

@@ -48,6 +48,11 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $packedIn = $this->packed_in;
+        if ($packedIn == null) {
+            $packedIn = 1;
+        }
+
         $requiredFactionalData = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors($this->quantity_required)
@@ -113,6 +118,12 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
+        $packedInMessage = '';
+        if ($packedIn == 1) {
+            $packedInMessage = '('.__('Individually packed').')';
+        } elseif ($packedIn > 1) {
+            $packedInMessage = '('.__('Pack of').": $packedIn".")";
+        }
 
         return [
             'id'                                => $this->id,
@@ -126,6 +137,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_not_picked'               => $this->quantity_not_picked,
             'quantity_packed'                   => $this->quantity_packed,
             'quantity_dispatched'               => $this->quantity_dispatched,
+            'org_stock_id'                      => $this->org_stock_id,
             'org_stock_code'                    => $this->org_stock_code,
             'org_stock_slug'                    => $this->org_stock_slug,
             'org_stock_name'                    => $this->org_stock_name,
@@ -150,6 +162,8 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'expiry_date'                       => $this->expiry_date,
 
             'warehouse_area'       => $warehouseArea,
+            'packed_in_message'            => $packedInMessage,
+
             'upsert_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',
                 'parameters' => [

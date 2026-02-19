@@ -110,7 +110,7 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             $invoice->reference,
             $order ? $order->reference : '',
             $customer->company_name ?: $customer->name,
-            $customer->identity_document_number ? "'".$customer->identity_document_number : '',
+            $customer->taxNumber->number ?? '',
             $countryCode,
             $invoice->date->format('Y-m-d H:i'),
             $invoice->currency->code ?? 'EUR',

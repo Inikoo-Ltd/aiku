@@ -57,27 +57,6 @@ const props = defineProps<{
 		}
 		brands: {}[]
 		tags: {}[]
-		// trade_units: {
-		// 	brand: {}
-		// 	brand_routes: {
-		// 		index_brand: routeType
-		// 		store_brand: routeType
-		// 		update_brand: routeType
-		// 		delete_brand: routeType
-		// 		attach_brand: routeType
-		// 		detach_brand: routeType
-		// 	}
-		// 	tag_routes: {
-		// 		index_tag: routeType
-		// 		store_tag: routeType
-		// 		update_tag: routeType
-		// 		delete_tag: routeType
-		// 		attach_tag: routeType
-		// 		detach_tag: routeType
-		// 	}
-		// 	tags: {}[]
-		// 	tags_selected_id: number[]
-		// }[],
 		gpsr: {
 			acute_toxicity: boolean
 			corrosive: boolean
@@ -199,6 +178,7 @@ const getTooltips = () => {
 			</span>
 
 			<span
+                v-if="data.product.data.state!='discontinued'"
 				v-tooltip="getTooltips()"
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer mx-2"
 				v-on:click="editIsForSale"
@@ -276,7 +256,7 @@ const getTooltips = () => {
 					{{
 					data?.product?.data?.stock > 0
 					? trans("In stock") + ` (${data?.product?.data?.stock} ` + trans("available") + `)`
-					: trans("Out Of Stock")
+					: data.product.data.state=='discontinued' ? trans("Discontinued")  : trans("Out Of Stock")
 					}}
 				</span>
 			</div>

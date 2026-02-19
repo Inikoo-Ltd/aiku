@@ -92,6 +92,7 @@ class IndexProductsInOrganisation extends OrgAction
                 'products.name',
                 'products.state',
                 'products.price',
+                'products.is_for_sale',
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',

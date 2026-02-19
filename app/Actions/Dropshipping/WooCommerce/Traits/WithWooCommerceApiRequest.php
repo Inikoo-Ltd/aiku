@@ -640,5 +640,36 @@ trait WithWooCommerceApiRequest
         }
     }
 
+    /**
+     * Check if a product exists and is available in WooCommerce
+     *
+     * @param  int  $productId  Product ID to check
+     *
+     * @return bool Whether the product exists and is available
+     */
+    public function sendOrderDetailNotification(int $orderId, string $email): array
+    {
+        return $this->makeWooCommerceRequest('POST', "orders/$orderId/actions/send_email", [
+            'template_id' => 'customer_completed_order',
+            'email' => $email,
+            'force_email_update' => true
+        ]);
+    }
 
+    public function sendOrderInvoiceNotification(int $orderId, string $email): array
+    {
+        return $this->makeWooCommerceRequest('POST', "orders/$orderId/actions/send_email", [
+            'template_id' => 'customer_invoice',
+            'email' => $email,
+            'force_email_update' => true
+        ]);
+    }
+
+    public function createCustomerOrderNote(int $orderId, string $note): array
+    {
+        return $this->makeWooCommerceRequest('POST', "orders/$orderId/notes", [
+            'note' => $note,
+            'customer_note' => true
+        ]);
+    }
 }

@@ -83,7 +83,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::post('{historicAsset:id}', StoreTransaction::class)->name('store')->withoutScopedBindings();
     });
 
-    Route::patch('send-back-to-Basket', SendOrderBackToBasket::class)->name('send_back_to_basket');
+    Route::patch('send-back-to-basket', SendOrderBackToBasket::class)->name('send_back_to_basket');
     Route::post('return-excess', AddBalanceFromExcessPaymentOrder::class)->name('return_excess_payment');
 
     Route::name('state.')->prefix('state')->group(function () {

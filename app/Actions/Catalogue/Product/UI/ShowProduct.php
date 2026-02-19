@@ -393,6 +393,7 @@ class ShowProduct extends OrgAction
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
                 ],
                 'is_external_shop'      => $isExternalShop,
+                'family_slug'           => $product->family->slug,
                 'product_state'         => $product->state->value,
                 'webpage_canonical_url' => $product->webpage?->canonical_url,
                 'is_single_trade_unit'  => $product->is_single_trade_unit,
@@ -404,7 +405,9 @@ class ShowProduct extends OrgAction
                     'luigisbox_private_key' => Arr::get($productWeb->website->settings, "luigisbox.private_key"),
                     'luigisbox_lbx_code'    => Arr::get($productWeb->website->settings, "luigisbox.lbx_code"),
                 ] : [],
-                ...$componentData
+                ...$componentData,
+                'variant'       => $product->variant,
+                'is_variant_leader' => $product->is_variant_leader,
             ]
         )
             ->table(IndexAssetTimeSeries::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
