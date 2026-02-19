@@ -11,7 +11,11 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableCampaigns from '@/Components/Shop/Offers/TableCampaigns.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
-import { Table as TableTS} from '@/types/Table'
+import { Table as TableTS } from '@/types/Table'
+import { faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faHandHoldingUsd } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faHandHoldingUsd);
 
 defineProps<{
     data: TableTS

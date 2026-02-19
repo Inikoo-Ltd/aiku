@@ -56,11 +56,45 @@ enum OfferCampaignTypeEnum: string
     {
         return [
             'order-recursion' => [
-                'icon'          => '',
-                'tooltip'       => '', // OfferCampaignTypeEnum::from($data['type'])->labels()[$data['type']] ?? 'Unknown',
+                'icon'          => 'fal fa-repeat',
+                'tooltip'       => self::from('order-recursion')->labels()['order-recursion'] ?? 'Unknown',
                 'class'         => '',
             ],
-            // Continue
+            'volume-discount' => [
+                'icon'          => 'fal fa-percentage',
+                'tooltip'       => self::from('volume-discount')->labels()['volume-discount'] ?? 'Unknown',
+                'class'         => '',
+            ],
+            'first-order' => [
+                'icon'          => 'fal fa-flag',
+                'tooltip'       => self::from('first-order')->labels()['first-order'] ?? 'Unknown',
+                'class'         => '',
+            ],
+            'customer-offers' => [
+                'icon'          => 'fal fa-users',
+                'tooltip'       => self::from('customer-offers')->labels()['customer-offers'] ?? 'Unknown',
+                'class'         => '',
+            ],
+            'shop-offers' => [
+                'icon'          => 'fal fa-store',
+                'tooltip'       => self::from('shop-offers')->labels()['shop-offers'] ?? 'Unknown',
+                'class'         => '',
+            ],
+            'category-offers' => [
+                'icon'          => 'fal fa-tags',
+                'tooltip'       => self::from('category-offers')->labels()['category-offers'] ?? 'Unknown',
+                'class'         => '',
+            ],
+            'product-offers' => [
+                'icon'          => 'fal fa-box',
+                'tooltip'       => self::from('product-offers')->labels()['product-offers'] ?? 'Unknown',
+                'class'         => '',
+            ],
+            'discretionary' => [
+                'icon'          => 'fal fa-hand-holding-usd',
+                'tooltip'       => self::from('discretionary')->labels()['discretionary'] ?? 'Unknown',
+                'class'         => '',
+            ],
         ];
     }
 }
