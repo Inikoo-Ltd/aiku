@@ -38,6 +38,25 @@ const minuteOptions = Array.from({ length: 60 }, (_, index) =>
     index < 10 ? `0${index}` : `${index}`
 )
 
+const extractTimeParts = (value: string): { hour: string; minute: string } => {
+    const date = new Date(value)
+
+    if (!Number.isNaN(date.getTime())) {
+        const hour = String(date.getHours()).padStart(2, '0')
+        const minute = String(date.getMinutes()).padStart(2, '0')
+
+        return { hour, minute }
+    }
+
+    const timePart = value.substring(11, 16)
+    const [rawHour, rawMinute] = timePart.split(':')
+
+    const hour = (rawHour ?? '00').padStart(2, '0')
+    const minute = (rawMinute ?? '00').padStart(2, '0')
+
+    return { hour, minute }
+}
+
 const form = useForm<{
     employee_id: number | null
     overtime_type_id: number | null
@@ -48,6 +67,11 @@ const form = useForm<{
     duration_minutes: string
     reason: string
     status: string
+    recorded_same_as_requested: boolean
+    recorded_start_hour: string
+    recorded_start_minute: string
+    recorded_duration_hours: string
+    recorded_duration_minutes: string
 }>({
     employee_id: null,
     overtime_type_id: null,
@@ -58,6 +82,11 @@ const form = useForm<{
     duration_minutes: '0',
     reason: '',
     status: 'pending',
+    recorded_same_as_requested: true,
+    recorded_start_hour: '00',
+    recorded_start_minute: '00',
+    recorded_duration_hours: '0',
+    recorded_duration_minutes: '0',
 })
 
 const formatDuration = (minutes?: number | null): string => {
@@ -89,6 +118,11 @@ const openRequestModal = () => {
     form.duration_hours = '0'
     form.duration_minutes = '0'
     form.status = 'pending'
+    form.recorded_same_as_requested = true
+    form.recorded_start_hour = '00'
+    form.recorded_start_minute = '00'
+    form.recorded_duration_hours = '0'
+    form.recorded_duration_minutes = '0'
     showRequestModal.value = true
 }
 
@@ -107,11 +141,9 @@ const openEditModal = (item: any) => {
     const startAt: string | null = item.requested_start_at ?? null
 
     if (startAt) {
-        const timePart = startAt.substring(11, 16)
-        const [hour, minute] = timePart.split(':')
-
-        form.start_hour = hour ?? '00'
-        form.start_minute = minute ?? '00'
+        const { hour, minute } = extractTimeParts(startAt)
+        form.start_hour = hour
+        form.start_minute = minute
     } else {
         form.start_hour = '00'
         form.start_minute = '00'
@@ -123,6 +155,38 @@ const openEditModal = (item: any) => {
 
     form.duration_hours = String(durationHours)
     form.duration_minutes = String(remainingMinutes)
+
+    if (
+        item.recorded_start_at &&
+        item.recorded_duration_minutes &&
+        item.recorded_start_at !== item.requested_start_at
+    ) {
+        form.recorded_same_as_requested = false
+
+        const recordedStart: string | null = item.recorded_start_at ?? null
+
+        if (recordedStart) {
+            const { hour, minute } = extractTimeParts(recordedStart)
+            form.recorded_start_hour = hour
+            form.recorded_start_minute = minute
+        } else {
+            form.recorded_start_hour = '00'
+            form.recorded_start_minute = '00'
+        }
+
+        const recordedDuration: number = item.recorded_duration_minutes ?? 0
+        const recordedDurationHours = Math.floor(recordedDuration / 60)
+        const recordedRemainingMinutes = recordedDuration % 60
+
+        form.recorded_duration_hours = String(recordedDurationHours)
+        form.recorded_duration_minutes = String(recordedRemainingMinutes)
+    } else {
+        form.recorded_same_as_requested = true
+        form.recorded_start_hour = form.start_hour
+        form.recorded_start_minute = form.start_minute
+        form.recorded_duration_hours = form.duration_hours
+        form.recorded_duration_minutes = form.duration_minutes
+    }
 
     showRequestModal.value = true
 }
@@ -200,15 +264,33 @@ const submitRequest = () => {
                 </span>
             </template>
 
+            <template #cell(recorded_start_at)="{ item }">
+                <span class="whitespace-nowrap">
+                    {{ item.recorded_start_at ? useFormatTime(item.recorded_start_at, { formatTime: 'hm' }) : '—' }}
+                </span>
+            </template>
+
             <template #cell(requested_duration_minutes)="{ item }">
                 <span class="whitespace-nowrap">
                     {{ formatDuration(item.requested_duration_minutes) }}
                 </span>
             </template>
 
+            <template #cell(recorded_duration_minutes)="{ item }">
+                <span class="whitespace-nowrap">
+                    {{ item.recorded_duration_minutes ? formatDuration(item.recorded_duration_minutes) : '—' }}
+                </span>
+            </template>
+
             <template #cell(lieu_requested_minutes)="{ item }">
                 <span class="whitespace-nowrap">
                     {{ formatDuration(item.lieu_requested_minutes) }}
+                </span>
+            </template>
+
+            <template #cell(recorder_name)="{ item }">
+                <span class="whitespace-nowrap">
+                    {{ item.recorder_name ?? '—' }}
                 </span>
             </template>
 
@@ -431,6 +513,76 @@ const submitRequest = () => {
                     </div>
                     <div v-if="form.errors.requested_duration_minutes" class="mt-1 text-sm text-red-600">
                         {{ form.errors.requested_duration_minutes }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-4 mt-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ trans('Recorded time') }}
+                </label>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                            v-model="form.recorded_same_as_requested"
+                            type="radio"
+                            :value="true"
+                            class="border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                        <span>{{ trans('Same as requested time') }}</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                            v-model="form.recorded_same_as_requested"
+                            type="radio"
+                            :value="false"
+                            class="border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                        <span>{{ trans('Use different recorded time') }}</span>
+                    </label>
+                </div>
+
+                <div v-if="!form.recorded_same_as_requested" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ trans('Recorded start time') }}
+                        </label>
+                        <div class="mt-1 flex gap-2">
+                            <select
+                                v-model="form.recorded_start_hour"
+                                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option v-for="hour in hourOptions" :key="hour" :value="hour">
+                                    {{ hour }}
+                                </option>
+                            </select>
+                            <select
+                                v-model="form.recorded_start_minute"
+                                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option v-for="minute in minuteOptions" :key="minute" :value="minute">
+                                    {{ minute }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ trans('Recorded duration') }}
+                        </label>
+                        <div class="mt-1 flex gap-2">
+                            <select
+                                v-model="form.recorded_duration_hours"
+                                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option v-for="hour in 13" :key="hour" :value="String(hour - 1)">
+                                    {{ hour - 1 }} {{ trans('hrs') }}
+                                </option>
+                            </select>
+                            <select
+                                v-model="form.recorded_duration_minutes"
+                                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option v-for="minute in [0, 15, 30, 45]" :key="minute" :value="String(minute)">
+                                    {{ minute }} {{ trans('mins') }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>

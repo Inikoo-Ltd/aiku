@@ -56,6 +56,33 @@ class StoreOvertimeRequest extends OrgAction
         }
 
         $this->set('requested_duration_minutes', $durationMinutes);
+
+        if ($this->has('recorded_same_as_requested')) {
+            $recordSameAsRequested = filter_var(
+                (string) $this->get('recorded_same_as_requested'),
+                FILTER_VALIDATE_BOOLEAN
+            );
+
+            if ($recordSameAsRequested) {
+                $this->set('recorded_start_at', $this->get('requested_start_at'));
+                $this->set('recorded_end_at', $this->get('requested_end_at'));
+                $this->set('recorded_duration_minutes', $this->get('requested_duration_minutes'));
+            } else {
+                $recordedStartHour = (int) $this->get('recorded_start_hour', $startHour);
+                $recordedStartMinute = (int) $this->get('recorded_start_minute', $startMinute);
+                $recordedDurationHour = (int) $this->get('recorded_duration_hours', $durationHour);
+                $recordedDurationMinute = (int) $this->get('recorded_duration_minutes', $durationMinute);
+
+                $recordedDurationMinutes = ($recordedDurationHour * 60) + $recordedDurationMinute;
+
+                if ($date && $recordedDurationMinutes > 0) {
+                    $recordedStartAt = $date->copy()->setTime($recordedStartHour, $recordedStartMinute);
+                    $this->set('recorded_start_at', $recordedStartAt);
+                    $this->set('recorded_end_at', $recordedStartAt->copy()->addMinutes($recordedDurationMinutes));
+                    $this->set('recorded_duration_minutes', $recordedDurationMinutes);
+                }
+            }
+        }
     }
 
     public function rules(): array
@@ -78,6 +105,9 @@ class StoreOvertimeRequest extends OrgAction
             'reason'                     => ['sometimes', 'nullable', 'string'],
             'status'                     => ['required', Rule::enum(OvertimeRequestStatusEnum::class)],
             'lieu_requested_minutes'     => ['sometimes', 'integer', 'min:0'],
+            'recorded_start_at'          => ['nullable', 'date'],
+            'recorded_end_at'            => ['nullable', 'date'],
+            'recorded_duration_minutes'  => ['nullable', 'integer', 'min:1'],
         ];
     }
 

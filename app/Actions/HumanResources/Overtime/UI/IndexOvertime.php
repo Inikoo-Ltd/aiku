@@ -43,6 +43,7 @@ class IndexOvertime extends OrgAction
             ->where('overtime_requests.organisation_id', $organisation->id)
             ->join('employees as staff', 'staff.id', '=', 'overtime_requests.employee_id')
             ->leftJoin('employees as approver', 'approver.id', '=', 'overtime_requests.approved_by_employee_id')
+            ->leftJoin('employees as recorder', 'recorder.id', '=', 'overtime_requests.recorded_by_employee_id')
             ->join('overtime_types', 'overtime_types.id', '=', 'overtime_requests.overtime_type_id')
             ->select([
                 'overtime_requests.id',
@@ -55,6 +56,10 @@ class IndexOvertime extends OrgAction
                 'overtime_requests.requested_start_at',
                 'overtime_requests.requested_end_at',
                 'overtime_requests.requested_duration_minutes',
+                'overtime_requests.recorded_start_at',
+                'overtime_requests.recorded_end_at',
+                'overtime_requests.recorded_duration_minutes',
+                'recorder.contact_name as recorder_name',
                 'overtime_requests.lieu_requested_minutes',
                 'overtime_requests.reason',
                 'overtime_requests.status',
@@ -121,10 +126,29 @@ class IndexOvertime extends OrgAction
                     sortable: true
                 )
                 ->column(
+                    key: 'recorded_start_at',
+                    label: __('Recorded from'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
                     key: 'requested_duration_minutes',
                     label: __('Duration'),
                     canBeHidden: true,
                     sortable: true
+                )
+                ->column(
+                    key: 'recorded_duration_minutes',
+                    label: __('Recorded duration'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'recorder_name',
+                    label: __('Recorded by'),
+                    canBeHidden: true,
+                    sortable: true,
+                    searchable: true
                 )
                 ->column(
                     key: 'lieu_requested_minutes',
