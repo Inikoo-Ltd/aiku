@@ -39,9 +39,12 @@ class FulfillOrderToTiktok extends OrgAction
         $deliveryNote = $order->deliveryNotes->first();
         $shipment = $deliveryNote->shipments()->first();
 
+        $shippingProviders = $tiktokUser->getShippingProviders(Arr::get($order->data, 'tiktok_order.delivery_option_id'));
+        $shippingProviderId = Arr::get($shippingProviders, 'data.shipping_providers.0.id');
+
         $tiktokUser->updateShippingInfo($fulfillOrderId, [
             'tracking_number' => (string) $shipment->tracking,
-            'shipping_provider_id' => (string) Arr::get($order->data, 'tiktok_order.delivery_option_id')
+            'shipping_provider_id' => (string) $shippingProviderId
         ]);
     }
 }
