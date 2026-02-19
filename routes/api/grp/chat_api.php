@@ -52,7 +52,7 @@ Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail:
 
 Route::get('agents', GetChatAgents::class)->name('agents.index');
 Route::get('/agents/specializations', GetChatAgentSpecializations::class)->name('agent.specializations');
-Route::get('/agents/unread-messages', GetAgentUnreadMessagesSummary::class)->name('agents.unread-messages');
+Route::get('/users/{id}/unread-messages', GetAgentUnreadMessagesSummary::class)->name('user.unread-messages');
 
 Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
     ->name('agents.store');

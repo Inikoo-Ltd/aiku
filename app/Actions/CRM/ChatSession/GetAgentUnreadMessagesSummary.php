@@ -7,9 +7,10 @@ use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\CRM\Livechat\ChatAgent;
 use App\Models\CRM\Livechat\ChatMessage;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\ActionRequest;
 
 class GetAgentUnreadMessagesSummary
 {
@@ -62,9 +63,9 @@ class GetAgentUnreadMessagesSummary
         ];
     }
 
-    public function asController(): JsonResponse
+    public function asController(ActionRequest $request, $userId): JsonResponse
     {
-        $user = Auth::user();
+        $user = User::find($userId);
 
         if (!$user || !$user->chatAgent) {
             return response()->json([
