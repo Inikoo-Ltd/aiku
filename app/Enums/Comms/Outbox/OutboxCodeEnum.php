@@ -344,7 +344,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
-            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER
+            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::BASKET_OFFER_NOTIFICATION,
             => 'EmailOngoingRun',
@@ -424,7 +424,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
-            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER
+            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
 
             => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
