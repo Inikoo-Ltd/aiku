@@ -37,6 +37,7 @@ import { trans } from "laravel-vue-i18n"
 import TableTimesheetsEmployee from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheetsEmployee.vue"
 import TableLeaves from "@/Components/Tables/Grp/Org/HumanResources/TableLeaves.vue"
 import TableAttendanceAdjustments from "@/Components/Tables/Grp/Org/HumanResources/TableAttendanceAdjustments.vue"
+import TableOvertimeEmployee from "@/Components/Tables/Grp/Org/HumanResources/TableOvertimeEmployee.vue"
 
 library.add(
 	faEnvelope,
@@ -70,10 +71,12 @@ const props = defineProps<{
 	scan_qr_code?: Record<string, any>
 	leaves?: Record<string, any>
 	adjustments?: Record<string, any>
+	overtime?: Record<string, any>
 }>()
 
 let currentTab = ref(props.tabs.current)
 const isRequestLeaveModalOpen = ref(false)
+const isRequestOvertimeModalOpen = ref(false)
 
 const openRequestLeaveModal = () => {
 	isRequestLeaveModalOpen.value = true
@@ -99,6 +102,7 @@ const component = computed(() => {
 		scan_qr_code: ScanQrUser,
 		leaves: TableLeaves,
 		adjustments: TableAttendanceAdjustments,
+		overtime: TableOvertimeEmployee,
 	}
 	return components[currentTab.value as keyof typeof components]
 })
@@ -124,7 +128,9 @@ const component = computed(() => {
 				? leaves?.data
 				: currentTab === 'adjustments'
 					? adjustments?.data
-					: timesheets?.data
+					: currentTab === 'overtime'
+						? overtime?.data
+						: timesheets?.data
 		"
 		:statistics="timesheets?.statistics"
 		:balance="leaves?.balance"
@@ -133,10 +139,15 @@ const component = computed(() => {
 				? leaves?.organisation
 				: currentTab === 'adjustments'
 					? adjustments?.organisation
-					: null
+					: currentTab === 'overtime'
+						? overtime?.organisation
+						: null
 		"
+		:overtimeTypeOptions="currentTab === 'overtime' ? overtime?.overtimeTypeOptions : undefined"
 		:tab="currentTab"
 		:isRequestLeaveModalOpen="isRequestLeaveModalOpen"
-		@update:isRequestLeaveModalOpen="isRequestLeaveModalOpen = $event">
+		:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen"
+		@update:isRequestLeaveModalOpen="isRequestLeaveModalOpen = $event"
+		@update:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen = $event">
 	</component>
 </template>

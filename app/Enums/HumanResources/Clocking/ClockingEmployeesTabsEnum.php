@@ -14,6 +14,7 @@ enum ClockingEmployeesTabsEnum: string
     case TIMESHEETS = 'timesheets';
     case LEAVES = 'leaves';
     case ADJUSTMENTS = 'adjustments';
+    case OVERTIME = 'overtime';
 
     public function blueprint(): array
     {
@@ -33,6 +34,10 @@ enum ClockingEmployeesTabsEnum: string
             ClockingEmployeesTabsEnum::ADJUSTMENTS => [
                 'icon' => 'fal fa-edit',
                 'title' => __('Adjustments'),
+            ],
+            ClockingEmployeesTabsEnum::OVERTIME => [
+                'icon' => 'fal fa-clock',
+                'title' => __('Overtime'),
             ],
         };
     }

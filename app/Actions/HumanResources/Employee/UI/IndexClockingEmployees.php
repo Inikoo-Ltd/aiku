@@ -22,11 +22,14 @@ use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\AttendanceAdjustment;
+use App\Models\HumanResources\OvertimeRequest;
 use Illuminate\Support\Carbon;
 use App\Enums\Helpers\Period\PeriodEnum;
 use Closure;
 use App\InertiaTable\InertiaTable;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
+use Spatie\QueryBuilder\AllowedFilter;
+use App\Models\HumanResources\OvertimeType;
 
 class IndexClockingEmployees extends OrgAction
 {
@@ -71,6 +74,7 @@ class IndexClockingEmployees extends OrgAction
         $leavesData = collect();
         $balance = null;
         $adjustmentsData = collect();
+        $overtimeData = collect();
 
         if ($this->tab == ClockingEmployeesTabsEnum::TIMESHEETS->value && $this->employee) {
 
@@ -142,6 +146,52 @@ class IndexClockingEmployees extends OrgAction
                 ->withQueryString();
         }
 
+        if ($this->tab == ClockingEmployeesTabsEnum::OVERTIME->value && $this->employee) {
+            InertiaTable::updateQueryBuilderParameters(ClockingEmployeesTabsEnum::OVERTIME->value);
+
+            $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+                $query->where(function ($query) use ($value) {
+                    $query->whereAnyWordStartWith('overtime_types.name', $value)
+                        ->orWhereAnyWordStartWith('overtime_requests.reason', $value);
+                });
+            });
+
+            $queryBuilder = QueryBuilder::for(OvertimeRequest::class)
+                ->where('overtime_requests.employee_id', $this->employee->id)
+                ->join('overtime_types', 'overtime_types.id', '=', 'overtime_requests.overtime_type_id')
+                ->select([
+                    'overtime_requests.id',
+                    'overtime_requests.requested_date',
+                    'overtime_requests.requested_start_at',
+                    'overtime_requests.requested_end_at',
+                    'overtime_requests.requested_duration_minutes',
+                    'overtime_requests.lieu_requested_minutes',
+                    'overtime_requests.reason',
+                    'overtime_requests.status',
+                    'overtime_requests.approved_at',
+                    'overtime_requests.rejected_at',
+                    'overtime_types.name as overtime_type_name',
+                ]);
+
+            $overtimeData = $queryBuilder
+                ->defaultSort('-requested_date')
+                ->allowedSorts([
+                    'requested_date',
+                    'requested_start_at',
+                    'requested_end_at',
+                    'requested_duration_minutes',
+                    'lieu_requested_minutes',
+                    'status',
+                ])
+                ->allowedFilters([
+                    $globalSearch,
+                    'requested_date',
+                    'status',
+                ])
+                ->paginate(request()->input('per_page', 10))
+                ->withQueryString();
+        }
+
         return [
             'tab' =>  $tab,
             'timesheets' => $timesheetsData,
@@ -149,6 +199,7 @@ class IndexClockingEmployees extends OrgAction
             'leaves' => $leavesData,
             'balance' => $balance,
             'adjustments' => $adjustmentsData,
+            'overtime' => $overtimeData,
             'organisation' => $this->employee?->organisation?->slug,
         ];
     }
@@ -232,8 +283,71 @@ class IndexClockingEmployees extends OrgAction
         };
     }
 
+    public function overtimeTableStructure($prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table->name($prefix)->pageName($prefix . 'Page');
+            }
+
+            $table
+                ->withGlobalSearch()
+                ->withEmptyState([
+                    'title' => __('No overtime requests found'),
+                    'count' => 0
+                ])
+                ->column(
+                    key: 'requested_date',
+                    label: __('Requested'),
+                    canBeHidden: false,
+                    sortable: true
+                )
+                ->column(
+                    key: 'overtime_type_name',
+                    label: __('Overtime type'),
+                    canBeHidden: false,
+                    sortable: true,
+                    searchable: true
+                )
+                ->column(
+                    key: 'requested_start_at',
+                    label: __('From'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'requested_duration_minutes',
+                    label: __('Duration'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'lieu_requested_minutes',
+                    label: __('Lieu requested'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'status',
+                    label: __('Status'),
+                    canBeHidden: false,
+                    sortable: true
+                )
+                ->column(
+                    key: 'reason',
+                    label: __('Reason'),
+                    canBeHidden: true,
+                    sortable: true
+                );
+
+            $table->defaultSort('-requested_date');
+        };
+    }
+
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
+        $organisationId = $this->employee?->organisation_id;
+
         return Inertia::render(
             'Org/HumanResources/ClockingEmployees',
             [
@@ -290,6 +404,41 @@ class IndexClockingEmployees extends OrgAction
                         'data' => AttendanceAdjustmentResource::collection($data['adjustments']),
                         'organisation' => $data['organisation'],
                     ]),
+
+                ClockingEmployeesTabsEnum::OVERTIME->value =>
+                $data['tab'] === ClockingEmployeesTabsEnum::OVERTIME->value
+                    ? fn () => [
+                        'data' => $data['overtime'],
+                        'organisation' => $data['organisation'],
+                        'overtimeTypeOptions' => OvertimeType::query()
+                            ->when($organisationId, function ($query, $organisationId) {
+                                $query->where('organisation_id', $organisationId);
+                            })
+                            ->where('is_active', true)
+                            ->orderBy('name')
+                            ->get()
+                            ->map(fn (OvertimeType $overtimeType) => [
+                                'value' => $overtimeType->id,
+                                'label' => $overtimeType->name,
+                            ])
+                            ->values(),
+                    ]
+                    : Inertia::lazy(fn () => [
+                        'data' => $data['overtime'],
+                        'organisation' => $data['organisation'],
+                        'overtimeTypeOptions' => OvertimeType::query()
+                            ->when($organisationId, function ($query, $organisationId) {
+                                $query->where('organisation_id', $organisationId);
+                            })
+                            ->where('is_active', true)
+                            ->orderBy('name')
+                            ->get()
+                            ->map(fn (OvertimeType $overtimeType) => [
+                                'value' => $overtimeType->id,
+                                'label' => $overtimeType->name,
+                            ])
+                            ->values(),
+                    ]),
             ]
         )
             ->table(
@@ -305,6 +454,11 @@ class IndexClockingEmployees extends OrgAction
             ->table(
                 $this->adjustmentsTableStructure(
                     ClockingEmployeesTabsEnum::ADJUSTMENTS->value
+                )
+            )
+            ->table(
+                $this->overtimeTableStructure(
+                    ClockingEmployeesTabsEnum::OVERTIME->value
                 )
             );
     }
