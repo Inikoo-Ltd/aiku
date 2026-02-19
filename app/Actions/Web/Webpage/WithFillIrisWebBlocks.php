@@ -31,11 +31,11 @@ trait WithFillIrisWebBlocks
 
         if ($webBlockType === 'banner') {
             $parsedWebBlocks[$key] = GetBanner::run($webBlock);
-        } elseif ($webBlockType == 'department-description') {
+        } elseif ($webBlockType == 'department-description-1') {
             $parsedWebBlocks[$key] = GetWebBlockDepartment::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'sub-department-description') {
+        } elseif ($webBlockType == 'sub-department-description-1') {
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'collection-description') {
+        } elseif ($webBlockType == 'collection-description-1') {
             $parsedWebBlocks[$key] = GetWebBlockCollection::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'sub-departments-')) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
