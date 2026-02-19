@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardOffersResource extends JsonResource
@@ -31,12 +32,13 @@ class DashboardOffersResource extends JsonResource
                ]
            ]
         ];
-
+        
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $data['name'] ?? 'Unknown',
+                    'formatted_value' => '[' . $data['code'] . '] ' .$data['name'] ?? 'Unknown',
                     'align'           => 'left',
+                    'icon_left'       => [], // OfferCampaignTypeEnum::from($data['type'])->icons()[$data['type']],
                     ...$routeTargets['label']
                 ],
                 'label_minified' => [

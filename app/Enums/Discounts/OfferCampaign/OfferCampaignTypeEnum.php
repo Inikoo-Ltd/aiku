@@ -52,4 +52,15 @@ enum OfferCampaignTypeEnum: string
         ];
     }
 
+    public function icons(): array
+    {
+        return [
+            'order-recursion' => [
+                'icon'          => '',
+                'tooltip'       => '', // OfferCampaignTypeEnum::from($data['type'])->labels()[$data['type']] ?? 'Unknown',
+                'class'         => '',
+            ],
+            // Continue
+        ];
+    }
 }
