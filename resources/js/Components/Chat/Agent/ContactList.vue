@@ -108,7 +108,6 @@ const myAgentShop = layout.user?.agent_shops ?? []
 const processedUnreadIds = new Set<number>()
 
 onMounted(async () => {
-    await fetchUnreadCount(baseUrl, activeTab.value, myAgentId)
     waitEchoReady(() => {
         window.Echo.join("chat-list").listen(".chatlist", async (e: any) => {
             console.log("message chat list", e)
