@@ -12,12 +12,13 @@ namespace App\Enums\UI\SupplyChain;
 
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Enums\HasTabsWithQuantity;
 use App\Models\Masters\MasterAsset;
 
 enum MasterAssetTabsEnum: string
 {
     use EnumHelperTrait;
-    use HasTabs;
+    use HasTabsWithQuantity;
 
     case SHOWCASE = 'showcase';
     case PRODUCTS = 'products';
