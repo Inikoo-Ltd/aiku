@@ -2,7 +2,7 @@
 
 /*
  * Author: eka yudinata (https://github.com/ekayudinata)
- * Created: Friday, 2 Jan 2026 11:54:00 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Created: Thursday, 5 Feb 2026 11:19:06 Central Indonesia Time, Sanur, Bali, Indonesia
  * Copyright (c) 2026, eka yudinata
  */
 
@@ -14,13 +14,11 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\Helpers\Snapshot;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\ActionRequest;
 
-class PublishMailShot extends OrgAction
+class PublishMailShotSecondWave extends OrgAction
 {
     use WithActionUpdate;
 
@@ -30,7 +28,6 @@ class PublishMailShot extends OrgAction
         $unpublishedSnapshot = $email->unpublishedSnapshot;
         $outbox              = $mailshot->outbox;
 
-        $primaryModelData = $modelData;
 
         /** @var Snapshot $snapshot */
         $snapshot = StoreEmailSnapshot::run(
@@ -80,11 +77,6 @@ class PublishMailShot extends OrgAction
 
         SetMailshotAsReady::run($mailshot, $modelData);
 
-        // publish second wave if exists
-        if ($mailshot->secondWave()->exists()) {
-            PublishMailShotSecondWave::make()->action($mailshot->secondWave, $primaryModelData);
-        }
-
         return $mailshot;
     }
 
@@ -106,11 +98,4 @@ class PublishMailShot extends OrgAction
         return $this->handle($mailshot, $this->validatedData);
     }
 
-
-    public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
-    {
-        $this->initialisation($mailshot->organisation, $request);
-
-        return $this->handle($mailshot, $this->validatedData);
-    }
 }
