@@ -8,10 +8,10 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { faPlus, faEdit } from "@fal"
+import { faEdit } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
-library.add(faPlus, faEdit)
+library.add(faEdit)
 
 const props = defineProps<{
 	data: {}
@@ -28,10 +28,14 @@ const props = defineProps<{
 		unpaid_used: number
 		unpaid_remaining: number
 	}
+	isRequestLeaveModalOpen?: boolean
+}>()
+
+const emit = defineEmits<{
+	(e: "update:isRequestLeaveModalOpen", value: boolean): void
 }>()
 
 const locale = useLocaleStore()
-const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const selectedLeave = ref<any>(null)
 const isSubmitting = ref(false)
@@ -82,7 +86,7 @@ const submitLeave = () => {
 			preserveScroll: true,
 			forceFormData: true,
 			onSuccess: () => {
-				isCreateModalOpen.value = false
+				emit("update:isRequestLeaveModalOpen", false)
 				leaveForm.reset()
 			},
 			onError: () => {
@@ -95,7 +99,7 @@ const submitLeave = () => {
 }
 
 const closeCreateModal = () => {
-	isCreateModalOpen.value = false
+	emit("update:isRequestLeaveModalOpen", false)
 	leaveForm.reset()
 }
 
@@ -141,14 +145,6 @@ const submitEdit = () => {
 
 <template>
 	<div>
-		<div class="flex justify-end">
-			<Button
-				@click="isCreateModalOpen = true"
-				:label="trans('Request Leave')"
-				icon="fal fa-plus"
-				type="create" />
-		</div>
-
 		<div class="mt-4">
 			<Table :resource="data" :name="tab">
 				<template #cell(start_date)="{ item: leave }">
@@ -203,7 +199,10 @@ const submitEdit = () => {
 			</Table>
 		</div>
 
-		<Modal :isOpen="isCreateModalOpen" @onClose="closeCreateModal" width="w-full max-w-lg">
+		<Modal
+			:isOpen="isRequestLeaveModalOpen"
+			@onClose="closeCreateModal"
+			width="w-full max-w-lg">
 			<h2 class="text-lg font-semibold text-gray-800 mb-4">
 				{{ trans("Request Leave") }}
 			</h2>
