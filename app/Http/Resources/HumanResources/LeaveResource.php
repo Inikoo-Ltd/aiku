@@ -22,6 +22,18 @@ class LeaveResource extends JsonResource
 {
     public function toArray($request): array|Arrayable|JsonSerializable
     {
+        $attachments = [];
+        $mediaItems = $this->getMedia('attachments');
+        if ($mediaItems && count($mediaItems) > 0) {
+            foreach ($mediaItems as $media) {
+                $attachments[] = [
+                    'id'   => $media->id,
+                    'name' => $media->file_name,
+                    'url'  => route('grp.media.download', ['media' => $media->ulid]),
+                ];
+            }
+        }
+
         return [
             'id'                => $this->id,
             'employee_id'       => $this->employee_id,
@@ -41,11 +53,7 @@ class LeaveResource extends JsonResource
             'approved_at'       => $this->approved_at?->toISOString(),
             'rejection_reason'  => $this->rejection_reason,
             'created_at'        => $this->created_at?->toISOString(),
-            'attachments'       => $this->getMedia('attachments')?->map(fn ($media) => [
-                'id'   => $media->id,
-                'name' => $media->file_name,
-                'url'  => route('grp.media.download', ['media' => $media->ulid]),
-            ]),
+            'attachments'       => $attachments,
         ];
     }
 }
