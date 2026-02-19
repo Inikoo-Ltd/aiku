@@ -3,6 +3,7 @@
 namespace App\Actions\HumanResources\Leave\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
@@ -20,6 +21,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexLeavesAdmin extends OrgAction
 {
+    use WithLeaveSubNavigation;
+
     public function handle(Organisation $organisation, ?string $prefix = null): LengthAwarePaginator
     {
         $prefix = $prefix ?? 'leaves';
@@ -63,10 +66,21 @@ class IndexLeavesAdmin extends OrgAction
             'Org/HumanResources/LeaveAdmin',
             [
                 'title' => __('Leave Requests'),
-                'breadcrumbs' => $this->getBreadcrumbs(),
-                'pageHead' => [
-                    'title' => __('Leave Requests'),
-                    'icon' => ['fal', 'fa-calendar-minus'],
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'pageHead'    => [
+                    'icon'          => [
+                        'icon'  => ['fal', 'fa-calendar-minus'],
+                        'title' => __('Human resources')
+                    ],
+                    'iconRight'     => [
+                        'icon'  => ['fal', 'fa-calendar-minus'],
+                        'title' => __('Leave')
+                    ],
+                    'title'         => __('Leave Requests'),
+                    'subNavigation' => $this->getLeaveSubNavigation($request),
                 ],
                 'leaves' => LeaveResource::collection($leaves),
                 'type_options' => LeaveTypeEnum::labels(),
@@ -84,15 +98,58 @@ class IndexLeavesAdmin extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'employee_name', label: __('Employee'), sortable: true)
-                ->column(key: 'type_label', label: __('Type'))
-                ->column(key: 'start_date', label: __('Start Date'), sortable: true)
-                ->column(key: 'end_date', label: __('End Date'), sortable: true)
-                ->column(key: 'duration_days', label: __('Days'))
-                ->column(key: 'status_label', label: __('Status'))
-                ->column(key: 'reason', label: __('Reason'))
-                ->column(key: 'attachments', label: __('Attachments'))
-                ->column(key: 'actions', label: '')
+                ->column(
+                    key: 'employee_name',
+                    label: __('Employee'),
+                    canBeHidden: false,
+                    sortable: true,
+                    searchable: true
+                )
+                ->column(
+                    key: 'type_label',
+                    label: __('Type'),
+                    canBeHidden: false
+                )
+                ->column(
+                    key: 'start_date',
+                    label: __('Start Date'),
+                    canBeHidden: false,
+                    sortable: true
+                )
+                ->column(
+                    key: 'end_date',
+                    label: __('End Date'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'duration_days',
+                    label: __('Days'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'status',
+                    label: __('Status'),
+                    canBeHidden: false,
+                    sortable: true
+                )
+                ->column(
+                    key: 'reason',
+                    label: __('Reason'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'attachments',
+                    label: __('Attachments'),
+                    canBeHidden: true
+                )
+                ->column(
+                    key: 'actions',
+                    label: __('Options'),
+                    canBeHidden: false
+                )
                 ->defaultSort('-created_at');
         };
     }
@@ -104,16 +161,31 @@ class IndexLeavesAdmin extends OrgAction
         return $this->handle($organisation);
     }
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return [
-            [
-                'type' => 'simple',
-                'simple' => [
-                    'label' => __('Leave Requests'),
-                    'route' => ['name' => 'grp.org.hr.leaves.index', 'parameters' => [$this->organisation->slug]]
-                ]
-            ]
-        ];
+        $headCrumb = function (string $routeName, array $routeParameters) {
+            return [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name'       => $routeName,
+                            'parameters' => $routeParameters,
+                        ],
+                        'label' => __('Leave Requests'),
+                        'icon'  => 'fal fa-calendar-minus',
+                    ],
+                ],
+            ];
+        };
+
+        return match ($routeName) {
+            'grp.org.hr.leaves.index' =>
+            array_merge(
+                ShowHumanResourcesDashboard::make()->getBreadcrumbs($routeParameters),
+                $headCrumb($routeName, $routeParameters)
+            ),
+            default => [],
+        };
     }
 }
