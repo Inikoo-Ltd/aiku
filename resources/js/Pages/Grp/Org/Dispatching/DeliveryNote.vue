@@ -436,7 +436,7 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select trolley (only for Ecom) -->
-		<template
+		<!-- <template
 			#button-set-for-waiting="{ action }"
 			v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"
 		>
@@ -444,7 +444,7 @@ onMounted(() => {
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
 			/>
-		</template>
+		</template> -->
 
 		<!-- Button: Select trolley (only for Ecom) -->
 		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-start-picking="{ action }">
@@ -467,14 +467,14 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Set as waiting (only for Ecom) -->
-		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-for-waiting="{ action }">
+		<!-- <template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-for-waiting="{ action }">
 			<ButtonSetAsWaiting
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
 			>
 
 			</ButtonSetAsWaiting>
-		</template>
+		</template> -->
 	</PageHeading>
 
 	<!-- Section: Pallet Warning -->

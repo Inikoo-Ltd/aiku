@@ -17,7 +17,7 @@ import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -29,8 +29,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faWandMagic);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic);
 
 
 const props = defineProps<{
@@ -270,6 +271,63 @@ const GetQuantityToPickFractional = (item) => {
     }else return item.quantity_to_pick_fractional
 }
 
+
+// Section: Set Transaction as waiting
+const listSetAsWaitingType = [
+    {
+        label: trans("Waiting for Customer"),
+        value: 'waiting_for_customer'
+    },
+    {
+        label: trans("Waiting for Warehouse"),
+        value: 'waiting_for_warehouse'
+    }
+]
+const dataToSendAsWaiting = ref({
+    type: '',
+    reason: '',
+})
+const isOpenModalSetAsWaiting = ref(false)
+const selectedTransactionToSetAsWaiting = ref(null)
+const isLoadingSetAsWaiting = ref(false)
+const submitTransactionAsWaiting = () => {
+    // Section: Submit
+    router.post(
+        route('grp.models.delivery_note_item.set_as_waiting.store', {
+            deliveryNoteItem: selectedTransactionToSetAsWaiting.value?.id
+        }),
+        {
+            ...dataToSendAsWaiting.value,
+            quantity: selectedTransactionToSetAsWaiting.value?.quantity_to_pick
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSetAsWaiting.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully set transaction as waiting"),
+                    type: "success"
+                })
+                dataToSendAsWaiting.value.type = ''
+                dataToSendAsWaiting.value.reason = ''
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set transaction as waiting. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSetAsWaiting.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -554,6 +612,7 @@ const GetQuantityToPickFractional = (item) => {
                                 </template>
                             </Button>
 
+                            <!-- Button: Set Transaction as not picked -->
                             <ButtonWithLink
                                 v-if="!itemValue.is_handled"
                                 type="negative"
@@ -571,6 +630,22 @@ const GetQuantityToPickFractional = (item) => {
                                     </div>
                                 </template>
                             </ButtonWithLink>
+                            
+                            <!-- Button: Set Transaction as Waiting -->
+                            <Button
+                                @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue)"
+                                type="tertiary"
+                                iconRight="fal fa-hourglass-half"
+                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                                v-tooltip="trans('Set :numberNotPicked as waiting', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                            >
+                                <template #label>
+                                    <div>
+                                        <FractionDisplay v-if="GetQuantityToPickFractional ? GetQuantityToPickFractional(itemValue) : null" :fractionData="GetQuantityToPickFractional(itemValue)" />
+                                        <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
+                                    </div>
+                                </template>
+                            </Button>
 
 
                             </div>
@@ -582,9 +657,8 @@ const GetQuantityToPickFractional = (item) => {
                                 *{{ error }}
                             </p>
                         </div>
-
-
                 </div>
+
                 <div v-else class="flex justify-between gap-x-2">
                     <div class="italic text-gray-400">{{ trans("No locations found") }}</div>
                     <!-- {{ itemValue.quantity_to_pick }} -->
@@ -793,6 +867,62 @@ const GetQuantityToPickFractional = (item) => {
                     </div>
                 </div>
             </div>
+        </div>
+    </Modal>
+
+    <!-- Modal: Set Transaction as Waiting -->
+    <Modal :isOpen="isOpenModalSetAsWaiting" width="w-full max-w-2xl" @close="isOpenModalSetAsWaiting = false">
+        <div class="font-semibold text-xl text-center mb-8">
+            {{ trans("Set :itemName as waiting", { itemName: selectedTransactionToSetAsWaiting?.org_stock_name ?? '-' }) }}
+        </div>
+
+        <div class="mt-8 space-y-8">
+            <div>
+                <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">
+                    <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle"/>
+        
+                    {{ trans('Select type waiting') }}:
+                </label>
+        
+                <div class="pl-4 grid grid-cols-2 py-1 px-2 gap-x-4">
+                    <div v-for="waitingType in listSetAsWaitingType" :key="waitingType.value">
+                        <Button
+                            full
+                            @click="() => dataToSendAsWaiting.type = waitingType.value"
+                            :label="waitingType.label"
+                            :type="dataToSendAsWaiting.type === waitingType.value ? 'secondary' : 'dashed'"
+                            :key="dataToSendAsWaiting.type"
+                            xdisabled="isLoadingSubmitBay !== undefined"
+                            xloading="isLoadingSubmitBay === waitingType.value"
+                        />
+                        
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">            
+                    {{ trans('Reason') }}:
+                </label>
+        
+                <div class="pl-4">
+                    <PureTextarea
+                        v-model="dataToSendAsWaiting.reason"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <div class="">
+            <Button
+                @click="() => submitTransactionAsWaiting()"
+                :label="trans('Set as waiting')"
+                full
+                iconRight="far fa-arrow-right"
+                class="mt-4"
+                :disabled="!dataToSendAsWaiting.type"
+                :loading="isLoadingSetAsWaiting"
+            />
         </div>
     </Modal>
 </template>

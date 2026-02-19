@@ -168,12 +168,13 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ]
             ];
-        } else {
-            $actions[] = [
-                'type'    => 'button',
-                'key'     => 'set-for-waiting',
-            ];
         }
+        // else {
+        //     $actions[] = [
+        //         'type'    => 'button',
+        //         'key'     => 'set-for-waiting',
+        //     ];
+        // }
 
         return $actions;
     }
