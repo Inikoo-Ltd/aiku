@@ -36,31 +36,7 @@ class GetTiktokOrdersApi extends RetinaAction
         ]);
 
         foreach (Arr::get($tiktokOrders, 'data.orders') as $order) {
-            $existingOrder = Order::where('customer_id', $tiktokUser->customer_id)
-                ->where('platform_order_id', Arr::get($order, 'id'))
-                ->exists();
-
-            if($existingOrder) {
-                continue;
-            }
-
-            if(Arr::get($order, 'status') !== 'AWAITING_SHIPMENT') {
-                continue;
-            }
-
-            $lineItems = collect(Arr::get($order, 'line_items', []))
-                ->pluck('product_id')
-                ->filter()
-                ->toArray();
-
-            $hasOutProducts = DB::table('portfolios')
-                ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
-                ->whereIn('platform_product_id', $lineItems)
-                ->exists();
-
-            if($hasOutProducts) {
-                StoreTiktokOrder::run($tiktokUser, $order);
-            }
+            ValidateIncomingTiktokOrder::run($tiktokUser, $order);
         }
     }
 

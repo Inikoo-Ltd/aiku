@@ -25,8 +25,7 @@ class SaveShopDataTiktokChannel
         $shopData = [];
         $tiktokShop = $tiktokUser->getAuthorizedShop();
         $tiktokWarehouses = $tiktokUser->getWarehouses();
-        $tiktokWebhook = $tiktokUser->updateWebhook('ORDER_STATUS_CHANGE',
-        'https://webhook.site/c6d2ae9a-5860-49d9-bbdf-1bcf823e3dce');
+        $tiktokUser->updateWebhook('ORDER_STATUS_CHANGE', route('webhooks.tiktok.orders.create'));
 
         $defaultWarehouse = null;
         foreach (Arr::get($tiktokWarehouses, 'data.warehouses', []) as $warehouse) {

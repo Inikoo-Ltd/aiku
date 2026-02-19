@@ -163,12 +163,12 @@ trait WithTiktokApiServices
 
     public function getOrder(string $orderId): array
     {
-        $path = '/order/'.$this->version.'/orders/';
+        $path = '/order/'.$this->version.'/orders';
 
         return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
         ], true, [
-            'ids' => [$orderId]
+            'ids' => $orderId
         ]);
     }
 
