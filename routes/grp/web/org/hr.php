@@ -47,6 +47,7 @@ use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Actions\HumanResources\Leave\ApproveLeave;
 use App\Actions\HumanResources\Leave\ExportLeaveReport;
+use App\Actions\HumanResources\Overtime\ExportOvertimeReport;
 use App\Actions\HumanResources\Leave\RejectLeave;
 use App\Actions\HumanResources\Leave\UpdateLeave;
 use App\Actions\HumanResources\AttendanceAdjustment\UI\IndexAttendanceAdjustmentsAdmin;
@@ -141,6 +142,7 @@ Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.ed
 
 Route::get('/overtime/dashboard', DashboardOvertime::class)->name('overtime.dashboard');
 Route::get('/overtime', IndexOvertime::class)->name('overtime.index');
+Route::get('/overtime/export', [ExportOvertimeReport::class, 'asController'])->name('overtime.export');
 Route::post('/overtime-requests', StoreOvertimeRequest::class)->name('overtime_requests.store');
 Route::patch('/overtime-requests/{overtimeRequest}/update', UpdateOvertimeRequest::class)->name('overtime_requests.update');
 Route::patch('/overtime-requests/{overtimeRequest}/approve', ApproveOvertimeRequest::class)->name('overtime_requests.approve');

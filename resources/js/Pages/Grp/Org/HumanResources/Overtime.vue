@@ -13,9 +13,9 @@ import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { trans } from 'laravel-vue-i18n'
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup } from "@fal";
+import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv } from "@fal";
 
-library.add(faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup)
+library.add(faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -27,8 +27,10 @@ const props = defineProps<{
 }>()
 
 const showRequestModal = ref(false)
+const isExportModalOpen = ref(false)
 const isEditMode = ref(false)
 const editingOvertimeId = ref<number | null>(null)
+const isExporting = ref(false)
 
 const hourOptions = Array.from({ length: 24 }, (_, index) =>
     index < 10 ? `0${index}` : `${index}`
@@ -89,6 +91,15 @@ const form = useForm<{
     recorded_duration_minutes: '0',
 })
 
+const exportForm = useForm({
+    from: '',
+    to: '',
+    type: '',
+    status: '',
+    employee_id: null as number | null,
+    format: 'xlsx',
+})
+
 const formatDuration = (minutes?: number | null): string => {
     if (!minutes) {
         return '-'
@@ -124,6 +135,46 @@ const openRequestModal = () => {
     form.recorded_duration_hours = '0'
     form.recorded_duration_minutes = '0'
     showRequestModal.value = true
+}
+
+const openExportModal = () => {
+    exportForm.reset()
+    exportForm.format = 'xlsx'
+    isExportModalOpen.value = true
+}
+
+const closeExportModal = () => {
+    isExportModalOpen.value = false
+    exportForm.reset()
+}
+
+const submitExport = () => {
+    const orgId = route().params.organisation
+
+    if (!orgId) {
+        alert('Error: Cannot find organisation ID')
+        return
+    }
+
+    isExporting.value = true
+
+    const exportParams: Record<string, any> = {
+        organisation: orgId,
+        format: exportForm.format,
+    }
+
+    if (exportForm.from) exportParams.from = exportForm.from
+    if (exportForm.to) exportParams.to = exportForm.to
+    if (exportForm.type) exportParams.type = exportForm.type
+    if (exportForm.status) exportParams.status = exportForm.status
+    if (exportForm.employee_id) exportParams.employee_id = exportForm.employee_id
+
+    isExportModalOpen.value = false
+    window.location.href = route('grp.org.hr.overtime.export', exportParams)
+
+    setTimeout(() => {
+        isExporting.value = false
+    }, 1500)
 }
 
 const openEditModal = (item: any) => {
@@ -228,13 +279,22 @@ const submitRequest = () => {
 
     <PageHeading :data="pageHead">
         <template #button-overtime-request="{ action }">
-            <Button
-                type="create"
-                :icon="action.icon"
-                size="xs"
-                :label="action.label"
-                @click="openRequestModal"
-            />
+            <div class="flex gap-2">
+                <Button
+                    type="secondary"
+                    :icon="faDownload"
+                    size="xs"
+                    :label="trans('Export')"
+                    @click="openExportModal"
+                />
+                <Button
+                    type="create"
+                    :icon="action.icon"
+                    size="xs"
+                    :label="action.label"
+                    @click="openRequestModal"
+                />
+            </div>
         </template>
     </PageHeading>
 
@@ -629,6 +689,147 @@ const submitRequest = () => {
                     :label="trans('Submit')"
                     :loading="form.processing"
                     @click="submitRequest"
+                />
+            </div>
+        </form>
+    </Modal>
+
+    <Modal :isOpen="isExportModalOpen" @onClose="closeExportModal" width="w-full max-w-lg">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+            {{ trans('Export Overtime Reports') }}
+        </h2>
+        <p class="text-sm text-gray-600 mb-4">
+            {{ trans('Select filters and export format for your overtime report.') }}
+        </p>
+
+        <form @submit.prevent="submitExport" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">
+                        {{ trans('From Date') }}
+                    </label>
+                    <input
+                        v-model="exportForm.from"
+                        type="date"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">
+                        {{ trans('To Date') }}
+                    </label>
+                    <input
+                        v-model="exportForm.to"
+                        type="date"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">
+                        {{ trans('Overtime Type') }}
+                    </label>
+                    <select
+                        v-model="exportForm.type"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    >
+                        <option value="">
+                            {{ trans('All Types') }}
+                        </option>
+                        <option
+                            v-for="type in overtimeTypeOptions"
+                            :key="type.value"
+                            :value="type.value"
+                        >
+                            {{ type.label }}
+                        </option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">
+                        {{ trans('Status') }}
+                    </label>
+                    <select
+                        v-model="exportForm.status"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    >
+                        <option value="">
+                            {{ trans('All Statuses') }}
+                        </option>
+                        <option
+                            v-for="status in statusOptions"
+                            :key="status.value"
+                            :value="status.value"
+                        >
+                            {{ status.label }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Employee') }}
+                </label>
+                <select
+                    v-model.number="exportForm.employee_id"
+                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                >
+                    <option :value="null">
+                        {{ trans('All Employees') }}
+                    </option>
+                    <option
+                        v-for="employee in employeeOptions"
+                        :key="employee.value"
+                        :value="employee.value"
+                    >
+                        {{ employee.label }}
+                    </option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Export Format') }}
+                </label>
+                <div class="mt-2 flex gap-4">
+                    <label class="flex cursor-pointer items-center gap-2">
+                        <input
+                            v-model="exportForm.format"
+                            type="radio"
+                            value="xlsx"
+                            class="text-blue-600 focus:ring-blue-500"
+                        />
+                        <FontAwesomeIcon icon="fal fa-file-excel" class="text-green-600" />
+                        <span class="text-sm">
+                            {{ trans('Excel (XLSX)') }}
+                        </span>
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2">
+                        <input
+                            v-model="exportForm.format"
+                            type="radio"
+                            value="csv"
+                            class="text-blue-600 focus:ring-blue-500"
+                        />
+                        <FontAwesomeIcon icon="fal fa-file-csv" class="text-blue-600" />
+                        <span class="text-sm">
+                            {{ trans('CSV') }}
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <Button @click="closeExportModal" :label="trans('Cancel')" type="tertiary" />
+                <Button
+                    type="save"
+                    nativeType="submit"
+                    :label="trans('Export')"
+                    :loading="isExporting"
+                    icon="fal fa-download"
                 />
             </div>
         </form>
