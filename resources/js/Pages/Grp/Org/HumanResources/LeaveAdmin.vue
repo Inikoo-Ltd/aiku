@@ -152,15 +152,15 @@ const formatDate = (date: string) => {
 <template>
 	<Head :title="capitalize(title)" />
 
-	<PageHeading :data="pageHead" />
-
-	<div class="flex justify-end px-4 mb-2">
-		<Button
-			type="secondary"
-			:icon="faDownload"
-			:label="trans('Export')"
-			@click="openExportModal" />
-	</div>
+	<PageHeading :data="pageHead">
+		<template #other>
+			<Button
+				type="secondary"
+				:icon="faDownload"
+				:label="trans('Export')"
+				@click="openExportModal" />
+		</template>
+	</PageHeading>
 
 	<div class="mt-4">
 		<Table :resource="leaves">
@@ -227,10 +227,7 @@ const formatDate = (date: string) => {
 			<template #cell(actions)="{ item: leave }">
 				<div class="flex gap-2">
 					<Button
-						v-if="
-							leave.type === 'medical' &&
-							(!leave.attachments || leave.attachments.length === 0)
-						"
+						v-if="leave.type === 'medical' && leave.status === 'pending'"
 						type="transparent"
 						size="xs"
 						:icon="faEdit"
