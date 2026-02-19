@@ -8,6 +8,7 @@ use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\HumanResources\Overtime\OvertimeRequestApprover;
 
 /**
  * @property int $id

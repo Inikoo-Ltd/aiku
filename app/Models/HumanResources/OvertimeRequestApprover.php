@@ -7,6 +7,7 @@ use App\Enums\HumanResources\Overtime\OvertimeApproverRoleEnum;
 use App\Models\HumanResources\Employee;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\HumanResources\OvertimeRequest;
 
 /**
  * @property int $id
