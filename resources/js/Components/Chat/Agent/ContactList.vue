@@ -130,7 +130,7 @@ onMounted(() => {
 
             playNotificationSoundFile(soundUrl)
             if (!processedUnreadIds.has(duplicate)) {
-                await fetchUnreadCount(baseUrl, activeTab.value)
+                await fetchUnreadCount(baseUrl, activeTab.value, myAgentId)
                 processedUnreadIds.add(duplicate)
             }
             if (Notification.permission === "granted") {

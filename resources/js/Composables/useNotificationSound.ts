@@ -1,5 +1,5 @@
 import axios from "axios"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 
 export type NotificationSoundOptions = {
 	frequency?: number
@@ -25,7 +25,7 @@ export const playNotificationSound = async (opts: NotificationSoundOptions = {})
 		if ((audioCtx as any).state === "suspended") {
 			try {
 				await (audioCtx as any).resume()
-			} catch {}
+			} catch { }
 		}
 		const oscillator = audioCtx.createOscillator()
 		const gain = audioCtx.createGain()
@@ -38,16 +38,16 @@ export const playNotificationSound = async (opts: NotificationSoundOptions = {})
 		setTimeout(() => {
 			try {
 				oscillator.stop()
-			} catch {}
+			} catch { }
 		}, duration)
-	} catch {}
+	} catch { }
 }
 
 export const setNotificationSoundUrl = (url: string) => {
 	try {
 		audioEl = new Audio(url)
 		audioEl.preload = "auto"
-	} catch {}
+	} catch { }
 }
 
 export const playNotificationSoundFile = async (url?: string) => {
@@ -72,31 +72,34 @@ export const buildStorageUrl = (fileName: string, baseUrl?: string) => {
 	return `${prefix}/assets/${path}`
 }
 
-export const unreadCount = ref(0)
+export const totalUnread = ref(0)
+export const assignedUnread = ref(0)
+export const unassignedUnread = ref(0)
 
 export const fetchUnreadCount = async (
-  baseUrl: string,
-  activeTab: string
+	baseUrl: string,
+	activeTab: string,
+	myAgentId: number
 ) => {
-  try {
-    const res = await axios.get(
-      `${baseUrl}/app/api/chats/agents/unread-messages`
-    )
+	try {
+		const res = await axios.get(
+			`${baseUrl}/app/api/chats/users/${myAgentId}/unread-messages`
+		)
 
-    const data = res.data?.data
-	console.log("data",data)
-    if (!data) return
+		const data = res.data?.data
+		if (!data) return
 
-    unreadCount.value =
-      activeTab === "waiting"
-        ? data.unassigned_unread_count
-        : data.assigned_unread_count
+		assignedUnread.value = data?.assigned_unread_count ?? 0
+		unassignedUnread.value = data?.unassigned_unread_count ?? 0
+		totalUnread.value = data?.total_unread_count ?? 0
 
-  } catch (e) {
-    console.error("Failed to fetch unread count", e)
-  }
+	} catch (e) {
+		console.error("Failed to fetch unread count", e)
+	}
 }
 
 export const resetUnread = () => {
-	unreadCount.value = 0
+	assignedUnread.value = 0
+	unassignedUnread.value = 0
+	totalUnread.value = 0
 }

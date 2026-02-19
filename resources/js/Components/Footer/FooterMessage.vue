@@ -12,7 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faMessage } from '@fortawesome/free-solid-svg-icons'
 library.add(faBriefcase)
-import { unreadCount, resetUnread } from "@/Composables/useNotificationSound"
+import { totalUnread, resetUnread } from "@/Composables/useNotificationSound"
 
 const layout = useLayoutStore()
 
@@ -43,12 +43,12 @@ const onPinTab = () => {
       <div class="relative flex items-center justify-center w-4 h-4">
         <FontAwesomeIcon :icon="faMessage" class="text-[12px]" />
 
-        <span v-if="unreadCount > 0" class="absolute -top-5 left-1/2 -translate-x-1/2
+        <span v-if="totalUnread > 0" class="absolute -top-5 left-1/2 -translate-x-1/2
                  px-2 py-[2px]
                  bg-red-500 text-white text-[9px] font-semibold
                  rounded-full whitespace-nowrap
                  animate-pulse">
-          {{ unreadCount }}
+          {{ totalUnread }}
         </span>
       </div>
 
