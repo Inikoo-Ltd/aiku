@@ -1,20 +1,21 @@
 import { trans } from "laravel-vue-i18n"
 
 export default {
-    data:[
+    data: [
         {
             title: "Background & Link",
             icon: ["fal", "fa-image"],
             fields: [
                 {
-                    name: ["layout","backgroundType"],
+                    name: ["layout", "backgroundType"],
                     type: "radio",
                     label: trans("Background Type"),
-                    value: ["layout","backgroundType"],
+                    value: ["layout", "backgroundType"],
                     useIn: ["desktop", "tablet", "mobile"],
                     options: [
                         { label: trans("Image"), value: "image" },
                         { label: trans("Color"), value: "color" },
+                        { label: trans("Video"), value: "video" },
                     ]
                 },
                 {
@@ -25,11 +26,17 @@ export default {
                     value: ["image"],
                 },
                 {
-                    name: ["layout","background"],
+                    name: "video",
+                    type: "slideVideo",
+                    label: trans("Video"),
+                    useIn: ["desktop", "tablet", "mobile"],
+                },
+                {
+                    name: ["layout", "background"],
                     type: "color-background",
                     label: trans("Background Color"),
                     useIn: ["desktop", "tablet", "mobile"],
-                    value: ["layout","background"],
+                    value: ["layout", "background"],
                 },
                 {
                     name: ["layout", "link"],
@@ -69,7 +76,7 @@ export default {
                     name: ["layout", "centralStage", "subtitle"],
                     type: "text",
                     label: trans("subtitle"),
-                    defaultValue : '',
+                    defaultValue: '',
                     value: ["layout", "centralStage", "subtitle"],
                     placeholder: "Holiday sales up to 80% all items."
                 },
@@ -77,7 +84,7 @@ export default {
                     name: ["layout", "centralStage", "linkOfText"],
                     type: "text",
                     label: trans("Hyperlink"),
-                    defaultValue : '',
+                    defaultValue: '',
                     value: ["layout", "centralStage", "linkOfText"],
                     placeholder: "https://www.example.com"
                 },
@@ -92,7 +99,7 @@ export default {
                     type: "textAlign",
                     label: trans("Text Align"),
                     value: ["layout", "centralStage", "textAlign"],
-                    defaultValue : "center",
+                    defaultValue: "center",
                     options: [
                         {
                             label: "Align left",
@@ -118,7 +125,7 @@ export default {
                     value: ["layout", "centralStage", "style", "fontSize"],
                     defaultValue: { fontTitle: "text-[25px] md:text-[32px] lg:text-[44px]", fontSubtitle: "text-[12px] md:text-[15px] lg:text-[20px]" },
                     options: [
-                        { 
+                        {
                             label: "Extra Small",
                             value: {
                                 fontTitle: "text-[13px] md:text-[17px] lg:text-[21px]",

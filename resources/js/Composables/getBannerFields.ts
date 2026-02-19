@@ -16,6 +16,7 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import SlideBackground from "@/Components/Banners/SlidesWorkshop/Fields/SlideBackground.vue"
 import ColorBackground from "@/Components/Banners/Slider/ColorBackground.vue"
+import SlideVideo from "@/Components/Banners/SlidesWorkshop/Fields/SlideVideo.vue"
 
 const componentsMap: Record<string, any> = {
 	text: PureInput,
@@ -32,6 +33,7 @@ const componentsMap: Record<string, any> = {
 	bannerNavigation: BannerNavigation,
 	slideBackground: SlideBackground,
 	"color-background": ColorBackground,
+	slideVideo: SlideVideo,
 }
 
 export const getComponent = (componentName: string) => {

@@ -28,6 +28,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(["update:modelValue"])
+
 const screenView = inject('screenView')
 const current = ref(0);
 
@@ -36,8 +37,6 @@ const getValue = (fieldData: string | string[]) => {
     const view = screenView.value!
     return rawVal?.[view] ?? rawVal?.desktop ?? rawVal ?? null
 }
-
-
 
 const setValue = (fieldData: any, value: any) => {
     const cloned = cloneDeep(props.modelValue || {})
@@ -68,10 +67,29 @@ const setValue = (fieldData: any, value: any) => {
     emit("update:modelValue", cloned)
 }
 
+const shouldShowField = (fieldData: any) => {
+    const bgType = get(props.modelValue, ["layout", "backgroundType", screenView.value])
+        ?? get(props.modelValue, ["layout", "backgroundType", "desktop"])
+
+    if (fieldData.name === "image") {
+        return bgType === "image"
+    }
+
+    if (fieldData.name === "video") {
+        return bgType === "video"
+    }
+
+    if (Array.isArray(fieldData.name) && fieldData.name.includes("background")) {
+        return bgType === "color"
+    }
+
+    return true
+}
+
+
 defineExpose({
     current,
 });
-
 </script>
 
 <template>
@@ -99,13 +117,14 @@ defineExpose({
         <div class="px-4 sm:px-6 md:px-4 pt-6 xl:pt-4 col-span-9 flex flex-grow justify-center">
             <div class="flex flex-col w-full gap-y-1">
                 <dl v-for="(fieldData, index) in blueprint[current].fields" :key="index"
-                    class="pb-4 sm:pb-5 sm:gap-4 w-full">
+                    v-show="shouldShowField(fieldData)" class="pb-4 sm:pb-5 sm:gap-4 w-full">
                     <!-- Title -->
                     <dt v-if="fieldData.name != 'image_source' && fieldData.label"
                         class="text-sm font-medium text-gray-500 flex justify-between items-start py-3">
                         <div class="inline-flex items-start leading-none">
                             <span>{{ fieldData.label }}</span>
-                            <InformationIcon v-if="fieldData.information" :information="fieldData.information" class="ml-1" />
+                            <InformationIcon v-if="fieldData.information" :information="fieldData.information"
+                                class="ml-1" />
                         </div>
 
                         <ScreenView :show-list="fieldData.useIn || []" v-model="screenView" />
@@ -118,18 +137,10 @@ defineExpose({
                             <!-- <pre>{{ fieldData.name }}</pre>
                             <pre>{{ props.modelValue }}</pre>
                             <pre>{{ fieldData }}</pre> -->
-                            <component
-                                :is="getComponent(fieldData.type)"
-                                :model-value="getValue(fieldData)"
-                                @update:modelValue="setValue(fieldData, $event)"
-                                :fieldName="fieldData.name"
-                                :fieldData="fieldData"
-                                :key="fieldData.type + index + fieldData.label"
-                                :counter="false"
-                                :common="common"
-                                :uploadRoutes="uploadRoutes"
-                                :bannerType="bannerType"
-                            />
+                            <component :is="getComponent(fieldData.type)" :model-value="getValue(fieldData)"
+                                @update:modelValue="setValue(fieldData, $event)" :fieldName="fieldData.name"
+                                :fieldData="fieldData" :key="fieldData.type + index + fieldData.label" :counter="false"
+                                :common="common" :uploadRoutes="uploadRoutes" :bannerType="bannerType" />
                         </div>
                     </dd>
                 </dl>

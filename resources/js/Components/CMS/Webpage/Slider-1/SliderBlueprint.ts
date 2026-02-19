@@ -1,3 +1,5 @@
+import { trans } from "laravel-vue-i18n";
+
 export default {
 	blueprint: [
 		{
@@ -10,7 +12,7 @@ export default {
 					type: "image-cropped",
 					props_data: {
 						stencilProps: {
-							aspectRatio: [1, 4/3, 16/9, null],
+							aspectRatio: [1, 4 / 3, 16 / 9, null],
 							movable: true,
 							scalable: true,
 							resizable: true,
@@ -21,7 +23,7 @@ export default {
 					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
-				},	
+				},
 			],
 		},
 		{
@@ -29,5 +31,13 @@ export default {
 			label: "Link",
 			type: "link",
 		},
+		{
+			name: "video",
+			type: "slideVideo",
+			label: trans("Video"),
+			useIn: ["desktop", "tablet", "mobile"],
+			value: ["video"],
+		},
+
 	],
 }
