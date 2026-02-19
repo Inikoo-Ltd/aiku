@@ -8,14 +8,17 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Product;
 
-use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -26,103 +29,128 @@ class StoreProductToTiktok extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(TiktokUser $tiktokUser, array $modelData)
+    public function handle(TiktokUser $tiktokUser, Portfolio $portfolio): array
     {
-        DB::transaction(function () use ($tiktokUser, $modelData) {
+        $logs = StorePlatformPortfolioLog::run($portfolio, [
+            'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
+        ]);
+
+        try {
+            /** @var Product $product */
+            $product = $portfolio->item;
+
             $productImages = [];
-            foreach (Arr::get($modelData, 'products') as $product) {
-                $product = Product::find($product);
+            foreach ($product->images as $image) {
+                $productImage = UploadProductImageToTiktok::run($tiktokUser, $image);
 
-                /** @var Portfolio $portfolio */
-                $portfolio = StorePortfolio::run(
-                    $tiktokUser->customerSalesChannel,
-                    $product,
-                    []
-                );
+                $productImages[] = [
+                    'uri' => Arr::get($productImage, 'data.uri')
+                ];
+            }
 
-                foreach ($portfolio->item?->images as $image) {
-                    $productImage = UploadProductImageToTiktok::run($tiktokUser, $image);
+            $w = max(Arr::get($product->marketing_dimensions, 'w', 1), 20);
+            $h = max(Arr::get($product->marketing_dimensions, 'h', 1), 20);
+            $l = max(Arr::get($product->marketing_dimensions, 'l', 1), 80);
 
-                    $productImages[] = [
-                        'uri' => Arr::get($productImage, 'data.uri')
-                    ];
-                }
-
-                $productData = [
-                    'title' => $portfolio->item->name,
-                    'description' => $portfolio->item->name,
-                    'price' => $portfolio->item->price,
-                    'category_id' => "2348816",
-                    'main_images' => $productImages,
-                    'package_weight' => [
-                        'value' => $portfolio->item->gross_weight ?? "1.00",
-                        'unit' => 'KILOGRAM'
-                    ],
-                    'package_dimensions' => [
-                        'width' => "10",
-                        'length' => "5",
-                        'height' => "10",
-                        'unit' => "CENTIMETER",
-                    ],
-                    'product_attributes' => [
-                        [
-                            'id' => "101710",
-                            'values' => [
-                                [
-                                    'id' => "1000059",
-                                    'name' => "No"
-                                ]
-                            ]
-                        ],
-                        [
-                            'id' => "100110",
-                            'values' => [
-                                [
-                                    'id' => "1000059",
-                                    'name' => "No"
-                                ]
+            $productData = [
+                'title' => $portfolio->customer_product_name,
+                'description' => $portfolio->customer_description,
+                'price' => (string) $portfolio->customer_price,
+                'category_id' => "2348816",
+                'main_images' => $productImages,
+                'package_weight' => [
+                    'value' => (string) ($product->gross_weight / 1000),
+                    'unit' => 'KILOGRAM'
+                ],
+                'package_dimensions' => [
+                    'width' => (string) ceil($w),
+                    'length' => (string) ceil($l),
+                    'height' => (string) ceil($h),
+                    'unit' => "CENTIMETER",
+                ],
+                'external_product_id' => (string) $portfolio->id,
+                'product_attributes' => [
+                    [
+                        'id' => "101710",
+                        'values' => [
+                            [
+                                'id' => "1000059",
+                                'name' => "No"
                             ]
                         ]
                     ],
-                    'skus' => [
-                        [
-                            'sales_attributes' => [],
-                            'inventory' => [
-                                [
-                                    'quantity' => $portfolio->item->available_quantity,
-                                    'warehouse_id' => "7480392764145895201"
-                                ]
-                            ],
-                            'price' => [
-                                'amount' => $portfolio->item->price,
-                                'currency' => $tiktokUser->customer->shop->currency->code
-                            ],
+                    [
+                        'id' => "100110",
+                        'values' => [
+                            [
+                                'id' => "1000059",
+                                'name' => "No"
+                            ]
                         ]
                     ]
-                ];
+                ],
+                'skus' => [
+                    [
+                        'sales_attributes' => [],
+                        'inventory' => [
+                            [
+                                'quantity' => $product->available_quantity,
+                                'warehouse_id' => (string) $tiktokUser->tiktok_warehouse_id
+                            ]
+                        ],
+                        'price' => [
+                            'amount' => (string) $portfolio->customer_price,
+                            'currency' => $tiktokUser->customer->shop->currency->code
+                        ],
+                    ]
+                ]
+            ];
 
-                $product = $tiktokUser->uploadProductToTiktok($productData);
+            $tiktokProduct = $tiktokUser->uploadProductToTiktok($productData);
 
-                $tiktokUser->products()->create([
-                    'productable_id' => $portfolio->item->id,
-                    'productable_type' => $portfolio->item->getMorphClass(),
-                    'tiktok_product_id' => Arr::get($product, 'data.product_id')
+            UpdatePortfolio::run($portfolio, [
+                'platform_product_id' => Arr::get($tiktokProduct, 'data.product_id'),
+                'platform_product_variant_id' => Arr::get($tiktokProduct, 'data.product_id')
+            ]);
+
+            CheckTiktokPortfolio::run($portfolio);
+
+            $portfolio->refresh();
+
+            if ($portfolio->platform_status) {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+            } else {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $tiktokProduct
                 ]);
             }
-        });
+
+            return $tiktokProduct;
+        } catch (\Exception $e) {
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => [
+                    'message' => $e->getMessage()
+                ]
+            ]);
+
+            if ($logs) {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $e->getMessage()
+                ]);
+            }
+
+            return [];
+        }
     }
 
-    public function rules(): array
-    {
-        return [
-            'products' => ['required', 'array']
-        ];
-    }
-
-    public function asController(TiktokUser $tiktokUser, ActionRequest $request): void
+    public function asController(TiktokUser $tiktokUser, Portfolio $portfolio, ActionRequest $request): void
     {
         $this->initialisation($request);
 
-        $this->handle($tiktokUser, $this->validatedData);
+        $this->handle($tiktokUser, $portfolio);
     }
 }
