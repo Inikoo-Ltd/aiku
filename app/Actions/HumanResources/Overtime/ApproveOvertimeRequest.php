@@ -18,14 +18,28 @@ class ApproveOvertimeRequest extends OrgAction
 
     public function handle(OvertimeRequest $overtimeRequest): OvertimeRequest
     {
+        $approverEmployeeId = Auth::user()->employee->id ?? null;
 
-        $overtimeRequest->update([
+        $updateData = [
             'status'                  => OvertimeRequestStatusEnum::APPROVED,
             'approved_at'             => now(),
-            'approved_by_employee_id' => Auth::user()->employee->id ?? null,
-        ]);
+            'approved_by_employee_id' => $approverEmployeeId,
+        ];
 
-        return $overtimeRequest;
+        if (
+            is_null($overtimeRequest->recorded_start_at)
+            && is_null($overtimeRequest->recorded_end_at)
+            && is_null($overtimeRequest->recorded_duration_minutes)
+        ) {
+            $updateData['recorded_start_at'] = $overtimeRequest->requested_start_at;
+            $updateData['recorded_end_at'] = $overtimeRequest->requested_end_at;
+            $updateData['recorded_duration_minutes'] = $overtimeRequest->requested_duration_minutes;
+            $updateData['recorded_by_employee_id'] = $approverEmployeeId;
+        }
+
+        $overtimeRequest->update($updateData);
+
+        return $overtimeRequest->refresh();
     }
 
     public function action(OvertimeRequest $overtimeRequest): OvertimeRequest
