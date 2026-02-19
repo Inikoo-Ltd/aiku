@@ -96,6 +96,7 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
+import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 
 library.add(
 	faRainbow,
@@ -281,8 +282,10 @@ const requestNotificationPermission = () => {
 		}
 }
 
+const baseUrl = layout?.appUrl ?? ""
+const myAgentId = layout.user?.id
 onMounted(() => {
-	requestNotificationPermission()
+	fetchUnreadCount(baseUrl, '', myAgentId)
 	checkScreenType()
 	onCheckAppVersion()
 	setColorStyleRoot(layout?.app?.theme)
