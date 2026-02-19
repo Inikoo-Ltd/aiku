@@ -213,7 +213,15 @@ const submitExport = () => {
 <template>
 	<Head :title="capitalize(title)" />
 
-	<PageHeading :data="pageHead" />
+	<PageHeading :data="pageHead">
+		<template #other>
+			<Button
+				type="secondary"
+				:icon="faDownload"
+				:label="trans('Export')"
+				@click="openExportModal" />
+		</template>
+	</PageHeading>
 
 	<div class="mt-5 bg-white shadow-sm rounded-lg p-4">
 		<div class="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
@@ -267,14 +275,6 @@ const submitExport = () => {
 					</option>
 				</select>
 			</div>
-		</div>
-
-		<div class="flex justify-end mb-4">
-			<Button
-				type="secondary"
-				:icon="faDownload"
-				:label="trans('Export')"
-				@click="openExportModal" />
 		</div>
 
 		<div class="overflow-x-auto">
