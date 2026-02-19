@@ -316,7 +316,7 @@ class EditMasterProduct extends GrpAction
                         'type'       => 'select_infinite',
                         'label'      => __('Master family'),
                         'options'    => [
-                            $masterProduct->masterFamily ? MasterFamiliesResource::make($masterProduct->masterFamily)->toArray(request()) : null
+                            $masterProduct->masterFamily ? MasterFamiliesResource::make($masterProduct->masterFamily)->toArray(request()) : []
                         ],
                         'fetchRoute' => [
                             'name'       => 'grp.json.master-family.all-master-family',
@@ -345,34 +345,35 @@ class EditMasterProduct extends GrpAction
                         'withQuantity' => true,
                         'full'         => true,
                         'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
-                        'tabs'         =>
-                            array_filter([
-                                $masterProduct->masterFamily ? [
-                                    'label'      => __('To do'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $masterProduct->masterFamily->id,
-                                        ],
-                                    ],
-                                ] : null,
-                                $masterProduct->masterFamily ? [
-                                    'label'      => __('Done'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.taken-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $masterProduct->masterFamily->id,
-                                        ],
-                                    ],
-                                ] : null,
-                                [
-                                    'label'      => __('All'),
-                                    'search'     => true,
-                                    'routeFetch' => [
-                                        'name' => 'grp.json.master_product_category.all_trade_units',
+                        'tabs' => array_values(array_filter([
+                            $masterProduct->masterFamily  ? [
+                                'label'      => __('To do'),
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.master-product-category.recommended-trade-units',
+                                    'parameters' => [
+                                        'masterProductCategory' => $masterProduct->masterFamily->id,
                                     ],
                                 ],
-                            ]),
+                            ] : null,
+
+                            $masterProduct->masterFamily  ? [
+                                'label'      => __('Done'),
+                                'routeFetch' => [
+                                    'name'       => 'grp.json.master-product-category.taken-trade-units',
+                                    'parameters' => [
+                                        'masterProductCategory' => $masterProduct->masterFamily->id,
+                                    ],
+                                ],
+                            ] : null,
+
+                            [
+                                'label'      => __('All'),
+                                'search'     => true,
+                                'routeFetch' => [
+                                    'name' => 'grp.json.master_product_category.all_trade_units',
+                                ],
+                            ],
+                        ])),
                         'value'        => $tradeUnits,
                     ],
                 ],
