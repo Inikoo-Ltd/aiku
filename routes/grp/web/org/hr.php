@@ -151,6 +151,7 @@ Route::post('/overtime-types/store', StoreOvertimeType::class)->name('overtime_t
 Route::patch('/overtime-types/{overtimeType}', UpdateOvertimeType::class)->name('overtime_types.update');
 Route::delete('/overtime-types/{overtimeType}', DeleteOvertimeType::class)->name('overtime_types.delete');
 
+
 Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('dashboard', \App\Actions\HumanResources\Leave\UI\DashboardLeave::class)->name('dashboard');
     Route::get('', \App\Actions\HumanResources\Leave\UI\IndexLeavesAdmin::class)->name('index');
