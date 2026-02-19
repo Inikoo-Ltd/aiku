@@ -9,7 +9,7 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
-use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
+use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
@@ -101,6 +101,9 @@ class DeleteInvoice extends OrgAction
         GroupHydrateDeletedInvoices::dispatch($customer->group);
 
         $invoiceDate = \Carbon\Carbon::parse($invoice->date);
+
+        RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
+
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             ProcessShopTimeSeriesRecords::dispatch(
                 $invoice->shop_id,
@@ -150,21 +153,6 @@ class DeleteInvoice extends OrgAction
         if ($invoiceCategory) {
             $invoiceCategory->refresh();
             InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
-
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessInvoiceCategoryTimeSeriesRecords::dispatch(
-                    $invoice->invoice_category_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString(),
-                )->delay($this->hydratorsDelay);
-            }
         }
 
         if ($invoice->platform_id) {
