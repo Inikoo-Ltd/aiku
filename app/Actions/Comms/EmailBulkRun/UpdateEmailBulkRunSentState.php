@@ -35,7 +35,7 @@ class UpdateEmailBulkRunSentState
             ];
         }
 
-        $countInProcess = $emailBulkRun->channels()->whereNot('emailBulkRun_send_channels.state', EmailDeliveryChannelStateEnum::SENT)->count();
+        $countInProcess = $emailBulkRun->channels()->whereNot('email_delivery_channels.state', EmailDeliveryChannelStateEnum::SENT)->count();
 
         if ($countInProcess > 0) {
             return [

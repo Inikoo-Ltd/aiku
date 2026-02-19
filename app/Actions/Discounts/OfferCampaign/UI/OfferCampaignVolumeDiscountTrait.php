@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\OfferCampaign\UI;
 
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Discounts\OfferCampaignTabsEnum;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\History\HistoryResource;
@@ -39,6 +40,7 @@ trait OfferCampaignVolumeDiscountTrait
                         ],
                     'title'         => $offerCampaign->name,
                     'model'         => __('Offer Campaign'),
+                    'iconRight'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
                     'actions' => app()->environment('local') ? [
                         [
                             'type'  => 'button',

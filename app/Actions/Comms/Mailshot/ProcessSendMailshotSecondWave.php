@@ -2,18 +2,24 @@
 
 /*
  * Author: eka yudinata (https://github.com/ekayudinata)
- * Created: Tuesday, 6 Jan 2026 11:56:32 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Created: Thursday, 5 Feb 2026 09:40:43 Central Indonesia Time, Sanur, Bali, Indonesia
  * Copyright (c) 2026, eka yudinata
  */
 
 namespace App\Actions\Comms\Mailshot;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
+use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
+use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Customer;
@@ -21,8 +27,9 @@ use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
+use Illuminate\Support\Facades\Log;
 
-class ProcessSendNewsletter
+class ProcessSendMailshotSecondWave
 {
     use AsAction;
 
@@ -30,23 +37,51 @@ class ProcessSendNewsletter
 
     public function tags(): array
     {
-        return ['send_newsletter'];
+        return ['send_mailshot_second_wave'];
     }
 
     public function handle(Mailshot $mailshot): void
     {
+        $parentMailshots = $mailshot->parentMailshot;
 
-        // NOTE: Ensure no second wave exists when the parent mailshot has second wave disabled
-        if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
-            DeleteMailshotSecondWave::run($mailshot->secondWave);
+        if (!$parentMailshots) {
+            Log::warning('Mailshot does not have parent mailshot, skipping second wave processing', [
+                'mailshot_id' => $mailshot->id,
+            ]);
+            return;
         }
 
-        $queryBuilder = QueryBuilder::for(Customer::class)
-            ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
-            ->where('shop_id', $mailshot->shop_id)
-            ->where('customer_comms.is_subscribed_to_newsletter', true)
-            ->where('customers.email', '!=', null)
-            ->select('customers.id', 'customers.shop_id', 'customers.name', 'customers.email', 'customers.slug');
+        $queryBuilder = QueryBuilder::for(Customer::class);
+        $queryBuilder->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
+        $queryBuilder->join('dispatched_emails', function ($join) {
+            $join->on('customers.id', '=', 'dispatched_emails.recipient_id')
+                ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
+        });
+        $queryBuilder->where('dispatched_emails.parent_type', class_basename(Mailshot::class));
+        $queryBuilder->where('dispatched_emails.parent_id', $parentMailshots->id);
+        $queryBuilder->where('dispatched_emails.state', DispatchedEmailStateEnum::SENT->value);
+        $queryBuilder->whereNotNull('dispatched_emails.sent_at');
+
+        $queryBuilder->where('customers.shop_id', $mailshot->shop_id);
+        $queryBuilder->where('customers.email', '!=', null);
+
+        switch ($mailshot->type) {
+            case MailshotTypeEnum::NEWSLETTER:
+                $queryBuilder->where('customer_comms.is_subscribed_to_newsletter', true);
+                break;
+            case MailshotTypeEnum::MARKETING:
+                $queryBuilder->where('customer_comms.is_subscribed_to_marketing', true);
+                break;
+            default:
+                // Return invalid query for unsupported types
+                $queryBuilder->whereRaw('1 = 0');
+                break;
+        }
+
+        $queryBuilder->select('customers.id', 'customers.shop_id', 'customers.name', 'customers.email', 'customers.slug');
+
+        // NOTE: for debug the SQl query
+        // \Log::info($queryBuilder->toRawSql());
 
         // Process recipients in chunks of 250
         $queryBuilder->chunk(250, function ($recipients) use ($mailshot) {
@@ -62,7 +97,8 @@ class ProcessSendNewsletter
 
                 if (!$recipientExists && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
 
-                    $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->first();
+                    $outboxCode = $mailshot->type === MailshotTypeEnum::NEWSLETTER ? OutboxCodeEnum::NEWSLETTER : OutboxCodeEnum::MARKETING;
+                    $outbox = $recipient->shop->outboxes()->where('code', $outboxCode)->first();
 
                     $dispatchedEmail = StoreDispatchedEmail::run(
                         $mailshot,
@@ -71,7 +107,7 @@ class ProcessSendNewsletter
                             'is_test'       => false,
                             'outbox_id'     => $outbox->id,
                             'email_address' => $recipient->email,
-                            'provider'      => DispatchedEmailProviderEnum::SES,
+                            'provider'      => DispatchedEmailProviderEnum::SES
                         ]
                     );
 
@@ -104,11 +140,14 @@ class ProcessSendNewsletter
             ]
         );
 
-        // TODO: check another hydrator
         MailshotHydrateDispatchedEmails::run($mailshot);
+        GroupHydrateMailshots::dispatch($mailshot->group);
+        OrganisationHydrateMailshots::dispatch($mailshot->organisation);
+        OutboxHydrateMailshots::dispatch($mailshot->outbox);
+        ShopHydrateMailshots::dispatch($mailshot->shop);
     }
 
-    public string $commandSignature = 'mailshot:send {mailshot}';
+    public string $commandSignature = 'mailshot-second-wave:send {mailshot}';
 
     public function asCommand(Command $command): int
     {
