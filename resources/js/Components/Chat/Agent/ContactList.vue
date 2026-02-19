@@ -128,10 +128,8 @@ onMounted(async () => {
             if (notifiedMessages.has(duplicate)) return
 
             playNotificationSoundFile(soundUrl)
-            if (!processedUnreadIds.has(duplicate)) {
-                await fetchUnreadCount(baseUrl, activeTab.value, myAgentId)
-                processedUnreadIds.add(duplicate)
-            }
+            await fetchUnreadCount(baseUrl, activeTab.value, myAgentId)
+
             if (Notification.permission === "granted") {
                 new Notification(senderDisplay, {
                     body: msg.text ?? "New message",
