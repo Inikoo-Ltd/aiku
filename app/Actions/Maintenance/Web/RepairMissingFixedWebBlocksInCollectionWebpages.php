@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Web;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
@@ -32,7 +33,6 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
     {
         /** @var \App\Models\Catalogue\Collection $collection */
         $collection = $webpage->model;
-
 
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'families-1');
@@ -64,8 +64,7 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
 
         if ($webpage->is_dirty) {
             if (in_array($collection->state, [
-                ProductCategoryStateEnum::ACTIVE,
-                ProductCategoryStateEnum::DISCONTINUING
+                CollectionStateEnum::ACTIVE,
             ])) {
                 $command->line('Webpage '.$webpage->code.' is dirty, publishing after upgrade');
                 PublishWebpage::make()->action(
@@ -82,7 +81,7 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
     public function setDescriptionWebBlockOnTop(Webpage $webpage): void
     {
         $collectionDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'collection-description-1')->first()->model_has_web_blocks_id;
-        $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
+        $webBlocks                     = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
 
         $runningPosition = 2;
