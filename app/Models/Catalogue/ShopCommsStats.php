@@ -92,6 +92,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_email_templates
  * @property int $number_outboxes_type_credit_balance_notification_for_customer
  * @property int $number_outboxes_type_credit_balance_notification_for_user
+ * @property int $number_outboxes_type_chat_notification_to_customer
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static Builder<static>|ShopCommsStats newModelQuery()
  * @method static Builder<static>|ShopCommsStats newQuery()

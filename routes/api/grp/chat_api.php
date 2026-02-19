@@ -21,13 +21,18 @@ use App\Actions\CRM\ChatSession\TranslateSingleMessage;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\CRM\ChatSession\TranslateSessionMessages;
 use App\Actions\CRM\ChatSession\GetChatAgentSpecializations;
+use App\Actions\CRM\ChatSession\GetChatStatus;
+use App\Actions\CRM\ChatSession\StoreOfflineMessage;
 
 Route::get('/ping', function () {
     return 'pong';
 })->name('ping');
 
+
+
 Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
 Route::post('/sessions', StoreChatSession::class)->name('sessions.store');
+Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-message.store');
 Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)
     ->name('sessions.update');
@@ -59,6 +64,7 @@ Route::post('/typing', HandleChatTyping::class, 'typing')
 
 Route::post('/read', HandleChatRead::class, 'read')
     ->name('read');
+Route::get('/status', GetChatStatus::class)->name('status');
 
 Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)
     ->name('chat.attachment.download');

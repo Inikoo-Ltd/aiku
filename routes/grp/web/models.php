@@ -130,6 +130,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWoo
 use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -349,7 +350,7 @@ use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiAsync;
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -703,6 +704,7 @@ Route::post('{customerSalesChannel:id}/shopify-batch-all', CreateNewBulkPortfoli
 Route::post('{customerSalesChannel:id}/woo-batch-upload', StoreBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/woo-batch-match', MatchBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/woo-batch-all', StoreBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_all')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/revive', ReviveInActiveWooChannel::class)->name('woo.revive')->withoutScopedBindings();
 
 Route::post('{customerSalesChannel:id}/ebay-batch-upload', StoreBulkNewProductToCurrentEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings();
@@ -1089,7 +1091,7 @@ Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name(
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
 Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigiAsync::class)->name('website_luigi.reindex')->withoutScopedBindings();
 
-Route::post('webpage/{webpage:id}/reindex-luigi', ReindexWebpageLuigiAsync::class)->name('webpage_luigi.reindex')->withoutScopedBindings();
+Route::post('webpage/{webpage:id}/reindex-luigi', ReindexWebpageLuigi::class)->name('webpage_luigi.reindex')->withoutScopedBindings();
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
 Route::patch('snapshot/{snapshot:id}/update', UpdateSnapshot::class)->name('snapshot.update');

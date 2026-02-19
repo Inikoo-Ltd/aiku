@@ -50,6 +50,8 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(ShopTimeSeries $timeSeries, string $from, string $to): void
     {
+        $processedPeriods = [];
+
         $results = DB::table('invoices')
             ->where('invoices.shop_id', $timeSeries->shop_id)
             ->where('invoices.in_process', false)
@@ -179,25 +181,25 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                 ->where('shop_id', $timeSeries->shop_id)
                 ->where('date', '>=', $periodFrom)
                 ->where('date', '<=', $periodTo)
+                ->whereNull('deleted_at')
                 ->count();
 
             $registrationsWithOrders = DB::table('customers')
-                ->leftjoin('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+                ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
                 ->where('customers.shop_id', $timeSeries->shop_id)
                 ->where('customers.registered_at', '>=', $periodFrom)
                 ->where('customers.registered_at', '<=', $periodTo)
                 ->where('customer_stats.number_orders', '>', 0)
+                ->whereNull('customers.deleted_at')
                 ->count();
 
             $registrationsWithoutOrders = DB::table('customers')
-                ->leftJoin('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+                ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
                 ->where('customers.shop_id', $timeSeries->shop_id)
                 ->where('customers.registered_at', '>=', $periodFrom)
                 ->where('customers.registered_at', '<=', $periodTo)
-                ->where(function ($query) {
-                    $query->where('customer_stats.number_orders', '=', 0)
-                          ->orWhereNull('customer_stats.number_orders');
-                })
+                ->where('customer_stats.number_orders', '=', 0)
+                ->whereNull('customers.deleted_at')
                 ->count();
 
             $timeSeries->records()->updateOrCreate(
@@ -230,6 +232,186 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                     'orders'                       => $result->orders,
                 ]
             );
+
+            $processedPeriods[] = $period;
         }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+    }
+
+    protected function processPeriodsWithoutInvoices(ShopTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = $this->getNonInvoicePeriods($timeSeries, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $periodFrom = $periodData['from'];
+            $periodTo   = $periodData['to'];
+            $period     = $periodData['period'];
+
+            $basketsCreated = DB::table('orders')
+                ->where('shop_id', $timeSeries->shop_id)
+                ->where('state', OrderStateEnum::CREATING)
+                ->where('created_at', '>=', $periodFrom)
+                ->where('created_at', '<=', $periodTo)
+                ->whereNull('deleted_at')
+                ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
+                ->first();
+
+            $basketsUpdated = DB::table('orders')
+                ->where('shop_id', $timeSeries->shop_id)
+                ->where('state', OrderStateEnum::CREATING)
+                ->where('updated_at', '>=', $periodFrom)
+                ->where('updated_at', '<=', $periodTo)
+                ->whereNull('deleted_at')
+                ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
+                ->first();
+
+            $deliveryNotes = DB::table('delivery_notes')
+                ->where('shop_id', $timeSeries->shop_id)
+                ->where('date', '>=', $periodFrom)
+                ->where('date', '<=', $periodTo)
+                ->whereNull('deleted_at')
+                ->count();
+
+            $registrationsWithOrders = DB::table('customers')
+                ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+                ->where('customers.shop_id', $timeSeries->shop_id)
+                ->where('customers.registered_at', '>=', $periodFrom)
+                ->where('customers.registered_at', '<=', $periodTo)
+                ->where('customer_stats.number_orders', '>', 0)
+                ->whereNull('customers.deleted_at')
+                ->count();
+
+            $registrationsWithoutOrders = DB::table('customers')
+                ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+                ->where('customers.shop_id', $timeSeries->shop_id)
+                ->where('customers.registered_at', '>=', $periodFrom)
+                ->where('customers.registered_at', '<=', $periodTo)
+                ->where('customer_stats.number_orders', '=', 0)
+                ->whereNull('customers.deleted_at')
+                ->count();
+
+            $hasActivity = ($basketsCreated->net_amount ?? 0) != 0
+                || ($basketsCreated->org_net_amount ?? 0) != 0
+                || ($basketsCreated->grp_net_amount ?? 0) != 0
+                || ($basketsUpdated->net_amount ?? 0) != 0
+                || ($basketsUpdated->org_net_amount ?? 0) != 0
+                || ($basketsUpdated->grp_net_amount ?? 0) != 0
+                || $deliveryNotes > 0
+                || $registrationsWithOrders > 0
+                || $registrationsWithoutOrders > 0;
+
+            if (!$hasActivity) {
+                continue;
+            }
+
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'shop_time_series_id'  => $timeSeries->id,
+                    'period'               => $period,
+                    'frequency'            => $timeSeries->frequency->singleLetter()
+                ],
+                [
+                    'from'                         => $periodFrom,
+                    'to'                           => $periodTo,
+                    'sales'                        => 0,
+                    'sales_org_currency'           => 0,
+                    'sales_grp_currency'           => 0,
+                    'lost_revenue'                 => 0,
+                    'lost_revenue_org_currency'    => 0,
+                    'lost_revenue_grp_currency'    => 0,
+                    'baskets_created'              => $basketsCreated->net_amount,
+                    'baskets_created_org_currency' => $basketsCreated->org_net_amount,
+                    'baskets_created_grp_currency' => $basketsCreated->grp_net_amount,
+                    'baskets_updated'              => $basketsUpdated->net_amount,
+                    'baskets_updated_org_currency' => $basketsUpdated->org_net_amount,
+                    'baskets_updated_grp_currency' => $basketsUpdated->grp_net_amount,
+                    'delivery_notes'               => $deliveryNotes,
+                    'registrations_with_orders'    => $registrationsWithOrders,
+                    'registrations_without_orders' => $registrationsWithoutOrders,
+                    'customers_invoiced'           => 0,
+                    'invoices'                     => 0,
+                    'refunds'                      => 0,
+                    'orders'                       => 0,
+                ]
+            );
+        }
+    }
+
+    protected function getNonInvoicePeriods(ShopTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
+    {
+        $periods = [];
+
+        $startDate = Carbon::parse($from)->startOfDay();
+        $endDate   = Carbon::parse($to)->endOfDay();
+
+        if ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
+            $current = $startDate->copy();
+            while ($current <= $endDate) {
+                $period = $current->format('Y-m-d');
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfDay(),
+                        'to'     => $current->copy()->endOfDay(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addDay();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
+            $current = $startDate->copy()->startOfWeek();
+            while ($current <= $endDate) {
+                $period = $current->isoFormat('GGGG').' W'.str_pad($current->isoWeek(), 2, '0', STR_PAD_LEFT);
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfWeek(),
+                        'to'     => $current->copy()->endOfWeek(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addWeek();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
+            $current = $startDate->copy()->startOfMonth();
+            while ($current <= $endDate) {
+                $period = $current->year.'-'.str_pad($current->month, 2, '0', STR_PAD_LEFT);
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfMonth(),
+                        'to'     => $current->copy()->endOfMonth(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addMonth();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
+            $current = $startDate->copy()->startOfQuarter();
+            while ($current <= $endDate) {
+                $period = $current->year.' Q'.$current->quarter;
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfQuarter(),
+                        'to'     => $current->copy()->endOfQuarter(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addQuarter();
+            }
+        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
+            $current = $startDate->copy()->startOfYear();
+            while ($current <= $endDate) {
+                $period = (string) $current->year;
+                if (!in_array($period, $processedPeriods)) {
+                    $periods[] = [
+                        'from'   => $current->copy()->startOfYear(),
+                        'to'     => $current->copy()->endOfYear(),
+                        'period' => $period,
+                    ];
+                }
+                $current->addYear();
+            }
+        }
+
+        return $periods;
     }
 }

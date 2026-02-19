@@ -62,7 +62,7 @@ export default {
                 },
             ],
         },
-        {
+       /*  {
             title: "corners",
             icon: ["fal", "fa-expand-arrows"],
             fields: [
@@ -74,7 +74,7 @@ export default {
                     optionType: ["cornerText", "linkButton", "ribbon", 'clear'],
                 },
             ],
-        },
+        }, */
         {
             title: "central stage",
             icon: ["fal", "fa-align-center"],

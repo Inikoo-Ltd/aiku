@@ -17,7 +17,6 @@ use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
-use App\Actions\Helpers\HydrateSalesMetrics;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Helpers\Intervals\ResetMonthlyIntervals;
 use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
@@ -38,6 +37,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
+
+        $schedule->command('queue:prune-failed --hours=168')->daily();
 
         $schedule->command('cloudflare:reload')->daily();
 
@@ -294,6 +295,15 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+        $this->logSchedule(
+            $schedule->command('delete:debug-webhook 10')->daily()->sentryMonitor(
+                monitorSlug: 'DeleteDebugWebhookPeriodically',
+            ),
+            name: 'DeleteDebugWebhookPeriodically',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
         //        $this->logSchedule(
         //            $schedule->command('faire:orders')->hourly()->sentryMonitor(
         //                monitorSlug: 'GetFaireOrders',
@@ -363,15 +373,6 @@ class Kernel extends ConsoleKernel
             ),
             name: 'PurgeDownloadPortfolioCustomerSalesChannel',
             type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
-
-        $this->logSchedule(
-            $schedule->job(HydrateSalesMetrics::makeJob())->dailyAt('23.59')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'HydrateSalesMetrics',
-            ),
-            name: 'HydrateSalesMetrics',
-            type: 'command',
             scheduledAt: now()->format('H:i')
         );
 

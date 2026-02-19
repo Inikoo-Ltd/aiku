@@ -5,6 +5,7 @@
  */
 
 export interface DeliveryNote {
+    id: number
     slug:string,
     shop_id: string,
     customer_id: number,

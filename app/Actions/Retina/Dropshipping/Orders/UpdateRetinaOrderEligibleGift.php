@@ -17,7 +17,7 @@ class UpdateRetinaOrderEligibleGift extends RetinaAction
 {
     public function handle(Order $order, array $modelData): void
     {
-        // dd('eligible gift update action called');
+        dd('eligible gift update action called', $modelData);
         return;
     }
 
@@ -31,7 +31,7 @@ class UpdateRetinaOrderEligibleGift extends RetinaAction
     public function rules(): array
     {
         return [
-            'gift' => ['required', 'string'],
+            'gift_id' => ['nullable', 'numeric'],
         ];
     }
 

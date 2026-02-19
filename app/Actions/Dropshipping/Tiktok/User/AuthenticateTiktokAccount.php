@@ -17,6 +17,7 @@ use App\Models\Dropshipping\Platform;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -75,15 +76,18 @@ class AuthenticateTiktokAccount extends RetinaAction
                     $tiktokShop = $tiktokUser->getAuthorizedShop();
 
                     data_set($userData, 'data.authorized_shop', Arr::get($tiktokShop, 'data.shops.0'));
+                    $tiktokUser = UpdateTiktokUser::make()->action($tiktokUser, $userData);
 
-                    return UpdateTiktokUser::make()->action($tiktokUser, $userData);
+                    CheckTiktokChannel::run($tiktokUser);
+
+                    return $tiktokUser;
                 }
             }
 
             throw ValidationException::withMessages(['message' => __('tiktok.access_token')]);
 
         } catch (\Exception $e) {
-            dd($e);
+            Log::error('API Request failed: ' . $e->getMessage());
         }
     }
 

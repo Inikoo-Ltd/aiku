@@ -125,6 +125,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'products.price',
                 'products.rrp',
                 'products.unit',
+                'products.is_for_sale',
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',

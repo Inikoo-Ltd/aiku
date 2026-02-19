@@ -29,20 +29,27 @@ class RedoShopTimeSeries
     public function handle(Shop $shop, array $frequencies, bool $async = true): void
     {
         $firstInvoicedDate = DB::table('invoices')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('date');
+        $firstOrderCreatedAt = DB::table('orders')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('created_at');
+        $firstDeliveryNoteDate = DB::table('delivery_notes')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('date');
+        $firstCustomerRegisteredAt = DB::table('customers')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('registered_at');
 
-        if ($firstInvoicedDate && ($firstInvoicedDate < $shop->created_at)) {
-            $shop->update(['created_at' => $firstInvoicedDate]);
+        $firstActivityDate = collect([
+            $firstInvoicedDate,
+            $firstOrderCreatedAt,
+            $firstDeliveryNoteDate,
+            $firstCustomerRegisteredAt,
+        ])->filter()->min();
+
+        if ($firstActivityDate) {
+            $firstActivityAt = Carbon::parse($firstActivityDate);
+            if ($firstActivityAt->lt($shop->created_at)) {
+                $shop->update(['created_at' => $firstActivityAt]);
+            }
         }
 
         $from = $shop->created_at->toDateString();
 
-        $to = DB::table('invoices')->where('shop_id', $shop->id)->whereNull('deleted_at')->max('date');
-
-        if (!$to) {
-            $to = now();
-        }
-
-        $to = Carbon::parse($to)->toDateString();
+        $to = now()->toDateString();
 
         if ($from != null && $to != null) {
             foreach ($frequencies as $frequency) {

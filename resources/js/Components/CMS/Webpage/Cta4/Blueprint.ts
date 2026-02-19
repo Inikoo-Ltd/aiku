@@ -3,6 +3,12 @@ import { trans } from "laravel-vue-i18n"
 export default {
 	blueprint: [
 		{
+			label: "# Id ",
+			key: ["id"],
+			type: "text",
+			information : 'id selector is used to select one unique element!'
+		},
+		{
 			label: "Responsive Visibility",
 			key: ["container", "properties", "visibility"],
 			type: "visibility",
@@ -39,6 +45,11 @@ export default {
 					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
+				},
+				{
+					key: ["link"],
+					label: "Link",
+					type: "link",
 				},
 				{
 					key: ["properties", "dimension"],

@@ -37,7 +37,8 @@ const isLoadingVisit = ref(false)
                 @success="() => SelectItemCollector(product)"
                 @start="() => isLoadingVisit = true"
                 @finish="() => isLoadingVisit = false">
-                <img :src="product.attributes.image_link" :alt="product.attributes.title" class="object-contain w-full h-full" />
+                <img v-if="product.attributes.image_link || product.iris_attributes?.web_images?.main?.gallery?.original" :src="product.attributes.image_link || product.iris_attributes?.web_images?.main?.gallery?.original" :alt="product.attributes.title" class="object-contain w-full h-full" />
+                <FontAwesomeIcon v-else icon="fal fa-image" class="opacity-40 text-2xl md:text-5xl" fixed-width aria-hidden="true" />
             </component>
         </div>
 
@@ -63,7 +64,7 @@ const isLoadingVisit = ref(false)
             :class="Number(product.iris_attributes?.stock) > 0 ? 'text-green-600' : 'text-red-600'">
             <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
             <span>
-                {{ locale.number(Number(product.iris_attributes?.stock)) }} {{ trans('available') }}
+                {{ locale.number(Number(product.iris_attributes?.stock ?? 0)) }} {{ trans('available') }}
             </span>
         </div>
 
@@ -82,8 +83,20 @@ const isLoadingVisit = ref(false)
             </div>
         </div>
         <div v-else>
-            <Prices2 v-if="layout.retina?.type === 'b2b'" :product="product.iris_attributes" :currency="currency" :basketButton="false" />
-            <Prices v-else :product="product.iris_attributes" :currency="currency" :basketButton="false" />
+            <template v-if="product.iris_attributes">
+                <Prices2
+                    v-if="layout.retina?.type === 'b2b'"
+                    :product="product.iris_attributes"
+                    :currency="currency"
+                    :basketButton="false"
+                />
+                <Prices
+                    v-else
+                    :product="product.iris_attributes"
+                    :currency="currency"
+                    :basketButton="false"
+                />
+            </template>
         </div>
     </template>
 </template>

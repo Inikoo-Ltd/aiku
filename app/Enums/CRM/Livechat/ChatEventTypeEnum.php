@@ -25,6 +25,7 @@ enum ChatEventTypeEnum: string
     case NOTE = 'note';
     case REPLY = 'reply';
     case SEND = 'send';
+    case REOPEN = 'reopen';
 
     case GUEST_PROFILE = 'guest_profile';
 
@@ -46,6 +47,7 @@ enum ChatEventTypeEnum: string
             'Assignment_to_self' => __('Assignment to Self'),
             'priority' => __('Priority Updated'),
             'guest_profile' => __('Guest Profile'),
+            'reopen' => __('Chat Reopened'),
         ];
     }
 
@@ -126,6 +128,11 @@ enum ChatEventTypeEnum: string
                 'tooltip' => __('Guest Profile'),
                 'icon' => 'fas fa-user',
                 'class' => 'text-purple-500',
+            ],
+            'reopen' => [
+                'tooltip' => __('Chat Reopened'),
+                'icon' => 'fas fa-redo',
+                'class' => 'text-green-500',
             ],
 
         ];

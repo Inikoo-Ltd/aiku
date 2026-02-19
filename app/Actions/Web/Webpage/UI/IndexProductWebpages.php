@@ -222,7 +222,7 @@ class IndexProductWebpages extends OrgAction
                 ),
                 'title'       => __('Webpages'),
                 'pageHead'    => [
-                    'title'         => __('product webpages'),
+                    'title'         => __('Product webpages'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')

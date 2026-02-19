@@ -41,6 +41,7 @@ import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faMagnifyingGlass, faMagnifyingGlassArrowRight } from '@fortawesome/free-solid-svg-icons'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import { faShapes, faStar } from '@fas'
 
 
 library.add(
@@ -87,6 +88,7 @@ const props = defineProps<{
     stocks?: {}
     images?: {}
     attachments?: {}
+    family_slug : string
     luigi_data: {
         webpage_id: string
         last_reindexed: string
@@ -99,6 +101,8 @@ const props = defineProps<{
     masterRoute?: routeType
     is_external_shop?: boolean
     product_state?: boolean
+    variant?: {}
+    is_variant_leader?: boolean
    /*  taxonomy: {
         department?: {
             name: string
@@ -160,6 +164,20 @@ const component = computed(() => {
 })
  */
 
+
+const routeVariant = () => {
+    return route(
+        'grp.org.shops.show.catalogue.families.show.variants.show',
+        {
+            organisation: (route().params as RouteParams).organisation,
+            shop: (route().params as RouteParams).shop,
+            family: props.family_slug,
+            variant: props.variant.slug,
+        }
+    )
+}
+
+
 </script>
 
 <template>
@@ -179,6 +197,11 @@ const component = computed(() => {
                     icon="fal fa-atom"
                 />
             </Link>
+            <!-- TODO PLEASE CHANGE TO HAVE LINK TO VARIANT -->
+            <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
+                <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
+            </Link>
+            
         </template>
 
         <template #button-reindex>

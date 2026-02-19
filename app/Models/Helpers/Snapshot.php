@@ -125,7 +125,7 @@ class Snapshot extends Model
     {
         switch (class_basename($this->parent)) {
             case 'Banner':
-                $slides         = $this->slides()->where('visibility', true)->get();
+                $slides         = $this->slides()->get();
                 $compiledLayout = $this->layout;
                 data_set($compiledLayout, 'components', json_decode(SlideResource::collection($slides)->toJson(), true));
                 data_set($compiledLayout, 'type', $this->parent->type);

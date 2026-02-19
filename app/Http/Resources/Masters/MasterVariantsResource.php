@@ -48,6 +48,7 @@ class MasterVariantsResource extends JsonResource
             'leader_product_name'           => $this->leader_product_name,
             'leader_product_code'           => $this->leader_product_code,
             'leader_product_slug'           => $this->leader_product_slug,
+            'product_list'                  => $this->allProduct?->toArray()
         ];
     }
 }

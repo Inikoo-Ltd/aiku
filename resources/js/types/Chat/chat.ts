@@ -29,6 +29,11 @@ export interface SessionAPI {
 	unread_count: number
 	message_count: number
 	duration: string
+	ai_summary: {
+		summary: string
+		key_points: string
+		sentiment: string
+	} | null
 	web_user?: {
 		id: string
 		name: string

@@ -50,6 +50,7 @@ class GetProductsNotAttachedToACollection extends OrgAction
                 'products.code',
                 'products.name',
                 'products.state',
+                'products.is_for_sale',
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',

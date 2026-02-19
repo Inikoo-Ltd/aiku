@@ -21,7 +21,6 @@ use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -77,13 +76,12 @@ class ShowShop extends OrgAction
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings)
                     ],
-                    'shop_blocks' => array_merge(
-                        [
-                            'interval_data'   => $shopTimeSeriesStats,
-                            'currency_code'   => $shop->currency->code,
-                        ],
-                        $this->getAverageClv($shop)
-                    ),
+                    'shop_blocks' => [
+                        'interval_data'        => $shopTimeSeriesStats,
+                        'currency_code'        => $shop->currency->code,
+                        'average_clv'          => $shop->stats->average_clv ?? 0,
+                        'average_historic_clv' => $shop->stats->average_historic_clv ?? 0,
+                    ],
                     'tabs_box' => [
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
@@ -149,27 +147,5 @@ class ShowShop extends OrgAction
                 ],
             ],
         );
-    }
-
-    public function getAverageClv(Shop $shop): array
-    {
-        $clvData = DB::table('customers as c')
-            ->join('customer_stats as cs', 'c.id', '=', 'cs.customer_id')
-            ->where('c.shop_id', $shop->id)
-            ->selectRaw('
-                AVG(CASE WHEN cs.total_clv_amount > 0 THEN cs.total_clv_amount ELSE 0 END) as avg_clv,
-                AVG(CASE WHEN cs.historic_clv_amount > 0 THEN cs.historic_clv_amount ELSE 0 END) as avg_historic_clv,
-                COUNT(CASE WHEN cs.total_clv_amount > 0 THEN 1 END) as clv_count,
-                COUNT(CASE WHEN cs.historic_clv_amount > 0 THEN 1 END) as historic_clv_count
-            ')
-            ->first();
-
-        $averageCLV = $clvData->avg_clv ?? 0;
-        $averageHistoricCLV = $clvData->avg_historic_clv ?? 0;
-
-        return [
-            'average_clv' => $averageCLV,
-            'average_historic_clv' => $averageHistoricCLV
-        ];
     }
 }

@@ -188,11 +188,11 @@ const fetchRecommendersToGetProducts = async () => {
 
 
 onMounted(() => {
-    console.log('wwwwwwwwwwwwww$$$$$$$$$$', layout)
-    console.log('wwwwwwwwwwwwww+++ logged', layout.iris.is_logged_in)
-    console.log('wwwwwwwwwwwwww............', layout.iris_variables.customer_id)
-    console.log('wwwwwwwwwwwwwwwwwwwwwwww', layout.user?.customer_id?.toString())
-    console.log('wwwwwwwwwwwwww----------', Cookies.get('_lb'))
+    // console.log('wwwwwwwwwwwwww$$$$$$$$$$', layout)
+    // console.log('wwwwwwwwwwwwww+++ logged', layout.iris.is_logged_in)
+    // console.log('wwwwwwwwwwwwww............', layout.iris_variables.customer_id)
+    // console.log('wwwwwwwwwwwwwwwwwwwwwwww', layout.user?.customer_id?.toString())
+    // console.log('wwwwwwwwwwwwww----------', Cookies.get('_lb'))
     fetchRecommenders()
     window.luigiItemAlternatives = fetchRecommenders
 })
@@ -200,7 +200,8 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-item-alternatives-1-iris" class="w-full pb-6 px-4" :style="{
+    <div aria-type="luigi-item-alternatives-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-item-alternatives-1-iris'"  component="luigi-item-alternatives-1-iris"
+    :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { ref, computed, provide } from "vue"
 import SlidesWorkshop from "@/Components/Banners/SlidesWorkshop.vue"
 import SliderLandscape from "@/Components/Banners/Slider/SliderLandscape.vue"
 import SliderSquare from "@/Components/Banners/Slider/SliderSquare.vue"
@@ -23,7 +23,8 @@ const emits = defineEmits<{
 }>()
 
 const jumpToIndex = ref<string>("")
-const screenView = ref<string>("")
+const screenView = ref<string>("desktop")
+provide("screenView", screenView)
 
 const data = computed<BannerWorkshop>({
   get() {
@@ -43,7 +44,7 @@ const hasSlides = computed(() => {
 <template>
   <div v-if="hasSlides" class="w-full">
     <div class="flex justify-end pr-2">
-      <ScreenView @screenView="val => (screenView.value = val)" />
+      <ScreenView @screenView="val => (screenView = val)" />
     </div>
 
     <!-- Banner preview -->
