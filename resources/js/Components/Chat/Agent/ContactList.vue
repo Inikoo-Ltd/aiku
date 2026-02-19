@@ -13,8 +13,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import SettingChat from "../SettingChat.vue"
 import Dialog from 'primevue/dialog';
-import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
-import { incrementUnread } from "@/Composables/useNotificationSound"
+import { playNotificationSoundFile, buildStorageUrl, fetchUnreadCount } from "@/Composables/useNotificationSound"
+
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
@@ -110,7 +110,8 @@ const processedUnreadIds = new Set<number>()
 onMounted(() => {
 
     waitEchoReady(() => {
-        window.Echo.join("chat-list").listen(".chatlist", (e: any) => {
+        window.Echo.join("chat-list").listen(".chatlist", async (e: any) => {
+            console.log("message chat list", e)
             const msg = e.message
             if (!msg) return
             if (msg.sender_type === "agent") return
@@ -129,7 +130,7 @@ onMounted(() => {
 
             playNotificationSoundFile(soundUrl)
             if (!processedUnreadIds.has(duplicate)) {
-                incrementUnread()
+                await fetchUnreadCount(baseUrl, activeTab.value)
                 processedUnreadIds.add(duplicate)
             }
             if (Notification.permission === "granted") {

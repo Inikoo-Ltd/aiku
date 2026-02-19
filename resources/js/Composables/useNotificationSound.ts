@@ -1,3 +1,4 @@
+import axios from "axios"
 import { ref } from "vue"
 
 export type NotificationSoundOptions = {
@@ -73,8 +74,27 @@ export const buildStorageUrl = (fileName: string, baseUrl?: string) => {
 
 export const unreadCount = ref(0)
 
-export const incrementUnread = (amount: number = 1) => {
-	unreadCount.value += amount
+export const fetchUnreadCount = async (
+  baseUrl: string,
+  activeTab: string
+) => {
+  try {
+    const res = await axios.get(
+      `${baseUrl}/app/api/chats/agents/unread-messages`
+    )
+
+    const data = res.data?.data
+	console.log("data",data)
+    if (!data) return
+
+    unreadCount.value =
+      activeTab === "waiting"
+        ? data.unassigned_unread_count
+        : data.assigned_unread_count
+
+  } catch (e) {
+    console.error("Failed to fetch unread count", e)
+  }
 }
 
 export const resetUnread = () => {
