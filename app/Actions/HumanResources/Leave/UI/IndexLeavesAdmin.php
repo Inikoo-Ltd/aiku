@@ -46,7 +46,7 @@ class IndexLeavesAdmin extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Leave::class)
             ->where('organisation_id', $organisation->id)
-            ->with(['media', 'employee'])
+            ->with(['employee'])
             ->allowedFilters([$globalSearch, $statusFilter, $typeFilter])
             ->allowedSorts(['start_date', 'end_date', 'created_at', 'employee_name'])
             ->defaultSort('-created_at');
@@ -143,7 +143,7 @@ class IndexLeavesAdmin extends OrgAction
                 ->column(
                     key: 'attachments',
                     label: __('Attachments'),
-                    canBeHidden: true
+                    canBeHidden: false
                 )
                 ->column(
                     key: 'actions',
