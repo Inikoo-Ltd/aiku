@@ -33,10 +33,11 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faWandMagic);
 
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     state: string
+    shop_type : string
 }>();
 
 const emit = defineEmits<{
@@ -262,6 +263,13 @@ const onSubmitPickMagicPlace = () => {
         }
     )
 }
+
+const GetQuantityToPickFractional = (item) => {
+    if(props.shop_type == 'dropshipping'){
+        return item.quantity_to_pick_fractional_ds
+    }else return item.quantity_to_pick_fractional
+}
+
 </script>
 
 <template>
@@ -517,7 +525,7 @@ const onSubmitPickMagicPlace = () => {
                                         >
                                             <template #label>
                                                 <div>
-                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                                    <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
                                                     <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
                                                 </div>
                                             </template>
@@ -538,7 +546,7 @@ const onSubmitPickMagicPlace = () => {
                                 <template #label>
                                     <span class="flex items-center">
                                         <div>
-                                            <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                            <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
                                             <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
                                         </div>
                                         <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
@@ -558,7 +566,7 @@ const onSubmitPickMagicPlace = () => {
                             
                                 <template #label>
                                     <div>
-                                        <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                        <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
                                         <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
                                     </div>
                                 </template>
@@ -769,7 +777,7 @@ const onSubmitPickMagicPlace = () => {
                                 full>
                                 <template #label>
                                     <div class="whitespace-nowrap">
-                                        Yes, pick <FractionDisplay v-if="selectedItemToPickMagicPlace?.quantity_to_pick_fractional" :fractionData="selectedItemToPickMagicPlace?.quantity_to_pick_fractional" />
+                                        Yes, pick <FractionDisplay v-if="GetQuantityToPickFractional(selectedItemToPickMagicPlace)" :fractionData="GetQuantityToPickFractional(selectedItemToPickMagicPlace)" />
                                         <span v-else>{{ locale.number(selectedItemToPickMagicPlace?.quantity_to_pick ?? 0) }}</span>
                                     </div>
                                 </template>
