@@ -53,9 +53,12 @@ class GetAgentUnreadMessagesSummary
             })
             ->count();
 
+
+
         return [
             'assigned_unread_count' => $assignedUnreadCount,
             'unassigned_unread_count' => $unassignedUnreadCount,
+            'total_unread_count' => $assignedUnreadCount + $unassignedUnreadCount,
         ];
     }
 
