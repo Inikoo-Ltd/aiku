@@ -36,6 +36,18 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
             return;
         }
 
+        $followMaster = false;
+        if ($product->masterProduct && !$product->masterProduct->follow_trade_unit_media) {
+            $followMaster = true;
+        }
+
+        if ($followMaster) {
+            CloneProductImagesFromMasterProduct::run($product);
+
+            return;
+        }
+
+
         /** @var TradeUnit $tradeUnit */
         $tradeUnit = $product->tradeUnits->first();
 
@@ -58,6 +70,7 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
             $this->handle($product);
 
             $command->info("Images cloned from trade units for product: $product->code");
+
             return 0;
         }
 

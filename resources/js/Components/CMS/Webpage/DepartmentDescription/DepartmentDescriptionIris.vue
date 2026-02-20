@@ -6,7 +6,6 @@ import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { trans } from 'laravel-vue-i18n'
-import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 import { getBestOffer } from '@/Composables/useOffers'
 
 library.add(faCube, faLink, faInfoCircle, faStar, faCircle, faBadgePercent, faChevronCircleLeft, faChevronCircleRight)
@@ -76,28 +75,7 @@ const cleanedDescription = computed(() => {
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="department Description Section">
       
-        <!-- Section: listing Offers -->
-        <div class="hidden">
-          <pre><span class="bg-yellow-400">layout?.user?.gr_data?.customer_is_gr</span>: {{ layout?.user?.gr_data?.customer_is_gr }}</pre>
-          <pre><span class="bg-yellow-400">offers_data</span>: {{ fieldValue?.department?.offers_data }}</pre>
-        </div>
-         
-        <!-- Offer: list offers -->
-        <div v-if="fieldValue?.department?.offers_data?.number_offers && layout.iris.is_logged_in"
-            class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
-        >
-                <DiscountByType 
-                   :offers_data="fieldValue?.department?.offers_data"
-                   :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr'  : 'max_discount'"
-                />
-
-                <DiscountByType
-                    v-if="!layout?.user?.gr_data?.customer_is_gr && bestOffer.type == 'Category Quantity Ordered Order Interval'"
-                   :offers_data="fieldValue?.department?.offers_data"
-                   :template="'triggers_labels'"
-                />
-            
-        </div>
+    
 
         <!-- Description Title (SEO: Heading) -->
         <h1 v-if="fieldValue.department.name" class="text-[1.5rem] leading-[2rem] font-semibold">

@@ -90,7 +90,7 @@ watch(
                 v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping'"
                 v-tooltip="trans('My account')" url="/app/dashboard">
                 <template #label>
-                    <span class="text-white button"> {{ trans('My account') }}</span>
+                    <span class="text-white button whitespace-nowrap"> {{ trans('My account') }}</span>
                 </template>
             </Button>
 
@@ -102,7 +102,7 @@ watch(
                         aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white button"
+                    <span class="text-white button whitespace-nowrap"
                         v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
                 </template>
             </Button>
@@ -117,8 +117,8 @@ watch(
                 </template>
                 <template #label>
                     <span v-if="model?.favourite?.text === `{{ favourites_count }}`"
-                        v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" class="button"/>
-                    <span v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`" class="button">
+                        v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" class="button whitespace-nowrap"/>
+                    <span v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`" class="button whitespace-nowrap">
                         {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
                             trans("favourites") : trans("favourite") }}
                     </span>
@@ -131,7 +131,7 @@ watch(
                 v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b'"
                  icon="fal fa-shopping-cart">
                 <template #label>
-                    <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                    <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" class="button whitespace-nowrap"/>
                 </template>
             </Button>
 
@@ -144,7 +144,7 @@ watch(
                 </template>
 
                 <template #label>
-                    <span class="text-white button">
+                    <span class="text-white button whitespace-nowrap">
                         {{ trans("Register") }}
                     </span>
                 </template>
@@ -158,7 +158,7 @@ watch(
                         aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white button">
+                    <span class="text-white button whitespace-nowrap">
                         {{ trans("Login") }}
                     </span>
                 </template>
@@ -172,7 +172,7 @@ watch(
                         aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white button">
+                    <span class="text-white button whitespace-nowrap">
                         {{ trans("Logout") }}
                     </span>
                 </template>

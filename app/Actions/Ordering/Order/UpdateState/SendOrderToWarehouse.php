@@ -135,8 +135,11 @@ class SendOrderToWarehouse extends OrgAction
 
     public function getEmail(Order $order): ?string
     {
-        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && $order->customerClient) {
-            $email = $order->customerClient->email;
+        $email = '';
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($order->customerClient) {
+                $email = $order->customerClient->email;
+            }
         } else {
             $email = $order->customer->email;
         }
@@ -146,8 +149,11 @@ class SendOrderToWarehouse extends OrgAction
 
     public function getPhone(Order $order): ?string
     {
-        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && $order->customerClient) {
-            $phone = $order->customerClient->phone;
+        $phone = '';
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($order->customerClient) {
+                $phone = $order->customerClient->phone;
+            }
         } else {
             $phone = $order->customer->phone;
         }
@@ -157,8 +163,11 @@ class SendOrderToWarehouse extends OrgAction
 
     public function getCompanyName(Order $order): ?string
     {
-        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && $order->customerClient) {
-            $companyName = $order->customerClient->company_name;
+        $companyName = '';
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($order->customerClient) {
+                $companyName = $order->customerClient->company_name;
+            }
         } else {
             $companyName = $order->customer->company_name;
         }
@@ -168,8 +177,11 @@ class SendOrderToWarehouse extends OrgAction
 
     public function getContactName(Order $order): ?string
     {
-        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && $order->customerClient) {
-            $contactName = $order->customerClient->contact_name;
+        $contactName = '';
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            if ($order->customerClient) {
+                $contactName = $order->customerClient->contact_name;
+            }
         } else {
             $contactName = $order->customer->contact_name;
         }

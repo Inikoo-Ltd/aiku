@@ -12,22 +12,24 @@ namespace App\Enums\UI\SupplyChain;
 
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Enums\HasTabsWithQuantity;
+use App\Models\Masters\MasterAsset;
 
 enum MasterAssetTabsEnum: string
 {
     use EnumHelperTrait;
-    use HasTabs;
+    use HasTabsWithQuantity;
 
     case SHOWCASE = 'showcase';
     case PRODUCTS = 'products';
     case IMAGES = 'images';
     case SALES = 'sales';
 
-    case HISTORY  = 'history';
+    case HISTORY = 'history';
     case TRADE_UNITS = 'trade_units';
 
 
-    public function blueprint(): array
+    public function blueprint(MasterAsset $masterAsset): array
     {
         return match ($this) {
             MasterAssetTabsEnum::SHOWCASE => [
@@ -39,8 +41,20 @@ enum MasterAssetTabsEnum: string
                 'icon'  => 'fal fa-store',
             ],
             MasterAssetTabsEnum::IMAGES => [
-                'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
+                'title'      => __('Media'),
+                'icon'       => 'fal fa-camera-retro',
+                'icon_right' =>
+                    !$masterAsset->follow_trade_unit_media
+                        ? [
+                        'tooltip' => __('Master product does not follow trade unit media'),
+                        'icon'    => 'fal fa-unlink',
+                        'class'   => 'text-red-500',
+                        'color'   => 'red',
+                        'app'     => [
+                            'name' => 'unlink',
+                            'type' => 'font-awesome-5'
+                        ]
+                    ] : null
             ],
             MasterAssetTabsEnum::SALES => [
                 'title' => __('Sales'),

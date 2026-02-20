@@ -131,6 +131,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $marketing_ingredients
  * @property int|null $origin_country_id
  * @property bool|null $is_for_sale
+ * @property bool $follow_trade_unit_media
  * @property string|null $not_for_sale_since
  * @property bool $not_for_sale_from_trade_unit
  * @property array<array-key, mixed>|null $web_images
@@ -221,6 +222,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'offers_data'          => 'array',
         'web_images'           => 'array',
         'tax_category'         => 'array',
+        'follow_trade_unit_media' => 'boolean',
     ];
 
     protected $attributes = [
@@ -250,7 +252,8 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'unit',
         'is_main',
         'barcode',
-        'is_for_sale'
+        'is_for_sale',
+        'follow_trade_unit_media'
     ];
 
     public function getRouteKeyName(): string

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from "vue"
+import { inject, ref, computed } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
@@ -91,6 +91,30 @@ const getBestOffer = (offerId: string) => {
     return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
 }
 
+const hasOffer =
+    props.product?.product_offers_data?.number_offers > 0 &&
+    getBestOffer(props.product?.product_offers_data?.best_percentage_off?.offer_id)
+
+
+const showIntervalOffer = computed(() => {
+    return getBestOffer(props.product?.product_offers_data?.best_percentage_off?.offer_id)?.type
+        === 'Category Quantity Ordered Order Interval'
+})
+
+const showMemberPrice = computed(() => {
+    return layout?.user?.gr_data?.customer_is_gr
+})
+
+const showDiscount = computed(() => {
+    return props.basketButton
+        && !props.product.is_coming_soon
+        && !layout?.user?.gr_data?.customer_is_gr
+})
+
+const showLeftBlock = computed(() => {
+    return showMemberPrice.value || showDiscount.value
+})
+
 
 const _popoverProfit = ref(null)
 </script>
@@ -158,36 +182,34 @@ const _popoverProfit = ref(null)
             <div v-else class="h-5"></div>
 
             <!-- Section: Profit + Offer -->
-            <div class="mt-1">
-                <NonMemberPriceLabel
-                    v-if="!layout?.user?.gr_data?.customer_is_gr && product.product_offers_data?.number_offers > 0"
-                    :product />
-            </div>
 
+            <div class="mt-2" :class="hasOffer ? 'grid grid-cols-2 gap-x-2' : 'flex flex-col'">
+                <!-- LEFT: only if offer exists -->
 
-            <div class="mt-2 flex justify-between gap-x-2">
-                <div class="flex flex-col justify-end">
-                    <template v-if="product.product_offers_data?.number_offers > 0">
-                        <div v-if="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)?.type === 'Category Quantity Ordered Order Interval'"
-                            class="flex flex-col w-fit break-safe discount">
-                            <!-- member only -->
-                            <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr"
-                                :offer="getBestOffer(product?.product_offers_data?.best_percentage_off?.offer_id)" />
-
-                            <DiscountByType
-                                v-if="(product.stock && basketButton && !product.is_coming_soon && !layout?.user?.gr_data?.customer_is_gr)"
-                                :offers_data="product?.product_offers_data" :template="'products_triggers_label'" />
-                        </div>
-                    </template>
+                <div :class="showLeftBlock ? 'col-span-2' : 'col-span-1'">
+                    <NonMemberPriceLabel :product
+                        v-if="!layout?.user?.gr_data?.customer_is_gr && product.product_offers_data?.number_offers > 0" />
                 </div>
 
 
-                <!-- Profit -->
-                <div class="flex justify-end text-right flex-col text-xs break-safe">
+                <div v-if="showLeftBlock && showIntervalOffer" class="flex flex-col w-fit break-safe discount">
+                    <MemberPriceLabel v-if="showMemberPrice" :offer="bestOffer" />
+
+                    <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
+                        template="products_triggers_label" />
+                </div>
+
+
+                <!-- RIGHT -->
+                <div :class="[
+                    hasOffer
+                        ? 'flex flex-col justify-end text-right text-xs'
+                        : 'text-xs'
+                ]">
 
                     <div v-if="product?.rrp_per_unit > 0"
                         v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"
-                        class="flex flex-col text-right break-safe mb-2">
+                        class="flex flex-col break-safe mb-2">
                         <div class="text-xs">{{ trans("RRP") }}:</div>
                         <div class="font-bold text-xs break-safe">
                             {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
@@ -211,10 +233,8 @@ const _popoverProfit = ref(null)
                     </Popover>
                 </div>
             </div>
-
         </div>
     </div>
-
 </template>
 
 

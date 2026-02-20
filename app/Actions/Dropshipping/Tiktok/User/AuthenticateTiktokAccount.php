@@ -73,11 +73,7 @@ class AuthenticateTiktokAccount extends RetinaAction
 
                     $tiktokUser = UpdateTiktokUser::make()->action($tiktokUser, $userData);
 
-                    $tiktokShop = $tiktokUser->getAuthorizedShop();
-
-                    data_set($userData, 'data.authorized_shop', Arr::get($tiktokShop, 'data.shops.0'));
-                    $tiktokUser = UpdateTiktokUser::make()->action($tiktokUser, $userData);
-
+                    SaveShopDataTiktokChannel::run($tiktokUser);
                     CheckTiktokChannel::run($tiktokUser);
 
                     return $tiktokUser;

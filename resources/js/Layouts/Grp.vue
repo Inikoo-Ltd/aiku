@@ -73,7 +73,7 @@ import {
 	faCheckDouble,
 	faSmile,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot,
+	faShare, faUndoAlt, faRobot, faUnlink,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import {
@@ -96,6 +96,7 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
+import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 
 library.add(
 	faRainbow,
@@ -165,7 +166,7 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot,
+	faShare, faUndoAlt, faRobot, faUnlink,
 	faBadgePercent
 )
 
@@ -281,8 +282,10 @@ const requestNotificationPermission = () => {
 		}
 }
 
+const baseUrl = layout?.appUrl ?? ""
+const myAgentId = layout.user?.id
 onMounted(() => {
-	requestNotificationPermission()
+	fetchUnreadCount(baseUrl, '', myAgentId)
 	checkScreenType()
 	onCheckAppVersion()
 	setColorStyleRoot(layout?.app?.theme)

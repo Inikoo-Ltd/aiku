@@ -42,6 +42,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faMagnifyingGlass, faMagnifyingGlassArrowRight } from '@fortawesome/free-solid-svg-icons'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { faShapes, faStar } from '@fas'
+import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 
 
 library.add(
@@ -90,7 +91,7 @@ const props = defineProps<{
     attachments?: {}
     family_slug : string
     luigi_data: {
-        webpage_id: string
+        webpage_id: number
         last_reindexed: string
         luigisbox_tracker_id: string
         luigisbox_private_key: string
@@ -205,20 +206,35 @@ const routeVariant = () => {
         </template>
 
         <template #button-reindex>
-            <ButtonWithLink
-                v-tooltip="trans('Use this feature to update data to Luigi Search.')"
-                method="post"
-                :style="'edit'"
-                size="sm"
-                :routeTarget="{name: 'grp.models.webpage_luigi.reindex', parameters: { webpage: luigi_data.webpage_id }}"
-            >
-                <template #icon>
-                    <FontAwesomeIcon :icon="faSearch"/>
-                </template>
-                <template #label>
-                    {{ trans('Reindex') }}
-                </template>
-            </ButtonWithLink>
+            <div class="w-fit">
+                <ButtonReindexWebpage
+                    :webpage="{
+                        id: luigi_data.webpage_id,
+                        luigi_data: {
+                            luigisbox_tracker_id: luigi_data.luigisbox_tracker_id,
+                            luigisbox_private_key: luigi_data.luigisbox_private_key
+                        }
+                    }"
+                >
+                    <template #default="{ isLoadingReindexing }">
+                        <Button
+                            v-tooltip="trans('Use this feature to update data to Luigi Search.')"
+                            method="post"
+                            :style="'edit'"
+                            size="sm"
+                            xrouteTarget="{name: 'grp.models.webpage_luigi.reindex', parameters: { webpage: luigi_data.webpage_id }}"
+                            :loading="isLoadingReindexing"
+                        >
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faSearch" class="" fixed-width aria-hidden="true" />
+                            </template>
+                            <template #label>
+                                {{ trans('Reindex') }}
+                            </template>
+                        </Button>
+                    </template>
+                </ButtonReindexWebpage>
+            </div>
         </template>
         <template #other>
         </template>
