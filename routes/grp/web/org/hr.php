@@ -169,3 +169,8 @@ Route::prefix('adjustments')->as('adjustments.')->group(function () {
     Route::post('{adjustment}/approve', ApproveAttendanceAdjustment::class)->name('approve');
     Route::post('{adjustment}/reject', RejectAttendanceAdjustment::class)->name('reject');
 });
+
+Route::prefix('analytics')->as('analytics.')->group(function () {
+    Route::get('', \App\Actions\HumanResources\EmployeeAnalytics\UI\IndexEmployeeAnalytics::class)->name('index');
+    Route::get('employees/{employee}', \App\Actions\HumanResources\EmployeeAnalytics\UI\ShowEmployeeAnalytics::class)->name('show');
+});
