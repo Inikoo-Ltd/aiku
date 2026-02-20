@@ -7,17 +7,16 @@ use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 
-class AcceptFaireOrder extends OrgAction
+class CancelFaireOrder extends OrgAction
 {
-    public $commandSignature = 'faire:order_accepted {shop} {order}';
+    public $commandSignature = 'faire:order_cancel {shop} {order}';
 
     public function handle(Shop $shop, Order $order): array
     {
-        $acceptedOrder = $shop->acceptFaireOrder($order->external_id);
-
-        DownloadFairePackingPdfSlip::run($shop, $order);
-
-        return $acceptedOrder;
+        return $shop->cancelFaireOrder($order->external_id, [
+            'reason' => 'OTHER',
+            'note' => $order->customer_notes
+        ]);
     }
 
     public function asCommand(Command $command): void

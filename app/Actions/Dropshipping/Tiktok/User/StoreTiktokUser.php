@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Tiktok\User;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
@@ -35,7 +36,8 @@ class StoreTiktokUser extends RetinaAction
         $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
             'platform_user_type' => class_basename($tikTokUser),
             'platform_user_id' => $tikTokUser->id,
-            'reference' => $tikTokUser->name
+            'reference' => $tikTokUser->name,
+            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
         ]);
 
         $tikTokUser->update([

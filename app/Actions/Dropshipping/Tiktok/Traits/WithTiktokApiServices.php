@@ -93,7 +93,7 @@ trait WithTiktokApiServices
                 default => throw new \Exception("Unsupported HTTP method: $method"),
             };
 
-            if (!Arr::get($response->json(), 'data')) {
+            if (Arr::get($response->json(), 'message') !== "Success") {
                 throw new \Exception(Arr::get($response->json(), 'message'));
             }
 
