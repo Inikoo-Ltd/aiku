@@ -28,6 +28,22 @@ function trolleyRoute(trolley: {}) {
                 [trolley.organisation_slug, trolley.slug])
     }
 }
+
+const deliveryNoteRoute = (trolley: {}) => {
+    switch (route().current()) {
+        case 'grp.org.warehouses.show.dispatching.trolleys.show':
+        case 'grp.org.warehouses.show.dispatching.trolleys.index':
+            return route(
+                'grp.org.warehouses.show.dispatching.delivery_notes.show',
+                {
+                    organisation: route().params['organisation'],
+                    warehouse: route().params['warehouse'],
+                    deliveryNote: trolley.current_delivery_note.slug
+                })
+        default:
+            return '#'
+    }
+}
 </script>
 
 <template>
@@ -41,13 +57,15 @@ function trolleyRoute(trolley: {}) {
 
         <!-- Column: Current Delivery Note -->
         <template #cell(current_delivery_note)="{ item: trolley }">
-            <div v-if="trolley['current_delivery_note']" :href="trolleyRoute(trolley)" class="primaryLink w-fit">
+            <Link v-if="trolley['current_delivery_note']" :href="deliveryNoteRoute(trolley)" class="primaryLink w-fit">
                 {{ trolley['current_delivery_note']['reference'] }}
-                <span v-tooltip="trans('Number of the total items')" class="tabular-nums">
-                    ({{ trolley['current_delivery_note']['number_items'] }})
-                </span>
+                
                 <Icon :data="trolley['current_delivery_note']['state_icon']" />
-            </div>
+                <span v-tooltip="trans('Number of the total items')" class="tabular-nums">
+                    ({{ trolley['current_delivery_note']['number_items'] }}
+                        {{ trolley['current_delivery_note']['number_items'] > 1 ? trans('items') : trans('item') }})
+                </span>
+            </Link>
             <span v-else class="italic text-xs opacity-60">
                 {{ trans('No current delivery note') }}
             </span>
