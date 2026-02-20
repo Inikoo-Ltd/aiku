@@ -19,8 +19,6 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class GetTiktokOrdersApi extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     public string $commandSignature = 'tiktok:get-order {customerSalesChannel}';
