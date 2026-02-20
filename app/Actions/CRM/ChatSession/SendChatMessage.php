@@ -88,7 +88,9 @@ class SendChatMessage
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch($chatMessage);
 
-        if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+        $shouldNotifyByEmail = (bool) ($modelData['is_notif_email'] ?? false);
+
+        if ($shouldNotifyByEmail && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
             $this->sendExternalNotification($chatSession);
         }
 
