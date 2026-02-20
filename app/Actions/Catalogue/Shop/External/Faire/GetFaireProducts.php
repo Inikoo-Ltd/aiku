@@ -5,6 +5,7 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -13,6 +14,7 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Console\Command;
@@ -81,8 +83,6 @@ class GetFaireProducts extends OrgAction
                     continue;
                 }
 
-
-
                 $product = Product::where('shop_id', $shop->id)->where('code', $faireSKU)->first();
 
                 if ($product) {
@@ -91,8 +91,8 @@ class GetFaireProducts extends OrgAction
                             'code'           => $faireSKU,
                             'name'           => $faireProduct['name'].' - '.$variant['name'],
                             'description'    => $faireProduct['description'],
-                            'rrp'            => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
-                            'price'          => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
+                            'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
+                            'price'          => $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
                             'units'          => $faireProduct['unit_multiplier'],
                             'marketplace_id' => $variant['id'],
                             'data'           => [
@@ -111,8 +111,8 @@ class GetFaireProducts extends OrgAction
                             'code'           => $faireSKU,
                             'name'           => $faireProduct['name'].' - '.$variant['name'],
                             'description'    => $faireProduct['description'],
-                            'rrp'            => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
-                            'price'          => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
+                            'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
+                            'price'          => $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
                             'unit'           => 'Piece',
                             'units'          => $faireProduct['unit_multiplier'],
                             'is_main'        => true,
@@ -133,6 +133,48 @@ class GetFaireProducts extends OrgAction
 
             }
         }
+    }
+
+    public function extractFaireRetailPrices(Shop $shop, array $prices): float
+    {
+        $found = false;
+        $rrp = Arr::get($prices, '0.retail_price.amount_minor');
+        $faireCurrency = Arr::get($prices, '0.retail_price.currency');
+
+        foreach ($prices as $price) {
+            if (Arr::get($price, 'retail_price.currency') === $shop->currency->code) {
+                $found = true;
+                $rrp = Arr::get($price, 'retail_price.amount_minor');
+            }
+        }
+
+        if(! $found) {
+            $currency = Currency::where('code', $faireCurrency)->first();
+            $rrp = GetCurrencyExchange::run($currency, $shop->currency);
+        }
+
+        return $rrp / 100;
+    }
+
+    public function extractFaireCostPrices(Shop $shop, array $prices): float
+    {
+        $found = false;
+        $cost = Arr::get($prices, '0.wholesale_price.amount_minor');
+        $faireCurrency = Arr::get($prices, '0.wholesale_price.currency');
+
+        foreach ($prices as $price) {
+            if (Arr::get($price, 'wholesale_price.currency') === $shop->currency->code) {
+                $found = true;
+                $cost = Arr::get($price, 'wholesale_price.amount_minor');
+            }
+        }
+
+        if(! $found) {
+            $currency = Currency::where('code', $faireCurrency)->first();
+            $cost = GetCurrencyExchange::run($currency, $shop->currency);
+        }
+
+        return $cost / 100;
     }
 
     public function asCommand(Command $command): void
