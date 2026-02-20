@@ -89,21 +89,10 @@ const cleanedDescription = computed(() => {
             class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
         >
 
-            <!-- <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
-                <FamilyOfferLabelGR 
-                  v-if="offer.type == 'Category Quantity Ordered Order Interval'" 
-                />
-
-                <FamilyOfferLabelDiscount
-                    :offer="offer"
-                />
-            </template> -->
-
                 <DiscountByType 
                    :offers_data="fieldValue?.family?.offers_data"
                    :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr'  : 'max_discount'"
                 />
-
                 <DiscountByType
                     v-if="!layout?.user?.gr_data?.customer_is_gr && bestOffer.type == 'Category Quantity Ordered Order Interval'"
                    :offers_data="fieldValue?.family?.offers_data"
