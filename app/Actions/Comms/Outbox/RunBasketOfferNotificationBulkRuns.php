@@ -200,7 +200,7 @@ class RunBasketOfferNotificationBulkRuns
                 'customers.email',
                 DB::raw('STRING_AGG(DISTINCT products.id::TEXT, \',\' ORDER BY products.id::TEXT) AS product_ids'),
                 DB::raw('STRING_AGG(ranked_historic_assets.id::TEXT, \',\' ORDER BY ranked_historic_assets.id::TEXT) AS historic_asset_ids'),
-                'product_offers.offer_ids'
+                DB::raw('STRING_AGG(DISTINCT product_offers.offer_id::TEXT, \',\' ORDER BY product_offers.offer_id::TEXT) AS offer_ids'),
             );
             $baseQuery->groupBy('customers.id');
             $baseQuery->orderBy('customers.id');
