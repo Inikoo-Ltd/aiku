@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Image from "@/Components/Image.vue"
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from "vue"
+import { inject, ref, computed } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -93,8 +93,53 @@ const onUnselectBackInStock = (product: ProductResource) => {
     emits('unsetBackInStock', product)
 }
 
+
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
+
+const images = computed(() => {
+    if (!props.product?.web_images) return []
+
+    const arr = []
+
+    if (props.product?.web_images?.main?.gallery) {
+        arr.push(props.product.web_images.main.gallery)
+    }
+
+    if (props.product?.web_images?.all?.length) {
+        props.product.web_images.all.slice(1).forEach(img => {
+            if (img?.original) arr.push(img.original)
+        })
+    }
+
+    return arr
+})
+
+const currentIndex = ref(0)
+const mobileSlider = ref<HTMLElement | null>(null)
+
+const onScroll = () => {
+    if (!mobileSlider.value) return
+    const el = mobileSlider.value
+
+    const slideWidth = el.offsetWidth
+    const index = Math.round(el.scrollLeft / slideWidth)
+
+    currentIndex.value = index
+}
+
+const onTouchEnd = () => {
+    if (!mobileSlider.value) return
+    const el = mobileSlider.value
+
+    const slideWidth = el.offsetWidth
+    const index = Math.round(el.scrollLeft / slideWidth)
+
+    el.scrollTo({
+        left: index * slideWidth,
+        behavior: 'smooth'
+    })
+}
 
 
 </script>
@@ -112,13 +157,64 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 :type="typeOfLink" 
                 @start="() => idxSlideLoading = true" 
                 @finish="() => idxSlideLoading = false"
-                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
+                class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]"
             >
-                <Image 
-                    :src="product?.web_images?.main?.gallery" 
-                    :alt="product.name" 
-                    :style="{ objectFit: 'contain' }"  
-                />
+                 <div class="relative w-full h-full bg-white">
+
+                    <slot name="image" :product="product">
+
+                        <!-- MOBILE -->
+                        <div v-if="images.length" class="md:hidden w-full h-full relative">
+                            <div v-if="images.length > 1" ref="mobileSlider" @scroll="onScroll" @touchend="onTouchEnd"
+                                class="flex w-full h-full overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+
+                                <div v-for="(img, i) in images" :key="i"
+                                    class="w-full h-full flex-shrink-0 snap-start snap-always">
+
+                                    <Image :src="img" :alt="product.name" class="w-full h-full"
+                                       :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                </div>
+                            </div>
+
+                            <div v-else class="w-full h-full">
+                                <Image :src="images[0]" :alt="product.name" class="w-full h-full"
+                                   :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                            </div>
+
+                            <div v-if="images.length > 1"
+                                class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                                <span v-for="(img, i) in images" :key="'dot-' + i"
+                                    class="w-2 h-2 rounded-full transition-all"
+                                    :class="i === currentIndex ? 'bg-black' : 'bg-black/30'" />
+                            </div>
+
+                        </div>
+
+                        <!-- DESKTOP -->
+                        <div v-if="images.length" class="hidden md:block relative w-full h-full overflow-hidden group">
+                            <div class="flex w-full h-full"
+                                :class="images.length > 1 ? 'group-hover:-translate-x-full' : ''">
+
+                                <div class="w-full h-full flex-shrink-0 flex items-center justify-center">
+                                    <Image :src="images[0]" :alt="product.name" class="max-w-full max-h-full"
+                                       :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                </div>
+
+                                <div v-if="images.length > 1"
+                                    class="w-full h-full flex-shrink-0 flex items-center justify-center">
+                                    <Image :src="images[1]" :alt="product.name" class="max-w-full max-h-full"
+                                       :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <FontAwesomeIcon v-if="!images.length" icon="fal fa-image"
+                            class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" />
+
+                    </slot>
+                </div>
+
 
                  <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <button 
