@@ -154,20 +154,14 @@ watch(() => props.screenType, async () => {
             @swiper="onSwiper"
             class="w-full swiper-mask"
           >
-            <SwiperSlide
-              v-for="(item,index) in allItems"
-              :key="index"
-              class="flex"
-            >
-              <Family3Render
-                :data="item"
-                :screenType="props.screenType"
-                :style="{
-                  ...getStyles(props.modelValue?.card?.container?.properties, props.screenType),
-                   fontWeight : 600
-                }"
-              />
-            </SwiperSlide>
+            <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
+                <div  class="w-full h-full flex">
+                  <Family3Render class="family-item w-full h-full" :data="item" :style="{
+                    ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType),
+                    fontWeight: 600
+                  }" :screenType="props.screenType" />
+                </div>
+              </SwiperSlide>
           </Swiper>
         </div>
 
