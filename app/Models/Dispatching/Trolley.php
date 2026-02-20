@@ -15,6 +15,7 @@ use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InWarehouse;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
@@ -91,6 +92,11 @@ class Trolley extends Model implements Auditable
     {
         return $this->belongsToMany(DeliveryNote::class, 'delivery_note_has_trolleys')
             ->withTimestamps();
+    }
+
+    public function deliveryNote(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryNote::class, 'current_delivery_note_id');
     }
 
 }

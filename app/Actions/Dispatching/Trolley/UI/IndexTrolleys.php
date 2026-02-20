@@ -87,7 +87,7 @@ class IndexTrolleys extends OrgAction
                     ] : null,
                 ])
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'delivery_note', label: __('Current Delivery Note'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'current_delivery_note', label: __('Current Delivery Note'), tooltip: __('The current delivery note where the trolley is currently assigned'), canBeHidden: false, sortable: false, searchable: false)
                 ->defaultSort('name');
         };
     }
@@ -101,10 +101,11 @@ class IndexTrolleys extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Picking trolleys'),
+                'title'       => __('Trolleys'),
                 'pageHead'                        => [
-                    'title'  => __('Picking trolleys'),
+                    'title'  => __('Trolleys'),
                     'icon'   => ['fal', 'dolly-flatbed-alt'],
+                    'model'  => __('Warehouse'),
                     'actions' => [
                         [
                             'type'  => 'button',

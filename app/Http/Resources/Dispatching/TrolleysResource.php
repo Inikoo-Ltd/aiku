@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +25,13 @@ class TrolleysResource extends JsonResource
             'id'                => $this->id,
             'name'              => $this->name,
             'slug'              => $this->slug,
+            'current_delivery_note' => $this->deliveryNote ? [
+                'id'            => $this->deliveryNote->id,
+                'state_icon'         => DeliveryNoteStateEnum::from($this->deliveryNote->state->value)->stateIcon()[$this->deliveryNote->state->value],
+                'slug'          => $this->deliveryNote->slug,
+                'reference'     => $this->deliveryNote->reference,
+                'number_items'  => $this->deliveryNote->number_items,
+            ] : null,
         ];
     }
 }
