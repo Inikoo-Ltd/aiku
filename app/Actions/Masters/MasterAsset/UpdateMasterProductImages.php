@@ -23,20 +23,17 @@ class UpdateMasterProductImages extends GrpAction
 
     public function handle(MasterAsset $masterAsset, array $modelData, bool $updateDependants = false): MasterAsset
     {
-        if ($masterAsset->is_single_trade_unit) {
-            return $masterAsset;
+        if (!$masterAsset->is_single_trade_unit || !$masterAsset->follow_trade_unit_media) {
+            $this->updateModelImages($masterAsset, $modelData);
+
+            data_set($modelData, 'bucket_images', true);
+
+            $this->update($masterAsset, $modelData);
+
+            if ($updateDependants) {
+                $this->updateDependants($masterAsset);
+            }
         }
-
-        $this->updateModelImages($masterAsset, $modelData);
-
-        data_set($modelData, 'bucket_images', true);
-
-        $this->update($masterAsset, $modelData);
-
-        if ($updateDependants && !$masterAsset->is_single_trade_unit) {
-            $this->updateDependants($masterAsset);
-        }
-
 
         return $masterAsset;
     }
@@ -44,8 +41,17 @@ class UpdateMasterProductImages extends GrpAction
     public function updateDependants(MasterAsset $seedMasterAsset): void
     {
         foreach ($seedMasterAsset->products as $product) {
-            if ($product && !$product->is_single_trade_unit) {
-                CloneProductImagesFromMasterProduct::dispatch($product);
+            if ($product) {
+                $canUpdate = false;
+                if (!$product->is_single_trade_unit) {
+                    $canUpdate = true;
+                }
+                if (!$seedMasterAsset->follow_trade_unit_media) {
+                    $canUpdate = true;
+                }
+                if ($canUpdate) {
+                    CloneProductImagesFromMasterProduct::run($product);
+                }
             }
         }
     }

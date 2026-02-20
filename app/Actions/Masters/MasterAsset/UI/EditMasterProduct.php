@@ -13,7 +13,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Masters\MasterAsset;
@@ -244,48 +243,6 @@ class EditMasterProduct extends GrpAction
                     ],
                 ]
             ],
-            //            [
-            //                'label'  => __('Translations'),
-            //                'icon'   => 'fa-light fa-language',
-            //                'fields' => [
-            //                    'name_i8n'              => [
-            //                        'type'          => 'input_translation',
-            //                        'label'         => __('Translate name'),
-            //                        'language_from' => 'en',
-            //                        'full'          => true,
-            //                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-            //                        'main'          => $masterProduct->name,
-            //                        'value'         => $masterProduct->getTranslations('name_i8n')
-            //                    ],
-            //                    'description_title_i8n' => [
-            //                        'type'          => 'input_translation',
-            //                        'label'         => __('Translate description title'),
-            //                        'main'          => $masterProduct->description_title,
-            //                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-            //                        'value'         => $masterProduct->getTranslations('description_title_i8n'),
-            //                        'language_from' => 'en',
-            //                        'full'          => true,
-            //                    ],
-            //                    'description_i8n'       => [
-            //                        'type'          => 'textEditor_translation',
-            //                        'label'         => __('Translate description'),
-            //                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-            //                        'main'          => $masterProduct->description,
-            //                        'language_from' => 'en',
-            //                        'full'          => true,
-            //                        'value'         => $masterProduct->getTranslations('description_i8n')
-            //                    ],
-            //                    'description_extra_i8n' => [
-            //                        'type'          => 'textEditor_translation',
-            //                        'language_from' => 'en',
-            //                        'full'          => true,
-            //                        'label'         => __('Translate description extra'),
-            //                        'languages'     => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-            //                        'main'          => $masterProduct->description_extra,
-            //                        'value'         => $masterProduct->getTranslations('description_extra_i8n')
-            //                    ],
-            //                ]
-            //            ],
             [
                 'label'  => __('Properties'),
                 'title'  => __('id'),
@@ -395,6 +352,20 @@ class EditMasterProduct extends GrpAction
                     ],
                 ],
             ],
+            !$masterProduct->is_single_trade_unit
+                ? []
+                : [
+                'label'  => __('Follow images'),
+                'icon'   => 'fal fa-image',
+                'fields' => [
+                    'follow_trade_unit_media' => [
+                        'type'         => 'toggle',
+                        'label'        => __('Follow images from trade unit'),
+                        'value'        => $masterProduct->follow_trade_unit_media,
+                    ],
+                ],
+            ],
+
 
         ];
     }

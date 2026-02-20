@@ -12,6 +12,7 @@ import { inject, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle, faPallet, faCircle, faUndo } from "@fas"
 import { faSpinnerThird } from "@fad"
+import Icon from "@/Components/Icon.vue"
 import {
 	faRoad,
 	faClock,
@@ -197,6 +198,8 @@ const tabIconClass = function (
                                 {{ locale.number(tab.number || 0) }}
                             </div>
 
+							<Icon v-if="tab.icon_right" :data="tab.icon_right" :class="tab.icon_right.class" style="margin-left: 4px" />
+
 							<FontAwesomeIcon
 								v-if="tab.indicator"
 								icon="fas fa-circle"
@@ -238,6 +241,8 @@ const tabIconClass = function (
                                 :class="tabSlug === currentTab ? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]' : 'bg-gray-200 '">
                                 {{ locale.number(tab.number || 0) }}
                             </div>
+
+							<Icon v-if="tab.icon_right" :data="tab.icon_right" :class="tab.icon_right.class" style="margin-left: 4px" />
 
 							<FontAwesomeIcon
 								v-if="tab.indicator"

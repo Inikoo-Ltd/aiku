@@ -51,12 +51,18 @@ class UpdateTradeUnitImages extends GrpAction
         ) {
             if ($modelsData->model_type == 'MasterAsset') {
                 $masterAsset = MasterAsset::find($modelsData->model_id);
-                if ($masterAsset && $masterAsset->is_single_trade_unit) {
+                if ($masterAsset && $masterAsset->is_single_trade_unit && $masterAsset->follow_trade_unit_media) {
                     CloneMasterAssetImagesFromTradeUnits::dispatch($masterAsset);
                 }
             } elseif ($modelsData->model_type == 'Product') {
                 $product = Product::find($modelsData->model_id);
-                if ($product && $product->is_single_trade_unit) {
+
+                $followMaster=false;
+                if($product->masterProduct && !$product->masterProduct->follow_trade_unit_media){
+                    $followMaster=true;
+                }
+
+                if ($product && $product->is_single_trade_unit && !$followMaster) {
                     CloneProductImagesFromTradeUnits::dispatch($product);
                 }
             }

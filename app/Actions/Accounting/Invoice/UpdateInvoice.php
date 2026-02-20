@@ -18,7 +18,7 @@ use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrate
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
-use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Dropshipping\Platform\ProcessPlatformTimeSeriesRecords;
@@ -112,6 +112,7 @@ class UpdateInvoice extends OrgAction
         if (count($changes) > 0) {
             $invoiceDate = \Carbon\Carbon::parse($invoice->date);
 
+            RedoShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
             RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
 
             if ($invoice->invoiceCategory) {
@@ -123,21 +124,6 @@ class UpdateInvoice extends OrgAction
             ShopHydrateSalesIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
             ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessShopTimeSeriesRecords::dispatch(
-                    $invoice->shop_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString(),
-                )->delay($this->hydratorsDelay);
-            }
 
             if ($invoice->master_shop_id) {
                 MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
