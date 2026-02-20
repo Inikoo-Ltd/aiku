@@ -172,8 +172,12 @@ class SendChatMessage
 
     protected function sendExternalNotification(ChatSession $chatSession): void
     {
+        $chatLink = null;
+        if ($chatSession->shop && $chatSession->shop->website && $chatSession->ulid) {
+            $chatLink = 'https://ds.test/?chat_session=' . $chatSession->ulid;
+        }
         if ($chatSession->web_user_id && $chatSession->webUser && $chatSession->webUser->customer) {
-            SendChatNotificationToCustomer::dispatch($chatSession->webUser->customer, []);
+            SendChatNotificationToCustomer::dispatch($chatSession->webUser->customer, ['chat_link' => $chatLink]);
             return;
         }
 
@@ -195,7 +199,7 @@ class SendChatMessage
             'email' => $email,
         ]);
 
-        SendChatNotificationToExternal::dispatch($externalEmailRecipient, $chatSession->shop, []);
+        SendChatNotificationToExternal::dispatch($externalEmailRecipient, $chatSession->shop, ['chat_link' => $chatLink]);
     }
 
     public function rules(): array
