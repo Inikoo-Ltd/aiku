@@ -90,13 +90,13 @@ const submit = () => {
     <div class="w-full max-w-md">
       <!-- Conditional Form for Reset Link -->
       <template v-if="!isResetLinkSent">
-        <div class="text-center font-bold text-2xl text-gray-800">Reset Password</div>
+        <div class="text-center font-bold text-2xl text-gray-800">{{ trans("Reset Password") }}</div>
         <div class="mt-3 mb-6 text-sm text-center text-gray-600">{{ instructions }}</div>
 
         <form @submit.prevent="submit" class="mt-8 space-y-6">
           <!-- Email Input -->
           <div>
-            <label for="email" class="font-medium text-sm text-gray-700">Email:</label>
+            <label for="email" class="font-medium text-sm text-gray-700">{{ trans("Email") }}:</label>
             <PureInput
               v-model="form.email"
               @update:modelValue="() => form.errors.email = ''"
@@ -122,17 +122,18 @@ const submit = () => {
         <div class="text-center">
           <FontAwesomeIcon icon="fal fa-check-circle" class="text-green-500 text-4xl" fixed-width aria-hidden="true" />
         </div>
-        <div class="text-center mt-4 font-bold text-xl text-gray-800">Reset link sent</div>
+        <div class="text-center mt-4 font-bold text-xl text-gray-800">{{ trans("Reset link sent") }}</div>
         <div class="mt-3 mb-4 text-sm text-center text-gray-600">
-          We've sent a link to reset your password to <strong>{{ form.email }}</strong>. Please check your email, especially the spam folder.
+          {{ trans("We've sent a link to reset your password to:") }} <strong>{{ form.email }}</strong>.
+          <br>{{ trans("Please check your email, especially the spam folder") }}.
         </div>
       </template>
 
       <!-- Login Link -->
       <div class="flex justify-center items-center mt-6">
         <p class="text-sm text-gray-500">
-          Remembered your password?
-          <Link :href="route('retina.login.show')" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition duration-150 ease-in-out ml-1">Login here</Link>
+          {{ trans("Remembered your password") }}?
+          <Link :href="route('retina.login.show')" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition duration-150 ease-in-out ml-1">{{ trans("Login here") }}</Link>
         </p>
       </div>
     </div>
