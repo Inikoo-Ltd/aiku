@@ -162,22 +162,10 @@ const getActionIcon = (icon: any) => {
   }
 };
 
-const nativeButtonType = computed(() => {
-  if (props.nativeType !== undefined) {
-    return props.nativeType
-  }
-
-  if (props.type === "submit" || props.type === "reset" || props.type === "button") {
-    return props.type
-  }
-
-  return "button"
-})
-
 </script>
 
 <template>
-  <button :type="nativeButtonType"  :style="injectStyle ?? {}"
+  <button :style="injectStyle ?? {}"
           class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
           :class="[
             full ? 'w-full justify-center' : 'xmin-w-max',
