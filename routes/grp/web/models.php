@@ -985,6 +985,7 @@ Route::delete('/guest/{guest:id}', DeleteGuest::class)->name('guest.delete');
 
 Route::name('collection.')->prefix('collection/{collection:id}')->group(function () {
     Route::post('attach-models', AttachModelsToCollection::class)->name('attach-models');
+    Route::patch('update', UpdateCollection::class)->name('update');
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
     Route::delete('delete', DeleteCollection::class)->name('delete');
     Route::patch('webpage-disable', DisableCollection::class)->name('webpage_disable');

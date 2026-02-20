@@ -133,8 +133,8 @@ const customMenusTop = ref([]); // Create a reactive ref to hold the top navigat
 watch(computedSelectedSidebarData,
     (newValue) => {
         if (newValue) {
-            const navigationBottomData = newValue?.data?.fieldValue?.navigation_bottom;
-            const navigationData = newValue?.data?.fieldValue?.navigation;
+            const navigationBottomData = newValue?.data?.fieldValue?.navigation_bottom.filter(item => !item.hidden);;
+            const navigationData = newValue?.data?.fieldValue?.navigation.filter(item => !item.hidden);
 
             // console.log('navigationBottomData', navigationBottomData);
             // Process navigation_bottom data
