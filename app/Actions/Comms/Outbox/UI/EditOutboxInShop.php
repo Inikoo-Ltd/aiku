@@ -76,7 +76,7 @@ class EditOutboxInShop extends OrgAction
                     // ],
                 ]
             ];
-        } elseif (in_array($outbox->code, [OutboxCodeEnum::BASKET_LOW_STOCK])) {
+        } elseif (in_array($outbox->code, [OutboxCodeEnum::BASKET_LOW_STOCK, OutboxCodeEnum::BASKET_OFFER_NOTIFICATION])) {
             $fields = [
                 [
                     'title' => '',

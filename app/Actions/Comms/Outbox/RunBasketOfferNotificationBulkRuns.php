@@ -24,9 +24,9 @@ use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
-use App\Models\Discounts\Offer;
 use App\Services\QueryBuilder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -71,8 +71,8 @@ class RunBasketOfferNotificationBulkRuns
             $lastOutBoxSent = $outbox->last_sent_at;
 
             $productClass = class_basename(Product::class);
+            $productCategoryClass = class_basename(ProductCategory::class);
 
-            // Base query for customers - leave empty as requested
             $baseQuery = QueryBuilder::for(Customer::class);
             $baseQuery->where('customers.shop_id', $outbox->shop_id);
             $baseQuery->whereNull('customers.deleted_at');
@@ -91,7 +91,7 @@ class RunBasketOfferNotificationBulkRuns
             });
 
             // Join Products
-            $baseQuery->join('products', function ($join) use ($productClass, $intervalInHours) {
+            $baseQuery->join('products', function ($join) use ($productClass) {
                 $join->on('transactions.model_id', '=', 'products.id');
                 $join->where('transactions.model_type', $productClass);
                 $join->where('products.is_for_sale', true);
@@ -99,135 +99,58 @@ class RunBasketOfferNotificationBulkRuns
                     ProductStateEnum::ACTIVE,
                     ProductStateEnum::DISCONTINUING,
                 ]);
-                $join->whereNotNull('products.price_drop_at');
-                $join->where('products.price_drop_at', '<=', $intervalInHours);
                 $join->whereNull('products.deleted_at');
             });
 
-            // Filter by price history
-            // Innermost: rank historic assets per product
-            // $rankedQuery = DB::table('historic_assets')
-            //     ->select('model_id', 'price')
-            //     ->selectRaw('ROW_NUMBER() OVER (PARTITION BY model_id ORDER BY id DESC) AS rn')
-            //     ->where('model_type', $productClass);
-
-            // // Middle: aggregate latest and second latest price per product
-            // $priceComparisonQuery = DB::table(DB::raw("({$rankedQuery->toSql()}) AS ranked"))
-            //     ->mergeBindings($rankedQuery)
-            //     ->select('model_id')
-            //     ->selectRaw('MAX(CASE WHEN rn = 1 THEN price END) AS latest_price')
-            //     ->selectRaw('MAX(CASE WHEN rn = 2 THEN price END) AS second_latest_price')
-            //     ->groupBy('model_id');
-
-            // // Outer: filter only price dropped products
-            // $priceDroppedProductsQuery = DB::table(DB::raw("({$priceComparisonQuery->toSql()}) AS price_comparison"))
-            //     ->mergeBindings($priceComparisonQuery)
-            //     ->select('model_id')
-            //     ->whereRaw('latest_price < second_latest_price');
-
-            // // Join price dropped products
-            // $baseQuery->joinSub($priceDroppedProductsQuery, 'price_dropped_products', function ($join) {
-            //     $join->on('products.id', '=', 'price_dropped_products.model_id');
-            // });
-
-            // // Left join ranked historic assets (last 2 per product)
-            // $rankedHistoricAssetsQuery = DB::table('historic_assets')
-            //     ->select('id', 'model_id')
-            //     ->selectRaw('ROW_NUMBER() OVER (PARTITION BY model_id ORDER BY id DESC) AS rn')
-            //     ->where('model_type', $productClass);
-
-            // $baseQuery->leftJoinSub($rankedHistoricAssetsQuery, 'ranked_historic_assets', function ($join) {
-            //     $join->on('products.id', '=', 'ranked_historic_assets.model_id')
-            //         ->where('ranked_historic_assets.rn', '<=', 2);
-            // });
-
-            // Filter by discount offer - join with products to get their associated offers using Eloquent
-            // Product → Product trigger
-            // $productOffersQuery = Offer::select('products.id as product_id', 'offers.id as offer_id')
-            //     ->join('products', function ($join) {
-            //         $join->on('products.id', '=', 'offers.trigger_id')
-            //             ->where('offers.trigger_type', 'Product');
-            //     })
-            //     ->where('offers.shop_id', $outbox->shop_id)
-            //     ->union(
-            //         // Product → ProductCategory (family)
-            //         Offer::select('products.id as product_id', 'offers.id as offer_id')
-            //             ->join('products', function ($join) {
-            //                 $join->on('products.family_id', '=', 'offers.trigger_id')
-            //                     ->where('offers.trigger_type', 'ProductCategory');
-            //             })
-            //             ->where('offers.shop_id', $outbox->shop_id)
-            //     )
-            //     ->union(
-            //         // Product → ProductCategory (sub_department)
-            //         Offer::select('products.id as product_id', 'offers.id as offer_id')
-            //             ->join('products', function ($join) {
-            //                 $join->on('products.sub_department_id', '=', 'offers.trigger_id')
-            //                     ->where('offers.trigger_type', 'ProductCategory');
-            //             })
-            //             ->where('offers.shop_id', $outbox->shop_id)
-            //     )
-            //     ->union(
-            //         // Product → ProductCategory (department)
-            //         Offer::select('products.id as product_id', 'offers.id as offer_id')
-            //             ->join('products', function ($join) {
-            //                 $join->on('products.department_id', '=', 'offers.trigger_id')
-            //                     ->where('offers.trigger_type', 'ProductCategory');
-            //             })
-            //             ->where('offers.shop_id', $outbox->shop_id)
-            //     );
-
+            // Build product offers subquery using json_build_object + json_agg
             $productOffersQuery = DB::table('offers AS o')
                 ->select(
                     'p.id AS product_id',
-                    'o.id AS offer_id'
+                    DB::raw('json_build_object(p."id"::text, json_agg(DISTINCT o."id"::text)) AS product_offer_map')
                 )
-                ->join('products AS p', function ($join) use ($outbox) {
+                ->join('products AS p', function ($join) use ($outbox, $intervalInHours, $productCategoryClass, $productClass) {
                     $join->on('o.shop_id', '=', DB::raw($outbox->shop_id))
                         ->whereNull('o.deleted_at')
-                        ->where(function ($query) {
-                            $query->where(function ($q) {
-                                $q->where('o.trigger_type', '=', 'Product')
+                        // ->where('o.created_at', '>=', $intervalInHours)
+                        ->where(function ($query) use ($productCategoryClass, $productClass) {
+                            $query->where(function ($q) use ($productClass) {
+                                $q->where('o.trigger_type', '=', $productClass)
                                     ->whereColumn('p.id', 'o.trigger_id');
-                            })->orWhere(function ($q) {
-                                $q->where('o.trigger_type', '=', 'ProductCategory')
+                            })->orWhere(function ($q) use ($productCategoryClass) {
+                                $q->where('o.trigger_type', '=', $productCategoryClass)
                                     ->whereColumn('p.family_id', 'o.trigger_id');
-                            })->orWhere(function ($q) {
-                                $q->where('o.trigger_type', '=', 'ProductCategory')
+                            })->orWhere(function ($q) use ($productCategoryClass) {
+                                $q->where('o.trigger_type', '=', $productCategoryClass)
                                     ->whereColumn('p.sub_department_id', 'o.trigger_id');
-                            })->orWhere(function ($q) {
-                                $q->where('o.trigger_type', '=', 'ProductCategory')
+                            })->orWhere(function ($q) use ($productCategoryClass) {
+                                $q->where('o.trigger_type', '=', $productCategoryClass)
                                     ->whereColumn('p.department_id', 'o.trigger_id');
                             });
                         });
                 })
-                ->distinct();
+                ->groupBy('p.id')
+                ->orderBy('p.id');
 
-            // Create aggregated query
-            // $aggregatedOffersQuery = DB::table(DB::raw("({$productOffersQuery->toSql()}) AS product_offers_union"))
-            //     ->mergeBindings($productOffersQuery)
-            //     ->select(
-            //         'product_id',
-            //         DB::raw('STRING_AGG(offer_id::TEXT, \',\' ORDER BY offer_id) AS offer_ids')
-            //     )
-            //     ->groupBy('product_id')
-            //     ->orderBy('product_id');
+            // Left join the product offers subquery
+            $baseQuery->leftJoinSub($productOffersQuery, 'product_offers', function ($join) {
+                $join->on('products.id', '=', 'product_offers.product_id');
+            });
 
-            // $baseQuery->joinSub($aggregatedOffersQuery, 'product_offers', function ($join) {
-            //     $join->on('products.id', '=', 'product_offers.product_id');
-            // });
-
+            // Apply the price_drop_at OR product_offers condition (moved from join to where)
+            $baseQuery->where(function ($query) use ($intervalInHours) {
+                $query->where('products.price_drop_at', '>=', $intervalInHours)
+                    ->orWhereNotNull('product_offers.product_id');
+            });
 
             $baseQuery->select(
                 'customers.id',
                 'customers.email',
                 DB::raw('STRING_AGG(DISTINCT products.id::TEXT, \',\' ORDER BY products.id::TEXT) AS product_ids'),
-                // DB::raw('STRING_AGG(ranked_historic_assets.id::TEXT, \',\' ORDER BY ranked_historic_assets.id::TEXT) AS historic_asset_ids'),
-                // DB::raw("STRING_AGG(DISTINCT product_offers.offer_ids, ',' ORDER BY product_offers.offer_ids) AS offer_ids"),
+                DB::raw('STRING_AGG(DISTINCT "product_offers"."product_offer_map"::TEXT, \',\') AS offer_ids_map'),
             );
             $baseQuery->groupBy('customers.id');
             $baseQuery->orderBy('customers.id');
-            $baseQuery->limit(10);
+            // $baseQuery->limit(5);
 
             // Log the query
             Log::info($baseQuery->toRawSql());
@@ -394,3 +317,78 @@ class RunBasketOfferNotificationBulkRuns
         return $html;
     }
 }
+
+//  NOTE: Example SQL Query
+// select
+//   "customers"."id",
+//   "customers"."email",
+//   STRING_AGG(
+//     DISTINCT products.id :: TEXT,
+//     ','
+//     ORDER BY
+//       products.id :: TEXT
+//   ) AS product_ids,
+//     STRING_AGG(
+//     DISTINCT "product_offers"."result" :: TEXT,
+//     ','
+//   ) AS list_offer_ids
+// --  "product_offers"."result" as new_result
+// from
+//   "customers"
+//   inner join "orders" on "customers"."id" = "orders"."customer_id"
+//   and "orders"."state" = 'creating'
+//   and "orders"."status" = 'creating'
+//   and "orders"."deleted_at" is null
+//   inner join "transactions" on "orders"."id" = "transactions"."order_id"
+//   inner join "products" on "transactions"."model_id" = "products"."id"
+//   and "transactions"."model_type" = 'Product'
+//   and "products"."is_for_sale" = true
+//   and "products"."state" in ('active', 'discontinuing')
+//   and "products"."deleted_at" is null
+//   left join (
+//     select
+//       p."id" as "product_id",
+//       json_build_object(
+//         p."id" :: text,
+//         json_agg(DISTINCT o."id" :: text)
+//       ) AS "result"
+//     FROM
+//       "offers" AS "o"
+//       INNER JOIN "products" AS "p" ON "o"."shop_id" = 42
+//       AND "o"."deleted_at" IS NULL
+//       and "o"."created_at" >= '2026-02-16 03:02:18'
+//       AND (
+//         (
+//           "o"."trigger_type" = 'Product'
+//           AND "p"."id" = "o"."trigger_id"
+//         )
+//         OR (
+//           "o"."trigger_type" = 'ProductCategory'
+//           AND "p"."family_id" = "o"."trigger_id"
+//         )
+//         OR (
+//           "o"."trigger_type" = 'ProductCategory'
+//           AND "p"."sub_department_id" = "o"."trigger_id"
+//         )
+//         OR (
+//           "o"."trigger_type" = 'ProductCategory'
+//           AND "p"."department_id" = "o"."trigger_id"
+//         )
+//       )
+//     GROUP BY
+//       p."id"
+//     order by
+//       p."id" asc
+//   ) as "product_offers" on "products"."id" = "product_offers"."product_id"
+// where
+//   "customers"."shop_id" = 42
+//   and "customers"."deleted_at" is null
+//   and "customers"."deleted_at" is null
+//   and (
+//     "products"."price_drop_at" >= '2026-02-16 03:02:18'
+//     or "product_offers"."product_id" is not null
+//   )
+// group by
+//   "customers"."id"
+// order by
+//   "customers"."id" asc
