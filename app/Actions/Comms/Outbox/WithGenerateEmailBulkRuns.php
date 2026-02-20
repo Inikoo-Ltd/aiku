@@ -43,6 +43,39 @@ trait WithGenerateEmailBulkRuns
             'subject'      => now()->format('Y.m.d'),
             'state'        => EmailBulkRunStateEnum::SENDING, // note: make sure this condition
         ]);
+    }
 
+    protected function upsertEmailBulkRunForBasketLowStock(
+        Outbox $outbox,
+        ?string $date = null,
+    ): EmailBulkRun {
+        $date = $date ?? now()->toDateString();
+
+        // find email bulk email for today
+        $emailBulkRun = $outbox->emailBulkRuns()
+            ->whereDate('created_at', $date)
+            ->first();
+
+        if ($emailBulkRun) {
+            // Count existing runs for today
+            $existingRunsCount = $outbox->emailBulkRuns()
+                ->whereDate('created_at', $date)
+                ->count();
+
+            // Create new run with suffix
+            $subject = now()->format('Y.m.d') . '_' . ($existingRunsCount);
+
+            return StoreEmailBulkRun::run($outbox->emailOngoingRun, [
+                'scheduled_at' => now(),
+                'subject'      => $subject,
+                'state'        => EmailBulkRunStateEnum::SENDING,
+            ]);
+        }
+
+        return StoreEmailBulkRun::run($outbox->emailOngoingRun, [
+            'scheduled_at' => now(),
+            'subject'      => now()->format('Y.m.d'),
+            'state'        => EmailBulkRunStateEnum::SENDING,
+        ]);
     }
 }
