@@ -441,9 +441,9 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasOne(EbayUser::class);
     }
 
-    public function tiktokUser(): HasOne
+    public function tiktokUsers(): HasMany
     {
-        return $this->hasOne(TiktokUser::class);
+        return $this->hasMany(TiktokUser::class);
     }
 
     public function amazonUsers(): HasMany
