@@ -177,5 +177,51 @@ export default {
                 },
             ],
         },
+        {
+            title: "Card",
+            icon: ["fal", "fa-layer-group"],
+            fields: [
+                {
+                    name: ["layout", "card", "card1", "enabled"],
+                    type: "toogle",
+                    label: trans("Enable Card 1")
+                },
+                {
+                    name: ["layout", "card", "card1", "hideCard"],
+                    type: "toogle",
+                    label: trans("Hide Background")
+                },
+                {
+                    name: ["layout", "card", "card1", "title"],
+                    type: "text",
+                    label: trans("Title")
+                },
+                {
+                    name: ["layout", "card", "card1", "subtitle"],
+                    type: "textarea",
+                    label: trans("Subtitle")
+                },
+                {
+                    name: ["layout", "card", "card1", "horizontal"],
+                    type: "radio",
+                    label: trans("Horizontal Position"),
+                    options: [
+                        { label: "Left", value: "left" },
+                        { label: "Center", value: "center" },
+                        { label: "Right", value: "right" }
+                    ]
+                },
+                {
+                    name: ["layout", "card", "card1", "vertical"],
+                    type: "radio",
+                    label: trans("Vertical Position"),
+                    options: [
+                        { label: "Top", value: "top" },
+                        { label: "Middle", value: "middle" },
+                        { label: "Bottom", value: "bottom" }
+                    ]
+                }
+            ]
+        }
     ]
 }

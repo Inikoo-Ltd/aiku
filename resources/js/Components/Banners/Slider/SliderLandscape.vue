@@ -31,8 +31,6 @@ import { faExternalLink, faExclamationTriangle } from '@far'
 
 library.add(faExternalLink, faEyeSlash, faExclamationTriangle)
 
-
-
 const props = defineProps<{
     production?: boolean
     jumpToIndex?: string  // ulid
@@ -104,6 +102,10 @@ const renderVideoUrl = (component) => {
         get(component, ['video', 'desktop'], null))
 }
 
+const getCard = (component) => {
+    return get(component, ['layout', 'card'], {})
+}
+
 const isYoutube = (url: string) =>
     url?.includes("youtube.com") || url?.includes("youtu.be")
 
@@ -119,7 +121,6 @@ const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true
 })
-
 </script>
 
 <template>
@@ -186,12 +187,49 @@ onMounted(() => {
                         <SlideCorner v-for="(slideCorner, position) in filteredNulls(component?.layout?.corners)"
                             :position="position" :corner="slideCorner" :commonCorner="data.common.corners" />
                         <!-- CentralStage: slide-centralstage (prioritize) and common-centralStage -->
-                        <CentralStage
-                            v-if="component?.layout?.centralStage?.title?.length > 0 || component?.layout?.centralStage?.subtitle?.length > 0"
-                            :data="component?.layout?.centralStage" />
-                        <CentralStage
-                            v-else-if="data.common?.centralStage?.title?.length > 0 || data.common?.centralStage?.subtitle?.length > 0"
-                            :data="data.common?.centralStage" />
+                        <template v-if="getCard(component)">
+                            <template v-for="(card, key) in getCard(component)" :key="key">
+                                <template v-if="card?.enabled">
+
+                                    <div class="absolute inset-0 flex" :class="[
+                                        {
+                                            'justify-start pl-10': card.horizontal === 'left',
+                                            'justify-center': card.horizontal === 'center',
+                                            'justify-end pr-10': card.horizontal === 'right'
+                                        },
+                                        {
+                                            'items-start pt-10': card.vertical === 'top',
+                                            'items-center': card.vertical === 'middle',
+                                            'items-end pb-10': card.vertical === 'bottom'
+                                        }
+                                    ]">
+                                        <div v-if="!card.hideCard" :style="{
+                                            width: (card.width || 600) + 'px',
+                                            background: card.background || '#ffffff',
+                                            padding: (card.padding || 30) + 'px',
+                                            borderRadius: (card.radius || 10) + 'px',
+                                            opacity: card.opacity ?? 1
+                                        }" :class="card.shadow ? 'shadow-2xl' : ''">
+                                            <CentralStage :data="{ title: card.title, subtitle: card.subtitle }" />
+                                        </div>
+
+                                        <div v-else>
+                                            <CentralStage :data="{ title: card.title, subtitle: card.subtitle }" />
+                                        </div>
+                                    </div>
+
+                                </template>
+                            </template>
+                        </template>
+                        <template v-else>
+                            <CentralStage
+                                v-if="component?.layout?.centralStage?.title?.length > 0 || component?.layout?.centralStage?.subtitle?.length > 0"
+                                :data="component?.layout?.centralStage" />
+                            <CentralStage
+                                v-else-if="data.common?.centralStage?.title?.length > 0 || data.common?.centralStage?.subtitle?.length > 0"
+                                :data="data.common?.centralStage" />
+                        </template>
+
                     </SwiperSlide>
                     <div v-if="data.navigation?.bottomNav?.value && data.navigation?.bottomNav?.type?.value == 'buttons'"
                         class="absolute bottom-1 left-1/2 -translate-x-1/2 z-10">
