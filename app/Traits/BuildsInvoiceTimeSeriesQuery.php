@@ -16,9 +16,9 @@ trait BuildsInvoiceTimeSeriesQuery
     protected function fullInvoiceSelects(bool $includeOrders = false): array
     {
         return [
-            DB::raw('SUM(net_amount) as sales'),
-            DB::raw('SUM(org_net_amount) as sales_org_currency'),
-            DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
+            DB::raw('SUM(net_amount) as sales_external'),
+            DB::raw('SUM(org_net_amount) as sales_org_currency_external'),
+            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
             DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
             DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
             DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
@@ -32,8 +32,8 @@ trait BuildsInvoiceTimeSeriesQuery
     protected function organisationInvoiceSelects(): array
     {
         return [
-            DB::raw('SUM(org_net_amount) as sales_org_currency'),
-            DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
+            DB::raw('SUM(org_net_amount) as sales_org_currency_external'),
+            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
             DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
             DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
             DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
@@ -46,9 +46,9 @@ trait BuildsInvoiceTimeSeriesQuery
     protected function platformInvoiceSelects(): array
     {
         return [
-            DB::raw('SUM(net_amount) as sales'),
-            DB::raw('SUM(org_net_amount) as sales_org_currency'),
-            DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
+            DB::raw('SUM(net_amount) as sales_external'),
+            DB::raw('SUM(org_net_amount) as sales_org_currency_external'),
+            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
             DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices"),
         ];
     }
