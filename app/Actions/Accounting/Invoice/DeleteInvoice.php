@@ -20,7 +20,7 @@ use App\Actions\Comms\Email\SendInvoiceDeletedNotification;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
-use App\Actions\Dropshipping\Platform\ProcessPlatformTimeSeriesRecords;
+use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
 use App\Actions\Masters\MasterShop\ProcessMasterShopTimeSeriesRecords;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
@@ -104,6 +104,7 @@ class DeleteInvoice extends OrgAction
 
         RedoShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
         RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
+        RedoPlatformTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             ProcessOrganisationTimeSeriesRecords::dispatch(
@@ -141,24 +142,6 @@ class DeleteInvoice extends OrgAction
         if ($invoiceCategory) {
             $invoiceCategory->refresh();
             InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
-        }
-
-        if ($invoice->platform_id) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessPlatformTimeSeriesRecords::dispatch(
-                    $invoice->platform_id,
-                    $invoice->shop_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString(),
-                )->delay($this->hydratorsDelay);
-            }
         }
 
         if ($invoice->shipping_zone_id) {
