@@ -227,8 +227,7 @@ watch(selectedLanguage, async (val) => {
             :class="bubbleClass">
 
             <p class="whitespace-pre-wrap break-words">
-                {{ activeMessage.original?.text || props.message.message_text }} {{ props.message.sender_type }} {{
-                    props.viewerType }}
+                {{ activeMessage.original?.text || props.message.message_text }}
             </p>
             <div v-if="
                 message?.is_offline_message &&
