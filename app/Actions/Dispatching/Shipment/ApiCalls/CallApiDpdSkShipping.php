@@ -201,12 +201,6 @@ class CallApiDpdSkShipping extends OrgAction
             $note = Str::limit($note, 35, '');
         }
         $note = trim($note);
-        if ($note == '') {
-            $note = Arr::get($parentResource, 'reference');
-        } else {
-            $note = $note." (".Arr::get($parentResource, 'reference').")";
-        }
-
 
         return [
             'jsonrpc' => '2.0',
