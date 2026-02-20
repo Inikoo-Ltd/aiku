@@ -17,12 +17,14 @@ import Toggle from "@/Components/Pure/Toggle.vue"
 import SlideBackground from "@/Components/Banners/SlidesWorkshop/Fields/SlideBackground.vue"
 import ColorBackground from "@/Components/Banners/Slider/ColorBackground.vue"
 import SlideVideo from "@/Components/Banners/SlidesWorkshop/Fields/SlideVideo.vue"
+import RangeSlider from "@/Components/Banners/SlidesWorkshop/Fields/RangeSlider.vue"
 
 const componentsMap: Record<string, any> = {
 	text: PureInput,
 	number: PureInputNumber,
 	corners: Corners,
 	range: Range,
+	rangeSlider: RangeSlider,
 	colorpicker: Colorpicker,
 	select: PureMultiselect,
 	radio: Radio,

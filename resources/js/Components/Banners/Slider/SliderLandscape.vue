@@ -110,6 +110,10 @@ const isYoutube = (url: string) =>
 const isDirectVideo = (url: string) =>
     url?.match(/\.(mp4|webm|ogg)$/i)
 
+const bannerHeight = computed(() => {
+    return get(props.data, ['common', 'height', props.view],
+        get(props.data, ['common', 'height', 'desktop'], 400))
+})
 
 const isMounted = ref(false)
 onMounted(() => {
@@ -130,7 +134,7 @@ onMounted(() => {
                     'aspect-[4/1] w-full': $props.view == 'desktop'
                 }
                 : 'aspect-[2/1] md:aspect-[3/1] lg:aspect-[4/1] w-full'
-        ]">
+        ]" :style="{ height: bannerHeight + 'px' }">
 
             <!-- Add v-if to avoid error in SSR -->
             <template v-if="isMounted">
