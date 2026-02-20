@@ -122,6 +122,8 @@ trait WithSendBulkEmails
             'payment-note' => Arr::get($additionalData, 'payment_note'),
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
             'preview-amount' => Arr::get($additionalData, 'preview_amount'),
+            'chat-link' => Arr::get($additionalData, 'chat_link'),
+            'chat-message' => Arr::get($additionalData, 'chat_message'),
 
             default => $originalPlaceholder,
         };
