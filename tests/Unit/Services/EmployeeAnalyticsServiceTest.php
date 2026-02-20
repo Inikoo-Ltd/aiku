@@ -71,8 +71,10 @@ describe('calculateSummaryMetrics', function () {
 describe('calculateWorkingDays', function () {
     it('calculates working days excluding weekends', function () {
         $reflection = new ReflectionClass($this->service);
-        $method = $reflection->getMethod('calculateWorkingDays');
-        $method->setAccessible(true);
+        $method = tap(
+            $reflection->getMethod('calculateWorkingDays'),
+            static fn (ReflectionMethod $method) => $method->setAccessible(true)
+        );
 
         $startDate = Carbon::parse('2026-02-16');
         $endDate = Carbon::parse('2026-02-22');
@@ -84,8 +86,10 @@ describe('calculateWorkingDays', function () {
 
     it('returns correct count for single week', function () {
         $reflection = new ReflectionClass($this->service);
-        $method = $reflection->getMethod('calculateWorkingDays');
-        $method->setAccessible(true);
+        $method = tap(
+            $reflection->getMethod('calculateWorkingDays'),
+            static fn (ReflectionMethod $method) => $method->setAccessible(true)
+        );
 
         $startDate = Carbon::parse('2026-02-16');
         $endDate = Carbon::parse('2026-02-20');
@@ -97,8 +101,10 @@ describe('calculateWorkingDays', function () {
 
     it('returns 0 for weekend-only range', function () {
         $reflection = new ReflectionClass($this->service);
-        $method = $reflection->getMethod('calculateWorkingDays');
-        $method->setAccessible(true);
+        $method = tap(
+            $reflection->getMethod('calculateWorkingDays'),
+            static fn (ReflectionMethod $method) => $method->setAccessible(true)
+        );
 
         $startDate = Carbon::parse('2026-02-21');
         $endDate = Carbon::parse('2026-02-22');
@@ -112,8 +118,10 @@ describe('calculateWorkingDays', function () {
 describe('calculateOvertimeHours', function () {
     it('returns zero when under threshold', function () {
         $reflection = new ReflectionClass($this->service);
-        $method = $reflection->getMethod('calculateOvertimeHours');
-        $method->setAccessible(true);
+        $method = tap(
+            $reflection->getMethod('calculateOvertimeHours'),
+            static fn (ReflectionMethod $method) => $method->setAccessible(true)
+        );
 
         $result = $method->invoke($this->service, 30.0, 5);
 
@@ -122,8 +130,10 @@ describe('calculateOvertimeHours', function () {
 
     it('returns positive value when over threshold', function () {
         $reflection = new ReflectionClass($this->service);
-        $method = $reflection->getMethod('calculateOvertimeHours');
-        $method->setAccessible(true);
+        $method = tap(
+            $reflection->getMethod('calculateOvertimeHours'),
+            static fn (ReflectionMethod $method) => $method->setAccessible(true)
+        );
 
         $result = $method->invoke($this->service, 50.0, 5);
 
@@ -132,8 +142,10 @@ describe('calculateOvertimeHours', function () {
 
     it('handles zero working days', function () {
         $reflection = new ReflectionClass($this->service);
-        $method = $reflection->getMethod('calculateOvertimeHours');
-        $method->setAccessible(true);
+        $method = tap(
+            $reflection->getMethod('calculateOvertimeHours'),
+            static fn (ReflectionMethod $method) => $method->setAccessible(true)
+        );
 
         $result = $method->invoke($this->service, 0.0, 0);
 
@@ -179,8 +191,10 @@ describe('overtime calculation with config', function () {
 
         $service = new EmployeeAnalyticsService();
         $reflection = new ReflectionClass($service);
-        $method = $reflection->getMethod('calculateOvertimeHours');
-        $method->setAccessible(true);
+        $method = tap(
+            $reflection->getMethod('calculateOvertimeHours'),
+            static fn (ReflectionMethod $method) => $method->setAccessible(true)
+        );
 
         $result = $method->invoke($service, 50.0, 5);
 
