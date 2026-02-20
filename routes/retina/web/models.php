@@ -22,7 +22,10 @@ use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreRetinaNewProductToCurrentTiktok;
+use App\Actions\Dropshipping\Tiktok\User\AuthCheckCreateTiktokChannel;
+use App\Actions\Dropshipping\Tiktok\User\CheckTiktokChannel;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
+use App\Actions\Dropshipping\Tiktok\User\UpdateTiktokUser;
 use App\Actions\Dropshipping\WooCommerce\CheckTemporaryWooUserApiKeys;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Product\CreateNewBulkPortfolioToWooCommerce;
@@ -350,6 +353,9 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{magentoUser:id}/magento-batch-upload', SyncronisePortfoliosToMagento::class)->name('magento.batch_upload')->withoutScopedBindings();
     Route::post('{magentoUser:id}/magento-single-upload/{portfolio:id}', SyncronisePortfolioToMagento::class)->name('magento.single_upload')->withoutScopedBindings();
 
+    Route::get('tiktok/create-new-check', AuthCheckCreateTiktokChannel::class)->name('tiktok.auth_new_check')->withoutScopedBindings();
+    Route::get('tiktok/{tiktokUser:id}/check', CheckTiktokChannel::class)->name('tiktok.check')->withoutScopedBindings();
+    Route::patch('tiktok/{tiktokUser:id}', UpdateTiktokUser::class)->name('tiktok.update')->withoutScopedBindings();
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
 
