@@ -11,7 +11,7 @@ import {
 	CategoryScale,
 	LinearScale,
 } from "chart.js"
-import { Pie, Bar } from "vue-chartjs"
+import { Bar } from "vue-chartjs"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { capitalize } from "@/Composables/capitalize"
@@ -138,6 +138,22 @@ const formatNumber = (num: number | null | undefined, decimals = 2): string => {
 
 const hasValue = (num: number | null | undefined): boolean => {
 	return num !== null && num !== undefined
+}
+
+const formatMetric = (
+	value: number | null | undefined,
+	suffix = "",
+	decimals = 2
+): string => {
+	if (!hasValue(value)) return "--"
+	return formatNumber(value, decimals) + suffix
+}
+
+const attendanceMetricClass = (value: number | null | undefined): string => {
+	if (!hasValue(value)) return "text-gray-500"
+	if (value >= 90) return "text-green-600"
+	if (value >= 75) return "text-yellow-600"
+	return "text-red-600"
 }
 
 const hasAttendanceBreakdown = computed(
@@ -309,17 +325,9 @@ const leaveChartData = computed(() => {
 				<div class="text-sm font-medium text-gray-500">{{ trans("Avg Attendance %") }}</div>
 				<div
 					class="mt-2 text-3xl font-bold"
-					:class="
-						analytics?.avg_attendance_percentage >= 90
-							? 'text-green-600'
-							: analytics?.avg_attendance_percentage >= 75
-								? 'text-yellow-600'
-								: 'text-red-600'
-					">
+					:class="attendanceMetricClass(analytics?.avg_attendance_percentage)">
 					{{
-						hasValue(analytics?.avg_attendance_percentage)
-							? formatNumber(analytics.avg_attendance_percentage) + "%"
-							: "--"
+						formatMetric(analytics?.avg_attendance_percentage, "%")
 					}}
 				</div>
 			</div>
@@ -328,28 +336,20 @@ const leaveChartData = computed(() => {
 				<div class="text-sm font-medium text-gray-500">
 					{{ trans("Avg Working Hours") }}
 				</div>
-				<div class="mt-2 text-3xl font-bold text-gray-900">
-					{{
-						hasValue(analytics?.avg_total_working_hours)
-							? formatNumber(analytics.avg_total_working_hours) + "h"
-							: "--"
-					}}
+					<div class="mt-2 text-3xl font-bold text-gray-900">
+						{{ formatMetric(analytics?.avg_total_working_hours, "h") }}
+					</div>
 				</div>
-			</div>
 
 			<div class="bg-white shadow-sm rounded-lg p-6">
 				<div class="text-sm font-medium text-gray-500">
 					{{ trans("Avg Overtime Hours") }}
 				</div>
-				<div class="mt-2 text-3xl font-bold text-gray-900">
-					{{
-						hasValue(analytics?.avg_overtime_hours)
-							? formatNumber(analytics.avg_overtime_hours) + "h"
-							: "--"
-					}}
+					<div class="mt-2 text-3xl font-bold text-gray-900">
+						{{ formatMetric(analytics?.avg_overtime_hours, "h") }}
+					</div>
 				</div>
 			</div>
-		</div>
 
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 			<div class="bg-white shadow-sm rounded-lg p-6">
@@ -371,15 +371,11 @@ const leaveChartData = computed(() => {
 						<div class="text-sm font-medium text-gray-500">
 							{{ trans("Total Late Clock-ins") }}
 						</div>
-						<div class="text-2xl font-bold text-gray-900">
-							{{
-								hasValue(analytics?.total_late_clockins)
-									? formatNumber(analytics.total_late_clockins, 0)
-									: "--"
-							}}
+							<div class="text-2xl font-bold text-gray-900">
+								{{ formatMetric(analytics?.total_late_clockins, "", 0) }}
+							</div>
 						</div>
 					</div>
-				</div>
 			</div>
 
 			<div class="bg-white shadow-sm rounded-lg p-6">
@@ -401,15 +397,11 @@ const leaveChartData = computed(() => {
 						<div class="text-sm font-medium text-gray-500">
 							{{ trans("Total Early Clock-outs") }}
 						</div>
-						<div class="text-2xl font-bold text-gray-900">
-							{{
-								hasValue(analytics?.total_early_clockouts)
-									? formatNumber(analytics.total_early_clockouts, 0)
-									: "--"
-							}}
+							<div class="text-2xl font-bold text-gray-900">
+								{{ formatMetric(analytics?.total_early_clockouts, "", 0) }}
+							</div>
 						</div>
 					</div>
-				</div>
 			</div>
 
 			<div class="bg-white shadow-sm rounded-lg p-6">
@@ -431,15 +423,11 @@ const leaveChartData = computed(() => {
 						<div class="text-sm font-medium text-gray-500">
 							{{ trans("Total Leave Days") }}
 						</div>
-						<div class="text-2xl font-bold text-gray-900">
-							{{
-								hasValue(analytics?.total_leave_days)
-									? formatNumber(analytics.total_leave_days, 0)
-									: "--"
-							}}
+							<div class="text-2xl font-bold text-gray-900">
+								{{ formatMetric(analytics?.total_leave_days, "", 0) }}
+							</div>
 						</div>
 					</div>
-				</div>
 			</div>
 		</div>
 
