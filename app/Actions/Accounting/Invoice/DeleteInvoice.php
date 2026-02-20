@@ -15,7 +15,7 @@ use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoi
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\Comms\Email\SendInvoiceDeletedNotification;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
@@ -102,22 +102,10 @@ class DeleteInvoice extends OrgAction
 
         $invoiceDate = \Carbon\Carbon::parse($invoice->date);
 
+        RedoShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
         RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-            ProcessShopTimeSeriesRecords::dispatch(
-                $invoice->shop_id,
-                $frequency,
-                match ($frequency) {
-                    TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                    TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                    TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                    TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                    TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                },
-                $invoiceDate->toDateString(),
-            )->delay($this->hydratorsDelay);
-
             ProcessOrganisationTimeSeriesRecords::dispatch(
                 $invoice->organisation_id,
                 $frequency,
