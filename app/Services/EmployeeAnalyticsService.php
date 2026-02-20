@@ -133,6 +133,63 @@ class EmployeeAnalyticsService
             ->first();
     }
 
+    public function getEmployeeAttendanceBreakdown(int $organisationId, Carbon $startDate, Carbon $endDate, int $limit = 10): array
+    {
+        $results = DB::table('employee_analytics')
+            ->join('employees', 'employee_analytics.employee_id', '=', 'employees.id')
+            ->where('employee_analytics.organisation_id', $organisationId)
+            ->where('employee_analytics.period_start', '>=', $startDate)
+            ->where('employee_analytics.period_end', '<=', $endDate)
+            ->select([
+                'employees.id',
+                'employees.contact_name',
+                'employees.slug',
+                'employee_analytics.attendance_percentage',
+                'employee_analytics.late_clockins',
+                'employee_analytics.early_clockouts',
+            ])
+            ->orderByDesc('employee_analytics.attendance_percentage')
+            ->limit($limit)
+            ->get();
+
+        return $results->map(fn ($row) => [
+            'id' => $row->id,
+            'name' => $row->contact_name,
+            'slug' => $row->slug,
+            'attendance_percentage' => round($row->attendance_percentage ?? 0, 2),
+            'late_clockins' => $row->late_clockins ?? 0,
+            'early_clockouts' => $row->early_clockouts ?? 0,
+        ])->toArray();
+    }
+
+    public function getTopEmployeesByLeave(int $organisationId, Carbon $startDate, Carbon $endDate, int $limit = 10): array
+    {
+        $results = DB::table('employee_analytics')
+            ->join('employees', 'employee_analytics.employee_id', '=', 'employees.id')
+            ->where('employee_analytics.organisation_id', $organisationId)
+            ->where('employee_analytics.period_start', '>=', $startDate)
+            ->where('employee_analytics.period_end', '<=', $endDate)
+            ->where('employee_analytics.total_leave_days', '>', 0)
+            ->select([
+                'employees.id',
+                'employees.contact_name',
+                'employees.slug',
+                'employee_analytics.total_leave_days',
+                'employee_analytics.leave_breakdown',
+            ])
+            ->orderByDesc('employee_analytics.total_leave_days')
+            ->limit($limit)
+            ->get();
+
+        return $results->map(fn ($row) => [
+            'id' => $row->id,
+            'name' => $row->contact_name,
+            'slug' => $row->slug,
+            'total_leave_days' => $row->total_leave_days ?? 0,
+            'leave_breakdown' => json_decode($row->leave_breakdown ?? '{}', true),
+        ])->toArray();
+    }
+
     public function getEmployeeAnalytics(Employee $employee, Carbon $startDate, Carbon $endDate): ?object
     {
         return DB::table('employee_analytics')
