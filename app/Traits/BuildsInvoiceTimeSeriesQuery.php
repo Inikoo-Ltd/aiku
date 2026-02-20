@@ -13,13 +13,9 @@ use Illuminate\Support\Facades\DB;
 
 trait BuildsInvoiceTimeSeriesQuery
 {
-    protected function applyFrequencyGrouping(Builder $query, TimeSeriesFrequencyEnum $frequency, bool $includeOrders = false): Builder
+    protected function fullInvoiceSelects(bool $includeOrders = false): array
     {
-        $extraSelect = $includeOrders
-            ? [DB::raw('COUNT(DISTINCT order_id) as orders')]
-            : [];
-
-        $baseSelects = [
+        return [
             DB::raw('SUM(net_amount) as sales'),
             DB::raw('SUM(org_net_amount) as sales_org_currency'),
             DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
@@ -29,8 +25,23 @@ trait BuildsInvoiceTimeSeriesQuery
             DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
             DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
             DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-            ...$extraSelect,
+            ...($includeOrders ? [DB::raw('COUNT(DISTINCT order_id) as orders')] : []),
         ];
+    }
+
+    protected function platformInvoiceSelects(): array
+    {
+        return [
+            DB::raw('SUM(net_amount) as sales'),
+            DB::raw('SUM(org_net_amount) as sales_org_currency'),
+            DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
+            DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices"),
+        ];
+    }
+
+    protected function applyFrequencyGrouping(Builder $query, TimeSeriesFrequencyEnum $frequency, bool $includeOrders = false, ?array $customSelects = null): Builder
+    {
+        $baseSelects = $customSelects ?? $this->fullInvoiceSelects($includeOrders);
 
         return match ($frequency) {
             TimeSeriesFrequencyEnum::YEARLY => $query
