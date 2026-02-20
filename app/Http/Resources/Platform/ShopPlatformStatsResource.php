@@ -11,28 +11,21 @@ namespace App\Http\Resources\Platform;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property mixed $id
- * @property mixed $code
- * @property mixed $name
- * @property mixed $type
- */
 class ShopPlatformStatsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'      => $this->id,
-            'code'    => $this->platform->code,
-            'slug'    => $this->platform->slug,
-            'name'    => $this->platform->name,
-            'type'    => $this->platform->type,
-            'number_customers' => $this->number_customers,
-            'number_customer_sales_channels' => $this->number_customer_sales_channels,
-            'number_customer_sales_channel_broken' => $this->number_customer_sales_channel_broken,
-            'number_products' => $this->number_products,
-            'number_orders' => $this->number_orders,
-            'sales' => $this->sales,
+            'id'               => $this->id,
+            'code'             => $this->code,
+            'slug'             => $this->slug,
+            'name'             => $this->name,
+            'type'             => $this->type,
+            'channels'         => $this->channels ?? 0,
+            'customers'        => $this->customers ?? 0,
+            'portfolios'       => $this->portfolios ?? 0,
+            'customer_clients' => $this->customer_clients ?? 0,
+            'sales'            => $this->sales ?? 0,
         ];
     }
 }

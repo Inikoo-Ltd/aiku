@@ -22,19 +22,18 @@ trait WithTiktokApiServices
     {
         ksort($params);
 
-        $baseString = $appSecret . $path;
+        $baseString = $path;
 
         foreach ($params as $key => $value) {
             $baseString .= $key . $value;
         }
 
-        $jsonBody = json_encode($body);
-
-        if (blank($body)) {
-            $baseString .= $appSecret;
-        } else {
-            $baseString .=  $jsonBody . $appSecret;
+        if (! blank($body)) {
+            $jsonBody = json_encode($body);
+            $baseString .=  $jsonBody;
         }
+
+        $baseString = $appSecret.$baseString.$appSecret;
 
         return hash_hmac('sha256', $baseString, $appSecret);
     }
@@ -48,7 +47,7 @@ trait WithTiktokApiServices
         $shopCipher = [];
         if ($requireShopCipher) {
             $shopCipher = [
-                'shop_cipher' => Arr::get($this->data, 'authorized_shop.cipher')
+                'shop_cipher' => Arr::get($this->data, 'authorized_shop.0.cipher')
             ];
         }
 
@@ -58,15 +57,22 @@ trait WithTiktokApiServices
             ...$shopCipher
         ]);
 
+        if (Arr::get($headers, 'content-type') === 'multipart/form-data') {
+            $http = Http::asMultipart();
+            $body = [];
+        } else {
+            $http = Http::asJson();
+        }
+
         $signature = $this->generateSignature($path, $params, $appSecret, $body);
 
         if ($requireSign) {
             $params = array_merge($params, ['sign' => $signature]);
         }
 
-        return Http::withHeaders([
+        return $http->withHeaders([
             'x-tts-access-token' => $this->access_token,
-            ...$headers
+            ...Arr::except($headers, 'content-type')
         ])->baseUrl(config('services.tiktok.base_url'))
             ->withQueryParameters($params);
     }
@@ -83,6 +89,7 @@ trait WithTiktokApiServices
                 'POST' => $apiRequest->post($path, $productData),
                 'GET' => $apiRequest->get($path),
                 'PATCH' => $apiRequest->patch($path, $productData),
+                'PUT' => $apiRequest->put($path, $productData),
                 default => throw new \Exception("Unsupported HTTP method: $method"),
             };
 
@@ -106,6 +113,45 @@ trait WithTiktokApiServices
         ]);
     }
 
+    public function getWarehouses(): array
+    {
+        $path = '/logistics/'.$this->version.'/warehouses';
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getShippingProviders(string $deliveryOptionId): array
+    {
+        $path = "/logistics/$this->version/delivery_options/$deliveryOptionId/shipping_providers";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getDeliveryOptions(): array
+    {
+        $path = "/logistics/$this->version/warehouses/$this->tiktok_warehouse_id/delivery_options";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function updateWebhook(string $eventType, string $eventAddress): array
+    {
+        $path = '/event/'.$this->version.'/webhooks';
+
+        return $this->makeApiRequest('PUT', $path, [
+            'address' => $eventAddress,
+            'event_type' => $eventType
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
     public function uploadProductImageToTiktok(array $productData): array
     {
         $path = '/product/'.$this->version.'/images/upload';
@@ -124,13 +170,24 @@ trait WithTiktokApiServices
         ]);
     }
 
-    public function getOrders(array $params): array
+    public function getOrders(array $params = [], array $body = []): array
+    {
+        $path = '/order/'.$this->version.'/orders/search';
+
+        return $this->makeApiRequest('POST', $path, $body, true, [
+            'content-type' => 'application/json'
+        ], true, $params);
+    }
+
+    public function getOrder(string $orderId): array
     {
         $path = '/order/'.$this->version.'/orders';
 
         return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
-        ], true, $params);
+        ], true, [
+            'ids' => $orderId
+        ]);
     }
 
     public function getProducts(array $productData, array $params): array
@@ -140,5 +197,23 @@ trait WithTiktokApiServices
         return $this->makeApiRequest('POST', $path, $productData, true, [
             'content-type' => 'application/json'
         ], true, $params);
+    }
+
+    public function getProduct(string $productId): array
+    {
+        $path = '/product/'.$this->version.'/products/' . $productId;
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function updateShippingInfo(string $orderId, array $shippingData): array
+    {
+        $path = "/fulfillment/$this->version/orders/$orderId/shipping_info/update";
+
+        return $this->makeApiRequest('POST', $path, $shippingData, true, [
+            'content-type' => 'application/json'
+        ]);
     }
 }

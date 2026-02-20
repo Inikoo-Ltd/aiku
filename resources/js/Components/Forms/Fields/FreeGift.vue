@@ -7,18 +7,18 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { trans } from 'laravel-vue-i18n'
-import { debounce } from 'lodash-es'
+import { debounce, get, set } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from '@/Components/Image.vue'
 import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
-import { faPlus, faTimes, faBoxUp } from "@fal"
+import { faCircle, faPlus, faTimes, faBoxUp } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Tag from '@/Components/Tag.vue'
 
-library.add(faCheckCircle, faTimes, faBoxUp)
+library.add(faCircle, faCheckCircle, faTimes, faBoxUp)
 
 const props = defineProps<{
     form: any
@@ -33,7 +33,6 @@ const emits = defineEmits<{
     (e: "update:modelValue", val: Portfolio[]): void
     (e: "close"): void
     (e: "after-delete"): void
-    (e: "on-select"): void
 }>()
 
 interface Portfolio {
@@ -53,20 +52,16 @@ interface Portfolio {
 const layout = inject('layout', layoutStructure)
 const locale = inject('locale', null)
 
-const hideStockUnavailable = ref(false)
 
 const isLoadingFetch = ref(false)
 const showDialog = ref(false)
 
-const queryPortfolio = ref('')
+const querySearch = ref('')
 const list = ref<Portfolio[]>([])
 const meta = ref()
 const link = ref()
 
 // const committedProducts = ref<Portfolio[]>(props.modelValue || [])
-const selectedProduct = ref<Portfolio[]>([])
-
-const activeTab = ref(0)
 
 const openDialog = () => {
     // selectedProduct.value = [...committedProducts.value]
@@ -74,8 +69,6 @@ const openDialog = () => {
 }
 
 const confirmSelection = () => {
-    // emits("update:modelValue", committedProducts.value)
-    emits("on-select")
     showDialog.value = false
 }
 
@@ -85,7 +78,7 @@ const getProductsList = async (url?: string) => {
         const tabRoute = props.fieldData.fetchRoute
         const params: Record<string, any> = { ...tabRoute.parameters }
 
-        params['filter[global]'] = queryPortfolio.value
+        params['filter[global]'] = querySearch.value
 
         const urlToFetch = url || route(tabRoute.name, params)
 
@@ -108,17 +101,20 @@ const getProductsList = async (url?: string) => {
 const debouncegetProductsList = debounce(() => (getProductsList()), 500)
 
 const compSelectedProduct = computed(() =>
-    props.form[props.fieldName].map((item: Portfolio) => item.id)
+    selectedProduct.value.map((item: Portfolio) => item.id)
 )
 
+const selectedProduct = ref<Portfolio[]>([])
 const selectProduct = (item: Portfolio) => {
-    props.form[props.fieldName]
-    const exists = props.form[props.fieldName].find(p => p.id === item.id)
+    selectedProduct.value
+    const exists = selectedProduct.value.find(p => p.id === item.id)
     if (exists) {
-        props.form[props.fieldName] = props.form[props.fieldName].filter(p => p.id !== item.id)
+        selectedProduct.value = selectedProduct.value.filter(p => p.id !== item.id)
     } else {
-        props.form[props.fieldName]?.push(item)
+        selectedProduct.value?.push(item)
     }
+
+    props.form[props.fieldName] = selectedProduct.value.map(p => p.id)
 }
 
 
@@ -126,21 +122,21 @@ const selectProduct = (item: Portfolio) => {
 const isAllSelected = computed(() => {
     if (list.value.length === 0) return false
     return list.value.every(item =>
-        props.form[props.fieldName].some(selected => selected.id === item.id)
+        selectedProduct.value.some(selected => selected.id === item.id)
     )
 })
 const selectAllProducts = () => {
     if (isAllSelected.value) {
         const currentPageIds = list.value.map(item => item.id)
-        props.form[props.fieldName] = props.form[props.fieldName].filter(
+        selectedProduct.value = selectedProduct.value.filter(
             selected => !currentPageIds.includes(selected.id)
         )
     } else {
-        const currentSelectedIds = props.form[props.fieldName].map(item => item.id)
+        const currentSelectedIds = selectedProduct.value.map(item => item.id)
         const productsToAdd = list.value.filter(
             item => !currentSelectedIds.includes(item.id)
         )
-        props.form[props.fieldName] = [...props.form[props.fieldName], ...productsToAdd]
+        selectedProduct.value = [...selectedProduct.value, ...productsToAdd]
     }
 }
 
@@ -151,32 +147,52 @@ onUnmounted(() => {
     list.value = []
     meta.value = null
     link.value = null
-    queryPortfolio.value = ''
+    querySearch.value = ''
 })
 
 const clearAll = () => {
-    props.form[props.fieldName] = []
+    selectedProduct.value = []
 }
 
+// Method: on handle radio selection
+const onClickRadioProduct = (item) => {
+    if (get(props.form, ['default']) === item.id) {
+        set(props.form, ['default'], null)
+    } else {
+        set(props.form, ['default'], item.id)
+    }
+
+    console.log('vvvvvvvvv', props.form)
+}
 </script>
 
 <template>
     <div>
         <div class="">
             <div class="xflex justify-between">
-                <!-- <div>
-                    <h3 class="font-semibold mb-2">{{ trans(props.head_label) }}</h3>
-                </div> -->
-                
                 <div class="flex flex-grow flex-wrap">
-                    <Tag v-for="(item, index) in props.form[props.fieldName]" :key="index" class="mb-2 xflex-grow">
-                        <template #label>
-                            <div class="flex items-center gap-2">
-                                <div>{{ item.code }} - {{ item.name }}</div>
-                                <FontAwesomeIcon @click.stop="props.form[props.fieldName] = props.form[props.fieldName].filter((p: Portfolio) => p.id !== item.id)" icon="fal fa-times" fixed-width class="text-red-500 hover:text-red-700 cursor-pointer" aria-hidden="true" />
-                            </div>
-                        </template>
-                    </Tag>
+                    <template v-if="selectedProduct.length">
+                        <Tag
+                            v-for="(item, index) in selectedProduct"
+                            :key="index"
+                            @click="onClickRadioProduct(item)"
+                            class="mb-2 xflex-grow cursor-pointer"
+                        >
+                            <template #label>
+                                <div class="flex items-center gap-2">
+                                    <FontAwesomeIcon v-if="get(props.form, ['default']) === item.id" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" v-tooltip="trans('Default gift, will auto selected on each Order created')"/>
+                                    <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
+                                    <div><span class="font-bold">{{ item.code }}</span> - {{ item.name }}</div>
+                                    <FontAwesomeIcon @click.stop="selectedProduct = selectedProduct.filter((p: Portfolio) => p.id !== item.id)" icon="fal fa-times" fixed-width class="text-red-500 hover:text-red-700 cursor-pointer" aria-hidden="true" />
+                                </div>
+                            </template>
+                        </Tag>
+                    </template>
+                    <template v-else>
+                        <div class="text-gray-500 italic pb-2">
+                            {{ trans('No products selected') }}
+                        </div>
+                    </template>
                 </div>
 
                 <div>
@@ -206,7 +222,7 @@ const clearAll = () => {
 
                 <div class="mb-2">
                     <div class="pt-2">
-                        <PureInput v-model="queryPortfolio" @update:modelValue="() => debouncegetProductsList()"
+                        <PureInput v-model="querySearch" @update:modelValue="() => debouncegetProductsList()"
                             :placeholder="trans('Input to search')" />
                     </div>
 
@@ -224,11 +240,11 @@ const clearAll = () => {
                             <div class="flex gap-2">
                                 <div @click="selectAllProducts"
                                     :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
-                                    {{ trans("Select :number products in this page", { number: list.length }) }}
+                                    {{ trans("Select :xnumber products in this page", { xnumber: list.length }) }}
                                 </div>
                                 <div v-if="compSelectedProduct.length" @click="clearAll"
                                     class="cursor-pointer text-red-400 hover:text-red-600 hover:underline">
-                                    {{ trans('Clear :number selections', { number: compSelectedProduct.length }) }}
+                                    {{ trans('Clear :xnumber selections', { xnumber: compSelectedProduct.length }) }}
                                     <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
                                 </div>
                             </div>
@@ -303,8 +319,8 @@ const clearAll = () => {
 
             <!-- footer -->
             <template #footer>
-                <Button type="secondary" @click="showDialog = false" label="Cancel"></Button>
-                <Button type="create" full @click="confirmSelection" label="Select"></Button>
+                <Button type="tertiary" full @click="showDialog = false" label="Close"></Button>
+                <!-- <Button type="create" full @click="confirmSelection" label="Select"></Button> -->
             </template>
         </Dialog>
     </div>

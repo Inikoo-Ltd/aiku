@@ -30,7 +30,7 @@ class StoreTiktokUser extends RetinaAction
         data_set($modelData, 'platform_id', $platform->id);
 
         /** @var TiktokUser $tikTokUser */
-        $tikTokUser = $customer->tiktokUser()->create($modelData);
+        $tikTokUser = $customer->tiktokUsers()->create($modelData);
 
         $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
             'platform_user_type' => class_basename($tikTokUser),

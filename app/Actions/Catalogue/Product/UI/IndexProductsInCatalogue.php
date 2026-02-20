@@ -251,9 +251,9 @@ class IndexProductsInCatalogue extends OrgAction
                 $table->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
-            $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-
-            if ($bucket != 'discontinued') {
+            if($shop->type == ShopTypeEnum::EXTERNAL && $bucket !== 'discontinued') {
+                $table->column(key: 'stock', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
+            } else if ($bucket !== 'discontinued') {
                 $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
         };

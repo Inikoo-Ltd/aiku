@@ -16,8 +16,8 @@ const props = defineProps<{
 
 <template>
     <div class="relative w-fit">
-        <div class="background-primary rounded px-2 py-0.5 text-xxs w-fit text-white">{{ trans("Member Price") }}</div>
-        <img :src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward logo" class="absolute -right-5 -top-0.5 inline-block h-6 md:-right-6 md:h-7 ml-1 align-middle" />
+        <div class="background-primary rounded px-2 py-0.5 text-xxs  2xl:text-sm w-fit text-white">{{ trans("Member Price") }}</div>
+        <img :src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward logo" class="absolute -right-5 -top-0.5 inline-block h-6 md:-right-6 md:h-7 ml-1 2xl:h-9 2xl:-right-8 align-middle" />
 
         <span v-if="offer?.allowances?.[0]?.percentage_off" class="text-xs text-primary">
             {{ offer.allowances?.[0]?.percentage_off * 100 }}% {{trans("discount")}}
