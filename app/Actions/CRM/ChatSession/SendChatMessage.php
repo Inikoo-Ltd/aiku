@@ -88,7 +88,7 @@ class SendChatMessage
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch($chatMessage);
 
-        $shouldNotifyByEmail = (bool) ($modelData['is_notif_email'] ?? false);
+        $shouldNotifyByEmail = $modelData['is_email_notif'] ?? false;
 
         if ($shouldNotifyByEmail && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
             $this->sendExternalNotification($chatSession);
@@ -231,8 +231,8 @@ class SendChatMessage
                 File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
                     ->max(20 * 1024)
             ],
-            'is_notif_email' => [
-                'sometimes', 'nullable', 'boolean'
+            'is_email_notif' => [
+                'sometimes', 'nullable', 'in:true,false'
             ]
         ];
     }
