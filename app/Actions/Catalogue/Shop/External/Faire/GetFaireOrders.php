@@ -3,6 +3,7 @@
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -16,31 +17,34 @@ use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use integration\PHP8\ConstructorPromotionTest;
 
 class GetFaireOrders extends OrgAction
 {
-    public string $commandSignature = 'faire:orders {shop}';
 
-    public function handle(Shop $shop, array $modelData): void
+    /**
+     * @throws \Throwable
+     */
+    public function handle(Shop $shop): void
     {
-        DB::transaction(function () use ($shop, $modelData) {
-            $filters = [];
-            if ($minHours = Arr::get($modelData, 'min_hours', 48)) {
-                $filters = [
-                    'updated_at_min' => now()->subHours($minHours)->toIsoString(),
-                ];
-            }
+        DB::transaction(function () use ($shop) {
+            $filters = [
+                'created_at_min' => Carbon::parse('2026-02-01')->toIsoString(),
+            ];
 
             $orders = $shop->getFaireOrders([
                 'excluded_states' => 'PROCESSING',
                 ...$filters
             ]);
 
+
             foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
                 $externalId = Arr::get($faireOrder, 'id');
                 $retailerId = Arr::get($faireOrder, 'retailer_id');
-                $retailer = GetFaireRetailers::run($shop, $retailerId);
+                $retailer   = GetFaireRetailers::run($shop, $retailerId);
+
 
                 $orderExists = Order::where('shop_id', $shop->id)->where('external_id', $externalId)->exists();
 
@@ -49,50 +53,53 @@ class GetFaireOrders extends OrgAction
                 }
 
                 if ($retailer) {
-                    data_set($retailer, 'contact_name', Arr::get($retailer, 'name'));
-                    data_set($retailer, 'company_name', Arr::get($retailer, 'name'));
-                    data_set($retailer, 'external_id', $retailerId);
+                    $customer     = Customer::where('shop_id', $shop->id)->where('external_id', $retailerId)->first();
+                    $customerData = [
+                        'company_name'    => (Arr::get($retailer, 'name')),
+                        'external_id'     => $retailerId,
+                        'reference'       => $retailerId,
+                        'contact_address' => $this->getFormattedAddress(Arr::get($faireOrder, 'address'))
+                    ];
 
-                    $customer = Customer::where('shop_id', $shop->id)
-                        ->where('external_id', $retailerId)
-                        ->first();
-
-                    if (!$customer) {
-                        data_set($retailer, 'delivery_address', $this->getFormattedAddress(Arr::get($faireOrder, 'address')));
-                        data_set($retailer, 'contact_address', $this->getFormattedAddress(Arr::get($faireOrder, 'address')));
-
-                        $customer = StoreCustomer::make()->action($shop, $retailer);
+                    if ($customer) {
+                        $customer = UpdateCustomer::make()->action(customer: $customer, modelData: $customerData, strict: false);
+                    } else {
+                        $customer = StoreCustomer::make()->action(shop: $shop, modelData: $customerData, strict: false);
                     }
 
-                    data_set($faireOrder, 'external_id', $externalId);
-                    data_set($faireOrder, 'marketplace_id', $externalId);
-                    $awOrder = StoreOrder::make()->action($customer, Arr::only($faireOrder, ['delivery_address', 'billing_address', 'external_id']));
 
-                    foreach (Arr::get($faireOrder, 'items', []) as $item) {
-                        $product = Product::where('shop_id', $shop->id)
-                            ->where('code', $item['sku'])
-                            ->first();
-
-                        $historicAsset = $product?->asset?->historicAsset;
-
-                        if (! $historicAsset) {
-                            continue;
-                        }
-
-                        StoreTransaction::make()->action(
-                            order: $awOrder,
-                            historicAsset: $historicAsset,
-                            modelData: [
-                                'quantity_ordered' => $item['quantity'],
-                                'external_id' => $item['id'],
-                                'net_amount' => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
-                                'gross_amount' => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
-                                'marketplace_id' => $item['id']
-                            ]
-                        );
-                    }
-
-                    SubmitOrder::run($awOrder);
+                    //
+                    //
+                    //
+                    //                    data_set($faireOrder, 'external_id', $externalId);
+                    //                    data_set($faireOrder, 'marketplace_id', $externalId);
+                    //                    $awOrder = StoreOrder::make()->action($customer, Arr::only($faireOrder, ['delivery_address', 'billing_address', 'external_id']));
+                    //
+                    //                    foreach (Arr::get($faireOrder, 'items', []) as $item) {
+                    //                        $product = Product::where('shop_id', $shop->id)
+                    //                            ->where('code', $item['sku'])
+                    //                            ->first();
+                    //
+                    //                        $historicAsset = $product?->asset?->historicAsset;
+                    //
+                    //                        if (!$historicAsset) {
+                    //                            continue;
+                    //                        }
+                    //
+                    //                        StoreTransaction::make()->action(
+                    //                            order: $awOrder,
+                    //                            historicAsset: $historicAsset,
+                    //                            modelData: [
+                    //                                'quantity_ordered' => $item['quantity'],
+                    //                                'external_id'      => $item['id'],
+                    //                                'net_amount'       => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
+                    //                                'gross_amount'     => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
+                    //                                'marketplace_id'   => $item['id']
+                    //                            ]
+                    //                        );
+                    //                    }
+                    //
+                    //                    SubmitOrder::run($awOrder);
                 }
             }
         });
@@ -103,22 +110,33 @@ class GetFaireOrders extends OrgAction
         $country = Country::where('iso3', Arr::get($address, 'country_code'))->first();
 
         return [
-            'address_line_1' => Arr::get($address, 'address1', ''),
-            'sorting_code' => null,
-            'postal_code' => Arr::get($address, 'postal_code'),
-            'dependent_locality' => null,
-            'locality' => Arr::get($address, 'city'),
+            'address_line_1'      => Arr::get($address, 'address1', ''),
+            'sorting_code'        => null,
+            'postal_code'         => Arr::get($address, 'postal_code'),
+            'dependent_locality'  => null,
+            'locality'            => Arr::get($address, 'city'),
             'administrative_area' => Arr::get($address, 'state'),
-            'country_code' => $country->code,
-            'country_id' => $country->id
+            'country_code'        => $country->code,
+            'country_id'          => $country->id
         ];
     }
 
-    public function asCommand(Command $command): void
+    public string $commandSignature = 'faire:orders {shop?}';
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): int
     {
+        if ($command->argument('shop')) {
+            $shop = Shop::where('slug', $command->argument('shop'))->first();
+            $this->handle($shop);
+
+            return 0;
+        }
+
         $shops = Shop::where('type', ShopTypeEnum::EXTERNAL)
             ->where('engine', ShopEngineEnum::FAIRE)
-            ->where('slug', $command->argument('shop'))
             ->get();
 
         foreach ($shops as $shop) {
@@ -126,5 +144,7 @@ class GetFaireOrders extends OrgAction
                 $this->handle($shop);
             }
         }
+
+        return 0;
     }
 }
