@@ -40,9 +40,7 @@ class StoreMediaFromIcon
             $iconType = DiceBearStylesEnum::BOTS;
         }
 
-
         try {
-
 
             $svg = GetDiceBearAvatar::run($iconType, $seed);
             $checksum = md5($svg);
@@ -60,9 +58,6 @@ class StoreMediaFromIcon
                 ->usingName($model->slug."-icon")
                 ->usingFileName(hash('crc32b', $checksum).'.svg')
                 ->toMediaCollection('icon');
-
-            $media->ulid = $ulid;
-            $media->save();
 
             MediaHydrateDimensions::run($media);
             return $media;
