@@ -466,11 +466,36 @@ const handleOfflineSession = (sessionData: ChatSessionData) => {
     saveChatSession(sessionData)
 }
 
+const handleChatFromUrl = async () => {
+    const params = new URLSearchParams(window.location.search)
+    const sessionUlid = params.get("chat_session")
+
+    if (!sessionUlid) return
+
+    const sessionData: ChatSessionData & { saved_at: string } = {
+        ulid: sessionUlid,
+        saved_at: new Date().toISOString(),
+    }
+
+    localStorage.setItem("chat", JSON.stringify(sessionData))
+
+    chatSession.value = sessionData
+
+    const cleanUrl = window.location.origin + window.location.pathname
+    window.history.replaceState({}, document.title, cleanUrl)
+
+    if (!open.value) {
+        await toggle()
+    }
+}
+
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
 
 onMounted(() => {
     syncLoginState()
     window.addEventListener("storage", syncLoginState)
+
+    handleChatFromUrl()
 
     document.addEventListener("mousedown", (e) => {
         if (

@@ -227,10 +227,14 @@ watch(selectedLanguage, async (val) => {
             :class="bubbleClass">
 
             <p class="whitespace-pre-wrap break-words">
-                {{ activeMessage.original?.text || props.message.message_text }}
+                {{ activeMessage.original?.text || props.message.message_text }} {{ props.message.sender_type }} {{
+                    props.viewerType }}
             </p>
-            <div v-if="message?.is_offline_message" class="text-[10px] text-amber-600 mb-1 font-medium">
-                {{ trans("Sent while you were offline") }}
+            <div v-if="
+                message?.is_offline_message &&
+                !(props.message.sender_type === 'guest' && props.viewerType === 'user')
+            " class="text-[10px] text-amber-600 mb-1 font-medium">
+                {{ trans('Offline message') }}
             </div>
 
             <Image v-if="message.message_type === 'image' && message.media_url" :src="message.media_url.webp" preview
