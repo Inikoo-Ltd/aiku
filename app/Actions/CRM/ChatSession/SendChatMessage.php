@@ -230,7 +230,7 @@ class SendChatMessage
                     ->max(20 * 1024)
             ],
             'is_notif_email' => [
-                'sometimes', 'boolean'
+                'sometimes', 'nullable', 'boolean'
             ]
         ];
     }
