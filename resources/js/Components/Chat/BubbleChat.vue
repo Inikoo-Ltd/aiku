@@ -6,12 +6,14 @@ import { faCheck, faCheckDouble, faLanguage } from "@far"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import Image from "primevue/image"
+import { trans } from "laravel-vue-i18n"
 
 type SenderType = "guest" | "user" | "agent" | "system"
 type MessageStatus = "sending" | "sent" | "failed"
 type ViewerType = "user" | "agent"
 
 interface Message {
+    is_offline_message: boolean
     sender_type: SenderType
     message_text: string
     created_at: string
@@ -227,6 +229,9 @@ watch(selectedLanguage, async (val) => {
             <p class="whitespace-pre-wrap break-words">
                 {{ activeMessage.original?.text || props.message.message_text }}
             </p>
+            <div v-if="message?.is_offline_message" class="text-[10px] text-amber-600 mb-1 font-medium">
+                {{ trans("Sent while you were offline") }}
+            </div>
 
             <Image v-if="message.message_type === 'image' && message.media_url" :src="message.media_url.webp" preview
                 imageClass="rounded-lg max-w-full cursor-pointer" class="mt-1" />
