@@ -245,6 +245,15 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
+                        [
+                            'label' => __('Analytics'),
+                            'icon'  => ['fal', 'fa-chart-line'],
+                            'root'  => 'grp.org.hr.analytics.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.analytics.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
                     ],
                 ],
             ];
