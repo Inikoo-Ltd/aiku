@@ -32,7 +32,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
-use App\Actions\SysAdmin\Organisation\ProcessOrganisationTimeSeriesRecords;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -112,6 +112,7 @@ class UpdateInvoice extends OrgAction
         if (count($changes) > 0) {
             $invoiceDate = \Carbon\Carbon::parse($invoice->date);
 
+            RedoOrganisationTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
             RedoShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
             RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
             RedoPlatformTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
@@ -149,21 +150,6 @@ class UpdateInvoice extends OrgAction
             OrganisationHydrateSalesIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
-
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessOrganisationTimeSeriesRecords::dispatch(
-                    $invoice->organisation_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString(),
-                )->delay($this->hydratorsDelay);
-            }
 
             GroupHydrateSalesIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
             GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
