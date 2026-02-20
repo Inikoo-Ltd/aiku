@@ -117,7 +117,7 @@ class EmployeeAnalyticsService
 
     public function getOrganizationAnalyticsAggregated(int $organisationId, Carbon $startDate, Carbon $endDate): object|null
     {
-        return DB::table('employee_analytics')
+        $analytics = DB::table('employee_analytics')
             ->where('organisation_id', $organisationId)
             ->where('period_start', '>=', $startDate)
             ->where('period_end', '<=', $endDate)
@@ -131,6 +131,35 @@ class EmployeeAnalyticsService
                 SUM(total_leave_days) as total_leave_days
             ')
             ->first();
+
+        $totalLeaveDays = Leave::query()
+            ->where('organisation_id', $organisationId)
+            ->where('status', LeaveStatusEnum::APPROVED)
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('start_date', [$startDate, $endDate])
+                    ->orWhereBetween('end_date', [$startDate, $endDate])
+                    ->orWhere(function ($q) use ($startDate, $endDate) {
+                        $q->where('start_date', '<=', $startDate)
+                            ->where('end_date', '>=', $endDate);
+                    });
+            })
+            ->sum('duration_days');
+
+        if ($analytics) {
+            $analytics->total_leave_days = $totalLeaveDays;
+        } else {
+            $analytics = (object) [
+                'total_employees' => 0,
+                'avg_attendance_percentage' => null,
+                'avg_total_working_hours' => null,
+                'avg_overtime_hours' => null,
+                'total_late_clockins' => null,
+                'total_early_clockouts' => null,
+                'total_leave_days' => $totalLeaveDays,
+            ];
+        }
+
+        return $analytics;
     }
 
     public function getEmployeeAttendanceBreakdown(int $organisationId, Carbon $startDate, Carbon $endDate, int $limit = 10): array
@@ -164,30 +193,51 @@ class EmployeeAnalyticsService
 
     public function getTopEmployeesByLeave(int $organisationId, Carbon $startDate, Carbon $endDate, int $limit = 10): array
     {
-        $results = DB::table('employee_analytics')
-            ->join('employees', 'employee_analytics.employee_id', '=', 'employees.id')
-            ->where('employee_analytics.organisation_id', $organisationId)
-            ->where('employee_analytics.period_start', '>=', $startDate)
-            ->where('employee_analytics.period_end', '<=', $endDate)
-            ->where('employee_analytics.total_leave_days', '>', 0)
+        $results = Leave::query()
+            ->join('employees', 'leaves.employee_id', '=', 'employees.id')
+            ->where('leaves.organisation_id', $organisationId)
+            ->where('leaves.status', LeaveStatusEnum::APPROVED)
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('leaves.start_date', [$startDate, $endDate])
+                    ->orWhereBetween('leaves.end_date', [$startDate, $endDate])
+                    ->orWhere(function ($q) use ($startDate, $endDate) {
+                        $q->where('leaves.start_date', '<=', $startDate)
+                            ->where('leaves.end_date', '>=', $endDate);
+                    });
+            })
             ->select([
                 'employees.id',
                 'employees.contact_name',
                 'employees.slug',
-                'employee_analytics.total_leave_days',
-                'employee_analytics.leave_breakdown',
+                DB::raw('SUM(leaves.duration_days) as total_leave_days'),
+                'leaves.type',
             ])
-            ->orderByDesc('employee_analytics.total_leave_days')
+            ->groupBy('employees.id', 'employees.contact_name', 'employees.slug', 'leaves.type')
+            ->orderByDesc('total_leave_days')
             ->limit($limit)
             ->get();
 
-        return $results->map(fn ($row) => [
-            'id' => $row->id,
-            'name' => $row->contact_name,
-            'slug' => $row->slug,
-            'total_leave_days' => $row->total_leave_days ?? 0,
-            'leave_breakdown' => json_decode($row->leave_breakdown ?? '{}', true),
-        ])->toArray();
+        $employees = [];
+        foreach ($results as $row) {
+            $empId = $row->id;
+            if (!isset($employees[$empId])) {
+                $employees[$empId] = [
+                    'id' => $row->id,
+                    'name' => $row->contact_name,
+                    'slug' => $row->slug,
+                    'total_leave_days' => 0,
+                    'leave_breakdown' => [],
+                ];
+            }
+            $employees[$empId]['total_leave_days'] += $row->total_leave_days;
+            $typeValue = $row->type->value ?? $row->type;
+            $employees[$empId]['leave_breakdown'][$typeValue] =
+                ($employees[$empId]['leave_breakdown'][$typeValue] ?? 0) + $row->total_leave_days;
+        }
+
+        usort($employees, fn ($a, $b) => $b['total_leave_days'] <=> $a['total_leave_days']);
+
+        return array_slice($employees, 0, $limit);
     }
 
     public function getEmployeeAnalytics(Employee $employee, Carbon $startDate, Carbon $endDate): ?object
