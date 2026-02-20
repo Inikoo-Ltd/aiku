@@ -117,7 +117,13 @@ const props = defineProps<{
         }
         type_options: {}
         tax_number: {}
-        stats: any,
+        stats: any
+        shop: {
+            id: number
+            type: string
+            name: string
+            slug: string
+        }
         tag_routes: Record<string, routeType>
         tags: {}[]
         tags_selected_id: number[]
@@ -126,7 +132,6 @@ const props = defineProps<{
     handleTabUpdate?: Function
 }>()
 
-// console.log(props);
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout')
@@ -392,7 +397,7 @@ function tagColorClass(scope?: string) {
                                 <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                     <span class="" v-html="data?.customer?.address.formatted_address" />
 
-                                    <div v-if="data.address_management.can_open_address_management"
+                                    <div v-if="data.address_management.can_open_address_management && data.shop.type !== 'external'"
                                         @click="() => isModalAddress = true"
                                         class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                         <span>{{ trans("Edit") }}</span>
@@ -501,7 +506,8 @@ function tagColorClass(scope?: string) {
                     :currencyCode="data.currency" />
                 <CustomerSalesVsRefunds :data="data?.stats" :currency-code="data.currency" />
             </div>
-            <div class="justify-self-end ">
+
+            <div v-if="data.shop.type !== 'external'" class="justify-self-end ">
                 <div
                     class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
                     <div class="w-full flex justify-between items-center">
@@ -556,20 +562,20 @@ function tagColorClass(scope?: string) {
         </div>
     </div>
 
-    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
+    <Modal v-if="data.address_management.can_open_address_management && data.shop.type !== 'external'" :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal :addresses="data.address_management.addresses"
             :updateRoute="data.address_management.address_update_route" />
     </Modal>
 
     <!-- Modal: Increase balance -->
-    <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
+    <Modal v-if="data.shop.type !== 'external'" :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceIncrease v-model="isModalBalanceIncrease" :routeSubmit="data.balance.route_increase"
             :options="data.balance.increase_reasons_options" :currency="data.currency"
             :types="data.balance.type_options" :balance="data.customer.balance" />
     </Modal>
 
     <!-- Modal: Decrease balance -->
-    <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
+    <Modal v-if="data.shop.type !== 'external'" :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceDecrease v-model="isModalBalanceDecrease" :routeSubmit="data.balance.route_decrease"
             :options="data.balance.decrease_reasons_options" :currency="data.currency"
             :types="data.balance.type_options" :balance="data.customer.balance" />

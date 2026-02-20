@@ -145,7 +145,7 @@ class ShowCustomer extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
-                'notes'            => $this->getCustomerNotes($customer),
+                'notes'            => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? $this->getCustomerNotes($customer) : null,
                 'updateRoute'      => [
                     'name'       => 'grp.models.customer.update',
                     'parameters' => [
@@ -175,6 +175,12 @@ class ShowCustomer extends OrgAction
                 'accounting'       => [
                     'balance'             => $customer->balance,
                     'credit_transactions' => $customer->stats->number_credit_transactions
+                ],
+                'shop_data'         => [
+                    'id' => $customer->shop->id,
+                    'name' => $customer->shop->name,
+                    'slug' => $customer->shop->slug,
+                    'type' => $customer->shop->type,
                 ],
 
                 $tabs::SHOWCASE->value => $this->tab == $tabs::SHOWCASE->value ?

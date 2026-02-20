@@ -72,6 +72,9 @@ const props = defineProps<{
     payments?: {}
     notes: {}
     updateRoute: routeType
+    shop_data: {
+        type: string
+    }
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -124,7 +127,7 @@ const component = computed(() => {
     </PageHeading>
 
     <!-- Section: Box Note -->
-    <div class="relative">
+    <div v-if="shop_data.type !== 'external'" class="relative">
         <Transition name="headlessui">
             <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
                 class="p-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
