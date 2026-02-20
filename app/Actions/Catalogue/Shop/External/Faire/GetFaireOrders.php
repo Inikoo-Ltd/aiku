@@ -22,11 +22,19 @@ class GetFaireOrders extends OrgAction
 {
     public string $commandSignature = 'faire:orders {shop}';
 
-    public function handle(Shop $shop): void
+    public function handle(Shop $shop, array $modelData): void
     {
-        DB::transaction(function () use ($shop) {
+        DB::transaction(function () use ($shop, $modelData) {
+            $filters = [];
+            if ($minHours = Arr::get($modelData, 'min_hours', 48)) {
+                $filters = [
+                    'updated_at_min' => now()->subHours($minHours)->toIsoString(),
+                ];
+            }
+
             $orders = $shop->getFaireOrders([
-                'excluded_states' => 'DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,PENDING_RETAILER_CONFIRMATION'
+                'excluded_states' => 'PROCESSING',
+                ...$filters
             ]);
 
             foreach (Arr::get($orders, 'orders', []) as $faireOrder) {

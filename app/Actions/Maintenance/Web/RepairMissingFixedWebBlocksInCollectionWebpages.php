@@ -61,7 +61,7 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         print "=========\n";
 
 
-        if ($webpage->is_dirty) {
+        if ($webpage->is_dirty && $collection) {
             if (in_array($collection->state, [
                 CollectionStateEnum::ACTIVE,
             ])) {
