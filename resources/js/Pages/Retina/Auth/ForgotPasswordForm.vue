@@ -112,7 +112,7 @@ const submit = () => {
 
           <!-- Submit Button -->
           <div class="flex items-center justify-center mt-6">
-            <Button @click="submit" :loading="form.processing" label="Send Reset Link"  />
+            <Button @click="submit" :loading="form.processing" :label="trans('Send Reset Link')"  />
           </div>
         </form>
       </template>

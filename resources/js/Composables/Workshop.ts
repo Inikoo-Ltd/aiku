@@ -98,6 +98,7 @@ export const textReplaceVariables = (text?: string, piniaVariables?: PiniaVariab
 
 
 // Method: to declare css variable in the root
+// DEPRECATED (use setColorStyleRoot instead)
 export const irisStyleVariables = (layoutColor: string[]) => {
     if (!layoutColor) {
         return 
