@@ -169,7 +169,7 @@ const toggleInterest = (interestValue: string) => {
             >{{ trans("Website") }}</label
         >
         <div class="mt-2">
-            <IconField class="w-full">
+            <IconField class="w-full" :class="form.errors.contact_website ? 'errorShake' : ''">
                 <InputIcon>
                     <FontAwesomeIcon :icon="faGlobe" />
                 </InputIcon>

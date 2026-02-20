@@ -5,7 +5,7 @@ import { inject, ref, computed } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCircle} from "@fas"
+import { faCircle } from "@fas"
 import { Image as ImageTS } from "@/types/Image"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
@@ -78,7 +78,7 @@ const emits = defineEmits<{
 
 
 const onAddFavourite = (product: ProductResource) => {
-     emits('setFavorite', product)
+    emits('setFavorite', product)
 }
 const onUnselectFavourite = (product: ProductResource) => {
     emits('unsetFavorite', product)
@@ -86,7 +86,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
 
 const onAddBackInStock = (product: ProductResource) => {
-     emits('setBackInStock', product)
+    emits('setBackInStock', product)
 }
 
 const onUnselectBackInStock = (product: ProductResource) => {
@@ -118,28 +118,44 @@ const images = computed(() => {
 const currentIndex = ref(0)
 const mobileSlider = ref<HTMLElement | null>(null)
 
-const onScroll = () => {
-    if (!mobileSlider.value) return
-    const el = mobileSlider.value
+let startX = 0
+let isDragging = false
 
-    const slideWidth = el.offsetWidth
-    const index = Math.round(el.scrollLeft / slideWidth)
-
-    currentIndex.value = index
+const onTouchStart = (e: TouchEvent) => {
+    startX = e.touches[0].clientX
+    isDragging = true
 }
 
-const onTouchEnd = () => {
+const onTouchEnd = (e: TouchEvent) => {
+    if (!mobileSlider.value || !isDragging) return
+
+    const endX = e.changedTouches[0].clientX
+    const diff = startX - endX
+    const threshold = 50 // minimal swipe distance
+
+    if (Math.abs(diff) > threshold) {
+        if (diff > 0 && currentIndex.value < images.value.length - 1) {
+            currentIndex.value++
+        } else if (diff < 0 && currentIndex.value > 0) {
+            currentIndex.value--
+        }
+    }
+
+    scrollToIndex(currentIndex.value)
+    isDragging = false
+}
+
+const scrollToIndex = (index: number) => {
     if (!mobileSlider.value) return
     const el = mobileSlider.value
-
-    const slideWidth = el.offsetWidth
-    const index = Math.round(el.scrollLeft / slideWidth)
+    const slideWidth = el.clientWidth
 
     el.scrollTo({
-        left: index * slideWidth,
+        left: slideWidth * index,
         behavior: 'smooth'
     })
 }
+
 
 
 </script>
@@ -148,48 +164,47 @@ const onTouchEnd = () => {
     <div id="product-render" class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screenType/>
+            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
+                :screenType />
 
             <!-- Product Image -->
-            <component 
-                :is="product.canonical_url || product.url ? LinkIris : 'div'" 
-                :href="product.canonical_url || product.url"  
-                :type="typeOfLink" 
-                @start="() => idxSlideLoading = true" 
+            <component :is="product.canonical_url || product.url ? LinkIris : 'div'"
+                :href="product.canonical_url || product.url" :type="typeOfLink" @start="() => idxSlideLoading = true"
                 @finish="() => idxSlideLoading = false"
-                class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]"
-            >
-                 <div class="relative w-full h-full bg-white">
+                class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]">
+                <div class="relative w-full h-full bg-white">
 
                     <slot name="image" :product="product">
 
                         <!-- MOBILE -->
                         <div v-if="images.length" class="md:hidden w-full h-full relative">
-                            <div v-if="images.length > 1" ref="mobileSlider" @scroll="onScroll" @touchend="onTouchEnd"
-                                class="flex w-full h-full overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
-                                <div v-for="(img, i) in images" :key="i"
-                                    class="w-full h-full flex-shrink-0 snap-start snap-always">
+                            <div v-if="images.length > 1" ref="mobileSlider" @touchstart="onTouchStart"
+                                @touchend="onTouchEnd" class="flex w-full h-full overflow-hidden">
 
-                                    <Image :src="img" :alt="product.name" class="w-full h-full"
-                                       :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                <div v-for="(img, i) in images" :key="i" class="w-full h-full flex-shrink-0">
+
+                                    <Image :src="img" :alt="product.name"
+                                        class="w-full h-full select-none pointer-events-none"
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
                             </div>
 
+
                             <div v-else class="w-full h-full">
                                 <Image :src="images[0]" :alt="product.name" class="w-full h-full"
-                                   :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                    :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                             </div>
 
+                            <!-- dots -->
                             <div v-if="images.length > 1"
                                 class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
                                 <span v-for="(img, i) in images" :key="'dot-' + i"
-                                    class="w-2 h-2 rounded-full transition-all"
-                                    :class="i === currentIndex ? 'bg-black' : 'bg-black/30'" />
+                                    class="w-2 h-2 rounded-full transition-all duration-200"
+                                    :class="i === currentIndex ? 'bg-black scale-110' : 'bg-black/30'" />
                             </div>
 
                         </div>
-
                         <!-- DESKTOP -->
                         <div v-if="images.length" class="hidden md:block relative w-full h-full overflow-hidden group">
                             <div class="flex w-full h-full"
@@ -197,13 +212,13 @@ const onTouchEnd = () => {
 
                                 <div class="w-full h-full flex-shrink-0 flex items-center justify-center">
                                     <Image :src="images[0]" :alt="product.name" class="max-w-full max-h-full"
-                                       :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
 
                                 <div v-if="images.length > 1"
                                     class="w-full h-full flex-shrink-0 flex items-center justify-center">
                                     <Image :src="images[1]" :alt="product.name" class="max-w-full max-h-full"
-                                       :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
 
                             </div>
@@ -216,8 +231,8 @@ const onTouchEnd = () => {
                 </div>
 
 
-                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
-                    <button 
+                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
+                    <button
                         v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
@@ -252,7 +267,7 @@ const onTouchEnd = () => {
                 <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
                     <div v-if="!product.is_coming_soon"
                         class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[12rem] break-words leading-snug"
-                        :class="(product?.stock > 0 ) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+                        :class="(product?.stock > 0) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
                         <span class="inline-flex items-center gap-1 text-xs leading-snug">
                             <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" />
                             <span>
@@ -292,5 +307,4 @@ const onTouchEnd = () => {
 </template>
 
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -105,31 +105,48 @@ const images = computed(() => {
     return arr
 })
 
+
 const currentIndex = ref(0)
 const mobileSlider = ref<HTMLElement | null>(null)
 
-const onScroll = () => {
-    if (!mobileSlider.value) return
-    const el = mobileSlider.value
+let startX = 0
+let isDragging = false
 
-    const slideWidth = el.offsetWidth
-    const index = Math.round(el.scrollLeft / slideWidth)
-
-    currentIndex.value = index
+const onTouchStart = (e: TouchEvent) => {
+    startX = e.touches[0].clientX
+    isDragging = true
 }
 
-const onTouchEnd = () => {
+const onTouchEnd = (e: TouchEvent) => {
+    if (!mobileSlider.value || !isDragging) return
+
+    const endX = e.changedTouches[0].clientX
+    const diff = startX - endX
+    const threshold = 50 // minimal swipe distance
+
+    if (Math.abs(diff) > threshold) {
+        if (diff > 0 && currentIndex.value < images.value.length - 1) {
+            currentIndex.value++
+        } else if (diff < 0 && currentIndex.value > 0) {
+            currentIndex.value--
+        }
+    }
+
+    scrollToIndex(currentIndex.value)
+    isDragging = false
+}
+
+const scrollToIndex = (index: number) => {
     if (!mobileSlider.value) return
     const el = mobileSlider.value
-
-    const slideWidth = el.offsetWidth
-    const index = Math.round(el.scrollLeft / slideWidth)
+    const slideWidth = el.clientWidth
 
     el.scrollTo({
-        left: index * slideWidth,
+        left: slideWidth * index,
         behavior: 'smooth'
     })
 }
+
 
 defineExpose({
     _button_variant
@@ -146,44 +163,44 @@ defineExpose({
                 :screenType="screenType" />
 
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
-            <component 
-                :is="product.url ? LinkIris : 'div'" 
-                :href="product.url" 
-                :id="product?.url?.id"
+            <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
                 :type="typeOfLink"
                 class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]"
-                @start="() => idxSlideLoading = true" 
-                @finish="() => idxSlideLoading = false">
+                @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false">
                 <div class="relative w-full h-full bg-white">
 
                     <slot name="image" :product="product">
 
                         <!-- MOBILE -->
                         <div v-if="images.length" class="md:hidden w-full h-full relative">
-                            <div v-if="images.length > 1" ref="mobileSlider" @scroll="onScroll" @touchend="onTouchEnd"
-                                class="flex w-full h-full overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
-                                <div v-for="(img, i) in images" :key="i"
-                                    class="w-full h-full flex-shrink-0 snap-start snap-always">
+                            <div v-if="images.length > 1" ref="mobileSlider" @touchstart="onTouchStart"
+                                @touchend="onTouchEnd" class="flex w-full h-full overflow-hidden">
 
-                                    <Image :src="img" :alt="product.name" class="w-full h-full"
-                                       :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                <div v-for="(img, i) in images" :key="i" class="w-full h-full flex-shrink-0">
+
+                                    <Image :src="img" :alt="product.name"
+                                        class="w-full h-full select-none pointer-events-none"
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
                             </div>
 
+
                             <div v-else class="w-full h-full">
                                 <Image :src="images[0]" :alt="product.name" class="w-full h-full"
-                                   :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                    :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                             </div>
 
+                            <!-- dots -->
                             <div v-if="images.length > 1"
                                 class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
                                 <span v-for="(img, i) in images" :key="'dot-' + i"
-                                    class="w-2 h-2 rounded-full transition-all"
-                                    :class="i === currentIndex ? 'bg-black' : 'bg-black/30'" />
+                                    class="w-2 h-2 rounded-full transition-all duration-200"
+                                    :class="i === currentIndex ? 'bg-black scale-110' : 'bg-black/30'" />
                             </div>
 
                         </div>
+
 
                         <!-- DESKTOP -->
                         <div v-if="images.length" class="hidden md:block relative w-full h-full overflow-hidden group">
@@ -192,13 +209,13 @@ defineExpose({
 
                                 <div class="w-full h-full flex-shrink-0 flex items-center justify-center">
                                     <Image :src="images[0]" :alt="product.name" class="max-w-full max-h-full"
-                                       :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
 
                                 <div v-if="images.length > 1"
                                     class="w-full h-full flex-shrink-0 flex items-center justify-center">
                                     <Image :src="images[1]" :alt="product.name" class="max-w-full max-h-full"
-                                       :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
 
                             </div>
@@ -269,7 +286,7 @@ defineExpose({
                 </LinkIris>
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
                     <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{
-                    product.name}}
+                        product.name }}
                 </div>
 
                 <!-- Product Code -->
