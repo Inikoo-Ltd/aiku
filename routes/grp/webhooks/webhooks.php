@@ -62,6 +62,6 @@ Route::middleware('verify.shopify.webhook')->group(function () {
     });
 });
 
-Route::prefix('tiktok')->as('tiktok.')->group(function () {
+Route::prefix('tiktok')->as('webhooks.tiktok.')->group(function () {
     Route::post('orders', HandleOrderIncomingTiktok::class)->name('orders.create');
 });

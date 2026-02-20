@@ -180,6 +180,17 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
+
+                         [
+                            'tooltip' => __('Calendar'),
+                            'icon'  => ['fal', 'fa-calendar'],
+                            'root'  => 'grp.org.hr.calendars.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.calendars.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+
                         [
                             'label' => __('Employees'),
                             'icon'  => ['fal', 'fa-user-hard-hat'],
@@ -189,17 +200,9 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
-                        /*
-                    [
-                        'label' => __('Calendar'),
-                        'icon'  => ['fal', 'fa-calendar'],
-                        'root'  => 'grp.org.hr.calendars.',
-                        'route' => [
-                            'name'       => 'grp.org.hr.calendars.index',
-                            'parameters' => [$organisation->slug],
-                        ],
-                    ],
-                    */
+
+
+
                         [
                             'label' => __('Clocking machines'),
                             'icon'  => ['fal', 'fa-chess-clock'],

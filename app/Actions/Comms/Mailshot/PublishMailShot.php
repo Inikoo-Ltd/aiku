@@ -30,6 +30,7 @@ class PublishMailShot extends OrgAction
         $unpublishedSnapshot = $email->unpublishedSnapshot;
         $outbox              = $mailshot->outbox;
 
+        $primaryModelData = $modelData;
 
         /** @var Snapshot $snapshot */
         $snapshot = StoreEmailSnapshot::run(
@@ -78,6 +79,11 @@ class PublishMailShot extends OrgAction
         ];
 
         SetMailshotAsReady::run($mailshot, $modelData);
+
+        // publish second wave if exists
+        if ($mailshot->secondWave()->exists()) {
+            PublishMailShotSecondWave::make()->action($mailshot->secondWave, $primaryModelData);
+        }
 
         return $mailshot;
     }

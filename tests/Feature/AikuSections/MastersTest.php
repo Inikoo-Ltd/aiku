@@ -129,7 +129,7 @@ test('create master shop', function () {
 test('JSON Get All Trade Units in Master Product Category', function () {
     $masterProductCategory = ensureMasterProductCategory();
 
-    $response = getJson(route('grp.json.master-product-category.all-trade-units', [
+    $response = getJson(route('grp.json.master_product_category.all_trade_units', [
         'masterProductCategory' => $masterProductCategory->id,
     ]));
 

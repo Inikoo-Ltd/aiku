@@ -186,6 +186,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read \App\Models\Catalogue\ShopDiscountsStats|null $discountsStats
  * @property-read \App\Models\Catalogue\ShopDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, EmailTemplate> $emailTemplates
+ * @property-read LaravelCollection<int, ExternalEmailRecipient> $externalEmailRecipients
  * @property-read LaravelCollection<int, InvoiceTransactionHasFeedback> $feedbackBridges
  * @property-read Fulfilment|null $fulfilment
  * @property-read Group $group
@@ -254,6 +255,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Upload> $uploads
  * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read Website|null $website
+ * @property-read LaravelCollection<int, WorkSchedule> $workSchedules
  * @method static \Database\Factories\Catalogue\ShopFactory factory($count = null, $state = [])
  * @method static Builder<static>|Shop newModelQuery()
  * @method static Builder<static>|Shop newQuery()

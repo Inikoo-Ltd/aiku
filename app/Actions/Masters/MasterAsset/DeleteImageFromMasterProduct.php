@@ -20,29 +20,28 @@ class DeleteImageFromMasterProduct extends GrpAction
 
     public function handle(MasterAsset $masterAsset, Media $media, bool $updateDependants = false): MasterAsset
     {
-        if ($masterAsset->is_single_trade_unit) {
-            return $masterAsset;
-        }
 
-        $masterAsset->images()->detach($media->id);
+        if (!$masterAsset->is_single_trade_unit || !$masterAsset->follow_trade_unit_media) {
+            $masterAsset->images()->detach($media->id);
 
-        $updateData = [];
+            $updateData = [];
 
-        foreach ($this->imageColumns() as $column) {
-            if ($masterAsset->{$column} == $media->id) {
-                $updateData[$column] = null;
+            foreach ($this->imageColumns() as $column) {
+                if ($masterAsset->{$column} == $media->id) {
+                    $updateData[$column] = null;
+                }
+            }
+
+            if (!empty($updateData)) {
+                $masterAsset->update($updateData);
+            }
+
+            if ($updateDependants) {
+                UpdateMasterProductImages::make()->updateDependants($masterAsset);
             }
         }
-
-        if (!empty($updateData)) {
-            $masterAsset->update($updateData);
-        }
-
-        if ($updateDependants && !$masterAsset->is_single_trade_unit) {
-            UpdateMasterProductImages::make()->updateDependants($masterAsset);
-        }
-
         return $masterAsset;
+
     }
 
 

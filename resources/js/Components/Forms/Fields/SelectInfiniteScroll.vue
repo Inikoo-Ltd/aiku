@@ -41,7 +41,10 @@ const locale = inject('locale', aikuLocaleStructure)
 onMounted(() => {
     if(props.fieldData?.required && !props.form[props.fieldName]) {
         props.form[props.fieldName] = props.options?.[0]?.value
+			props.form.defaults(props.fieldName, props.options?.[0]?.value)
+			props.form.reset()
     }
+
 })
 
 

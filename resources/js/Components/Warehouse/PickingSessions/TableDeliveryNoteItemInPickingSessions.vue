@@ -17,7 +17,7 @@ import { routeType } from "@/types/route"
 import { ref, onMounted, reactive, inject } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes } from "@fal"
-import { faSkull, faStickyNote } from "@fas"
+import { faSkull, faStickyNote, faPeopleArrows} from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -34,7 +34,7 @@ import { RouteParams } from "@/types/route-params"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import state from "pusher-js/src/core/http/state"
 
-library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes)
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows)
 
 
 defineProps<{
@@ -130,8 +130,8 @@ const onCloseModal = () => {
 }
 
 // Method: to find the location that Alt ed, fallback is index 0
-const findLocation = (locationsList: { location_code: string }[], selectedHehe: string) => {
-    return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
+const findLocation = (locationsList: { location_code: string }[], selectedOrgStockId: string) => {
+    return locationsList.find(x => x.location_code == selectedOrgStockId) || locationsList[0]
 }
 
 const DeliveryNoteInModal = ref(null)
@@ -151,6 +151,12 @@ const innerWidth = ref(0)
 onMounted(() => {
     innerWidth.value = window.innerWidth
 })
+
+const GetQuantityToPickFractional = (item) => {
+    if(item.delivery_note_shop_type == 'dropshipping'){
+        return item.quantity_to_pick_fractional_ds
+    }else return item.quantity_to_pick_fractional
+}
 
 
 </script>
@@ -184,6 +190,11 @@ onMounted(() => {
                 </Link>
                 <FontAwesomeIcon v-if="item.delivery_note_is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-if="item.delivery_note_has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.delivery_note_is_for_collection" v-tooltip="trans('For Collection')" icon="fas fa-people-arrows" class="text-purple-500 animate-bounce" fixed-width aria-hidden="true" />
+
+
+
+
                 <NotesDisplay reference-field="delivery_note_reference" :item="item" :note-fields="{
                     shipping: 'delivery_note_shipping_notes',
                     customer: 'delivery_note_customer_notes',
@@ -288,21 +299,21 @@ onMounted(() => {
                     <div>
                         <Link :href="showOrgStockRoute(deliveryItem)" class="secondaryLink">
                         {{ deliveryItem.org_stock_code }}
-                        </Link>
+                        </Link> <span class="opacity-70">{{ deliveryItem.org_stock_name}} <span class="italic">{{ deliveryItem.packed_in_message}}</span></span>
                     </div>
 
                     <template v-if="deliveryItem.quantity_to_pick > 0 && deliveryItem.state == 'handling'">
-                        <div v-if="findLocation(deliveryItem.locations, proxyItem.hehe)"
+                        <div v-if="findLocation(deliveryItem.locations, proxyItem.org_stock_id)"
                             class="rounded p-1 flex flex-col justify-between gap-x-6 items-center">
                             <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
                                 <!-- Location Info -->
                                 <div>
                                     <Transition name="spin-to-right">
-                                        <div :key="findLocation(deliveryItem.locations, proxyItem.hehe).location_code">
-                                            <Link v-if="findLocation(deliveryItem.locations, proxyItem.hehe)"
-                                                :href="generateLocationRoute(findLocation(deliveryItem.locations, proxyItem.hehe))"
+                                        <div :key="findLocation(deliveryItem.locations, proxyItem.org_stock_id).location_code">
+                                            <Link v-if="findLocation(deliveryItem.locations, proxyItem.org_stock_id)"
+                                                :href="generateLocationRoute(findLocation(deliveryItem.locations, proxyItem.org_stock_id))"
                                                 class="secondaryLink">
-                                            {{ findLocation(deliveryItem.locations, proxyItem.hehe).location_code }}
+                                            {{ findLocation(deliveryItem.locations, proxyItem.org_stock_id).location_code }}
                                             </Link>
                                             <span v-else v-tooltip="trans('Unknown location')"
                                                 class="text-gray-400 italic">
@@ -313,7 +324,7 @@ onMounted(() => {
                                                 class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                                                 <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                                     aria-hidden="true" />
-                                                {{ findLocation(deliveryItem.locations, proxyItem.hehe).quantity }}
+                                                {{ findLocation(deliveryItem.locations, proxyItem.org_stock_id).quantity }}
                                             </span>
 
                                             <span v-if="deliveryItem.locations?.length > 1" @click="() => {
@@ -334,11 +345,11 @@ onMounted(() => {
                                 <!-- Quantity Picker -->
                                 <div class="flex items-center flex-nowrap gap-x-2">
                                     <NumberWithButtonSave
-                                        v-if="!deliveryItem.is_handled && findLocation(deliveryItem.locations, proxyItem.hehe).quantity > 0"
-                                        :key="findLocation(deliveryItem.locations, proxyItem.hehe).location_code"
+                                        v-if="!deliveryItem.is_handled && findLocation(deliveryItem.locations, proxyItem.org_stock_id).quantity > 0"
+                                        :key="findLocation(deliveryItem.locations, proxyItem.org_stock_id).location_code"
                                         noUndoButton
                                         @onError="(error: any) => proxyItem.errors = Object.values(error || {})"
-                                        :modelValue="findLocation(deliveryItem.locations, proxyItem.hehe).quantity_picked"
+                                        :modelValue="findLocation(deliveryItem.locations, proxyItem.org_stock_id).quantity_picked"
                                         @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                         saveOnForm :routeSubmit="{
                                             name: deliveryItem.upsert_picking_route.name,
@@ -347,13 +358,13 @@ onMounted(() => {
                                             step: 1,
                                             min: 0,
                                             max: Math.min(
-                                                findLocation(deliveryItem.locations, proxyItem.hehe).quantity,
+                                                findLocation(deliveryItem.locations, proxyItem.org_stock_id).quantity,
                                                 deliveryItem.quantity_required,
-                                                deliveryItem.quantity_to_pick + findLocation(deliveryItem.locations, proxyItem.hehe).quantity_picked
+                                                deliveryItem.quantity_to_pick + findLocation(deliveryItem.locations, proxyItem.org_stock_id).quantity_picked
                                             )
                                         }" :additionalData="{
-                                            location_org_stock_id: findLocation(deliveryItem.locations, proxyItem.hehe).id,
-                                            picking_id: deliveryItem.pickings.find(p => p.location_id === findLocation(deliveryItem.locations, proxyItem.hehe).location_id)?.id
+                                            location_org_stock_id: findLocation(deliveryItem.locations, proxyItem.org_stock_id).id,
+                                            picking_id: deliveryItem.pickings.find(p => p.location_id === findLocation(deliveryItem.locations, proxyItem.org_stock_id).location_id)?.id
                                         }" autoSave xxisWithRefreshModel
                                         :readonly="deliveryItem.is_handled || deliveryItem.quantity_required === deliveryItem.quantity_picked">
                                         <template #save="{ isProcessing }">
@@ -366,11 +377,11 @@ onMounted(() => {
                                                     preserveScroll: true,
                                                     preserveState: true
                                                 }" :body="{
-                                                    location_org_stock_id: findLocation(deliveryItem.locations, proxyItem.hehe).id
+                                                    location_org_stock_id: findLocation(deliveryItem.locations, proxyItem.org_stock_id).id
                                                 }" isWithError>
                                                 <template #label>
-                                                    <FractionDisplay v-if="deliveryItem.quantity_to_pick_fractional"
-                                                        :fractionData="deliveryItem.quantity_to_pick_fractional" />
+                                                    <FractionDisplay v-if="GetQuantityToPickFractional(deliveryItem)"
+                                                        :fractionData="GetQuantityToPickFractional(deliveryItem)" />
                                                     <span v-else>{{ locale.number(deliveryItem.quantity_to_pick ?? 0)
                                                         }}</span>
                                                 </template>
@@ -444,18 +455,18 @@ onMounted(() => {
         <!-- Column: actions -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0 && pickingSession.state == 'handling'">
-                <div v-if="findLocation(itemValue.locations, proxyItem.hehe)"
+                <div v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)"
                     class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
                     <!-- Action: decrease and increase quantity -->
                     <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
                         <div class="">
                             <Transition name="spin-to-right">
-                                <div :key="findLocation(itemValue.locations, proxyItem.hehe).location_code">
-                                    <span v-if="findLocation(itemValue.locations, proxyItem.hehe)">
+                                <div :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code">
+                                    <span v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)">
                                         <Link v-tooltip="`${itemValue.warehouse_area}`"
-                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.hehe))"
+                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.org_stock_id))"
                                             class="secondaryLink">
-                                        {{ findLocation(itemValue.locations, proxyItem.hehe).location_code }}
+                                        {{ findLocation(itemValue.locations, proxyItem.org_stock_id).location_code }}
                                         </Link>
                                     </span>
                                     <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
@@ -465,7 +476,7 @@ onMounted(() => {
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
-                                        {{ Number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity ?? 0) }}
+                                        {{ Number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity ?? 0) }}
                                     </span>
 
                                     <span v-if="itemValue.locations?.length > 1" @click="() => {
@@ -485,11 +496,11 @@ onMounted(() => {
                         <div>
                             <div class="flex items-center flex-nowrap gap-x-2">
                                 <NumberWithButtonSave
-                                    v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.hehe).quantity > 0"
-                                    :key="findLocation(itemValue.locations, proxyItem.hehe).location_code" noUndoButton
+                                    v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.org_stock_id).quantity > 0"
+                                    :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code" noUndoButton
                                     @onError="(error: any) => {
                                         proxyItem.errors = Object.values(error || {})
-                                    }" :modelValue="findLocation(itemValue.locations, proxyItem.hehe).quantity_picked"
+                                    }" :modelValue="findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked"
                                     @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                                     saveOnForm :routeSubmit="{
                                         name: itemValue.upsert_picking_route.name,
@@ -498,10 +509,10 @@ onMounted(() => {
                                         class: proxyItem.errors?.length ? 'errorShake' : undefined,
                                         step: 1,
                                         min: 0,
-                                        max: Math.min(findLocation(itemValue.locations, proxyItem.hehe).quantity, itemValue.quantity_required, (itemValue.quantity_to_pick + findLocation(itemValue.locations, proxyItem.hehe).quantity_picked))
+                                        max: Math.min(findLocation(itemValue.locations, proxyItem.org_stock_id).quantity, itemValue.quantity_required, (itemValue.quantity_to_pick + findLocation(itemValue.locations, proxyItem.org_stock_id).quantity_picked))
                                     }" :additionalData="{
-                                        location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id,
-                                        picking_id: itemValue.pickings.find(picking => picking.location_id == findLocation(itemValue.locations, proxyItem.hehe).location_id)?.id,
+                                        location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id,
+                                        picking_id: itemValue.pickings.find(picking => picking.location_id == findLocation(itemValue.locations, proxyItem.org_stock_id).location_id)?.id,
                                     }" autoSave xxisWithRefreshModel
                                     :readonly="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked">
                                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
@@ -515,12 +526,12 @@ onMounted(() => {
                                                     preserveScroll: true,
                                                     preserveState: true,
                                                 }" :body="{
-                                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
+                                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id
                                                 }" isWithError>
                                                 <template #label>
                                                     <div>
-                                                        <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
-                                                            :fractionData="itemValue.quantity_to_pick_fractional" />
+                                                        <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)"
+                                                            :fractionData="GetQuantityToPickFractional(itemValue)" />
                                                         <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
                                                             }}</span>
                                                     </div>
@@ -537,12 +548,12 @@ onMounted(() => {
                                                     preserveScroll: true,
                                                     preserveState: true,
                                                 }" :body="{
-                                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
+                                                    location_org_stock_id: findLocation(itemValue.locations, proxyItem.org_stock_id).id
                                                 }" isWithError full>
                                                 <template #label>
                                                     <div>
-                                                        <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
-                                                            :fractionData="itemValue.quantity_to_pick_fractional" />
+                                                        <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)"
+                                                            :fractionData="GetQuantityToPickFractional(itemValue)" />
                                                         <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
                                                             }}</span>
                                                     </div>
@@ -630,7 +641,7 @@ onMounted(() => {
                     </span>
                 </label>
 
-                <RadioButton v-model="selectedItemProxy.hehe" @update:modelValue="() => {
+                <RadioButton v-model="selectedItemProxy.org_stock_id" @update:modelValue="() => {
                         onCloseModal()
                     }" :size="twBreakPoint().includes('lg') ? undefined : 'large'" :inputId="location.location_code"
                     :disabled="location.quantity <= 0" name="location" :value="location.location_code" />

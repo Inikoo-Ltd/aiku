@@ -8,23 +8,25 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Order;
 
-use App\Actions\Fulfilment\PalletReturn\StorePalletReturn;
-use App\Actions\Fulfilment\StoredItem\StoreStoredItemsToReturn;
+use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
+use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
-use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatformUser;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
+use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\ChannelFulfilmentStateEnum;
-use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\Dropshipping\TiktokUserHasProduct;
+use App\Models\Helpers\Address;
+use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class StoreTiktokOrder extends RetinaAction
 {
@@ -33,103 +35,130 @@ class StoreTiktokOrder extends RetinaAction
     use WithActionUpdate;
     use WithGeneratedTiktokAddress;
 
-    public function handle(TiktokUser $tiktokUser, array $attributes): void
+    public function handle(TiktokUser $tiktokUser, array $tiktokOrders): void
     {
-        $tiktokOrders = $attributes;
-        $address      = Arr::get($tiktokOrders, 'recipient_address');
-        data_set($address, 'email', Arr::get($tiktokOrders, 'buyer_email'));
+        $customerClient = $this->digestTiktokCustomerClient($tiktokUser, $tiktokOrders);
+        $orderedProducts = $this->digestTiktokProducts($tiktokUser, $tiktokOrders);
 
-        $orderState = match (Arr::get($tiktokOrders, 'status')) {
-            'AWAITING_SHIPMENT' => OrderStateEnum::SUBMITTED->value,
-            'CANCEL' => OrderStateEnum::CANCELLED->value,
-            'DELIVERED', 'COMPLETED' => OrderStateEnum::FINALISED->value
-        };
-
-        /** @var CustomerClient $customerClient */
-        $customerClient = $tiktokUser->customer->clients()->where('email', Arr::get($attributes, 'buyer_email'))->first();
-        $address        = $this->getAddressAttributes($address);
-
-        $customerClient = StoreRetinaClientFromPlatformUser::run($tiktokUser, $address, [
-            'id' => Arr::get($tiktokOrders, 'user_id')
-        ], $customerClient);
-
-        data_set($tiktokOrders, 'customer_client_id', $customerClient->id);
-        data_set($tiktokOrders, 'state', $orderState);
-
-        if ($tiktokUser->customer->is_fulfilment) {
-            $this->processFulfilment($tiktokUser, $customerClient, $attributes);
-        } else {
-            $this->processDropshippingShop($attributes);
-        }
-    }
-
-    //todo: complete this method
-    protected function processDropshippingShop($attributes)
-    {
-        $order = StoreOrder::make()->action();
-        foreach (Arr::get($attributes, 'line_items') as $lineItem) {
-            StoreTransaction::run($order, []);
-        }
-    }
-
-    protected function processFulfilment(TiktokUser $tiktokUser, CustomerClient $customerClient, array $attributes)
-    {
-        $palletReturn = StorePalletReturn::make()->actionWithDropshipping($tiktokUser->customer->fulfilmentCustomer, [
-            'type'                      => PalletReturnTypeEnum::DROPSHIPPING,
-            'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
+        $orderData = [
+            'customer_client_id'        => $customerClient->id,
             'platform_id'               => $tiktokUser->platform_id,
-        ]);
+            'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
+            'customer_reference'        => Arr::get($tiktokOrders, 'user_id'),
+            'platform_order_id'         => Arr::get($tiktokOrders, 'id'),
+            'delivery_address'          => $this->digestTiktokAddress($tiktokOrders),
+            'data'                      => ['tiktok_order' => $tiktokOrders]
+        ];
 
-        $storedItems  = [];
-        $allComplete  = true;
-        $someComplete = false;
-        foreach (Arr::get($attributes, 'line_items') as $lineItem) {
-            $tiktokUserHasProduct = TiktokUserHasProduct::where('tiktok_user_id', $tiktokUser->id)
-                ->where('tiktok_product_id', $lineItem['product_id'])
-                ->first();
+        $order = StoreOrder::make()->action($customerClient, $orderData);
 
-            if (!$tiktokUserHasProduct) {
-                continue;
-            }
+        foreach ($orderedProducts as $orderedProduct) {
 
-            $storedItems[$tiktokUserHasProduct->portfolio->item_id] = [
-                'quantity' => Arr::get($lineItem, 'quantity', 1)
+
+            $transactionData = [
+                'quantity_ordered'        => $orderedProduct['quantity_ordered'],
+                'platform_transaction_id' => $orderedProduct['platform_transaction_id'],
+
             ];
 
-            $itemQuantity     = $tiktokUserHasProduct->portfolio->item->total_quantity;
-            $requiredQuantity = Arr::get($lineItem, 'quantity', 1);
 
-            if ($itemQuantity >= $requiredQuantity) {
-                $someComplete = true;
-            } else {
-                $allComplete = false;
+            StoreTransaction::make()->action(
+                order: $order,
+                historicAsset: $orderedProduct['historicAsset'],
+                modelData: $transactionData
+            );
+        }
+
+        try {
+            PayOrderAsync::run($order);
+        } catch (\Exception $e) {
+            Sentry::captureException($e);
+        }
+
+        SubmitOrder::run($order);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function digestTiktokCustomerClient(TiktokUser $tiktokUser, array $tiktokOrderData): CustomerClient
+    {
+        $tiktokOrderAddressData = Arr::get($tiktokOrderData, 'recipient_address');
+        $reference = trim(Arr::get($tiktokOrderAddressData, 'first_name').' '.Arr::get($tiktokOrderAddressData, 'last_name'));
+
+        $customerClientID = DB::table('customer_clients')
+            ->select('id')
+            ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
+            ->where('reference', $reference)
+            ->first();
+
+        if (!$customerClientID) {
+            $customerClient = StoreCustomerClient::make()->action($tiktokUser->customerSalesChannel, [
+                'reference'    => $reference,
+                'email'        => Arr::get($tiktokOrderData, 'buyer_email'),
+                'contact_name' => trim(Arr::get($tiktokOrderAddressData, 'first_name').' '.Arr::get($tiktokOrderAddressData, 'last_name')),
+                'company_name' => Arr::get($tiktokOrderAddressData, 'name'),
+                'phone'        => null,
+                'address'      => $this->digestTiktokAddress($tiktokOrderData)->toArray()
+            ]);
+        } else {
+            $customerClient = CustomerClient::find($customerClientID->id);
+            $customerClient = UpdateCustomerClient::make()->action($customerClient, [
+                'email'        => Arr::get($tiktokOrderData, 'buyer_email'),
+                'contact_name' => trim(Arr::get($tiktokOrderAddressData, 'first_name').' '.Arr::get($tiktokOrderAddressData, 'last_name')),
+                'company_name' => Arr::get($tiktokOrderAddressData, 'name'),
+                'phone'        => null,
+                'address'      => $this->digestTiktokAddress($tiktokOrderData)->toArray()
+            ]);
+        }
+
+        return $customerClient;
+    }
+
+    public function digestTiktokAddress($tiktokOrderData): Address
+    {
+        $tiktokOrderAddressData = Arr::get($tiktokOrderData, 'recipient_address');
+        $country = Country::where('code', Arr::get($tiktokOrderAddressData, 'region_code'))->first();
+        if (!$country) {
+            $country = Country::where('code', 'GB')->first(); // ¯\_(ツ)_/¯
+            Sentry::captureMessage('TiktokUserHasCountry >>'.Arr::get($tiktokOrderData, 'country').'<< country not found, using GB as default when creating CustomerClient. Please check the country code in the order data.');
+        }
+
+        $address = [
+            'address_line_1'      => Arr::get($tiktokOrderAddressData, 'address_line1'),
+            'address_line_2'      => Arr::get($tiktokOrderAddressData, 'address_line2'),
+            'sorting_code'        => null,
+            'postal_code'         => Arr::get($tiktokOrderAddressData, 'postal_code'),
+            'dependent_locality'  => null,
+            'locality'            => Arr::get($tiktokOrderAddressData, 'post_town'),
+            'administrative_area' => Arr::get($tiktokOrderAddressData, 'state'),
+            'country_code'        => $country->code,
+            'country_id'          => $country->id
+        ];
+
+        return new Address($address);
+    }
+
+    public function digestTiktokProducts(TiktokUser $tiktokUser, array $tiktokOrderData): array
+    {
+        $orderedProducts = [];
+        foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
+            $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')
+                ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
+                ->where('platform_product_id', $item['product_id'])
+                ->first();
+            if ($portfolioData && $portfolioData->item_id) {
+                $product = Product::find($portfolioData->item_id);
+                if ($product) {
+                    $orderedProducts[] = [
+                        'historicAsset'           => $product->currentHistoricProduct,
+                        'quantity_ordered'        => 1,
+                        'platform_transaction_id' => $item['id']
+                    ];
+                }
             }
         }
 
-        if (blank($storedItems)) {
-            return false;
-        }
-
-
-        if ($allComplete) {
-            $status = ChannelFulfilmentStateEnum::OPEN;
-        } elseif ($someComplete) {
-            $status = ChannelFulfilmentStateEnum::HOLD;
-        } else {
-            $status = ChannelFulfilmentStateEnum::INCOMPLETE;
-        }
-
-        StoreStoredItemsToReturn::make()->action($palletReturn, [
-            'stored_items' => $storedItems
-        ]);
-
-        $tiktokUser->orders()->create([
-            'orderable_type'     => $palletReturn->getMorphClass(),
-            'orderable_id'       => $palletReturn->id,
-            'state'              => $status,
-            'tiktok_order_id'    => Arr::get($attributes, 'id'),
-            'customer_client_id' => $customerClient->id
-        ]);
+        return $orderedProducts;
     }
-
 }

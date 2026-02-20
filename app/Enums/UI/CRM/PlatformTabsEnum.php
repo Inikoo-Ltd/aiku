@@ -17,10 +17,12 @@ enum PlatformTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE   = 'showcase';
-    case CHANNELS   = 'channels';
-    case CUSTOMERS  = 'customers';
-    case PRODUCTS   = 'products';
+    case SHOWCASE            = 'showcase';
+    case CHANNELS            = 'channels';
+    case CUSTOMERS           = 'customers';
+    case PRODUCTS            = 'products';
+    case TOP_LISTED_PRODUCTS = 'top_listed_products';
+    case TOP_SOLD_PRODUCTS   = 'top_sold_products';
 
     public function blueprint(): array
     {
@@ -41,6 +43,14 @@ enum PlatformTabsEnum: string
                 'title' => __('Channels'),
                 'icon'  => 'fal fa-code-branch',
                 'icon_rotation' => '90',
+            ],
+            PlatformTabsEnum::TOP_LISTED_PRODUCTS => [
+                'title' => __('Top Listed Products'),
+                'icon'  => 'fal fa-list-alt',
+            ],
+            PlatformTabsEnum::TOP_SOLD_PRODUCTS => [
+                'title' => __('Top Sold Products'),
+                'icon'  => 'fal fa-trophy',
             ],
         };
     }

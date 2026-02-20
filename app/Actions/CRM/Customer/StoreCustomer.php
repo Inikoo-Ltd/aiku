@@ -287,7 +287,7 @@ class StoreCustomer extends OrgAction
                 ],
 
         ];
-
+        // Used for autora and external shops (Faire)
         if (!$this->strict) {
             $rules['is_vip']             = ['sometimes', 'boolean'];
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];

@@ -221,6 +221,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'offers_data'          => 'array',
         'web_images'           => 'array',
         'tax_category'         => 'array',
+        'follow_trade_unit_media' => 'boolean',
     ];
 
     protected $attributes = [
@@ -250,7 +251,8 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'unit',
         'is_main',
         'barcode',
-        'is_for_sale'
+        'is_for_sale',
+        'follow_trade_unit_media'
     ];
 
     public function getRouteKeyName(): string

@@ -28,6 +28,7 @@ use App\Services\QueryBuilder;
 class IndexCalendars extends OrgAction
 {
     use WithHumanResourcesAuthorisation;
+    use WithCalendarSubNavigation;
 
     public function handle($prefix = null): LengthAwarePaginator
     {
@@ -83,8 +84,9 @@ class IndexCalendars extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Employees'),
                 'pageHead'    => [
-                    'title'  => __('Employees'),
-                    'create' => $this->canEdit ? [
+                    'title'         => __('Employees'),
+                    'subNavigation' => $this->getCalendarSubNavigation(),
+                    'create'        => $this->canEdit ? [
                         'route' => [
                             'name'       => 'grp.org.hr.employees.create',
                             'parameters' => array_values(request()->route()->originalParameters())

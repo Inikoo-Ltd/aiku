@@ -22,8 +22,14 @@ class UploadImagesToMasterProduct extends GrpAction
     public function handle(MasterAsset $model, string $scope, array $modelData, bool $updateDependants = false): array
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
-        if ($updateDependants && !$model->is_single_trade_unit) {
-            UpdateMasterProductImages::make()->updateDependants($model);
+
+        if ($updateDependants) {
+
+            if (!$model->is_single_trade_unit || !$model->follow_trade_unit_media) {
+                UpdateMasterProductImages::make()->updateDependants($model);
+
+            }
+
         }
 
         return $medias;

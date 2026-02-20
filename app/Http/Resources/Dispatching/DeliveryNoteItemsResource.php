@@ -51,7 +51,7 @@ class DeliveryNoteItemsResource extends JsonResource
         if ($quantityDispatched == null) {
             $quantityDispatched = 0;
         }
-        
+
         $packedInMessage = '';
         if ($packedIn == 1) {
             $packedInMessage = '('.__('Individually packed').')';

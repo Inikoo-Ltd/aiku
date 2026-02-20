@@ -6,14 +6,13 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterAsset\Json;
+namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\GrpAction;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
-use App\Models\Masters\MasterProductCategory;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -21,24 +20,17 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetAllTradeUnits extends GrpAction
+class GetAllTradeUnitsInProduct extends GrpAction
 {
-    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($masterProductCategory->group, $request);
-
-        return $this->handle(parent: $masterProductCategory);
-    }
-
-    public function inExternal(Product $product, ActionRequest $request): LengthAwarePaginator
+    public function asController(Product $product, ActionRequest $request): LengthAwarePaginator
     {
         $parent = $product;
         $this->initialisation($parent->group, $request);
 
-        return $this->handle(parent: $parent);
+        return $this->handle($product);
     }
 
-    public function handle(MasterProductCategory|Product $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Product $product, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -48,7 +40,7 @@ class GetAllTradeUnits extends GrpAction
         });
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
-        $queryBuilder->where('trade_units.group_id', $parent->group_id);
+        $queryBuilder->where('trade_units.group_id', $product->group_id);
         $queryBuilder->where('status', TradeUnitStatusEnum::ACTIVE);
 
         return $queryBuilder
