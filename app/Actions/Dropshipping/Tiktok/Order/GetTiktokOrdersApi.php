@@ -12,10 +12,8 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\TiktokUser;
-use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 

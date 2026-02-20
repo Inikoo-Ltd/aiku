@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Traits;
 
-use App\Models\Ordering\Order;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -58,7 +57,7 @@ trait WithTiktokApiServices
             ...$shopCipher
         ]);
 
-        if(Arr::get($headers, 'content-type') === 'multipart/form-data') {
+        if (Arr::get($headers, 'content-type') === 'multipart/form-data') {
             $http = Http::asMultipart();
             $body = [];
         } else {

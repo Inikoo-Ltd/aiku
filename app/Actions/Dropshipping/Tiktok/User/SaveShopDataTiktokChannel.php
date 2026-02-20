@@ -36,9 +36,18 @@ class SaveShopDataTiktokChannel
 
         data_set($shopData, 'data.authorized_shop', Arr::get($tiktokShop, 'data.shops'));
         data_set($shopData, 'data.warehouse', Arr::get($tiktokWarehouses, 'data.warehouses'));
-        data_set($shopData, 'tiktok_shop_id', Arr::get($tiktokShop, 'data.shops.0.id'));
-        data_set($shopData, 'tiktok_warehouse_id', Arr::get($defaultWarehouse, 'id'));
-        data_set($shopData, 'tiktok_shop_chiper', Arr::get($tiktokShop, 'data.shops.0.chiper'));
+
+        if (!$tiktokUser->tiktok_shop_id) {
+            data_set($shopData, 'tiktok_shop_id', Arr::get($tiktokShop, 'data.shops.0.id'));
+        }
+
+        if (!$tiktokUser->tiktok_warehouse_id) {
+            data_set($shopData, 'tiktok_warehouse_id', Arr::get($defaultWarehouse, 'id'));
+        }
+
+        if (!$tiktokUser->tiktok_shop_chiper) {
+            data_set($shopData, 'tiktok_shop_chiper', Arr::get($tiktokShop, 'data.shops.0.chiper'));
+        }
 
         $this->update($tiktokUser, $shopData);
     }

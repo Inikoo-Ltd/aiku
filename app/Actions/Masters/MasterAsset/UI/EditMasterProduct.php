@@ -303,7 +303,7 @@ class EditMasterProduct extends GrpAction
                         'full'         => true,
                         'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
                         'tabs' => array_values(array_filter([
-                            $masterProduct->masterFamily  ? [
+                            $masterProduct->masterFamily ? [
                                 'label'      => __('To do'),
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.recommended-trade-units',
@@ -313,7 +313,7 @@ class EditMasterProduct extends GrpAction
                                 ],
                             ] : null,
 
-                            $masterProduct->masterFamily  ? [
+                            $masterProduct->masterFamily ? [
                                 'label'      => __('Done'),
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.taken-trade-units',

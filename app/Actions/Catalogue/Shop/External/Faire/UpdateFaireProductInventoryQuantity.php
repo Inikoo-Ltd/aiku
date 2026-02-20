@@ -4,9 +4,6 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
-use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection;
 
 class UpdateFaireProductInventoryQuantity extends OrgAction
 {

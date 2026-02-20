@@ -25,7 +25,7 @@ class UploadImagesToMasterProduct extends GrpAction
 
         if ($updateDependants) {
 
-            if (!$model->is_single_trade_unit || !$model->follow_trade_unit_media ) {
+            if (!$model->is_single_trade_unit || !$model->follow_trade_unit_media) {
                 UpdateMasterProductImages::make()->updateDependants($model);
 
             }

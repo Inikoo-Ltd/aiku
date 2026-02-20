@@ -31,11 +31,11 @@ class ValidateIncomingTiktokOrder extends RetinaAction
             ->where('platform_order_id', Arr::get($order, 'id'))
             ->exists();
 
-        if($existingOrder) {
+        if ($existingOrder) {
             return;
         }
 
-        if(Arr::get($order, 'status') !== 'AWAITING_SHIPMENT') {
+        if (Arr::get($order, 'status') !== 'AWAITING_SHIPMENT') {
             return;
         }
 
@@ -49,7 +49,7 @@ class ValidateIncomingTiktokOrder extends RetinaAction
             ->whereIn('platform_product_id', $lineItems)
             ->exists();
 
-        if($hasOutProducts) {
+        if ($hasOutProducts) {
             StoreTiktokOrder::run($tiktokUser, $order);
         }
     }

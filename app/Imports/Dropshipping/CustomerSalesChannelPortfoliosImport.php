@@ -49,7 +49,7 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
 
         $modelData = [
             'sku' => $rowData['sku'],
-            'customer_product_name' => $rowData['title']
+            // 'customer_product_name' => $rowData['title']
         ];
 
         try {
@@ -64,7 +64,7 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
                 ->where('item_type', $product->getMorphClass())
                 ->exists()) {
 
-                StorePortfolio::make()->action($this->customerSalesChannel, $product, $modelData);
+                StorePortfolio::make()->action($this->customerSalesChannel, $product, []);
             }
 
             $this->setRecordAsCompleted($uploadRecord);

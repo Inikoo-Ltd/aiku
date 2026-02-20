@@ -22,8 +22,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetAllTradeUnitsInProduct extends GrpAction
 {
-
-
     public function asController(Product $product, ActionRequest $request): LengthAwarePaginator
     {
         $parent = $product;
