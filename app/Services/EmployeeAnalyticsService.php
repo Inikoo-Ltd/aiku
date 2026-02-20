@@ -117,20 +117,14 @@ class EmployeeAnalyticsService
 
     public function getOrganizationAnalyticsAggregated(int $organisationId, Carbon $startDate, Carbon $endDate): object|null
     {
-        $analytics = DB::table('employee_analytics')
+        $workingDays = $this->calculateWorkingDays($startDate, $endDate);
+
+        $employeeIds = DB::table('employees')
             ->where('organisation_id', $organisationId)
-            ->where('period_start', '>=', $startDate)
-            ->where('period_end', '<=', $endDate)
-            ->selectRaw('
-                COUNT(DISTINCT employee_id) as total_employees,
-                AVG(attendance_percentage) as avg_attendance_percentage,
-                AVG(total_working_hours) as avg_total_working_hours,
-                AVG(overtime_hours) as avg_overtime_hours,
-                SUM(late_clockins) as total_late_clockins,
-                SUM(early_clockouts) as total_early_clockouts,
-                SUM(total_leave_days) as total_leave_days
-            ')
-            ->first();
+            ->where('state', 'working')
+            ->pluck('id');
+
+        $totalEmployees = $employeeIds->count();
 
         $totalLeaveDays = Leave::query()
             ->where('organisation_id', $organisationId)
@@ -145,50 +139,114 @@ class EmployeeAnalyticsService
             })
             ->sum('duration_days');
 
-        if ($analytics) {
-            $analytics->total_leave_days = $totalLeaveDays;
-        } else {
-            $analytics = (object) [
-                'total_employees' => 0,
-                'avg_attendance_percentage' => null,
-                'avg_total_working_hours' => null,
-                'avg_overtime_hours' => null,
-                'total_late_clockins' => null,
-                'total_early_clockouts' => null,
-                'total_leave_days' => $totalLeaveDays,
-            ];
-        }
+        $totalLateClockins = $this->calculateAggregatedLateClockins($organisationId, $startDate, $endDate);
+        $totalEarlyClockouts = $this->calculateAggregatedEarlyClockouts($organisationId, $startDate, $endDate);
+        $avgAttendancePercentage = $this->calculateAggregatedAttendancePercentage($organisationId, $startDate, $endDate, $workingDays);
 
-        return $analytics;
+        $totalWorkingHours = $this->calculateAggregatedWorkingHours($organisationId, $startDate, $endDate);
+        $avgWorkingHours = $totalEmployees > 0 ? round($totalWorkingHours / $totalEmployees, 2) : null;
+
+        $avgOvertimeHours = $this->calculateAggregatedOvertimeHours($organisationId, $startDate, $endDate, $workingDays, $totalEmployees);
+
+        return (object) [
+            'total_employees' => $totalEmployees,
+            'avg_attendance_percentage' => $avgAttendancePercentage,
+            'avg_total_working_hours' => $avgWorkingHours,
+            'avg_overtime_hours' => $avgOvertimeHours,
+            'total_late_clockins' => $totalLateClockins,
+            'total_early_clockouts' => $totalEarlyClockouts,
+            'total_leave_days' => $totalLeaveDays,
+        ];
     }
 
     public function getEmployeeAttendanceBreakdown(int $organisationId, Carbon $startDate, Carbon $endDate, int $limit = 10): array
     {
-        $results = DB::table('employee_analytics')
-            ->join('employees', 'employee_analytics.employee_id', '=', 'employees.id')
-            ->where('employee_analytics.organisation_id', $organisationId)
-            ->where('employee_analytics.period_start', '>=', $startDate)
-            ->where('employee_analytics.period_end', '<=', $endDate)
-            ->select([
-                'employees.id',
-                'employees.contact_name',
-                'employees.slug',
-                'employee_analytics.attendance_percentage',
-                'employee_analytics.late_clockins',
-                'employee_analytics.early_clockouts',
-            ])
-            ->orderByDesc('employee_analytics.attendance_percentage')
-            ->limit($limit)
+        $workingDays = $this->calculateWorkingDays($startDate, $endDate);
+        $lateGraceMinutes = $this->config['thresholds']['late_grace_minutes'] ?? 15;
+        $earlyDepartureMinutes = $this->config['thresholds']['early_departure_minutes'] ?? 15;
+        $workStartTime = $this->config['defaults']['work_start_time'] ?? '08:00:00';
+        $workEndTime = $this->config['defaults']['work_end_time'] ?? '17:00:00';
+
+        $employees = DB::table('employees')
+            ->where('organisation_id', $organisationId)
+            ->where('state', 'working')
+            ->select('id', 'contact_name', 'slug')
             ->get();
 
-        return $results->map(fn ($row) => [
-            'id' => $row->id,
-            'name' => $row->contact_name,
-            'slug' => $row->slug,
-            'attendance_percentage' => round($row->attendance_percentage ?? 0, 2),
-            'late_clockins' => $row->late_clockins ?? 0,
-            'early_clockouts' => $row->early_clockouts ?? 0,
-        ])->toArray();
+        $employeeIds = $employees->pluck('id');
+
+        $clockings = Clocking::query()
+            ->whereIn('subject_id', $employeeIds)
+            ->where('subject_type', Employee::class)
+            ->whereBetween('clocked_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->select('subject_id', 'clocked_at')
+            ->orderBy('subject_id')
+            ->orderBy('clocked_at')
+            ->get();
+
+        $clockingsByEmployee = $clockings->groupBy('subject_id');
+
+        $results = [];
+        foreach ($employees as $employee) {
+            $employeeClockings = $clockingsByEmployee->get($employee->id, collect());
+
+            $presentDays = $employeeClockings
+                ->map(fn ($c) => $c->clocked_at->format('Y-m-d'))
+                ->unique()
+                ->count();
+
+            $attendancePercentage = $workingDays > 0 ? round(($presentDays / $workingDays) * 100, 2) : 0;
+
+            $lateClockins = 0;
+            $earlyClockouts = 0;
+            $processedDays = [];
+
+            $sortedClockings = $employeeClockings->sortBy('clocked_at');
+            foreach ($sortedClockings as $clocking) {
+                $dateKey = $clocking->clocked_at->format('Y-m-d');
+
+                if (!isset($processedDays[$dateKey])) {
+                    $dateStr = $clocking->clocked_at->format('Y-m-d');
+                    $scheduledStart = Carbon::parse($dateStr . ' ' . $workStartTime);
+                    $gracePeriod = $scheduledStart->copy()->addMinutes($lateGraceMinutes);
+
+                    if ($clocking->clocked_at->gt($gracePeriod)) {
+                        $lateClockins++;
+                    }
+                    $processedDays[$dateKey] = ['first' => $clocking->clocked_at];
+                }
+            }
+
+            $processedDays = [];
+            $sortedClockingsDesc = $employeeClockings->sortByDesc('clocked_at');
+            foreach ($sortedClockingsDesc as $clocking) {
+                $dateKey = $clocking->clocked_at->format('Y-m-d');
+
+                if (!isset($processedDays[$dateKey])) {
+                    $dateStr = $clocking->clocked_at->format('Y-m-d');
+                    $scheduledEnd = Carbon::parse($dateStr . ' ' . $workEndTime);
+                    $earlyThreshold = $scheduledEnd->copy()->subMinutes($earlyDepartureMinutes);
+
+                    if ($clocking->clocked_at->lt($earlyThreshold)) {
+                        $earlyClockouts++;
+                    }
+                    $processedDays[$dateKey] = true;
+                }
+            }
+
+            $results[] = [
+                'id' => $employee->id,
+                'name' => $employee->contact_name,
+                'slug' => $employee->slug,
+                'attendance_percentage' => $attendancePercentage,
+                'late_clockins' => $lateClockins,
+                'early_clockouts' => $earlyClockouts,
+            ];
+        }
+
+        usort($results, fn ($a, $b) => $b['attendance_percentage'] <=> $a['attendance_percentage']);
+
+        return array_slice($results, 0, $limit);
     }
 
     public function getTopEmployeesByLeave(int $organisationId, Carbon $startDate, Carbon $endDate, int $limit = 10): array
@@ -394,5 +452,152 @@ class EmployeeAnalyticsService
             'medical_remaining' => $balance->medical_remaining,
             'unpaid_remaining'  => $balance->unpaid_remaining,
         ];
+    }
+
+    protected function calculateAggregatedLateClockins(int $organisationId, Carbon $startDate, Carbon $endDate): int
+    {
+        $lateGraceMinutes = $this->config['thresholds']['late_grace_minutes'] ?? 15;
+        $workStartTime = $this->config['defaults']['work_start_time'] ?? '08:00:00';
+
+        $clockings = Clocking::query()
+            ->join('employees', 'clockings.subject_id', '=', 'employees.id')
+            ->where('employees.organisation_id', $organisationId)
+            ->where('clockings.subject_type', Employee::class)
+            ->whereBetween('clocked_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->select('clockings.subject_id', 'clockings.clocked_at')
+            ->orderBy('clockings.subject_id')
+            ->orderBy('clockings.clocked_at')
+            ->get();
+
+        $lateCount = 0;
+        $processedDays = [];
+
+        foreach ($clockings as $clocking) {
+            $dateKey = $clocking->subject_id . '_' . $clocking->clocked_at->format('Y-m-d');
+
+            if (isset($processedDays[$dateKey])) {
+                continue;
+            }
+
+            $dateStr = $clocking->clocked_at->format('Y-m-d');
+            $scheduledStart = Carbon::parse($dateStr . ' ' . $workStartTime);
+            $gracePeriod = $scheduledStart->copy()->addMinutes($lateGraceMinutes);
+
+            if ($clocking->clocked_at->gt($gracePeriod)) {
+                $lateCount++;
+            }
+
+            $processedDays[$dateKey] = true;
+        }
+
+        return $lateCount;
+    }
+
+    protected function calculateAggregatedEarlyClockouts(int $organisationId, Carbon $startDate, Carbon $endDate): int
+    {
+        $earlyDepartureMinutes = $this->config['thresholds']['early_departure_minutes'] ?? 15;
+        $workEndTime = $this->config['defaults']['work_end_time'] ?? '17:00:00';
+
+        $clockings = Clocking::query()
+            ->join('employees', 'clockings.subject_id', '=', 'employees.id')
+            ->where('employees.organisation_id', $organisationId)
+            ->where('clockings.subject_type', Employee::class)
+            ->whereBetween('clocked_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->select('clockings.subject_id', 'clockings.clocked_at')
+            ->orderBy('clockings.subject_id')
+            ->orderByDesc('clockings.clocked_at')
+            ->get();
+
+        $earlyCount = 0;
+        $processedDays = [];
+
+        foreach ($clockings as $clocking) {
+            $dateKey = $clocking->subject_id . '_' . $clocking->clocked_at->format('Y-m-d');
+
+            if (isset($processedDays[$dateKey])) {
+                continue;
+            }
+
+            $dateStr = $clocking->clocked_at->format('Y-m-d');
+            $scheduledEnd = Carbon::parse($dateStr . ' ' . $workEndTime);
+            $earlyThreshold = $scheduledEnd->copy()->subMinutes($earlyDepartureMinutes);
+
+            if ($clocking->clocked_at->lt($earlyThreshold)) {
+                $earlyCount++;
+            }
+
+            $processedDays[$dateKey] = true;
+        }
+
+        return $earlyCount;
+    }
+
+    protected function calculateAggregatedAttendancePercentage(int $organisationId, Carbon $startDate, Carbon $endDate, int $workingDays): float|null
+    {
+        if ($workingDays <= 0) {
+            return null;
+        }
+
+        $employeeIds = DB::table('employees')
+            ->where('organisation_id', $organisationId)
+            ->where('state', 'working')
+            ->pluck('id');
+
+        if ($employeeIds->isEmpty()) {
+            return null;
+        }
+
+        $presentDaysByEmployee = Clocking::query()
+            ->whereIn('subject_id', $employeeIds)
+            ->where('subject_type', Employee::class)
+            ->whereBetween('clocked_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->select('subject_id', DB::raw('DATE(clocked_at) as clock_date'))
+            ->distinct()
+            ->get()
+            ->groupBy('subject_id')
+            ->map(fn ($days) => $days->count());
+
+        $totalPercentage = 0;
+        $employeeCount = 0;
+
+        foreach ($employeeIds as $employeeId) {
+            $presentDays = $presentDaysByEmployee->get($employeeId, 0);
+            $percentage = $workingDays > 0 ? ($presentDays / $workingDays) * 100 : 0;
+            $totalPercentage += $percentage;
+            $employeeCount++;
+        }
+
+        return $employeeCount > 0 ? round($totalPercentage / $employeeCount, 2) : null;
+    }
+
+    protected function calculateAggregatedWorkingHours(int $organisationId, Carbon $startDate, Carbon $endDate): float
+    {
+        $employeeIds = DB::table('employees')
+            ->where('organisation_id', $organisationId)
+            ->where('state', 'working')
+            ->pluck('id');
+
+        $totalSeconds = Timesheet::query()
+            ->whereIn('subject_id', $employeeIds)
+            ->where('subject_type', Employee::class)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('working_duration');
+
+        return round($totalSeconds / 3600, 2);
+    }
+
+    protected function calculateAggregatedOvertimeHours(int $organisationId, Carbon $startDate, Carbon $endDate, int $workingDays, int $totalEmployees): float|null
+    {
+        if ($totalEmployees <= 0) {
+            return null;
+        }
+
+        $totalWorkingHours = $this->calculateAggregatedWorkingHours($organisationId, $startDate, $endDate);
+        $dailyScheduledHours = $this->config['thresholds']['daily_scheduled_hours'] ?? 8.0;
+
+        $scheduledHours = $workingDays * $dailyScheduledHours * $totalEmployees;
+        $totalOvertime = max(0, $totalWorkingHours - $scheduledHours);
+
+        return round($totalOvertime / $totalEmployees, 2);
     }
 }

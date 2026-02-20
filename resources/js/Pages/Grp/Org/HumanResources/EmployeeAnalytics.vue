@@ -254,7 +254,7 @@ const leaveChartData = computed(() => {
 				data: data.map((e) => e.total_leave_days),
 				backgroundColor: "rgba(59, 130, 246, 0.8)",
 				borderColor: "rgb(59, 130, 246)",
-				borderWidth: 1,
+				borderWidth: 5,
 				borderRadius: 4,
 			},
 		],
