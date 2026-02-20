@@ -192,7 +192,7 @@ const _popoverProfit = ref(null)
                 </div>
 
 
-                <div v-if="showLeftBlock && showIntervalOffer" class="flex flex-col w-fit break-safe discount">
+                <div v-if="showLeftBlock && showIntervalOffer" class="flex flex-col w-fit break-safe discount items-center justify-center">
                     <MemberPriceLabel v-if="showMemberPrice" :offer="bestOffer" />
 
                     <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"

@@ -124,7 +124,7 @@ defineExpose({
                 :type="typeOfLink"   class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false"
             >
-               <div class="relative w-full h-full">
+               <div class="relative w-full h-full bg-white">
 
                     <slot name="image" :product="product">
 
