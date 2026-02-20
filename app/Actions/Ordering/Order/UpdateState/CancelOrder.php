@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
+use App\Actions\Catalogue\Shop\External\Faire\CancelFaireOrder;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
@@ -122,6 +123,10 @@ class CancelOrder extends OrgAction
                     'public_notes' => __('We\'re unable update order to customer\'s sales channel due to their sales channel are not found or already deleted.')
                 ]);
             }
+        }
+
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && app()->isProduction()) {
+            CancelFaireOrder::run($order->shop, $order);
         }
 
         $this->orderHydrators($order);
