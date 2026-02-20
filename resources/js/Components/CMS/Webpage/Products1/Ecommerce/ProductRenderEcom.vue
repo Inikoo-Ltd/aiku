@@ -165,7 +165,7 @@ defineExpose({
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
                 :type="typeOfLink"
-                class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]"
+                class="relative block w-full mb-1 rounded overflow-hidden  aspect-[5/5]"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false">
                 <div class="relative w-full h-full bg-white">
 
