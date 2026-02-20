@@ -2,6 +2,8 @@
 
 namespace App\Actions\CRM\ChatSession;
 
+use App\Actions\Comms\Email\SendChatNotificationToExternal;
+use App\Actions\Comms\Email\StoreExternalEmailRecipient;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,6 +22,7 @@ use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Http\UploadedFile;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
+use App\Actions\Comms\Email\SendChatNotificationToCustomer;
 
 class SendChatMessage
 {
@@ -84,6 +87,10 @@ class SendChatMessage
         TranslateChatMessage::dispatch(messageId: $chatMessage->id);
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch($chatMessage);
+
+        if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+            $this->sendExternalNotification($chatSession);
+        }
 
         return $chatMessage;
     }
@@ -161,6 +168,34 @@ class SendChatMessage
         );
     }
 
+    protected function sendExternalNotification(ChatSession $chatSession): void
+    {
+        if ($chatSession->web_user_id && $chatSession->webUser && $chatSession->webUser->customer) {
+            SendChatNotificationToCustomer::dispatch($chatSession->webUser->customer, []);
+            return;
+        }
+
+        if (!$chatSession->shop) {
+            return;
+        }
+
+        $metadata = $chatSession->metadata ?? [];
+
+        $email = $metadata['email'] ?? null;
+        $name = $metadata['name'] ?? null;
+
+        if (!$email) {
+            return;
+        }
+
+        $externalEmailRecipient = StoreExternalEmailRecipient::run($chatSession->shop, [
+            'name' => $name ?? $email,
+            'email' => $email,
+        ]);
+
+        SendChatNotificationToExternal::dispatch($externalEmailRecipient, $chatSession->shop, []);
+    }
+
     public function rules(): array
     {
         return [
@@ -193,6 +228,9 @@ class SendChatMessage
                 'nullable',
                 File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
                     ->max(20 * 1024)
+            ],
+            'is_notif_email' => [
+                'sometimes', 'boolean'
             ]
         ];
     }
