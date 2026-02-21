@@ -61,11 +61,17 @@ class StoreTransaction extends OrgAction
 
 
             data_set($modelData, 'estimated_weight', $estimatedWeight);
-
-
         } else {
             $net   = Arr::get($modelData, 'net_amount', 0);
             $gross = Arr::get($modelData, 'gross_amount', 0);
+        }
+
+        if (!$this->strict && Arr::exists($modelData, 'net_amount')) {
+            $net = Arr::get($modelData, 'net_amount');
+        }
+
+        if (!$this->strict && Arr::exists($modelData, 'gross_amount')) {
+            $gross = Arr::get($modelData, 'gross_amount');
         }
 
 
@@ -108,12 +114,12 @@ class StoreTransaction extends OrgAction
             OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order, $calculateShipping);
             OrderHydrateTransactions::dispatch($order);
-
-            $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-            AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-            AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
-
         }
+
+        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+        AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
+
 
         if (request()->hasSession() && request()->input('website')) {
             StoreWebsiteConversionEvent::dispatch(
@@ -157,9 +163,12 @@ class StoreTransaction extends OrgAction
             'submitted_at'            => ['sometimes', 'required', 'date'],
             'data'                    => ['sometimes', 'array'],
             'label'                   => ['sometimes', 'string', 'max:255'],
-            'marketplace_id'          => ['sometimes', Rule::unique('transactions', 'marketplace_id')->where(function ($query) {
-                $query->where('group_id', $this->shop->group_id);
-            })],
+            'marketplace_id'          => [
+                'sometimes',
+                Rule::unique('transactions', 'marketplace_id')->where(function ($query) {
+                    $query->where('group_id', $this->shop->group_id);
+                })
+            ],
         ];
 
         if (!$this->strict) {
