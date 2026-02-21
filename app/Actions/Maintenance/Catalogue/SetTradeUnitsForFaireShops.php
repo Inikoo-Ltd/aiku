@@ -36,9 +36,12 @@ class SetTradeUnitsForFaireShops
                     'quantity' => $tradeUnit->pivot->quantity
                 ];
             }
-            UpdateTradeUnitsForExternalProduct::make()->action($product, [
-                'trade_units' => $tradeUnitsData
-            ]);
+            if(!empty($tradeUnitsData)){
+                UpdateTradeUnitsForExternalProduct::make()->action($product, [
+                    'trade_units' => $tradeUnitsData
+                ]);
+            }
+
 
         } elseif (!$seederProduct) {
             $command->error("Product not found in seeder ".$product->code);
