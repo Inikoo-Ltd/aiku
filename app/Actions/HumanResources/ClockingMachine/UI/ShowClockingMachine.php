@@ -24,14 +24,32 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 
 class ShowClockingMachine extends OrgAction
 {
     use WithHumanResourcesAuthorisation;
 
+    private function getAvailableTabs(ClockingMachine $clockingMachine): array
+    {
+        $tabs = [
+            ClockingMachineTabsEnum::SHOWCASE->value,
+            ClockingMachineTabsEnum::CLOCKINGS->value,
+            ClockingMachineTabsEnum::HISTORY->value,
+            ClockingMachineTabsEnum::DATA->value,
+        ];
+
+
+        if ($clockingMachine->type === ClockingMachineTypeEnum::QR_CODE->value) {
+            array_splice($tabs, 1, 0, ClockingMachineTabsEnum::SCAN_QR_CODE->value);
+        }
+
+        return $tabs;
+    }
+
     public function inOrganisation(Organisation $organisation, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
-        $this->initialisation($organisation, $request)->withTab(ClockingMachineTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab($this->getAvailableTabs($clockingMachine));
 
         return $clockingMachine;
     }
@@ -40,13 +58,23 @@ class ShowClockingMachine extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inWorkplace(Organisation $organisation, Workplace $workplace, ClockingMachine $clockingMachine, ActionRequest $request): ClockingMachine
     {
-        $this->initialisation($organisation, $request)->withTab(ClockingMachineTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab($this->getAvailableTabs($clockingMachine));
 
         return $clockingMachine;
     }
 
     public function htmlResponse(ClockingMachine $clockingMachine, ActionRequest $request): Response
     {
+        $availableTabs = $this->getAvailableTabs($clockingMachine);
+        $navigationData = [];
+        foreach ($availableTabs as $tabValue) {
+            $enumCase = ClockingMachineTabsEnum::tryFrom($tabValue);
+            if ($enumCase) {
+                $blueprint = $enumCase->blueprint();
+                $navigationData[$tabValue] = $blueprint;
+            }
+        }
+
         return Inertia::render(
             'Org/HumanResources/ClockingMachine',
             [
@@ -61,10 +89,10 @@ class ShowClockingMachine extends OrgAction
                 ],
                 'pageHead'                               => [
                     'icon'    =>
-                        [
-                            'icon'  => ['fal', 'fa-chess-clock'],
-                            'title' => __('Clocking machines')
-                        ],
+                    [
+                        'icon'  => ['fal', 'fa-chess-clock'],
+                        'title' => __('Clocking machines')
+                    ],
                     'title'   => $clockingMachine->name,
                     'model'   => __('clocking machine'),
                     'actions' => [
@@ -91,22 +119,19 @@ class ShowClockingMachine extends OrgAction
                             'name'     => trans_choice('clocking|clockings', 0/*$clockingMachine->stats->number_clockings*/),
                             'number'   => 0/*$clockingMachine->stats->number_clockings*/,
                             'route'    =>
-                                match ($request->route()->getName()) {
-                                    'grp.org.hr.workplaces.show.clocking_machines.show' => [
-                                        'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index',
-                                        [$this->organisation->slug, $clockingMachine->workplace->slug, $clockingMachine->slug]
-                                    ],
-                                    default => [
-                                        'grp.org.hr.clocking_machines.show.clockings.index',
-                                        [
-                                            $this->organisation->slug,
-                                            $clockingMachine->slug,
-                                        ]
+                            match ($request->route()->getName()) {
+                                'grp.org.hr.workplaces.show.clocking_machines.show' => [
+                                    'grp.org.hr.workplaces.show.clocking_machines.show.clockings.index',
+                                    [$this->organisation->slug, $clockingMachine->workplace->slug, $clockingMachine->slug]
+                                ],
+                                default => [
+                                    'grp.org.hr.clocking_machines.show.clockings.index',
+                                    [
+                                        $this->organisation->slug,
+                                        $clockingMachine->slug,
                                     ]
-                                }
-
-
-                            ,
+                                ]
+                            },
                             'leftIcon' => [
                                 'icon'    => 'fal fa-clock',
                                 'tooltip' => __('clockings')
@@ -117,19 +142,24 @@ class ShowClockingMachine extends OrgAction
                 ],
                 'tabs'                                   => [
                     'current'    => $this->tab,
-                    'navigation' => ClockingMachineTabsEnum::navigation()
+                    'navigation' => $navigationData
                 ],
                 ClockingMachineTabsEnum::SHOWCASE->value => $this->tab == ClockingMachineTabsEnum::SHOWCASE->value ?
-                    fn () => GetClockingMachineShowcase::run($clockingMachine)
-                    : Inertia::lazy(fn () => GetClockingMachineShowcase::run($clockingMachine)),
+                    fn() => GetClockingMachineShowcase::run($clockingMachine)
+                    : Inertia::lazy(fn() => GetClockingMachineShowcase::run($clockingMachine)),
+
+                ClockingMachineTabsEnum::SCAN_QR_CODE->value =>
+                $this->tab == ClockingMachineTabsEnum::SCAN_QR_CODE->value
+                    ? fn() => GetClockingMachineShowcase::run($clockingMachine)
+                    : Inertia::lazy(fn() => GetClockingMachineShowcase::run($clockingMachine)),
 
                 ClockingMachineTabsEnum::CLOCKINGS->value => $this->tab == ClockingMachineTabsEnum::CLOCKINGS->value ?
-                    fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))
-                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))),
+                    fn() => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))
+                    : Inertia::lazy(fn() => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))),
 
                 ClockingMachineTabsEnum::HISTORY->value => $this->tab == ClockingMachineTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($clockingMachine))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($clockingMachine)))
+                    fn() => HistoryResource::collection(IndexHistory::run($clockingMachine))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($clockingMachine)))
 
             ]
         )->table(IndexClockings::make()->tableStructure($clockingMachine, prefix: ClockingMachineTabsEnum::CLOCKINGS->value))

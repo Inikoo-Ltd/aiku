@@ -12,6 +12,7 @@ use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Helpers\ImgProxy\Image;
 use App\Models\Traits\IsMedia;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as BaseMedia;
 
 /**

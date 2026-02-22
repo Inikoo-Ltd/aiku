@@ -12,6 +12,7 @@ namespace App\Http\Resources\HumanResources;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
+use App\Models\HumanResources\Employee;
 
 /**
  * @property int $id
@@ -30,19 +31,28 @@ class TimesheetsResource extends JsonResource
     {
 
 
-        return [
-            'id'                                       => $this->id,
-            'date'                                     => $this->date,
-            'subject_name'                             => $this->subject_name,
-            'start_at'                                 => $this->start_at,
-            'end_at'                                   => $this->end_at,
-            'working_duration'                         => $this->working_duration,
-            'breaks_duration'                          => $this->breaks_duration,
-            'number_time_trackers'                     => $this->number_time_trackers,
-            'number_open_time_trackers'                => $this->number_open_time_trackers,
-            'organisation_name'                        => $this->organisation_name,
-            'organisation_slug'                        => $this->organisation_slug,
+        $jobPosition = null;
+        if ($this->resource->relationLoaded('subject') && $this->subject instanceof Employee) {
+            $jobPosition = $this->subject->job_title ?? null;
+        }
 
+        return [
+            'id'                        => $this->id,
+            'date'                      => $this->date,
+            'subject_name'              => $this->subject_name,
+            'start_at'                  => $this->start_at,
+            'end_at'                    => $this->end_at,
+            'working_duration'          => $this->working_duration,
+            'breaks_duration'           => $this->breaks_duration,
+            'number_time_trackers'      => $this->number_time_trackers,
+            'number_open_time_trackers' => $this->number_open_time_trackers,
+
+            'job_position'              => $jobPosition,
+            'clock_in_count'            => $this->clock_in_count ?? $this->number_time_trackers,
+            'clock_out_count'           => $this->clock_out_count ?? ($this->number_time_trackers - $this->number_open_time_trackers),
+
+            'organisation_name'         => $this->organisation_name ?? null,
+            'organisation_slug'         => $this->organisation_slug ?? null,
         ];
     }
 }

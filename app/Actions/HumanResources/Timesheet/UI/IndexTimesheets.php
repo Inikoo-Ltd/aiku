@@ -13,6 +13,7 @@ use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Actions\Traits\WithTabsBox; // Trait Tabs
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\Helpers\Period\PeriodEnum;
 use App\Enums\UI\HumanResources\TimesheetsTabsEnum;
@@ -32,13 +33,49 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Models\HumanResources\WorkSchedule;
+use App\Models\HumanResources\QrScanLog;
+use App\Models\Catalogue\Shop;
+use Illuminate\Support\Carbon;
 
 class IndexTimesheets extends OrgAction
 {
     use WithEmployeeSubNavigation;
     use WithHumanResourcesAuthorisation;
+    use WithTabsBox;
 
     private Group|Employee|Organisation|Guest $parent;
+
+
+    public function getTabsBox(Group|Organisation|Shop|Employee|Guest $parent): array
+    {
+        if ($parent instanceof Employee || $parent instanceof Guest) {
+            return [];
+        }
+
+        return [];
+    }
+    private $statsQuery;
+
+    protected function resolvePeriodRange(): ?array
+    {
+        $period = request()->input('period');
+
+        if ($period && is_array($period)) {
+            return PeriodEnum::toDateRange($period);
+        }
+
+        $employeesPeriod = request()->input('employees_period');
+
+        if ($employeesPeriod && is_array($employeesPeriod)) {
+            return PeriodEnum::toDateRange($employeesPeriod);
+        }
+
+        return [
+            now()->startOfMonth(),
+            now()->endOfMonth(),
+        ];
+    }
 
     public function handle(Group|Organisation|Employee|Guest $parent, ?string $prefix = null, bool $isTodayTimesheet = false): LengthAwarePaginator
     {
@@ -52,44 +89,186 @@ class IndexTimesheets extends OrgAction
 
         if ($parent instanceof Organisation) {
             $query->where('timesheets.organisation_id', $parent->id);
+            $timezone = $parent->timezone->name ?? 'UTC';
         } elseif ($parent instanceof Employee) {
             $query->where('timesheets.subject_type', 'Employee')
                 ->where('timesheets.subject_id', $parent->id);
+            $timezone = $parent->organisation->timezone->name ?? 'UTC';
         } elseif ($parent instanceof Group) {
             $query->where('timesheets.group_id', $parent->id);
+            $timezone = 'UTC';
         } else {
             $query->where('subject_type', 'Guest')->where('subject_id', $parent->id);
+            $timezone = 'UTC';
         }
+
         $query->leftjoin('organisations', 'timesheets.organisation_id', '=', 'organisations.id');
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $query->with(['subject.jobPositions']);
+
         if ($isTodayTimesheet) {
-            $query->whereDate('timesheets.date', now()->format('Y-m-d'));
+            $query->whereDate('timesheets.date', now()->setTimezone($timezone)->format('Y-m-d'));
         }
 
         $query->withFilterPeriod('date');
+        [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
+        if ($from && $to) {
+            $query->whereBetween('timesheets.date', [$from, $to]);
+        }
+
+        $this->statsQuery = $query->clone();
+
+        $this->applyStatusFilter($query, $parent, $timezone);
+
         $query->select([
-            'timesheets.id',
-            'timesheets.date',
-            'timesheets.subject_name',
-            'timesheets.start_at',
-            'timesheets.end_at',
-            'timesheets.working_duration',
-            'timesheets.breaks_duration',
-            'timesheets.number_time_trackers',
-            'timesheets.number_open_time_trackers',
+            'timesheets.*',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
         ]);
+
         return $query
             ->defaultSort('date')
             ->allowedSorts(['date', 'subject_name', 'working_duration', 'breaks_duration'])
             ->allowedFilters([$globalSearch, 'subject_name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function getStatistics(): array
+    {
+        if (!$this->statsQuery) {
+            return [];
+        }
+
+        $baseQuery = $this->statsQuery->clone();
+
+        [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
+        if ($from && $to) {
+            $baseQuery->whereBetween('timesheets.date', [$from, $to]);
+        }
+
+        $total = (clone $baseQuery)->count();
+        $noClockOut = (clone $baseQuery)->where('number_open_time_trackers', '>', 0)->count();
+
+        $organisationId = null;
+        if ($this->parent instanceof Organisation) {
+            $organisationId = $this->parent->id;
+            $timezone = $this->parent->timezone->name ?? 'UTC';
+        } elseif ($this->parent instanceof Employee) {
+            $organisationId = $this->parent->organisation_id;
+            $timezone = $this->parent->organisation->timezone->name ?? 'UTC';
+        } else {
+            $timezone = 'UTC';
+        }
+
+        $invalidScanCount = 0;
+        if ($organisationId) {
+            $invalidQuery = QrScanLog::where('organisation_id', $organisationId)
+                ->where('status', 'failed')
+                ->whereNotNull('employee_id');
+
+            if ($from && $to) {
+                $invalidQuery->whereBetween('scanned_at', [
+                    Carbon::parse($from, $timezone)->startOfDay()->utc(),
+                    Carbon::parse($to, $timezone)->endOfDay()->utc(),
+                ]);
+            }
+
+            $invalidScanCount = $invalidQuery->count();
+        }
+
+
+        $schedule = null;
+        if ($organisationId) {
+            $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
+                ->where('schedulable_id', $organisationId)
+                ->where('is_active', true)
+                ->with('days')
+                ->first();
+        }
+
+
+        if (!$schedule) {
+            return [
+                'on_time' => 0,
+                'late_clock_in' => 0,
+                'early_clock_out' => 0,
+                'no_clock_out' => $noClockOut,
+                'invalid' => $invalidScanCount,
+                'absent' => 0,
+                'total' => $total,
+            ];
+        }
+
+        $scheduleMap = $schedule->days->keyBy('day_of_week');
+
+        $timesheets = (clone $baseQuery)
+            ->setEagerLoads([])
+            ->select(['timesheets.date', 'timesheets.start_at', 'timesheets.end_at', 'timesheets.number_open_time_trackers']);
+        $lateClockIn = 0;
+        $earlyClockOut = 0;
+        $onTime = 0;
+
+        foreach ($timesheets->cursor() as $ts) {
+
+            $dayOfWeek = $ts->date->dayOfWeekIso;
+            $daySchedule = $scheduleMap->get($dayOfWeek);
+
+            if (!$daySchedule || !$daySchedule->is_working_day) {
+                continue;
+            }
+
+            $startAt = $ts->start_at
+                ?->copy()
+                ->setTimezone($timezone);
+
+            $endAt = $ts->end_at
+                ?->copy()
+                ->setTimezone($timezone);
+
+            if ($startAt) {
+                $scheduledStart = $startAt->copy()->setTime(
+                    $daySchedule->start_time->hour,
+                    $daySchedule->start_time->minute,
+                    $daySchedule->start_time->second ?? 0,
+                );
+
+                $scheduledEnd = $startAt->copy()->setTime(
+                    $daySchedule->end_time->hour,
+                    $daySchedule->end_time->minute,
+                    $daySchedule->end_time->second ?? 0,
+                );
+            }
+
+            $isLate = false;
+
+            if ($startAt && $startAt->gt($scheduledStart->copy()->addMinutes(1))) {
+                $lateClockIn++;
+                $isLate = true;
+            }
+
+            if ($ts->number_open_time_trackers == 0 && $endAt && $endAt->lt($scheduledEnd->copy()->subMinutes(1))) {
+                $earlyClockOut++;
+            }
+
+            if (!$isLate && $startAt) {
+                $onTime++;
+            }
+        }
+
+        return [
+            'on_time' => $onTime,
+            'late_clock_in' => $lateClockIn,
+            'early_clock_out' => $earlyClockOut,
+            'no_clock_out' => $noClockOut,
+            'invalid' => $invalidScanCount,
+            'absent' => 0,
+            'total' => $total,
+        ];
     }
 
     protected function getPeriodFilters(): array
@@ -111,9 +290,7 @@ class IndexTimesheets extends OrgAction
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
+                $table->name($prefix)->pageName($prefix . 'Page');
             }
 
             $noResults = __("No timesheets found");
@@ -126,162 +303,115 @@ class IndexTimesheets extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->withEmptyState(
-                    [
-                        'title' => $noResults,
-                        'count' => $stats->number_timesheets
-                    ]
-                )
+                ->withEmptyState(['title' => $noResults, 'count' => $stats->number_timesheets ?? 0])
                 ->withModelOperations($modelOperations)
-                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true);
+                ->column(key: 'date', label: __('Date'), sortable: true);
 
             if ($parent instanceof Organisation) {
-                $table->column(key: 'subject_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'subject_name', label: __('Name'), sortable: true, searchable: true);
+                $table->column(key: 'job_position', label: __('Job Position'));
             }
 
             foreach ($this->getPeriodFilters() as $periodFilter) {
                 $table->periodFilters($periodFilter['elements']);
             }
 
-            $table->column(key: 'working_duration', label: __('working'), canBeHidden: false, sortable: true)
-                ->column(key: 'breaks_duration', label: __('breaks'), canBeHidden: false, sortable: true);
+            $table->column(key: 'working_duration', label: __('Working'), sortable: true)
+                ->column(key: 'breaks_duration', label: __('Breaks'), sortable: true)
+                ->column(key: 'clock_in_count', label: __('Clock In'))
+                ->column(key: 'clock_out_count', label: __('Clock Out'));
+
             if ($parent instanceof Group) {
-                $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
+                $table->column(key: 'organisation_name', label: __('Organisation'), searchable: true);
             }
             $table->defaultSort('date');
         };
     }
 
-
     public function jsonResponse(LengthAwarePaginator $timesheets): AnonymousResourceCollection
     {
+
+        $timesheets->through(function ($timesheet) {
+
+            $jobPositions = '-';
+
+            if ($timesheet->subject_type === 'Employee' && $timesheet->subject) {
+                $jobPositions = $timesheet->subject->job_title;
+            }
+            $timesheet->setAttribute('job_position', $jobPositions ?: '-');
+            $timesheet->setAttribute('clock_in_count', $timesheet->number_time_trackers);
+            $timesheet->setAttribute('clock_out_count', $timesheet->number_time_trackers - $timesheet->number_open_time_trackers);
+
+            return $timesheet;
+        });
+
         return TimesheetsResource::collection($timesheets);
     }
 
-    public function htmlResponse(LengthAwarePaginator $timesheets, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator|Group|Organisation|Employee|Guest $parent, ActionRequest $request): Response
     {
-        $subNavigation = [];
-        $model         = '';
-        $title         = __('Timesheets');
-        $icon          = [
-            'title' => __('Timesheets'),
-            'icon'  => 'fal fa-stopwatch'
-        ];
-        $afterTitle    = null;
-        $iconRight     = null;
-        $modelOperations = [
 
-            'createLink' => [
-                [
-                    'route' => [
-                        'name'       => 'grp.org.hr.timesheets.index',
-                        'parameters' => array_values($request->route()->originalParameters())
-                    ],
-                    'label' => __('per employee')
-                ]
-            ]
-
-        ];
-        if ($this->parent instanceof Group) {
-            $modelOperations = [];
+        if ($parent instanceof LengthAwarePaginator) {
+            $parent = $this->parent;
         }
-        if ($this->parent instanceof Employee) {
-            $afterTitle    = [
-                'label' => $title
-            ];
-            $iconRight     = $icon;
-            $subNavigation = $this->getEmployeeSubNavigation($this->parent, $request);
-            $title         = $this->parent->contact_name;
 
-            $icon = [
-                'icon'  => ['fal', 'fa-user-hard-hat'],
-                'title' => __('Employee')
-            ];
+        if (empty($this->tab)) {
+            $this->tab = TimesheetsTabsEnum::ALL_EMPLOYEES->value;
         }
+
+
+        $this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value);
 
         return Inertia::render(
             'Org/HumanResources/Timesheets',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $this->parent,
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($this->parent, $request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('timesheets'),
                 'pageHead'    => [
-                    'title'         => $title,
-                    'icon'          => $icon,
-                    'model'         => $model,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'subNavigation' => $subNavigation,
-                    'actions' => [
-                        class_basename($this->parent) !== class_basename(Organisation::class) ? [
-                            'type'   => 'button',
-                            'style'  => 'tertiary',
-                            'label'  => 'PDF',
-                            'target' => '_blank',
-                            'icon'   => 'fal fa-file-pdf',
-                            'key'    => 'action',
-                            'route'  => [
-                                'name'       => match (class_basename($this->parent)) {
-                                    class_basename(Organisation::class) => 'grp.org.hr.timesheets.export',
-                                    class_basename(Employee::class) => 'grp.org.hr.employees.show.timesheets.pdf',
-                                },
-                                'parameters' => match (class_basename($this->parent)) {
-                                    class_basename(Organisation::class) => [
-                                        'organisation' => $this->parent->slug,
-                                        ...$request->query
-                                    ],
-                                    class_basename(Employee::class) => [
-                                        'organisation' => $this->parent->organisation->slug,
-                                        'employee' => $this->parent->slug,
-                                        ...$request->query
-                                    ],
-                                },
-                            ]
-                        ] : []
-                    ]
-        ],
-
+                    'title'         => __('Timesheets'),
+                    'icon'          => ['title' => __('Timesheets'), 'icon'  => 'fal fa-stopwatch'],
+                ],
+                'statistics' => $this->getStatistics(),
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => TimesheetsTabsEnum::navigation()
+                    'navigation' => $this->getTabsBox($this->parent)
                 ],
 
-                'data' => TimesheetsResource::collection($timesheets)
+                TimesheetsTabsEnum::ALL_EMPLOYEES->value => $this->tab == TimesheetsTabsEnum::ALL_EMPLOYEES->value
+                    ? fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))
+                    : Inertia::lazy(fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))),
 
+                TimesheetsTabsEnum::PER_EMPLOYEE->value => $this->tab == TimesheetsTabsEnum::PER_EMPLOYEE->value
+                    ? fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))
+                    : Inertia::lazy(fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))),
             ]
-        )->table(
-            $this->tableStructure($this->parent, modelOperations: $modelOperations)
-        );
+        )
+            ->table($this->tableStructure($this->parent, null, TimesheetsTabsEnum::ALL_EMPLOYEES->value))
+            ->table($this->tableStructure($this->parent, null, TimesheetsTabsEnum::PER_EMPLOYEE->value));
     }
 
 
-    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(TimesheetsTabsEnum::values());
 
-        return $this->handle($organisation);
+        return $organisation;
     }
 
-    public function inEmployee(Organisation $organisation, Employee $employee, ActionRequest $request): LengthAwarePaginator
+    public function inEmployee(Organisation $organisation, Employee $employee, ActionRequest $request): Employee
     {
         $this->parent = $employee;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($employee);
+        $this->initialisation($organisation, $request)->withTab(TimesheetsTabsEnum::values());
+        return $employee;
     }
 
-    public function inGroup(ActionRequest $request): LengthAwarePaginator
+    public function inGroup(ActionRequest $request): Group
     {
         $this->parent = group();
-        $this->initialisationFromGroup(group(), $request);
-
-        return $this->handle(group());
+        $this->initialisationFromGroup(group(), $request)->withTab(TimesheetsTabsEnum::values());
+        return group();
     }
-
 
     public function getBreadcrumbs(Group|Organisation|Employee|Guest $parent, string $routeName, array $routeParameters): array
     {
@@ -327,5 +457,127 @@ class IndexTimesheets extends OrgAction
                 )
             ),
         };
+    }
+
+    protected function applyStatusFilter(QueryBuilder $query,Group|Organisation|Employee|Guest $parent,string $timezone): void {
+        $status = request()->input('timesheet_status');
+
+        if (!$status) {
+            return;
+        }
+
+        if (!in_array($status, ['on_time', 'late_clock_in', 'early_clock_out', 'no_clock_out'], true)) {
+            return;
+        }
+
+        if ($status === 'no_clock_out') {
+            $query->where('timesheets.number_open_time_trackers', '>', 0);
+
+            return;
+        }
+
+        $organisationId = null;
+
+        if ($parent instanceof Organisation) {
+            $organisationId = $parent->id;
+        } elseif ($parent instanceof Employee) {
+            $organisationId = $parent->organisation_id;
+        }
+
+        if (!$organisationId) {
+            return;
+        }
+
+        $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
+            ->where('schedulable_id', $organisationId)
+            ->where('is_active', true)
+            ->with('days')
+            ->first();
+
+        if (!$schedule) {
+            return;
+        }
+
+        $scheduleMap = $schedule->days->keyBy('day_of_week');
+
+        $baseQuery = $query->clone()
+            ->setEagerLoads([])
+            ->select([
+                'timesheets.id',
+                'timesheets.date',
+                'timesheets.start_at',
+                'timesheets.end_at',
+                'timesheets.number_open_time_trackers',
+            ]);
+
+        $matchingIds = [];
+
+        foreach ($baseQuery->cursor() as $ts) {
+            $dayOfWeek = $ts->date->dayOfWeekIso;
+            $daySchedule = $scheduleMap->get($dayOfWeek);
+
+            if (!$daySchedule || !$daySchedule->is_working_day) {
+                continue;
+            }
+
+            $startAt = $ts->start_at
+                ?->copy()
+                ->setTimezone($timezone);
+
+            $endAt = $ts->end_at
+                ?->copy()
+                ->setTimezone($timezone);
+
+            $scheduledStart = null;
+            $scheduledEnd = null;
+
+            if ($startAt) {
+                $scheduledStart = $startAt->copy()->setTime(
+                    $daySchedule->start_time->hour,
+                    $daySchedule->start_time->minute,
+                    $daySchedule->start_time->second ?? 0,
+                );
+
+                $scheduledEnd = $startAt->copy()->setTime(
+                    $daySchedule->end_time->hour,
+                    $daySchedule->end_time->minute,
+                    $daySchedule->end_time->second ?? 0,
+                );
+            }
+
+            $isLateClockIn = false;
+            $isEarlyClockOut = false;
+
+            if (
+                $scheduledStart
+                && $startAt
+                && $startAt->gt($scheduledStart->copy()->addMinutes(1))
+            ) {
+                $isLateClockIn = true;
+            }
+
+            if (
+                $scheduledEnd
+                && $ts->number_open_time_trackers == 0
+                && $endAt
+                && $endAt->lt($scheduledEnd->copy()->subMinutes(1))
+            ) {
+                $isEarlyClockOut = true;
+            }
+
+            if ($status === 'late_clock_in' && $isLateClockIn) {
+                $matchingIds[] = $ts->id;
+            } elseif ($status === 'early_clock_out' && $isEarlyClockOut) {
+                $matchingIds[] = $ts->id;
+            } elseif ($status === 'on_time' && !$isLateClockIn && $startAt) {
+                $matchingIds[] = $ts->id;
+            }
+        }
+
+        if (!empty($matchingIds)) {
+            $query->whereIn('timesheets.id', $matchingIds);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
     }
 }

@@ -40,12 +40,11 @@ class StoreMediaFromIcon
             $iconType = DiceBearStylesEnum::BOTS;
         }
 
-
         try {
-
 
             $svg = GetDiceBearAvatar::run($iconType, $seed);
             $checksum = md5($svg);
+            $ulid = Str::ulid();
 
             /** @var Media $media */
             $media = $model->addMediaFromString($svg)
@@ -54,7 +53,6 @@ class StoreMediaFromIcon
                     [
                         'checksum' => $checksum,
                         'group_id' => $group_id,
-                        'ulid'     => Str::ulid()
                     ]
                 )
                 ->usingName($model->slug."-icon")

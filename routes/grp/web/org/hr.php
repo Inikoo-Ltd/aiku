@@ -32,6 +32,12 @@ use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheet;
 use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheets;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\HumanResources\Timesheet\UI\ShowTimesheet;
+use App\Actions\HumanResources\Overtime\UI\IndexOvertime;
+use App\Actions\HumanResources\Overtime\UI\IndexOvertimeTypes;
+use App\Actions\HumanResources\Overtime\StoreOvertimeType;
+use App\Actions\HumanResources\Overtime\UpdateOvertimeRequest;
+use App\Actions\HumanResources\Overtime\UpdateOvertimeType;
+use App\Actions\HumanResources\Overtime\DeleteOvertimeType;
 use App\Actions\HumanResources\Workplace\UI\CreateWorkplace;
 use App\Actions\HumanResources\Workplace\UI\EditWorkplace;
 use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
@@ -39,7 +45,20 @@ use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
+use App\Actions\HumanResources\Leave\ApproveLeave;
+use App\Actions\HumanResources\Leave\ExportLeaveReport;
+use App\Actions\HumanResources\Overtime\ExportOvertimeReport;
+use App\Actions\HumanResources\Leave\RejectLeave;
+use App\Actions\HumanResources\Leave\UpdateLeave;
+use App\Actions\HumanResources\AttendanceAdjustment\UI\IndexAttendanceAdjustmentsAdmin;
+use App\Actions\HumanResources\AttendanceAdjustment\ApproveAttendanceAdjustment;
+use App\Actions\HumanResources\AttendanceAdjustment\RejectAttendanceAdjustment;
 use Illuminate\Support\Facades\Route;
+use App\Actions\HumanResources\Overtime\DeleteOvertimeRequest;
+use App\Actions\HumanResources\Overtime\ApproveOvertimeRequest;
+use App\Actions\HumanResources\Overtime\RejectOvertimeRequest;
+use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
+use App\Actions\HumanResources\Overtime\UI\DashboardOvertime;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
@@ -66,9 +85,6 @@ Route::prefix('employees')->as('employees.')->group(function () {
             Route::get('timesheets/export', ExportEmployeeTimesheets::class)->name('timesheets.export');
             Route::get('timesheets/{timesheet}', [ShowTimesheet::class, 'inEmployee'])->name('timesheets.show');
         });
-
-
-
     });
 });
 
@@ -119,9 +135,42 @@ Route::prefix('clocking-machines')->as('clocking_machines.')->group(function () 
     Route::get('{clockingMachine}/edit', EditClockingMachine::class)->name('edit');
 });
 
-
-
 Route::get('/clocking', IndexClockings::class)->name('clockings.index');
 Route::get('/clocking/create', CreateClocking::class)->name('clockings.create');
 Route::get('/clocking/{clocking}', ShowClocking::class)->name('clockings.show');
 Route::get('/clocking/{clocking}/edit', EditClocking::class)->name('clockings.edit');
+
+Route::get('/overtime/dashboard', DashboardOvertime::class)->name('overtime.dashboard');
+Route::get('/overtime', IndexOvertime::class)->name('overtime.index');
+Route::get('/overtime/export', [ExportOvertimeReport::class, 'asController'])->name('overtime.export');
+Route::post('/overtime-requests', StoreOvertimeRequest::class)->name('overtime_requests.store');
+Route::patch('/overtime-requests/{overtimeRequest}/update', UpdateOvertimeRequest::class)->name('overtime_requests.update');
+Route::patch('/overtime-requests/{overtimeRequest}/approve', ApproveOvertimeRequest::class)->name('overtime_requests.approve');
+Route::patch('/overtime-requests/{overtimeRequest}/reject', RejectOvertimeRequest::class)->name('overtime_requests.reject');
+Route::delete('/overtime-requests/{overtimeRequest}', DeleteOvertimeRequest::class)->name('overtime_requests.delete');
+Route::get('/overtime-types', IndexOvertimeTypes::class)->name('overtime_types.index');
+Route::post('/overtime-types/store', StoreOvertimeType::class)->name('overtime_types.store');
+Route::patch('/overtime-types/{overtimeType}', UpdateOvertimeType::class)->name('overtime_types.update');
+Route::delete('/overtime-types/{overtimeType}', DeleteOvertimeType::class)->name('overtime_types.delete');
+
+
+Route::prefix('leaves')->as('leaves.')->group(function () {
+    Route::get('dashboard', \App\Actions\HumanResources\Leave\UI\DashboardLeave::class)->name('dashboard');
+    Route::get('', \App\Actions\HumanResources\Leave\UI\IndexLeavesAdmin::class)->name('index');
+    Route::get('export', [ExportLeaveReport::class, 'asController'])->name('export');
+    Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
+    Route::post('{leave}/reject', RejectLeave::class)->name('reject');
+    Route::post('{leave}', UpdateLeave::class)->name('update');
+});
+
+Route::prefix('adjustments')->as('adjustments.')->group(function () {
+    Route::get('dashboard', \App\Actions\HumanResources\AttendanceAdjustment\UI\DashboardAdjustments::class)->name('dashboard');
+    Route::get('', IndexAttendanceAdjustmentsAdmin::class)->name('index');
+    Route::post('{adjustment}/approve', ApproveAttendanceAdjustment::class)->name('approve');
+    Route::post('{adjustment}/reject', RejectAttendanceAdjustment::class)->name('reject');
+});
+
+Route::prefix('analytics')->as('analytics.')->group(function () {
+    Route::get('', \App\Actions\HumanResources\EmployeeAnalytics\UI\IndexEmployeeAnalytics::class)->name('index');
+    Route::get('employees/{employee}', \App\Actions\HumanResources\EmployeeAnalytics\UI\ShowEmployeeAnalytics::class)->name('show');
+});
