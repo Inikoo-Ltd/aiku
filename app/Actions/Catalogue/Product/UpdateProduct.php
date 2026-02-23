@@ -31,6 +31,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
+use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
@@ -332,6 +333,13 @@ class UpdateProduct extends OrgAction
             $product->updateQuietly([
                 'price_updated_at' => now()
             ]);
+
+            $oldPrice = HistoricAsset::find($oldHistoricProduct)?->price;
+            if ($oldPrice && $oldPrice > $product->price) {
+                $product->updateQuietly([
+                    'price_drop_at' => now()
+                ]);
+            }
         }
 
         if ($oldHistoricProduct != $product->current_historic_asset_id) {

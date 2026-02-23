@@ -458,7 +458,8 @@
   },
   {
     "outboxes": [
-      "price_change_notification"
+      "price_change_notification",
+      "basket_offer_notification"
     ],
     "name": "Beefree blank email template",
     "content": "beefree_blank_email_template.json",
