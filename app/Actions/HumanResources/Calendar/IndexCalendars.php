@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Http\Resources\HumanResources\EmployeeResource;
+use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Closure;
@@ -75,8 +76,48 @@ class IndexCalendars extends OrgAction
     }
 
 
-    public function htmlResponse(LengthAwarePaginator $employees): Response
+    public function htmlResponse(LengthAwarePaginator $employees, ActionRequest $request): Response
     {
+        $year  = (int) $request->input('year', now()->year);
+        $month = $request->integer('month') ?: null;
+
+        $holidays = Holiday::query()
+            ->where('organisation_id', $this->organisation->id)
+            ->where('year', $year)
+            ->get();
+
+        $holidayDates = [];
+
+        foreach ($holidays as $holiday) {
+            $currentDate = $holiday->from->copy();
+            while ($currentDate->lte($holiday->to)) {
+                $dateKey = $currentDate->format('Y-m-d');
+
+                if (!array_key_exists($dateKey, $holidayDates)) {
+                    $holidayDates[$dateKey] = [
+                        'date'   => $dateKey,
+                        'labels' => [],
+                    ];
+                }
+
+                if ($holiday->label) {
+                    $holidayDates[$dateKey]['labels'][] = $holiday->label;
+                }
+
+                $currentDate->addDay();
+            }
+        }
+
+        $calendarHolidays = array_values(array_map(
+            static function (array $item): array {
+                return [
+                    'date'  => $item['date'],
+                    'label' => implode(', ', $item['labels']),
+                ];
+            },
+            $holidayDates
+        ));
+
         return Inertia::render(
             'Org/HumanResources/Calendar',
             [
@@ -86,7 +127,9 @@ class IndexCalendars extends OrgAction
                     'title'         => __('Calendar'),
                     'subNavigation' => $this->getCalendarSubNavigation(),
                 ],
-
+                'year'     => $year,
+                'month'    => $month,
+                'holidays' => $calendarHolidays,
             ]
         )->table($this->tableStructure());
     }
