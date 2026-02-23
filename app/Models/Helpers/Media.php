@@ -63,41 +63,6 @@ class Media extends BaseMedia
 
     protected $table = 'media';
 
-    protected static function booted(): void
-    {
-        static::creating(function (self $media): void {
-            $media->group_id = static::resolveGroupId($media);
-            static::ensureUlid($media);
-        });
-    }
-
-    private static function resolveGroupId(self $media): ?int
-    {
-        if ($media->group_id) {
-            return $media->group_id;
-        }
-
-        $groupId = data_get($media->custom_properties, 'group_id');
-
-        if (!$groupId && $media->model_type && $media->model_id && class_exists($media->model_type)) {
-            $model = $media->model_type::find($media->model_id);
-            $groupId = $model?->group_id;
-        }
-
-        if (!$groupId && function_exists('group')) {
-            $groupId = group()?->id;
-        }
-
-        return $groupId ? (int) $groupId : null;
-    }
-
-    private static function ensureUlid(self $media): void
-    {
-        if (!$media->ulid) {
-            $media->ulid = (string) Str::ulid();
-        }
-    }
-
     public function getRouteKeyName(): string
     {
         return 'slug';
