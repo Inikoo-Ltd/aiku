@@ -23,6 +23,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
+use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\Organisation\SetIconAsShopLogo;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
@@ -250,9 +251,9 @@ class StoreShop extends OrgAction
             MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);
         }
         CreateDiscretionaryCharges::run($shop);
-        Artisan::call('org:seed-job-positions', [
-            'organisation' => $shop->organisation->slug
-        ]);
+
+        SeedJobPositions::run($shop->organisation);
+
 
         return $shop;
     }
