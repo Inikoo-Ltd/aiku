@@ -9,8 +9,12 @@ use Illuminate\Console\Command;
 
 class UpdateFaireProductInventoryQuantity extends OrgAction
 {
-    public function handle(Product $product): array
+    public function handle(Product $product): void
     {
+        if (!$product->marketplace_id) {
+            return;
+        }
+
         $shop = $product->shop;
 
         $availableQuantity = $product->available_quantity * $product->units;
@@ -22,7 +26,7 @@ class UpdateFaireProductInventoryQuantity extends OrgAction
             ]
         ];
 
-        return $shop->updateInventoryQuantity($inventories);
+        $shop->updateInventoryQuantity($inventories);
     }
 
     public string $commandSignature = 'faire:inventory{model}';
