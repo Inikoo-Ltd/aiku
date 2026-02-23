@@ -45,6 +45,7 @@ const props = defineProps<{
 		}[]
 	}[]
 	shipments_routes: {
+		submit_platform_route: routeType
 		submit_route: routeType
 		fetch_route: routeType
 		delete_route: routeType
@@ -522,10 +523,21 @@ const onCopyDataCustomer = (field: string) => {
 
 			<div class="gap-2 mb-2 flex">
 				<!-- Button: Shipment -->
+				<ButtonWithLink
+					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
+					v-if="!shipments.length && props.shipments_routes?.submit_platform_route?.name"
+					:disabled="!props.shipments_routes?.submit_platform_route?.name"
+					xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
+					:label="trans('Get Platform Shipment')"
+					method="post"
+					:url="route(props.shipments_routes?.submit_platform_route?.name, props.shipments_routes?.submit_platform_route?.parameters)"
+					icon="fas fa-plus"
+					type="dashed"
+					:size="twBreakPoint().includes('lg') ? 'xs' : undefined" />
 				<Button
 					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
 					v-if="!shipments.length && props.shipments_routes?.submit_route?.name"
-					:disabled="props.shipments_routes?.submit_route?.name ? false : true"
+					:disabled="!props.shipments_routes?.submit_route?.name"
 					@click="() => ((isModalShipment = true), onOpenModalTrackingNumber())"
 					xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
 					:label="trans('Shipment')"

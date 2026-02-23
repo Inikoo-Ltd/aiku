@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Shop\External\Faire\ProcessFaireShipment;
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
@@ -24,6 +25,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicking;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
+use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
@@ -33,6 +35,8 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         ->name('update_shipping_fields_retry_store_shipping')->withoutScopedBindings();
 
     Route::post('shipment-from-warehouse', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
+    Route::post('shipment-from-tiktok', ProcessTiktokOrderShipment::class)->name('shipment.store_tiktok');
+    Route::post('shipment-from-faire', ProcessFaireShipment::class)->name('shipment.store_faire');
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in_queue')->withoutScopedBindings();

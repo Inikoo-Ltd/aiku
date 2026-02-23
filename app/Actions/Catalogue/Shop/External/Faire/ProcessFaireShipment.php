@@ -10,7 +10,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
-class GetFaireShipment extends OrgAction
+class ProcessFaireShipment extends OrgAction
 {
 
     /**

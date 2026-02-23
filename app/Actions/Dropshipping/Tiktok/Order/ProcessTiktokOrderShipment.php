@@ -13,6 +13,7 @@ use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Ordering\Order;
@@ -21,6 +22,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -73,6 +75,13 @@ class ProcessTiktokOrderShipment extends OrgAction
             \Sentry::captureException($th);
             Log::error($th->getMessage());
         }
+    }
+
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
+    {
+        $this->initialisation($deliveryNote->organisation, $request);
+
+        $this->handle($deliveryNote->orders->firstOrFail());
     }
 
     public $commandSignature = 'tiktok:order_shipment {order}';
