@@ -257,7 +257,7 @@ const onPayWithBalance = () => {
                                 </template>
                                 <template v-else>
                                     <div class="text-gray-400 ">
-                                        {{ shipment.name }}: {{ shipment.tracking }}
+                                        {{ shipment.name == 'GSL' ? 'GLS' : shipment.name  }}: {{ shipment.tracking }}
                                     </div>
                                     <a class="secondaryLink" target="_parent" v-if="shipment.shipper_url"
                                         :href="shipment.shipper_url">{{ trans('Tracking url') }} </a>
