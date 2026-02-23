@@ -24,11 +24,13 @@ const props = defineProps<{
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
+const showGenerateModal = ref(false)
 const editingHoliday = ref<any | null>(null)
 const toTouchedCreate = ref(false)
 const toTouchedEdit = ref(false)
 const filterYear = ref<string>('')
 const filterMonth = ref<string>('')
+const defaultTargetYear = String(new Date().getFullYear() + 1)
 
 const yearOptions = computed(() => {
     const currentYear = new Date().getFullYear()
@@ -69,6 +71,12 @@ const editForm = useForm<{
     from: '',
     to: '',
     is_recurring: false,
+})
+
+const generateForm = useForm<{
+    year: string
+}>({
+    year: defaultTargetYear,
 })
 
 const initializeFiltersFromUrl = () => {
@@ -123,6 +131,29 @@ const openCreateModal = () => {
     form.clearErrors()
     toTouchedCreate.value = false
     showCreateModal.value = true
+}
+
+const openGenerateModal = () => {
+    const currentYear = new Date().getFullYear()
+    const baseYear = filterYear.value ? parseInt(filterYear.value, 10) + 1 : currentYear + 1
+
+    generateForm.year = String(baseYear)
+    generateForm.clearErrors()
+    showGenerateModal.value = true
+}
+
+const closeGenerateModal = () => {
+    showGenerateModal.value = false
+    generateForm.clearErrors()
+}
+
+const submitGenerate = () => {
+    generateForm.post(route('grp.org.hr.holidays.generate', route().params), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeGenerateModal()
+        },
+    })
 }
 
 const closeCreateModal = () => {
@@ -265,6 +296,13 @@ watch(
                     :label="action.label"
                     @click="openCreateModal"
                 />
+                <Button
+                    type="secondary"
+                    size="xs"
+                    icon="fal fa-umbrella"
+                    :label="trans('Generate next year')"
+                    @click="openGenerateModal"
+                />
             </div>
         </template>
     </PageHeading>
@@ -362,6 +400,44 @@ watch(
                     size="sm"
                     :label="trans('Save')"
                     :disabled="form.processing"
+                />
+            </div>
+        </form>
+    </Modal>
+    <Modal :isOpen="showGenerateModal" @onClose="closeGenerateModal" width="w-full max-w-md">
+        <form class="space-y-4" @submit.prevent="submitGenerate">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Target year') }}
+                </label>
+                <input
+                    v-model="generateForm.year"
+                    type="number"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    min="2000"
+                    max="2100"
+                />
+                <div v-if="generateForm.errors.year" class="mt-1 text-xs text-red-600">
+                    {{ generateForm.errors.year }}
+                </div>
+            </div>
+
+            <p class="text-sm text-gray-600">
+                {{ trans('This will create holidays for the target year based on recurring holidays from the previous year.') }}
+            </p>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <Button
+                    type="secondary"
+                    size="sm"
+                    :label="trans('Cancel')"
+                    @click.prevent="closeGenerateModal"
+                />
+                <Button
+                    type="create"
+                    size="sm"
+                    :label="trans('Generate')"
+                    :disabled="generateForm.processing"
                 />
             </div>
         </form>

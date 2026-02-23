@@ -63,6 +63,7 @@ use App\Actions\HumanResources\Holiday\UI\IndexHolidays;
 use App\Actions\HumanResources\Holiday\StoreHoliday;
 use App\Actions\HumanResources\Holiday\UpdateHoliday;
 use App\Actions\HumanResources\Holiday\DeleteHoliday;
+use App\Actions\HumanResources\Holiday\GenerateNextYearHolidays;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
@@ -101,6 +102,7 @@ Route::get('/calendars', IndexCalendars::class)->name('calendars.index');
 Route::get('/calendars/{calendar}', ShowCalendar::class)->name('calendars.show');
 Route::get('/holidays', IndexHolidays::class)->name('holidays.index');
 Route::post('/holidays', StoreHoliday::class)->name('holidays.store');
+Route::post('/holidays/generate', GenerateNextYearHolidays::class)->name('holidays.generate');
 Route::patch('/holidays/{holiday}', UpdateHoliday::class)->name('holidays.update');
 Route::delete('/holidays/{holiday}', DeleteHoliday::class)->name('holidays.delete');
 
