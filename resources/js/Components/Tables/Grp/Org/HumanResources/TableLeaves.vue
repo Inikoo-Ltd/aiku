@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
@@ -8,26 +8,29 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { faEdit } from "@fal"
+import { faEdit, faCalendarCheck, faMedkit, faCalendarTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faEdit)
+library.add(faEdit, faCalendarCheck, faMedkit, faCalendarTimes)
+
+type LeaveBalanceSummary = {
+	annual_days: number
+	annual_used: number
+	annual_remaining: number
+	medical_days: number
+	medical_used: number
+	medical_remaining: number
+	unpaid_days: number
+	unpaid_used: number
+	unpaid_remaining: number
+}
 
 const props = defineProps<{
 	data: {}
 	tab?: string
 	organisation?: string | null
-	balance?: {
-		annual_days: number
-		annual_used: number
-		annual_remaining: number
-		medical_days: number
-		medical_used: number
-		medical_remaining: number
-		unpaid_days: number
-		unpaid_used: number
-		unpaid_remaining: number
-	}
+	balance?: LeaveBalanceSummary | { data?: LeaveBalanceSummary }
 	isRequestLeaveModalOpen?: boolean
 }>()
 
@@ -39,6 +42,70 @@ const locale = useLocaleStore()
 const isEditModalOpen = ref(false)
 const selectedLeave = ref<any>(null)
 const isSubmitting = ref(false)
+
+const toNumber = (value: unknown): number => {
+	if (typeof value === "number") {
+		return Number.isFinite(value) ? value : 0
+	}
+
+	if (typeof value === "string") {
+		const parsed = Number(value)
+		return Number.isFinite(parsed) ? parsed : 0
+	}
+
+	return 0
+}
+
+const normalizedBalance = computed<LeaveBalanceSummary | null>(() => {
+	if (!props.balance || typeof props.balance !== "object") {
+		return null
+	}
+
+	if ("data" in props.balance && props.balance.data && typeof props.balance.data === "object") {
+		return props.balance.data
+	}
+
+	return props.balance as LeaveBalanceSummary
+})
+
+const balanceSummary = computed(() => {
+	if (!normalizedBalance.value) {
+		return null
+	}
+
+	const annualDays = toNumber(normalizedBalance.value.annual_days)
+	const annualUsed = toNumber(normalizedBalance.value.annual_used)
+	const annualRemainingRaw = toNumber(normalizedBalance.value.annual_remaining)
+
+	const medicalDays = toNumber(normalizedBalance.value.medical_days)
+	const medicalUsed = toNumber(normalizedBalance.value.medical_used)
+	const medicalRemainingRaw = toNumber(normalizedBalance.value.medical_remaining)
+
+	const unpaidDays = toNumber(normalizedBalance.value.unpaid_days)
+	const unpaidUsed = toNumber(normalizedBalance.value.unpaid_used)
+	const unpaidRemainingRaw = toNumber(normalizedBalance.value.unpaid_remaining)
+
+	return {
+		annual_days: annualDays,
+		annual_used: annualUsed,
+		annual_remaining:
+			annualRemainingRaw > 0 || annualDays === 0
+				? annualRemainingRaw
+				: Math.max(0, annualDays - annualUsed),
+		medical_days: medicalDays,
+		medical_used: medicalUsed,
+		medical_remaining:
+			medicalRemainingRaw > 0 || medicalDays === 0
+				? medicalRemainingRaw
+				: Math.max(0, medicalDays - medicalUsed),
+		unpaid_days: unpaidDays,
+		unpaid_used: unpaidUsed,
+		unpaid_remaining:
+			unpaidRemainingRaw > 0 || unpaidDays === 0
+				? unpaidRemainingRaw
+				: Math.max(0, unpaidDays - unpaidUsed),
+	}
+})
 
 const typeOptions = [
 	{ value: "annual", label: trans("Annual Leave") },
@@ -145,6 +212,74 @@ const submitEdit = () => {
 
 <template>
 	<div>
+		<div v-if="balanceSummary" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+			<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm text-gray-500">{{ trans("Annual Leave") }}</p>
+						<p class="text-2xl font-bold text-blue-600">
+							{{ balanceSummary.annual_remaining }}
+						</p>
+						<p class="text-xs text-gray-400">
+							{{
+								trans(":used of :total days used", {
+									used: balanceSummary.annual_used,
+									total: balanceSummary.annual_days,
+								})
+							}}
+						</p>
+					</div>
+					<div class="text-3xl text-blue-200">
+						<FontAwesomeIcon icon="fal fa-calendar-check" />
+					</div>
+				</div>
+			</div>
+
+			<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm text-gray-500">{{ trans("Medical Leave") }}</p>
+						<p class="text-2xl font-bold text-red-600">
+							{{ balanceSummary.medical_remaining }}
+						</p>
+						<p class="text-xs text-gray-400">
+							{{
+								trans(":used of :total days used", {
+									used: balanceSummary.medical_used,
+									total: balanceSummary.medical_days,
+								})
+							}}
+						</p>
+					</div>
+					<div class="text-3xl text-red-200">
+						<FontAwesomeIcon icon="fal fa-medkit" />
+					</div>
+				</div>
+			</div>
+
+			<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm text-gray-500">{{ trans("Unpaid Leave") }}</p>
+						<p class="text-2xl font-bold text-gray-600">
+							{{ balanceSummary.unpaid_remaining }}
+						</p>
+						<p class="text-xs text-gray-400">
+							{{
+								trans(":used of :total days used", {
+									used: balanceSummary.unpaid_used,
+									total: balanceSummary.unpaid_days,
+								})
+							}}
+						</p>
+					</div>
+					<div class="text-3xl text-gray-200">
+						<FontAwesomeIcon icon="fal fa-calendar-times" />
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<div class="mt-4">
 			<Table :resource="data" :name="tab">
 				<template #cell(start_date)="{ item: leave }">
