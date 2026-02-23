@@ -7,9 +7,9 @@ import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faChevronLeft, faChevronRight } from '@fal'
+import { faChevronLeft, faChevronRight , faDownload } from '@fal'
 
-library.add(faChevronLeft, faChevronRight)
+library.add(faChevronLeft, faChevronRight, faDownload)
 
 type CalendarHoliday = {
     date: string
@@ -399,9 +399,9 @@ const goNext = () => {
                         <Button
                             type="secondary"
                             size="sm"
-                        >
-                            {{ trans('Export Excel') }}
-                        </Button>
+                            :icon="faDownload"
+                            :label="trans('Export')"
+                        />
                     </a>
                 </div>
             </div>
