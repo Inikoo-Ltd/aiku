@@ -172,8 +172,9 @@ defineExpose({
                     <slot name="image" :product="product">
 
                         <!-- MOBILE -->
-                        <div v-if="images.length" class="md:hidden w-full h-full relative">
+                        <div v-if="images.length" class="md:hidden w-full relative aspect-square overflow-hidden">
 
+                            <!-- MULTI IMAGE SLIDER -->
                             <div v-if="images.length > 1" ref="mobileSlider" @touchstart="onTouchStart"
                                 @touchend="onTouchEnd" class="flex w-full h-full overflow-hidden">
 
@@ -185,13 +186,13 @@ defineExpose({
                                 </div>
                             </div>
 
-
+                            <!-- SINGLE IMAGE -->
                             <div v-else class="w-full h-full">
                                 <Image :src="images[0]" :alt="product.name" class="w-full h-full"
                                     :style="{ objectFit: 'contain', objectPosition: 'center' }" />
                             </div>
 
-                            <!-- dots -->
+                            <!-- DOTS -->
                             <div v-if="images.length > 1"
                                 class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
                                 <span v-for="(img, i) in images" :key="'dot-' + i"
@@ -203,21 +204,27 @@ defineExpose({
 
 
                         <!-- DESKTOP -->
-                        <div v-if="images.length" class="hidden md:block relative w-full h-full overflow-hidden group">
-                            <div class="flex w-full h-full"
+                        <div v-if="images.length"
+                            class="hidden md:block relative w-full aspect-square overflow-hidden group">
+                            <div class="flex w-full h-full "
                                 :class="images.length > 1 ? 'group-hover:-translate-x-full' : ''">
-
-                                <div class="w-full h-full flex-shrink-0 flex items-center justify-center">
-                                    <Image :src="images[0]" :alt="product.name" class="max-w-full max-h-full"
-                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                <!-- FIRST IMAGE -->
+                                <div class="w-full h-full flex-shrink-0 relative">
+                                    <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                        :style="{
+                                            objectFit: 'contain',
+                                            objectPosition: 'center'
+                                        }" />
                                 </div>
 
-                                <div v-if="images.length > 1"
-                                    class="w-full h-full flex-shrink-0 flex items-center justify-center">
-                                    <Image :src="images[1]" :alt="product.name" class="max-w-full max-h-full"
-                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                <!-- SECOND IMAGE -->
+                                <div v-if="images.length > 1" class="w-full h-full flex-shrink-0 relative">
+                                    <Image :src="images[1]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                        :style="{
+                                            objectFit: 'contain',
+                                            objectPosition: 'center'
+                                        }" />
                                 </div>
-
                             </div>
                         </div>
 
