@@ -216,4 +216,37 @@ trait WithTiktokApiServices
             'content-type' => 'application/json'
         ]);
     }
+
+    public function getOrderLabel(string $packageId): array
+    {
+        $path = "/fulfillment/202309/packages/$packageId/shipping_documents";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ], true, [
+            'document_type' => 'SHIPPING_LABEL'
+        ]);
+    }
+
+    public function createOrderPackage(string $orderId): array
+    {
+        $path = "/fulfillment/202512/packages";
+
+        return $this->makeApiRequest('POST', $path, [
+            'ship_type' => 1,
+            'order_id' => $orderId,
+
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function shipPackage(string $packageId): array
+    {
+        $path = "/fulfillment/202309/packages/$packageId/ship";
+
+        return $this->makeApiRequest('POST', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
 }
