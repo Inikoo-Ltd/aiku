@@ -68,38 +68,38 @@ class GetFaireOrders extends OrgAction
                     }
 
 
-                    //
-                    //
-                    //
-                    //                    data_set($faireOrder, 'external_id', $externalId);
-                    //                    data_set($faireOrder, 'marketplace_id', $externalId);
-                    //                    $awOrder = StoreOrder::make()->action($customer, Arr::only($faireOrder, ['delivery_address', 'billing_address', 'external_id']));
-                    //
-                    //                    foreach (Arr::get($faireOrder, 'items', []) as $item) {
-                    //                        $product = Product::where('shop_id', $shop->id)
-                    //                            ->where('code', $item['sku'])
-                    //                            ->first();
-                    //
-                    //                        $historicAsset = $product?->asset?->historicAsset;
-                    //
-                    //                        if (!$historicAsset) {
-                    //                            continue;
-                    //                        }
-                    //
-                    //                        StoreTransaction::make()->action(
-                    //                            order: $awOrder,
-                    //                            historicAsset: $historicAsset,
-                    //                            modelData: [
-                    //                                'quantity_ordered' => $item['quantity'],
-                    //                                'external_id'      => $item['id'],
-                    //                                'net_amount'       => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
-                    //                                'gross_amount'     => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
-                    //                                'marketplace_id'   => $item['id']
-                    //                            ]
-                    //                        );
-                    //                    }
-                    //
-                    //                    SubmitOrder::run($awOrder);
+
+
+
+                                        data_set($faireOrder, 'external_id', $externalId);
+                                        data_set($faireOrder, 'marketplace_id', $externalId);
+                                        $awOrder = StoreOrder::make()->action($customer, Arr::only($faireOrder, ['delivery_address', 'billing_address', 'external_id']));
+
+                                        foreach (Arr::get($faireOrder, 'items', []) as $item) {
+                                            $product = Product::where('shop_id', $shop->id)
+                                                ->where('code', $item['sku'])
+                                                ->first();
+
+                                            $historicAsset = $product?->asset?->historicAsset;
+
+                                            if (!$historicAsset) {
+                                                continue;
+                                            }
+
+                                            StoreTransaction::make()->action(
+                                                order: $awOrder,
+                                                historicAsset: $historicAsset,
+                                                modelData: [
+                                                    'quantity_ordered' => $item['quantity'],
+                                                    'external_id'      => $item['id'],
+                                                    'net_amount'       => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
+                                                    'gross_amount'     => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
+                                                    'marketplace_id'   => $item['id']
+                                                ]
+                                            );
+                                        }
+
+                                        SubmitOrder::run($awOrder);
                 }
             }
         });
