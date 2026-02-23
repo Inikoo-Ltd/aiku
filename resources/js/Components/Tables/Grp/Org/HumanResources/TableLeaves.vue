@@ -26,24 +26,12 @@ type LeaveBalanceSummary = {
 	unpaid_remaining: number
 }
 
-const canSubmitLeave = computed(() => {
-	if (!balanceSummary.value) return true
-	switch (leaveForm.type) {
-		case "annual":
-			return balanceSummary.value.annual_remaining > 0
-		case "medical":
-			return balanceSummary.value.medical_remaining > 0
-		default:
-			return true
-	}
-})
-
 const props = defineProps<{
 	data: {}
 	tab?: string
 	organisation?: string | null
 	balance?: LeaveBalanceSummary | { data?: LeaveBalanceSummary }
-	isRequestLeaveModalOpen?: boolean
+	isRequestLeaveModalOpen: boolean
 }>()
 
 const emit = defineEmits<{
@@ -125,16 +113,36 @@ const typeOptions = [
 	{ value: "unpaid", label: trans("Unpaid Leave") },
 ]
 
-const leaveForm = useForm({
+const leaveForm = useForm<{
+	type: string
+	start_date: string
+	end_date: string
+	reason: string
+	attachments: File[]
+}>({
 	type: "annual",
 	start_date: "",
 	end_date: "",
 	reason: "",
-	attachments: [] as File[],
+	attachments: [],
 })
 
-const editForm = useForm({
-	attachments: [] as File[],
+const editForm = useForm<{
+	attachments: File[]
+}>({
+	attachments: [],
+})
+
+const canSubmitLeave = computed(() => {
+	if (!balanceSummary.value) return true
+	switch (leaveForm.type) {
+		case "annual":
+			return balanceSummary.value.annual_remaining > 0
+		case "medical":
+			return balanceSummary.value.medical_remaining > 0
+		default:
+			return true
+	}
 })
 
 const getStatusTheme = (status: string): number => {
