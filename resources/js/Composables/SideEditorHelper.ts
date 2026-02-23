@@ -48,6 +48,7 @@ import UploadImageCropped from '@/Components/Workshop/Properties/UploadImageCrop
 import ShowBlockInResponsive from '@/Components/CMS/Fields/ShowBlockInResponsive.vue'
 import ResponsiveText from '@/Components/CMS/Fields/ResponsiveText.vue'
 import { SelectButton } from 'primevue'
+import SelectBanner from '@/Components/CMS/Fields/SelectBanner.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -97,7 +98,8 @@ export const getComponent = (componentName: string) => {
         "image-cropped" : UploadImageCropped,
         'visibility' : ShowBlockInResponsive,
         'text-responsive': ResponsiveText,
-        'select-button' : SelectButton
+        'select-button' : SelectButton,
+        'select_banner' : SelectBanner
     }
     return components[componentName] ?? NotFoundComponents
 }

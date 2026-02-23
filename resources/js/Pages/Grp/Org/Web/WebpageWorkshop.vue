@@ -65,6 +65,7 @@ const props = defineProps<{
   editable : boolean
 }>();
 
+console.log('props',props)
 provide('isInWorkshop', true);
 const layout = inject('layout', layoutStructure);
 const confirm = useConfirm();
