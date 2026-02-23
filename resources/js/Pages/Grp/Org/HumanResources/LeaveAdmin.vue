@@ -13,6 +13,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip } from "@fal"
 
 library.add(faCheck, faTimes, faEdit, faDownload, faFileExcel, faFileCsv, faPaperclip)
@@ -263,7 +264,13 @@ const formatDate = (date: string) => {
 							name: 'grp.org.hr.leaves.reject',
 							parameters: { ...route().params, leave: leave.id },
 							method: 'post',
-						}">
+						}"
+						:isWithMessage="true"
+						:keyMessage="'rejection_reason'"
+						:whyLabel="trans('Rejection Reason')"
+						:title="trans('Reject Leave Request')"
+						:description="trans('Are you sure you want to reject this leave request?')"
+						:message="{ placeholder: trans('Enter the reason for rejection') }">
 						<template #default="{ changeModel, isLoadingdelete }">
 							<Button
 								type="warning"
