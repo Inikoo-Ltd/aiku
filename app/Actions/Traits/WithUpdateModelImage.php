@@ -50,7 +50,7 @@ trait WithUpdateModelImage
                         [
                             'checksum' => $checksum,
                             'group_id' => group()->id,
-                            'ulid' => Str::ulid()
+                            'ulid'     => Str::ulid()
                         ],
                         $properties
                     )
