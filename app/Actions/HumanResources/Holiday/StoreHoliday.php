@@ -46,18 +46,29 @@ class StoreHoliday extends OrgAction
         ];
     }
 
-    public function action(Organisation $organisation, array $modelData): Holiday
-    {
-        return $this->handle($organisation, $modelData);
-    }
-
     public function asController(Organisation $organisation, ActionRequest $request): Holiday
     {
-        return $this->handle($organisation, $request->validated());
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation, $this->validatedData);
+    }
+
+    public function action(Organisation $organisation, array $modelData): Holiday
+    {
+        $this->asAction = true;
+        $this->initialisation($organisation, $modelData);
+
+        return $this->handle($organisation, $this->validatedData);
     }
 
     public function htmlResponse(Holiday $holiday): RedirectResponse
     {
-        return Redirect::back()->with('success', __('Holiday created successfully.'));
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Holiday successfully created.'),
+        ]);
+
+        return Redirect::back();
     }
 }

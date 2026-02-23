@@ -60,6 +60,9 @@ use App\Actions\HumanResources\Overtime\RejectOvertimeRequest;
 use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
 use App\Actions\HumanResources\Overtime\UI\DashboardOvertime;
 use App\Actions\HumanResources\Holiday\UI\IndexHolidays;
+use App\Actions\HumanResources\Holiday\StoreHoliday;
+use App\Actions\HumanResources\Holiday\UpdateHoliday;
+use App\Actions\HumanResources\Holiday\DeleteHoliday;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
@@ -97,6 +100,9 @@ Route::get('/positions/{jobPosition}', ShowJobPosition::class)->name('job_positi
 Route::get('/calendars', IndexCalendars::class)->name('calendars.index');
 Route::get('/calendars/{calendar}', ShowCalendar::class)->name('calendars.show');
 Route::get('/holidays', IndexHolidays::class)->name('holidays.index');
+Route::post('/holidays', StoreHoliday::class)->name('holidays.store');
+Route::patch('/holidays/{holiday}', UpdateHoliday::class)->name('holidays.update');
+Route::delete('/holidays/{holiday}', DeleteHoliday::class)->name('holidays.delete');
 
 Route::get('/timesheets', IndexTimesheets::class)->name('timesheets.index');
 Route::get('/timesheets-export', PdfTimesheets::class)->name('timesheets.export');

@@ -20,6 +20,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Enums\HumanResources\Holiday\HolidayTypeEnum;
 
 class IndexHolidays extends OrgAction
 {
@@ -92,7 +93,8 @@ class IndexHolidays extends OrgAction
                 ->column(key: 'type_label', label: __('Type'), sortable: true)
                 ->column(key: 'from', label: __('From'), sortable: true)
                 ->column(key: 'to', label: __('To'), sortable: true)
-                ->column(key: 'duration_days', label: __('Days'), sortable: true);
+                ->column(key: 'duration_days', label: __('Days'), sortable: true)
+                ->column(key: 'action', label: __('Actions'));
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), searchable: true);
@@ -118,8 +120,21 @@ class IndexHolidays extends OrgAction
                     'icon'          => ['fal', 'fa-umbrella-beach'],
                     'title'         => __('Holidays'),
                     'subNavigation' => $this->getCalendarSubNavigation(),
+                    'actions'       => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'key'   => 'create holiday',
+                            'label' => __('Add Holiday'),
+                            'icon'  => ['fal', 'fa-plus'],
+                        ],
+                    ],
                 ],
                 'data'        => $this->jsonResponse($holidays),
+                'typeOptions' => collect(HolidayTypeEnum::labels())
+                    ->map(fn ($label, $value) => ['value' => $value, 'label' => $label])
+                    ->values()
+                    ->all(),
             ]
         )->table($this->tableStructure($this->parent));
     }
