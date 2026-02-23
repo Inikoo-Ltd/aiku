@@ -416,21 +416,7 @@ class ShowDeliveryNote extends OrgAction
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
         $order     = $deliveryNote->orders->first();
 
-        $additionalShipmentRoutes = [];
-
-        if($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
-            $additionalShipmentRoutes = [
-                'submit_platform_route' => [
-                    'name'       => match ($order->platform->type) {
-                        PlatformTypeEnum::TIKTOK => 'grp.models.delivery_note.shipment.store_tiktok',
-                        default => 'grp.models.delivery_note.shipment.store',
-                    },
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ]
-            ];
-        } else if($order->shop->type == ShopTypeEnum::EXTERNAL) {
+        if($order->shop->type == ShopTypeEnum::EXTERNAL) {
             $additionalShipmentRoutes = [
                 'submit_platform_route' => [
                     'name'       => match ($order->shop->engine) {
