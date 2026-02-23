@@ -18,7 +18,6 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
 

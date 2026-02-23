@@ -44,7 +44,7 @@ class CheckTiktokChannel
             'exist_in_platform'       => $existInPlatform
         ];
 
-        if($platformStatus && $tiktokUser->tiktok_shop_id && $tiktokUser->tiktok_shop_chiper) {
+        if ($platformStatus && $tiktokUser->tiktok_shop_id && $tiktokUser->tiktok_shop_chiper) {
             $data['state'] = CustomerSalesChannelStateEnum::READY;
         }
 

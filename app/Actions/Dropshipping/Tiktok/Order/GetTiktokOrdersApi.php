@@ -14,8 +14,6 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class GetTiktokOrdersApi extends RetinaAction
 {

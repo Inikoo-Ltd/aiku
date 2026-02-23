@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\Tiktok\User;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
@@ -16,9 +15,6 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\TiktokUser;
-use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -37,13 +33,13 @@ class AuthCheckCreateTiktokChannel extends RetinaAction
             ->where('state', CustomerSalesChannelStateEnum::AUTHENTICATED)
             ->first();
 
-        if(!$customerSalesChannel) {
+        if (!$customerSalesChannel) {
             throw ValidationException::withMessages(['message' => __('No authenticated TikTok channel found.')]);
         }
 
         $customerSalesChannel = CheckTiktokChannel::run($customerSalesChannel->user);
 
-        if(!$customerSalesChannel->platform_status) {
+        if (!$customerSalesChannel->platform_status) {
             throw ValidationException::withMessages(['message' => __('Your TikTok channel is not authorized yet. Please contact support.')]);
         }
 

@@ -18,7 +18,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $organisation_id
  * @property bool $status
  * @property int $warehouse_id
- * @property int|null $current_delivery_note_id
+ * @property int|null $delivery_note_id
  * @property string $slug
  * @property string $code
  * @property \Illuminate\Support\Carbon|null $created_at
