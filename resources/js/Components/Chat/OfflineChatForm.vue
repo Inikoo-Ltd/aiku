@@ -79,7 +79,7 @@ const submitOffline = async () => {
                 {{ trans("Our working hours are") }} <strong>{{ props.hours?.start }} - {{ props.hours?.end }}</strong>.
             </p>
             <p class="text-sm text-gray-500 mt-1">
-                {{ trans("Leave a message and we'll get back to you.") }}
+                {{ trans("Leave a message and we'll get back to you") }}
             </p>
         </div>
 
