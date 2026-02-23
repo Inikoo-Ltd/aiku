@@ -42,6 +42,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategor
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
+use App\Actions\Iris\Json\GetBanner;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('product-category/{productCategory:id}/portfolio-data', GetIrisPortfoliosInProductCategory::class)->name('product_category.portfolio_data');
@@ -93,4 +94,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant');
     Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');
     Route::get('luigi-product-details', LuigiBoxGetProductDetail::class)->name('luigi.product_details');
+
+    Route::get('banner/{banner:id}', GetBanner::class)->name('get_banner');
 });

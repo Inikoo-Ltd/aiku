@@ -36,7 +36,7 @@ class SetTradeUnitsForFaireShops
                     'quantity' => $tradeUnit->pivot->quantity
                 ];
             }
-            if(!empty($tradeUnitsData)){
+            if (!empty($tradeUnitsData)) {
                 UpdateTradeUnitsForExternalProduct::make()->action($product, [
                     'trade_units' => $tradeUnitsData
                 ]);

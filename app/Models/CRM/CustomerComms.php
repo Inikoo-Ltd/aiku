@@ -62,7 +62,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $price_change_notification_unsubscribed_author_id
  * @property string|null $price_change_notification_unsubscribed_origin_type EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)
  * @property string|null $price_change_notification_unsubscribed_origin_id
- * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\CRM\Customer $customer
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms query()

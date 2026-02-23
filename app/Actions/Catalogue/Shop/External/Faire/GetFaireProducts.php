@@ -30,6 +30,10 @@ class GetFaireProducts extends OrgAction
 
     public function handle(Shop $shop, array $modelData, ?Command $command = null): void
     {
+        if($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::FAIRE) {
+            return;
+        }
+
         $faireProducts = [];
         $limit         = 200;
         $page          = 1;
@@ -87,32 +91,33 @@ class GetFaireProducts extends OrgAction
 
                 if ($product) {
 
-                    try {UpdateProduct::make()->action($product, [
-                            'code'           => $faireSKU,
-                            'name'           => $faireProduct['name'].' - '.$variant['name'],
-                            'description'    => $faireProduct['description'],
-                            'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
-                            'price'          => $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
-                            'units'          => $faireProduct['unit_multiplier'],
-                            'marketplace_id' => $variant['id'],
-                            'data'           => [
-                                'faire' => $variant
-                            ]
-                        ], strict: false);
+                    try {
+                        UpdateProduct::make()->action($product, [
+                                'code'           => $faireSKU,
+                                'name'           => $faireProduct['name'].' - '.$variant['name'],
+                                'description'    => $faireProduct['description'],
+                                'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
+                                'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                                'units'          => $faireProduct['unit_multiplier'],
+                                'marketplace_id' => $variant['id'],
+                                'data'           => [
+                                    'faire' => $variant
+                                ]
+                            ], strict: false);
                     } catch (Exception $e) {
                         $command?->error("Product update failed: ".$faireProduct['name'].' - '.$variant['name'].' '.$e->getMessage());
                     }
 
 
-                }else{
+                } else {
 
                     try {
-                        $product=StoreProduct::make()->action($shop, [
+                        $product = StoreProduct::make()->action($shop, [
                             'code'           => $faireSKU,
                             'name'           => $faireProduct['name'].' - '.$variant['name'],
                             'description'    => $faireProduct['description'],
                             'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
-                            'price'          => $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                            'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
                             'unit'           => 'Piece',
                             'units'          => $faireProduct['unit_multiplier'],
                             'is_main'        => true,
@@ -148,7 +153,7 @@ class GetFaireProducts extends OrgAction
             }
         }
 
-        if(! $found) {
+        if (! $found) {
             $currency = Currency::where('code', $faireCurrency)->first();
             $rrp = GetCurrencyExchange::run($currency, $shop->currency);
         }
@@ -169,7 +174,7 @@ class GetFaireProducts extends OrgAction
             }
         }
 
-        if(! $found) {
+        if (! $found) {
             $currency = Currency::where('code', $faireCurrency)->first();
             $cost = GetCurrencyExchange::run($currency, $shop->currency);
         }

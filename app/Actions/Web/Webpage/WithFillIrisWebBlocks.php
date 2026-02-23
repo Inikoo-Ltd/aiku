@@ -29,9 +29,10 @@ trait WithFillIrisWebBlocks
     {
         $webBlockType = Arr::get($webBlock, 'type');
 
-        if ($webBlockType === 'banner') {
+      /*   if ($webBlockType === 'banner') {
             $parsedWebBlocks[$key] = GetBanner::run($webBlock);
-        } elseif ($webBlockType == 'department-description-1') {
+        } */ 
+            if ($webBlockType == 'department-description-1') {
             $parsedWebBlocks[$key] = GetWebBlockDepartment::run($webpage, $webBlock);
         } elseif ($webBlockType == 'sub-department-description-1') {
             $parsedWebBlocks[$key] = GetBlockSubDepartment::run($webpage, $webBlock);

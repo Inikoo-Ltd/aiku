@@ -14,8 +14,6 @@ use App\Models\Dropshipping\TiktokUser;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class ValidateIncomingTiktokOrder extends RetinaAction
 {

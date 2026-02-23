@@ -26,12 +26,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $slug
  * @property int $warehouse_id
  * @property string $name
- * @property int|null $current_delivery_note_id
+ * @property int $current_delivery_note_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $picking_session_id
- * @property bool $status
- * @property-read DeliveryNote|null $currentDeliveryNote
+ * @property-read DeliveryNote $currentDeliveryNote
  * @property-read Group $group
  * @property-read Organisation $organisation
  * @property-read \App\Models\Inventory\Warehouse $warehouse

@@ -58,6 +58,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $send_time Time to send reorder reminder mail
  * @property string|null $sub_type Grouping outbox example: reorder-reminder
  * @property string|null $last_sent_at Last time this outbox was sent
+ * @property int|null $interval cool-down interval can be in hours, in minutes or etc.
+ * @property int|null $threshold threshold for basket low stock or etc.
  * @property-read Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read Collection<int, \App\Models\Comms\EmailBulkRun> $emailBulkRuns
  * @property-read \App\Models\Comms\EmailOngoingRun|null $emailOngoingRun

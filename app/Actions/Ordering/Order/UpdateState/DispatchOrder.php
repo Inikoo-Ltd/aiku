@@ -84,7 +84,7 @@ class DispatchOrder extends OrgAction
                         PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
                         PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
                         PlatformTypeEnum::MAGENTO => FulfillOrderToMagento::run($order),
-                        PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($order),
+                        // PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($order),
                         //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
                         PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order, $deliveryNote),
                         default => null,
