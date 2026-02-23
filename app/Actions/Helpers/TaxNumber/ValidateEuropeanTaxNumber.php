@@ -67,20 +67,22 @@ class ValidateEuropeanTaxNumber
 
 
             try {
-                $number  = preg_replace('/\s+/', '', $taxNumber->number);
-                $country = strtoupper((string)$taxNumber->country_code);
-                if (strlen($number) >= 2 && strtoupper(substr($number, 0, 2)) === $country) {
+                $number      = preg_replace('/\s+/', '', $taxNumber->number);
+                $countryCode = strtoupper((string)$taxNumber->country_code);
+                if (strlen($number) >= 2 && strtoupper(substr($number, 0, 2)) === $countryCode) {
+                    $number = substr($number, 2);
+                }
+                if ($countryCode === 'GR' && strtoupper(substr($number, 0, 2)) === 'EL') {
                     $number = substr($number, 2);
                 }
 
 
                 $response = $this->getClient()->checkVat(
                     array(
-                        'countryCode' => $taxNumber->country_code,
+                        'countryCode' => $taxNumber->country_code == 'GR' ? 'EL' : $taxNumber->country_code,
                         'vatNumber'   => $number
                     )
                 );
-
 
 
                 $validationDate = now();

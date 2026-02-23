@@ -61,8 +61,8 @@ const component = computed(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #otherBefore>
-            <ModalCreateStoreOffers :shop_data="props.shop_data" />
+        <template #other>
+            <ModalCreateStoreOffers  :shop_data="props.shop_data" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
