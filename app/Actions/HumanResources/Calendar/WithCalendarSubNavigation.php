@@ -22,12 +22,15 @@ trait WithCalendarSubNavigation
             ],
             [
                 'label'    => __('Holiday'),
-                'route'    => null,
+                'route'    => [
+                    'name'       => 'grp.org.hr.holidays.index',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-umbrella-beach'],
                     'tooltip' => __('Holiday'),
                 ],
-            ],
+            ]
         ];
     }
 }

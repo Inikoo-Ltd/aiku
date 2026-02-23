@@ -11,7 +11,6 @@ namespace App\Actions\HumanResources\Calendar;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
-use App\Http\Resources\HumanResources\EmployeesResource;
 use App\Http\Resources\HumanResources\EmployeeResource;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
@@ -82,19 +81,12 @@ class IndexCalendars extends OrgAction
             'Org/HumanResources/Calendar',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Employees'),
+                'title'       => __('Calendar'),
                 'pageHead'    => [
-                    'title'         => __('Employees'),
+                    'title'         => __('Calendar'),
                     'subNavigation' => $this->getCalendarSubNavigation(),
-                    'create'        => $this->canEdit ? [
-                        'route' => [
-                            'name'       => 'grp.org.hr.employees.create',
-                            'parameters' => array_values(request()->route()->originalParameters())
-                        ],
-                        'label' => __('Employee')
-                    ] : false,
                 ],
-                'data'        => EmployeesResource::collection($employees),
+
             ]
         )->table($this->tableStructure());
     }
@@ -117,13 +109,12 @@ class IndexCalendars extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.hr.employees.index',
+                            'name'       => 'grp.org.hr.calendars.index',
                             'parameters' => array_values(request()->route()->originalParameters())
                         ],
-                        'label' => __('Employees'),
-                        'icon'  => 'fal fa-bars',
+                        'label' => __('Calendars'),
+                        'icon'  => 'fal fa-calendar',
                     ],
-
                 ]
             ]
         );
