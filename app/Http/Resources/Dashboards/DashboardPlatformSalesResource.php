@@ -63,9 +63,9 @@ class DashboardPlatformSalesResource extends JsonResource
             $this->getDashboardColumnsFromArray($data, [
                 'customer_clients',
                 'customer_clients_minified',
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
+                'sales_grp_currency_external',
+                'sales_grp_currency_external_minified',
+                'sales_grp_currency_external_delta',
                 'sales_percentage'
             ])
         );
@@ -106,12 +106,12 @@ class DashboardPlatformSalesResource extends JsonResource
             );
         }
 
-        $columns['sales']                      = $columns['sales_grp_currency'];
-        $columns['sales_minified']             = $columns['sales_grp_currency_minified'];
-        $columns['sales_delta']                = $columns['sales_grp_currency_delta'];
-        $columns['sales_org_currency']         = $columns['sales_grp_currency'];
-        $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
-        $columns['sales_org_currency_delta']   = $columns['sales_grp_currency_delta'];
+        $columns['sales_external']                       = $columns['sales_grp_currency_external'];
+        $columns['sales_external_minified']              = $columns['sales_grp_currency_external_minified'];
+        $columns['sales_external_delta']                 = $columns['sales_grp_currency_external_delta'];
+        $columns['sales_org_currency_external']          = $columns['sales_grp_currency_external'];
+        $columns['sales_org_currency_external_minified'] = $columns['sales_grp_currency_external_minified'];
+        $columns['sales_org_currency_external_delta']    = $columns['sales_grp_currency_external_delta'];
 
         return [
             'slug'    => $data['slug'] ?? 'unknown',

@@ -33,7 +33,7 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
             'registrations',
             'registrations_with_orders',
             'registrations_without_orders',
-            'sales_grp_currency',
+            'sales_grp_currency_external',
             'invoices',
         ];
 
@@ -87,9 +87,9 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
             $this->getDashboardTableColumnFromArray($summedData, 'invoices'),
             $this->getDashboardTableColumnFromArray($summedData, 'invoices_minified'),
             $this->getDashboardTableColumnFromArray($summedData, 'invoices_delta'),
-            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency'),
-            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_minified'),
-            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_delta')
+            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_external'),
+            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_external_minified'),
+            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_external_delta')
         );
 
         return [

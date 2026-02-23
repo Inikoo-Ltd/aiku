@@ -32,7 +32,7 @@ class DashboardTotalOffersResource extends JsonResource
             'customers',
             'orders',
             'invoices',
-            'sales',
+            'sales_external',
         ];
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
@@ -59,9 +59,9 @@ class DashboardTotalOffersResource extends JsonResource
                 'invoices',
                 'invoices_minified',
                 'invoices_delta',
-                'sales',
-                'sales_minified',
-                'sales_delta',
+                'sales_external',
+                'sales_external_minified',
+                'sales_external_delta',
             ])
         );
 

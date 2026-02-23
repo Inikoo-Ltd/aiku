@@ -57,9 +57,9 @@ class DashboardOffersResource extends JsonResource
                 'invoices',
                 'invoices_minified',
                 'invoices_delta',
-                'sales',
-                'sales_minified',
-                'sales_delta'
+                'sales_external',
+                'sales_external_minified',
+                'sales_external_delta'
             ])
         );
 
