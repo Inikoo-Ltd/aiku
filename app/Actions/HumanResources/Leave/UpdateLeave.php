@@ -31,9 +31,13 @@ class UpdateLeave extends OrgAction
 
             foreach ($modelData['attachments'] as $file) {
                 if ($file && is_object($file) && method_exists($file, 'getClientOriginalName')) {
-                    $media = $leave->addMedia($file)->toMediaCollection('attachments');
-                    $media->ulid = Str::ulid();
-                    $media->save();
+                    $leave->addMedia($file)
+                        ->withProperties([
+                            'group_id' => $leave->group_id,
+                            'type'     => 'attachment',
+                            'ulid'     => (string) Str::ulid(),
+                        ])
+                        ->toMediaCollection('attachments');
                 }
             }
         }
