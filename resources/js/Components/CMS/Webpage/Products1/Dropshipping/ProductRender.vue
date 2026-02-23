@@ -171,7 +171,7 @@ const scrollToIndex = (index: number) => {
             <component :is="product.canonical_url || product.url ? LinkIris : 'div'"
                 :href="product.canonical_url || product.url" :type="typeOfLink" @start="() => idxSlideLoading = true"
                 @finish="() => idxSlideLoading = false"
-                class="relative block w-full mb-1 rounded overflow-hidden sm:aspect-square aspect-[4/5]">
+                class="relative block w-full mb-1 rounded overflow-hidden aspect-[5/5]">
                 <div class="relative w-full h-full bg-white">
 
                     <slot name="image" :product="product">

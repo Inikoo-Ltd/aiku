@@ -108,7 +108,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         }
 
         if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE) {
-            UpdateFaireProductInventoryQuantity::run($product);
+            UpdateFaireProductInventoryQuantity::dispatch($product);
         }
 
         if (!$product->is_for_sale) {

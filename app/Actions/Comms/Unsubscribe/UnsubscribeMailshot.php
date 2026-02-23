@@ -63,6 +63,9 @@ class UnsubscribeMailshot
                     OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => [
                         'is_subscribed_to_price_change_notification' => false,
                     ],
+                    OutboxCodeEnum::BASKET_LOW_STOCK => [
+                        'is_subscribed_to_basket_low_stock' => false,
+                    ],
                     default => []
                 };
 

@@ -24,6 +24,7 @@ import { initialiseRetinaApp } from '@/Composables/initialiseRetinaApp'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import axios from 'axios'
+import { setColorStyleRoot } from '@/Composables/useApp'
 library.add(faExclamationTriangle, faSignIn)
 
 initialiseIrisApp()  // Init Iris app
@@ -91,7 +92,8 @@ const isOpenMenuMobile = ref(false)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
 onMounted(() => {
-    irisStyleVariables(theme?.color)
+    irisStyleVariables(theme?.color)  // DEPRECATED (use setColorStyleRoot instead)
+    setColorStyleRoot(theme?.color)
     fetchSidebarOnce()
 })
 
