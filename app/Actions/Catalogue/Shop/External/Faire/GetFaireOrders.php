@@ -4,105 +4,172 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Country;
+use App\Models\Helpers\Currency;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use integration\PHP8\ConstructorPromotionTest;
 
 class GetFaireOrders extends OrgAction
 {
-
     /**
      * @throws \Throwable
      */
     public function handle(Shop $shop): void
     {
-        DB::transaction(function () use ($shop) {
-            $filters = [
-                'created_at_min' => Carbon::parse('2026-02-01')->toIsoString(),
-            ];
+        //      DB::transaction(function () use ($shop) {
+        $filters = [
+            'created_at_min' => Carbon::parse('2026-02-01')->toIsoString(),
+        ];
 
-            $orders = $shop->getFaireOrders([
-                'excluded_states' => 'PROCESSING',
-                ...$filters
-            ]);
-
-
-            foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
-                $externalId = Arr::get($faireOrder, 'id');
-                $retailerId = Arr::get($faireOrder, 'retailer_id');
-                $retailer   = GetFaireRetailers::run($shop, $retailerId);
+        $orders = $shop->getFaireOrders([
+            'excluded_states' => 'PROCESSING',
+            ...$filters
+        ]);
 
 
-                $orderExists = Order::where('shop_id', $shop->id)->where('external_id', $externalId)->exists();
+        foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
+            $externalId = Arr::get($faireOrder, 'id');
+            $retailerId = Arr::get($faireOrder, 'retailer_id');
+            $retailer   = GetFaireRetailers::run($shop, $retailerId);
 
-                if ($orderExists) {
-                    continue;
+            $transactionCommissions = Arr::get($faireOrder, 'payout_costs.commission_bps', 0) / 10000;
+            $orderCommission        = Arr::get($faireOrder, 'payout_costs.commission.amount_minor', 0) / 100;
+
+            $orderExists = Order::where('shop_id', $shop->id)->where('external_id', $externalId)->exists();
+
+            if ($orderExists) {
+                continue;
+            }
+
+            if ($retailer) {
+                $address = $this->getFormattedAddress(Arr::get($faireOrder, 'address'));
+
+                $customer = Customer::where('shop_id', $shop->id)->where('external_id', $retailerId)->first();
+
+                $contactName = trim(Arr::get($faireOrder, 'customer.first_name', '').' '.Arr::get($faireOrder, 'customer.last_name', ''));
+                $phone       = Arr::get($faireOrder, 'address.phone_number');
+
+                $customerData = [
+                    'company_name'    => (Arr::get($retailer, 'name')),
+                    'contact_name'    => $contactName,
+                    'external_id'     => $retailerId,
+                    'reference'       => $retailerId,
+                    'contact_address' => $address,
+
+                ];
+                if ($contactName != '') {
+                    $customerData['contact_name'] = $contactName;
+                }
+                if ($phone != '') {
+                    $customerData['phone'] = $contactName;
                 }
 
-                if ($retailer) {
-                    $customer     = Customer::where('shop_id', $shop->id)->where('external_id', $retailerId)->first();
-                    $customerData = [
-                        'company_name'    => (Arr::get($retailer, 'name')),
-                        'external_id'     => $retailerId,
-                        'reference'       => $retailerId,
-                        'contact_address' => $this->getFormattedAddress(Arr::get($faireOrder, 'address'))
-                    ];
+                if ($customer) {
+                    $customer = UpdateCustomer::make()->action(customer: $customer, modelData: $customerData, strict: false);
+                } else {
+                    $customer = StoreCustomer::make()->action(shop: $shop, modelData: $customerData, strict: false);
+                }
 
-                    if ($customer) {
-                        $customer = UpdateCustomer::make()->action(customer: $customer, modelData: $customerData, strict: false);
-                    } else {
-                        $customer = StoreCustomer::make()->action(shop: $shop, modelData: $customerData, strict: false);
+
+                $orderData = [
+                    'external_id'         => $externalId,
+                    'marketplace_id'      => $externalId,
+                    'reference'           => $faireOrder['display_id'],
+                    'created_at'          => Carbon::parse(Arr::get($faireOrder, 'created_at'))->toDateTimeString(),
+                    'billing_address'     => $address,
+                    'delivery_address'    => $address,
+                    'commission_amount'   => $orderCommission,
+                    'pay_status'          => OrderPayStatusEnum::UNPAID->value,
+                    'pay_detailed_status' => OrderPayDetailedStatusEnum::UNPAID->value
+                ];
+
+                $transactionsData = [];
+                $errors           = [];
+                foreach (Arr::get($faireOrder, 'items', []) as $item) {
+                    $product = Product::where('shop_id', $shop->id)
+                        ->where('marketplace_id', $item['variant_id'])
+                        ->first();
+
+                    if (!$product) {
+                        $errors[] = [
+                            'product_code'           => $item['sku'],
+                            'product_name'           => $item['name'],
+                            'product_marketplace_id' => $item['variant_id'],
+                            'message'                => "Product not found in catalogue"
+                        ];
+                        continue;
                     }
 
 
+                    $historicAsset = $product->asset->historicAsset;
+
+                    if (!$historicAsset) {
+                        $errors[] = [
+                            'product_code'           => $item['sku'],
+                            'product_name'           => $item['name'],
+                            'product_marketplace_id' => $item['variant_id'],
+                            'product_slug'           => $product->slug,
+                            'message'                => "Product has no historic asset"
+                        ];
+                        continue;
+                    }
+
+                    $price        = Arr::get($item, 'price.amount_minor', 0) / 100;
+                    $currencyCode = Arr::get($item, 'price.currency');
+                    $currency     = Currency::where('code', $currencyCode)->first();
+                    if (!$currency) {
+                        $errors[] = [
+                            'message' => 'Currency ('.$currencyCode.') not found'
+                        ];
+                    }
+
+                    $price = $price * GetCurrencyExchange::run($currency, $shop->currency);
 
 
+                    $quantity = $item['quantity'] / $product->units;
 
-                                        data_set($faireOrder, 'external_id', $externalId);
-                                        data_set($faireOrder, 'marketplace_id', $externalId);
-                                        $awOrder = StoreOrder::make()->action($customer, Arr::only($faireOrder, ['delivery_address', 'billing_address', 'external_id']));
+                    $transactionsData[] = [
+                        'historical_asset'  => $historicAsset,
+                        'quantity_ordered'  => $quantity,
+                        'external_id'       => $item['id'],
+                        'net_amount'        => $price * $quantity,
+                        'gross_amount'      => $price * $quantity,
+                        'commission_amount' => $price * $transactionCommissions * $quantity,
+                        'marketplace_id'    => $item['id'],
+                        'created_at'        => Carbon::parse(Arr::get($item, 'created_at'))->toDateTimeString(),
+                    ];
+                }
 
-                                        foreach (Arr::get($faireOrder, 'items', []) as $item) {
-                                            $product = Product::where('shop_id', $shop->id)
-                                                ->where('code', $item['sku'])
-                                                ->first();
+                if (empty($errors)) {
+                    $order = StoreOrder::make()->action($customer, $orderData);
 
-                                            $historicAsset = $product?->asset?->historicAsset;
-
-                                            if (!$historicAsset) {
-                                                continue;
-                                            }
-
-                                            StoreTransaction::make()->action(
-                                                order: $awOrder,
-                                                historicAsset: $historicAsset,
-                                                modelData: [
-                                                    'quantity_ordered' => $item['quantity'],
-                                                    'external_id'      => $item['id'],
-                                                    'net_amount'       => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
-                                                    'gross_amount'     => (Arr::get($item, 'price.amount_minor', 0) / 100) * $item['quantity'],
-                                                    'marketplace_id'   => $item['id']
-                                                ]
-                                            );
-                                        }
-
-                                        SubmitOrder::run($awOrder);
+                    foreach ($transactionsData as $transactionData) {
+                        StoreTransaction::make()->action(
+                            order: $order,
+                            historicAsset: $transactionData['historical_asset'],
+                            modelData: Arr::except($transactionData, 'historical_asset')
+                        );
+                    }
+                    print "Order: $order->id\n";
+                    exit;
                 }
             }
-        });
+        }
+        //  });
     }
 
     public function getFormattedAddress(array $address): array

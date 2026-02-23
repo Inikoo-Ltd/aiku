@@ -93,7 +93,7 @@ class GetFaireProducts extends OrgAction
                                 'name'           => $faireProduct['name'].' - '.$variant['name'],
                                 'description'    => $faireProduct['description'],
                                 'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
-                                'price'          => $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                                'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
                                 'units'          => $faireProduct['unit_multiplier'],
                                 'marketplace_id' => $variant['id'],
                                 'data'           => [
@@ -113,7 +113,7 @@ class GetFaireProducts extends OrgAction
                             'name'           => $faireProduct['name'].' - '.$variant['name'],
                             'description'    => $faireProduct['description'],
                             'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
-                            'price'          => $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                            'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
                             'unit'           => 'Piece',
                             'units'          => $faireProduct['unit_multiplier'],
                             'is_main'        => true,
