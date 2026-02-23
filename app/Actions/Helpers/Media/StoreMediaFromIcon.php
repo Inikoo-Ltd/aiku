@@ -52,6 +52,7 @@ class StoreMediaFromIcon
                     [
                         'checksum' => $checksum,
                         'group_id' => $group_id,
+                        'ulid'     => Str::ulid()
                     ]
                 )
                 ->usingName($model->slug."-icon")
