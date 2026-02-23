@@ -14,6 +14,7 @@ use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -27,6 +28,7 @@ use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -315,6 +317,10 @@ class UpdateProduct extends OrgAction
             if ($product->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id)->delay(now()->addSeconds(180));
             }
+            if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE) {
+                UpdateFaireProductInventoryQuantity::dispatch($product);
+            }
+
         }
 
         if (Arr::has($changed, 'master_product_id')) {

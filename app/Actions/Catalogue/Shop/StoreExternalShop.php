@@ -10,7 +10,7 @@ namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\External\Shopify\StoreShopifyUserExternalShop;
-use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
+use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
@@ -33,7 +33,7 @@ class StoreExternalShop extends OrgAction
 {
     use WithStoreShopRules;
     use WithModelAddressActions;
-    use WithFaireShopApiCollection;
+    use WithFaireApi;
 
     public array $settings;
 

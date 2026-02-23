@@ -8,7 +8,7 @@
 
 namespace App\Models\Catalogue;
 
-use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
+use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -276,7 +276,7 @@ class Shop extends Model implements HasMedia, Auditable
     use InOrganisation;
     use HasHistory;
     use HasImage;
-    use WithFaireShopApiCollection;
+    use WithFaireApi;
 
     protected $casts = [
         'data'                         => 'array',
