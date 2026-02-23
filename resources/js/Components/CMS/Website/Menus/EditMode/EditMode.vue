@@ -12,6 +12,7 @@ import IconPicker from '@/Components/Pure/IconPicker.vue'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
+import UploadImage from '@/Components/Pure/UploadImage.vue'
 
 // FontAwesome
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -23,6 +24,7 @@ import {
 } from '@fas'
 import { faHeart } from '@fortawesome/free-regular-svg-icons'
 import { faExclamationTriangle, faTimesCircle } from '@fal'
+import { routeType } from '@/types/route'
 
 library.add(
   faChevronRight, faSignOutAlt, faShoppingCart,
@@ -54,7 +56,7 @@ interface Navigation {
 }
 
 // ================= PROPS =================
-const props = defineProps<{ modelValue: Navigation }>()
+const props = defineProps<{ modelValue: Navigation , uploadImageRoute : routeType}>()
 const emits = defineEmits<{
   (e: 'update:modelValue', val: Navigation): void
 }>()
@@ -86,6 +88,9 @@ const changeType = (type: string) => {
   })
 }
 
+const changeImage = (image: any) => {
+  commit({ image })
+}
 const addSubNavigation = () => {
   const subnavs = cloneDeep(localNav.value.subnavs ?? [])
   subnavs.push({
@@ -170,6 +175,8 @@ watch(
     localNav.value = cloneDeep(newVal)
   }
 )
+
+const image = ref(null)
 </script>
 
 
@@ -197,13 +204,23 @@ watch(
       <!-- Type Selector -->
       <div>
         <h3 class="font-medium text-gray-800 text-md mb-3">Type</h3>
-
-        <PureMultiselect :required="true" :model-value="localNav.type" label="label" value-prop="value" :options="[
-          { label: 'Single', value: 'single' },
-          { label: 'Multiple', value: 'multiple' }
-        ]" @update:model-value="changeType" />
+        <PureMultiselect 
+          :required="true" 
+          :model-value="localNav.type" 
+          label="label" 
+          value-prop="value" 
+          :options="[
+            { label: 'Single', value: 'single' },
+            { label: 'Multiple', value: 'multiple' }
+          ]" 
+          @update:model-value="changeType" 
+        />
       </div>
 
+      <div>
+        <h3 class="font-medium text-gray-800 text-md mb-3">Image</h3>
+        <UploadImage :model-value="localNav.image" :uploadRoutes="uploadImageRoute" @update:model-value="changeImage" />
+      </div>
 
     <!-- Navigation Link -->
     <div>
