@@ -3,6 +3,7 @@
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
@@ -12,6 +13,10 @@ class UpdateFaireProductInventoryQuantity extends OrgAction
     public function handle(Product $product): void
     {
         if (!$product->marketplace_id) {
+            return;
+        }
+
+        if ($product->state == ProductStateEnum::IN_PROCESS || $product->state == ProductStateEnum::DISCONTINUED) {
             return;
         }
 
@@ -37,6 +42,7 @@ class UpdateFaireProductInventoryQuantity extends OrgAction
         if ($shop) {
             $command->info("Updating inventory for shop $shop->name");
             foreach ($shop->products as $product) {
+                $command->info("Updating inventory for product $product->code");
                 $this->handle($product);
             }
 
