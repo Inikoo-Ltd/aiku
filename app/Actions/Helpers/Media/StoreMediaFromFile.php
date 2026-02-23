@@ -25,6 +25,7 @@ class StoreMediaFromFile
             $extension = pathinfo($imageData['path'], PATHINFO_EXTENSION);
         }
 
+        
         $media = $model->addMedia($imageData['path'])
             ->preservingOriginal()
             ->withProperties(
@@ -34,6 +35,7 @@ class StoreMediaFromFile
                         'group_id' => group()->id,
                         'type'     => $type,
                         'ulid'     => Str::ulid()
+                    
                     ],
                 )
             )
