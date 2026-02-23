@@ -208,10 +208,6 @@ trait IsOrder
                     'label'       => __('Net'),
                     'information' => '',
                     'price_total' => $order->net_amount,
-                    // 'styleField'    => [
-                    //     'background' => '#000000CC',
-                    //     'color' => '#fff',
-                    // ],
                 ],
                 [
                     'label'       => __('Tax').' ('.$taxCategory->name.')',
@@ -224,12 +220,17 @@ trait IsOrder
             [
                 'label'       => __('Total'),
                 'price_total' => $order->total_amount,
-                // 'styleField'    => [
-                //     'background' => '#000',
-                //     'color' => '#fff',
-                // ],
             ],
         ];
+
+        if ($order->commission_amount != 0) {
+            $orderSummary[] = [
+                [
+                    'label'       => __('Commission'),
+                    'price_total' => $order->commission_amount,
+                ],
+            ];
+        }
 
 
         $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
