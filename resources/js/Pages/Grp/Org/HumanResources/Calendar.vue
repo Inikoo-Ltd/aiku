@@ -385,6 +385,24 @@ const goNext = () => {
                             {{ option.label }}
                         </option>
                     </select>
+
+                    <a
+                        :href="route('grp.org.hr.holidays.export', {
+                            organisation: route().params.organisation,
+                            year: Number(filterYear),
+                            month: filterMonth ? Number(filterMonth) : undefined,
+                            format: 'xlsx',
+                        })"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <Button
+                            type="secondary"
+                            size="sm"
+                        >
+                            {{ trans('Export Excel') }}
+                        </Button>
+                    </a>
                 </div>
             </div>
 
