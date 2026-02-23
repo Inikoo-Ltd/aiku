@@ -130,14 +130,15 @@ class ShowOutbox extends OrgAction
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::BASKET_LOW_STOCK,
-            OutboxCodeEnum::BASKET_OFFER_NOTIFICATION
+            OutboxCodeEnum::BASKET_OFFER_NOTIFICATION,
+            OutboxCodeEnum::FAVORITE_OFFER_NOTIFICATION
         ])) {
             unset($navigation[OutboxTabsEnum::EMAIL_RUNS->value]);
         }
 
         if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD]) && $outbox->days_after) {
             $pageHeadAfterTitle = [
-                'label' => __('send after '.$outbox->days_after.' days from last invoice')
+                'label' => __('send after ' . $outbox->days_after . ' days from last invoice')
             ];
         }
 
@@ -153,10 +154,10 @@ class ShowOutbox extends OrgAction
                     'title'   => $outbox->name,
                     'model'   => __('Outbox'),
                     'icon'    =>
-                        [
-                            'icon'  => ['fal', 'fa-inbox-out'],
-                            'title' => __('Outbox')
-                        ],
+                    [
+                        'icon'  => ['fal', 'fa-inbox-out'],
+                        'title' => __('Outbox')
+                    ],
                     'iconRight' => $outbox->state->icon()[$outbox->state->value],
                     'actions' => $actions,
                 ] + ($pageHeadAfterTitle ? ['afterTitle' => $pageHeadAfterTitle] : []),
@@ -186,10 +187,9 @@ class ShowOutbox extends OrgAction
 
 
             ]
-        )->table(IndexMailshots::make()->tableStructure(parent:$outbox, prefix: OutboxTabsEnum::MAILSHOTS->value))
+        )->table(IndexMailshots::make()->tableStructure(parent: $outbox, prefix: OutboxTabsEnum::MAILSHOTS->value))
             ->table(IndexDispatchedEmails::make()->tableStructure(parent: $outbox, prefix: OutboxTabsEnum::DISPATCHED_EMAILS->value))
             ->table(IndexReorderEmailBulkRuns::make()->tableStructure(parent: $outbox, prefix: OutboxTabsEnum::EMAIL_RUNS->value));
-
     }
 
     public function jsonResponse(Outbox $outbox): OutboxesResource
@@ -356,6 +356,4 @@ class ShowOutbox extends OrgAction
             ],
         };
     }
-
-
 }
