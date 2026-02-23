@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faStoreAlt } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { capitalize } from "@/Composables/capitalize"
-import { inject, computed } from "vue"
+import { inject, computed, nextTick, watch } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 library.add(faStoreAlt)
@@ -34,17 +34,38 @@ const sortedShowareList = computed(() => {
 })
 
 
+// Section: to automatically scroll to the active item in the dropdown when it changes
+const scrollToActiveItem = () => {
+    nextTick(() => {
+        const activeItem = document.querySelector('.navigationDropdownActive') as HTMLElement
+        if (activeItem) {
+            const container = activeItem.closest('.max-h-96') as HTMLElement
+            const itemRect = activeItem.getBoundingClientRect()
+            const containerRect = container.getBoundingClientRect()
+
+            // Calculate the scroll position needed to center the item in the container
+            const itemOffset = itemRect.top - containerRect.top
+            const centerOffset = (containerRect.height - itemRect.height) / 2
+
+            // Check if the active item is out of view and calculate the new scrollTop to center it
+            if (itemOffset + itemRect.height > containerRect.height) {
+                // If the item is below the center, scroll to it
+                container.scrollTop = itemOffset - centerOffset
+            } else if (itemOffset < 0) {
+                // If the item is above the center, scroll to it
+                container.scrollTop = itemOffset - centerOffset
+            }
+        }
+    })
+}
+watch(() => layout.value?.organisationsState, () => {
+    scrollToActiveItem()
+}, { immediate: true })
+
 </script>
 
 <template>
     <div class="px-1 xpy-1">
-        <!-- Show All -->
-        <!-- <div @click="() => (router.visit(route(layout.navigation.org[layout.currentParams.organisation][`${navKey}s_index`].route.name, layout.navigation.org[layout.currentParams.organisation][`${navKey}s_index`].route.parameters)), closeMenu())"
-            class="flex gap-x-2 items-center pl-2 py-1.5 rounded text-slate-600 hover:bg-slate-200/30 cursor-pointer">
-            <FontAwesomeIcon v-if="icon" :icon='icon' class='text-xxs' aria-hidden='true' />
-            <span class="text-[9px] leading-none font-semibold">Show all {{ navKey }}s</span>
-        </div>
-        <hr class="w-11/12 mx-auto border-t border-gray-200 mt-1 mb-1"> -->
 
         <!-- List -->
         <div class="max-h-96 overflow-y-auto space-y-1.5 pr-1">
@@ -57,10 +78,6 @@ const sortedShowareList = computed(() => {
                             : 'rounded text-slate-600 hover:bg-slate-200/30 cursor-pointer',
                         'group flex gap-x-2 w-full justify-between items-center px-2 py-1.5 text-sm',
                     ]">
-                <!-- <div class="h-5 rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-50">
-                            <Image v-show="imageSkeleton[idxSH]" :src="item.logo" @onLoadImage="() => imageSkeleton[idxSH] = true"/>
-                            <div v-show="!imageSkeleton[idxSH]" class="skeleton w-5 h-5"/>
-                        </div> -->
                 <div class="flex flex-col font-semibold">
                     <div>{{ showare.label }}</div>
                     <div v-if="showare.website_domain" v-tooltip="trans('Website domain')" class="w-fit opacity-60 italic text-xs">

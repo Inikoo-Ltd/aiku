@@ -56,8 +56,8 @@ const toggleShowExtra = () => {
 // Debounced save function
 const saveDescription = debounce(async (key: string, value: string) => {
   try {
-    const url = route('grp.models.product_category.update', {
-      productCategory: modelValue.value.collection.id,
+    const url = route('grp.models.collection.update', {
+      collection: modelValue.value.collection.id,
     })
     await axios.patch(url, { [key]: value })
     collectionEdit.value = false

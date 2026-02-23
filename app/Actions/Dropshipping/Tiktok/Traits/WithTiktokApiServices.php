@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Traits;
 
-use App\Models\Ordering\Order;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -58,7 +57,7 @@ trait WithTiktokApiServices
             ...$shopCipher
         ]);
 
-        if(Arr::get($headers, 'content-type') === 'multipart/form-data') {
+        if (Arr::get($headers, 'content-type') === 'multipart/form-data') {
             $http = Http::asMultipart();
             $body = [];
         } else {
@@ -94,7 +93,7 @@ trait WithTiktokApiServices
                 default => throw new \Exception("Unsupported HTTP method: $method"),
             };
 
-            if (!Arr::get($response->json(), 'data')) {
+            if (Arr::get($response->json(), 'message') !== "Success") {
                 throw new \Exception(Arr::get($response->json(), 'message'));
             }
 
@@ -214,6 +213,39 @@ trait WithTiktokApiServices
         $path = "/fulfillment/$this->version/orders/$orderId/shipping_info/update";
 
         return $this->makeApiRequest('POST', $path, $shippingData, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getOrderLabel(string $packageId): array
+    {
+        $path = "/fulfillment/202309/packages/$packageId/shipping_documents";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ], true, [
+            'document_type' => 'SHIPPING_LABEL'
+        ]);
+    }
+
+    public function createOrderPackage(string $orderId): array
+    {
+        $path = "/fulfillment/202512/packages";
+
+        return $this->makeApiRequest('POST', $path, [
+            'ship_type' => 1,
+            'order_id' => $orderId,
+
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function shipPackage(string $packageId): array
+    {
+        $path = "/fulfillment/202309/packages/$packageId/ship";
+
+        return $this->makeApiRequest('POST', $path, [], true, [
             'content-type' => 'application/json'
         ]);
     }

@@ -57,9 +57,9 @@ class UpdateTradeUnitImages extends GrpAction
             } elseif ($modelsData->model_type == 'Product') {
                 $product = Product::find($modelsData->model_id);
 
-                $followMaster=false;
-                if($product->masterProduct && !$product->masterProduct->follow_trade_unit_media){
-                    $followMaster=true;
+                $followMaster = false;
+                if ($product->masterProduct && !$product->masterProduct->follow_trade_unit_media) {
+                    $followMaster = true;
                 }
 
                 if ($product && $product->is_single_trade_unit && !$followMaster) {

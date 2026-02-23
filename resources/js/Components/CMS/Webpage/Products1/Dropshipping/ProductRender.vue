@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import Image from "@/Components/Image.vue"
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from "vue"
+import { inject, ref, computed } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCircle} from "@fas"
+import { faCircle } from "@fas"
 import { Image as ImageTS } from "@/types/Image"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
@@ -78,7 +78,7 @@ const emits = defineEmits<{
 
 
 const onAddFavourite = (product: ProductResource) => {
-     emits('setFavorite', product)
+    emits('setFavorite', product)
 }
 const onUnselectFavourite = (product: ProductResource) => {
     emits('unsetFavorite', product)
@@ -86,15 +86,76 @@ const onUnselectFavourite = (product: ProductResource) => {
 
 
 const onAddBackInStock = (product: ProductResource) => {
-     emits('setBackInStock', product)
+    emits('setBackInStock', product)
 }
 
 const onUnselectBackInStock = (product: ProductResource) => {
     emits('unsetBackInStock', product)
 }
 
+
 const idxSlideLoading = ref(false)
 const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
+
+const images = computed(() => {
+    if (!props.product?.web_images) return []
+
+    const arr = []
+
+    if (props.product?.web_images?.main?.gallery) {
+        arr.push(props.product.web_images.main.gallery)
+    }
+
+    if (props.product?.web_images?.all?.length) {
+        props.product.web_images.all.slice(1).forEach(img => {
+            if (img?.original) arr.push(img.original)
+        })
+    }
+
+    return arr
+})
+
+const currentIndex = ref(0)
+const mobileSlider = ref<HTMLElement | null>(null)
+
+let startX = 0
+let isDragging = false
+
+const onTouchStart = (e: TouchEvent) => {
+    startX = e.touches[0].clientX
+    isDragging = true
+}
+
+const onTouchEnd = (e: TouchEvent) => {
+    if (!mobileSlider.value || !isDragging) return
+
+    const endX = e.changedTouches[0].clientX
+    const diff = startX - endX
+    const threshold = 50 // minimal swipe distance
+
+    if (Math.abs(diff) > threshold) {
+        if (diff > 0 && currentIndex.value < images.value.length - 1) {
+            currentIndex.value++
+        } else if (diff < 0 && currentIndex.value > 0) {
+            currentIndex.value--
+        }
+    }
+
+    scrollToIndex(currentIndex.value)
+    isDragging = false
+}
+
+const scrollToIndex = (index: number) => {
+    if (!mobileSlider.value) return
+    const el = mobileSlider.value
+    const slideWidth = el.clientWidth
+
+    el.scrollTo({
+        left: slideWidth * index,
+        behavior: 'smooth'
+    })
+}
+
 
 
 </script>
@@ -103,25 +164,84 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
     <div id="product-render" class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screenType/>
+            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
+                :screenType />
 
             <!-- Product Image -->
-            <component 
-                :is="product.canonical_url || product.url ? LinkIris : 'div'" 
-                :href="product.canonical_url || product.url"  
-                :type="typeOfLink" 
-                @start="() => idxSlideLoading = true" 
+            <component :is="product.canonical_url || product.url ? LinkIris : 'div'"
+                :href="product.canonical_url || product.url" :type="typeOfLink" @start="() => idxSlideLoading = true"
                 @finish="() => idxSlideLoading = false"
-                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
-            >
-                <Image 
-                    :src="product?.web_images?.main?.gallery" 
-                    :alt="product.name" 
-                    :style="{ objectFit: 'contain' }"  
-                />
+                class="relative block w-full mb-1 rounded overflow-hidden aspect-[5/5]">
+                <div class="relative w-full h-full bg-white">
 
-                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
-                    <button 
+                   <slot name="image" :product="product">
+
+                        <!-- MOBILE -->
+                        <div v-if="images.length" class="md:hidden w-full relative aspect-square overflow-hidden">
+
+                            <!-- MULTI IMAGE SLIDER -->
+                            <div v-if="images.length > 1" ref="mobileSlider" @touchstart="onTouchStart"
+                                @touchend="onTouchEnd" class="flex w-full h-full overflow-hidden">
+
+                                <div v-for="(img, i) in images" :key="i" class="w-full h-full flex-shrink-0">
+
+                                    <Image :src="img" :alt="product.name"
+                                        class="w-full h-full select-none pointer-events-none"
+                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                </div>
+                            </div>
+
+                            <!-- SINGLE IMAGE -->
+                            <div v-else class="w-full h-full">
+                                <Image :src="images[0]" :alt="product.name" class="w-full h-full"
+                                    :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                            </div>
+
+                            <!-- DOTS -->
+                            <div v-if="images.length > 1"
+                                class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                                <span v-for="(img, i) in images" :key="'dot-' + i"
+                                    class="w-2 h-2 rounded-full transition-all duration-200"
+                                    :class="i === currentIndex ? 'bg-black scale-110' : 'bg-black/30'" />
+                            </div>
+
+                        </div>
+
+
+                        <!-- DESKTOP -->
+                        <div v-if="images.length"
+                            class="hidden md:block relative w-full aspect-square overflow-hidden group">
+                            <div class="flex w-full h-full "
+                                :class="images.length > 1 ? 'group-hover:-translate-x-full' : ''">
+                                <!-- FIRST IMAGE -->
+                                <div class="w-full h-full flex-shrink-0 relative">
+                                    <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                        :style="{
+                                            objectFit: 'contain',
+                                            objectPosition: 'center'
+                                        }" />
+                                </div>
+
+                                <!-- SECOND IMAGE -->
+                                <div v-if="images.length > 1" class="w-full h-full flex-shrink-0 relative">
+                                    <Image :src="images[1]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                        :style="{
+                                            objectFit: 'contain',
+                                            objectPosition: 'center'
+                                        }" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <FontAwesomeIcon v-if="!images.length" icon="fal fa-image"
+                            class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" />
+
+                    </slot>
+                </div>
+
+
+                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
+                    <button
                         v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
@@ -156,7 +276,7 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
                 <div v-if="layout?.iris?.is_logged_in" class="flex items-center md:justify-end justify-start">
                     <div v-if="!product.is_coming_soon"
                         class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[12rem] break-words leading-snug"
-                        :class="(product?.stock > 0 ) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+                        :class="(product?.stock > 0) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
                         <span class="inline-flex items-center gap-1 text-xs leading-snug">
                             <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" />
                             <span>
@@ -196,5 +316,4 @@ const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsW
 </template>
 
 
-<style scoped>
-</style>
+<style scoped></style>

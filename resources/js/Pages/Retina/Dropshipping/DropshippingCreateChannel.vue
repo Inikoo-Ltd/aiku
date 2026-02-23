@@ -32,6 +32,10 @@ import EbayListingProfileConfirmationForm from "@/Pages/Retina/Dropshipping/Form
 import WooAccountNameForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelWoo/WooAccountNameForm.vue"
 import WooAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelWoo/WooAuthKeyForm.vue"
 import WooConnectedFinish from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelWoo/WooConnectedFinish.vue"
+import TiktokAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokAuthKeyForm.vue"
+import TiktokBusinessAccountsForm
+	from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokBusinessAccountsForm.vue"
+import TiktokConnectedFinish from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokConnectedFinish.vue"
 library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers)
@@ -124,6 +128,7 @@ const onCreateStoreShopify = async () => {
 
 // Section: Woocommerce
 const isModalWooCommerce = ref<boolean>(false)
+const isModalTiktok = ref<boolean>(false)
 const wooCommerceInput = ref({
 	name: null as null | string,
 	url: null as null | string,
@@ -259,6 +264,7 @@ onMounted(() => {
 
 const isModalCreateEbay = ref(false)
 const ebayId = ref<int | null>(null)
+const tiktokUserId = ref<int | null>(null)
 const customerSalesChannelId = ref<int | null>(null)
 const ebayName = ref<string | null>(null)
 
@@ -278,6 +284,10 @@ const closeCreateEbayModal = () => {
 
 const closeCreateWooModal = () => {
 	isModalWooCommerce.value = false
+}
+
+const closeCreateTiktokModal = () => {
+	isModalTiktok.value = false
 }
 
 const openCreateEbayModal = async () => {
@@ -323,7 +333,9 @@ const openCreateEbayModal = async () => {
 
 provide("closeCreateEbayModal", closeCreateEbayModal)
 provide("closeCreateWooModal", closeCreateWooModal)
+provide("closeCreateTiktokModal", closeCreateTiktokModal)
 provide("ebayId", ebayId)
+provide("tiktokUserId", tiktokUserId)
 provide("ebayName", ebayName)
 provide("customerSalesChannelId", customerSalesChannelId)
 
@@ -346,6 +358,7 @@ const stepComponents = [
 ]
 
 const stepWooComponents = [WooAccountNameForm, WooAuthKeyForm, WooConnectedFinish]
+const stepTiktokComponents = [TiktokAuthKeyForm, TiktokBusinessAccountsForm, TiktokConnectedFinish]
 
 const currentStep = ref(0)
 
@@ -422,7 +435,7 @@ provide("goNext", goNext)
 			</div>
 
 			<!-- Section: Tiktok -->
-			            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+			<div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                     <img
@@ -434,23 +447,20 @@ provide("goNext", goNext)
                     />
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Tiktok</div>
-                        <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        <div v-if="layout?.app?.environment === 'local'"
                              class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.tiktok }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <a target="_blank" class="w-full" :href="tiktokAuth?.url">
                         <Button v-if="layout?.app?.environment === 'local'"
-                            :label="tiktokAuth?.isAuthenticatedExpired ? trans('Re-connect') : trans('Connect')"
+								@click="() => (isModalTiktok = true)"
+								:label="trans('Connect')"
                             type="primary"
                             full
-                            iconRight="fal fa-external-link-alt"
                         />
                         <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
-                    </a>
-
                 </div>
             </div>
 
@@ -697,6 +707,17 @@ provide("goNext", goNext)
 		<div class="flex flex-col gap-6">
 			<ProgressBar />
 			<component :is="stepWooComponents[currentStep]" :props="props" />
+		</div>
+	</Modal>
+
+	<!-- Modal: Tiktok -->
+	<Modal
+		:isOpen="isModalTiktok"
+		@onClose="isModalTiktok = false"
+		width="w-full max-w-lg">
+		<div class="flex flex-col gap-6">
+			<ProgressBar />
+			<component :is="stepTiktokComponents[currentStep]" :props="props" />
 		</div>
 	</Modal>
 

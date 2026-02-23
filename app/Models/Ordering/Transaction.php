@@ -92,8 +92,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $discretionary_offer_label
  * @property string|null $label
  * @property string|null $marketplace_id
+ * @property numeric $commission_amount
+ * @property string $profit_amount
+ * @property string|null $margin
  * @property-read Asset|null $asset
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE
  * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
@@ -147,6 +150,7 @@ class Transaction extends Model
         'quantity_cancelled'        => 'decimal:3',
         'gross_amount'              => 'decimal:2',
         'net_amount'                => 'decimal:2',
+        'commission_amount'         => 'decimal:2',
         'grp_net_amount'            => 'decimal:2',
         'org_net_amount'            => 'decimal:2',
         'grp_exchange'              => 'decimal:4',
@@ -156,8 +160,8 @@ class Transaction extends Model
     ];
 
     protected $attributes = [
-        'data'             => '{}',
-        'offers_data'      => '{}',
+        'data'        => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];

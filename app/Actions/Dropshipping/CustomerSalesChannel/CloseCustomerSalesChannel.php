@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
 use App\Actions\Dropshipping\WooCommerce\DeleteWooCommerceUser;
 use App\Actions\OrgAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -29,6 +30,7 @@ class CloseCustomerSalesChannel extends OrgAction
             $customerSalesChannel,
             [
                 'status' => CustomerSalesChannelStatusEnum::CLOSED,
+                'state' => CustomerSalesChannelStateEnum::NOT_READY,
                 'name' => $customerSalesChannel->name.' - deleted - '.rand(00, 99), // This for user can make another channel with the same name
                 'closed_at' => now(),
                 'is_down' => null,

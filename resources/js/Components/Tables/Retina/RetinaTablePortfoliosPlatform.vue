@@ -127,6 +127,11 @@ const props = defineProps<{
 	disabled?: boolean
 }>()
 
+const emits = defineEmits<{
+    (e: 'showBulkButton'): void
+    (e: 'hideBulkButton'): void
+}>()
+
 const errorBluk = ref([])
 const _table = ref(null)
 function portfolioRoute(product: Product) {
@@ -144,6 +149,8 @@ const locale = inject("locale", aikuLocaleStructure)
 const layout = inject("layout", retinaLayoutStructure)
 const isEbay = computed(() => props.platform_data?.type === "ebay")
 const selectedProducts = defineModel<number[]>("selectedProducts")
+const selectedInvalidProductsCreate = ref<number[]>([]);
+
 const onUnchecked = (itemId: number) => {
 	props.selectedData.products = props.selectedData.products.filter(
 		(product) => product !== itemId
@@ -402,13 +409,29 @@ const openEditModal = (item) => {
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
 	if (!selectedProducts.value) return
 
+    const changeButtonState = disableCreateNew(item);
+
 	if (checked) {
 		if (!selectedProducts.value.includes(item.id)) {
 			selectedProducts.value.push(item.id)
 		}
+
+        if (!selectedInvalidProductsCreate.value?.includes(item.id) && changeButtonState){
+            selectedInvalidProductsCreate.value?.push(item.id)
+        }
 	} else {
 		selectedProducts.value = selectedProducts.value.filter((id) => id != item.id)
+		
+        if (changeButtonState){
+            selectedInvalidProductsCreate.value = selectedInvalidProductsCreate.value?.filter(id => id != item.id)
+        }
 	}
+
+    if(selectedInvalidProductsCreate.value.length > 0){
+        emits('hideBulkButton');
+    }else{
+        emits('showBulkButton');
+    }
 }
 
 const onCheckedAll = ({ data, allChecked }) => {
@@ -424,6 +447,22 @@ const onCheckedAll = ({ data, allChecked }) => {
 }
 
 const onDisableCheckbox = (item) => {
+	if (disableButtons(item)) {
+		return true
+	}
+
+	if (
+		!isEbay.value &&
+		item.platform_status &&
+		item.exist_in_platform &&
+		item.has_valid_platform_product_id
+	) {
+		return true
+	}
+	return false
+}
+
+const disableCreateNew = (item) => {
 	if (disableButtons(item)) {
 		return true
 	}
@@ -614,7 +653,6 @@ const compTableFilterForSale = computed(() => {
 		@onCheckedAll="(data) => onCheckedAll(data)"
 		checkboxKey="id"
 		:isChecked="(item) => selectedProducts.includes(item.id)"
-		:disabledCheckbox="(item) => onDisableCheckbox(item)"
 		:rowColorFunction="
 			(item) => {
 				if (disableButtons(item)) {
