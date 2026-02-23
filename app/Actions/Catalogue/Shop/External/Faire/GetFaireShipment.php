@@ -18,7 +18,7 @@ class GetFaireShipment extends OrgAction
      */
     public function handle(Order $order): array
     {
-        $deliveryNote = $order->deliveryNotes->first();
+        $deliveryNote = $order->deliveryNotes->firstOrFail();
         $faireOrder = GetSpecificFaireOrder::run($order);
 
         $shipment = Arr::get($faireOrder, 'shipments.0');

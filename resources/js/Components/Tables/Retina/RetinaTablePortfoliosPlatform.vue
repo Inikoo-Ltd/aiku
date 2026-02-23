@@ -779,8 +779,25 @@ const compTableFilterForSale = computed(() => {
 			</div>
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
 				<div>{{ trans("Stocks:") }} {{ locale.number(product.quantity_left) }}</div>
-				<div>{{ trans("Weight:") }} {{ locale.number(product.weight / 1000) }} kg</div>
 			</div>
+
+            <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
+                <div>
+                    {{ trans("Weight:") }} <span v-tooltip="trans('Marketing weight')">{{
+                        locale.number(product.marketing_weight / 1000)
+                    }}Kg</span> / <span
+                    v-tooltip="trans('Weight including packing')">{{
+                        locale.number(product.weight / 1000)
+                    }}Kg</span>
+                </div>
+            </div>
+
+            <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
+                <div>
+                    {{ trans("Dimension:") }} 
+                    {{ product.dimension }}
+                </div>
+            </div>
 
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
 				<div v-if="customerSalesChannel.include_vat">
