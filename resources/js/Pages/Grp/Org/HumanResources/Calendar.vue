@@ -250,6 +250,8 @@ const weekdayLabels = [
     trans('Su'),
 ]
 
+const isWeekendColumn = (index: number): boolean => index === 5 || index === 6
+
 const applyFilters = () => {
     const params: Record<string, unknown> = {
         ...route().params,
@@ -398,9 +400,10 @@ const goNext = () => {
 
                     <div class="grid grid-cols-7 text-[11px] text-gray-400">
                         <div
-                            v-for="label in weekdayLabels"
+                            v-for="(label, labelIndex) in weekdayLabels"
                             :key="label"
                             class="py-1 text-center"
+                            :class="isWeekendColumn(labelIndex) ? 'text-gray-400 bg-gray-50' : ''"
                         >
                             {{ label }}
                         </div>
@@ -420,7 +423,11 @@ const goNext = () => {
                                 <div
                                     v-if="day.isCurrentMonth && day.dayOfMonth"
                                     class="flex h-full w-full items-center justify-center rounded"
-                                    :class="day.isHoliday ? 'bg-red-100 text-red-700 hover:bg-red-200 cursor-pointer' : 'text-gray-700 hover:bg-gray-100'"
+                                    :class="day.isHoliday
+                                        ? 'bg-red-100 text-red-700 hover:bg-red-200 cursor-pointer'
+                                        : isWeekendColumn(dayIndex)
+                                            ? 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                                            : 'text-gray-700 hover:bg-gray-100'"
                                     v-tooltip="day.isHoliday && day.holidayLabel ? day.holidayLabel : undefined"
                                 >
                                     <span class="leading-none">
