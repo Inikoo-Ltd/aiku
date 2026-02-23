@@ -30,6 +30,10 @@ class GetFaireProducts extends OrgAction
 
     public function handle(Shop $shop, array $modelData, ?Command $command = null): void
     {
+        if($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::FAIRE) {
+            return;
+        }
+
         $faireProducts = [];
         $limit         = 200;
         $page          = 1;

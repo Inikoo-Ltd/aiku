@@ -6,6 +6,8 @@ use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -21,7 +23,6 @@ use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class GetFaireOrders extends OrgAction
 {
@@ -30,18 +31,21 @@ class GetFaireOrders extends OrgAction
      */
     public function handle(Shop $shop): void
     {
-        //      DB::transaction(function () use ($shop) {
+
         $filters = [
             'created_at_min' => Carbon::parse('2026-02-01')->toIsoString(),
         ];
 
         $orders = $shop->getFaireOrders([
-            'excluded_states' => 'PROCESSING',
+            'excluded_states' => 'PROCESSING,PRE_TRANSIT,IN_TRANSIT,DELIVERED,PENDING_RETAILER_CONFIRMATION,BACKORDERED,CANCELED',
             ...$filters
         ]);
 
 
         foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
+
+
+
             $externalId = Arr::get($faireOrder, 'id');
             $retailerId = Arr::get($faireOrder, 'retailer_id');
             $retailer   = GetFaireRetailers::run($shop, $retailerId);
@@ -164,8 +168,16 @@ class GetFaireOrders extends OrgAction
                             modelData: Arr::except($transactionData, 'historical_asset')
                         );
                     }
-                    print "Order: $order->id\n";
-                    exit;
+
+                    $order     = SubmitOrder::make()->action($order);
+                    $warehouse = $order->shop->organisation->warehouses()->first();
+                    SendOrderToWarehouse::make()->action($order, [
+                        'warehouse_id' => $warehouse->id
+                    ]);
+
+                    //AcceptFaireOrder::run($order);
+
+
                 }
             }
         }

@@ -328,7 +328,6 @@ class ShowOrder extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrderTabsEnum::navigation()
                 ],
-                'shop_type'   => $order->shop->type,
                 'routes'      => [
                     'modify'                     => [
                         'name'       => 'grp.models.order.modification.save',
@@ -374,6 +373,7 @@ class ShowOrder extends OrgAction
                 'notes'                       => $this->getOrderNotes($order),
                 'timelines'                   => $finalTimeline,
                 'readonly'                    => false,
+                'shop_type'                   => $order->shop->type,
                 'is_shop_external'            => $this->shop->type == ShopTypeEnum::EXTERNAL,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
                 'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
