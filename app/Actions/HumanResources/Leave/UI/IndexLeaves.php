@@ -105,7 +105,7 @@ class IndexLeaves extends OrgAction
                 ->column(key: 'duration_days', label: __('Days'))
                 ->column(key: 'status_label', label: __('Status'))
                 ->column(key: 'reason', label: __('Reason'))
-                ->column(key: 'actions', label: '')
+                ->column(key: 'actions', label: 'Actions')
                 ->defaultSort('start_date');
         };
     }
