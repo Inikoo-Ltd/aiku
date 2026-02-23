@@ -25,7 +25,6 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
@@ -417,7 +416,7 @@ class ShowDeliveryNote extends OrgAction
         $order     = $deliveryNote->orders->first();
 
         // TODO: Implement is_shipping_by_external
-        if($order->shop->type == ShopTypeEnum::EXTERNAL) {
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL) {
             $additionalShipmentRoutes = [
                 'submit_platform_route' => [
                     'name'       => match ($order->shop->engine) {

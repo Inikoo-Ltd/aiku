@@ -152,6 +152,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $commission_amount
  * @property string $profit_amount
  * @property string|null $margin
+ * @property bool $is_shipping_by_external
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

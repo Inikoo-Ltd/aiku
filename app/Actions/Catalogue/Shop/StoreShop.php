@@ -23,7 +23,6 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
-use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\Organisation\SetIconAsShopLogo;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
