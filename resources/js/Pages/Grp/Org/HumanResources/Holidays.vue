@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3'
+import { Head, useForm, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
@@ -7,8 +7,13 @@ import Table from '@/Components/Table/Table.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { trans } from 'laravel-vue-i18n'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv, faUmbrella } from "@fal";
+
+library.add(faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv, faUmbrella)
+
 
 const props = defineProps<{
     title: string
@@ -22,6 +27,21 @@ const showEditModal = ref(false)
 const editingHoliday = ref<any | null>(null)
 const toTouchedCreate = ref(false)
 const toTouchedEdit = ref(false)
+const filterYear = ref<string>('')
+const filterMonth = ref<string>('')
+
+const yearOptions = computed(() => {
+    const currentYear = new Date().getFullYear()
+
+    return Array.from({ length: 5 }, (_, index) => {
+        const year = currentYear - 2 + index
+
+        return {
+            value: String(year),
+            label: String(year),
+        }
+    })
+})
 
 const form = useForm<{
     type: string
@@ -46,6 +66,53 @@ const editForm = useForm<{
     from: '',
     to: '',
 })
+
+const initializeFiltersFromUrl = () => {
+    const url = new URL(window.location.href)
+
+    const yearParam = url.searchParams.get('filter[year]')
+    const monthParam = url.searchParams.get('filter[month]')
+
+    filterYear.value = yearParam ?? ''
+    filterMonth.value = monthParam ?? ''
+}
+
+initializeFiltersFromUrl()
+
+const applyFilters = () => {
+    const params: Record<string, unknown> = {
+        ...route().params,
+    }
+
+    const filter: Record<string, string> = {}
+
+    if (filterYear.value) {
+        filter.year = filterYear.value
+    }
+
+    if (filterMonth.value) {
+        filter.month = filterMonth.value
+    }
+
+    if (Object.keys(filter).length > 0) {
+        params.filter = filter
+    }
+
+    router.get(route('grp.org.hr.holidays.index', params), {}, { preserveState: true, preserveScroll: true })
+}
+
+const resetFilters = () => {
+    filterYear.value = ''
+    filterMonth.value = ''
+
+    const params: Record<string, unknown> = {
+        ...route().params,
+    }
+
+    params.filter = undefined
+
+    router.get(route('grp.org.hr.holidays.index', params), {}, { preserveState: true, preserveScroll: true })
+}
 
 const openCreateModal = () => {
     form.reset()
@@ -129,13 +196,71 @@ watch(
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-create-holiday="{ action }">
-            <Button
-                type="create"
-                size="xs"
-                :icon="action.icon"
-                :label="action.label"
-                @click="openCreateModal"
-            />
+            <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div>
+                        <select
+                            v-model="filterYear"
+                            class="mt-0.5 block w-28 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                            <option value="">
+                                {{ trans('All years') }}
+                            </option>
+                            <option
+                                v-for="year in yearOptions"
+                                :key="year.value"
+                                :value="year.value"
+                            >
+                                {{ year.label }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+
+                        <select
+                            v-model="filterMonth"
+                            class="mt-0.5 block w-32 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                            <option value="">
+                                {{ trans('All months') }}
+                            </option>
+                            <option value="1">{{ trans('January') }}</option>
+                            <option value="2">{{ trans('February') }}</option>
+                            <option value="3">{{ trans('March') }}</option>
+                            <option value="4">{{ trans('April') }}</option>
+                            <option value="5">{{ trans('May') }}</option>
+                            <option value="6">{{ trans('June') }}</option>
+                            <option value="7">{{ trans('July') }}</option>
+                            <option value="8">{{ trans('August') }}</option>
+                            <option value="9">{{ trans('September') }}</option>
+                            <option value="10">{{ trans('October') }}</option>
+                            <option value="11">{{ trans('November') }}</option>
+                            <option value="12">{{ trans('December') }}</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <Button
+                            type="secondary"
+                            size="xs"
+                            :label="trans('Filter')"
+                            @click="applyFilters"
+                        />
+                        <Button
+                            type="tertiary"
+                            size="xs"
+                            :label="trans('Reset')"
+                            @click="resetFilters"
+                        />
+                    </div>
+                </div>
+                <Button
+                    type="create"
+                    size="xs"
+                    :icon="action.icon"
+                    :label="action.label"
+                    @click="openCreateModal"
+                />
+            </div>
         </template>
     </PageHeading>
 
