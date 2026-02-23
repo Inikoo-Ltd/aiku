@@ -25,21 +25,28 @@ class CheckTiktokChannel
     public function handle(TiktokUser $tiktokUser): CustomerSalesChannel
     {
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
-        $tiktokShop = Arr::get($tiktokUser->getAuthorizedShop(), 'data.shops.0');
+        $tiktokShop = Arr::get($tiktokUser->getAuthorizedShop(), 'data.shops');
 
-        if ($tiktokShop) {
+        if (Arr::get($tiktokShop, '0')) {
             $platformStatus       = true;
             $canConnectToPlatform = true;
             $existInPlatform      = true;
         }
 
+        $tiktokShop = collect($tiktokShop)
+            ->where('id', $tiktokUser->tiktok_shop_id)
+            ->first();
+
         $data = [
-            'state'                   => CustomerSalesChannelStateEnum::AUTHENTICATED,
             'name'                    => Arr::get($tiktokShop, 'name'),
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform
         ];
+
+        if($platformStatus && $tiktokUser->tiktok_shop_id && $tiktokUser->tiktok_shop_chiper) {
+            $data['state'] = CustomerSalesChannelStateEnum::READY;
+        }
 
         if ($platformStatus) {
             $data['ban_stock_update_util'] = null;
@@ -52,6 +59,11 @@ class CheckTiktokChannel
     public function getCommandSignature(): string
     {
         return 'tiktok:check {customerSalesChannel}';
+    }
+
+    public function asController(TiktokUser $tiktokUser): CustomerSalesChannel
+    {
+        return $this->handle($tiktokUser);
     }
 
     public function asCommand(Command $command): void

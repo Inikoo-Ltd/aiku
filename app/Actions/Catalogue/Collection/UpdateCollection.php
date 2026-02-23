@@ -130,7 +130,7 @@ class UpdateCollection extends OrgAction
     {
         $this->collection = $collection;
 
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($collection->shop, $request);
 
         return $this->handle($collection, $this->validatedData);
     }

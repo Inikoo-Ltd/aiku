@@ -31,13 +31,13 @@ class RedoInvoiceCategoryTimeSeries implements ShouldBeUnique
     public function handle(InvoiceCategory $invoiceCategory, bool $async = false): void
     {
         $firstInvoicedDate = DB::table('invoices')->where('invoice_category_id', $invoiceCategory->id)->whereNull('deleted_at')->min('date');
-        $lastInvoicedDate = DB::table('invoices')->where('invoice_category_id', $invoiceCategory->id)->whereNull('deleted_at')->max('date');
+        $lastInvoicedDate  = DB::table('invoices')->where('invoice_category_id', $invoiceCategory->id)->whereNull('deleted_at')->max('date');
 
-        if ($firstInvoicedDate && ($firstInvoicedDate < $invoiceCategory->created_at)) {
-            $invoiceCategory->update(['created_at' => $firstInvoicedDate]);
+        if (!$firstInvoicedDate) {
+            return;
         }
 
-        $from = $invoiceCategory->created_at->toDateString();
+        $from = Carbon::parse($firstInvoicedDate)->toDateString();
         $to   = Carbon::parse($lastInvoicedDate ?? now())->toDateString();
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {

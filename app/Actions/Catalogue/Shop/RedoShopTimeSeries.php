@@ -30,25 +30,21 @@ class RedoShopTimeSeries implements ShouldBeUnique
 
     public function handle(Shop $shop, bool $async = false): void
     {
-        $firstActivityDate = collect([
-            DB::table('invoices')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('date'),
-            DB::table('orders')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('created_at'),
-            DB::table('delivery_notes')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('date'),
-            DB::table('customers')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('registered_at'),
-        ])->filter()->min();
+        $dates = collect([
+            DB::table('invoices')->where('shop_id', $shop->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
+            DB::table('orders')->where('shop_id', $shop->id)->whereNull('deleted_at')->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
+            DB::table('delivery_notes')->where('shop_id', $shop->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
+            DB::table('customers')->where('shop_id', $shop->id)->whereNull('deleted_at')->selectRaw('MIN(registered_at) as min_date, MAX(registered_at) as max_date')->first(),
+        ]);
 
-        $lastActivityDate = collect([
-            DB::table('invoices')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('date'),
-            DB::table('orders')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('created_at'),
-            DB::table('delivery_notes')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('date'),
-            DB::table('customers')->where('shop_id', $shop->id)->whereNull('deleted_at')->min('registered_at'),
-        ])->filter()->max();
+        $firstActivityDate = $dates->pluck('min_date')->filter()->min();
+        $lastActivityDate  = $dates->pluck('max_date')->filter()->max();
 
-        if ($firstActivityDate && ($firstActivityDate < $shop->created_at)) {
-            $shop->update(['created_at' => $firstActivityDate]);
+        if (!$firstActivityDate) {
+            return;
         }
 
-        $from = $shop->created_at->toDateString();
+        $from = Carbon::parse($firstActivityDate)->toDateString();
         $to   = Carbon::parse($lastActivityDate ?? now())->toDateString();
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {

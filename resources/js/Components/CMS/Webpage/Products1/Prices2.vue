@@ -12,6 +12,7 @@ import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vu
 import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
+import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 
 library.add(faPlusCircle, faQuestionCircle)
 
@@ -83,21 +84,25 @@ const props = defineProps<{
     basketButton?: boolean
 }>()
 
-const getBestOffer = (offerId: string) => {
+/* const getBestOffer = (offerId: string) => {
     if (!offerId) {
         return
     }
 
     return Object.values(props.product?.product_offers_data?.offers || []).find(e => e.id == offerId)
-}
+} */
+
+const bestOffer = computed(() => {
+  return getBestOfferfromComposable(props.product?.product_offers_data)
+})
 
 const hasOffer =
     props.product?.product_offers_data?.number_offers > 0 &&
-    getBestOffer(props.product?.product_offers_data?.best_percentage_off?.offer_id)
+    getBestOfferfromComposable(props.product?.product_offers_data)
 
 
 const showIntervalOffer = computed(() => {
-    return getBestOffer(props.product?.product_offers_data?.best_percentage_off?.offer_id)?.type
+    return getBestOfferfromComposable(props.product?.product_offers_data)?.type
         === 'Category Quantity Ordered Order Interval'
 })
 
@@ -192,7 +197,8 @@ const _popoverProfit = ref(null)
                 </div>
 
 
-                <div v-if="showLeftBlock && showIntervalOffer" class="flex flex-col w-fit break-safe discount">
+                <div v-if="showLeftBlock && showIntervalOffer" class="flex flex-col w-fit break-safe discount items-center justify-center">
+           
                     <MemberPriceLabel v-if="showMemberPrice" :offer="bestOffer" />
 
                     <DiscountByType v-if="showDiscount" :offers_data="product?.product_offers_data"
@@ -201,11 +207,7 @@ const _popoverProfit = ref(null)
 
 
                 <!-- RIGHT -->
-                <div :class="[
-                    hasOffer
-                        ? 'flex flex-col justify-end text-right text-xs'
-                        : 'text-xs'
-                ]">
+                <div class="flex flex-col justify-end text-right text-xs">
 
                     <div v-if="product?.rrp_per_unit > 0"
                         v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"

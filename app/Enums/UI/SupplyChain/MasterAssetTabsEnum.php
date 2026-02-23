@@ -11,7 +11,6 @@
 namespace App\Enums\UI\SupplyChain;
 
 use App\Enums\EnumHelperTrait;
-use App\Enums\HasTabs;
 use App\Enums\HasTabsWithQuantity;
 use App\Models\Masters\MasterAsset;
 

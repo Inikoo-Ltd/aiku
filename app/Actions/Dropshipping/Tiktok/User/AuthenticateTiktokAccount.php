@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\TiktokUser;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -55,25 +56,18 @@ class AuthenticateTiktokAccount extends RetinaAction
                         'refresh_token_expire_in' => $userData['refresh_token_expire_in'],
                     ];
 
-                    $tiktokUser = $customer->tiktokUser?->where('tiktok_id', $userData['tiktok_id'])->withTrashed()->first();
+                    $tiktokUser = $customer->tiktokUsers()
+                        ->where('tiktok_id', $userData['tiktok_id'])
+                        ->first();
 
-                    if ($tiktokUser) {
-                        if ($tiktokUser->deleted_at) {
-                            $tiktokUser->restore();
-                            $platform = Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first();
-                            StoreCustomerSalesChannel::make()->action($customer, $platform, [
-                                'platform_user_type' => $tiktokUser->getMorphClass(),
-                                'platform_user_id' => $tiktokUser->id,
-                                'reference' => $tiktokUser->name
-                            ]);
-                        }
-                    } else {
+                    if (!$tiktokUser) {
                         $tiktokUser = StoreTiktokUser::make()->action($customer, $userData);
                     }
 
                     $tiktokUser = UpdateTiktokUser::make()->action($tiktokUser, $userData);
 
                     SaveShopDataTiktokChannel::run($tiktokUser);
+                    $tiktokUser->refresh();
                     CheckTiktokChannel::run($tiktokUser);
 
                     return $tiktokUser;
@@ -87,7 +81,7 @@ class AuthenticateTiktokAccount extends RetinaAction
         }
     }
 
-    public function redirectToTikTok(Customer $customer)
+    public function redirectToTikTok(Customer $customer): string
     {
         $clientId = config('services.tiktok.client_id');
         $redirectUri = urlencode($customer->shop?->website?->getFullUrl() . config('services.tiktok.redirect_uri'));
@@ -96,22 +90,14 @@ class AuthenticateTiktokAccount extends RetinaAction
         return config('services.tiktok.auth_url')."/oauth/authorize?app_key={$clientId}&state={$state}&redirect_uri={$redirectUri}";
     }
 
-    public function checkIsAuthenticated(Customer $customer): bool
+    public function checkIsAuthenticated(TiktokUser $tiktokUser): bool
     {
-        if (!$customer->tiktokUser) {
-            return false;
-        }
-
-        return (bool) $customer->tiktokUser;
+        return $tiktokUser->customerSalesChannel->platform_status;
     }
 
-    public function checkIsAuthenticatedExpired(Customer $customer): bool
+    public function checkIsAuthenticatedExpired(TiktokUser $tiktokUser): bool
     {
-        if (!$customer->tiktokUser) {
-            return false;
-        }
-
-        return $customer->tiktokUser && now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($customer->tiktokUser?->access_token_expire_in));
+        return now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($tiktokUser->access_token_expire_in));
     }
 
     public function rules(): array

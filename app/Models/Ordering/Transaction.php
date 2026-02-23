@@ -92,6 +92,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $discretionary_offer_label
  * @property string|null $label
  * @property string|null $marketplace_id
+ * @property bool $is_cut_view
  * @property-read Asset|null $asset
  * @property-read Customer|null $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE

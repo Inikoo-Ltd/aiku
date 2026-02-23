@@ -93,6 +93,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_credit_balance_notification_for_customer
  * @property int $number_outboxes_type_credit_balance_notification_for_user
  * @property int $number_outboxes_type_chat_notification_to_customer
+ * @property int $number_outboxes_type_basket_offer_notification
+ * @property int $number_outboxes_type_price_change_notification
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationCommsStats newModelQuery()
  * @method static Builder<static>|OrganisationCommsStats newQuery()

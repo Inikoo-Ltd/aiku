@@ -198,7 +198,7 @@ onMounted(async () => {
         }">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <!-- LEFT: Images -->
-            <div class="col-span-7">
+            <div class="col-span-7 bg-white" >
                 <div class="py-1 w-full">
                     <ImageProducts :key="product.code" :images="validImages" :video="videoSetup?.url" />
                 </div>

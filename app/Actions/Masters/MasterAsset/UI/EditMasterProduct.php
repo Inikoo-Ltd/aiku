@@ -303,7 +303,7 @@ class EditMasterProduct extends GrpAction
                         'full'         => true,
                         'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
                         'tabs' => array_values(array_filter([
-                            $masterProduct->masterFamily  ? [
+                            $masterProduct->masterFamily ? [
                                 'label'      => __('To do'),
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.recommended-trade-units',
@@ -313,7 +313,7 @@ class EditMasterProduct extends GrpAction
                                 ],
                             ] : null,
 
-                            $masterProduct->masterFamily  ? [
+                            $masterProduct->masterFamily ? [
                                 'label'      => __('Done'),
                                 'routeFetch' => [
                                     'name'       => 'grp.json.master-product-category.taken-trade-units',
@@ -343,7 +343,7 @@ class EditMasterProduct extends GrpAction
                 'icon'   => 'fal fa-cart-arrow-down',
                 'fields' => [
                     'is_for_sale' => [
-                        'confirmation' => [
+                        'saveConfirmation' => [
                             'description' => __('Changing the sale status of a master product will affect all products linked to it in all shops.'),
                         ],
                         'type'         => 'toggle',

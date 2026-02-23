@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\OrgAction;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -21,7 +22,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
 
-class UpdateProductExternal extends OrgAction
+class UpdateTradeUnitsForExternalProduct extends OrgAction
 {
     use WithActionUpdate;
     use WithProductHydrators;
@@ -31,31 +32,23 @@ class UpdateProductExternal extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-        if (Arr::has($modelData, 'trade_units')) {
-            // Can't do this. Infinite loop until timeout.
-            // data_set($modelData, 'is_for_sale', true);
-            // data_set($modelData, 'state', ProductStateEnum::ACTIVE);
-            $isForSaleOne = $product->is_for_sale;
-            $product = UpdateProduct::make()->action($product, $modelData);
-            // So had to do this below manually
-            $product->update([
-                'is_for_sale'           => true,
-                'state'                 => ProductStateEnum::ACTIVE,
-                'is_single_trade_unit'  => $product->tradeUnits()->count() == 1
-            ]);
-            $isForSaleTwo = $product->is_for_sale;
+        $product = UpdateProduct::make()->action($product, $modelData);
 
-            CloneProductImagesFromTradeUnits::run($product);
-            ProductHydrateAvailableQuantity::run($product);
+        $product->update([
+            'is_for_sale' => true,
+            'state'       => ProductStateEnum::ACTIVE,
+        ]);
+        ModelHydrateSingleTradeUnits::run($product);
 
-            $this->productHydrators($product, false);
-        }
+        CloneProductImagesFromTradeUnits::run($product);
+        ProductHydrateAvailableQuantity::run($product);
 
+        $this->productHydrators($product, false);
 
         return $product;
     }
 
-    public function afterValidator(Validator$validator): void
+    public function afterValidator(Validator $validator): void
     {
         if ($this->product->shop->type !== ShopTypeEnum::EXTERNAL) {
             $validator->errors()->add('shop', 'This product does not belong to an external shop');
@@ -64,11 +57,11 @@ class UpdateProductExternal extends OrgAction
 
     public function rules(): array
     {
-        $rules = [
-            'trade_units' => ['sometimes', 'present', 'array'],
+        return [
+            'trade_units' => ['required', 'array'],
+            'trade_units.*.id' => ['required', 'exists:trade_units,id'],
+            'trade_units.*.quantity' => ['required', 'numeric', 'gt:0'],
         ];
-
-        return $rules;
     }
 
     public function asController(Product $product, ActionRequest $request): Product
@@ -79,16 +72,10 @@ class UpdateProductExternal extends OrgAction
         return $this->handle($product, $this->validatedData);
     }
 
-    public function action(Product $product, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Product
+    public function action(Product $product, array $modelData): Product
     {
-        if (!$audit) {
-            Product::disableAuditing();
-        }
-
-        $this->asAction       = true;
-        $this->hydratorsDelay = $hydratorsDelay;
-        $this->product        = $product;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->product  = $product;
 
         $this->initialisationFromShop($product->shop, $modelData);
 
