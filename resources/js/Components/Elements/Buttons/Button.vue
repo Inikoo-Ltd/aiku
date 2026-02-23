@@ -12,7 +12,7 @@ import { faClipboard, faSpinner, faPencil, faDownload, faFileExport, faPlus as f
 import { faArrowLeft, faTrashAlt, faPersonDolly, faTimes } from "@far";
 import { faPlus, faSave, faUpload, faTrashUndoAlt, faThLarge, faRocket, faMinus } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, inject } from "vue";
+import { inject } from "vue";
 import { Icon } from "@/types/Utils/Icon";
 
 const layout: any = inject("layout", {});
@@ -37,7 +37,6 @@ const props = withDefaults(defineProps<{
   injectStyle? : object|null
   iconRightRotation?: number | string
   iconRotation?: number | string
-  nativeType?: "button" | "submit" | "reset"
 }>(), {
   size: "m",
   capitalize: false,

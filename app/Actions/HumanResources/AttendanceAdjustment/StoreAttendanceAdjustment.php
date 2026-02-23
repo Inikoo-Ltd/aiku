@@ -97,9 +97,13 @@ class StoreAttendanceAdjustment extends OrgAction
 
         if (isset($modelData['attachments'])) {
             foreach ($modelData['attachments'] as $file) {
-                $media = $adjustment->addMedia($file)->toMediaCollection('attachments');
-                $media->ulid = Str::ulid();
-                $media->save();
+                $adjustment->addMedia($file)
+                    ->withProperties([
+                        'group_id' => $adjustment->group_id,
+                        'type'     => 'attachment',
+                        'ulid'     => (string) Str::ulid(),
+                    ])
+                    ->toMediaCollection('attachments');
             }
         }
 

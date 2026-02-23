@@ -44,7 +44,6 @@ class StoreMediaFromIcon
 
             $svg = GetDiceBearAvatar::run($iconType, $seed);
             $checksum = md5($svg);
-            $ulid = Str::ulid();
 
             /** @var Media $media */
             $media = $model->addMediaFromString($svg)
