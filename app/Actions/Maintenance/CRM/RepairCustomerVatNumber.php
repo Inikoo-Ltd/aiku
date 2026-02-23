@@ -9,6 +9,7 @@
 
 namespace App\Actions\Maintenance\CRM;
 
+use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Helpers\TaxNumber;
 use Illuminate\Console\Command;
@@ -20,14 +21,14 @@ class RepairCustomerVatNumber
 
     protected function handle(TaxNumber $taxNumber): void
     {
-        $taxNumber->updateQuietly(['number' => preg_replace('/^GR/', 'EL', $taxNumber->number)]);
+        UpdateTaxNumber::run($taxNumber, ['number' => $taxNumber->number, 'country_id' => $taxNumber->country_id]);
     }
 
     public string $commandSignature = 'customers:repair_vat';
 
     public function asCommand(Command $command): void
     {
-        $query = TaxNumber::where('country_code', 'GR')->get();
+        $query = TaxNumber::where('country_id', 39)->get();
         $total = $query->count();
 
         if ($total === 0) {
