@@ -80,9 +80,13 @@ class StoreLeave extends OrgAction
 
         if (isset($modelData['attachments'])) {
             foreach ($modelData['attachments'] as $file) {
-                $media = $leave->addMedia($file)->toMediaCollection('attachments');
-                $media->ulid = Str::ulid();
-                $media->save();
+                $leave->addMedia($file)
+                    ->withProperties([
+                        'group_id' => $leave->group_id,
+                        'type'     => 'attachment',
+                        'ulid'     => (string) Str::ulid(),
+                    ])
+                    ->toMediaCollection('attachments');
             }
         }
 
@@ -126,8 +130,16 @@ class StoreLeave extends OrgAction
             return;
         }
 
+        if ($validator->errors()->has('start_date') || $validator->errors()->has('end_date')) {
+            return;
+        }
+
         $startDate = Carbon::parse(request()->input('start_date'));
         $endDate = Carbon::parse(request()->input('end_date'));
+
+        if ($endDate->lt($startDate)) {
+            return;
+        }
 
         $existingLeave = Leave::where('employee_id', $this->employee->id)
             ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
