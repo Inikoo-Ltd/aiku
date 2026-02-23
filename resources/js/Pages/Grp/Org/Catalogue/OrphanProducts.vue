@@ -122,9 +122,11 @@ const onSubmitToFamily = () => {
         :is="component"
         :key="currentTab"
         :tab="currentTab"
+        :selectedProductsId
         :data="props[currentTab]"
         :isCheckboxProducts="is_orphan_products"
-        @selectedRow="(productsId: {}) => (console.log('qqqqqq', productsId), selectedProductsId = productsId)"
+        xselectedRow="(productsId: {}) => (console.log('qqqqqq', productsId), selectedProductsId = productsId)"
+        @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
     />
     
 

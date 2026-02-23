@@ -55,6 +55,21 @@ import PureProgressBar from "@/Components/PureProgressBar.vue"
 import { set } from "lodash-es"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { EditorContent } from "@tiptap/vue-3"
+import UploadExcel from "@/Components/Upload/UploadExcel.vue"
+import { UploadPallet } from "@/types/Pallet"
+
+interface UploadSection {
+	title: {
+		label: string
+		information: string
+	}
+	progressDescription: string
+	upload_spreadsheet: UploadPallet
+	preview_template: {
+		header: string[]
+		rows: {}[]
+	}
+}
 
 library.add(
 	faFileExcel,
@@ -87,6 +102,7 @@ const props = defineProps<{
 			add_button?: string
 		}
 	}
+	bulk_import_product: UploadSection
 	products: TableTS
 	logs: {}
 	routes: {
@@ -151,6 +167,15 @@ const isLoadingClone = ref(false)
 const selectedData = reactive({
 	products: [] as number[],
 })
+const isHiddenBulkButton = ref(false);
+
+const showBulkButton = () => {
+	isHiddenBulkButton.value = false;
+}
+
+const hideBulkButton = () => {
+	isHiddenBulkButton.value = true;
+}
 
 const onUploadToShopify = () => {
 	if (!props.routes.bulk_upload?.name) {
@@ -206,6 +231,7 @@ const downloadUrl = (type: string, extraParams: Record<string, unknown> = {}) =>
 
 const _popover = ref()
 const _clone_popover = ref()
+const _import_modal = ref(false)
 const _export_popover = ref()
 
 // Method: Platform reconnect
@@ -990,6 +1016,16 @@ const layout = inject("layout", layoutStructure)
 			</div>
 
 			<Button
+				@click="(e) => _import_modal = true"
+				v-tooltip="trans('Import from xlsx file')"
+				:icon="faUpload"
+				xloading="!!isLoadingSpecificChannel.length"
+				class="!px-2 h-full"
+				type="tertiary"
+				key=""
+				v-if="!customer_sales_channel?.ban_stock_update_until && !routes?.syncAllRoute" />
+
+			<Button
 				@click="() => (isOpenModalPortfolios = true)"
 				:label="trans('Add products')"
 				:icon="'fas fa-plus'"
@@ -1146,6 +1182,68 @@ const layout = inject("layout", layoutStructure)
 		</div>
 	</div>
 	<!-- Section: Alert if there is product not synced -->
+	<div 
+		v-if="selectedProducts.length > 0"
+		class="px-4 pt-4 grid justify-items-end"
+	>
+		<div class="gap-x-3 flex">
+			<Button
+				v-if="selectedProducts.length > 0"
+				v-tooltip="
+					trans('Edit Product :platform', { platform: props.platform_data?.name })
+				"
+				:type="'tertiary'"
+				:label="trans('Edit Price (:_count)', { _count: selectedProducts?.length })"
+				:loading="loadingAction.includes('bulk-edit')"
+				@click="openBulkEditModal()"
+				:icon="['fal', 'fa-pencil']"
+				size="xs" />
+
+			<Button
+				v-if="selectedProducts.length > 0"
+				v-tooltip="
+					trans('Unlink & Delete Product :platform', {
+						platform: props.platform_data?.name,
+					})
+				"
+				:type="'delete'"
+				:label="
+					trans('Unlink & Delete (:_count)', { _count: selectedProducts?.length })
+				"
+				:loading="loadingAction.includes('bulk-unlink')"
+				@click="
+					() =>
+						submitPortfolioAction({
+							label: 'bulk-unlink',
+							name: props.routes.bulk_unlink.name,
+							parameters: { customerSalesChannel: customer_sales_channel.id },
+							method: 'post',
+						})
+				"
+				size="xs" />
+
+			<Button
+				v-if="selectedProducts.length > 0 && !isHiddenBulkButton"
+				v-tooltip="
+					trans('Upload as new product to the :platform', {
+						platform: props.platform_data?.name,
+					})
+				"
+				:type="'create'"
+				:label="trans('Create New (:_count)', { _count: selectedProducts?.length })"
+				:loading="loadingAction.includes('bulk-create')"
+				@click="
+					() =>
+						submitPortfolioAction({
+							label: 'bulk-create',
+							name: props.routes.bulk_upload.name,
+							parameters: { customerSalesChannel: customer_sales_channel.id },
+							method: 'post',
+						})
+				"
+				size="xs" />
+		</div>
+	</div>
 	<Message
 		v-if="
 			is_platform_connected &&
@@ -1198,66 +1296,6 @@ const layout = inject("layout", layoutStructure)
 					icon="fas fa-sync-alt"
 					:label="trans('Use existing')"
 					type="tertiary" />
-
-				<div
-					v-if="selectedProducts.length > 0"
-					class="space-x-2 border-r border-gray-400 pr-2">
-					<Button
-						v-if="selectedProducts.length > 0"
-						v-tooltip="
-							trans('Edit Product :platform', { platform: props.platform_data?.name })
-						"
-						:type="'tertiary'"
-						:label="trans('Edit Price (:_count)', { _count: selectedProducts?.length })"
-						:loading="loadingAction.includes('bulk-edit')"
-						@click="openBulkEditModal()"
-						:icon="['fal', 'fa-pencil']"
-						size="xs" />
-
-					<Button
-						v-if="selectedProducts.length > 0"
-						v-tooltip="
-							trans('Unlink & Delete Product :platform', {
-								platform: props.platform_data?.name,
-							})
-						"
-						:type="'delete'"
-						:label="
-							trans('Unlink & Delete (:_count)', { _count: selectedProducts?.length })
-						"
-						:loading="loadingAction.includes('bulk-unlink')"
-						@click="
-							() =>
-								submitPortfolioAction({
-									label: 'bulk-unlink',
-									name: props.routes.bulk_unlink.name,
-									parameters: { customerSalesChannel: customer_sales_channel.id },
-									method: 'post',
-								})
-						"
-						size="xs" />
-
-					<Button
-						v-if="selectedProducts.length > 0"
-						v-tooltip="
-							trans('Upload as new product to the :platform', {
-								platform: props.platform_data?.name,
-							})
-						"
-						:type="'create'"
-						:label="trans('Create New (:_count)', { _count: selectedProducts?.length })"
-						:loading="loadingAction.includes('bulk-create')"
-						@click="
-							() =>
-								submitPortfolioAction({
-									label: 'bulk-create',
-									name: props.routes.bulk_upload.name,
-									parameters: { customerSalesChannel: customer_sales_channel.id },
-									method: 'post',
-								})
-						"
-						size="xs" />
-				</div>
 
 				<div>
 					<ButtonWithLink
@@ -1339,6 +1377,8 @@ const layout = inject("layout", layoutStructure)
 				" />
 			<RetinaTablePortfoliosShopify
 				v-else-if="platform_data.type === 'shopify'"
+				@showBulkButton="showBulkButton()"
+				@hideBulkButton="hideBulkButton()"
 				:data="props.products"
 				:tab="'products'"
 				:selectedData
@@ -1353,6 +1393,8 @@ const layout = inject("layout", layoutStructure)
 				:count_product_not_synced="count_product_not_synced" />
 			<RetinaTablePortfoliosPlatform
 				v-else
+				@showBulkButton="showBulkButton()"
+				@hideBulkButton="hideBulkButton()"
 				:data="props.products"
 				:tab="'products'"
 				:selectedData
@@ -1908,4 +1950,12 @@ const layout = inject("layout", layoutStructure)
 			</div>
 		</div>
 	</Modal>
+	<UploadExcel
+		v-if="bulk_import_product"
+		v-model="_import_modal"
+		:title="bulk_import_product.title"
+		:progressDescription="bulk_import_product.progressDescription"
+		:preview_template="bulk_import_product.preview_template"
+		:upload_spreadsheet="bulk_import_product.upload_spreadsheet"
+	/>
 </template>

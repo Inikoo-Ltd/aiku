@@ -52,6 +52,13 @@ class DeliveryNoteItemsResource extends JsonResource
             $quantityDispatched = 0;
         }
 
+        $packedInMessage = '';
+        if ($packedIn == 1) {
+            $packedInMessage = '('.__('Individually packed').')';
+        } elseif ($packedIn > 1) {
+            $packedInMessage = '('.__('Pack of').": $packedIn".")";
+        }
+
         return [
             'id'                             => $this->id,
             'state'                          => $this->state,
@@ -70,6 +77,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_id'                   => $this->org_stock_id,
             'batch_code'                     => $this->batch_code,
             'expiry_date'                    => $this->expiry_date,
+            'packed_in_message'              => $packedInMessage
         ];
     }
 }

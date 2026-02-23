@@ -5,6 +5,7 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -13,6 +14,7 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Console\Command;
@@ -28,6 +30,10 @@ class GetFaireProducts extends OrgAction
 
     public function handle(Shop $shop, array $modelData, ?Command $command = null): void
     {
+        if($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::FAIRE) {
+            return;
+        }
+
         $faireProducts = [];
         $limit         = 200;
         $page          = 1;
@@ -62,6 +68,7 @@ class GetFaireProducts extends OrgAction
 
 
         foreach ($faireProducts as $faireProduct) {
+
             $faireState = Arr::get($faireProduct, 'lifecycle_state');
             if (!in_array($faireState, ['PUBLISHED', 'UNPUBLISHED'])) {
                 continue;
@@ -80,53 +87,99 @@ class GetFaireProducts extends OrgAction
                     continue;
                 }
 
-                if (Product::where('shop_id', $shop->id)->where('code', $faireSKU)->exists()) {
-                    $product = Product::where('shop_id', $shop->id)->where('code', $faireSKU)->first();
+                $product = Product::where('shop_id', $shop->id)->where('code', $faireSKU)->first();
+
+                if ($product) {
 
                     try {
                         UpdateProduct::make()->action($product, [
+                                'code'           => $faireSKU,
+                                'name'           => $faireProduct['name'].' - '.$variant['name'],
+                                'description'    => $faireProduct['description'],
+                                'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
+                                'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                                'units'          => $faireProduct['unit_multiplier'],
+                                'marketplace_id' => $variant['id'],
+                                'data'           => [
+                                    'faire' => $variant
+                                ]
+                            ], strict: false);
+                    } catch (Exception $e) {
+                        $command?->error("Product update failed: ".$faireProduct['name'].' - '.$variant['name'].' '.$e->getMessage());
+                    }
+
+
+                } else {
+
+                    try {
+                        $product = StoreProduct::make()->action($shop, [
                             'code'           => $faireSKU,
                             'name'           => $faireProduct['name'].' - '.$variant['name'],
                             'description'    => $faireProduct['description'],
-                            'rrp'            => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
-                            'price'          => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
+                            'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
+                            'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                            'unit'           => 'Piece',
                             'units'          => $faireProduct['unit_multiplier'],
+                            'is_main'        => true,
+                            'trade_config'   => ProductTradeConfigEnum::AUTO,
+                            'status'         => ProductStatusEnum::FOR_SALE,
+                            'state'          => ProductStateEnum::IN_PROCESS,
                             'marketplace_id' => $variant['id'],
                             'data'           => [
                                 'faire' => $variant
                             ]
                         ], strict: false);
-                    } catch (Exception $e) {
-                        $command?->error("Product update failed: ".$faireProduct['name'].' - '.$variant['name'].' '.$e->getMessage());
+                        $command?->info("Product added: ".$product->slug);
+                    } catch (Exception|Throwable $e) {
+                        $command?->error("Product creation failed: ".$faireProduct['name'].' - '.$variant['name'].' '.$e->getMessage());
                     }
-
-                    continue;
                 }
 
-                try {
-                    StoreProduct::make()->action($shop, [
-                        'code'           => $faireSKU,
-                        'name'           => $faireProduct['name'].' - '.$variant['name'],
-                        'description'    => $faireProduct['description'],
-                        'rrp'            => Arr::get($variant, 'prices.0.retail_price.amount_minor') / 100,
-                        'price'          => Arr::get($variant, 'prices.0.wholesale_price.amount_minor') / 100,
-                        'unit'           => 'Piece',
-                        'units'          => $faireProduct['unit_multiplier'],
-                        'is_main'        => true,
-                        'trade_config'   => ProductTradeConfigEnum::AUTO,
-                        'status'         => ProductStatusEnum::FOR_SALE,
-                        'state'          => ProductStateEnum::IN_PROCESS,
-                        'marketplace_id' => $variant['id'],
-                        'data'           => [
-                            'faire' => $variant
-                        ]
-                    ], strict: false);
-                    $command?->info("Product added: ".$faireProduct['name'].' - '.$variant['name']);
-                } catch (Exception|Throwable $e) {
-                    $command?->error("Product creation failed: ".$faireProduct['name'].' - '.$variant['name'].' '.$e->getMessage());
-                }
+
             }
         }
+    }
+
+    public function extractFaireRetailPrices(Shop $shop, array $prices): float
+    {
+        $found = false;
+        $rrp = Arr::get($prices, '0.retail_price.amount_minor');
+        $faireCurrency = Arr::get($prices, '0.retail_price.currency');
+
+        foreach ($prices as $price) {
+            if (Arr::get($price, 'retail_price.currency') === $shop->currency->code) {
+                $found = true;
+                $rrp = Arr::get($price, 'retail_price.amount_minor');
+            }
+        }
+
+        if (! $found) {
+            $currency = Currency::where('code', $faireCurrency)->first();
+            $rrp = GetCurrencyExchange::run($currency, $shop->currency);
+        }
+
+        return $rrp / 100;
+    }
+
+    public function extractFaireCostPrices(Shop $shop, array $prices): float
+    {
+        $found = false;
+        $cost = Arr::get($prices, '0.wholesale_price.amount_minor');
+        $faireCurrency = Arr::get($prices, '0.wholesale_price.currency');
+
+        foreach ($prices as $price) {
+            if (Arr::get($price, 'wholesale_price.currency') === $shop->currency->code) {
+                $found = true;
+                $cost = Arr::get($price, 'wholesale_price.amount_minor');
+            }
+        }
+
+        if (! $found) {
+            $currency = Currency::where('code', $faireCurrency)->first();
+            $cost = GetCurrencyExchange::run($currency, $shop->currency);
+        }
+
+        return $cost / 100;
     }
 
     public function asCommand(Command $command): void

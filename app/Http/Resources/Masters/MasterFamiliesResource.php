@@ -29,46 +29,52 @@ use Illuminate\Support\Arr;
  * @property mixed $status
  * @property mixed $current_master_assets
  * @property mixed $web_images
+ * @property mixed $master_sub_department_slug
+ * @property mixed $master_sub_department_code
+ * @property mixed $master_sub_department_name
+ * @property mixed $currency_code
  */
 class MasterFamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'code'                   => $this->code,
-            'name'                   => $this->name,
-            'master_shop_slug'       => $this->master_shop_slug,
-            'master_shop_code'       => $this->master_shop_code,
-            'master_shop_name'       => $this->master_shop_name,
-            'master_department_slug' => $this->master_department_slug,
-            'master_department_code' => $this->master_department_code,
-            'master_department_name' => $this->master_department_name,
+            'id'                         => $this->id,
+            'slug'                       => $this->slug,
+            'code'                       => $this->code,
+            'name'                       => $this->name,
+            'master_shop_slug'           => $this->master_shop_slug,
+            'master_shop_code'           => $this->master_shop_code,
+            'master_shop_name'           => $this->master_shop_name,
+            'master_department_slug'     => $this->master_department_slug,
+            'master_department_code'     => $this->master_department_code,
+            'master_department_name'     => $this->master_department_name,
             'master_sub_department_slug' => $this->master_sub_department_slug,
             'master_sub_department_code' => $this->master_sub_department_code,
             'master_sub_department_name' => $this->master_sub_department_name,
-            'used_in'                => $this->used_in,
-            'products'               => $this->products,
-            'show_in_website'        => $this->show_in_website,
-            'status_icon'            => $this->status ? [
-                'tooltip' => __('Active'),
-                'icon'    => 'fas fa-check-circle',
-                'class'   => 'text-green-400'
-            ] : [
-                'tooltip' => __('Closed'),
-                'icon'    => 'fas fa-times-circle',
-                'class'   => 'text-red-400'
-            ],
-            'number_current_products' => $this->current_master_assets,
-            'image_thumbnail'  => Arr::get($this->web_images, 'main.thumbnail'),
-            'currency_code'    => $this->currency_code,
-            'sales'            => $this->sales ?? 0,
-            'sales_ly'         => $this->sales_ly ?? 0,
-            'sales_delta'      => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
-            'invoices'         => $this->invoices ?? 0,
-            'invoices_ly'      => $this->invoices_ly ?? 0,
-            'invoices_delta'   => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'used_in'                    => $this->used_in,
+            'products'                   => $this->products,
+            'show_in_website'            => $this->show_in_website,
+            'status_icon'                => $this->status
+                ? [
+                    'tooltip' => __('Active'),
+                    'icon'    => 'fas fa-check-circle',
+                    'class'   => 'text-green-400'
+                ]
+                : [
+                    'tooltip' => __('Closed'),
+                    'icon'    => 'fas fa-times-circle',
+                    'class'   => 'text-red-400'
+                ],
+            'number_current_products'    => $this->current_master_assets,
+            'image_thumbnail'            => Arr::get($this->web_images, 'main.thumbnail'),
+            'currency_code'              => $this->currency_code,
+            'sales'                      => $this->sales ?? 0,
+            'sales_ly'                   => $this->sales_ly ?? 0,
+            'sales_delta'                => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'invoices'                   => $this->invoices ?? 0,
+            'invoices_ly'                => $this->invoices_ly ?? 0,
+            'invoices_delta'             => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
         ];
     }
 

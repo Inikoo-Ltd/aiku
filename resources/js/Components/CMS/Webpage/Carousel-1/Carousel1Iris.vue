@@ -131,7 +131,7 @@ const idxSlideLoading = ref<number | null>(null)
 </script>
 
 <template>
-<div id="carousel" class="relative overflow-hidden">
+<div  :id="fieldValue?.id ? fieldValue?.id  : 'carousel'"  component="carousel" class="relative overflow-hidden">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(fieldValue?.container?.properties, props.screenType)

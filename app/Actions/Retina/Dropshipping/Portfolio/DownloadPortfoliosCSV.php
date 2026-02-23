@@ -150,7 +150,7 @@ class DownloadPortfoliosCSV extends RetinaAction
             'product_name' => 'Product name',
             'materials_ingredients' => 'Materials/Ingredients',
             'unit_dimensions' => 'Unit dimensions',
-            'unit_net_weight' => 'Unit net weight',
+            'unit_net_weight' => 'Unit net weight (kg)',
             'package_weight_shipping' => 'Package weight (shipping)',
             'country_of_origin' => 'Country of origin',
             'tariff_code' => 'Tariff code',

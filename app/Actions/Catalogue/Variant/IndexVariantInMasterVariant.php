@@ -66,6 +66,7 @@ class IndexVariantInMasterVariant extends OrgAction
              'code',
              'leader_product_name',
          ])
+         ->with('allProduct:asset_id,slug,code,name,state,is_for_sale,variant_id')
          ->allowedFilters([$globalSearch])
          ->withPaginator($prefix, tableName: request()->route()->getName())
          ->withQueryString();
@@ -99,7 +100,7 @@ class IndexVariantInMasterVariant extends OrgAction
             ->column(key: 'leader_product_name', label: __('Leader Product'), canBeHidden: false, sortable: false, searchable: true)
             ->column(key: 'number_dimensions', label: __('Options'), canBeHidden: false, sortable: false, searchable: false)
             ->column(key: 'number_used_slots', label: __('No. of Slots'), canBeHidden: false, sortable: false, searchable: false)
-            ->column(key: 'number_used_slots_for_sale', label: __('No. of Slots Used (For Sale enabled)'), canBeHidden: false, sortable: false, searchable: false);
+            ->column(key: 'number_used_slots_for_sale', label: __('No. of Products for Sale'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 }

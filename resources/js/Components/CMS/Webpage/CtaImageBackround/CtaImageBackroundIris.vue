@@ -18,7 +18,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-	  <div id="cta-image-background">
+	  <div  :id="fieldValue?.id ? fieldValue?.id  : 'cta-image-background'"  component="cta-image-background" >
 		<div class="relative grid rounded-lg  shadow-lg" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType)

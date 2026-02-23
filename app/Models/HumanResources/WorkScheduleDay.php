@@ -12,8 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $work_schedule_id
  * @property int $day_of_week
  * @property bool $is_working_day
- * @property \Illuminate\Support\Carbon|null $start_time
- * @property \Illuminate\Support\Carbon|null $end_time
+ * @property string|null $start_time
+ * @property string|null $end_time
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\WorkScheduleBreak> $breaks

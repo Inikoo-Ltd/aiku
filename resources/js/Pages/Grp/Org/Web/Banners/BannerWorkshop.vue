@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, usePage } from "@inertiajs/vue3"
+import { Head, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { ref, onBeforeMount, watch, onBeforeUnmount, computed, inject, shallowRef } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"

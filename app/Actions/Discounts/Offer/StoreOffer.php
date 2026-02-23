@@ -82,6 +82,12 @@ class StoreOffer extends OrgAction
         );
     }
 
+    public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        dd($this->validatedData);
+    }
 
     public function rules(): array
     {
@@ -106,6 +112,9 @@ class StoreOffer extends OrgAction
             'start_at'     => ['sometimes', 'date'],
             'end_at'       => ['sometimes', 'nullable', 'date'],
             'type'         => ['required', 'string'],
+            'offer_qty_items'     => ['sometimes', 'integer'],
+            'offer_amount'        => ['sometimes', 'decimal:0,2'],
+            'discount_percentage' => ['sometimes', 'integer', 'between:0,100'],
             'trigger_type' => ['sometimes', Rule::in(['Order'])],
             'allowances'   => ['sometimes', 'nullable', 'array'],
             'duration'     => ['sometimes', Rule::enum(OfferDurationEnum::class)],

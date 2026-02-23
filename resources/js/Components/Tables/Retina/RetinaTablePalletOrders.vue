@@ -86,7 +86,7 @@ function clientRoute(order) {
           <FontAwesomeIcon v-if="item.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="" fixed-width aria-hidden="true" />
         </span>
         <div
-          v-if="!(item.payment_amount >= item.total_amount) && item.state != 'cancelled'"
+          v-if="!(item.payment_amount >= item.total_amount) && (item.state && item.state != 'cancelled')"
           class="cursor-default text-xs text-red-500 italic bg-red-100 px-1.5 py-0.5 w-fit rounded-sm mt-0.5 border border-red-300"
           v-tooltip="trans('If your order is marked as unpaid, please add the required funds to your account balance. Once done, return back to orders and click to complete the payment by balance. Your order will then be automatically sent to the warehouse for fulfilment') + '.'"
         >

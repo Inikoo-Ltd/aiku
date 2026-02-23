@@ -240,6 +240,7 @@ const props = defineProps<{
     },
     payments: {}
     readonly?: boolean
+    is_shop_external?: boolean
     attachments?: {}
     invoices?: {}
     attachmentRoutes?: {}
@@ -1081,7 +1082,7 @@ const recalculateVat = async () => {
     <PageHeading :data="pageHead">
         <template #button-add-product="{ action }">
             <div class="relative">
-                <Button :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
+                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
             </div>
         </template>
@@ -1094,9 +1095,12 @@ const recalculateVat = async () => {
             </div>
         </template>
 
+        <!-- Button: Upload -->
         <template #button-group-upload-add="{ action }">
-            <div class="relative">
-                <Button v-if="upload_excel" :style="action.button[0].style" :label="action.button[0].label"
+            <div class="relative"
+                :class="upload_excel && !is_shop_external ? '' : 'hidden'"
+            >
+                <Button v-if="upload_excel && !is_shop_external" :style="action.button[0].style" :label="action.button[0].label"
                     :icon="action.button[0].icon" @click="() => isModalUploadExcel = true"
                     :key="`ActionButton${action.button[0].label}${action.button[0].style}`"
                     :tooltip="action.button[0].tooltip" />
@@ -1106,7 +1110,7 @@ const recalculateVat = async () => {
 
 
         <template #other>
-            <div v-if="!props.readonly || isShowProforma" class="flex">
+            <div v-if="(!props.readonly || isShowProforma) && !is_shop_external" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
@@ -1124,68 +1128,138 @@ const recalculateVat = async () => {
                 v-tooltip="trans('Create return')" />
         </template>
 
-        <template #wrapped-add-note="{ action }">
-            <!-- Button: Add Notes -->
-            <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
-                <template #button="{ open }">
-                    <Button icon="fal fa-sticky-note" type="tertiary" full :label="trans('Add notes')" />
-                </template>
-                <template #content="{ close: closed }">
-                    <div class="w-[350px]">
-                        <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
-                        <div class="">
-                            <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
-                                required
-                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                valueProp="value" />
+        <!-- Button Wrapped: Edit -->
+        <template #wrapped-0="{ action }">
+            <ButtonWithLink
+                type="tertiary"
+                :tooltip="trans('Edit the order reference')"
+                full
+                :routeTarget="action.route"
+            >
+                <template #button_default="{ isLoadingVisit }">
+                    <div class="flex items-center justify-between w-full gap-x-2">
+                        <div class="w-fit">
+                            <LoadingIcon v-if="isLoadingVisit" />
+                            <FontAwesomeIcon v-else icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
                         </div>
-
-                        <div class="mt-3">
-                            <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
-                            <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                @keydown.enter="() => onSubmitNote(closed)" />
-                        </div>
-
-                        <p v-if="errorNote" class="mt-2 text-sm text-red-600">
-                            *{{ errorNote }}
-                        </p>
-
-                        <div class="flex justify-end mt-3">
-                            <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
-                                full />
-                        </div>
-
-                        <div v-if="isLoadingButton === 'submitNote'"
-                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
-                                aria-hidden="true" />
-                        </div>
+                        <div class="w-full">{{ trans('Edit') }}</div>
                     </div>
                 </template>
-            </Popover>
+            </ButtonWithLink>
+        </template>
 
-            <div class="flex flex-col gap-2">
+        <template #wrapped-add-note="{ action }">
+            <!-- Button: Add Notes -->
+            <div class="w-full">
+                <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
+                    <template #button="{ open }">
+                        <Button icon="fal fa-sticky-note" type="tertiary" full :label="trans('Add notes')" />
+                    </template>
+                    <template #content="{ close: closed }">
+                        <div class="w-[350px]">
+                            <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
+                            <div class="">
+                                <PureMultiselect v-model="noteToSubmit.selectedNote"
+                                    @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
+                                    required
+                                    :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
+                                    valueProp="value" />
+                            </div>
+                            <div class="mt-3">
+                                <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
+                                <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
+                                    @keydown.enter="() => onSubmitNote(closed)" />
+                            </div>
+                            <p v-if="errorNote" class="mt-2 text-sm text-red-600">
+                                *{{ errorNote }}
+                            </p>
+                            <div class="flex justify-end mt-3">
+                                <Button @click="() => onSubmitNote(closed)" :style="'save'"
+                                    :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
+                                    full />
+                            </div>
+                            <div v-if="isLoadingButton === 'submitNote'"
+                                class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                                <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
+                                    aria-hidden="true" />
+                            </div>
+                        </div>
+                    </template>
+                </Popover>
+            </div>
+
+            <div class="w-48 flex flex-col gap-2">
                 <!-- Button: Undispatched -->
                 <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
                     :routeDelete="routes.rollback_dispatch"
                     :title="trans('Are you sure you want to rollback the Order??')"
                     :description="trans('The state of the Order will go back to finalised state.')" isFullLoading
                     :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                    <template #default="{ changeModel }">
-                        <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo"
-                            :tooltip="trans('Rollback the dispatch')" />
+                    <template #default="{ changeModel, isLoadingdelete }">
+                        <Button @click="changeModel"
+                            type="negative"
+                            :tooltip="trans('Rollback the dispatch')"
+                            full
+                        >
+                            <div class="flex items-center justify-between w-full gap-x-2">
+                                <div class="w-fit">
+                                    <LoadingIcon v-if="isLoadingdelete" />
+                                    <FontAwesomeIcon v-else icon="fas fa-undo" class="" fixed-width aria-hidden="true" />
+                                </div>
+                                <div class="w-full">{{ trans('Undispatch') }}</div>
+                            </div>
+                        </Button>
                     </template>
                 </ModalConfirmationDelete>
 
                 <!-- Button: Proforma Invoice -->
                 <Button
                     v-if="proforma_invoice && !props.box_stats?.invoices?.length && !(['dispatched', 'cancelled'].includes(props.data?.data?.state))"
-                    @click="() => isOpenModalProforma = true" type="tertiary" :label="trans('Proforma Invoice')"
-                    icon="fal fa-download" />
+                    @click="() => isOpenModalProforma = true" type="tertiary"
+                    full
+                >
+                    <div class="flex items-center justify-between w-full gap-x-2">
+                        <div class="w-fit">
+                            <FontAwesomeIcon icon="fal fa-download" class="" fixed-width aria-hidden="true" />
+                        </div>
+                        <div class="w-full">{{ trans('Proforma Invoice') }}</div>
+                    </div>
+                </Button>
 
             </div>
+            
+            <!-- Button: Undo to basket -->
+            <ModalConfirmationDelete
+                v-if="data?.data?.state === 'submitted'"
+                :description="trans('This will move the order back to basket, allowing customer to edit the order again. Are you sure?')"
+                :title="trans('Undo Order back to basket?')"
+                :noLabel="trans('Yes, undo to basket')"
+                noIcon="fal fa-undo-alt"
+                class="w-full"
+                :routeDelete="{
+                    name: 'grp.models.order.send_back_to_basket',
+                    parameters: {
+                        order: data?.data.id
+                    },
+                    method: 'patch'
+                }">
+                <template #default="{ changeModel, isLoadingdelete }">
+                    <Button
+                        v-tooltip="trans('Set the Order back to basket')"
+                        @click="changeModel"
+                        type="negative"
+                        full
+                    >
+                        <div class="flex items-center justify-between w-full gap-x-2">
+                            <div class="w-fit">
+                                <LoadingIcon v-if="isLoadingdelete" />
+                                <FontAwesomeIcon v-else icon="fal fa-undo-alt" class="" fixed-width aria-hidden="true" />
+                            </div>
+                            <div class="w-full">{{ trans('Undo to basket') }}</div>
+                        </div>
+                    </Button>
+                </template>
+            </ModalConfirmationDelete>
         </template>
 
         <template #afterTitle2>
@@ -1319,7 +1393,7 @@ const recalculateVat = async () => {
                     </dl>
 
                     <!-- Collection Toggle -->
-                    <div v-if="props.data?.data?.state !== 'dispatched'"
+                    <div v-if="props.data?.data?.state !== 'dispatched' && !is_shop_external"
                         class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
@@ -1664,7 +1738,7 @@ const recalculateVat = async () => {
                                 </dd>
                             </div>
                             <!-- button edit all percentage -->
-                            <template v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx'))">
+                            <template v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx')) && !is_shop_external">
                                 <div class="text-right text-purple-600 w-full mr-1">{{ trans('Global discount') }}</div>
                                 <button
                                     class="ml-auto h-6 mr-2" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
@@ -1721,7 +1795,7 @@ const recalculateVat = async () => {
                                         {{ fieldSummary.label }}
                                     </span>
                                     <span @click="isOpenModalDiscretionaryCharge = true"
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !is_shop_external"
                                         v-tooltip="trans('Edit charges')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
@@ -1755,7 +1829,7 @@ const recalculateVat = async () => {
                                         aria-hidden='true' />
 
                                     <span
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !is_shop_external"
                                         @click="_shipping_price_method?.toggle"
                                         v-tooltip="trans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
@@ -1767,7 +1841,7 @@ const recalculateVat = async () => {
 
 
                                 <!-- Popover: Select shipping price method -->
-                                <PopoverPrimevue ref="_shipping_price_method">
+                                <PopoverPrimevue v-if="!is_shop_external" ref="_shipping_price_method">
                                     <div class="relative flex flex-col gap-2">
                                         <div class="text-sm">
                                             {{ trans("Select to change shipping price method") }}:
@@ -1869,7 +1943,9 @@ const recalculateVat = async () => {
             :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
             :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
             @update:tab="handleTabUpdate" :ref="(e) => _refComponents = e"
-            :routesProductsListModification="routes.products_list_modification" />
+            :routesProductsListModification="routes.products_list_modification"
+            :is_shop_external
+        />
     </div>
 
     <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
@@ -2050,7 +2126,7 @@ const recalculateVat = async () => {
     </Modal>
 
     <!-- Modal: Charges list -->
-    <Modal vxif="" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
+    <Modal v-if="!is_shop_external" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
         width="w-full max-w-4xl " :isClosableInBackground="false" closeButton>
         <div class="isolate bg-white px-6 lg:px-8 relative">
             <div class="mx-auto max-w-2xl text-center mb-4">
@@ -2208,7 +2284,7 @@ const recalculateVat = async () => {
 
     </Modal> -->
 
-    <UploadExcel v-if="props.upload_excel" v-model="isModalUploadExcel" :title="upload_excel.title"
+    <UploadExcel v-if="props.upload_excel && !is_shop_external" v-model="isModalUploadExcel" :title="upload_excel.title"
         :progressDescription="upload_excel.progressDescription" :upload_spreadsheet="upload_excel.upload_spreadsheet"
         :preview_template="upload_excel.preview_template" :propsRefreshAfterFinish="['transactions', 'box_stats']"
         :xadditionalDataToSend="'interest.pallets_storage' ? ['stored_items'] : undefined" />

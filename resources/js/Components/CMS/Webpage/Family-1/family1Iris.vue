@@ -74,7 +74,7 @@ const cleanedDescription = computed(() => {
 </script>
 
 <template>
-  <div id="family-1-iris">
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'family-1-iris'"  component="family-1-iris" >
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="Family Description Section">
       
@@ -89,21 +89,10 @@ const cleanedDescription = computed(() => {
             class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
         >
 
-            <!-- <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
-                <FamilyOfferLabelGR 
-                  v-if="offer.type == 'Category Quantity Ordered Order Interval'" 
-                />
-
-                <FamilyOfferLabelDiscount
-                    :offer="offer"
-                />
-            </template> -->
-
                 <DiscountByType 
                    :offers_data="fieldValue?.family?.offers_data"
                    :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr'  : 'max_discount'"
                 />
-
                 <DiscountByType
                     v-if="!layout?.user?.gr_data?.customer_is_gr && bestOffer.type == 'Category Quantity Ordered Order Interval'"
                    :offers_data="fieldValue?.family?.offers_data"

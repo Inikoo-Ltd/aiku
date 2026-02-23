@@ -139,6 +139,9 @@ const sanitizeVariants = () => {
     <PageHeading :data="props.pageHead" />
     <div class="flex justify-center mt-6">
         <div class="w-full max-w-6xl p-4 bg-white rounded-lg shadow space-y-4">
+            <span class="text-lg text-red-500 italic">
+                * {{ trans('Adding products to a variant would force it to be for sale') }}
+            </span>
             <div>
                 <PureVariantField v-model="form.data_variants" :master_assets_route="master_assets_route" :master_asset="master_asset" />
             </div>

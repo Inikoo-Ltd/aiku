@@ -13,7 +13,7 @@ import {
     faBrowser,
     faUpload,
 } from "@fal"
-import { faExclamationTriangle } from "@fas"
+import { faExclamationTriangle, faCactus } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { computed, inject, ref } from "vue"
@@ -48,7 +48,9 @@ library.add(
     faProjectDiagram,
     faUser,
     faMoneyBillWave,
-    faBrowser, faExclamationTriangle
+    faBrowser,
+    faExclamationTriangle,
+    faCactus
 )
 
 

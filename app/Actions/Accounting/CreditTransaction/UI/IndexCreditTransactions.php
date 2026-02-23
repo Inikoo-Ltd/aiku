@@ -58,7 +58,7 @@ class IndexCreditTransactions extends OrgAction
         return $query->defaultSort('credit_transactions.id')
             ->select([
                 'credit_transactions.id',
-                'credit_transactions.created_at',
+                'credit_transactions.date as created_at',
                 'credit_transactions.type',
                 'credit_transactions.amount',
                 'credit_transactions.running_amount',

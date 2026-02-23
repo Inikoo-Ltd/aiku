@@ -18,7 +18,6 @@ import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 
 import Family1Render from '@/Components/CMS/Webpage/Families1/Families1Render.vue'
-import DepartmentRender from '@/Components/CMS/Webpage/Department1/DepartmentRender.vue'
 
 const props = withDefaults(defineProps<{
   title: string
@@ -53,7 +52,6 @@ const goToNext = () => {
 }
 
 const componentsDepartment: Record<string, Component> = {
-    'departments': DepartmentRender,
     'family-1': Family1Render,
 }
 
@@ -144,7 +142,7 @@ const onUpload = async (files: File[], clear) => {
 
 <template>
     <div>
-        
+
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
             <div class="flex justify-between items-center border-b pb-4 mb-4">
                 <h3 class="text-xl font-semibold">{{ title }}</h3>
@@ -156,10 +154,10 @@ const onUpload = async (files: File[], clear) => {
                     <Button label="Save" :size="'xs'" :type="'primary'" :icon="faSave"  @click="() => confirmSave()" />
                 </div>
                 </div>
-                
+
             </div>
             <div class="flex items-center justify-between mb-6">
-                <button @click="goToPrev" aria-label="Previous">    
+                <button @click="goToPrev" aria-label="Previous">
                     <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl text-gray-600 hover:text-primary" />
                 </button>
                 <div class="flex-1 mx-4">

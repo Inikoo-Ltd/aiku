@@ -401,7 +401,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
 </script>
 
 <template>
-    <div id="products">
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'products-ds'"  component="products-ds" >
         <div class="flex flex-col lg:flex-row" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)

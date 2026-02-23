@@ -43,9 +43,11 @@ use App\Actions\Retina\Dropshipping\Client\UI\EditRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\Client\UI\IndexRetinaCustomerClients;
 use App\Actions\Retina\Dropshipping\Client\UI\ShowRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ExportTemplateRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ReconnectRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\RedirectRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaRecentCustomerSalesChannelPortfolioUploads;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
@@ -64,8 +66,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('select-products-for-empty-basket', IndexRetinaProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
 Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket::class)->name('select_products_for_basket');
 
+Route::get('export-template-portfolios', ExportTemplateRetinaPortfolios::class)->name('portfolio_template.export');
+
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
+    Route::get('{customerSalesChannel}/upload-portfolio-history', IndexRetinaRecentCustomerSalesChannelPortfolioUploads::class)
+        ->name('portfolios.bulk_import_history');
+
     Route::get('/', IndexRetinaDropshippingCustomerSalesChannels::class)->name('index');
     Route::get('/create', CreateRetinaDropshippingCustomerSalesChannel::class)->name('create');
 

@@ -22,6 +22,11 @@ class UpdateMailshotRecipientFilter extends OrgAction
     {
         $this->update($mailshot, $modelData);
 
+        // Note: Update second wave recipient filter if exists
+        if ($mailshot->secondWave()->exists()) {
+            $this->update($mailshot->secondWave, $modelData);
+        }
+
         return $mailshot;
     }
 

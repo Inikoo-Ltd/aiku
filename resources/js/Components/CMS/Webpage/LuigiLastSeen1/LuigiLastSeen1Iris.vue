@@ -197,7 +197,8 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4" :style="{
+    <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'luigi-last-seen-1-iris'"  component="luigi-last-seen-1-iris"
+    :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'

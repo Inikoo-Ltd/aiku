@@ -38,6 +38,7 @@ import invoiceSerialReferences from '@/Components/Forms/Fields/invoiceSerialRefe
 import ListSelectorTradeUnit from "@/Components/Forms/Fields/ListSelectorTradeUnit.vue"
 
 
+const FreeGift = defineAsyncComponent(() => import('@/Components/Forms/Fields/FreeGift.vue'))
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
 const PollTypeSelect = defineAsyncComponent(() => import('@/Components/Forms/Fields/PollTypeSelect.vue'))
 const EmployeeState = defineAsyncComponent(() => import('@/Components/Forms/Fields/Employee/EmployeeState.vue'))
@@ -153,7 +154,9 @@ export const componentsList: { [key: string]: Component } = {
     'offer_fields'  : OfferFields,
     'vol_discount' : InputVolDiscount,
     'map-picker' : MapPickerField,
-    'working-hours' : InputWorkingHours
+    'working-hours' : InputWorkingHours,
+
+    'free_gift': FreeGift,
 }
 
 export const getComponent = (componentName: string) => {

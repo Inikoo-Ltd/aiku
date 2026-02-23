@@ -10,7 +10,6 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Models\Catalogue\Product;
@@ -22,9 +21,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Helpers\LanguageResource;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use App\Enums\Catalogue\Shop\ShopEngineEnum;
 
 class EditProduct extends OrgAction
 {
@@ -98,9 +95,9 @@ class EditProduct extends OrgAction
      */
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
-        $warning = null;
-        $warningText = [];
-        $hasMaster = (bool) $product->masterProduct;
+        $warning        = null;
+        $warningText    = [];
+        $hasMaster      = (bool)$product->masterProduct;
         $isExternalShop = $product->shop->type == ShopTypeEnum::EXTERNAL;
 
         if ($product->is_single_trade_unit) {
@@ -190,7 +187,7 @@ class EditProduct extends OrgAction
         );
     }
 
-    public function getBlueprintExternal(Product $product)
+    public function getBlueprintExternal(Product $product): array
     {
         $packedIn = DB::table('model_has_trade_units')
             ->where('model_type', 'Stock')
@@ -266,8 +263,20 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-        $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
+        $barcodes  = $product->tradeUnits->pluck('barcode')->filter()->unique();
         $languages = [$product->shop->language_id => LanguageResource::make($product->shop->language)->resolve()];
+
+        $canEditNotForSale = true;
+        if ($product->masterProduct && !$product->masterProduct->is_for_sale) {
+            $canEditNotForSale = false;
+        }
+        if ($canEditNotForSale) {
+            foreach ($product->tradeUnits as $tradeUnit) {
+                if (!$tradeUnit->is_for_sale) {
+                    $canEditNotForSale = false;
+                }
+            }
+        }
 
         $nameFields = [
             'name'              => $product->masterProduct
@@ -281,7 +290,7 @@ class EditProduct extends OrgAction
                     'mode'          => 'single',
                     'value'         => $product->name,
                     'reviewed'      => $product->is_name_reviewed,
-                    'information' => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
+                    'information'   => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
                 ]
                 : [
                     'type'        => 'input',
@@ -303,11 +312,28 @@ class EditProduct extends OrgAction
                     'mode'          => 'single',
                     'value'         => $product->description,
                     'reviewed'      => $product->is_description_reviewed,
-                    'information' => __('This show in product webpage'),
-                    'toogle'  => [
-                            'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                            'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                            'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                    'information'   => __('This show in product webpage'),
+                    'toogle'        => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear'
                     ],
                 ]
                 : [
@@ -317,10 +343,27 @@ class EditProduct extends OrgAction
                     'options'     => [
                         'counter' => true,
                     ],
-                    'toogle'  => [
-                            'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                            'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                            'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                    'toogle'      => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear'
                     ],
                     'value'       => $product->description
                 ],
@@ -335,14 +378,32 @@ class EditProduct extends OrgAction
                     'mode'          => 'single',
                     'value'         => $product->description_extra,
                     'reviewed'      => $product->is_description_extra_reviewed,
-                    'information' => __('This above product specification in product webpage'),
-                    'toogle'  => [
-                            'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                            'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                            'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                    'information'   => __('This above product specification in product webpage'),
+                    'toogle'        => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear'
                     ],
 
-                ] : [
+                ]
+                : [
                     'type'        => 'textEditor',
                     'label'       => __('Extra description'),
                     'information' => __('This above product specification in product webpage'),
@@ -350,10 +411,27 @@ class EditProduct extends OrgAction
                         'counter' => true,
                     ],
                     'value'       => $product->description_extra,
-                    'toogle'  => [
-                            'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
-                            'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-                            'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                    'toogle'      => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear'
                     ],
                 ]
         ];
@@ -362,25 +440,25 @@ class EditProduct extends OrgAction
             $webpage           = $product->webpage;
             $webpageNameFields = [
                 // for now, we're forcing the breadcrumbs to show product code so no need for this
-//                'webpage_breadcrumb_label' => [
-//                    'type'        => 'input',
-//                    'label'       => __('Breadcrumb label').' ('.__('Optional').')',
-//                    'information' => __('To be used for the breadcrumbs, will use Meta Title if missing'),
-//                    'options'     => [
-//                        'counter' => true,
-//                    ],
-//                    'value'       => $webpage->breadcrumb_label,
-//                ],
-                'webpage_title'            => [
+                //                'webpage_breadcrumb_label' => [
+                //                    'type'        => 'input',
+                //                    'label'       => __('Breadcrumb label').' ('.__('Optional').')',
+                //                    'information' => __('To be used for the breadcrumbs, will use Meta Title if missing'),
+                //                    'options'     => [
+                //                        'counter' => true,
+                //                    ],
+                //                    'value'       => $webpage->breadcrumb_label,
+                //                ],
+                'webpage_title'       => [
                     'type'        => 'input',
                     'label'       => __('Meta Title').' (& '.__('Browser title').')',
-                    'information' => __('This will be used for the title seen in the browser, and meta title for SEO'),
+                    'information' => __('This will be used as the title displayed in the browser, meta title for SEO, and the search feature'),
                     'options'     => [
                         'counter' => true,
                     ],
                     'value'       => $webpage->title,
                 ],
-                'webpage_description'      => [
+                'webpage_description' => [
                     'type'        => 'textarea',
                     'label'       => __('Meta Description'),
                     'information' => __('This will be used for the meta description'),
@@ -470,62 +548,64 @@ class EditProduct extends OrgAction
                         ],
                     ]
                 ],
-                $product->is_single_trade_unit ? [] :
-                [
-                    'label'  => __('Properties'),
-                    'title'  => __('id'),
-                    'icon'   => 'fa-light fa-fingerprint',
-                    'fields' => [
-                        'unit'                 => [
-                            'type'  => 'input',
-                            'label' => __('Unit'),
-                            'value' => $product->unit,
-                        ],
-                        'units'                => [
-                            'type'  => 'input_number',
-                            'label' => __('Units'),
-                            'value' => $product->units,
-                        ],
-                        'marketing_weight'     => [
-                            'type'        => 'input_number',
-                            'label'       => __('Marketing weight'),
-                            'information' => __('In product page, this will be displayed in specifications as Net Weight'),
-                            'value'       => $product->marketing_weight,
-                            'bind'        => [
-                                'suffix' => 'g'
-                            ]
-                        ],
-                        'gross_weight'         => [
-                            'type'        => 'input_number',
-                            'label'       => __('Gross weight'),
-                            'information' => __('In product page, this will be displayed in specifications as Shipping Weight'),
-                            'value'       => $product->gross_weight,
-                            'bind'        => [
-                                'suffix' => 'g'
-                            ]
-                        ],
-                        'marketing_dimensions' => [
-                            'type'        => 'input-dimension',
-                            'information' => __('In product page, this will be displayed in specifications as Dimensions'),
-                            'label'       => __('Marketing dimension'),
-                            'value'       => $product->marketing_dimensions,
-                        ],
-                        'barcode'              => [
-                            'type'     => 'select',
-                            'label'    => __('Barcode'),
-                            'value'    => $product->barcode,
-                            'readonly' => $product->tradeUnits->count() == 1,
-                            'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                                return [$barcode => $barcode];
-                            })->toArray()
-                        ],
+                $product->is_single_trade_unit
+                    ? []
+                    :
+                    [
+                        'label'  => __('Properties'),
+                        'title'  => __('id'),
+                        'icon'   => 'fa-light fa-fingerprint',
+                        'fields' => [
+                            'unit'                 => [
+                                'type'  => 'input',
+                                'label' => __('Unit'),
+                                'value' => $product->unit,
+                            ],
+                            'units'                => [
+                                'type'  => 'input_number',
+                                'label' => __('Units'),
+                                'value' => $product->units,
+                            ],
+                            'marketing_weight'     => [
+                                'type'        => 'input_number',
+                                'label'       => __('Marketing weight'),
+                                'information' => __('In product page, this will be displayed in specifications as Net Weight'),
+                                'value'       => $product->marketing_weight,
+                                'bind'        => [
+                                    'suffix' => 'g'
+                                ]
+                            ],
+                            'gross_weight'         => [
+                                'type'        => 'input_number',
+                                'label'       => __('Gross weight'),
+                                'information' => __('In product page, this will be displayed in specifications as Shipping Weight'),
+                                'value'       => $product->gross_weight,
+                                'bind'        => [
+                                    'suffix' => 'g'
+                                ]
+                            ],
+                            'marketing_dimensions' => [
+                                'type'        => 'input-dimension',
+                                'information' => __('In product page, this will be displayed in specifications as Dimensions'),
+                                'label'       => __('Marketing dimension'),
+                                'value'       => $product->marketing_dimensions,
+                            ],
+                            'barcode'              => [
+                                'type'     => 'select',
+                                'label'    => __('Barcode'),
+                                'value'    => $product->barcode,
+                                'readonly' => $product->tradeUnits->count() == 1,
+                                'options'  => $barcodes->mapWithKeys(function ($barcode) {
+                                    return [$barcode => $barcode];
+                                })->toArray()
+                            ],
 
 
-                    ]
-                ],
-                // To do display message that prompts user to edit from trade unit / master
-                $product->not_for_sale_from_master || $product->not_for_sale_from_trade_unit ? [
-                ] : [
+                        ]
+                    ],
+
+                $canEditNotForSale
+                    ? [
                     'label'  => __('Sale Status'),
                     'icon'   => 'fal fa-cart-arrow-down',
                     'fields' => [
@@ -535,7 +615,7 @@ class EditProduct extends OrgAction
                             'value' => $product->is_for_sale,
                         ],
                     ],
-                ],
+                ] : [],
 
             ]
         );

@@ -109,7 +109,7 @@ const idxSlideLoading = ref<number | null>(null)
 </script>
 
 <template>
-  <div id="image_iris">
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'image_iris'"  component="image_iris" >
     <section :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType),

@@ -110,7 +110,7 @@ const textVisible = computed(() => {
 
 <template>
 
-  <div v-if="mergedItems.length" class="mx-auto" :class="screenClass"
+  <div v-if="mergedItems.length" class="mx-auto" :class="screenClass" :id="fieldValue?.id ? fieldValue?.id  : 'sub-department-1'"  component="sub-department-1"
     :style="getStyles(fieldValue?.container?.properties, screenType)">
    <!--  <h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">
       {{ trans("Browse By Sub-department") }}

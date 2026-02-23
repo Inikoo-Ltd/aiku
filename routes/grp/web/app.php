@@ -167,6 +167,10 @@ Route::middleware(["auth", "two_fa"])->group(function () {
         ->name("sales_channels.")
         ->group(__DIR__."/sales_channels.php");
 
+    Route::prefix("platforms")
+        ->name("platforms.")
+        ->group(__DIR__."/platforms.php");
+
     Route::fallback(function () {
         $status = 404;
 

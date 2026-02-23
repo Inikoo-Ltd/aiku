@@ -4,6 +4,8 @@ import { faTriangle, faEquals } from "@fas"
 import { Link } from "@inertiajs/vue3"
 import { Intervals } from "@/types/Components/Dashboard"
 import { getDashboardDateRange } from "@/Composables/useDashboard"
+import Icon from "@/Components/Icon.vue"
+import { Icon as IconTS } from "@/types/Utils/Icon"
 
 interface RouteTarget {
     name?: string
@@ -21,6 +23,7 @@ const props = defineProps<{
             state?: string
         },
         icon?: string
+        icon_left?: IconTS
     }
     interval: Intervals
 }>()
@@ -87,6 +90,10 @@ const getIntervalStateColor = (state?: string) => {
             [cell?.route_target?.key_date_filter]: getDashboardDateRange(props.interval.value, props.interval.range_interval)
         } : cell?.route_target.parameters) : '#'"
     >
+        <Icon
+            v-if="cell.icon_left"
+            :data="cell.icon_left"
+        />
         <img
             v-if="cell?.icon"
             :src="`/assets/channel_logo/${cell.icon}.svg`"

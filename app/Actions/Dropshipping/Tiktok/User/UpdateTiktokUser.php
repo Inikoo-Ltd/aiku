@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Tiktok\User;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\TiktokUser;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -22,7 +23,11 @@ class UpdateTiktokUser extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser, array $modelData): TiktokUser
     {
-        return $this->update($tiktokUser, $modelData);
+        $tiktokUser = $this->update($tiktokUser, $modelData);
+
+        CheckTiktokChannel::run($tiktokUser);
+
+        return $tiktokUser;
     }
 
     public function rules(): array
@@ -33,6 +38,8 @@ class UpdateTiktokUser extends RetinaAction
             'access_token_expire_in' => ['sometimes'],
             'refresh_token' => ['sometimes', 'string'],
             'refresh_token_expire_in' => ['sometimes'],
+            'tiktok_shop_id' => ['sometimes', 'string'],
+            'tiktok_shop_chiper' => ['sometimes', 'string'],
             'data' => ['sometimes']
         ];
     }
@@ -40,6 +47,13 @@ class UpdateTiktokUser extends RetinaAction
     public function action(TiktokUser $tiktokUser, array $modelData): TiktokUser
     {
         $this->initialisationActions($tiktokUser->customer, $modelData);
+
+        return $this->handle($tiktokUser, $this->validatedData);
+    }
+
+    public function asController(TiktokUser $tiktokUser, ActionRequest $request): TiktokUser
+    {
+        $this->initialisation($request);
 
         return $this->handle($tiktokUser, $this->validatedData);
     }

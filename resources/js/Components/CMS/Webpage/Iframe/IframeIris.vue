@@ -41,7 +41,7 @@ const iframeStyles = computed(() => {
 </script>
 
 <template>
-	<div id="iframe" :style="iframeStyles">
+	<div id="iframe" :style="iframeStyles" :id="fieldValue?.id ? fieldValue?.id  : 'iframe'"  component="iframe" >
 		<iframe
 		:style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),

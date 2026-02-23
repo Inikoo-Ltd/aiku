@@ -200,7 +200,8 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-item-alternatives-1-iris" class="w-full pb-6 px-4" :style="{
+    <div aria-type="luigi-item-alternatives-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-item-alternatives-1-iris'"  component="luigi-item-alternatives-1-iris"
+    :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'

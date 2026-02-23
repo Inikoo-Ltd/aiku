@@ -69,7 +69,7 @@ class IndexMasterProducts extends GrpAction
                         $activeMasterProducts
                     ],
                     'discontinued' => [
-                        __('Discontinued'),
+                        __('Discontinued/Not for sale'),
                         $discontinuedMasterProducts
                     ],
                 ],
@@ -262,7 +262,7 @@ class IndexMasterProducts extends GrpAction
 
         return $queryBuilder
             ->defaultSort('master_assets.code')
-            ->allowedSorts(['code', 'name', 'used_in', 'sales', 'invoices'])
+            ->allowedSorts(['code', 'name', 'used_in', 'sales', 'invoices', 'variant_slug'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -318,9 +318,11 @@ class IndexMasterProducts extends GrpAction
                     ->column(key: 'status_icon', label: '', type: 'icon')
                     ->column(key: 'code', label: __('Code'), sortable: true);
 
-                if ($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY) {
-                    $table->column(key: 'variant_slug', label: 'Variant');
-                }
+                // if ($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+                //     $table->column(key: 'variant_slug', label: 'Variant');
+                // }
+                $table->column(key: 'variant_slug', label: 'Variant', sortable: true);
+
 
                 $table
                     ->column(key: 'name', label: __('Name'), sortable: true)
@@ -441,16 +443,14 @@ class IndexMasterProducts extends GrpAction
                         ],
                     ] : [],
                 ],
-                'variantSlugs'            => $isFamily ? $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
+                'variantSlugs'            => $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'masterProductCategoryId' => $this->parent->id,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
-
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => MasterProductsTabsEnum::navigation(),
                 ],
-
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)
                     : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))),

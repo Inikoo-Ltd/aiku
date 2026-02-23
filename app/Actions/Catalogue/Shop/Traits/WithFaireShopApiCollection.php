@@ -147,6 +147,17 @@ trait WithFaireShopApiCollection
     }
 
     /**
+     * Update a specific order by ID
+     *
+     * @param string $orderId
+     * @return array
+     */
+    public function cancelFaireOrder(string $orderId, array $attributes = []): array
+    {
+        return $this->buildRequest('PUT', "orders/{$orderId}/cancel", $attributes);
+    }
+
+    /**
      * Update shipping to a specific order by ID
      *
      * @param string $orderId

@@ -382,7 +382,7 @@ const listType = [
                 :object="true"
                 @update:modelValue="(val) => updateProductAt(index, val)"
                 :fetchRoute="{
-                  name: 'grp.json.shop.products',
+                  name: 'grp.json.shop.products_for_website_workshop',
                   parameters: {
                     shop: (route().params as any).shop
                   }

@@ -2,7 +2,7 @@
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft } from "@fal"
-import { faExclamationTriangle } from "@fas"
+import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { computed, ref } from "vue"
@@ -26,6 +26,7 @@ import ProductCategoryContent from "@/Components/Showcases/Grp/ProductCategoryCo
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import TableVariants from "@/Components/Tables/Grp/Org/Catalogue/TableVariants.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
 library.add(
     faFolder,
@@ -39,13 +40,14 @@ library.add(
     faBrowser,
     faExclamationTriangle,
     faFolderDownload,
-    faQuoteLeft
+    faQuoteLeft,
+    faThumbtack
 )
 
 
 const props = defineProps<{
     title: string
-    pageHead: object
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
         navigation: object
@@ -108,13 +110,27 @@ const showDialog = ref(false)
 
         <template #afterTitle>
             <div class="whitespace-nowrap">
+
+                <FontAwesomeIcon
+                    v-if="pageHead.iconRight"
+                    v-tooltip="pageHead.iconRight.tooltip || ''"
+                    :icon="pageHead.iconRight?.icon || pageHead.iconRight"
+                    class="align-top"
+                    :class="pageHead.iconRight.class"
+                    aria-hidden="true"
+                    :color="pageHead.iconRight.color"
+                    :rotation="pageHead?.iconRight?.icon_rotation" />
+
                 <Link v-if="url_master" :href="route(url_master.name,url_master.parameters)" v-tooltip="'Go to Master family'" :class="'opacity-70 hover:opacity-100'">
                     <FontAwesomeIcon
                         :icon="faOctopusDeploy"
                         color="#4B0082"
                         fixed-width
                     />
+
                 </Link>
+
+
             </div>
         </template>
     </PageHeading>
@@ -142,7 +158,7 @@ const showDialog = ref(false)
             </template>
         </Breadcrumb>
     </div>
-    
+
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData" />
 
 

@@ -149,6 +149,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $with_replacement
  * @property array<array-key, mixed> $discretionary_offers_data
  * @property string|null $marketplace_id
+ * @property numeric $commission_amount
+ * @property string $profit_amount
+ * @property string|null $margin
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -224,18 +227,19 @@ class Order extends Model implements HasMedia, Auditable
         'grp_exchange' => 'decimal:4',
         'org_exchange' => 'decimal:4',
 
-        'gross_amount'     => 'decimal:2',
-        'goods_amount'     => 'decimal:2',
-        'services_amount'  => 'decimal:2',
-        'charges_amount'   => 'decimal:2',
-        'shipping_amount'  => 'decimal:2',
-        'insurance_amount' => 'decimal:2',
-        'net_amount'       => 'decimal:2',
-        'grp_net_amount'   => 'decimal:2',
-        'org_net_amount'   => 'decimal:2',
-        'tax_amount'       => 'decimal:2',
-        'total_amount'     => 'decimal:2',
-        'payment_amount'   => 'decimal:2',
+        'gross_amount'      => 'decimal:2',
+        'goods_amount'      => 'decimal:2',
+        'services_amount'   => 'decimal:2',
+        'charges_amount'    => 'decimal:2',
+        'shipping_amount'   => 'decimal:2',
+        'insurance_amount'  => 'decimal:2',
+        'net_amount'        => 'decimal:2',
+        'grp_net_amount'    => 'decimal:2',
+        'org_net_amount'    => 'decimal:2',
+        'tax_amount'        => 'decimal:2',
+        'total_amount'      => 'decimal:2',
+        'payment_amount'    => 'decimal:2',
+        'commission_amount' => 'decimal:2',
 
 
         'state'               => OrderStateEnum::class,
@@ -274,6 +278,7 @@ class Order extends Model implements HasMedia, Auditable
         'goods_amount',
         'shipping_amount',
         'payment_amount',
+        'commission_amount',
         'handing_type',
     ];
 

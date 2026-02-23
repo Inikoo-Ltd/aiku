@@ -16,9 +16,9 @@ trait WithDepartmentSubNavigation
     {
         return [
             [
-                'isAnchor'   => true,
+                'isAnchor' => true,
                 'label'    => __('Department'),
-                'route'     => [
+                'route'    => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show',
                     'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
                 ],
@@ -30,7 +30,7 @@ trait WithDepartmentSubNavigation
             [
                 'label'    => __('Sub-departments'),
                 'number'   => $department->stats->number_sub_departments,
-                'route'     => [
+                'route'    => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
                     'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
                 ],
@@ -41,10 +41,17 @@ trait WithDepartmentSubNavigation
             ],
             [
                 'label'    => __('Families'),
-                'number'   => $department->stats->number_families,
-                'route'     => [
+                'number'   => $department->stats->number_current_families,
+                'route'    => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.families.index',
-                    'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
+                    'parameters' => [
+                        $this->organisation->slug,
+                        $department->shop->slug,
+                        $department->slug,
+                        [
+                            'index_elements[state]' => 'active,discontinuing'
+                        ]
+                    ]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-folder'],
@@ -53,28 +60,35 @@ trait WithDepartmentSubNavigation
             ],
             [
                 'label'    => __('Products'),
-                'number'   => $department->stats->number_products,
-                'route'     => [
+                'number'   => $department->stats->number_current_products,
+                'route'    => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.products.index',
-                    'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
+                    'parameters' => [
+                        $this->organisation->slug,
+                        $department->shop->slug,
+                        $department->slug,
+                        [
+                            'index_elements[state]' => 'active,discontinuing'
+                        ]
+                    ]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-cube'],
                     'tooltip' => __('products')
                 ]
             ],
-             [
-                 'label'    => __('Collections'),
-                 'number'   => $department->stats->number_collections,
-                 'route'     => [
-                     'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
-                     'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
-                 ],
-                 'leftIcon' => [
-                     'icon'    => ['fal', 'fa-album-collection'],
-                     'tooltip' => __('collections')
-                 ]
-             ],
+            [
+                'label'    => __('Collections'),
+                'number'   => $department->stats->number_collections,
+                'route'    => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
+                    'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-album-collection'],
+                    'tooltip' => __('collections')
+                ]
+            ],
         ];
     }
 

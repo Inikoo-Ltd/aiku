@@ -13,6 +13,7 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Traits\WithOrganisationSource;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\Aurora\WithAuroraParsers;
@@ -43,7 +44,8 @@ class UpdateProductIsForSaleFromAurora
         $organisationSource->initialisation($organisation);
 
 
-        $auroraProducts = DB::connection('aurora')->table('Product Dimension')->select(['Product ID', 'Product Code', 'Product Web Configuration'])->get();
+        $auroraProducts = DB::connection('aurora')->table('Product Dimension')->select(['Product ID', 'Product Code', 'Product Web Configuration'])
+            ->get();
 
         $progressBar = $command->getOutput()->createProgressBar(count($auroraProducts));
         $progressBar->setFormat('debug');
@@ -52,25 +54,34 @@ class UpdateProductIsForSaleFromAurora
         foreach ($auroraProducts as $auroraProduct) {
             /** @var Product $product */
             $product = Product::where('source_id', $organisation->id.':'.$auroraProduct->{'Product ID'})->first();
+            if (!$product) {
+                continue;
+            }
 
-            if ($product) {
+            if ($product->shop->state == ShopStateEnum::CLOSED) {
+                continue;
+            }
+
+
+            if (!$product->variant_id) {
                 if ($auroraProduct->{'Product Web Configuration'} == 'Offline') {
-
                     if ($product->is_for_sale) {
                         $command->info($product->slug.' will be set as NOT FOR SALE');
                         UpdateProduct::make()->action($product, [
                             'is_for_sale' => false
                         ]);
                     }
-                } else {
-                    if (!$product->is_for_sale) {
-                        $command->info($product->slug.' will be set as FOR SALE *********');
-                        UpdateProduct::make()->action($product, [
-                            'is_for_sale' => true
-                        ]);
-                    }
+                } elseif (!$product->is_for_sale && $product->is_main) {
+                    $command->info($product->slug.' will be set as FOR SALE *********');
+                    UpdateProduct::make()->action($product, [
+                        'is_for_sale' => true
+                    ]);
                 }
+            } elseif ($auroraProduct->{'Product Web Configuration'} == 'Offline' && !$product->is_for_sale) {
+                $command->info($product->slug.'NEW VARIANT  will be set as NOT FOR SALE *********');
+                $product->update(['is_for_sale' => true]);
             }
+
             $progressBar->advance();
         }
 

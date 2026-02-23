@@ -13,19 +13,26 @@ use Illuminate\Support\Arr;
 
 trait HasGetProductCategoryState
 {
-    public function getProductCategoryState($stats): ProductCategoryStateEnum
+    public function getProductCategoryState($stats, $numberCurrentProductsActiveForSale, $numberCurrentProductsDiscontinuingForSale): ProductCategoryStateEnum
     {
-
         if ($stats['number_products'] == 0) {
             return ProductCategoryStateEnum::IN_PROCESS;
         }
 
         if (Arr::get($stats, 'number_products_state_active', 0) > 0) {
-            return ProductCategoryStateEnum::ACTIVE;
+            if ($numberCurrentProductsActiveForSale == 0) {
+                return ProductCategoryStateEnum::INACTIVE;
+            } else {
+                return ProductCategoryStateEnum::ACTIVE;
+            }
         }
 
         if (Arr::get($stats, 'number_products_state_discontinuing', 0) > 0) {
-            return ProductCategoryStateEnum::DISCONTINUING;
+            if ($numberCurrentProductsDiscontinuingForSale == 0) {
+                return ProductCategoryStateEnum::INACTIVE;
+            } else {
+                return ProductCategoryStateEnum::DISCONTINUING;
+            }
         }
 
         if (Arr::get($stats, 'number_products_state_in_process', 0) > 0) {
@@ -33,6 +40,5 @@ trait HasGetProductCategoryState
         }
 
         return ProductCategoryStateEnum::DISCONTINUED;
-
     }
 }

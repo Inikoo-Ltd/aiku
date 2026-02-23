@@ -161,11 +161,11 @@ class FetchIrisEcomBasket extends IrisAction
         $transactions = [];
         foreach ($productsData as $productData) {
             $imageData         = is_string($productData->web_images) ? json_decode($productData->web_images, true) : $productData->web_images;
-            $webImageThumbnail = Arr::get($imageData, 'main.thumbnail');
+            $webImageThumbnail = Arr::get($imageData, 'main.original');
 
             $transactions[] = [
                 'transaction_id'       => $productData->id,
-                'id'       => $productData->product_id,
+                'id'                   => $productData->product_id,
                 'net_amount'           => $productData->net_amount,
                 'gross_amount'         => $productData->gross_amount,
                 'quantity_ordered'     => $productData->quantity_ordered,

@@ -9,6 +9,7 @@ namespace App\Actions\Discounts\OfferCampaign\UI;
 
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Discounts\OfferCampaignTabsEnum;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\History\HistoryResource;
@@ -32,16 +33,21 @@ trait OfferCampaignProductOffersTrait
                 ],
                 'pageHead'                                           => [
                     'icon'  =>
-                        [
-                            'icon'  => ['fal', 'comment-dollar'],
-                            'title' => __('Offer campaign')
-                        ],
+                    [
+                        'icon'  => ['fal', 'comment-dollar'],
+                        'title' => __('Offer campaign')
+                    ],
                     'title'         => $offerCampaign->name,
                     'model'         => __('Offer Campaign'),
+                    'iconRight'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
                 ],
                 'tabs'                                               => [
                     'current'    => $this->tab,
                     'navigation' => OfferCampaignTabsEnum::navigation()
+                ],
+                'shop_data' => [
+                    'slug'          => $offerCampaign->shop->slug,
+                    'currency_code' => $offerCampaign->shop->currency->code,
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)
@@ -54,6 +60,6 @@ trait OfferCampaignProductOffersTrait
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]
         )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
-        ->table(IndexHistory::make()->tableStructure(prefix:OfferCampaignTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
     }
 }

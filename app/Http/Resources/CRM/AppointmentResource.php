@@ -41,25 +41,25 @@ class AppointmentResource extends JsonResource
             'schedule_at'      => $appointment->schedule_at,
             'state'            => match ($appointment->state) {
                 AppointmentStateEnum::BOOKED => [
-                    'tooltip' => __('live'),
+                    'tooltip' => __('Live'),
                     'icon'    => 'fal fa-broadcast-tower',
                     'class'   => 'text-green-600 animate-pulse'
                 ],
                 AppointmentStateEnum::OVERDUE => [
-                    'tooltip' => __('unpublished'),
+                    'tooltip' => __('Unpublished'),
                     'icon'    => 'fal fa-seedling',
                     'class'   => 'text-indigo-500'
                 ],
                 AppointmentStateEnum::ONGOING => [
-                    'tooltip' => __('ongoing'),
+                    'tooltip' => __('Ongoing'),
                     'icon'    => 'fal fa-ghost'
                 ],
                 AppointmentStateEnum::FINISH => [
-                    'tooltip' => __('finish'),
+                    'tooltip' => __('Finish'),
                     'icon'    => 'fal fa-ghost'
                 ],
                 AppointmentStateEnum::CANCEL => [
-                    'tooltip' => __('canceled'),
+                    'tooltip' => __('Canceled'),
                     'icon'    => 'fal fa-ghost'
                 ],
                 default => []

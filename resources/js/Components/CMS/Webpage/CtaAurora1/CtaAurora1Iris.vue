@@ -33,27 +33,28 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-    <div>
- <div :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(fieldValue.container?.properties, screenType)
-    }">
-        <div class="w-full">
-            <div class="relative  px-6 py-16 md:py-24 text-center sm:px-16">
-                <section v-html="fieldValue.title"></section>
-                <section v-html="fieldValue.text"></section>
-                <div class="flex justify-center">
-                    <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
-                        typeof="button" :type="fieldValue?.button?.link?.type" :canonical_url="fieldValue?.button?.link?.canonical_url">
-                        <template #default>
-                            <Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-                            :label="fieldValue?.button?.text" />
-                        </template>
-                    </LinkIris>
+    <div :id="fieldValue?.id ? fieldValue?.id : 'ctaAurora'" component="ctaAurora">
+        <div :style="{
+            ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+            ...getStyles(fieldValue.container?.properties, screenType)
+        }">
+            <div class="w-full">
+                <div class="relative  px-6 py-16 md:py-24 text-center sm:px-16">
+                    <section v-html="fieldValue.title"></section>
+                    <section v-html="fieldValue.text"></section>
+                    <div class="flex justify-center">
+                        <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
+                            typeof="button" :type="fieldValue?.button?.link?.type"
+                            :canonical_url="fieldValue?.button?.link?.canonical_url">
+                            <template #default>
+                                <Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+                                    :label="fieldValue?.button?.text" />
+                            </template>
+                        </LinkIris>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    </div>
-   
+
 </template>

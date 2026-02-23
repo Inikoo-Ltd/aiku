@@ -32,7 +32,6 @@ import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
 import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Workshop.vue'
-import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iris.vue'
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
 import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Dropshipping/Product1Workshop.vue'
@@ -41,8 +40,6 @@ import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Works
 import Families2Workshop from '@/Components/CMS/Webpage/Families2/Families2Workshop.vue'
 import Families3Workshop from '@/Components/CMS/Webpage/Families3/Families3Workshop.vue'
 
-
-import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
 import CTAVideo1Workshop from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Workshop.vue'
 import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
 import UserSubscribeWorkshop from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'
@@ -67,10 +64,13 @@ import RenderDropshippingProductWorkshop from '@/Components/CMS/Webpage/Product/
 import RenderEcommerceProductWorkshop from '@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductWorkshop.vue'
 import Product1WorkshopEcom from '@/Components/CMS/Webpage/Product1/Ecommerce/Product1WorkshopEcom.vue'
 import Product2WorkshopEcom from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
-import ProductWorkshop2 from '@/Components/CMS/Webpage/Product2/Product2WorkshopEcom.vue'
 import Column3Workshop from '@/Components/CMS/Webpage/Column3/Column3Workshop.vue'
 import Column4Workshop from '@/Components/CMS/Webpage/Column4/Column4Workshop.vue'
 import Slider1Workshop from '@/Components/CMS/Webpage/Slider-1/Slider1Workshop.vue'
+import CollectionDescriptionWorkshop from '@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionWorkshop.vue'
+import DepartmentDescriptionWorkshop from '@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionWorkshop.vue'
+import SubDepartmentDesciptionWorkshop from '@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionWorkshop.vue'
+
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -92,8 +92,11 @@ const components = (shop_type?: string): Record<string, Component> => {
         //footer
         'footer-1': Footer1,
 
-        //department
-        'department' : Department1Iris,
+        //description catalouge
+        'collection-description-1' : CollectionDescriptionWorkshop,
+        'department-description-1' : DepartmentDescriptionWorkshop,
+        'sub-department-description-1' : SubDepartmentDesciptionWorkshop,
+        'family-1': FamilyIris1,
 
         //sub-department
         'sub-departments-1' : SubDepartmentWorkshop1,
@@ -103,7 +106,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'families-1' : Families1Workshop,
         'families-2' : Families2Workshop,
         'families-3' : Families3Workshop,
-        'family-1': FamilyIris1,
+
 
         //product
         'product-1': shop_type == 'b2b' ? RenderEcommerceProductWorkshop : RenderDropshippingProductWorkshop,
@@ -146,7 +149,6 @@ const components = (shop_type?: string): Record<string, Component> => {
         'timeline' : Timeline,
         'step-1' : Step2Workshop,
         'carousel-1' : Carousel1Workshop,
-        'collections-1': Collections1Workshop,
         'cta-video-1' : CTAVideo1Workshop,
         'video-1': Video1Workshop,
         "user-subscribe": UserSubscribeWorkshop,
@@ -155,7 +157,8 @@ const components = (shop_type?: string): Record<string, Component> => {
         'carousel-cta' : CarouselCtaWorkshop,
         'carousel-image-background' : CarouselImageBackground,
         'step-2' : TimelineWorkshop2,
-        'slider-1' : Slider1Workshop
+        'slider-1' : Slider1Workshop,
+
     }
 }
 

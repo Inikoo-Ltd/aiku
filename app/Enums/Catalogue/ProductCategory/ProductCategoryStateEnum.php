@@ -21,9 +21,10 @@ enum ProductCategoryStateEnum: string
 
     case IN_PROCESS = 'in_process';
     case ACTIVE = 'active';
-    case INACTIVE = 'inactive';
     case DISCONTINUING = 'discontinuing';
     case DISCONTINUED = 'discontinued';
+    case INACTIVE = 'inactive';
+
 
     public static function labels(): array
     {
@@ -60,28 +61,28 @@ enum ProductCategoryStateEnum: string
                 ]
             ],
             'inactive'      => [
-                'tooltip' => __('Inactive'),
-                'icon'    => 'fal fa-ban',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
+                'tooltip' => __('Not For Sale'),
+                'icon'    => 'fas fa-thumbtack',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
                 'app'     => [
-                    'name' => 'ban',
+                    'name' => 'thumbtack',
                     'type' => 'font-awesome-5'
                 ]
             ],
             'discontinuing' => [
                 'tooltip' => __('Discontinuing'),
-                'icon'    => 'fal fa-exclamation-triangle',
-                'class'   => 'text-orange-500',
+                'icon'    => 'fal fa-skull',
+                'class'   => 'text-yellow-400',
                 'color'   => 'orange',
                 'app'     => [
-                    'name' => 'exclamation-triangle',
+                    'name' => 'skull',
                     'type' => 'font-awesome-5'
                 ]
             ],
             'discontinued'  => [
                 'tooltip' => __('Discontinued'),
-                'icon'    => 'fal fa-times',
+                'icon'    => 'fas fa-skull',
                 'class'   => 'text-red-500',
                 'color'   => 'red',
                 'app'     => [

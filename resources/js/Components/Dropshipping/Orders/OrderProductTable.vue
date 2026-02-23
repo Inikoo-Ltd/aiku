@@ -44,6 +44,7 @@ const props = defineProps<{
     modifyRoute?: routeType
     fetchRoute?: routeType
     routesProductsListModification?: routeType
+    is_shop_external: boolean
 }>()
 
 const layout = inject("layout", {})
@@ -358,7 +359,7 @@ const onSubmitEditNetAmount = () => {
 
                 <div class="flex items-center justify-end gap-2">
                     <!-- Editable when creating and not in edit mode -->
-                    <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)"
+                    <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id) && !is_shop_external"
                          class="w-fit">
                         <NumberWithButtonSave :modelValue="Number(item.quantity_ordered)" :routeSubmit="item.updateRoute"
                                               :bindToTarget="{ min: 0, max: item.available_quantity }" isWithRefreshModel
@@ -409,7 +410,7 @@ const onSubmitEditNetAmount = () => {
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
                             <Button
-                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))"
+                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external"
                                 @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
                                 v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
                                 :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400" />
@@ -452,7 +453,7 @@ const onSubmitEditNetAmount = () => {
         </Table>
 
         <!-- Section: Modal edit discretionary discount -->
-        <Modal v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))" :isOpen="isOpenModalEditNetAmount" @onClose="() => onCloseModalNetAmount()" width="w-full max-w-lg">
+        <Modal v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external" :isOpen="isOpenModalEditNetAmount" @onClose="() => onCloseModalNetAmount()" width="w-full max-w-lg">
             <div class="text-center mb-4">
                 <div class="font-semibold text-2xl">Update for {{ selectedItemToEditNetAmount?.asset_code }}:</div>
                 <div class="opacity-80 italic text-sm">

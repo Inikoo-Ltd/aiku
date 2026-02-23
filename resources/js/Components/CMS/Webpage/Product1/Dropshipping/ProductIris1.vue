@@ -80,7 +80,7 @@ const toggleExpanded = () => {
 </script>
 
 <template>
-    <div v-if="screenType != 'mobile'" id="product-1" :style="{
+    <div v-if="screenType != 'mobile'" :id="fieldValue?.id ? fieldValue?.id  : 'product-ds-1'"  component="product-ds-1" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         marginLeft: 'auto',
         marginRight: 'auto'

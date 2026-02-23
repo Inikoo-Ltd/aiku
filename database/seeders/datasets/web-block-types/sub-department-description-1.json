@@ -1,0 +1,14 @@
+{
+	"slug": "sub-department-description-1",
+	"scope": "webpage",
+	"code": "sub-department-description-1",
+	"name": "sub-department-description",
+	"category": "",
+	"fixed": true,
+	"icon": ["fal", "folder"],
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
+	"data": {
+		"fieldValue": {}
+	}
+}

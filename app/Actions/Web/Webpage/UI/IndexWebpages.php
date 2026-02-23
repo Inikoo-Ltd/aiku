@@ -283,6 +283,7 @@ class IndexWebpages extends OrgAction
                 'webpages.slug',
                 'webpages.level',
                 'webpages.state',
+                'webpages.title',
                 'webpages.sub_type',
                 'webpages.url',
                 'webpages.canonical_url',
@@ -293,7 +294,7 @@ class IndexWebpages extends OrgAction
                 'websites.domain as website_url',
                 'websites.slug as website_slug'
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url', 'state'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'state', 'title'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -344,6 +345,7 @@ class IndexWebpages extends OrgAction
                 $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
             }
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'title', label: __('Title'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'url', label: __('Url'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)

@@ -14,7 +14,6 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class FamilyHydrateProducts implements ShouldBeUnique
@@ -30,7 +29,7 @@ class FamilyHydrateProducts implements ShouldBeUnique
 
     public function handle(ProductCategory $family): void
     {
-        $stats         = [
+        $stats = [
             'number_products' => $family->getproducts()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count()
         ];
 
@@ -47,20 +46,26 @@ class FamilyHydrateProducts implements ShouldBeUnique
             )
         );
 
-        $stats['number_current_products'] = Arr::get($stats, 'number_products_state_active', 0) +
-            Arr::get($stats, 'number_products_state_discontinuing', 0);
+
+        $numberCurrentProductsActiveForSale = Product::where('family_id', $family->id)->where('is_for_sale', true)
+            ->where('state', ProductStateEnum::ACTIVE)
+            ->count();
+        $numberCurrentProductsDiscontinuingForSale = Product::where('family_id', $family->id)->where('is_for_sale', true)
+            ->where('state', ProductStateEnum::DISCONTINUING)
+            ->count();
+
+        $stats['number_current_products'] = $numberCurrentProductsActiveForSale + $numberCurrentProductsDiscontinuingForSale;
+
 
         UpdateProductCategory::make()->action(
             $family,
             [
-                'state' => $this->getProductCategoryState($stats)
+                'state' => $this->getProductCategoryState($stats, $numberCurrentProductsActiveForSale, $numberCurrentProductsDiscontinuingForSale)
             ]
         );
 
         $family->stats()->update($stats);
     }
-
-
 
 
 }

@@ -64,6 +64,7 @@ class ShowWebpageWorkshopPreview extends OrgAction
                 "retina"   => [
                     "type"     => $website->shop->type->value,
                 ],
+                'editable'      => true // INI-927 need passing permission
             ]
         );
     }

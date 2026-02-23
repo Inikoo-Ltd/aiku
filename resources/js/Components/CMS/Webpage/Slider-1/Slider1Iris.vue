@@ -127,7 +127,7 @@ onMounted(startAutoMove)
 onBeforeUnmount(stopAutoMove)
 </script>
 <template>
-  <div id="slider" class="relative overflow-hidden">
+  <div :id="fieldValue?.id ? fieldValue?.id  : 'slider'"  component="slider" class="relative overflow-hidden">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="containerStyles">
 
       <div

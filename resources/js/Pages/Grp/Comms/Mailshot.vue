@@ -12,7 +12,7 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import MailshotShowcase from "@/Components/Showcases/Org/Mailshot/MailshotShowcase.vue";
 import { faEnvelope, faStop } from "@fas";
-import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock } from "@fal";
+import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock, faSpinner, faSave } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue";
 import TableMailshotRecipients from "@/Components/Tables/TableMailshotRecipients.vue";
@@ -20,11 +20,12 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import axios from "axios"
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from "@/types/route";
-import { Popover } from 'primevue';
+import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
 
@@ -42,9 +43,19 @@ const props = defineProps<{
     deleteMailshotRoute?: routeType
     indexRoute?: routeType
     cancelScheduleMailshotRoute?: routeType
+    showLinkedMailShotRoute?: routeType
     status?: string
+    secondWaveStatus?: string
     estimatedRecipients?: number
     mailshotType?: string
+    setSecondWaveRoute?: routeType
+    updateSecondWaveRoute?: routeType
+    isSecondWaveActive: boolean
+    secondwaveSubject?: string
+    secondwaveDelayHours?: number
+    isHasParentMailshot: boolean
+    numberSecondWaveRecipients?: number
+    isSecondWave: boolean
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -63,18 +74,24 @@ const filteredTabs = computed(() => {
     )
 })
 
+// Toggle switch state (second wave)
+const checked = ref(props.isSecondWaveActive ?? false)
+const isEditingSecond = ref(false)
+
+const subject = ref(props.secondwaveSubject ?? "")
+const hour = ref(props.secondwaveDelayHours ?? 48)
 
 // Computed property to check if buttons should be shown
 const shouldShowButtons = computed(() => {
-    return props.status && props.status.toLowerCase() === 'ready';
+    return props.status && props.status.toLowerCase() === 'ready' && !props.isSecondWave;
 });
 
 const shouldShowDeleteButton = computed(() => {
-    return props.status && ['ready', 'in_process'].includes(props.status.toLowerCase());
+    return props.status && ['ready', 'in_process'].includes(props.status.toLowerCase()) && !props.isSecondWave;
 });
 
 const shouldShowCancelScheduleButton = computed(() => {
-    return props.status && props.status.toLowerCase() === 'scheduled';
+    return props.status && props.status.toLowerCase() === 'scheduled' && !props.isSecondWave;
 });
 
 // Schedule datetime picker state
@@ -134,7 +151,6 @@ const handleSendNow = async () => {
             router.reload();
         })
 };
-
 
 // Function to handle schedule with datetime picker
 const handleSchedule = async (event: Event) => {
@@ -350,6 +366,174 @@ const handleCancelSchedule = async () => {
         })
 }
 
+const isSavingToggle = ref(false)
+const handleToggleSecondWave = async (value: boolean) => {
+    if (!props.setSecondWaveRoute) {
+        return
+    }
+    const previous = false
+    isSavingToggle.value = true
+
+    await axios.post(route(props.setSecondWaveRoute?.name, props.setSecondWaveRoute?.parameters), {
+        status: value
+    })
+        .then((response) => {
+            if (response.data) {
+                isSavingToggle.value = false
+            } else {
+                checked.value = previous
+                isSavingToggle.value = false
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Failed to update second wave status',
+                })
+            }
+        })
+        .catch((exception) => {
+            console.log(exception);
+            checked.value = previous
+            isSavingToggle.value = false
+            notify({
+                type: 'error',
+                title: 'Error',
+                text: 'Failed to update second wave status',
+            })
+        })
+        .finally(() => {
+            isSavingToggle.value = false
+            router.reload()
+            if (!props.indexRoute) {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Mailshot index route not configured',
+                })
+                return;
+            }
+        })
+}
+
+const loading = ref(false)
+const handleSaveSecond = async () => {
+    if (!checked.value) return
+
+    if (!subject.value.trim() || hour.value === null) {
+        notify({
+            type: 'error',
+            title: 'Validation',
+            text: 'Subject or delay hours are required',
+        })
+        return
+    }
+
+    if (!props.updateSecondWaveRoute) {
+        return
+    }
+
+    await axios.patch(route(props.updateSecondWaveRoute?.name, props.updateSecondWaveRoute?.parameters), {
+        subject: subject.value,
+        send_delay_hours: hour.value
+    })
+        .then((response) => {
+            if (response.data) {
+                isEditingSecond.value = false
+                notify({
+                    type: 'success',
+                    title: 'Success',
+                    text: 'Second wave data updated successfully',
+                })
+
+            } else {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Failed to delete mailshot',
+                })
+            }
+        })
+        .catch((exception) => {
+            console.log(exception);
+            notify({
+                type: 'error',
+                title: 'Error',
+                text: 'Failed to delete mailshot',
+            })
+        })
+        .finally(() => {
+            if (!props.indexRoute) {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Mailshot index route not configured',
+                })
+                return;
+            }
+            router.reload()
+        })
+}
+
+const loadingFetch = ref(false)
+
+const handleFetchActionWave = () => {
+    if (!props.showLinkedMailShotRoute) return
+
+    loadingFetch.value = true
+
+    router.get(
+        route(props.showLinkedMailShotRoute.name, props.showLinkedMailShotRoute.parameters),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                loadingFetch.value = true
+            },
+            onFinish: () => {
+                loadingFetch.value = false
+            },
+            onSuccess: () => {
+                notify({
+                    type: 'success',
+                    title: 'Success',
+                    text: 'Wave data refreshed',
+                })
+            },
+            onError: () => {
+                notify({
+                    type: 'error',
+                    title: 'Error',
+                    text: 'Failed to fetch wave data',
+                })
+            }
+        }
+    )
+}
+
+const waveLabel = computed(() =>
+    props.isHasParentMailshot ? 'First Wave' : '2nd Wave'
+)
+const isWaveContext = computed(() =>
+    props.isHasParentMailshot || props.isSecondWaveActive
+)
+
+const showWaveSettings = computed(() =>
+    ['in_process', 'ready'].includes(props.status ?? '') && !props.isSecondWave
+)
+
+// for the input subject secondwave validation
+const shouldShowWaveInfo = computed(() =>
+    showWaveSettings.value || isWaveContext.value
+)
+
+// for the links
+const canFetchWaveAction = computed(() =>
+    !showWaveSettings.value && isWaveContext.value
+)
+
+watch(() => props.isSecondWaveActive, v => checked.value = v)
+watch(() => props.secondwaveSubject, v => subject.value = v ?? "")
+watch(() => props.secondwaveDelayHours, v => hour.value = v ?? 48)
 watch(
     filteredTabs,
     (tabs) => {
@@ -364,10 +548,11 @@ watch(
 <template>
 
     <Head :title="capitalize(pageHead.title)" />
+
     <PageHeading :data="pageHead">
         <template #afterTitle v-if="
             props.mailshotType === 'marketing' &&
-            ['in_process', 'ready', 'scheduled'].includes(props.status ?? '')
+            ['in_process', 'ready', 'scheduled'].includes(props.status ?? '') && !props.isSecondWave
         ">
             <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>
         </template>
@@ -441,5 +626,44 @@ watch(
         </div>
     </Popover>
     <Tabs :current="currentTab" :navigation="filteredTabs" @update:tab="handleTabUpdate" />
+    <div class="mx-4 my-4 space-y-3" v-if="shouldShowWaveInfo && props.status">
+        <div class="inline-flex items-center gap-3 px-3 py-1.5 rounded-md
+         bg-gray-50 border border-gray-200">
+            <template v-if="shouldShowWaveInfo">
+                <span class="text-sm font-medium whitespace-nowrap transition" :class="canFetchWaveAction
+                    ? 'text-indigo-600 cursor-pointer hover:underline'
+                    : 'text-gray-700'" @click="canFetchWaveAction && handleFetchActionWave()">
+                    {{ waveLabel }}
+                </span>
+                <span class="text-sm font-medium text-gray-700 whitespace-nowrap"
+                    v-if="!props.isHasParentMailshot && !showWaveSettings && props.status === 'sent' && props.secondWaveStatus === 'sent'">
+                    Recipients: {{ numberSecondWaveRecipients }}
+                </span>
+            </template>
+            <template v-if="showWaveSettings">
+                <ToggleSwitch v-model="checked" @update:modelValue="handleToggleSecondWave"
+                    :disabled="isSavingToggle" />
+
+                <Button v-if="checked" type="edit" label="Edit" class="!px-2 !py-1 text-xs h-8"
+                    @click="isEditingSecond = !isEditingSecond" />
+
+                <span class="h-4 w-px bg-gray-300"></span>
+                <template v-if="checked">
+                    <label class="block text-sm text-gray-600 mb-1 font-medium">Subject</label>
+                    <InputText v-model="subject" placeholder="Subject" :disabled="!checked || !isEditingSecond"
+                        class="!h-8 !py-1 !text-sm w-44" />
+
+                    <div class="flex items-center gap-1 shrink-0">
+                        <InputNumber v-model="hour" :min="1" :disabled="!checked || !isEditingSecond"
+                            inputClass="!h-8 !py-1 !text-sm text-center w-20" />
+                        <span class="text-sm font-medium text-gray-700 whitespace-nowrap">hours</span>
+                    </div>
+
+                    <Button v-if="isEditingSecond" type="save" @click="handleSaveSecond" :loading="loading" />
+                </template>
+            </template>
+        </div>
+
+    </div>
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>

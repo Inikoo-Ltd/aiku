@@ -76,6 +76,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $tax_amount
  * @property bool $is_tax_only
  * @property string $amount_total
+ * @property numeric $commission_amount
+ * @property string|null $margin
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
  * @property-read \App\Models\CRM\Customer $customer
@@ -111,21 +113,22 @@ class InvoiceTransaction extends Model
     protected $table = 'invoice_transactions';
 
     protected $casts = [
-        'data'           => 'array',
-        'date'           => 'datetime',
-        'quantity'       => 'decimal:3',
-        'gross_amount'   => 'decimal:2',
-        'net_amount'     => 'decimal:2',
-        'grp_exchange'   => 'decimal:4',
-        'org_exchange'   => 'decimal:4',
-        'grp_net_amount' => 'decimal:2',
-        'org_net_amount' => 'decimal:2',
-        'offers_data'    => 'array',
-        'is_refund'      => 'boolean',
+        'data'              => 'array',
+        'date'              => 'datetime',
+        'quantity'          => 'decimal:3',
+        'gross_amount'      => 'decimal:2',
+        'net_amount'        => 'decimal:2',
+        'commission_amount' => 'decimal:2',
+        'grp_exchange'      => 'decimal:4',
+        'org_exchange'      => 'decimal:4',
+        'grp_net_amount'    => 'decimal:2',
+        'org_net_amount'    => 'decimal:2',
+        'offers_data'       => 'array',
+        'is_refund'         => 'boolean',
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'        => '{}',
         'offers_data' => '{}',
     ];
 

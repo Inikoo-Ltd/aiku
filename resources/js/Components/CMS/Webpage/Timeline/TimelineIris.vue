@@ -21,7 +21,7 @@ const emits = defineEmits<{
 
 <template>
 	<div
-		class="container mx-auto max-w-7xl px-6 lg:px-8"
+		class="container mx-auto max-w-7xl px-6 lg:px-8" :id="fieldValue?.id ? fieldValue?.id  : 'timeline'"  component="timeline"
 		:style="getStyles(fieldValue?.container?.properties,screenType)">
 		<div class="relative py-8">
 			<!-- ➊ thicker, rounded, full‑height line, behind everything -->

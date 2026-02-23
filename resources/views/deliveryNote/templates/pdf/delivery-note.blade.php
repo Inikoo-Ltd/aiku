@@ -68,7 +68,7 @@
         @foreach ($items as $item)
         <tr>
             <td>{{ $item->orgStock->code }}</td>
-            <td>{{ $item->orgStock->name }}</td>
+            <td>{{ $item->orgStock->name }} [Pack of {{$item->orgStock->packed_in}}]</td>
             <td>{{ number_format($item->quantity_required,0) }}</td>
             <td></td>
             <td></td>

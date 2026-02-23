@@ -244,8 +244,10 @@ class ShowMasterProduct extends GrpAction
                 'trade_unit_slug'      => $masterAsset->tradeUnits?->first->slug,
                 'tabs'                 => [
                     'current'    => $this->tab,
-                    'navigation' => MasterAssetTabsEnum::navigation()
+                    'navigation' => MasterAssetTabsEnum::navigation($masterAsset)
                 ],
+                'masterVariant'        => $masterAsset->masterVariant,
+                'is_variant_leader'    => $masterAsset->is_variant_leader,
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductShowcase::run($masterAsset)

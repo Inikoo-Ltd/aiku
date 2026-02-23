@@ -44,6 +44,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $master_variant_id
  * @property string $slug
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProduct
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProductForSale
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
  * @property-read \App\Models\Catalogue\ProductCategory|null $family

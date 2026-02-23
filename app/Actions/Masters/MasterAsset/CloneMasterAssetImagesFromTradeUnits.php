@@ -25,7 +25,7 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
 
     public function handle(MasterAsset $masterAsset): void
     {
-        if (!$masterAsset->is_single_trade_unit) {
+        if (!$masterAsset->is_single_trade_unit || !$masterAsset->follow_trade_unit_media) {
             return;
         }
 

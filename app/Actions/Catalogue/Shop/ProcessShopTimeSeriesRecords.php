@@ -10,8 +10,10 @@ namespace App\Actions\Catalogue\Shop;
 use App\Actions\Catalogue\Shop\Hydrators\ShopTimeSeriesHydrateNumberRecords;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopTimeSeries;
+use App\Traits\BuildsInvoiceTimeSeriesQuery;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +22,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessShopTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
+    use BuildsInvoiceTimeSeriesQuery;
 
     public function getJobUniqueId(int $shopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -50,161 +53,27 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(ShopTimeSeries $timeSeries, string $from, string $to): void
     {
-        $results = DB::table('invoices')
+        $processedPeriods = [];
+
+        $query = DB::table('invoices')
             ->where('invoices.shop_id', $timeSeries->shop_id)
             ->where('invoices.in_process', false)
             ->where('invoices.date', '>=', $from)
             ->where('invoices.date', '<=', $to)
             ->whereNull('invoices.deleted_at');
 
-        if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                DB::raw('EXTRACT(QUARTER FROM invoices.date) as quarter'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(QUARTER FROM invoices.date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                DB::raw('EXTRACT(MONTH FROM invoices.date) as month'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(MONTH FROM invoices.date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                DB::raw('EXTRACT(WEEK FROM invoices.date) as week'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(WEEK FROM invoices.date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
-            $results->select(
-                DB::raw('CAST(invoices.date AS DATE) as date'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
-                DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('CAST(invoices.date AS DATE)'));
-        }
-
-        $results = $results->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, includeOrders: true)->get();
 
         foreach ($results as $result) {
-            if ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-                $periodFrom = Carbon::create((int)$result->year, ((int)$result->quarter - 1) * 3 + 1)->startOfQuarter();
-                $periodTo   = Carbon::create((int)$result->year, ((int)$result->quarter - 1) * 3 + 1)->endOfQuarter();
-                $period     = $result->year.' Q'.$result->quarter;
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-                $periodFrom = Carbon::create((int)$result->year, (int)$result->month)->startOfMonth();
-                $periodTo   = Carbon::create((int)$result->year, (int)$result->month)->endOfMonth();
-                $period     = $result->year.'-'.str_pad($result->month, 2, '0', STR_PAD_LEFT);
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-                $periodFrom = Carbon::create((int)$result->year)->week((int)$result->week)->startOfWeek();
-                $periodTo   = Carbon::create((int)$result->year)->week((int)$result->week)->endOfWeek();
-                $period     = $result->year.' W'.str_pad($result->week, 2, '0', STR_PAD_LEFT);
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
-                $periodFrom = Carbon::parse($result->date)->startOfDay();
-                $periodTo   = Carbon::parse($result->date)->endOfDay();
-                $period     = Carbon::parse($result->date)->format('Y-m-d');
-            } else {
-                $periodFrom = Carbon::parse((int)$result->year.'-01-01');
-                $periodTo   = Carbon::parse((int)$result->year.'-12-31');
-                $period     = $result->year;
-            }
+            ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $basketsCreated = DB::table('orders')
-                ->where('shop_id', $timeSeries->shop_id)
-                ->where('state', OrderStateEnum::CREATING)
-                ->where('created_at', '>=', $periodFrom)
-                ->where('created_at', '<=', $periodTo)
-                ->whereNull('deleted_at')
-                ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
-                ->first();
-
-            $basketsUpdated = DB::table('orders')
-                ->where('shop_id', $timeSeries->shop_id)
-                ->where('state', OrderStateEnum::CREATING)
-                ->where('updated_at', '>=', $periodFrom)
-                ->where('updated_at', '<=', $periodTo)
-                ->whereNull('deleted_at')
-                ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
-                ->first();
-
-            $deliveryNotes = DB::table('delivery_notes')
-                ->where('shop_id', $timeSeries->shop_id)
-                ->where('date', '>=', $periodFrom)
-                ->where('date', '<=', $periodTo)
-                ->count();
-
-            $registrationsWithOrders = DB::table('customers')
-                ->leftjoin('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
-                ->where('customers.shop_id', $timeSeries->shop_id)
-                ->where('customers.registered_at', '>=', $periodFrom)
-                ->where('customers.registered_at', '<=', $periodTo)
-                ->where('customer_stats.number_orders', '>', 0)
-                ->count();
-
-            $registrationsWithoutOrders = DB::table('customers')
-                ->leftJoin('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
-                ->where('customers.shop_id', $timeSeries->shop_id)
-                ->where('customers.registered_at', '>=', $periodFrom)
-                ->where('customers.registered_at', '<=', $periodTo)
-                ->where(function ($query) {
-                    $query->where('customer_stats.number_orders', '=', 0)
-                          ->orWhereNull('customer_stats.number_orders');
-                })
-                ->count();
+            $metrics = $this->getShopPeriodMetrics($timeSeries->shop_id, $periodFrom, $periodTo);
 
             $timeSeries->records()->updateOrCreate(
                 [
-                    'shop_time_series_id'  => $timeSeries->id,
-                    'period'               => $period,
-                    'frequency'            => $timeSeries->frequency->singleLetter()
+                    'shop_time_series_id' => $timeSeries->id,
+                    'period'              => $period,
+                    'frequency'           => $timeSeries->frequency->singleLetter(),
                 ],
                 [
                     'from'                         => $periodFrom,
@@ -215,21 +84,105 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                     'lost_revenue'                 => $result->lost_revenue,
                     'lost_revenue_org_currency'    => $result->lost_revenue_org_currency,
                     'lost_revenue_grp_currency'    => $result->lost_revenue_grp_currency,
-                    'baskets_created'              => $basketsCreated->net_amount,
-                    'baskets_created_org_currency' => $basketsCreated->org_net_amount,
-                    'baskets_created_grp_currency' => $basketsCreated->grp_net_amount,
-                    'baskets_updated'              => $basketsUpdated->net_amount,
-                    'baskets_updated_org_currency' => $basketsUpdated->org_net_amount,
-                    'baskets_updated_grp_currency' => $basketsUpdated->grp_net_amount,
-                    'delivery_notes'               => $deliveryNotes,
-                    'registrations_with_orders'    => $registrationsWithOrders,
-                    'registrations_without_orders' => $registrationsWithoutOrders,
                     'customers_invoiced'           => $result->customers_invoiced,
                     'invoices'                     => $result->invoices,
                     'refunds'                      => $result->refunds,
                     'orders'                       => $result->orders,
+                    ...$metrics,
+                ]
+            );
+
+            $processedPeriods[] = $period;
+        }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+    }
+
+    protected function processPeriodsWithoutInvoices(ShopTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $metrics = $this->getShopPeriodMetrics($timeSeries->shop_id, $periodData['from'], $periodData['to']);
+
+            $hasActivity = collect($metrics)->some(fn ($value) => $value != 0 && $value !== null);
+
+            if (!$hasActivity) {
+                continue;
+            }
+
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'shop_time_series_id' => $timeSeries->id,
+                    'period'              => $periodData['period'],
+                    'frequency'           => $timeSeries->frequency->singleLetter(),
+                ],
+                [
+                    'from'                      => $periodData['from'],
+                    'to'                        => $periodData['to'],
+                    'sales'                     => 0,
+                    'sales_org_currency'        => 0,
+                    'sales_grp_currency'        => 0,
+                    'lost_revenue'              => 0,
+                    'lost_revenue_org_currency' => 0,
+                    'lost_revenue_grp_currency' => 0,
+                    'customers_invoiced'        => 0,
+                    'invoices'                  => 0,
+                    'refunds'                   => 0,
+                    'orders'                    => 0,
+                    ...$metrics,
                 ]
             );
         }
+    }
+
+    protected function getShopPeriodMetrics(int $shopId, Carbon $periodFrom, Carbon $periodTo): array
+    {
+        $basketsCreated = DB::table('orders')
+            ->where('shop_id', $shopId)
+            ->where('state', OrderStateEnum::CREATING)
+            ->where('created_at', '>=', $periodFrom)
+            ->where('created_at', '<=', $periodTo)
+            ->whereNull('deleted_at')
+            ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
+            ->first();
+
+        $basketsUpdated = DB::table('orders')
+            ->where('shop_id', $shopId)
+            ->where('state', OrderStateEnum::CREATING)
+            ->where('updated_at', '>=', $periodFrom)
+            ->where('updated_at', '<=', $periodTo)
+            ->whereNull('deleted_at')
+            ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
+            ->first();
+
+        $deliveryNotes = DB::table('delivery_notes')
+            ->where('shop_id', $shopId)
+            ->where('date', '>=', $periodFrom)
+            ->where('date', '<=', $periodTo)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $registrationsBase = DB::table('customers')
+            ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
+            ->where('customers.shop_id', $shopId)
+            ->where('customers.registered_at', '>=', $periodFrom)
+            ->where('customers.registered_at', '<=', $periodTo)
+            ->whereNull('customers.deleted_at');
+
+        $registrationsWithOrders    = (clone $registrationsBase)->where('customer_stats.number_orders', '>', 0)->count();
+        $registrationsWithoutOrders = (clone $registrationsBase)->where('customer_stats.number_orders', '=', 0)->count();
+
+        return [
+            'baskets_created'              => $basketsCreated->net_amount,
+            'baskets_created_org_currency' => $basketsCreated->org_net_amount,
+            'baskets_created_grp_currency' => $basketsCreated->grp_net_amount,
+            'baskets_updated'              => $basketsUpdated->net_amount,
+            'baskets_updated_org_currency' => $basketsUpdated->org_net_amount,
+            'baskets_updated_grp_currency' => $basketsUpdated->grp_net_amount,
+            'delivery_notes'               => $deliveryNotes,
+            'registrations_with_orders'    => $registrationsWithOrders,
+            'registrations_without_orders' => $registrationsWithoutOrders,
+        ];
     }
 }

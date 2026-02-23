@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Dropshipping;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Helpers\NaturalLanguage;
 use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -48,6 +49,7 @@ class DropshippingPortfoliosResource extends JsonResource
         $itemId           = $this->item->current_historic_asset_id;
         $weight           = $this->item->gross_weight;
         $marketing_weight = $this->item->marketing_weight;
+        $dimension        = NaturalLanguage::make()->dimensions(json_encode($this->item->marketing_dimensions));
         $price            = $this->item->price;
         $image            = $this->item->imageSources(64, 64);
         $fullSizeImage    = $this->item->imageSources();
@@ -139,6 +141,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'quantity_left'         => $quantity,
             'weight'                => $weight,
             'marketing_weight'      => $marketing_weight,
+            'dimension'             => $dimension,
             'price'                 => $price,
             'price_include_vat'     => $price,
             'selling_price'         => $this->selling_price,

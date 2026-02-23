@@ -116,6 +116,7 @@ class UpdateShop extends OrgAction
                     'ebay_warehouse_state' => 'settings.ebay.warehouse_state',
                     'ebay_warehouse_country' => 'settings.ebay.warehouse_country',
                     'faire_access_token'    => 'settings.faire.access_token',
+                    'faire_order_from_date'    => 'settings.faire.order_from_date',
                     'wix_access_token'    => 'settings.wix.access_token',
                     'enable_chat'  => 'settings.chat.enable_chat',
                     'portal_link'   => 'settings.portal.link',
@@ -137,6 +138,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'ebay_warehouse_city');
         data_forget($modelData, 'ebay_warehouse_state');
         data_forget($modelData, 'faire_access_token');
+        data_forget($modelData, 'faire_order_from_date');
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
 
