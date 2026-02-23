@@ -29,6 +29,18 @@ trait BuildsInvoiceTimeSeriesQuery
         ];
     }
 
+    protected function masterShopInvoiceSelects(): array
+    {
+        return [
+            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
+            DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
+            DB::raw('COUNT(DISTINCT order_id) as orders'),
+        ];
+    }
+
     protected function organisationInvoiceSelects(): array
     {
         return [
