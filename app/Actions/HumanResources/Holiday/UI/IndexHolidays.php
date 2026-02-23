@@ -7,6 +7,7 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
+use App\Enums\HumanResources\Holiday\HolidayTypeEnum;
 use App\Http\Resources\HumanResources\HolidayResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\Holiday;
@@ -16,11 +17,12 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use App\Enums\HumanResources\Holiday\HolidayTypeEnum;
+use Illuminate\Support\Carbon;
 
 class IndexHolidays extends OrgAction
 {
@@ -41,6 +43,10 @@ class IndexHolidays extends OrgAction
             $query->where('holidays.year', $value);
         });
 
+        $monthFilter = AllowedFilter::callback('month', function ($query, $value) {
+            $query->whereMonth('holidays.from', $value);
+        });
+
         $typeFilter = AllowedFilter::callback('type', function ($query, $value) {
             $query->where('holidays.type', $value);
         });
@@ -57,6 +63,10 @@ class IndexHolidays extends OrgAction
             $queryBuilder->where('holidays.group_id', $parent->id);
         }
 
+        $selectedYear = Arr::get(request()->input('filter', []), 'year', (string) now()->year);
+
+        $queryBuilder->where('holidays.year', $selectedYear);
+
         $queryBuilder->leftJoin('organisations', 'holidays.organisation_id', '=', 'organisations.id');
 
         return $queryBuilder
@@ -68,11 +78,12 @@ class IndexHolidays extends OrgAction
                 'holidays.label',
                 'holidays.from',
                 'holidays.to',
+                'holidays.data',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
             ->allowedSorts(['year', 'from', 'to', 'label', 'type'])
-            ->allowedFilters([$globalSearch, $yearFilter, $typeFilter])
+            ->allowedFilters([$globalSearch, $yearFilter, $typeFilter, $monthFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -86,11 +97,45 @@ class IndexHolidays extends OrgAction
                     ->pageName($prefix . 'Page');
             }
 
+            $yearsQuery = Holiday::query();
+
+            if ($parent instanceof Organisation) {
+                $yearsQuery->where('organisation_id', $parent->id);
+            } else {
+                $yearsQuery->where('group_id', $parent->id);
+            }
+
+            $years = $yearsQuery
+                ->whereNotNull('year')
+                ->distinct()
+                ->orderByDesc('year')
+                ->pluck('year')
+                ->toArray();
+
+            if (empty($years)) {
+                $years = [(int) now()->year];
+            }
+
+            $yearOptions = collect($years)->mapWithKeys(function ($year) {
+                return [(string) $year => (string) $year];
+            })->all();
+
+            $monthOptions = collect(range(1, 12))->mapWithKeys(function ($month) {
+                $label = Carbon::createFromDate(null, $month, 1)->translatedFormat('F');
+
+                return [(string) $month => $label];
+            })->all();
+
+            $defaultYear = (string) now()->year;
+
             $table
                 ->withGlobalSearch()
+                ->selectFilter('year', $yearOptions, __('Year'), $defaultYear, false)
+                ->selectFilter('month', $monthOptions, __('Month'))
                 ->column(key: 'year', label: __('Year'), sortable: true)
                 ->column(key: 'label', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'type_label', label: __('Type'), sortable: true)
+                ->column(key: 'is_recurring', label: __('Recurring'))
                 ->column(key: 'from', label: __('From'), sortable: true)
                 ->column(key: 'to', label: __('To'), sortable: true)
                 ->column(key: 'duration_days', label: __('Days'), sortable: true)
@@ -117,7 +162,7 @@ class IndexHolidays extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Holidays'),
                 'pageHead'    => [
-                    'icon'          => ['fal', 'fa-umbrella-beach'],
+                    'icon'          => ['fal', 'fa-umbrella'],
                     'title'         => __('Holidays'),
                     'subNavigation' => $this->getCalendarSubNavigation(),
                     'actions'       => [
@@ -167,7 +212,7 @@ class IndexHolidays extends OrgAction
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Holidays'),
-                        'icon'  => 'fal fa-umbrella-beach',
+                        'icon'  => 'fal fa-umbrella',
                     ],
                 ],
             ];

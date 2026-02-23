@@ -27,7 +27,7 @@ trait WithCalendarSubNavigation
                     'parameters' => $request->route()->originalParameters(),
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-umbrella-beach'],
+                    'icon'    => ['fal', 'fa-umbrella'],
                     'tooltip' => __('Holiday'),
                 ],
             ]

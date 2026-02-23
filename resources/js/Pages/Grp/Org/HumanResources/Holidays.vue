@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3'
+import { Head, useForm, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
@@ -7,8 +7,13 @@ import Table from '@/Components/Table/Table.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { trans } from 'laravel-vue-i18n'
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv, faUmbrella } from "@fal";
+
+library.add(faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv, faUmbrella)
+
 
 const props = defineProps<{
     title: string
@@ -19,20 +24,39 @@ const props = defineProps<{
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
+const showGenerateModal = ref(false)
 const editingHoliday = ref<any | null>(null)
 const toTouchedCreate = ref(false)
 const toTouchedEdit = ref(false)
+const filterYear = ref<string>('')
+const filterMonth = ref<string>('')
+const defaultTargetYear = String(new Date().getFullYear() + 1)
+
+const yearOptions = computed(() => {
+    const currentYear = new Date().getFullYear()
+
+    return Array.from({ length: 5 }, (_, index) => {
+        const year = currentYear - 2 + index
+
+        return {
+            value: String(year),
+            label: String(year),
+        }
+    })
+})
 
 const form = useForm<{
     type: string
     label: string
     from: string
     to: string
+    is_recurring: boolean
 }>({
     type: '',
     label: '',
     from: '',
     to: '',
+    is_recurring: false,
 })
 
 const editForm = useForm<{
@@ -40,18 +64,96 @@ const editForm = useForm<{
     label: string
     from: string
     to: string
+    is_recurring: boolean
 }>({
     type: '',
     label: '',
     from: '',
     to: '',
+    is_recurring: false,
 })
+
+const generateForm = useForm<{
+    year: string
+}>({
+    year: defaultTargetYear,
+})
+
+const initializeFiltersFromUrl = () => {
+    const url = new URL(window.location.href)
+
+    const yearParam = url.searchParams.get('filter[year]')
+    const monthParam = url.searchParams.get('filter[month]')
+
+    filterYear.value = yearParam ?? ''
+    filterMonth.value = monthParam ?? ''
+}
+
+initializeFiltersFromUrl()
+
+const applyFilters = () => {
+    const params: Record<string, unknown> = {
+        ...route().params,
+    }
+
+    const filter: Record<string, string> = {}
+
+    if (filterYear.value) {
+        filter.year = filterYear.value
+    }
+
+    if (filterMonth.value) {
+        filter.month = filterMonth.value
+    }
+
+    if (Object.keys(filter).length > 0) {
+        params.filter = filter
+    }
+
+    router.get(route('grp.org.hr.holidays.index', params), {}, { preserveState: true, preserveScroll: true })
+}
+
+const resetFilters = () => {
+    filterYear.value = ''
+    filterMonth.value = ''
+
+    const params: Record<string, unknown> = {
+        ...route().params,
+    }
+
+    params.filter = undefined
+
+    router.get(route('grp.org.hr.holidays.index', params), {}, { preserveState: true, preserveScroll: true })
+}
 
 const openCreateModal = () => {
     form.reset()
     form.clearErrors()
     toTouchedCreate.value = false
     showCreateModal.value = true
+}
+
+const openGenerateModal = () => {
+    const currentYear = new Date().getFullYear()
+    const baseYear = filterYear.value ? parseInt(filterYear.value, 10) + 1 : currentYear + 1
+
+    generateForm.year = String(baseYear)
+    generateForm.clearErrors()
+    showGenerateModal.value = true
+}
+
+const closeGenerateModal = () => {
+    showGenerateModal.value = false
+    generateForm.clearErrors()
+}
+
+const submitGenerate = () => {
+    generateForm.post(route('grp.org.hr.holidays.generate', route().params), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeGenerateModal()
+        },
+    })
 }
 
 const closeCreateModal = () => {
@@ -77,6 +179,7 @@ const openEditModal = (holiday: any) => {
     editForm.label = holiday.label ?? ''
     editForm.from = holiday.from
     editForm.to = holiday.to
+    editForm.is_recurring = holiday.is_recurring ?? false
     showEditModal.value = true
 }
 
@@ -129,13 +232,78 @@ watch(
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-create-holiday="{ action }">
-            <Button
-                type="create"
-                size="xs"
-                :icon="action.icon"
-                :label="action.label"
-                @click="openCreateModal"
-            />
+            <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div>
+                        <select
+                            v-model="filterYear"
+                            class="mt-0.5 block w-28 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                            <option value="">
+                                {{ trans('All years') }}
+                            </option>
+                            <option
+                                v-for="year in yearOptions"
+                                :key="year.value"
+                                :value="year.value"
+                            >
+                                {{ year.label }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+
+                        <select
+                            v-model="filterMonth"
+                            class="mt-0.5 block w-32 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                            <option value="">
+                                {{ trans('All months') }}
+                            </option>
+                            <option value="1">{{ trans('January') }}</option>
+                            <option value="2">{{ trans('February') }}</option>
+                            <option value="3">{{ trans('March') }}</option>
+                            <option value="4">{{ trans('April') }}</option>
+                            <option value="5">{{ trans('May') }}</option>
+                            <option value="6">{{ trans('June') }}</option>
+                            <option value="7">{{ trans('July') }}</option>
+                            <option value="8">{{ trans('August') }}</option>
+                            <option value="9">{{ trans('September') }}</option>
+                            <option value="10">{{ trans('October') }}</option>
+                            <option value="11">{{ trans('November') }}</option>
+                            <option value="12">{{ trans('December') }}</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <Button
+                            type="secondary"
+                            size="xs"
+                            :label="trans('Filter')"
+                            @click="applyFilters"
+                        />
+                        <Button
+                            type="tertiary"
+                            size="xs"
+                            :label="trans('Reset')"
+                            @click="resetFilters"
+                        />
+                    </div>
+                </div>
+                <Button
+                    type="create"
+                    size="xs"
+                    :icon="action.icon"
+                    :label="action.label"
+                    @click="openCreateModal"
+                />
+                <Button
+                    type="secondary"
+                    size="xs"
+                    icon="fal fa-umbrella"
+                    :label="trans('Generate next year')"
+                    @click="openGenerateModal"
+                />
+            </div>
         </template>
     </PageHeading>
 
@@ -208,6 +376,18 @@ watch(
                 </div>
             </div>
 
+            <div class="flex items-center gap-2">
+                <input
+                    id="is_recurring"
+                    v-model="form.is_recurring"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label for="is_recurring" class="text-sm text-gray-700">
+                    {{ trans('Repeats every year (fixed holiday)') }}
+                </label>
+            </div>
+
             <div class="mt-6 flex justify-end gap-3">
                 <Button
                     type="secondary"
@@ -220,6 +400,44 @@ watch(
                     size="sm"
                     :label="trans('Save')"
                     :disabled="form.processing"
+                />
+            </div>
+        </form>
+    </Modal>
+    <Modal :isOpen="showGenerateModal" @onClose="closeGenerateModal" width="w-full max-w-md">
+        <form class="space-y-4" @submit.prevent="submitGenerate">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    {{ trans('Target year') }}
+                </label>
+                <input
+                    v-model="generateForm.year"
+                    type="number"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    min="2000"
+                    max="2100"
+                />
+                <div v-if="generateForm.errors.year" class="mt-1 text-xs text-red-600">
+                    {{ generateForm.errors.year }}
+                </div>
+            </div>
+
+            <p class="text-sm text-gray-600">
+                {{ trans('This will create holidays for the target year based on recurring holidays from the previous year.') }}
+            </p>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <Button
+                    type="secondary"
+                    size="sm"
+                    :label="trans('Cancel')"
+                    @click.prevent="closeGenerateModal"
+                />
+                <Button
+                    type="create"
+                    size="sm"
+                    :label="trans('Generate')"
+                    :disabled="generateForm.processing"
                 />
             </div>
         </form>
@@ -293,6 +511,18 @@ watch(
                 </div>
             </div>
 
+            <div class="flex items-center gap-2">
+                <input
+                    id="edit_is_recurring"
+                    v-model="editForm.is_recurring"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label for="edit_is_recurring" class="text-sm text-gray-700">
+                    {{ trans('Repeats every year (fixed holiday)') }}
+                </label>
+            </div>
+
             <div class="mt-6 flex justify-end gap-3">
                 <Button
                     type="secondary"
@@ -325,6 +555,15 @@ watch(
         <template #cell(type_label)="{ item }">
             <span class="whitespace-nowrap">
                 {{ item.type_label }}
+            </span>
+        </template>
+
+        <template #cell(is_recurring)="{ item }">
+            <span
+                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                :class="item.is_recurring ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+            >
+                {{ item.is_recurring ? trans('Fixed') : trans('One-off') }}
             </span>
         </template>
 
