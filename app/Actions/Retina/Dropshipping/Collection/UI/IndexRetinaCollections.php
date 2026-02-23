@@ -67,6 +67,7 @@ class IndexRetinaCollections extends RetinaAction
                 'collections.state',
                 'collections.name',
                 'collections.description',
+                'collections.web_images',
                 'collections.created_at',
                 'collections.updated_at',
                 'collections.slug',

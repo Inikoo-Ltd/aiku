@@ -75,6 +75,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
                 'products.is_for_sale',
                 'products.gross_weight',
                 'products.rrp',
+                'products.web_images',
                 'available_quantity',
                 'units',
             ])
@@ -116,8 +117,9 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
 
                     ]
                 );
-            $table->column(key: 'image', label: __('image'), type: 'icon')
+            $table
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], sortable: true, type: 'icon')
+                ->column(key: 'image', label: __('Image'), type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
