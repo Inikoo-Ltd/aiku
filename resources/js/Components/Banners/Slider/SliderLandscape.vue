@@ -117,6 +117,12 @@ const bannerHeight = computed(() => {
         get(props.data, ['common', 'height', 'desktop'], 400))
 })
 
+const getCardScale = computed(() => {
+    if (props.view === 'mobile') return 0.6
+    if (props.view === 'tablet') return 0.8
+    return 1
+})
+
 const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true
@@ -205,13 +211,14 @@ onMounted(() => {
                                     ]">
 
                                         <div class="relative" :style="{
-                                            width: (card.width || 600) + 'px',
+                                            width: (card.width || 60) + '%',
                                             height: (card.height || 300) + 'px',
                                             background: card.hideCard ? 'transparent' : (card.background || '#ffffff'),
                                             padding: (card.padding || 30) + 'px',
                                             borderRadius: (card.radius || 10) + 'px',
                                             opacity: card.opacity ?? 1,
-                                            transform: `translate(${card.offsetX || 0}px, ${card.offsetY || 0}px)`
+                                            transform: `translate(${card.offsetX || 0}px, ${card.offsetY || 0}px) scale(${getCardScale})`,
+                                            transformOrigin: 'center'
                                         }" :class="card.shadow && !card.hideCard ? 'shadow-2xl' : ''">
                                             <CentralStage :data="{
                                                 titles: card.titles,

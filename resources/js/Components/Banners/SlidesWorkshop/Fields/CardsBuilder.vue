@@ -12,6 +12,7 @@ import { faTrashAlt } from '@fal'
 import ColorPicker from './ColorPicker.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faTrashAlt)
 
@@ -25,7 +26,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const cards = computed({
-    get: () => props.modelValue || {},
+    get: () => props.modelValue ?? {},
     set: (val) => emit('update:modelValue', val)
 })
 
@@ -77,13 +78,16 @@ const removeTitle = (cardKey: string, index: number) => {
 }
 
 const addCard = () => {
-    const nextIndex = Object.keys(cards.value).length + 1
-    const key = `card${nextIndex}`
+    const safeCards = { ...(cards.value || {}) }
 
-    cards.value = {
-        ...cards.value,
-        [key]: createDefaultCard()
+    let index = 1
+    while (safeCards[`card${index}`]) {
+        index++
     }
+
+    safeCards[`card${index}`] = createDefaultCard()
+
+    cards.value = safeCards
 }
 
 const removeCard = (key: string) => {
@@ -100,8 +104,8 @@ const removeCard = (key: string) => {
         <Button label="Add Card" type="primary" full icon="fas fa-plus" @click="addCard" class="w-full" />
 
         <!-- EMPTY STATE -->
-        <div v-if="Object.keys(cards).length === 0" class="text-center text-gray-400">
-            No cards added yet
+        <div v-if="Object.keys(cards ?? {}).length === 0" class="text-center text-gray-400">
+            {{ trans("No cards added yet") }}
         </div>
 
         <!-- CARDS -->
@@ -123,6 +127,101 @@ const removeCard = (key: string) => {
                             <ToggleButton v-model="card.hideCard" onLabel="Hide Background"
                                 offLabel="Show Background" />
                             <ToggleButton v-model="card.shadow" onLabel="Shadow On" offLabel="Shadow Off" />
+                        </div>
+
+                        <Divider />
+
+                        <!-- SIZE CONTROLS -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                            <div>
+                                <label class="block mb-2">Width ({{ card.width }}%)</label>
+                                <Slider v-model="card.width" :min="10" :max="100" :step="10" />
+                            </div>
+
+                            <div>
+                                <label class="block mb-2">Height ({{ card.height }}px)</label>
+                                <Slider v-model="card.height" :min="10" :max="800" :step="10" />
+                            </div>
+
+                            <div>
+                                <label class="block mb-2">Padding ({{ card.padding }}px)</label>
+                                <Slider v-model="card.padding" :min="10" :max="100" :step="5" />
+                            </div>
+
+                            <div>
+                                <label class="block mb-2">Border Radius ({{ card.radius }}px)</label>
+                                <Slider v-model="card.radius" :min="0" :max="50" :step="1" />
+                            </div>
+
+                            <div>
+                                <label class="block mb-2">Opacity/Transparency ({{ card.opacity }})</label>
+                                <Slider v-model="card.opacity" :min="0" :max="1" :step="0.1" />
+                            </div>
+
+                        </div>
+
+                        <Divider />
+
+                        <!-- COLOR -->
+                        <div>
+                            <label class="block mb-2 font-medium">Background</label>
+                            <ColorPicker v-model="card.background" />
+                        </div>
+
+                        <Divider />
+
+                        <!-- POSITION -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                            <div>
+                                <label class="block mb-2 font-medium">Horizontal</label>
+                                <div class="flex gap-3">
+                                    <RadioButton v-model="card.horizontal" value="left" />
+                                    <label>Left</label>
+
+                                    <RadioButton v-model="card.horizontal" value="center" />
+                                    <label>Center</label>
+
+                                    <RadioButton v-model="card.horizontal" value="right" />
+                                    <label>Right</label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block mb-2 font-medium">Vertical</label>
+                                <div class="flex gap-3">
+                                    <RadioButton v-model="card.vertical" value="top" />
+                                    <label>Top</label>
+
+                                    <RadioButton v-model="card.vertical" value="middle" />
+                                    <label>Middle</label>
+
+                                    <RadioButton v-model="card.vertical" value="bottom" />
+                                    <label>Bottom</label>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <Divider />
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                            <div>
+                                <label class="block mb-2">
+                                    Adjust Horizontal Position Card ({{ card.offsetX }}px)
+                                </label>
+                                <Slider v-model="card.offsetX" :min="-800" :max="800" :step="1" />
+                            </div>
+
+                            <div>
+                                <label class="block mb-2">
+                                    Adjust Vertical Position Card ({{ card.offsetY }}px)
+                                </label>
+                                <Slider v-model="card.offsetY" :min="-800" :max="800" :step="1" />
+                            </div>
+
                         </div>
 
                         <Divider />
@@ -238,102 +337,6 @@ const removeCard = (key: string) => {
                                     @click="addTitle(key)" />
                             </div>
                         </div>
-
-                        <Divider />
-
-                        <!-- SIZE CONTROLS -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                            <div>
-                                <label class="block mb-2">Width ({{ card.width }}px)</label>
-                                <Slider v-model="card.width" :min="10" :max="1000" :step="10" />
-                            </div>
-
-                            <div>
-                                <label class="block mb-2">Height ({{ card.height }}px)</label>
-                                <Slider v-model="card.height" :min="10" :max="800" :step="10" />
-                            </div>
-
-                            <div>
-                                <label class="block mb-2">Padding ({{ card.padding }}px)</label>
-                                <Slider v-model="card.padding" :min="10" :max="100" :step="5" />
-                            </div>
-
-                            <div>
-                                <label class="block mb-2">Border Radius ({{ card.radius }}px)</label>
-                                <Slider v-model="card.radius" :min="0" :max="50" :step="1" />
-                            </div>
-
-                            <div>
-                                <label class="block mb-2">Opacity/Transparency ({{ card.opacity }})</label>
-                                <Slider v-model="card.opacity" :min="0" :max="1" :step="0.1" />
-                            </div>
-
-                        </div>
-
-                        <Divider />
-
-                        <!-- COLOR -->
-                        <div>
-                            <label class="block mb-2 font-medium">Background</label>
-                            <ColorPicker v-model="card.background" />
-                        </div>
-
-                        <Divider />
-
-                        <!-- POSITION -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                            <div>
-                                <label class="block mb-2 font-medium">Horizontal</label>
-                                <div class="flex gap-3">
-                                    <RadioButton v-model="card.horizontal" value="left" />
-                                    <label>Left</label>
-
-                                    <RadioButton v-model="card.horizontal" value="center" />
-                                    <label>Center</label>
-
-                                    <RadioButton v-model="card.horizontal" value="right" />
-                                    <label>Right</label>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block mb-2 font-medium">Vertical</label>
-                                <div class="flex gap-3">
-                                    <RadioButton v-model="card.vertical" value="top" />
-                                    <label>Top</label>
-
-                                    <RadioButton v-model="card.vertical" value="middle" />
-                                    <label>Middle</label>
-
-                                    <RadioButton v-model="card.vertical" value="bottom" />
-                                    <label>Bottom</label>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <Divider />
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                            <div>
-                                <label class="block mb-2">
-                                    Card Offset X ({{ card.offsetX }}px)
-                                </label>
-                                <Slider v-model="card.offsetX" :min="-800" :max="800" :step="1" />
-                            </div>
-
-                            <div>
-                                <label class="block mb-2">
-                                    Card Offset Y ({{ card.offsetY }}px)
-                                </label>
-                                <Slider v-model="card.offsetY" :min="-800" :max="800" :step="1" />
-                            </div>
-
-                        </div>
-
                     </div>
                 </template>
             </Card>
