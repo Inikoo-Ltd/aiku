@@ -21,8 +21,6 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Comms\Outbox;
@@ -77,23 +75,15 @@ class RunFavoriteOfferNotificationBulkRuns
             $baseQuery->where('customers.shop_id', $outbox->shop_id);
             $baseQuery->whereNull('customers.deleted_at');
 
-            // Join Order
-            $baseQuery->join('orders', function ($join) {
-                $join->on('customers.id', '=', 'orders.customer_id');
-                $join->where('orders.state', OrderStateEnum::CREATING);
-                $join->where('orders.status', OrderStatusEnum::CREATING);
-                $join->whereNull('orders.deleted_at');
-            });
-
-            // Join Transactions
-            $baseQuery->join('transactions', function ($join) {
-                $join->on('orders.id', '=', 'transactions.order_id');
+            // Join Favorite
+            $baseQuery->join('favourites', function ($join) {
+                $join->on('customers.id', '=', 'favourites.customer_id')
+                    ->whereNull('favourites.unfavourited_at');
             });
 
             // Join Products
-            $baseQuery->join('products', function ($join) use ($productClass) {
-                $join->on('transactions.model_id', '=', 'products.id');
-                $join->where('transactions.model_type', $productClass);
+            $baseQuery->join('products', function ($join) {
+                $join->on('favourites.product_id', '=', 'products.id');
                 $join->where('products.is_for_sale', true);
                 $join->whereIn('products.state', [
                     ProductStateEnum::ACTIVE,
