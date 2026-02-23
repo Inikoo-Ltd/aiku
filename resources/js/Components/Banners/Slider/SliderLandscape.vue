@@ -203,19 +203,37 @@ onMounted(() => {
                                             'items-end pb-10': card.vertical === 'bottom'
                                         }
                                     ]">
-                                        <div v-if="!card.hideCard" :style="{
+
+                                        <div class="relative" :style="{
                                             width: (card.width || 600) + 'px',
-                                            background: card.background || '#ffffff',
+                                            height: (card.height || 300) + 'px',
+                                            background: card.hideCard ? 'transparent' : (card.background || '#ffffff'),
                                             padding: (card.padding || 30) + 'px',
                                             borderRadius: (card.radius || 10) + 'px',
-                                            opacity: card.opacity ?? 1
-                                        }" :class="card.shadow ? 'shadow-2xl' : ''">
-                                            <CentralStage :data="{ title: card.title, subtitle: card.subtitle }" />
+                                            opacity: card.opacity ?? 1,
+                                            transform: `translate(${card.offsetX || 0}px, ${card.offsetY || 0}px)`
+                                        }" :class="card.shadow && !card.hideCard ? 'shadow-2xl' : ''">
+                                            <CentralStage :data="{
+                                                titles: card.titles,
+                                                textAlign: card.textAlign,
+                                            }" :class="[
+                                                card.textAlign === 'center'
+                                                    ? 'left-0 right-0 text-center'
+                                                    : '',
+
+                                                card.textVertical === 'top'
+                                                    ? 'top-0'
+                                                    : '',
+                                                card.textVertical === 'middle'
+                                                    ? 'top-1/2 -translate-y-1/2'
+                                                    : '',
+                                                card.textVertical === 'bottom'
+                                                    ? 'bottom-0'
+                                                    : ''
+                                            ]" />
+
                                         </div>
 
-                                        <div v-else>
-                                            <CentralStage :data="{ title: card.title, subtitle: card.subtitle }" />
-                                        </div>
                                     </div>
 
                                 </template>
