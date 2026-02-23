@@ -416,6 +416,7 @@ class ShowDeliveryNote extends OrgAction
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
         $order     = $deliveryNote->orders->first();
 
+        // TODO: Implement is_shipping_by_external
         if($order->shop->type == ShopTypeEnum::EXTERNAL) {
             $additionalShipmentRoutes = [
                 'submit_platform_route' => [
