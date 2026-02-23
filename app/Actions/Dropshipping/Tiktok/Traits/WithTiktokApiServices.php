@@ -219,7 +219,7 @@ trait WithTiktokApiServices
 
     public function getOrderLabel(string $packageId): array
     {
-        $path = "/fulfillment/202309/packages/$packageId/shipping_documents";
+        $path = "/fulfillment/$this->version/packages/$packageId/shipping_documents";
 
         return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
@@ -233,9 +233,8 @@ trait WithTiktokApiServices
         $path = "/fulfillment/202512/packages";
 
         return $this->makeApiRequest('POST', $path, [
-            'ship_type' => 1,
+            'ship_type' => "1",
             'order_id' => $orderId,
-
         ], true, [
             'content-type' => 'application/json'
         ]);
@@ -243,9 +242,20 @@ trait WithTiktokApiServices
 
     public function shipPackage(string $packageId): array
     {
-        $path = "/fulfillment/202309/packages/$packageId/ship";
+        $path = "/fulfillment/$this->version/packages/$packageId/ship";
 
-        return $this->makeApiRequest('POST', $path, [], true, [
+        return $this->makeApiRequest('POST', $path, [
+            'handover_method' => 'PICKUP'
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getPackageDetail(string $packageId): array
+    {
+        $path = "/fulfillment/$this->version/packages/$packageId";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
             'content-type' => 'application/json'
         ]);
     }

@@ -32,6 +32,10 @@ class GetDispatchHubShowcase
             $stats['b2b'] = GetDispatchHubB2BWidget::run($warehouse, $request);
         }
 
+        if ($organisationCatalogueStats->number_current_shops_type_external) {
+            $stats['external'] = GetDispatchHubExternalWidget::run($warehouse, $request);
+        }
+
         if ($organisationCatalogueStats->number_current_shops_type_b2c) {
             $stats['b2c'] = GetDispatchHubB2CWidget::run($warehouse);
         }

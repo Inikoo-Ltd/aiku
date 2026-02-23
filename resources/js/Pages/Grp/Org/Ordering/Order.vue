@@ -240,6 +240,7 @@ const props = defineProps<{
     },
     payments: {}
     readonly?: boolean
+    is_shop_external?: boolean
     attachments?: {}
     invoices?: {}
     attachmentRoutes?: {}
@@ -1081,7 +1082,7 @@ const recalculateVat = async () => {
     <PageHeading :data="pageHead">
         <template #button-add-product="{ action }">
             <div class="relative">
-                <Button :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
+                <Button v-if="!is_shop_external" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
             </div>
         </template>
@@ -1094,9 +1095,12 @@ const recalculateVat = async () => {
             </div>
         </template>
 
+        <!-- Button: Upload -->
         <template #button-group-upload-add="{ action }">
-            <div class="relative">
-                <Button v-if="upload_excel" :style="action.button[0].style" :label="action.button[0].label"
+            <div class="relative"
+                :class="upload_excel && !is_shop_external ? '' : 'hidden'"
+            >
+                <Button v-if="upload_excel && !is_shop_external" :style="action.button[0].style" :label="action.button[0].label"
                     :icon="action.button[0].icon" @click="() => isModalUploadExcel = true"
                     :key="`ActionButton${action.button[0].label}${action.button[0].style}`"
                     :tooltip="action.button[0].tooltip" />
@@ -1106,7 +1110,7 @@ const recalculateVat = async () => {
 
 
         <template #other>
-            <div v-if="!props.readonly || isShowProforma" class="flex">
+            <div v-if="(!props.readonly || isShowProforma) && !is_shop_external" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
@@ -1389,7 +1393,7 @@ const recalculateVat = async () => {
                     </dl>
 
                     <!-- Collection Toggle -->
-                    <div v-if="props.data?.data?.state !== 'dispatched'"
+                    <div v-if="props.data?.data?.state !== 'dispatched' && !is_shop_external"
                         class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
@@ -1734,7 +1738,7 @@ const recalculateVat = async () => {
                                 </dd>
                             </div>
                             <!-- button edit all percentage -->
-                            <template v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx'))">
+                            <template v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx')) && !is_shop_external">
                                 <div class="text-right text-purple-600 w-full mr-1">{{ trans('Global discount') }}</div>
                                 <button
                                     class="ml-auto h-6 mr-2" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
@@ -1791,7 +1795,7 @@ const recalculateVat = async () => {
                                         {{ fieldSummary.label }}
                                     </span>
                                     <span @click="isOpenModalDiscretionaryCharge = true"
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !is_shop_external"
                                         v-tooltip="trans('Edit charges')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
                                         <FontAwesomeIcon icon="fal fa-edit" class="" fixed-width aria-hidden="true" />
@@ -1825,7 +1829,7 @@ const recalculateVat = async () => {
                                         aria-hidden='true' />
 
                                     <span
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !is_shop_external"
                                         @click="_shipping_price_method?.toggle"
                                         v-tooltip="trans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
@@ -1837,7 +1841,7 @@ const recalculateVat = async () => {
 
 
                                 <!-- Popover: Select shipping price method -->
-                                <PopoverPrimevue ref="_shipping_price_method">
+                                <PopoverPrimevue v-if="!is_shop_external" ref="_shipping_price_method">
                                     <div class="relative flex flex-col gap-2">
                                         <div class="text-sm">
                                             {{ trans("Select to change shipping price method") }}:
@@ -1939,7 +1943,9 @@ const recalculateVat = async () => {
             :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
             :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
             @update:tab="handleTabUpdate" :ref="(e) => _refComponents = e"
-            :routesProductsListModification="routes.products_list_modification" />
+            :routesProductsListModification="routes.products_list_modification"
+            :is_shop_external
+        />
     </div>
 
     <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
@@ -2120,7 +2126,7 @@ const recalculateVat = async () => {
     </Modal>
 
     <!-- Modal: Charges list -->
-    <Modal vxif="" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
+    <Modal v-if="!is_shop_external" :isOpen="isOpenModalDiscretionaryCharge" @onClose="isOpenModalDiscretionaryCharge = false"
         width="w-full max-w-4xl " :isClosableInBackground="false" closeButton>
         <div class="isolate bg-white px-6 lg:px-8 relative">
             <div class="mx-auto max-w-2xl text-center mb-4">
@@ -2278,7 +2284,7 @@ const recalculateVat = async () => {
 
     </Modal> -->
 
-    <UploadExcel v-if="props.upload_excel" v-model="isModalUploadExcel" :title="upload_excel.title"
+    <UploadExcel v-if="props.upload_excel && !is_shop_external" v-model="isModalUploadExcel" :title="upload_excel.title"
         :progressDescription="upload_excel.progressDescription" :upload_spreadsheet="upload_excel.upload_spreadsheet"
         :preview_template="upload_excel.preview_template" :propsRefreshAfterFinish="['transactions', 'box_stats']"
         :xadditionalDataToSend="'interest.pallets_storage' ? ['stored_items'] : undefined" />

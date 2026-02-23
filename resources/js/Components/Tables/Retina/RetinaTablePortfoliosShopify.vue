@@ -616,6 +616,9 @@ onMounted(() => {
                 <div>
                     {{ trans("Stock:") }} {{ locale.number(product.quantity_left) }}
                 </div>
+            </div>
+
+            <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
                 <div>
                     {{ trans("Weight:") }} <span v-tooltip="trans('Marketing weight')">{{
                         locale.number(product.marketing_weight / 1000)
@@ -623,6 +626,13 @@ onMounted(() => {
                     v-tooltip="trans('Weight including packing')">{{
                         locale.number(product.weight / 1000)
                     }}Kg</span>
+                </div>
+            </div>
+
+            <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
+                <div>
+                    {{ trans("Dimension:") }} 
+                    {{ product.dimension }}
                 </div>
             </div>
 
@@ -661,7 +671,7 @@ onMounted(() => {
         </template>
         
         <template #cell(message)="{item}">
-            <div class="whitespace min-w-[100px] text-left font-medium italic whitespace-break-spaces text-red-500" v-if="disableButtons(item)">
+            <div class="whitespace min-w-[50px] text-left font-medium italic whitespace-break-spaces text-red-500" v-if="disableButtons(item)">
                 <FontAwesomeLayers v-if="item.product_state == 'discontinued'"
                     v-tooltip="trans('This product line has been discontinued. Please remove this item')"
                     class="flex h-full w-full"
