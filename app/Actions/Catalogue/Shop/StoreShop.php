@@ -42,6 +42,7 @@ use App\Models\Helpers\Language;
 use App\Models\Helpers\Timezone;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
+use Artisan;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
@@ -243,7 +244,6 @@ class StoreShop extends OrgAction
         OrganisationHydrateShops::dispatch($organisation)->delay($this->hydratorsDelay);
         ProspectQuerySeeder::dispatch($shop);
         SeedShopOutboxes::dispatch($shop);
-        SeedJobPositions::dispatch($organisation);
         SetIconAsShopLogo::dispatch($shop)->delay($this->hydratorsDelay);
         SeedShopOfferCampaigns::dispatch($shop);
         SeedTrafficSources::dispatch($shop);
@@ -251,6 +251,9 @@ class StoreShop extends OrgAction
             MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);
         }
         CreateDiscretionaryCharges::run($shop);
+        Artisan::call('org:seed-job-positions', [
+            'organisation' => $shop->organisation->slug
+        ]);
 
         return $shop;
     }
@@ -417,8 +420,8 @@ class StoreShop extends OrgAction
     {
         return Redirect::route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $shop->slug])
             ->with('notification', [
-                'status'  => 'success',
-                'title' => __('Your shop is still being created.'),
+                'status'      => 'success',
+                'title'       => __('Your shop is still being created.'),
                 'description' => __('Please wait approximately 45 minutes for the shop to be fully created.'),
             ]);
     }
