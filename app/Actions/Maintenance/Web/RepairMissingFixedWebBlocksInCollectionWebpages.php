@@ -14,6 +14,7 @@ use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class RepairMissingFixedWebBlocksInCollectionWebpages
@@ -32,16 +33,45 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
     {
         /** @var \App\Models\Catalogue\Collection $collection */
         $collection = $webpage->model;
+        $website = $webpage->website;
 
+        // FIX FOR DUPLICATED FAMILIES WEBBLOCK UNDER COLLECTION
+        $liveFamiliesSnapshot = $website->liveFamilySnapshot;
+        $unpublishedFamiliesSnapshot = $website->unpublishedFamilySnapshot;
 
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'families-1');
+        $usedFamiliesTemplate = data_get($liveFamiliesSnapshot?->layout, 'code', data_get($unpublishedFamiliesSnapshot?->layout, 'code', null)); // Get published Families layout code
+        
+        if($usedFamiliesTemplate){
+            $unusedFamiliesTemplate = array_filter(
+                ['families-1', 'families-2', 'families-3'],
+                fn ($family) => $family != $usedFamiliesTemplate
+            );
+            
+            $countFamiliesWebBlock = $this->getWebpageBlocksByType($webpage, $usedFamiliesTemplate);
+            if (count($countFamiliesWebBlock) == 0) {
+                $this->createWebBlock($webpage, $usedFamiliesTemplate);
+            }
 
-        if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'families-1');
+            // REMOVE DUPLICATED FAMILIES WEBBLOCK UNDER COLLECTION
+            foreach($unusedFamiliesTemplate as $unusedFamiliesCode) {
+                $unusedFamiliesWebBlock = $this->getWebpageBlocksByType($webpage, $unusedFamiliesCode); 
+                if(count($unusedFamiliesWebBlock) > 0) {
+                    $webpage
+                        ->modelHasWebBlocks()
+                        ->whereIn('id', $unusedFamiliesWebBlock->pluck('model_has_web_blocks_id'))
+                        ->delete();
+    
+                    $webpage
+                        ->webBlocks()
+                        ->whereIn('web_blocks.id', $unusedFamiliesWebBlock->pluck('id'))
+                        ->delete();
+    
+                }
+            }
         }
 
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
-        if (count($countFamilyWebBlock) == 0) {
+        $countProductsWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
+        if (count($countProductsWebBlock) == 0) {
             $this->createWebBlock($webpage, 'products-1');
         }
 
@@ -107,7 +137,11 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->where('model_type', 'Collection')->get();
+        $webpagesID = DB::table('webpages')
+        ->select('id')
+        ->where('model_type', 'Collection')
+        ->where('slug', 'mothers-day-awd-1')
+        ->get();
 
 
         foreach ($webpagesID as $webpageID) {
