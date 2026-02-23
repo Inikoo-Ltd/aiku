@@ -15,7 +15,7 @@ import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import {FontAwesomeIcon, FontAwesomeLayers} from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import {debounce, set} from "lodash-es"
+import {clone, debounce, set} from "lodash-es"
 import {
     faConciergeBell,
     faGarage,
@@ -87,6 +87,11 @@ const props = defineProps<{
     progressToUploadToShopifyAll: {}
     count_product_not_synced: number
     disabled?: boolean
+}>()
+
+const emits = defineEmits<{
+    (e: 'showBulkButton'): void
+    (e: 'hideBulkButton'): void
 }>()
 
 console.log(props)
@@ -327,16 +332,33 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 
 
 const selectedProducts = defineModel<number[]>('selectedProducts')
+const selectedInvalidProductsCreate = ref<number[]>([]);
 
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
     if (!selectedProducts.value) return
+
+    const changeButtonState = disableCreateNew(item);
 
     if (checked) {
         if (!selectedProducts.value.includes(item.id)) {
             selectedProducts.value.push(item.id)
         }
+
+        if (!selectedInvalidProductsCreate.value?.includes(item.id) && changeButtonState){
+            selectedInvalidProductsCreate.value?.push(item.id)
+        }
     } else {
         selectedProducts.value = selectedProducts.value.filter(id => id != item.id)
+
+        if (changeButtonState){
+            selectedInvalidProductsCreate.value = selectedInvalidProductsCreate.value?.filter(id => id != item.id)
+        }
+    }
+
+    if(selectedInvalidProductsCreate.value.length > 0){
+        emits('hideBulkButton');
+    }else{
+        emits('showBulkButton');
     }
 }
 
@@ -353,6 +375,11 @@ const onCheckedAll = ({data, allChecked}) => {
 }
 
 const onDisableCheckbox = (item) => {
+    if ((item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) || disableButtons(item)) return true
+    return false
+}
+
+const disableCreateNew = (item) => {
     if ((item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) || disableButtons(item)) return true
     return false
 }
@@ -486,25 +513,22 @@ onMounted(() => {
 
         <template #checkbox="{ checked, data }">
             <!-- Spinner ketika sedang upload -->
-            <div v-if="disableButtons(data)"/>
-            <div v-else>
-                <FontAwesomeIcon v-if="progressToUploadToShopifyAll.total !== 0 && selectedProducts.includes(data.id)"
-                                 icon="fad fa-spinner-third" class="animate-spin text-blue-500 p-2 text-lg mx-auto block"
-                                 fixed-width
-                                 aria-hidden="true"/>
-    
-                <!-- Checkbox aktif -->
-                <FontAwesomeIcon v-else-if="selectedProducts.includes(data.id)" @click="() => onChangeCheked(false, data)"
-                                 icon="fas fa-check-square" class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
-                                 fixed-width
-                                 aria-hidden="true"/>
-    
-                <!-- Checkbox kosong -->
-                <FontAwesomeIcon v-else @click="() => onChangeCheked(true, data)" icon="fal fa-square"
-                                 class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
-                                 fixed-width
-                                 aria-hidden="true"/>
-            </div>
+            <FontAwesomeIcon v-if="progressToUploadToShopifyAll.total !== 0 && selectedProducts.includes(data.id)"
+                                icon="fad fa-spinner-third" class="animate-spin text-blue-500 p-2 text-lg mx-auto block"
+                                fixed-width
+                                aria-hidden="true"/>
+
+            <!-- Checkbox aktif -->
+            <FontAwesomeIcon v-else-if="selectedProducts.includes(data.id)" @click="() => onChangeCheked(false, data)"
+                                icon="fas fa-check-square" class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
+                                fixed-width
+                                aria-hidden="true"/>
+
+            <!-- Checkbox kosong -->
+            <FontAwesomeIcon v-else @click="() => onChangeCheked(true, data)" icon="fal fa-square"
+                                class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
+                                fixed-width
+                                aria-hidden="true"/>
         </template>
 
 
