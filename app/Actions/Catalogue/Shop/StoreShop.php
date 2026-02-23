@@ -252,7 +252,6 @@ class StoreShop extends OrgAction
         }
         CreateDiscretionaryCharges::run($shop);
 
-        SeedJobPositions::run($shop->organisation);
 
 
         return $shop;
