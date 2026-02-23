@@ -31,6 +31,13 @@ class StoreHoliday extends OrgAction
             $modelData['year'] = (int) date('Y', strtotime($modelData['from']));
         }
 
+        if (Arr::has($modelData, 'is_recurring')) {
+            $data = Arr::get($modelData, 'data', []);
+            $data['is_recurring'] = (bool) $modelData['is_recurring'];
+            $modelData['data'] = $data;
+            unset($modelData['is_recurring']);
+        }
+
         return $organisation->holidays()->create($modelData);
     }
 
@@ -43,6 +50,7 @@ class StoreHoliday extends OrgAction
             'from'  => ['required', 'date'],
             'to'    => ['required', 'date', 'after_or_equal:from'],
             'data'  => ['nullable', 'array'],
+            'is_recurring' => ['nullable', 'boolean'],
         ];
     }
 

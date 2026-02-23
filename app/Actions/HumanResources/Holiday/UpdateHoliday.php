@@ -29,6 +29,13 @@ class UpdateHoliday extends OrgAction
             $modelData['year'] = (int) date('Y', strtotime($modelData['from']));
         }
 
+        if (Arr::has($modelData, 'is_recurring')) {
+            $data = Arr::get($modelData, 'data', $holiday->data ?? []);
+            $data['is_recurring'] = (bool) $modelData['is_recurring'];
+            $modelData['data'] = $data;
+            unset($modelData['is_recurring']);
+        }
+
         $holiday->update($modelData);
 
         return $holiday->refresh();
@@ -43,6 +50,7 @@ class UpdateHoliday extends OrgAction
             'from'  => ['sometimes', 'required', 'date'],
             'to'    => ['sometimes', 'required', 'date', 'after_or_equal:from'],
             'data'  => ['nullable', 'array'],
+            'is_recurring' => ['nullable', 'boolean'],
         ];
     }
 

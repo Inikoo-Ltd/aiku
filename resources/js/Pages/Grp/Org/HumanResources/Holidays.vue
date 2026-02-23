@@ -48,11 +48,13 @@ const form = useForm<{
     label: string
     from: string
     to: string
+    is_recurring: boolean
 }>({
     type: '',
     label: '',
     from: '',
     to: '',
+    is_recurring: false,
 })
 
 const editForm = useForm<{
@@ -60,11 +62,13 @@ const editForm = useForm<{
     label: string
     from: string
     to: string
+    is_recurring: boolean
 }>({
     type: '',
     label: '',
     from: '',
     to: '',
+    is_recurring: false,
 })
 
 const initializeFiltersFromUrl = () => {
@@ -144,6 +148,7 @@ const openEditModal = (holiday: any) => {
     editForm.label = holiday.label ?? ''
     editForm.from = holiday.from
     editForm.to = holiday.to
+    editForm.is_recurring = holiday.is_recurring ?? false
     showEditModal.value = true
 }
 
@@ -333,6 +338,18 @@ watch(
                 </div>
             </div>
 
+            <div class="flex items-center gap-2">
+                <input
+                    id="is_recurring"
+                    v-model="form.is_recurring"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label for="is_recurring" class="text-sm text-gray-700">
+                    {{ trans('Repeats every year (fixed holiday)') }}
+                </label>
+            </div>
+
             <div class="mt-6 flex justify-end gap-3">
                 <Button
                     type="secondary"
@@ -418,6 +435,18 @@ watch(
                 </div>
             </div>
 
+            <div class="flex items-center gap-2">
+                <input
+                    id="edit_is_recurring"
+                    v-model="editForm.is_recurring"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label for="edit_is_recurring" class="text-sm text-gray-700">
+                    {{ trans('Repeats every year (fixed holiday)') }}
+                </label>
+            </div>
+
             <div class="mt-6 flex justify-end gap-3">
                 <Button
                     type="secondary"
@@ -450,6 +479,15 @@ watch(
         <template #cell(type_label)="{ item }">
             <span class="whitespace-nowrap">
                 {{ item.type_label }}
+            </span>
+        </template>
+
+        <template #cell(is_recurring)="{ item }">
+            <span
+                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                :class="item.is_recurring ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+            >
+                {{ item.is_recurring ? trans('Fixed') : trans('One-off') }}
             </span>
         </template>
 

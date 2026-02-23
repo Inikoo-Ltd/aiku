@@ -78,6 +78,7 @@ class IndexHolidays extends OrgAction
                 'holidays.label',
                 'holidays.from',
                 'holidays.to',
+                'holidays.data',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
@@ -134,6 +135,7 @@ class IndexHolidays extends OrgAction
                 ->column(key: 'year', label: __('Year'), sortable: true)
                 ->column(key: 'label', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'type_label', label: __('Type'), sortable: true)
+                ->column(key: 'is_recurring', label: __('Recurring'))
                 ->column(key: 'from', label: __('From'), sortable: true)
                 ->column(key: 'to', label: __('To'), sortable: true)
                 ->column(key: 'duration_days', label: __('Days'), sortable: true)

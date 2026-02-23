@@ -26,6 +26,7 @@ class HolidayResource extends JsonResource
             'from'              => $holiday->from?->format('Y-m-d'),
             'to'                => $holiday->to?->format('Y-m-d'),
             'duration_days'     => $holiday->from && $holiday->to ? $holiday->from->diffInDays($holiday->to) + 1 : null,
+            'is_recurring'      => (bool) ($holiday->data['is_recurring'] ?? false),
             'organisation_name' => $holiday->organisation->name ?? null,
             'organisation_slug' => $holiday->organisation->slug ?? null,
         ];
