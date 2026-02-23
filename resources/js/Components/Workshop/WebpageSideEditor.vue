@@ -519,9 +519,7 @@ const cancelRename = () => {
 										:editable="editable"
 										:blueprint="
 											getBlueprint(
-												webpage.layout.web_blocks[openedBlockSideEditor]
-													.type,
-												webpage
+												webpage.layout.web_blocks[openedBlockSideEditor].type, webpage , webpage.layout.web_blocks[openedBlockSideEditor].id
 											)
 										"
 										:block="webpage.layout.web_blocks[openedBlockSideEditor]"

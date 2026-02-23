@@ -138,6 +138,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $master_variant_id
  * @property bool $is_variant_leader
  * @property bool $is_minion_variant
+ * @property bool $follow_trade_unit_media
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

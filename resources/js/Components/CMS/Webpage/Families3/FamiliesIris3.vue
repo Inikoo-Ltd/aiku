@@ -206,23 +206,15 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
               navigation
               class="w-full swiper-inner"
             >
-              <SwiperSlide
-                v-for="(item,index) in allItems"
-                :key="'item-'+index"
-                class="flex"
-              >
-                <LinkIris :href="item.url">
-                  <Family3Render
-                    class="family-item"
-                    :data="item"
-                    :style="{
-                      ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
-                      fontWeight : 600
-                    }"
-                    :screenType="props.screenType"
-                  />
+              <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
+                <LinkIris :href="item.url" class="w-full h-full flex">
+                  <Family3Render class="family-item w-full h-full" :data="item" :style="{
+                    ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
+                    fontWeight: 600
+                  }" :screenType="props.screenType" />
                 </LinkIris>
               </SwiperSlide>
+
             </Swiper>
           </div>
 

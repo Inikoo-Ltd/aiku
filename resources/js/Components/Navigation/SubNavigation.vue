@@ -96,7 +96,7 @@ const isSubNavActive = (subNav: SubNav) => {
         <div class="w-full flex">
             <TransitionGroup>
                 <template v-for="subNav, itemIdx in dataNavigation" :key="'subNav' + itemIdx">
-                    <component v-if="subNav.align !== 'right'" :is="subNav.route?.name ? Link : 'div'"
+                    <component v-if="subNav && subNav.align !== 'right'" :is="subNav.route?.name ? Link : 'div'"
                         :href="subNav.route?.name ? route(subNav.route.name, subNav.route.parameters) : '#'"
                         @start="() => isLoading = itemIdx" @finish="() => isLoading = false"
                         class="group pt-2 pb-1.5 px-3 flex w-fit items-center gap-x-2" :class="[
@@ -128,7 +128,7 @@ const isSubNavActive = (subNav: SubNav) => {
         <div class="flex">
             <TransitionGroup>
                 <template v-for="subNav, itemIdx in dataNavigation" :key="'subNav' + itemIdx">
-                    <component v-if="subNav.align === 'right'" :is="subNav.route?.name ? Link : 'div'"
+                    <component v-if="subNav && subNav.align === 'right'" :is="subNav.route?.name ? Link : 'div'"
                         :href="subNav.route?.name ? route(subNav.route.name, subNav.route.parameters) : '#'"
                         @start="() => isLoading = itemIdx" @finish="() => isLoading = false"
                         class="group py-1.5 px-3 flex items-center gap-x-2 transition-all" :class="[

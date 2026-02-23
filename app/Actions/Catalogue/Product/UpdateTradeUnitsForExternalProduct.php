@@ -18,11 +18,10 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
 
-class UpdateProductExternal extends OrgAction
+class UpdateTradeUnitsForExternalProduct extends OrgAction
 {
     use WithActionUpdate;
     use WithProductHydrators;
@@ -59,6 +58,8 @@ class UpdateProductExternal extends OrgAction
     {
         return [
             'trade_units' => ['required', 'array'],
+            'trade_units.*.id' => ['required', 'exists:trade_units,id'],
+            'trade_units.*.quantity' => ['required', 'numeric', 'gt:0'],
         ];
     }
 

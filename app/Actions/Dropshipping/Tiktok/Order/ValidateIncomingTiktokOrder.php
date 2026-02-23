@@ -14,18 +14,12 @@ use App\Models\Dropshipping\TiktokUser;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class ValidateIncomingTiktokOrder extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
-    public string $commandSignature = 'tiktok:get-order {customerSalesChannel}';
-
-    public function handle(TiktokUser $tiktokUser, array $order): void
+    public function handle(TiktokUser $tiktokUser, $order = []): void
     {
         $existingOrder = Order::where('customer_id', $tiktokUser->customer_id)
             ->where('platform_order_id', Arr::get($order, 'id'))

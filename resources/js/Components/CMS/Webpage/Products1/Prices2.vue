@@ -207,11 +207,7 @@ const _popoverProfit = ref(null)
 
 
                 <!-- RIGHT -->
-                <div :class="[
-                    hasOffer
-                        ? 'flex flex-col justify-end text-right text-xs'
-                        : 'text-xs'
-                ]">
+                <div class="flex flex-col justify-end text-right text-xs">
 
                     <div v-if="product?.rrp_per_unit > 0"
                         v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"

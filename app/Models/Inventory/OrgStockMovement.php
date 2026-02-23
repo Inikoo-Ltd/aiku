@@ -46,7 +46,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $source_id
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\Location|null $location
- * @property-read \App\Models\Inventory\OrgStock|null $orgStock
+ * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static Builder<static>|OrgStockMovement newModelQuery()

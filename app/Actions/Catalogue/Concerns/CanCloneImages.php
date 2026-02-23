@@ -66,6 +66,7 @@ trait CanCloneImages
             'art4_image_id'            => $source->art4_image_id,
             'art5_image_id'            => $source->art5_image_id,
             'lifestyle_image_id'       => $source->lifestyle_image_id,
+            'video_url'                => $source->video_url,
         ]);
 
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);

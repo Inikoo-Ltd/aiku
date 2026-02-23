@@ -13,11 +13,22 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
+ * @property int $id
+ * @property int $group_id
+ * @property int $organisation_id
+ * @property bool $status
+ * @property int $warehouse_id
+ * @property int|null $delivery_note_id
+ * @property string $slug
+ * @property string $code
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\SysAdmin\Organisation|null $organisation
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
- * @property-read \App\Models\Inventory\Warehouse|null $warehouse
+ * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingTrolley newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingTrolley newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingTrolley onlyTrashed()

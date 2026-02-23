@@ -45,6 +45,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_sales_channel_id
  * @property string|null $tiktok_shop_id
  * @property string|null $tiktok_warehouse_id
+ * @property string|null $tiktok_shop_chiper
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\PlatformHasClient> $clients
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
