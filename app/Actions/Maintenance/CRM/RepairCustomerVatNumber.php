@@ -45,7 +45,7 @@ class RepairCustomerVatNumber
             $bar?->advance();
         }
 
-        
+
         $bar->finish();
         $command->newLine();
         $command->info('VAT repair completed');

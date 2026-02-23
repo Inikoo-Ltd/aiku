@@ -14,7 +14,6 @@ use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class RepairMissingFixedWebBlocksInCollectionWebpages
@@ -40,32 +39,32 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         $unpublishedFamiliesSnapshot = $website->unpublishedFamilySnapshot;
 
         $usedFamiliesTemplate = data_get($liveFamiliesSnapshot?->layout, 'code', data_get($unpublishedFamiliesSnapshot?->layout, 'code', null)); // Get published Families layout code
-        
-        if($usedFamiliesTemplate){
+
+        if ($usedFamiliesTemplate) {
             $unusedFamiliesTemplate = array_filter(
                 ['families-1', 'families-2', 'families-3'],
                 fn ($family) => $family != $usedFamiliesTemplate
             );
-            
+
             $countFamiliesWebBlock = $this->getWebpageBlocksByType($webpage, $usedFamiliesTemplate);
             if (count($countFamiliesWebBlock) == 0) {
                 $this->createWebBlock($webpage, $usedFamiliesTemplate);
             }
 
             // REMOVE DUPLICATED FAMILIES WEBBLOCK UNDER COLLECTION
-            foreach($unusedFamiliesTemplate as $unusedFamiliesCode) {
-                $unusedFamiliesWebBlock = $this->getWebpageBlocksByType($webpage, $unusedFamiliesCode); 
-                if(count($unusedFamiliesWebBlock) > 0) {
+            foreach ($unusedFamiliesTemplate as $unusedFamiliesCode) {
+                $unusedFamiliesWebBlock = $this->getWebpageBlocksByType($webpage, $unusedFamiliesCode);
+                if (count($unusedFamiliesWebBlock) > 0) {
                     $webpage
                         ->modelHasWebBlocks()
                         ->whereIn('id', $unusedFamiliesWebBlock->pluck('model_has_web_blocks_id'))
                         ->delete();
-    
+
                     $webpage
                         ->webBlocks()
                         ->whereIn('web_blocks.id', $unusedFamiliesWebBlock->pluck('id'))
                         ->delete();
-    
+
                 }
             }
         }

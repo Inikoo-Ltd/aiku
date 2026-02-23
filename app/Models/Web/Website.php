@@ -116,6 +116,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Media|null $favicon
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read Snapshot|null $liveFamilySnapshot
  * @property-read Snapshot|null $liveSnapshot
  * @property-read Collection<int, \App\Models\Web\WebsiteLlmsTxt> $llmsTxt
  * @property-read Media|null $logo
