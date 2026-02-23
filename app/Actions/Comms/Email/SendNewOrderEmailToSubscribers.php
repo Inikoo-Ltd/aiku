@@ -58,7 +58,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 'tax_amount'                   => $order->tax_amount,
                 'payment_amount'               => $order->payment_amount,
                 'payment_type'                 => $order->payments()->first()->paymentAccount->name ?? 'N/A',
-                'blade_new_order_transactions' => $this->generateOrderTransactionsHtml($transactions, $order->shop->currency),
+                'blade_new_order_transactions' => $this->generateOrderTransactionsHtml($transactions, $order->shop->currency, $order->shop->organisation->currency),
                 'date'                         => $order->submitted_at->format('F jS, Y'),
                 'order_link'                   => route('grp.org.shops.show.crm.customers.show.orders.show', [
                     $order->organisation->slug,
@@ -84,7 +84,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
     }
 
 
-    private function generateOrderTransactionsHtml($transactions, Currency $currency): string
+    private function generateOrderTransactionsHtml($transactions, Currency $currency, Currency $organisationCurrency): string
     {
         if (!$transactions) {
             return '';
@@ -94,6 +94,8 @@ class SendNewOrderEmailToSubscribers extends OrgAction
         }
         $html           = '';
         $currencySymbol = $currency->symbol ?? '£';
+        $orgCurrencySymbol = $organisationCurrency->symbol ?? '£';
+        $currenciesDiffer = $currency->id !== $organisationCurrency->id;
 
         foreach ($transactions as $transaction) {
             $historicAsset = $transaction->historicAsset;
@@ -104,6 +106,25 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $transaction->shop?->slug,
                 $product?->slug
             ]);
+
+            // Generate price display based on currency difference
+            $priceDisplay = '';
+            if ($currenciesDiffer) {
+                // Show both currencies with organisation currency larger
+                $priceDisplay = sprintf(
+                    '<div style="text-align: right;">
+                        <div style="font-size: 11px; color: #666;">%s%s</div>
+                        <div style="font-size: 16px; font-weight: bold; margin-top: 2px;">%s%s</div>
+                    </div>',
+                    $currencySymbol,
+                    $transaction->net_amount ?? '0',
+                    $orgCurrencySymbol,
+                    $transaction->org_net_amount ?? $transaction->net_amount ?? '0'
+                );
+            } else {
+                // Show single currency
+                $priceDisplay = $currencySymbol . ($transaction->net_amount ?? '0');
+            }
 
             $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
@@ -126,7 +147,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                     </table>
                 </td>
                 <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center;">%s</td>
-                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">%s%s</td>
+                <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">%s</td>
             </tr>',
                 $productImage
                     ? '<img src="' . $productImage . '"
@@ -138,8 +159,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $productLink,
                 $historicAsset->name ?? 'N/A',
                 rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.') ?? '0',
-                $currencySymbol,
-                $transaction->net_amount ?? '0'
+                $priceDisplay
             );
         }
 
