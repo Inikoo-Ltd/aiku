@@ -26,6 +26,18 @@ type LeaveBalanceSummary = {
 	unpaid_remaining: number
 }
 
+const canSubmitLeave = computed(() => {
+	if (!balanceSummary.value) return true
+	switch (leaveForm.type) {
+		case "annual":
+			return balanceSummary.value.annual_remaining > 0
+		case "medical":
+			return balanceSummary.value.medical_remaining > 0
+		default:
+			return true
+	}
+})
+
 const props = defineProps<{
 	data: {}
 	tab?: string
@@ -420,13 +432,18 @@ const submitEdit = () => {
 					</p>
 				</div>
 
+				<p v-if="!canSubmitLeave" class="text-sm text-red-600">
+					{{ trans("Insufficient leave balance for the selected type.") }}
+				</p>
+
 				<div class="mt-6 flex justify-end gap-2">
 					<Button @click="closeCreateModal" :label="trans('Cancel')" type="tertiary" />
 					<Button
 						type="save"
 						nativeType="submit"
 						:label="trans('Submit Request')"
-						:loading="isSubmitting" />
+						:loading="isSubmitting"
+						:disabled="!canSubmitLeave" />
 				</div>
 			</form>
 		</Modal>
