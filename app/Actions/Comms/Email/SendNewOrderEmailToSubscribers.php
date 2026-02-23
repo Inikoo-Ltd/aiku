@@ -110,16 +110,16 @@ class SendNewOrderEmailToSubscribers extends OrgAction
             // Generate price display based on currency difference
             $priceDisplay = '';
             if ($currenciesDiffer) {
-                // Show both currencies with organisation currency larger
+                // Show both currencies with organisation currency above
                 $priceDisplay = sprintf(
                     '<div style="text-align: right;">
-                        <div style="font-size: 11px; color: #666;">%s%s</div>
-                        <div style="font-size: 16px; font-weight: bold; margin-top: 2px;">%s%s</div>
+                        <div style="font-size: 16px; font-weight: bold;">%s%s</div>
+                        <div style="font-size: 11px; color: #666; margin-top: 2px;">%s%s</div>
                     </div>',
-                    $currencySymbol,
-                    $transaction->net_amount ?? '0',
                     $orgCurrencySymbol,
-                    $transaction->org_net_amount ?? $transaction->net_amount ?? '0'
+                    $transaction->org_net_amount ?? $transaction->net_amount ?? '0',
+                    $currencySymbol,
+                    $transaction->net_amount ?? '0'
                 );
             } else {
                 // Show single currency
