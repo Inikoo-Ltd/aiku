@@ -30,12 +30,19 @@ type CalendarMonth = {
     weeks: CalendarDay[][]
 }
 
+type HolidayRange = {
+    from: string
+    to: string
+    label: string
+}
+
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     year?: number
     month?: number | null
     holidays?: CalendarHoliday[]
+    holidayRanges?: HolidayRange[]
     tabs?: unknown
 }>()
 
@@ -183,6 +190,54 @@ const visibleMonths = computed<CalendarMonth[]>(() => {
     const monthIndex = Number(filterMonth.value) - 1
 
     return calendarMonths.value.filter((month) => month.month === monthIndex)
+})
+
+const holidaySummariesByMonth = computed<Record<number, { fromDay: number; toDay: number; label: string }[]>>(() => {
+    const result: Record<number, { fromDay: number; toDay: number; label: string }[]> = {}
+
+    if (!props.holidayRanges || props.holidayRanges.length === 0) {
+        return result
+    }
+
+    const year = displayYear.value
+
+    for (const range of props.holidayRanges) {
+        const fromDate = new Date(range.from)
+        const toDate = new Date(range.to)
+
+        if (fromDate.getFullYear() !== year && toDate.getFullYear() !== year) {
+            continue
+        }
+
+        const startMonth = fromDate.getMonth()
+        const endMonth = toDate.getMonth()
+
+        if (startMonth !== endMonth || fromDate.getFullYear() !== toDate.getFullYear()) {
+            continue
+        }
+
+        const monthIndex = startMonth
+
+        if (!result[monthIndex]) {
+            result[monthIndex] = []
+        }
+
+        const fromDay = fromDate.getDate()
+        const toDay = toDate.getDate()
+
+        result[monthIndex].push({
+            fromDay,
+            toDay,
+            label: range.label,
+        })
+    }
+
+    Object.keys(result).forEach((key) => {
+        const index = Number(key)
+        result[index] = result[index].sort((a, b) => a.fromDay - b.fromDay)
+    })
+
+    return result
 })
 
 const weekdayLabels = [
@@ -335,7 +390,7 @@ const goNext = () => {
                 <div
                     v-for="month in visibleMonths"
                     :key="month.month"
-                    class="space-y-2"
+                    class="space-y-3"
                 >
                     <div class="text-sm font-semibold text-gray-800">
                         {{ month.name }}
@@ -373,6 +428,29 @@ const goNext = () => {
                                     </span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="holidaySummariesByMonth[month.month] && holidaySummariesByMonth[month.month].length"
+                        class="mt-2 border-t border-gray-200 pt-2 text-[11px]"
+                    >
+                        <div
+                            v-for="summary in holidaySummariesByMonth[month.month]"
+                            :key="`${summary.fromDay}-${summary.toDay}-${summary.label}`"
+                            class="flex gap-1 text-red-600"
+                        >
+                            <span class="font-semibold">
+                                <span v-if="summary.fromDay === summary.toDay">
+                                    {{ summary.fromDay }}
+                                </span>
+                                <span v-else>
+                                    {{ summary.fromDay }}-{{ summary.toDay }}
+                                </span>
+                            </span>
+                            <span>
+                                {{ summary.label }}
+                            </span>
                         </div>
                     </div>
                 </div>

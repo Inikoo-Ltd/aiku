@@ -118,6 +118,16 @@ class IndexCalendars extends OrgAction
             $holidayDates
         ));
 
+        $holidayRanges = $holidays->map(
+            static function (Holiday $holiday): array {
+                return [
+                    'from'  => $holiday->from->format('Y-m-d'),
+                    'to'    => $holiday->to->format('Y-m-d'),
+                    'label' => $holiday->label,
+                ];
+            }
+        )->values();
+
         return Inertia::render(
             'Org/HumanResources/Calendar',
             [
@@ -127,9 +137,10 @@ class IndexCalendars extends OrgAction
                     'title'         => __('Calendar'),
                     'subNavigation' => $this->getCalendarSubNavigation(),
                 ],
-                'year'     => $year,
-                'month'    => $month,
-                'holidays' => $calendarHolidays,
+                'year'           => $year,
+                'month'          => $month,
+                'holidays'       => $calendarHolidays,
+                'holidayRanges'  => $holidayRanges,
             ]
         )->table($this->tableStructure());
     }
