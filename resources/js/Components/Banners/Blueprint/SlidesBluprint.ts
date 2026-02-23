@@ -184,6 +184,7 @@ export default {
                 {
                     name: ["layout", "card"],
                     type: "cardsBuilder",
+                    useIn: ["desktop", "tablet", "mobile"],
                     label: trans("Cards")
                 }
             ]
