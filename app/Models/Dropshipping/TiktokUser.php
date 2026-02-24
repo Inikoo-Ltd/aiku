@@ -125,4 +125,9 @@ class TiktokUser extends Model
     {
         return $this->belongsTo(CustomerSalesChannel::class);
     }
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
+    }
 }
