@@ -41,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_offer_allowances_state_suspended
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopDiscountsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopDiscountsStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopDiscountsStats query()
