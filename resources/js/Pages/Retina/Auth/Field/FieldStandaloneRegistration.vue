@@ -41,6 +41,7 @@ const addressFieldData = {
         country_id: 48,
     },
     options: props.countriesAddressData,
+    isWithRequiredField: true,
 }
 
 
