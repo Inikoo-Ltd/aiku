@@ -50,6 +50,7 @@ trait WithUpdateModelImage
                         [
                             'checksum' => $checksum,
                             'group_id' => group()->id,
+                            'ulid'     => Str::ulid()
                         ],
                         $properties
                     )
@@ -57,7 +58,6 @@ trait WithUpdateModelImage
                 ->usingName($originalFilename)
                 ->usingFileName(hash('crc32b', $checksum).'.'.$extension)
                 ->toMediaCollection($collection);
-
             $media->refresh();
             UpdateIsAnimatedMedia::run($media, $imagePath);
             MediaHydrateDimensions::run($media);
