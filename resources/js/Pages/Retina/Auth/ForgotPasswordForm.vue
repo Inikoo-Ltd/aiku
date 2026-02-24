@@ -8,7 +8,6 @@ import { faArrowLeft, faCheckCircle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ref } from 'vue'
 import InputError from '@/Components/InputError.vue'
-import { trans } from 'laravel-vue-i18n'
 library.add(faArrowLeft, faCheckCircle)
 
 
@@ -112,7 +111,7 @@ const submit = () => {
 
           <!-- Submit Button -->
           <div class="flex items-center justify-center mt-6">
-            <Button @click="submit" :loading="form.processing" :label="trans('Send Reset Link')"  />
+            <Button @click="submit" :loading="form.processing" :label="ctrans('Send Reset Link')"  />
           </div>
         </form>
       </template>
@@ -133,7 +132,7 @@ const submit = () => {
       <div class="flex justify-center items-center mt-6">
         <p class="text-sm text-gray-500">
           {{ ctrans("Remembered your password") }}?
-          <Link :href="route('retina.login.show')" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition duration-150 ease-in-out ml-1">{{ trans("Login here") }}</Link>
+          <Link :href="route('retina.login.show')" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition duration-150 ease-in-out ml-1">{{ ctrans("Login here") }}</Link>
         </p>
       </div>
     </div>
