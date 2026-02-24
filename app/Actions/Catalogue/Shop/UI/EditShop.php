@@ -104,6 +104,7 @@ class EditShop extends OrgAction
             __('Languages'),
             __('Faire Settings'),
             __('Shopify Keys'),
+            __('Shipping'),
             __('Wix Keys'),
         ];
         $salesChannels = SalesChannel::orderBy('id', 'asc')->get();
@@ -433,6 +434,11 @@ class EditShop extends OrgAction
                             'mode'        => 'tags',
                             'labelProp'   => 'label',
                             'valueProp'   => 'id'
+                        ],
+                        'is_shipping_by_external' => [
+                            'type'          => 'toggle',
+                            'label'         => __('Shipping by external service'),
+                            'value' => Arr::get($shop->settings, 'is_shipping_by_external', false)
                         ]
                     ],
                 ],
