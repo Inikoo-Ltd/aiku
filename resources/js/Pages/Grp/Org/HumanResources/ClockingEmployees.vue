@@ -38,6 +38,7 @@ import TableTimesheetsEmployee from "@/Components/Tables/Grp/Org/HumanResources/
 import TableLeaves from "@/Components/Tables/Grp/Org/HumanResources/TableLeaves.vue"
 import TableAttendanceAdjustments from "@/Components/Tables/Grp/Org/HumanResources/TableAttendanceAdjustments.vue"
 import TableOvertimeEmployee from "@/Components/Tables/Grp/Org/HumanResources/TableOvertimeEmployee.vue"
+import EmployeeCalendar from "@/Components/HumanResources/EmployeeCalendar.vue"
 
 library.add(
 	faEnvelope,
@@ -59,6 +60,20 @@ library.add(
 	faPlus
 )
 
+type EmployeeCalendarData = {
+	year?: number
+	month?: number | null
+	holidays?: {
+		date: string
+		label: string
+	}[]
+	holidayRanges?: {
+		from: string
+		to: string
+		label: string
+	}[]
+}
+
 const props = defineProps<{
 	data: object
 	title: string
@@ -72,6 +87,7 @@ const props = defineProps<{
 	leaves?: Record<string, any>
 	adjustments?: Record<string, any>
 	overtime?: Record<string, any>
+	calendar?: EmployeeCalendarData
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -121,7 +137,13 @@ const component = computed(() => {
 		</template>
 	</PageHeading>
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+
+	<EmployeeCalendar
+		v-if="currentTab === 'calendar'"
+		:calendar="calendar" />
+
 	<component
+		v-else
 		:is="component"
 		:data="
 			currentTab === 'leaves'
