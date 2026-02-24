@@ -80,12 +80,12 @@ const nodeHeight = 100
 const horizontalGap = 40
 const verticalGap = 80
 const minScale = 0.2
-const maxScale = 15
+const maxScale = Number.POSITIVE_INFINITY
 const zoomInStep = 1.35
 const zoomOutStep = 0.75
 const panSpeed = 5
 const enableNodeToggle = false
-const defaultScale = 10
+const defaultScale = 4
 const searchQuery = ref("")
 const searchResultIndex = ref(0)
 let focusAnimationFrame: number | null = null
@@ -287,11 +287,26 @@ const searchResultIds = computed(() => {
 watch(
 	displayNodes,
 	(nodes) => {
+		if (focusAnimationFrame !== null) {
+			cancelAnimationFrame(focusAnimationFrame)
+			focusAnimationFrame = null
+		}
+
+		motionBlurPx.value = 0
+		isDragging.value = false
+		activeNodeDrag.value = null
+		justDraggedNodeId.value = null
+		nodeOffsets.value = new Map()
+
 		expandedNodes.value = getInitialExpandedNodes(
 			nodes,
 			enableNodeToggle ? 1 : Number.MAX_SAFE_INTEGER
 		)
 		focusedNodeId.value = nodes[0]?.id || null
+
+		requestAnimationFrame(() => {
+			centerChart()
+		})
 	},
 	{ immediate: true }
 )
@@ -351,11 +366,18 @@ const centerChart = () => {
 	const containerWidth = chartContainer.value.clientWidth
 	const containerHeight = chartContainer.value.clientHeight
 
-	transform.value.scale = Math.min(Math.max(defaultScale, minScale), maxScale)
+	const bounds = getLayoutBounds()
+	const boundsWidth = Math.max(1, bounds.maxX - bounds.minX)
+	const boundsHeight = Math.max(1, bounds.maxY - bounds.minY)
+	const fitScale = Math.min(containerWidth / boundsWidth, containerHeight / boundsHeight)
+	const autoScale = Math.max(minScale, fitScale * 1.4)
+	const scale = Math.min(Math.max(Math.min(defaultScale, autoScale), minScale), maxScale)
+	const centerX = bounds.minX + boundsWidth / 2
+	const centerY = bounds.minY + boundsHeight / 2
 
-	// Center the tree
-	transform.value.x = (containerWidth - svgWidth.value * transform.value.scale) / 2
-	transform.value.y = (containerHeight - svgHeight.value * transform.value.scale) / 2
+	transform.value.scale = scale
+	transform.value.x = containerWidth / 2 - centerX * scale
+	transform.value.y = containerHeight / 2 - centerY * scale
 }
 
 // Re-center when nodes are expanded/collapsed
@@ -453,6 +475,31 @@ const getContainerCenter = (): { x: number; y: number } => {
 		x: chartContainer.value.clientWidth / 2,
 		y: chartContainer.value.clientHeight / 2,
 	}
+}
+
+const getLayoutBounds = (): { minX: number; minY: number; maxX: number; maxY: number } => {
+	if (layout.value.nodes.length === 0) {
+		return {
+			minX: 0,
+			minY: 0,
+			maxX: svgWidth.value,
+			maxY: svgHeight.value,
+		}
+	}
+
+	let minX = Number.POSITIVE_INFINITY
+	let minY = Number.POSITIVE_INFINITY
+	let maxX = Number.NEGATIVE_INFINITY
+	let maxY = Number.NEGATIVE_INFINITY
+
+	for (const node of layout.value.nodes) {
+		minX = Math.min(minX, node.x)
+		minY = Math.min(minY, node.y)
+		maxX = Math.max(maxX, node.x + nodeWidth)
+		maxY = Math.max(maxY, node.y + nodeHeight)
+	}
+
+	return { minX, minY, maxX, maxY }
 }
 
 const getSvgPointFromClient = (clientX: number, clientY: number): { x: number; y: number } | null => {
@@ -612,9 +659,17 @@ const isTextInputElement = (target: EventTarget | null): boolean => {
 }
 
 const handleWheel = (e: WheelEvent) => {
-	e.preventDefault()
 	const delta = e.deltaY > 0 ? zoomOutStep : zoomInStep
 	const newScale = Math.min(Math.max(transform.value.scale * delta, minScale), maxScale)
+	const didScaleChange = newScale !== transform.value.scale
+
+	e.preventDefault()
+
+	if (!didScaleChange) {
+		transform.value.x -= e.deltaX
+		transform.value.y -= e.deltaY
+		return
+	}
 
 	const rect = chartContainer.value?.getBoundingClientRect()
 	if (rect) {
