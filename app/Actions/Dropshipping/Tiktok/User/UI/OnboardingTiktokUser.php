@@ -39,11 +39,19 @@ class OnboardingTiktokUser extends OrgAction
     {
         $tiktokUser = null;
         $message = null;
+        $website = null;
         $status = false;
+        $needCreateCustomer = false;
         if($model instanceof TiktokUser) {
             $tiktokUser = $model;
             $message = __('Your account is now connected to your TikTok seller account.');
             $status = true;
+            if($tiktokUser->customerSalesChannel?->shop?->website) {
+                $website = $tiktokUser->customerSalesChannel->shop->website;
+            }
+            if($tiktokUser->customer_id == null) {
+                $needCreateCustomer = true;
+            }
         } else if(is_string($model)) {
             $message = $model;
         }
@@ -51,8 +59,11 @@ class OnboardingTiktokUser extends OrgAction
         return Inertia::render('Tiktok/TiktokOnboarding', [
             'success' => $status,
             'name' => $tiktokUser?->name,
-            'customer_id' => $tiktokUser?->customer_id,
-            'message' => $message
+            'message' => $message,
+            'website' => $website,
+            'is_need_create_customer' => $needCreateCustomer, // @Vika If true, need to show those three websites to register page.
+            //If false, show "close this page and continue your registration in the previous website (without bringing the code)"
+            // the url to register page should bring the code on the parameter
         ]);
     }
 
