@@ -76,8 +76,12 @@ class ShowClockingEmployee extends OrgAction
 
 
                 TimesheetTabsEnum::CLOCKINGS->value => $this->tab == TimesheetTabsEnum::CLOCKINGS->value ?
-                    fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))
-                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))),
+                    fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))->additional([
+                        'can_edit_clockings' => false,
+                    ])
+                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))->additional([
+                        'can_edit_clockings' => false,
+                    ])),
 
 
                 TimesheetTabsEnum::HISTORY->value => $this->tab == TimesheetTabsEnum::HISTORY->value ?

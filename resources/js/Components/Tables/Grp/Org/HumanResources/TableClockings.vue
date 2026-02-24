@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { format } from "date-fns";
 import Table from "@/Components/Table/Table.vue";
 import { useFormatTime } from "@/Composables/useFormatTime";
@@ -30,6 +30,22 @@ const notes = ref<string>("");
 const clockedAt = ref<string>("");
 const isSubmitting = ref(false);
 const errorMsg = ref<string | null>(null);
+
+const canEdit = computed<boolean>(() => {
+    if (!props.data) {
+        return false;
+    }
+
+    if ("can_edit_clockings" in props.data) {
+        return !!props.data.can_edit_clockings;
+    }
+
+    if ("meta" in props.data && props.data.meta && "can_edit_clockings" in props.data.meta) {
+        return !!props.data.meta.can_edit_clockings;
+    }
+
+    return false;
+});
 
 const formatClockedAtForInput = (value: string | null | undefined): string => {
     if (!value) {
@@ -122,7 +138,7 @@ const submitNotes = async () => {
                 </div>
             </template>
 
-            <template #cell(actions)="{ item }">
+            <template v-if="canEdit" #cell(actions)="{ item }">
                 <div class="flex">
                     <Button
                         type="transparent"

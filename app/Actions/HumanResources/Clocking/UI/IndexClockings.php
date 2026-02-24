@@ -82,9 +82,9 @@ class IndexClockings extends OrgAction
     }
 
 
-    public function tableStructure(Organisation|Workplace|ClockingMachine|Timesheet $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Organisation|Workplace|ClockingMachine|Timesheet $parent, ?array $modelOperations = null, $prefix = null, bool $showActions = false): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $showActions) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -107,7 +107,7 @@ class IndexClockings extends OrgAction
                 ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('slug');
 
-            if (class_basename($parent) == 'Timesheet') {
+            if ($showActions && class_basename($parent) == 'Timesheet') {
                 $table->column(key: 'actions', label: 'Actions');
             }
         };
@@ -189,7 +189,9 @@ class IndexClockings extends OrgAction
                         ] : false
                     ]
                 ],
-                'data'        => ClockingsResource::collection($clockings),
+                'data'        => ClockingsResource::collection($clockings)->additional([
+                    'can_edit_clockings' => $this->canEdit,
+                ]),
 
 
             ]
