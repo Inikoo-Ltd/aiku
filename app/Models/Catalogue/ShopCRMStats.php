@@ -128,7 +128,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_opt_out_prospects_success_status_registered
  * @property int $number_opt_out_prospects_success_status_invoiced
  * @property int $number_opt_out_prospects_dont_contact_me
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static Builder<static>|ShopCRMStats newModelQuery()
  * @method static Builder<static>|ShopCRMStats newQuery()
  * @method static Builder<static>|ShopCRMStats query()
