@@ -61,21 +61,6 @@
               description: data.state != 'switch_off' ? trans('Create new slides in the workshop to get started' ): trans('need re-publish the banner at workshop'),
             
           }" />
-  
-          <!-- Box: Url (copy button) -->
-          <!-- <div v-if="data.state !== 'unpublished'" class="" :class="[!data.compiled_layout?.components?.length ?  'flex justify-center' : '' ]">
-              <div class="bg-white border border-gray-300 flex items-center justify-between mx-auto gap-x-3 rounded-md md:w-fit ">
-                  <a :href="data.delivery_url" target="_blank" class="pl-4 md:pl-5 inline-block py-2 text-xxs md:text-base text-gray-400">{{ data.delivery_url }}</a>
-                  <Button :style="'secondary'" class="" size="xl" @click="useCopyText(data.delivery_url)" title="Copy url to clipboard">
-                      <FontAwesomeIcon icon='far fa-link' class='text-gray-500' aria-hidden='true' />
-                  </Button>
-              </div>
-              <div class="w-full text-center text-gray-500 mt-2 text-sm italic">
-                  {{ data.ulid }}
-                  <FontAwesomeIcon v-if="!isOnCopy" @click="() => onCopyUlid(data.ulid)" icon='fal fa-copy' class='cursor-pointer hover:text-gray-600' fixed-width aria-hidden='true' />
-                  <FontAwesomeIcon v-else icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />
-              </div>
-          </div> -->
       </div>
   
   </template>
