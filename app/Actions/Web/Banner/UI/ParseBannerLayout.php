@@ -19,7 +19,7 @@ class ParseBannerLayout
     public function handle(array $layout): array
     {
         $slides = [];
-
+        
         foreach (Arr::get($layout, 'components', []) as $key => $slideData) {
             $slides[Arr::get($slideData, 'ulid', $key)] = [
                 'layout'          => Arr::get($slideData, 'layout'),
