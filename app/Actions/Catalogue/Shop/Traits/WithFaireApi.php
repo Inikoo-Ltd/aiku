@@ -5,7 +5,7 @@ namespace App\Actions\Catalogue\Shop\Traits;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 
-trait WithFaireShopApiCollection
+trait WithFaireApi
 {
     protected string $baseUrl = 'https://www.faire.com/external-api/v2/';
     protected array $defaultHeaders = [];
@@ -179,12 +179,7 @@ trait WithFaireShopApiCollection
         return $this->buildRequest(method: 'GET', endpoint: "orders/{$orderId}/packing-slip-pdf", isFileDownload: true);
     }
 
-    /**
-     * Update Inventory Quantity
-     *
-     * @param string $orderId
-     * @return array
-     */
+
     public function updateInventoryQuantity(array $inventories): array
     {
         return $this->buildRequest('PATCH', "product-inventory/by-product-variant-ids", data: [

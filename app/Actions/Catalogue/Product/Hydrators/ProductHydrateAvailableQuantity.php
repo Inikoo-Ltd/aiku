@@ -107,10 +107,6 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             $dataToUpdate['status'] = $status;
         }
 
-        if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE) {
-            UpdateFaireProductInventoryQuantity::dispatch($product);
-        }
-
         if (!$product->is_for_sale) {
             $dataToUpdate['status'] = ProductStatusEnum::NOT_FOR_SALE;
         }

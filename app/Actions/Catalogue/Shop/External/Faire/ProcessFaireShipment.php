@@ -10,9 +10,8 @@ use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
-class GetFaireShipment extends OrgAction
+class ProcessFaireShipment extends OrgAction
 {
-
     /**
      * @throws \Throwable
      */
@@ -25,7 +24,7 @@ class GetFaireShipment extends OrgAction
 
         $shipper = Shipper::where('code', Arr::get($shipment, 'carrier'))->first();
 
-        if(! $shipper) {
+        if (! $shipper) {
             $shipper = StoreShipper::make()->action($order->organisation, [
                 'code' => Arr::get($shipment, 'carrier'),
                 'name' => Arr::get($shipment, 'carrier'),

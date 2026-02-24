@@ -2,7 +2,7 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { DatePicker, InputNumber } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
@@ -10,7 +10,6 @@ import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
 import InformationIcon from '../Utils/InformationIcon.vue'
-import Toggle from '../Pure/Toggle.vue'
 
 const props = defineProps<{
     shop_data: {
@@ -23,10 +22,8 @@ const isOpenModal = ref(false)
 
 const offerLabel = ref('')
 const offerAmount = ref<number | null>(0)
-const discountPercentage = ref<number | null>(null)
 const startDate = ref(null)
 const endDate = ref(null)
-const reuseCustomer = ref(false)
 
 const isLoadingSubmit = ref(false)
 const submitCategoryOffer = () => {
@@ -41,10 +38,8 @@ const submitCategoryOffer = () => {
             name: offerLabel.value,
             type: 'amount',
             offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value,
             start_date: startDate.value,
             end_date: endDate.value,
-            reuse_customer: reuseCustomer.value,
         },
         {
             preserveScroll: true,
@@ -77,17 +72,26 @@ const submitCategoryOffer = () => {
 const resetForm = () => {
     offerLabel.value = ''
     offerAmount.value = null
-    discountPercentage.value = null
+    startDate.value = null
+    endDate.value = null
 }
+
+const isFormInvalid = computed(() => {
+    if (!offerLabel.value) return true
+    if (!offerAmount.value || offerAmount.value <= 0) return true
+    if (!endDate.value) return true
+    if (startDate.value && endDate.value < startDate.value) return true
+    return false
+})
 </script>
 
 <template>
     <div>
-        <Button :label="trans('Create Voucher')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Discount Shipping')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="px-6">
-                <h2 class="text-2xl font-bold mxb-4 text-center">{{ trans('Create Voucher') }}</h2>
+                <h2 class="text-2xl font-bold mxb-4 text-center">{{ trans('Create Discount Shipping') }}</h2>
                 <div class="mt-8 space-y-8">
 
                     <!-- offer name -->
@@ -118,21 +122,6 @@ const resetForm = () => {
                         </div>
                     </div>
 
-                    <!-- Discount -->
-                    <!-- <div>
-                        <label class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk"
-                                class="font-light text-xs text-red-400 align-middle" />
-                            {{ trans('Discount percentage') }}:
-                        </label>
-
-                        <div class="pl-4">
-                            <InputNumber v-model="discountPercentage" inputId="offer_discount"
-                                :placeholder="trans('Enter discount percentage')" suffix="%" class="w-full" :min="0"
-                                :max="100" />
-                        </div>
-                    </div> -->
-
                     <!-- Start date - end date -->
                     <div class="grid grid-cols-2 gap-x-6 ">
                         <div>
@@ -151,18 +140,9 @@ const resetForm = () => {
                             <div class="pl-4">
                                 <DatePicker v-model="endDate" showButtonBar showIcon />
                             </div>
-                        </div>
-                    </div>
-
-                    
-                    <!-- Discount -->
-                    <div>
-                        <label class="font-medium mb-2 flex items-center gap-x-1">
-                            {{ trans('Can customers reuse the voucher') }}?
-                        </label>
-
-                        <div class="pl-4">
-                            <Toggle v-model="reuseCustomer" />
+                            <p v-if="startDate && endDate && endDate < startDate" class="text-red-500 text-sm">
+                                End date must be after start date
+                            </p>
                         </div>
                     </div>
 
@@ -172,11 +152,7 @@ const resetForm = () => {
                     <Button @click="isOpenModal = false" type="cancel" />
                     <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
                         :isLoading="isLoadingSubmit"
-                        :disabled="
-                            !offerLabel
-                            || !discountPercentage
-                            || (!offerAmount)
-                        "
+                        :disabled="isFormInvalid"
                     />
                 </div>
 
