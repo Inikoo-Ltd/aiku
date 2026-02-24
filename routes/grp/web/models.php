@@ -350,6 +350,7 @@ use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
+use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
@@ -738,6 +739,10 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
     Route::patch('layout', UpdateUnpublishedBannerSnapshot::class)->name('layout.update');
     Route::post('images', UploadImagesToBanner::class)->name('images.store');
     Route::post('set-snapshot-to-banner/{snapshot:id}', SetSnapshotToBanner::class)->name('snapshot_to_banner.store')->withoutScopedBindings();
+});
+
+Route::name('layout_template.')->prefix('/layout-template/{webpage}')->group(function () {
+    Route::post('/store', StoreWebLayoutTemplate::class)->name('store');
 });
 
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {

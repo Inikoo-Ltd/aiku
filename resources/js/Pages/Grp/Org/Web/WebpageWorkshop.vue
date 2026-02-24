@@ -575,9 +575,9 @@ const saveAsTemplate = async (payload) => {
   isLoadingPublish.value = true;
   console.log(payload)
 
- /*  try {
-    const response = await axios[action.method](
-      route(action.name, action.parameters),
+  try {
+    const response = await axios.post(
+      route('grp.models.layout_template.store', {webpage: route().params.webpage}),
       payload
     );
 
@@ -602,7 +602,7 @@ const saveAsTemplate = async (payload) => {
     });
   } finally {
     isLoadingPublish.value = false;
-  } */
+  } 
 };
 
 
