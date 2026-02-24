@@ -44,11 +44,11 @@ const setValue = (fieldData: any, value: any) => {
 
     // responsive field (desktop/tablet/mobile)
     if (Array.isArray(fieldData.useIn) && fieldData.useIn.length > 0) {
-        const responsiveValue = get(cloned, fieldName) || {}
+        const existing = get(cloned, fieldName)
 
         set(cloned, fieldName, {
-            ...responsiveValue,
-            [screenView.value]: value
+        ...(existing && typeof existing === "object" ? existing : {}),
+        [screenView.value]: value
         })
 
         console.log('cloned after set:', cloned);
