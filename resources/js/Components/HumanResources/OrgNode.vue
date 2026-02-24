@@ -19,6 +19,7 @@ const props = defineProps<{
 	isFocused?: boolean
 	isExpanded?: boolean
 	hasChildren?: boolean
+	disableToggle?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -28,8 +29,18 @@ const emit = defineEmits<{
 	dragStart: [payload: DragStartPayload]
 }>()
 
+const dragThreshold = 1
+let isPointerDown = false
+let startX = 0
+let startY = 0
+let hasDragged = false
+
+const canToggle = (): boolean => {
+	return Boolean(props.hasChildren && !props.disableToggle)
+}
+
 const toggleExpand = (e: Event) => {
-	if (!props.hasChildren) {
+	if (!canToggle()) {
 		return
 	}
 
@@ -42,6 +53,11 @@ const handleFocus = () => {
 }
 
 const handleClick = () => {
+	if (hasDragged) {
+		hasDragged = false
+		return
+	}
+
 	emit("focus", props.node)
 	emit("select", props.node)
 }
@@ -56,6 +72,12 @@ const handleMouseDown = (e: MouseEvent) => {
 		return
 	}
 
+	e.preventDefault()
+	isPointerDown = true
+	startX = e.clientX
+	startY = e.clientY
+	hasDragged = false
+
 	e.stopPropagation()
 	emit("dragStart", {
 		node: props.node,
@@ -64,12 +86,32 @@ const handleMouseDown = (e: MouseEvent) => {
 	})
 }
 
+const handleMouseMove = (e: MouseEvent) => {
+	if (!isPointerDown || hasDragged) {
+		return
+	}
+
+	const deltaX = e.clientX - startX
+	const deltaY = e.clientY - startY
+	if (Math.abs(deltaX) > dragThreshold || Math.abs(deltaY) > dragThreshold) {
+		hasDragged = true
+	}
+}
+
+const handleMouseUp = () => {
+	isPointerDown = false
+}
+
+const handleMouseLeave = () => {
+	isPointerDown = false
+}
+
 const handleKeydown = (e: KeyboardEvent) => {
 	if (e.key === "Enter") {
 		e.preventDefault()
 		e.stopPropagation()
 
-		if (props.hasChildren) {
+		if (canToggle()) {
 			toggleExpand(e)
 			return
 		}
@@ -80,20 +122,29 @@ const handleKeydown = (e: KeyboardEvent) => {
 	if (e.key === " ") {
 		e.preventDefault()
 		e.stopPropagation()
-		toggleExpand(e)
+
+		if (canToggle()) {
+			toggleExpand(e)
+			return
+		}
+
+		handleSelect()
 	}
 }
 </script>
 
 <template>
-	<div
-		class="org-node"
-		:class="{ 'is-focused': isFocused, 'is-collapsed': !isExpanded && hasChildren }"
-		role="treeitem"
-		:aria-expanded="hasChildren ? isExpanded : undefined"
+		<div
+			class="org-node"
+			:class="{ 'is-focused': isFocused, 'is-collapsed': !isExpanded && hasChildren && !disableToggle }"
+			role="treeitem"
+			:aria-expanded="hasChildren && !disableToggle ? isExpanded : undefined"
 			:tabindex="0"
 			@click="handleClick"
 			@mousedown="handleMouseDown"
+			@mousemove="handleMouseMove"
+			@mouseup="handleMouseUp"
+			@mouseleave="handleMouseLeave"
 			@focus="handleFocus"
 			@keydown="handleKeydown">
 		<div class="org-node-content">
@@ -116,8 +167,8 @@ const handleKeydown = (e: KeyboardEvent) => {
 				</div>
 			</div>
 
-			<button
-				v-if="hasChildren"
+				<button
+					v-if="hasChildren && !disableToggle"
 					class="org-node-toggle"
 					:aria-label="isExpanded ? 'Collapse' : 'Expand'"
 					@mousedown.stop

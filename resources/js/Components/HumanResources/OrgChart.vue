@@ -25,81 +25,11 @@ const emit = defineEmits<{
 	nodeClick: [node: OrgNodeData]
 }>()
 
-const dummyData: OrgNodeData[] = [
-	{
-		id: "1",
-		name: "Sarah Johnson",
-		title: "Head of Human Resources",
-		department: "Human Resources",
-		avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-		reports: [
-			{
-				id: "2",
-				name: "Michael Chen",
-				title: "HR Manager",
-				department: "Human Resources",
-				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
-				reports: [
-					{
-						id: "5",
-						name: "Emily Davis",
-						title: "HR Specialist",
-						department: "Recruitment",
-						avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily",
-						reports: [],
-					},
-					{
-						id: "6",
-						name: "James Wilson",
-						title: "HR Coordinator",
-						department: "Employee Relations",
-						avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=James",
-						reports: [],
-					},
-				],
-			},
-			{
-				id: "3",
-				name: "Lisa Anderson",
-				title: "Training & Development Lead",
-				department: "Learning & Development",
-				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa",
-				reports: [
-					{
-						id: "7",
-						name: "David Brown",
-						title: "Training Coordinator",
-						department: "Learning & Development",
-						avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
-						reports: [],
-					},
-				],
-			},
-			{
-				id: "4",
-				name: "Robert Taylor",
-				title: "Payroll Manager",
-				department: "Payroll",
-				avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Robert",
-				reports: [
-					{
-						id: "8",
-						name: "Jennifer Martinez",
-						title: "Payroll Specialist",
-						department: "Payroll",
-						avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jennifer",
-						reports: [],
-					},
-				],
-			},
-		],
-	},
-]
-
 const chartContainer = ref<HTMLElement | null>(null)
 const transform = ref({ x: 0, y: 0, scale: 1 })
 const isDragging = ref(false)
-const dragStart = ref({ x: 0, y: 0 })
+const panStartPointer = ref({ x: 0, y: 0 })
+const panStartTransform = ref({ x: 0, y: 0 })
 const focusedNodeId = ref<string | null>(null)
 const expandedNodes = ref<Set<string>>(new Set())
 const svgWidth = ref(1200)
@@ -116,7 +46,7 @@ const activeNodeDrag = ref<{
 const justDraggedNodeId = ref<string | null>(null)
 
 const displayNodes = computed(() => {
-	return props.nodes && props.nodes.length > 0 ? props.nodes : dummyData
+	return props.nodes ?? []
 })
 
 const getInitialExpandedNodes = (nodes: OrgNodeData[], maxDepth: number): Set<string> => {
@@ -148,6 +78,15 @@ const nodeWidth = 200
 const nodeHeight = 100
 const horizontalGap = 40
 const verticalGap = 80
+const minScale = 0.2
+const maxScale = 15
+const zoomInStep = 1.35
+const zoomOutStep = 0.75
+const panSpeed = 5
+const enableNodeToggle = false
+const defaultScale = 10
+const searchQuery = ref("")
+const searchResultIndex = ref(0)
 
 interface LayoutNode {
 	node: OrgNodeData
@@ -323,10 +262,30 @@ const visibleFlatNodes = computed(() => {
 	return layout.value.nodes.map((layoutNode) => layoutNode.node)
 })
 
+const searchResultIds = computed(() => {
+	const keyword = searchQuery.value.trim().toLowerCase()
+	if (!keyword) {
+		return []
+	}
+
+	return visibleFlatNodes.value
+		.filter((node) => {
+			return [node.name, node.title, node.department]
+				.filter(Boolean)
+				.join(" ")
+				.toLowerCase()
+				.includes(keyword)
+		})
+		.map((node) => node.id)
+})
+
 watch(
 	displayNodes,
 	(nodes) => {
-		expandedNodes.value = getInitialExpandedNodes(nodes, 1)
+		expandedNodes.value = getInitialExpandedNodes(
+			nodes,
+			enableNodeToggle ? 1 : Number.MAX_SAFE_INTEGER
+		)
 		focusedNodeId.value = nodes[0]?.id || null
 	},
 	{ immediate: true }
@@ -344,6 +303,21 @@ watch(visibleFlatNodes, (nodes) => {
 	}
 
 	focusedNodeId.value = nodes[0].id
+})
+
+watch(searchQuery, () => {
+	searchResultIndex.value = 0
+})
+
+watch(searchResultIds, (resultIds) => {
+	if (resultIds.length === 0) {
+		searchResultIndex.value = 0
+		return
+	}
+
+	if (searchResultIndex.value >= resultIds.length) {
+		searchResultIndex.value = 0
+	}
 })
 
 onMounted(() => {
@@ -367,12 +341,7 @@ const centerChart = () => {
 	const containerWidth = chartContainer.value.clientWidth
 	const containerHeight = chartContainer.value.clientHeight
 
-	// Calculate scale to fit if needed
-	const scaleX = containerWidth / svgWidth.value
-	const scaleY = containerHeight / svgHeight.value
-	const fitScale = Math.min(scaleX, scaleY, 1) * 0.9 // 90% to add padding
-
-	transform.value.scale = Math.max(0.3, Math.min(fitScale, 1))
+	transform.value.scale = Math.min(Math.max(defaultScale, minScale), maxScale)
 
 	// Center the tree
 	transform.value.x = (containerWidth - svgWidth.value * transform.value.scale) / 2
@@ -410,8 +379,10 @@ const findNodeById = (nodeId: string, nodes: OrgNodeData[]): OrgNodeData | null 
 
 const handleMouseDown = (e: MouseEvent) => {
 	if (e.button !== 0) return
+	e.preventDefault()
 	isDragging.value = true
-	dragStart.value = { x: e.clientX - transform.value.x, y: e.clientY - transform.value.y }
+	panStartPointer.value = { x: e.clientX, y: e.clientY }
+	panStartTransform.value = { x: transform.value.x, y: transform.value.y }
 }
 
 const handleMouseMove = (e: MouseEvent) => {
@@ -433,8 +404,11 @@ const handleMouseMove = (e: MouseEvent) => {
 	}
 
 	if (!isDragging.value) return
-	transform.value.x = e.clientX - dragStart.value.x
-	transform.value.y = e.clientY - dragStart.value.y
+	const speed = panSpeed * Math.max(1, Math.sqrt(transform.value.scale))
+	const deltaX = (e.clientX - panStartPointer.value.x) * speed
+	const deltaY = (e.clientY - panStartPointer.value.y) * speed
+	transform.value.x = panStartTransform.value.x + deltaX
+	transform.value.y = panStartTransform.value.y + deltaY
 }
 
 const handleMouseUp = () => {
@@ -446,25 +420,112 @@ const handleMouseUp = () => {
 	isDragging.value = false
 }
 
+const applyZoomAtContainerPoint = (newScale: number, containerX: number, containerY: number) => {
+	const oldScale = transform.value.scale
+	if (newScale === oldScale) {
+		return
+	}
+
+	const worldX = (containerX - transform.value.x) / oldScale
+	const worldY = (containerY - transform.value.y) / oldScale
+
+	transform.value.scale = newScale
+	transform.value.x = containerX - worldX * newScale
+	transform.value.y = containerY - worldY * newScale
+}
+
+const getContainerCenter = (): { x: number; y: number } => {
+	if (!chartContainer.value) {
+		return { x: svgWidth.value / 2, y: svgHeight.value / 2 }
+	}
+
+	return {
+		x: chartContainer.value.clientWidth / 2,
+		y: chartContainer.value.clientHeight / 2,
+	}
+}
+
+const focusNodeInView = (nodeId: string, preferredScale: number = transform.value.scale) => {
+	if (!chartContainer.value) {
+		return
+	}
+
+	const targetNode = layout.value.nodes.find((layoutNode) => layoutNode.node.id === nodeId)
+	if (!targetNode) {
+		return
+	}
+
+	const scale = Math.min(Math.max(preferredScale, minScale), maxScale)
+	const nodeCenterX = targetNode.x + nodeWidth / 2
+	const nodeCenterY = targetNode.y + nodeHeight / 2
+
+	transform.value.scale = scale
+	transform.value.x = chartContainer.value.clientWidth / 2 - nodeCenterX * scale
+	transform.value.y = chartContainer.value.clientHeight / 2 - nodeCenterY * scale
+	focusedNodeId.value = nodeId
+}
+
+const focusSearchResult = (index: number) => {
+	const total = searchResultIds.value.length
+	if (total === 0) {
+		return
+	}
+
+	const normalized = ((index % total) + total) % total
+	searchResultIndex.value = normalized
+	const nodeId = searchResultIds.value[normalized]
+	focusNodeInView(nodeId, Math.max(transform.value.scale, 1.25))
+}
+
+const focusNextSearchResult = () => {
+	focusSearchResult(searchResultIndex.value + 1)
+}
+
+const focusPreviousSearchResult = () => {
+	focusSearchResult(searchResultIndex.value - 1)
+}
+
+const runSearch = () => {
+	focusSearchResult(searchResultIndex.value)
+}
+
+const clearSearch = () => {
+	searchQuery.value = ""
+	searchResultIndex.value = 0
+}
+
+const isTextInputElement = (target: EventTarget | null): boolean => {
+	const element = target as HTMLElement | null
+	if (!element) {
+		return false
+	}
+
+	const tagName = element.tagName
+	return tagName === "INPUT" || tagName === "TEXTAREA" || element.isContentEditable
+}
+
 const handleWheel = (e: WheelEvent) => {
 	e.preventDefault()
-	const delta = e.deltaY > 0 ? 0.9 : 1.1
-	const newScale = Math.min(Math.max(transform.value.scale * delta, 0.3), 3)
+	const delta = e.deltaY > 0 ? zoomOutStep : zoomInStep
+	const newScale = Math.min(Math.max(transform.value.scale * delta, minScale), maxScale)
 
 	const rect = chartContainer.value?.getBoundingClientRect()
 	if (rect) {
 		const mouseX = e.clientX - rect.left
 		const mouseY = e.clientY - rect.top
-
-		const scaleDiff = newScale - transform.value.scale
-		transform.value.x -= (mouseX * scaleDiff) / transform.value.scale
-		transform.value.y -= (mouseY * scaleDiff) / transform.value.scale
+		applyZoomAtContainerPoint(newScale, mouseX, mouseY)
+		return
 	}
 
-	transform.value.scale = newScale
+	const center = getContainerCenter()
+	applyZoomAtContainerPoint(newScale, center.x, center.y)
 }
 
 const handleNodeToggle = (id: string) => {
+	if (!enableNodeToggle) {
+		return
+	}
+
 	const target = findNodeById(id, displayNodes.value)
 	if (!target || (target.reports?.length || 0) === 0) {
 		return
@@ -483,6 +544,10 @@ const handleNodeFocus = (node: OrgNodeData) => {
 }
 
 const handleNodeClick = (node: OrgNodeData) => {
+	if (activeNodeDrag.value?.nodeId === node.id) {
+		return
+	}
+
 	if (justDraggedNodeId.value === node.id) {
 		justDraggedNodeId.value = null
 		return
@@ -505,6 +570,10 @@ const handleNodeDragStart = (payload: NodeDragStartPayload) => {
 }
 
 const handleKeydown = (e: KeyboardEvent) => {
+	if (isTextInputElement(e.target)) {
+		return
+	}
+
 	if (!focusedNodeId.value) {
 		if (visibleFlatNodes.value.length > 0) {
 			focusedNodeId.value = visibleFlatNodes.value[0].id
@@ -525,7 +594,7 @@ const handleKeydown = (e: KeyboardEvent) => {
 		focusedNodeId.value = visibleFlatNodes.value[prevIndex].id
 	} else if (e.key === "Enter") {
 		const node = visibleFlatNodes.value[currentIndex]
-		if (node.reports && node.reports.length > 0) {
+		if (enableNodeToggle && node.reports && node.reports.length > 0) {
 			handleNodeToggle(node.id)
 		} else {
 			handleNodeClick(node)
@@ -534,15 +603,19 @@ const handleKeydown = (e: KeyboardEvent) => {
 }
 
 const resetView = () => {
-	transform.value = { x: 0, y: 0, scale: 1 }
+	centerChart()
 }
 
 const zoomIn = () => {
-	transform.value.scale = Math.min(transform.value.scale * 1.2, 3)
+	const newScale = Math.min(transform.value.scale * zoomInStep, maxScale)
+	const center = getContainerCenter()
+	applyZoomAtContainerPoint(newScale, center.x, center.y)
 }
 
 const zoomOut = () => {
-	transform.value.scale = Math.max(transform.value.scale * 0.8, 0.3)
+	const newScale = Math.max(transform.value.scale * zoomOutStep, minScale)
+	const center = getContainerCenter()
+	applyZoomAtContainerPoint(newScale, center.x, center.y)
 }
 
 const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
@@ -562,6 +635,39 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 
 <template>
 	<div class="org-chart-wrapper">
+		<div class="org-chart-search">
+			<input
+				v-model="searchQuery"
+				type="text"
+				class="search-input"
+				placeholder="Search employee or job"
+				@keydown.enter.prevent="runSearch" />
+			<button
+				class="search-btn"
+				:disabled="searchResultIds.length === 0"
+				title="Previous result"
+				@click="focusPreviousSearchResult">
+				↑
+			</button>
+			<button
+				class="search-btn"
+				:disabled="searchResultIds.length === 0"
+				title="Next result"
+				@click="focusNextSearchResult">
+				↓
+			</button>
+			<button
+				class="search-btn search-find-btn"
+				:disabled="searchResultIds.length === 0"
+				@click="runSearch">
+				Find
+			</button>
+			<button v-if="searchQuery" class="search-btn search-clear-btn" @click="clearSearch">Clear</button>
+			<span class="search-count">
+				{{ searchResultIds.length === 0 ? "0" : `${searchResultIndex + 1}/${searchResultIds.length}` }}
+			</span>
+		</div>
+
 		<div class="org-chart-controls">
 			<button class="control-btn" @click="zoomIn" title="Zoom In">
 				<svg
@@ -625,34 +731,35 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 							class="connector-line" />
 					</g>
 
-						<foreignObject
-							v-for="ln in layout.nodes"
-							:key="ln.node.id"
-							:x="ln.x"
-							:y="ln.y"
-							:width="nodeWidth"
-							:height="nodeHeight">
-							<OrgNode
-								:node="ln.node"
-								:is-focused="focusedNodeId === ln.node.id"
-								:is-expanded="expandedNodes.has(ln.node.id)"
-								:has-children="(ln.node.reports?.length ?? 0) > 0"
-								@toggle="handleNodeToggle"
-								@focus="handleNodeFocus"
-								@drag-start="handleNodeDragStart"
-								@select="handleNodeClick" />
-						</foreignObject>
-					</g>
-				</svg>
-			</div>
-
-			<div class="org-chart-help">
-				<span>🖱️ Drag to pan</span>
-				<span>⚙️ Scroll to zoom</span>
-				<span>⌨️ Arrow keys to navigate</span>
-				<span>Enter to expand</span>
-			</div>
+					<foreignObject
+						v-for="ln in layout.nodes"
+						:key="ln.node.id"
+						:x="ln.x"
+						:y="ln.y"
+						:width="nodeWidth"
+						:height="nodeHeight">
+						<OrgNode
+							:node="ln.node"
+							:is-focused="focusedNodeId === ln.node.id"
+							:is-expanded="enableNodeToggle ? expandedNodes.has(ln.node.id) : true"
+							:has-children="(ln.node.reports?.length ?? 0) > 0"
+							:disable-toggle="!enableNodeToggle"
+							@toggle="handleNodeToggle"
+							@focus="handleNodeFocus"
+							@drag-start="handleNodeDragStart"
+							@select="handleNodeClick" />
+					</foreignObject>
+				</g>
+			</svg>
 		</div>
+
+		<div class="org-chart-help">
+			<span>🖱️ Drag to pan</span>
+			<span>⚙️ Scroll to zoom</span>
+			<span>⌨️ Arrow keys to navigate</span>
+			<span>Enter to select</span>
+		</div>
+	</div>
 </template>
 
 <style scoped>
@@ -666,6 +773,12 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 	border: 1px solid #e5e7eb;
 }
 
+.org-chart-wrapper,
+.org-chart-wrapper * {
+	user-select: none;
+	-webkit-user-select: none;
+}
+
 .org-chart-controls {
 	position: absolute;
 	top: 16px;
@@ -677,6 +790,86 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 	padding: 8px;
 	border-radius: 8px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.org-chart-search {
+	position: absolute;
+	top: 16px;
+	left: 16px;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: white;
+	padding: 8px;
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	max-width: calc(100% - 170px);
+}
+
+.search-input {
+	width: 230px;
+	max-width: 36vw;
+	padding: 8px 10px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	font-size: 13px;
+	color: #111827;
+	background: white;
+	outline: none;
+	user-select: text;
+	-webkit-user-select: text;
+}
+
+.search-input:focus {
+	border-color: #6366f1;
+	box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.search-btn {
+	border: none;
+	background: #f3f4f6;
+	color: #374151;
+	border-radius: 6px;
+	padding: 8px 10px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	min-width: 34px;
+}
+
+.search-btn:hover:not(:disabled) {
+	background: #e5e7eb;
+}
+
+.search-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.search-find-btn {
+	background: #dbeafe;
+	color: #1e40af;
+}
+
+.search-find-btn:hover:not(:disabled) {
+	background: #bfdbfe;
+}
+
+.search-clear-btn {
+	background: #fee2e2;
+	color: #b91c1c;
+}
+
+.search-clear-btn:hover {
+	background: #fecaca;
+}
+
+.search-count {
+	font-size: 12px;
+	color: #6b7280;
+	min-width: 40px;
+	text-align: right;
 }
 
 .control-btn {
@@ -742,6 +935,20 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 @media (max-width: 768px) {
 	.org-chart-wrapper {
 		height: 500px;
+	}
+
+	.org-chart-search {
+		top: 12px;
+		left: 12px;
+		right: 12px;
+		max-width: unset;
+		flex-wrap: wrap;
+	}
+
+	.search-input {
+		flex: 1;
+		max-width: unset;
+		min-width: 180px;
 	}
 
 	.org-chart-help {

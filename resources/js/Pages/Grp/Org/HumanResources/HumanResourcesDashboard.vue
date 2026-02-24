@@ -10,7 +10,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Stats from "@/Components/DataDisplay/Stats.vue"
 import OrgChart from "@/Components/HumanResources/OrgChart.vue"
 import { capitalize } from "@/Composables/capitalize"
-defineProps(["title", "pageHead", "stats"])
+defineProps(["title", "pageHead", "stats", "orgChartNodes"])
 </script>
 
 <template>
@@ -20,6 +20,6 @@ defineProps(["title", "pageHead", "stats"])
 	<Stats :stats="stats"></Stats>
 
 	<div class="mt-6">
-		<OrgChart></OrgChart>
+		<OrgChart :nodes="orgChartNodes"></OrgChart>
 	</div>
 </template>
