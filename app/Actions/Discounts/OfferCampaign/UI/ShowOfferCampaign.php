@@ -28,6 +28,7 @@ class ShowOfferCampaign extends OrgAction
     use OfferCampaignCategoryOffersTrait;
     use OfferCampaignProductOffersTrait;
     use OfferCampaignDiscretionaryTrait;
+    use OfferCampaignDiscountShippingTrait;
 
     public function handle(OfferCampaign $offerCampaign): OfferCampaign
     {
@@ -58,7 +59,7 @@ class ShowOfferCampaign extends OrgAction
             OfferCampaignTypeEnum::CATEGORY_OFFERS => $this->getCategoryOffersHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::PRODUCT_OFFERS => $this->getProductOffersHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::DISCRETIONARY => $this->getDiscretionaryHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::SHIPPING => $this->getDiscretionaryHtmlResponse($offerCampaign, $request), // todo make its own action
+            OfferCampaignTypeEnum::SHIPPING => $this->getDiscountShippingHtmlResponse($offerCampaign, $request), // todo make its own action
 
         };
     }
