@@ -46,6 +46,14 @@ class UploadImagesToWebsite extends OrgAction
         return $this->handle($website, 'sidebar', $this->validatedData);
     }
 
+    public function menu(Website $website, ActionRequest $request): Collection
+    {
+        $this->scope = $website->organisation;
+        $this->initialisation($this->scope, $request);
+
+        return $this->handle($website, 'menu', $this->validatedData);
+    }
+
     public function favicon(Website $website, ActionRequest $request): Collection
     {
         $this->scope = $website->shop;

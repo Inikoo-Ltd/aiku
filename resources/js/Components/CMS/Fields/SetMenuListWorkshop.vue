@@ -15,6 +15,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEye, faEyeSlash } from "@fal"
 import { faCopy } from "@far"
 import { faTrash } from "@fas"
+import { routeType } from "@/types/route"
+
+
+defineProps<{
+	uploadImageRoute : routeType
+}>()
 
 const dataModel = defineModel<{
 	data: {
@@ -203,6 +209,7 @@ const updateNavigationFromDrawer = (value: any) => {
 			v-if="selectedMenu !== null"
 			:model-value="navigation[selectedMenu]"
 			@update:model-value="updateNavigationFromDrawer"
+			:uploadImageRoute
 		/>
 	</Drawer>
 

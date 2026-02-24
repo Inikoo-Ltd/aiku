@@ -12,6 +12,7 @@ import IconPicker from '@/Components/Pure/IconPicker.vue'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
+import UploadImage from '@/Components/Pure/UploadImage.vue'
 
 // FontAwesome
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -23,6 +24,8 @@ import {
 } from '@fas'
 import { faHeart } from '@fortawesome/free-regular-svg-icons'
 import { faExclamationTriangle, faTimesCircle } from '@fal'
+import { routeType } from '@/types/route'
+import SelectButton from 'primevue/selectbutton';
 
 library.add(
   faChevronRight, faSignOutAlt, faShoppingCart,
@@ -54,7 +57,7 @@ interface Navigation {
 }
 
 // ================= PROPS =================
-const props = defineProps<{ modelValue: Navigation }>()
+const props = defineProps<{ modelValue: Navigation, uploadImageRoute: routeType }>()
 const emits = defineEmits<{
   (e: 'update:modelValue', val: Navigation): void
 }>()
@@ -84,6 +87,14 @@ const changeType = (type: string) => {
     type,
     subnavs: type === 'multiple' ? [] : undefined
   })
+}
+
+const changeImage = (image: any) => {
+  commit({ image })
+}
+
+const changeImagePosition = (position: number) => {
+  commit({ image_position: position })
 }
 
 const addSubNavigation = () => {
@@ -170,6 +181,15 @@ watch(
     localNav.value = cloneDeep(newVal)
   }
 )
+
+const image = ref(null)
+
+const options = ref([
+  { name: 'Column 1', value: 1 },
+  { name: 'Column 2', value: 2 },
+  { name: 'Column 3', value: 3 },
+  { name: 'Column 4', value: 4 }
+]);
 </script>
 
 
@@ -197,112 +217,143 @@ watch(
       <!-- Type Selector -->
       <div>
         <h3 class="font-medium text-gray-800 text-md mb-3">Type</h3>
-
         <PureMultiselect :required="true" :model-value="localNav.type" label="label" value-prop="value" :options="[
           { label: 'Single', value: 'single' },
           { label: 'Multiple', value: 'multiple' }
         ]" @update:model-value="changeType" />
       </div>
 
-
-    <!-- Navigation Link -->
-    <div>
-      <h3 class="font-medium text-gray-800 text-md mb-3">Link</h3>
-      <div v-if="!props.modelValue?.link?.href" @click="visibleNavigation=true" tabindex="0" role="button" class="flex items-center justify-between bg-gray-100 p-3 rounded-md cursor-pointer">
-        <span class="text-gray-500 truncate">Not set up yet</span>
+      <div>
+        <h3 class="font-medium text-gray-800 text-md mb-3">Image</h3>
+        <UploadImage :model-value="localNav.image" :uploadRoutes="uploadImageRoute" option-value="value"
+          option-label="label" @update:model-value="changeImage" />
       </div>
-      <div v-else class="flex items-center justify-between bg-gray-100 p-3 rounded-md">
-        <span class="text-blue-500 hover:underline truncate cursor-pointer" @click="visibleNavigation=true">{{ props.modelValue.link.href }}</span>
-        <div class="flex items-center gap-2">
-          <a v-if="props.modelValue.link.type === 'internal'" :href="props.modelValue.link.workshop" target="_blank" rel="noopener">
-            <FontAwesomeIcon :icon="faCompassDrafting" />
-          </a>
-          <a :href="props.modelValue.link.href" target="_blank" rel="noopener">
-            <FontAwesomeIcon :icon="faExternalLink" />
-          </a>
+
+
+      <div v-if="localNav.image">
+        <h3 class="font-medium text-gray-800 text-md mb-3">Image Position</h3>
+        <SelectButton :model-value="localNav.image_position" :options="options" optionLabel="name" optionValue="value"
+          @update:model-value="changeImagePosition" />
+      </div>
+
+      <!-- Navigation Link -->
+      <div>
+        <h3 class="font-medium text-gray-800 text-md mb-3">Link</h3>
+        <div v-if="!props.modelValue?.link?.href" @click="visibleNavigation = true" tabindex="0" role="button"
+          class="flex items-center justify-between bg-gray-100 p-3 rounded-md cursor-pointer">
+          <span class="text-gray-500 truncate">Not set up yet</span>
         </div>
-      </div>
+        <div v-else class="flex items-center justify-between bg-gray-100 p-3 rounded-md">
+          <span class="text-blue-500 hover:underline truncate cursor-pointer" @click="visibleNavigation = true">{{
+            props.modelValue.link.href }}</span>
+          <div class="flex items-center gap-2">
+            <a v-if="props.modelValue.link.type === 'internal'" :href="props.modelValue.link.workshop" target="_blank"
+              rel="noopener">
+              <FontAwesomeIcon :icon="faCompassDrafting" />
+            </a>
+            <a :href="props.modelValue.link.href" target="_blank" rel="noopener">
+              <FontAwesomeIcon :icon="faExternalLink" />
+            </a>
+          </div>
+        </div>
 
-      <!-- Subnavigation -->
-      <div v-if="props.modelValue.type === 'multiple'">
-        <div class="font-medium text-gray-800 text-lg mb-4 mt-4">Subnavigation</div>
-        <draggable :list="props.modelValue.subnavs" class="flex flex-col gap-4" ghost-class="ghost" itemKey="id" handle=".drag-handle">
-          <template #item="{ element, index }">
-            <Disclosure>
-              <template #default="{ open }">
-                <article class="bg-white rounded-lg shadow-lg" :class="open ? 'ring-1 ring-blue-500' : ''">
-                  <DisclosureButton class="flex justify-between items-center w-full p-4 cursor-pointer">
-                    <div class="flex items-center gap-3">
-                      <FontAwesomeIcon icon="fas fa-bars" class="drag-handle cursor-move text-gray-400"/>
-                      <div class="text-md" @click.stop="() => openNameDialog(element, index)" tabindex="0" role="button">
-                        <span v-if="element.title" class="font-medium text-gray-800">{{ element.title }}</span>
-                        <span v-else class="font-medium text-gray-400">Has no title</span>
+        <!-- Subnavigation -->
+        <div v-if="props.modelValue.type === 'multiple'">
+          <div class="font-medium text-gray-800 text-lg mb-4 mt-4">Subnavigation</div>
+          <draggable :list="props.modelValue.subnavs" class="flex flex-col gap-4" ghost-class="ghost" itemKey="id"
+            handle=".drag-handle">
+            <template #item="{ element, index }">
+              <Disclosure>
+                <template #default="{ open }">
+                  <article class="bg-white rounded-lg shadow-lg" :class="open ? 'ring-1 ring-blue-500' : ''">
+                    <DisclosureButton class="flex justify-between items-center w-full p-4 cursor-pointer">
+                      <div class="flex items-center gap-3">
+                        <FontAwesomeIcon icon="fas fa-bars" class="drag-handle cursor-move text-gray-400" />
+                        <div class="text-md" @click.stop="() => openNameDialog(element, index)" tabindex="0"
+                          role="button">
+                          <span v-if="element.title" class="font-medium text-gray-800">{{ element.title }}</span>
+                          <span v-else class="font-medium text-gray-400">Has no title</span>
+                        </div>
                       </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <FontAwesomeIcon v-if="element.links.length < 8" icon="fas fa-plus-circle" class="cursor-pointer text-blue-500" @click.stop="() => addLink(index)"/>
-                      <FontAwesomeIcon icon="fas fa-trash-alt" class="cursor-pointer text-red-500" @click.stop="() => deleteSubNavigation(index)"/>
-                      <FontAwesomeIcon :icon="open ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="text-gray-400"/>
-                    </div>
-                  </DisclosureButton>
+                      <div class="flex items-center gap-3">
+                        <FontAwesomeIcon v-if="element.links.length < 8" icon="fas fa-plus-circle"
+                          class="cursor-pointer text-blue-500" @click.stop="() => addLink(index)" />
+                        <FontAwesomeIcon icon="fas fa-trash-alt" class="cursor-pointer text-red-500"
+                          @click.stop="() => deleteSubNavigation(index)" />
+                        <FontAwesomeIcon :icon="open ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"
+                          class="text-gray-400" />
+                      </div>
+                    </DisclosureButton>
 
-                  <DisclosurePanel class="p-3 border-t border-gray-200">
-                    <draggable :list="element.links" ghost-class="ghost" group="link" itemKey="id" handle=".link-drag-handle" :animation="200" class="flex flex-col gap-y-2">
-                      <template #item="{ element: link, index: linkIndex }">
-                        <div class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition">
-                          <FontAwesomeIcon icon="fas fa-bars" class="link-drag-handle cursor-move text-gray-400 pr-2"/>
-                          <IconPicker v-model="link.icon"/>
-                          <div class="flex justify-between items-center w-full">
-                            <div class="text-gray-500 hover:text-gray-600 hover:underline cursor-pointer text-xs" @click.stop="() => openLinkDialog(link, index, linkIndex)" tabindex="0" role="button">{{ link.label }}</div>
-                            <div class="flex items-center gap-3">
-                              <a v-if="link?.link?.type == 'internal'" :href="link.link.workshop" target="_blank" rel="noopener">
-                                <FontAwesomeIcon :icon="faCompassDrafting" class="text-gray-400 hover:text-gray-600 transition"/>
-                              </a>
-                              <a v-if="link?.link?.href" :href="link.link.href" target="_blank" rel="noopener">
-                                <FontAwesomeIcon :icon="faExternalLink" class="text-gray-400 hover:text-gray-600 transition"/>
-                              </a>
-                              <span @click.stop="() => element.links.splice(linkIndex, 1)" class="text-red-400 hover:text-red-600 cursor-pointer">
-                                <FontAwesomeIcon :icon="faTimesCircle"/>
-                              </span>
+                    <DisclosurePanel class="p-3 border-t border-gray-200">
+                      <draggable :list="element.links" ghost-class="ghost" group="link" itemKey="id"
+                        handle=".link-drag-handle" :animation="200" class="flex flex-col gap-y-2">
+                        <template #item="{ element: link, index: linkIndex }">
+                          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition">
+                            <FontAwesomeIcon icon="fas fa-bars"
+                              class="link-drag-handle cursor-move text-gray-400 pr-2" />
+                            <IconPicker v-model="link.icon" />
+                            <div class="flex justify-between items-center w-full">
+                              <div class="text-gray-500 hover:text-gray-600 hover:underline cursor-pointer text-xs"
+                                @click.stop="() => openLinkDialog(link, index, linkIndex)" tabindex="0" role="button">{{
+                                link.label }}</div>
+                              <div class="flex items-center gap-3">
+                                <a v-if="link?.link?.type == 'internal'" :href="link.link.workshop" target="_blank"
+                                  rel="noopener">
+                                  <FontAwesomeIcon :icon="faCompassDrafting"
+                                    class="text-gray-400 hover:text-gray-600 transition" />
+                                </a>
+                                <a v-if="link?.link?.href" :href="link.link.href" target="_blank" rel="noopener">
+                                  <FontAwesomeIcon :icon="faExternalLink"
+                                    class="text-gray-400 hover:text-gray-600 transition" />
+                                </a>
+                                <span @click.stop="() => element.links.splice(linkIndex, 1)"
+                                  class="text-red-400 hover:text-red-600 cursor-pointer">
+                                  <FontAwesomeIcon :icon="faTimesCircle" />
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </template>
-                    </draggable>
-                  </DisclosurePanel>
-                </article>
-              </template>
-            </Disclosure>
-          </template>
-        </draggable>
+                        </template>
+                      </draggable>
+                    </DisclosurePanel>
+                  </article>
+                </template>
+              </Disclosure>
+            </template>
+          </draggable>Z
 
-        <!-- Add Subnavigation Button -->
-        <div class="flex justify-end mt-2">
-          <Button label="Add Subnavigation" type="create" :disabled="props.modelValue.subnavs?.length >= 8" @click="addSubNavigation"/>
+          <!-- Add Subnavigation Button -->
+          <div class="flex justify-end mt-2">
+            <Button label="Add Subnavigation" type="create" :disabled="props.modelValue.subnavs?.length >= 8"
+              @click="addSubNavigation" />
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Dialogs -->
-  <Dialog v-model:visible="visibleNameDialog" modal header="Edit Name" :style="{ width: '25rem' }" :contentStyle="{ overflowY: 'visible'}">
-    <DialogEditLink v-model="nameValue" @on-save="saveSubnavTitle"/>
-  </Dialog>
+    <!-- Dialogs -->
+    <Dialog v-model:visible="visibleNameDialog" modal header="Edit Name" :style="{ width: '25rem' }"
+      :contentStyle="{ overflowY: 'visible' }">
+      <DialogEditLink v-model="nameValue" @on-save="saveSubnavTitle" />
+    </Dialog>
 
-  <Dialog v-model:visible="visibleDialog" modal header="Edit Link" :style="{ width: '25rem' }" :contentStyle="{ overflowY: 'visible'}">
-    <DialogEditLink v-model="linkValue" @on-save="saveLink"/>
-  </Dialog>
+    <Dialog v-model:visible="visibleDialog" modal header="Edit Link" :style="{ width: '25rem' }"
+      :contentStyle="{ overflowY: 'visible' }">
+      <DialogEditLink v-model="linkValue" @on-save="saveLink" />
+    </Dialog>
 
-  <Dialog v-model:visible="visibleNavigation" modal header="Edit Navigation Link" :style="{ width: '25rem' }" :contentStyle="{ overflowY: 'visible'}">
-    <DialogEditLink :modelValue="props.modelValue" @on-save="saveNavigationLink"/>
-  </Dialog>
+    <Dialog v-model:visible="visibleNavigation" modal header="Edit Navigation Link" :style="{ width: '25rem' }"
+      :contentStyle="{ overflowY: 'visible' }">
+      <DialogEditLink :modelValue="props.modelValue" @on-save="saveNavigationLink" />
+    </Dialog>
 
-  <ConfirmPopup>
-    <template #icon>
-      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
-    </template>
-  </ConfirmPopup>
-</div>
+    <ConfirmPopup>
+      <template #icon>
+        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+      </template>
+    </ConfirmPopup>
+  </div>
 </template>
 
 <style scoped lang="scss">
