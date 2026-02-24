@@ -96,8 +96,7 @@ class DispatchOrder extends OrgAction
                 }
             }
 
-            // TODO: Implement is_shipping_by_external
-            if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && app()->isProduction()) {
+            if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external && app()->isProduction()) {
                 UpdateShippingFaireOrder::run($order->shop, $order);
             }
 
