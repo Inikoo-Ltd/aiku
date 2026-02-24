@@ -101,7 +101,7 @@ const openRequestLeaveModal = () => {
 const handleTabUpdate = (tabSlug: string) => {
 	const url = new URL(window.location.href)
 	url.searchParams.forEach((_, key) => {
-		if (key.startsWith("timesheets_")) {
+		if (key.startsWith("timesheet_") || key === "year" || key === "month" || key.startsWith("requested_")) {
 			url.searchParams.delete(key)
 		}
 	})
