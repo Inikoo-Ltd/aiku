@@ -23,6 +23,7 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -375,6 +376,10 @@ class ShowOrder extends OrgAction
                 'readonly'                    => false,
                 'shop_type'                   => $order->shop->type,
                 'is_shop_external'            => $this->shop->type == ShopTypeEnum::EXTERNAL,
+                'external_shop'               => $this->shop->type == ShopTypeEnum::EXTERNAL ? [
+                    'engine_value' => $this->shop->engine->value,
+                    'engine_label'  => ShopEngineEnum::from($this->shop->engine->value)->label()
+                ] : null,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
                 'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
                 'box_stats'                   => $this->getOrderBoxStats($order),
