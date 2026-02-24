@@ -584,7 +584,7 @@ class IndexClockingEmployees extends OrgAction
 
         foreach ($timesheetsQuery->cursor() as $ts) {
 
-            $dayOfWeek = $ts->date->dayOfWeekIso;
+            $dayOfWeek   = $ts->date->dayOfWeekIso;
             $daySchedule = $scheduleMap->get($dayOfWeek);
 
             if (!$daySchedule || !$daySchedule->is_working_day) {
@@ -600,20 +600,11 @@ class IndexClockingEmployees extends OrgAction
                 ->setTimezone($timezone);
 
             $scheduledStart = null;
-            $scheduledEnd = null;
+            $scheduledEnd   = null;
 
-            if ($startAt) {
-                $scheduledStart = $startAt->copy()->setTime(
-                    $daySchedule->start_time->hour,
-                    $daySchedule->start_time->minute,
-                    $daySchedule->start_time->second ?? 0,
-                );
-
-                $scheduledEnd = $startAt->copy()->setTime(
-                    $daySchedule->end_time->hour,
-                    $daySchedule->end_time->minute,
-                    $daySchedule->end_time->second ?? 0,
-                );
+            if ($startAt && $daySchedule->start_time && $daySchedule->end_time) {
+                $scheduledStart = $startAt->copy()->setTimeFromTimeString($daySchedule->start_time);
+                $scheduledEnd   = $startAt->copy()->setTimeFromTimeString($daySchedule->end_time);
             }
 
             $isLate = false;
@@ -723,20 +714,11 @@ class IndexClockingEmployees extends OrgAction
                 ->setTimezone($timezone);
 
             $scheduledStart = null;
-            $scheduledEnd = null;
+            $scheduledEnd   = null;
 
-            if ($startAt) {
-                $scheduledStart = $startAt->copy()->setTime(
-                    $daySchedule->start_time->hour,
-                    $daySchedule->start_time->minute,
-                    $daySchedule->start_time->second ?? 0,
-                );
-
-                $scheduledEnd = $startAt->copy()->setTime(
-                    $daySchedule->end_time->hour,
-                    $daySchedule->end_time->minute,
-                    $daySchedule->end_time->second ?? 0,
-                );
+            if ($startAt && $daySchedule->start_time && $daySchedule->end_time) {
+                $scheduledStart = $startAt->copy()->setTimeFromTimeString($daySchedule->start_time);
+                $scheduledEnd   = $startAt->copy()->setTimeFromTimeString($daySchedule->end_time);
             }
 
             $isLateClockIn = false;
