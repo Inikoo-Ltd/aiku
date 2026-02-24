@@ -126,7 +126,7 @@ class Snapshot extends Model
         switch (class_basename($this->parent)) {
             case 'Banner':
                 $slides         = $this->slides()->get();
-                if($customOrder = data_get($this->layout, 'orders', null)){
+                if ($customOrder = data_get($this->layout, 'orders', null)) {
                     $slides = $slides
                         ->sortBy(function ($model) use ($customOrder) {
                             return $customOrder[$model->ulid] ?? PHP_INT_MAX;

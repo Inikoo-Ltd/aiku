@@ -134,7 +134,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_spaces_state_finished
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read \App\Models\Fulfilment\RecurringBill|null $currentRecurringBill
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read \App\Models\Fulfilment\Fulfilment $fulfilment
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
