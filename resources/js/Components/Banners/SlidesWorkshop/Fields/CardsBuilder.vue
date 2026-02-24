@@ -35,19 +35,19 @@ const createDefaultCard = () => ({
     hideCard: false,
     titles: [
         {
-            text: '', color: '#000000', align: 'center',
+            text: 'Example', color: '#000000', align: 'center',
             vertical: 'middle', fontSize: 32, offsetX: 0,
             offsetY: 0
         }
     ],
     horizontal: 'center',
     vertical: 'middle',
-    width: 100,
-    height: 100,
+    width: 50,
+    height: 50,
     padding: 30,
     radius: 10,
     opacity: 1,
-    background: '#999999',
+    background: '#FFFFFF',
     shadow: true,
     textAlign: 'center',
     textVertical: 'middle',
