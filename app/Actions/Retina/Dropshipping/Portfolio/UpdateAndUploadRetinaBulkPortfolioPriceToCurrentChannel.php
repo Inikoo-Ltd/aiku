@@ -21,16 +21,8 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
 
     public function handle(array $modelData, $isDraft = false): void
     {
-        // Bulk edit portfolio prices will now ignore based on condition set below
         foreach (Arr::pull($modelData, 'items') as $itemId) {
-            $portfolio = Portfolio::find($itemId)
-                ->whereExists(function ($q) {
-                    $q->selectRaw(1)
-                        ->from('products as p')
-                        ->whereColumn('p.id', 'portfolios.item_id')
-                        ->whereNot('p.state', ProductStateEnum::DISCONTINUED->value)
-                        ->where('p.is_for_sale', true);
-                });
+            $portfolio = Portfolio::find($itemId);
 
             if (! $portfolio) {
                 continue;
