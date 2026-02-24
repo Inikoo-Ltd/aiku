@@ -85,13 +85,15 @@ const zoomInStep = 1.35
 const zoomOutStep = 0.75
 const panSpeed = 5
 const enableNodeToggle = false
-const defaultScale = 4
+const defaultScale = 1.8
 const searchQuery = ref("")
 const searchResultIndex = ref(0)
 let focusAnimationFrame: number | null = null
 const minFocusAnimationDuration = 280
 const maxFocusAnimationDuration = 700
 const motionBlurPx = ref(0)
+let resizeObserver: ResizeObserver | null = null
+let centerChartTimer: ReturnType<typeof setTimeout> | null = null
 
 interface LayoutNode {
 	node: OrgNodeData
@@ -305,7 +307,7 @@ watch(
 		focusedNodeId.value = nodes[0]?.id || null
 
 		requestAnimationFrame(() => {
-			centerChart()
+			scheduleCenterChart()
 		})
 	},
 	{ immediate: true }
@@ -344,15 +346,27 @@ onMounted(() => {
 	if (chartContainer.value) {
 		svgWidth.value = Math.max(chartContainer.value.clientWidth, 1200)
 		svgHeight.value = Math.max(chartContainer.value.clientHeight, 800)
+		resizeObserver = new ResizeObserver(() => {
+			scheduleCenterChart()
+		})
+		resizeObserver.observe(chartContainer.value)
 	}
 	window.addEventListener("keydown", handleKeydown)
 
-	// Center chart after layout is computed
-	setTimeout(centerChart, 100)
+	scheduleCenterChart(100)
 })
 
 onUnmounted(() => {
 	window.removeEventListener("keydown", handleKeydown)
+	if (resizeObserver && chartContainer.value) {
+		resizeObserver.unobserve(chartContainer.value)
+		resizeObserver.disconnect()
+		resizeObserver = null
+	}
+	if (centerChartTimer !== null) {
+		clearTimeout(centerChartTimer)
+		centerChartTimer = null
+	}
 	if (focusAnimationFrame !== null) {
 		cancelAnimationFrame(focusAnimationFrame)
 		focusAnimationFrame = null
@@ -360,31 +374,52 @@ onUnmounted(() => {
 	motionBlurPx.value = 0
 })
 
-const centerChart = () => {
-	if (!chartContainer.value) return
+const scheduleCenterChart = (delay: number = 0) => {
+	if (centerChartTimer !== null) {
+		clearTimeout(centerChartTimer)
+	}
+
+	centerChartTimer = setTimeout(() => {
+		centerChartTimer = null
+		const didCenter = centerChart()
+		if (!didCenter) {
+			scheduleCenterChart(120)
+		}
+	}, delay)
+}
+
+const centerChart = (): boolean => {
+	if (!chartContainer.value) {
+		return false
+	}
 
 	const containerWidth = chartContainer.value.clientWidth
 	const containerHeight = chartContainer.value.clientHeight
+	if (containerWidth <= 0 || containerHeight <= 0) {
+		return false
+	}
 
 	const bounds = getLayoutBounds()
 	const boundsWidth = Math.max(1, bounds.maxX - bounds.minX)
 	const boundsHeight = Math.max(1, bounds.maxY - bounds.minY)
 	const fitScale = Math.min(containerWidth / boundsWidth, containerHeight / boundsHeight)
 	const autoScale = Math.max(minScale, fitScale * 1.4)
-	const scale = Math.min(Math.max(Math.min(defaultScale, autoScale), minScale), maxScale)
+	const scale = Math.min(Math.max(Math.max(defaultScale, autoScale), minScale), maxScale)
 	const centerX = bounds.minX + boundsWidth / 2
 	const centerY = bounds.minY + boundsHeight / 2
 
 	transform.value.scale = scale
 	transform.value.x = containerWidth / 2 - centerX * scale
 	transform.value.y = containerHeight / 2 - centerY * scale
+
+	return true
 }
 
 // Re-center when nodes are expanded/collapsed
 watch(
 	expandedNodes,
 	() => {
-		setTimeout(centerChart, 50)
+		scheduleCenterChart(50)
 	},
 	{ deep: true }
 )
@@ -502,7 +537,10 @@ const getLayoutBounds = (): { minX: number; minY: number; maxX: number; maxY: nu
 	return { minX, minY, maxX, maxY }
 }
 
-const getSvgPointFromClient = (clientX: number, clientY: number): { x: number; y: number } | null => {
+const getSvgPointFromClient = (
+	clientX: number,
+	clientY: number
+): { x: number; y: number } | null => {
 	if (!svgElement.value) {
 		return null
 	}
@@ -528,7 +566,9 @@ const getViewportCenterInSvg = (): { x: number; y: number } => {
 	const rect = chartContainer.value.getBoundingClientRect()
 	const centerX = rect.left + rect.width / 2
 	const centerY = rect.top + rect.height / 2
-	return getSvgPointFromClient(centerX, centerY) || { x: svgWidth.value / 2, y: svgHeight.value / 2 }
+	return (
+		getSvgPointFromClient(centerX, centerY) || { x: svgWidth.value / 2, y: svgHeight.value / 2 }
+	)
 }
 
 const animateTransformTo = (targetX: number, targetY: number, targetScale: number) => {
@@ -555,9 +595,7 @@ const animateTransformTo = (targetX: number, targetY: number, targetScale: numbe
 	const step = (now: number) => {
 		const elapsed = Math.min(1, (now - start) / duration)
 		const eased =
-			elapsed < 0.5
-				? 4 * elapsed * elapsed * elapsed
-				: 1 - Math.pow(-2 * elapsed + 2, 3) / 2
+			elapsed < 0.5 ? 4 * elapsed * elapsed * elapsed : 1 - Math.pow(-2 * elapsed + 2, 3) / 2
 
 		const nextX = initial.x + (targetX - initial.x) * eased
 		const nextY = initial.y + (targetY - initial.y) * eased
@@ -736,24 +774,26 @@ const handleKeydown = (e: KeyboardEvent) => {
 		return
 	}
 
-	if (!focusedNodeId.value) {
-		if (visibleFlatNodes.value.length > 0) {
-			focusedNodeId.value = visibleFlatNodes.value[0].id
-		}
+	if (visibleFlatNodes.value.length === 0) {
 		return
 	}
 
-	const currentIndex = visibleFlatNodes.value.findIndex((n) => n.id === focusedNodeId.value)
-	if (currentIndex === -1) return
+	const lastIndex = visibleFlatNodes.value.length - 1
+	const focusedIndex = focusedNodeId.value
+		? visibleFlatNodes.value.findIndex((n) => n.id === focusedNodeId.value)
+		: -1
+	const currentIndex = focusedIndex === -1 ? 0 : focusedIndex
 
 	if (e.key === "ArrowDown" || e.key === "ArrowRight") {
 		e.preventDefault()
-		const nextIndex = Math.min(currentIndex + 1, visibleFlatNodes.value.length - 1)
-		focusedNodeId.value = visibleFlatNodes.value[nextIndex].id
+		const nextIndex = Math.min(currentIndex + 1, lastIndex)
+		const nextNodeId = visibleFlatNodes.value[nextIndex].id
+		focusNodeInView(nextNodeId)
 	} else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
 		e.preventDefault()
 		const prevIndex = Math.max(currentIndex - 1, 0)
-		focusedNodeId.value = visibleFlatNodes.value[prevIndex].id
+		const prevNodeId = visibleFlatNodes.value[prevIndex].id
+		focusNodeInView(prevNodeId)
 	} else if (e.key === "Enter") {
 		const node = visibleFlatNodes.value[currentIndex]
 		if (enableNodeToggle && node.reports && node.reports.length > 0) {
@@ -802,7 +842,7 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 				v-model="searchQuery"
 				type="text"
 				class="search-input"
-				placeholder="Search employee or job"
+				placeholder="Search The Employee or Jobdesks"
 				@keydown.enter.prevent="runSearch" />
 			<button
 				class="search-btn"
@@ -824,9 +864,15 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 				@click="runSearch">
 				Find
 			</button>
-			<button v-if="searchQuery" class="search-btn search-clear-btn" @click="clearSearch">Clear</button>
+			<button v-if="searchQuery" class="search-btn search-clear-btn" @click="clearSearch">
+				Clear
+			</button>
 			<span class="search-count">
-				{{ searchResultIds.length === 0 ? "0" : `${searchResultIndex + 1}/${searchResultIds.length}` }}
+				{{
+					searchResultIds.length === 0
+						? "0"
+						: `${searchResultIndex + 1}/${searchResultIds.length}`
+				}}
 			</span>
 		</div>
 
@@ -919,10 +965,12 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 		</div>
 
 		<div class="org-chart-help">
-			<span>🖱️ Drag to pan</span>
-			<span>⚙️ Scroll to zoom</span>
+			<span>🖱️Drag to pan</span>
+			<span>🖱️Scroll to zoom</span>
 			<span>⌨️ Arrow keys to navigate</span>
-			<span>Enter to select</span>
+			<span>👍Enter to select</span>
+			<span>👌Click The node to Move Around</span>
+			<span>✨Click reset to re-center</span>
 		</div>
 	</div>
 </template>
