@@ -25,9 +25,11 @@ class LuigiBoxGetProductDetail extends IrisAction
     public function handle(array $modelData): LengthAwarePaginator
     {
         $productIdString = data_get($modelData, 'product_ids');
+        $productIds = json_decode("[{$productIdString}]"); // Convert to an array of integers
+
         $queryBuilder = QueryBuilder::for(Product::class)
-            ->whereIn('products.id', json_decode("[{$productIdString}]"))
-             ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
+            ->whereIn('products.id', $productIds)
+            ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
         $queryBuilder->select([
             'products.id',
@@ -43,6 +45,13 @@ class LuigiBoxGetProductDetail extends IrisAction
             'products.price',
             'webpages.canonical_url as url',
         ]);
+
+        // To keep the order of products to like the original Luigi
+        $caseStatement = '';
+        foreach ($productIds as $index => $productId) {
+            $caseStatement .= "WHEN products.id = {$productId} THEN {$index} ";
+        }
+        $queryBuilder->orderByRaw("CASE {$caseStatement} ELSE 9999 END");
 
 
         return $queryBuilder

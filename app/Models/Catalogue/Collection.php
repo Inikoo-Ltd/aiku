@@ -10,6 +10,7 @@ namespace App\Models\Catalogue;
 
 use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Models\Masters\MasterCollection;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -18,6 +19,7 @@ use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use App\Models\Web\Webpage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -63,6 +65,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read MasterCollection|null $masterCollection
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Catalogue\CollectionOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Catalogue\CollectionsOrderingStats|null $orderingStats
@@ -199,6 +202,11 @@ class Collection extends Model implements Auditable, HasMedia
     public function timeSeries(): HasMany
     {
         return $this->hasMany(CollectionTimeSeries::class);
+    }
+
+    public function masterCollection(): BelongsTo
+    {
+        return $this->belongsTo(MasterCollection::class);
     }
 
 }

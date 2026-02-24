@@ -2,6 +2,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Traits;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -184,8 +185,6 @@ trait WithWooCommerceApiRequest
 
                 return $data;
             } else {
-                Log::error('WooCommerce API Error, status'.$response->status().' body:'.$response->body());
-
                 return [$response->body()];
             }
         } catch (ConnectionException $e) {
@@ -586,6 +585,23 @@ trait WithWooCommerceApiRequest
         return $this->makeWooCommerceRequest('GET', 'webhooks');
     }
 
+    /**
+     * List all registered WooCommerce webhooks
+     *
+     * @return array List of webhooks
+     */
+    public function getProductSettings(): array
+    {
+        return $this->makeWooCommerceRequest('GET', 'settings/products');
+    }
+
+    public function getProductWeightSettings(): string
+    {
+        $response = $this->makeWooCommerceRequest('GET', 'settings/products/woocommerce_weight_unit');
+
+        return Arr::get($response, 'value', 'kg');
+    }
+
     public function checkConnection(): bool
     {
         try {
@@ -624,5 +640,36 @@ trait WithWooCommerceApiRequest
         }
     }
 
+    /**
+     * Check if a product exists and is available in WooCommerce
+     *
+     * @param  int  $productId  Product ID to check
+     *
+     * @return bool Whether the product exists and is available
+     */
+    public function sendOrderDetailNotification(int $orderId, string $email): array
+    {
+        return $this->makeWooCommerceRequest('POST', "orders/$orderId/actions/send_email", [
+            'template_id' => 'customer_completed_order',
+            'email' => $email,
+            'force_email_update' => true
+        ]);
+    }
 
+    public function sendOrderInvoiceNotification(int $orderId, string $email): array
+    {
+        return $this->makeWooCommerceRequest('POST', "orders/$orderId/actions/send_email", [
+            'template_id' => 'customer_invoice',
+            'email' => $email,
+            'force_email_update' => true
+        ]);
+    }
+
+    public function createCustomerOrderNote(int $orderId, string $note): array
+    {
+        return $this->makeWooCommerceRequest('POST', "orders/$orderId/notes", [
+            'note' => $note,
+            'customer_note' => true
+        ]);
+    }
 }

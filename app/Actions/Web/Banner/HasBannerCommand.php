@@ -8,7 +8,7 @@
 
 namespace App\Actions\Web\Banner;
 
-use App\Models\Portfolio\Banner;
+use App\Models\Web\Banner;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -24,10 +24,8 @@ trait HasBannerCommand
             return null;
         }
 
-
         Config::set('global.customer_id', $bannerData->customer_id);
 
         return Banner::find($bannerData->id);
     }
-
 }

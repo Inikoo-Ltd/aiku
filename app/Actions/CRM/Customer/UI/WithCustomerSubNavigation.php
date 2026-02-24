@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
@@ -36,21 +37,20 @@ trait WithCustomerSubNavigation
                     'tooltip' => __('Customer')
                 ]
             ],
-
-            [
-                'route' => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.web_users.index',
-                    'parameters' => $request->route()->originalParameters()
-
-                ],
-
-                'label'    => $webUsersLabel,
-                'leftIcon' => [
-                    'icon'    => 'fal fa-user-circle',
-                    'tooltip' => $webUsersLabel,
-                ],
-                'number'   => $customer->stats->number_web_users
-            ],
+            ($customer->shop->type !== ShopTypeEnum::EXTERNAL
+                ? [
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.crm.customers.show.web_users.index',
+                        'parameters' => $request->route()->originalParameters()
+                    ],
+                    'label'    => $webUsersLabel,
+                    'leftIcon' => [
+                        'icon'    => 'fal fa-user-circle',
+                        'tooltip' => $webUsersLabel,
+                    ],
+                    'number'   => $customer->stats->number_web_users
+                ]
+                : null),
             [
                 'label'    => __('Orders'),
                 'number'   => $customer->orders()->count(),

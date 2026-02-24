@@ -9,14 +9,16 @@
 namespace App\Console;
 
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
+use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
+use App\Actions\Comms\Outbox\RunBasketLowStockEmailBulkRuns;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
-use App\Actions\Helpers\HydrateSalesMetrics;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Helpers\Intervals\ResetMonthlyIntervals;
 use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
@@ -37,6 +39,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
+
+        $schedule->command('queue:prune-failed --hours=168')->daily();
 
         $schedule->command('cloudflare:reload')->daily();
 
@@ -293,6 +297,15 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+        $this->logSchedule(
+            $schedule->command('delete:debug-webhook 10')->daily()->sentryMonitor(
+                monitorSlug: 'DeleteDebugWebhookPeriodically',
+            ),
+            name: 'DeleteDebugWebhookPeriodically',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
         //        $this->logSchedule(
         //            $schedule->command('faire:orders')->hourly()->sentryMonitor(
         //                monitorSlug: 'GetFaireOrders',
@@ -366,15 +379,6 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(HydrateSalesMetrics::makeJob())->dailyAt('23.59')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'HydrateSalesMetrics',
-            ),
-            name: 'HydrateSalesMetrics',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );
-
-        $this->logSchedule(
             $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'SendReorderRemainderEmails',
             ),
@@ -382,62 +386,6 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
-
-        // $urlsToHit = [
-        //     [
-        //         'url' => 'https://www.aw-dropship.es/',
-        //         'inertia' => true,
-        //         'xmlhttp' => true,
-        //         'slug' => 'Hit https://www.aw-dropship.es/ X-Inertia: true',
-        //     ],
-        //     [
-        //         'url' => 'https://www.aw-dropship.es/',
-        //         'inertia' => false,
-        //         'xmlhttp' => false,
-        //         'slug' => 'Hit https://www.aw-dropship.es/',
-        //     ],
-        // ];
-
-        // foreach ($urlsToHit as $config) {
-        //     $command = sprintf(
-        //         'iris:hit-url %s --inertia=%s --xmlhttp=%s',
-        //         $config['url'],
-        //         $config['inertia'] ? 'true': 'false',
-        //         $config['xmlhttp'] ? 'true': 'false'
-        //     );
-
-        //     $schedule->command($command)
-        //         ->everyMinute()
-        //         ->timezone('UTC');
-        // }
-
-        $urlsToHit = [
-            [
-                'url'     => 'https://www.aw-fulfilment.eu/',
-                'inertia' => true,
-                'xmlhttp' => true,
-                'slug'    => 'Hit https://www.aw-fulfilment.eu/ X-Inertia: true',
-            ],
-            [
-                'url'     => 'https://www.aw-fulfilment.eu/',
-                'inertia' => false,
-                'xmlhttp' => false,
-                'slug'    => 'Hit https://www.aw-fulfilment.eu/',
-            ],
-        ];
-
-        foreach ($urlsToHit as $config) {
-            $command = sprintf(
-                'iris:hit-url %s --inertia=%s --xmlhttp=%s',
-                $config['url'],
-                $config['inertia'] ? 'true' : 'false',
-                $config['xmlhttp'] ? 'true' : 'false'
-            );
-
-            $schedule->command($command)
-                ->everyMinute()
-                ->timezone('UTC');
-        }
 
         $this->logSchedule(
             $schedule->job(RunBackInStockEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
@@ -512,7 +460,35 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunMailshotSecondWave',
+                ),
+                name: 'RunMailshotSecondWave',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
         }
+
+        // $this->logSchedule(
+        //     $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+        //         monitorSlug: 'RunPriceChangeNotificationEmailBulkRuns',
+        //     ),
+        //     name: 'RunPriceChangeNotificationEmailBulkRuns',
+        //     type: 'job',
+        //     scheduledAt: now()->format('H:i')
+        // );
+
+        // $this->logSchedule(
+        //     $schedule->job(RunBasketLowStockEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+        //         monitorSlug: 'RunBasketLowStockEmailBulkRuns',
+        //     ),
+        //     name: 'RunBasketLowStockEmailBulkRuns',
+        //     type: 'job',
+        //     scheduledAt: now()->format('H:i')
+        // );
+
     }
 
     protected function commands(): void

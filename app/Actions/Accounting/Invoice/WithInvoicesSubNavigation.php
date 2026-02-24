@@ -54,6 +54,7 @@ trait WithInvoicesSubNavigation
             $refundsRouteName         = str_replace('invoices', 'invoices.refunds', $routeName).'.index';
             $deletedInvoicesRouteName = str_replace('invoices', 'invoices.deleted', $routeName).'.index';
             $sageInvoicesRouteName    = str_replace('invoices', 'invoices.sage', $routeName).'.index';
+            $montanaInvoicesRouteName = str_replace('invoices', 'invoices.montana', $routeName).'.index';
         }
 
         return [
@@ -82,6 +83,15 @@ trait WithInvoicesSubNavigation
                 'label'  => __('Sage Invoices'),
                 'route'  => [
                     'name'       => $sageInvoicesRouteName,
+                    'parameters' => $param,
+                ]
+            ] : [],
+
+            $parent instanceof Shop ? [
+                'number' => IndexSageInvoicesReport::make()->inReports($parent),
+                'label'  => __('Montana Invoices'),
+                'route'  => [
+                    'name'       => $montanaInvoicesRouteName,
                     'parameters' => $param,
                 ]
             ] : [],

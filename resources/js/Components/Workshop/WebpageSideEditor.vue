@@ -65,6 +65,7 @@ const props = defineProps<{
 	webpage: RootWebpage
 	webBlockTypes: Daum
 	selectedTab: Number
+	editable:boolean
 }>()
 
 const emits = defineEmits<{
@@ -388,6 +389,7 @@ const saveAsTemplate = () => {
 								ghost-class="ghost"
 								group="column"
 								itemKey="id"
+								:disabled="!editable"
 								class="space-y-1">
 								<template #item="{ element, index }">
 									<div
@@ -536,6 +538,7 @@ const saveAsTemplate = () => {
 							<Collapse :when="true">
 								<div class="p-2 space-y-2">
 									<VisibleCheckmark
+										:disabled="!editable"
 										v-model="
 											webpage.layout.web_blocks[openedBlockSideEditor]
 												.visibility
@@ -551,11 +554,10 @@ const saveAsTemplate = () => {
 												.web_block.layout.data.fieldValue
 										"
 										:panelOpen="openedChildSideEditor"
+										:editable="editable"
 										:blueprint="
 											getBlueprint(
-												webpage.layout.web_blocks[openedBlockSideEditor]
-													.type,
-												webpage
+												webpage.layout.web_blocks[openedBlockSideEditor].type, webpage , webpage.layout.web_blocks[openedBlockSideEditor].id
 											)
 										"
 										:block="webpage.layout.web_blocks[openedBlockSideEditor]"

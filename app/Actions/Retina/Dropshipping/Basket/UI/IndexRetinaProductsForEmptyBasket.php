@@ -55,6 +55,7 @@ class IndexRetinaProductsForEmptyBasket extends RetinaAction
             'products.shop_id',
             'products.webpage_id',
             'products.code',
+            'products.is_for_sale',
             'products.name',
             'products.price',
             'products.current_historic_asset_id as historic_asset_id',

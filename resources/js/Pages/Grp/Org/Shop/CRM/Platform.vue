@@ -19,6 +19,8 @@ import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue
 import TableCustomerSalesChannels from '@/Components/Tables/Grp/Org/CRM/TableCustomerSalesChannels.vue'
 import TableInvoices from '@/Components/Tables/Grp/Org/CRM/TableInvoices.vue'
 import PlatformTableCustomers from "@/Components/Tables/Grp/Org/CRM/PlatformTableCustomers.vue";
+import TableTopListedProducts from '@/Components/Tables/Grp/Org/CRM/TableTopListedProducts.vue'
+import TableTopSoldProducts from '@/Components/Tables/Grp/Org/CRM/TableTopSoldProducts.vue'
 
 library.add(faFolder, faCube, faStream, faMoneyBillWave, faShoppingCart, faUsers, faBullhorn, faProjectDiagram, faBox, faCameraRetro, faRoad, faChessBoard)
 
@@ -29,12 +31,13 @@ const props = defineProps<{
   products: {},
   showcase: {},
   customers: {},
+  top_listed_products: {},
+  top_sold_products: {},
   tabs: {
       current: string
       navigation: {}
   }
 }>()
-
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -44,7 +47,9 @@ const component = computed(() => {
     showcase: TableInvoices,
     products: TablePortfolios,
     channels: TableCustomerSalesChannels,
-    customers: PlatformTableCustomers
+    customers: PlatformTableCustomers,
+    top_listed_products: TableTopListedProducts,
+    top_sold_products: TableTopSoldProducts
   }
 
   return components[currentTab.value]

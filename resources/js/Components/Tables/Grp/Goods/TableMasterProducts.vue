@@ -21,6 +21,7 @@ import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { faShapes, faStar, faTriangle, faEquals } from "@fas"
+import { routeType } from "@/types/route"
 
 const props = defineProps<{
     data: {}
@@ -28,7 +29,14 @@ const props = defineProps<{
     editable_table?: boolean
     isCheckBox?: boolean
     variantSlugs?: Record<string, string>;
+    routes: {
+        dataList: routeType
+        submitAttach: routeType
+        detach: routeType
+    },
 }>()
+
+const isLoadingDetach = ref<string[]>([])
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
@@ -323,8 +331,6 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </Link>
         </template>
 
-
-
         <template #cell(variant_slug)="{ item: masterProduct }">
             <Link v-if="masterProduct.variant_slug" :href="masterVarinatRoute(masterProduct) as string"
                 class="inline-block" v-tooltip="masterProduct.is_variant_leader
@@ -345,6 +351,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </span>
                 </span>
             </Link>
+            <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
+               rounded-md text-medium font-medium
+               border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
+                -
+            </span>
         </template>
 
         <template #cell(name)="{ item: masterProduct }">
@@ -481,6 +492,24 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(actions)="{ item: item}">
+            <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
+                :method="routes?.detach?.method" :data="{
+                    product: item.id
+                }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
+            </Link>
+            <Link v-else-if="item?.delete_product?.name" as="button"
+                :href="route(item.delete_product.name, item.delete_product.parameters)"
+                :method="item?.delete_product?.method" :data="{
+                    product: item.id
+                }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
+            </Link>
+
             <div v-if="editable_table">
                 <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="()=>onEdit(item)">
                     <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"

@@ -702,7 +702,7 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                                                         <div class="absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2">
                                                             <template
                                                                 v-if="isGroupAdminSelected || (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin' && !isLevelGroupAdmin(jobGroup.level)) || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin')">
-                                                                <FontAwesomeIcon v-if="(idxSubDepartment === 0 && optionsList.shops.every((shop) => newForm[props.fieldName]['shop-admin']['shops'].includes(shop.slug))) || isGradeAllCheckedInCurrentAndInShopAdmin(subDepartment.slug)" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
+                                                                <FontAwesomeIcon v-if="(idxSubDepartment === 0 && optionsList.shops.every((shop) => get(newForm, [props.fieldName, 'shop-admin', 'shops'], []).includes(shop.slug))) || isGradeAllCheckedInCurrentAndInShopAdmin(subDepartment.slug)" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
                                                                 <FontAwesomeIcon v-else-if="idxSubDepartment === 0 || isSomeShopCheckedInSameGrade(subDepartment.slug)" icon="fal fa-check-circle" class="xtext-green-500" fixed-width aria-hidden="true" />
                                                                 <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
                                                             </template>
@@ -733,7 +733,7 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                                             <button @click.prevent="() => openFineTune = openFineTune === jobGroup.key ? '' : jobGroup.key"
                                                     class="underline disabled:no-underline whitespace-nowrap cursor-pointer disabled:cursor-auto disabled:text-gray-400"
                                             >
-                                                {{ trans("Shops Fine tuning") }}
+                                                {{ trans("Show details") }}
                                             </button>
                                         </div>
                                     </div>
@@ -744,7 +744,18 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                                                 <div class="flex flex-col gap-y-4 pt-4">
                                                     <template v-for="optionData, optionKey, optionIdx in optionsList" :key="optionKey + optionIdx">
                                                         <div v-if="jobGroup.subDepartment.some(subDep => subDep.optionsType?.includes(optionKey))" class="">
-                                                            <div class="text-white text-center bg-gray-400 py-0.5">{{ optionKey }}</div>
+                                                            <div class="text-white grid" 
+                                                                :style="{
+                                                                    'grid-template-columns': `repeat(${1 + jobGroup.subDepartment.length}, minmax(0, 1fr))`
+                                                                }"
+                                                            >
+                                                                <div class="capitalize">
+                                                                    <!-- {{ optionKey }} -->
+                                                                </div>
+                                                                <div v-for="jobLabel in jobGroup.subDepartment.map(subDep => subDep.label)" class="py-0.5 bg-gray-400 text-center">
+                                                                    {{ jobLabel }}  <!-- Supervisor/Worker -->
+                                                                </div>
+                                                            </div>
                                                             <div class="flex flex-col gap-x-2 gap-y-0.5">
                                                                 <!-- Section: Box radio -->
                                                                 <div v-for="(shop, idxZXC) in optionData" class="grid grid-cols-4 items-center justify-start gap-x-6 min-h-6"

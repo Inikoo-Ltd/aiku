@@ -5,7 +5,7 @@ import type { Table as TableTS } from "@/types/Table"
 import { RouteParams } from "@/types/route-params"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import ConfirmPopup from "primevue/confirmpopup"
 import { useConfirm } from "primevue/useconfirm"
 import { faExclamationTriangle } from "@far"
@@ -25,6 +25,7 @@ defineProps<{
 
 const confirm = useConfirm()
 const deletingId = ref<number | null>(null)
+const isPlatformShow = computed(() => route().current() === "grp.platforms.show")
 
 function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
     const current = route().current()
@@ -53,7 +54,6 @@ function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
 }
 
 function customerRoute(customerSalesChannel: CustomerSalesChannel) {
-    // Both branches return the same route; simplify to a single return.
     return route(
         "grp.org.shops.show.crm.customers.show",
         [
@@ -167,18 +167,19 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         <template #cell(name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
                 <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name" class="w-6 h-6"/>
-                <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
+                <Link v-if="!isPlatformShow" :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
                     {{ customerSalesChannel.name || customerSalesChannel.reference }}
                 </Link>
-<!--                <span>{{ customerSalesChannel.name || customerSalesChannel.reference }}</span>-->
+                <span v-else>{{ customerSalesChannel.name || customerSalesChannel.reference }}</span>
             </div>
         </template>
+
         <template #cell(customer_company_name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
-                <Link :href="(customerRoute(customerSalesChannel) as string)" class="primaryLink">
+                <Link v-if="!isPlatformShow" :href="(customerRoute(customerSalesChannel) as string)" class="primaryLink">
                     {{ customerSalesChannel.customer_company_name }}
                 </Link>
-<!--                <span>{{ customerSalesChannel.customer_company_name }}</span>-->
+                <span v-else>{{ customerSalesChannel.customer_company_name }}</span>
             </div>
         </template>
 
@@ -202,9 +203,9 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
-            <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
+            <Link v-if="!isPlatformShow" :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
                 <span v-if="customerSalesChannel.platform_type=='manual'">
-                       {{ customerSalesChannel.number_portfolios }}
+                    {{ customerSalesChannel.number_portfolios }}
                 </span>
                 <template v-else>
                     <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0">
@@ -218,36 +219,36 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     </span>
                 </template>
             </Link>
-<!--            <div>-->
-<!--                <span v-if="customerSalesChannel.platform_type=='manual'">-->
-<!--                       {{ customerSalesChannel.number_portfolios }}-->
-<!--                </span>-->
-<!--                <template v-else>-->
-<!--                    <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0">-->
-<!--                        {{ customerSalesChannel.number_portfolios }}-->
-<!--                    </span>-->
-<!--                    <span v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios" class="text-red-500">-->
-<!--                        {{ customerSalesChannel.number_portfolio_broken }}-->
-<!--                    </span>-->
-<!--                    <span v-else>-->
-<!--                        <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}-->
-<!--                    </span>-->
-<!--                </template>-->
-<!--            </div>-->
+            <template v-else>
+                <span v-if="customerSalesChannel.platform_type=='manual'">
+                    {{ customerSalesChannel.number_portfolios }}
+                </span>
+                <template v-else>
+                    <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0">
+                        {{ customerSalesChannel.number_portfolios }}
+                    </span>
+                    <span v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios" class="text-red-500">
+                        {{ customerSalesChannel.number_portfolio_broken }}
+                    </span>
+                    <span v-else>
+                        <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}
+                    </span>
+                </template>
+            </template>
         </template>
 
         <template #cell(number_clients)="{ item: customerSalesChannel }">
-            <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
+            <Link v-if="!isPlatformShow" :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
                 {{ customerSalesChannel.number_clients }}
             </Link>
-<!--            <span>{{ customerSalesChannel.number_clients }}</span>-->
+            <span v-else>{{ customerSalesChannel.number_clients }}</span>
         </template>
 
         <template #cell(number_orders)="{ item: customerSalesChannel }">
-            <Link :href="(ordersRoute(customerSalesChannel) as string)" class="secondaryLink">
+            <Link v-if="!isPlatformShow" :href="(ordersRoute(customerSalesChannel) as string)" class="secondaryLink">
                 {{ customerSalesChannel.number_orders }}
             </Link>
-<!--            <span>{{ customerSalesChannel.number_orders }}</span>-->
+            <span v-else>{{ customerSalesChannel.number_orders }}</span>
         </template>
 
         <template #cell(action)="{ item }">

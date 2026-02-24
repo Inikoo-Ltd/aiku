@@ -3,6 +3,12 @@ import BlueprintSideInformation from "@/Components/CMS/Webpage/Product1/Blueprin
 export default {
 	blueprint: [
 		{
+			label: "# Id ",
+			key: ["id"],
+			type: "text",
+			information: "id selector is used to select one unique element!",
+		},
+		{
 			name: "Settings",
 			key: ["setting"],
 			replaceForm: [

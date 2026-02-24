@@ -104,7 +104,7 @@ class StoreRefund extends OrgAction
     public function rules(): array
     {
         return [
-
+            'is_tax_only'   => ['sometimes', 'boolean']
         ];
     }
 

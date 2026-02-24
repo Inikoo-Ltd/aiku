@@ -13,6 +13,7 @@ use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
@@ -101,10 +102,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $this->createWebBlock($webpage, 'family-1');
         }
 
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
-        if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'products-1');
-        }
+        // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
         if (count($countFamilyWebBlock) == 0) {
@@ -116,9 +115,12 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $this->createWebBlock($webpage, 'luigi-last-seen-1');
         }
 
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
+        }
+
         $webpage->refresh();
-
-
 
 
         $this->setFamilyWebBlockOnTop($webpage);
@@ -152,17 +154,18 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $familyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first()->model_has_web_blocks_id;
 
 
-        $trendsWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
-        $lastSeenWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
+        $trendsWebBlock     = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
+        $lastSeenWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
+        $lastBoughtWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1')->first()->model_has_web_blocks_id;
 
 
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
         $count = $webpage->webBlocks()->count();
 
-        $trendsWebBlockPosition = $count + 101;
-        $lastSeenWebBlockPosition       = $count + 102;
-
+        $trendsWebBlockPosition     = $count + 101;
+        $lastBoughtWebBlockPosition = $count + 102;
+        $lastSeenWebBlockPosition   = $count + 103;
 
 
         $runningPosition = 2;
@@ -173,6 +176,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 $webBlocks[$key] = $trendsWebBlockPosition;
             } elseif ($key == $lastSeenWebBlock) {
                 $webBlocks[$key] = $lastSeenWebBlockPosition;
+            } elseif ($key == $lastBoughtWebBlock) {
+                $webBlocks[$key] = $lastBoughtWebBlockPosition;
             } else {
                 $webBlocks[$key] = $runningPosition;
                 $runningPosition++;

@@ -9,10 +9,8 @@
 namespace App\Actions\Dashboard;
 
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
-use App\Actions\Helpers\Dashboard\GetTopPerformanceStats;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
-use App\Actions\Traits\Dashboards\WithCustomRangeDashboard;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
@@ -33,7 +31,6 @@ class ShowOrganisationDashboard extends OrgAction
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
     use WithTabsBox;
-    use WithCustomRangeDashboard;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -71,7 +68,6 @@ class ShowOrganisationDashboard extends OrgAction
             }
         }
 
-        $topPerformanceStats = GetTopPerformanceStats::run($organisation, $performanceDates[0], $performanceDates[1]);
         $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($organisation, $performanceDates[0], $performanceDates[1]);
 
         $tabsBox = $this->getTabsBox($organisation);
@@ -98,7 +94,6 @@ class ShowOrganisationDashboard extends OrgAction
                             'tabs'        => OrganisationDashboardSalesTableTabsEnum::navigation(),
                             'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation, $timeSeriesData),
                             'charts'      => [],
-                            'top_performance' => $topPerformanceStats,
                         ],
                     ],
                     'tabs_box'  => [

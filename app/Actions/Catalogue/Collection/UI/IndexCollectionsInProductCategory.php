@@ -93,6 +93,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                 'collection_stats.number_families',
                 'collection_stats.number_products',
                 'collection_stats.number_parents',
+                'collections.master_collection_id',
                 'webpages.id as webpage_id',
                 'webpages.state as webpage_state',
                 'webpages.url as webpage_url',

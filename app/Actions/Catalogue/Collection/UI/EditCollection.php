@@ -123,29 +123,73 @@ class EditCollection extends OrgAction
                                     'label' => __('Name'),
                                     'value' => $collection->name
                                 ],
-                                'description_title' => [
+                                /*   'description_title' => [
                                     'type'  => 'input',
                                     'label' => __('Description title'),
                                     'options'   => [
                                         'counter'   => true,
                                     ],
                                     'value' => $collection->description_title
-                                ],
+                                ], */
                                 'description' => [
-                                    'type'  => 'textarea',
+                                    'type'  => 'textEditor',
                                     'label' => __('Description'),
                                     'options'   => [
                                         'counter'   => true,
                                     ],
-                                    'value' => $collection->description
+                                    'value' => $collection->description,
+                                    'toogle'  => [
+                                        'heading2',
+                                        'heading3',
+                                        'fontSize',
+                                        'bold',
+                                        'italic',
+                                        'underline',
+                                        'bulletList',
+                                        "fontFamily",
+                                        'orderedList',
+                                        'blockquote',
+                                        'divider',
+                                        'alignLeft',
+                                        'alignRight',
+                                        "customLink",
+                                        'alignCenter',
+                                        'undo',
+                                        'redo',
+                                        'highlight',
+                                        'color',
+                                        'clear'
+                                    ],
                                 ],
                                 'description_extra' => [
-                                    'type'  => 'textarea',
+                                    'type'  => 'textEditor',
                                     'label' => __('Extra description'),
                                     'options'   => [
                                         'counter'   => true,
                                     ],
-                                    'value' => $collection->description_extra
+                                    'value' => $collection->description_extra,
+                                    'toogle'  => [
+                                        'heading2',
+                                        'heading3',
+                                        'fontSize',
+                                        'bold',
+                                        'italic',
+                                        'underline',
+                                        'bulletList',
+                                        "fontFamily",
+                                        'orderedList',
+                                        'blockquote',
+                                        'divider',
+                                        'alignLeft',
+                                        'alignRight',
+                                        "customLink",
+                                        'alignCenter',
+                                        'undo',
+                                        'redo',
+                                        'highlight',
+                                        'color',
+                                        'clear'
+                                    ],
                                 ],
                             ]
                         ],
@@ -166,10 +210,8 @@ class EditCollection extends OrgAction
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.org.catalogue.collections.update',
+                            'name'       => 'grp.models.collection.update',
                             'parameters' => [
-                                'organisation' => $collection->organisation_id,
-                                'shop'         => $collection->shop_id,
                                 'collection'   => $collection->id
                             ]
 

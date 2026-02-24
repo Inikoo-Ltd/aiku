@@ -62,6 +62,7 @@ class RepairProductsWithNoWebpage
 
         $count = Product::where('shop_id', $shop->id)->whereNull('webpage_id')
             ->whereIn('state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
+            ->whereNull('variant_id')
             ->where('is_for_sale', true)->count();
 
 

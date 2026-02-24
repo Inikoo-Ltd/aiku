@@ -261,7 +261,7 @@ const debounceUpdateName = debounce((description: string) => {
                     v-model="selectedDataToEditDescription.description"
                     @update:modelValue="() => debounceUpdateDescription(selectedDataToEditDescription.description)"
                     :toogle="[
-                        'heading', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'fontFamily',
+                        'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'fontFamily',
                         'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', 
                         'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                     ]"

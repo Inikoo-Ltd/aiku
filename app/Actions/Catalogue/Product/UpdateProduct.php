@@ -14,8 +14,10 @@ use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -26,6 +28,7 @@ use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -56,12 +59,13 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-        // hack because in tests $product->getChanges() do not work
+        // Note laravel wasChanged do not work! for this action, no idea why need to use $oldData
         $oldState = $product->state;
 
         $webpageData = [];
         $newData     = [];
         $oldData     = $product->toArray();
+
 
         if (Arr::has($modelData, 'webpage_title')) {
             $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
@@ -162,9 +166,8 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::hasAny($changed, ['is_for_sale']) || $oldState != $product->state) {
-            $product = ProductHydrateAvailableQuantity::run($product);
-        }
+
+
 
         if ($product->webpage && !empty($webpageData)) {
             UpdateWebpage::make()->action($product->webpage, $webpageData);
@@ -178,7 +181,13 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if (Arr::has($changed, 'is_for_sale') && $product->webpage) {
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  && $product->webpage) {
+
+
+            if ($product->master_product_id) {
+                MasterAssetHydrateAssets::run($product->master_product_id);
+            }
+
             if ($product->is_for_sale && $product->webpage->state == WebPageStateEnum::CLOSED) {
                 ReopenWebpage::run($product->webpage);
             }
@@ -195,7 +204,7 @@ class UpdateProduct extends OrgAction
         }
 
 
-        if (Arr::has($changed, 'is_for_sale') || $newData) {
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  || $newData) {
             $product->auditEvent    = 'update';
             $product->isCustomEvent = true;
 
@@ -308,6 +317,10 @@ class UpdateProduct extends OrgAction
             if ($product->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id)->delay(now()->addSeconds(180));
             }
+            if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE) {
+                UpdateFaireProductInventoryQuantity::dispatch($product);
+            }
+
         }
 
         if (Arr::has($changed, 'master_product_id')) {
@@ -329,6 +342,10 @@ class UpdateProduct extends OrgAction
 
         if ($oldHistoricProduct != $product->current_historic_asset_id) {
             UpdateHistoricProductInBasketTransactions::dispatch($product);
+        }
+
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  || $oldState != $product->state) {
+            $product = ProductHydrateAvailableQuantity::run($product);
         }
 
         return $product;

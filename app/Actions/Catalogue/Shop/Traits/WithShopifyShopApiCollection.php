@@ -40,6 +40,15 @@ trait WithShopifyShopApiCollection
                             displayFulfillmentStatus
                             email
                             phone
+                            fulfillmentOrders(first: 10) {
+                              edges {
+                                node {
+                                  id
+                                  status
+                                  requestStatus
+                                }
+                              }
+                            }
                             totalPriceSet {
                                 shopMoney {
                                     amount

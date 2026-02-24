@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -25,6 +26,7 @@ class OfferCampaignsResource extends JsonResource
     {
         return [
             'slug'                  => $this->slug,
+            'type'                  => OfferCampaignTypeEnum::from($this->type->value)->icons()[$this->type->value],
             'code'                  => $this->code,
             'name'                  => $this->name,
             'number_current_offers' => $this->number_current_offers,

@@ -43,12 +43,20 @@ class HydrateModels extends HydrateModel
             $this->hydrateMasters($command);
         }
 
+        if ($this->checkIfCanHydrate(['masters_sales', 'mas_s'], $command)) {
+            $this->hydrateMastersSales($command);
+        }
+
         if ($this->checkIfCanHydrate(['goods'], $command)) {
             $this->hydrateGoods($command);
         }
 
         if ($this->checkIfCanHydrate(['catalogue', 'cat'], $command)) {
             $this->hydrateCatalogue($command);
+        }
+
+        if ($this->checkIfCanHydrate(['catalogue_sales', 'cat_s'], $command)) {
+            $this->hydrateCatalogueSales($command);
         }
 
         if ($this->checkIfCanHydrate(['billables', 'bil','bill'], $command)) {
@@ -141,6 +149,12 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:master_assets');
     }
 
+    protected function hydrateMastersSales(Command $command): void
+    {
+        $command->info('Master section (sales) 📐️');
+        $command->call('hydrate:master_shops_sales');
+    }
+
     protected function hydrateGoods(Command $command): void
     {
         $command->info('Goods section ⛅️');
@@ -159,6 +173,16 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:families');
         $command->call('hydrate:products');
         $command->call('hydrate:assets');
+    }
+
+    protected function hydrateCatalogueSales(Command $command): void
+    {
+        $command->info('Catalogue section 📚');
+        $command->call('hydrate:shops_sales');
+        $command->call('hydrate:departments_sales');
+        $command->call('hydrate:sub_departments_sales');
+        $command->call('hydrate:families_sales');
+        $command->call('hydrate:assets_sales');
     }
 
     protected function hydrateBillables(Command $command): void

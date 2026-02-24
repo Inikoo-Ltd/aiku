@@ -69,7 +69,7 @@ class IndexTradeUnitsInMasterProduct extends OrgAction
             $this->addColumnCodeAndName($table);
             $this->addColumnNetWeight($table, 'Weight');
             $this->addColumnType($table, 'Type');
-            $this->addColumnQuantityPlain($table, 'quantity', true, true);
+            $this->addColumnQuantityPlain($table, 'Quantity', true, true);
         };
     }
 }

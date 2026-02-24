@@ -9,10 +9,12 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -64,6 +66,10 @@ class UpdateMasterAsset extends OrgAction
         }
 
         if (Arr::has($modelData, 'is_for_sale')) {
+            if (!Arr::get($modelData, 'is_for_sale')) {
+                data_set($modelData, 'status', false);
+            }
+
             data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? now() : null);
         }
 
@@ -204,7 +210,7 @@ class UpdateMasterAsset extends OrgAction
                 $shopLanguage    = $shop->language;
                 $dataToBeUpdated = [];
 
-                // Updates affected field name using translate if follow_master_{field} is true
+                // Updates the affected field name using translation if follow_master_{field} is true
                 if ($masterAsset->wasChanged('name')) {
                     $dataToBeUpdated['name']             = Translate::run($masterAsset->name, $english, $shopLanguage);
                     $dataToBeUpdated['is_name_reviewed'] = false;
@@ -225,6 +231,18 @@ class UpdateMasterAsset extends OrgAction
                 if ($dataToBeUpdated) {
                     UpdateProduct::make()->action($product, $dataToBeUpdated);
                 }
+            }
+        }
+
+        if ($masterAsset->wasChanged('is_for_sale') && $masterAsset->is_for_sale) {
+            MasterAssetHydrateAssets::run($masterAsset->id);
+        }
+
+
+        if ($masterAsset->wasChanged('follow_trade_unit_media') && $masterAsset->follow_trade_unit_media && $masterAsset->is_single_trade_unit) {
+            CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+            foreach ($masterAsset->products as $product) {
+                CloneProductImagesFromTradeUnits::run($product);
             }
         }
 
@@ -273,6 +291,7 @@ class UpdateMasterAsset extends OrgAction
             'description_extra_i8n'        => ['sometimes', 'array'],
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
+            'follow_trade_unit_media'      => ['sometimes', 'boolean'],
             'tax_category'                 => ['sometimes', 'array']
         ];
 

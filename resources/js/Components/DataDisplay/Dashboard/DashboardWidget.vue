@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { inject, computed } from "vue";
 import WidgetShops from "./Widget/WidgetShops.vue";
 import WidgetOrganisations from "./Widget/WidgetOrganisations.vue";
-import RegistrationsWithOrders from "@/Components/DataDisplay/Dashboard/Widget/RegistrationsWithOrders.vue";
-import RegistrationsWithoutOrders from "@/Components/DataDisplay/Dashboard/Widget/RegistrationsWithoutOrders.vue";
-import TopPerformers from "@/Components/Shop/TopPerformers.vue";
 
 const props = defineProps<{
 	intervals: {
@@ -17,31 +13,6 @@ const props = defineProps<{
 	}
     tableData: {}
 }>()
-
-const layout = inject('layout')
-
-const totalsColumns = computed(() => {
-    if (props.tableData?.tables?.organisations?.totals?.columns) {
-        return props.tableData.tables.organisations.totals.columns
-    }
-    if (props.tableData?.tables?.shops?.totals?.columns) {
-        return props.tableData.tables.shops.totals.columns
-    }
-    if (props.tableData?.tables?.master_shops?.totals?.columns) {
-        return props.tableData.tables.master_shops.totals.columns
-    }
-    return null
-})
-
-const hasRegistrationsWithOrders = computed(() => {
-    const value = totalsColumns.value?.registrations_with_orders?.[props.intervals.value]?.raw_value
-    return value && Number(value) > 0
-})
-
-const hasRegistrationsWithoutOrders = computed(() => {
-    const value = totalsColumns.value?.registrations_without_orders?.[props.intervals.value]?.raw_value
-    return value && Number(value) > 0
-})
 </script>
 
 <template>
@@ -56,20 +27,5 @@ const hasRegistrationsWithoutOrders = computed(() => {
             :tableData="props.tableData"
             :intervals="props.intervals"
         />
-        <RegistrationsWithOrders
-            v-if="hasRegistrationsWithOrders"
-            :tableData="props.tableData"
-            :intervals="props.intervals"
-        />
-        <RegistrationsWithoutOrders
-            v-if="hasRegistrationsWithoutOrders"
-            :tableData="props.tableData"
-            :intervals="props.intervals"
-        />
     </div>
-
-    <TopPerformers
-        :packers="props.tableData?.top_performance?.top_packers?.[props.intervals.value]"
-        :pickers="props.tableData?.top_performance?.top_pickers?.[props.intervals.value]"
-    />
 </template>

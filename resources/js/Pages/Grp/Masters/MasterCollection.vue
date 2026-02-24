@@ -30,6 +30,8 @@ import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollect
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableMasterCollections from '@/Components/Tables/Grp/Goods/TableMasterCollections.vue'
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
+import TableMasterFamilies from '@/Components/Tables/Grp/Goods/TableMasterFamilies.vue'
+import TableMasterProducts from '@/Components/Tables/Grp/Goods/TableMasterProducts.vue'
 library.add(faPlus)
 
 const props = defineProps<{
@@ -73,8 +75,8 @@ const handleTabUpdate = (tabSlug: string) => {
 const component = computed(() => {
     const components: Record<string, Component> = {
         showcase: MasterCollectionShowcase,
-        families: TableFamilies,
-        products: TableProducts,
+        families: TableMasterFamilies,
+        products: TableMasterProducts,
         collections: TableMasterCollections,
         shop_collections: TableCollections,
         history: TableHistories,
@@ -183,6 +185,7 @@ const onSubmitAttach = async ({
         :tab="currentTab"
         :routes="props.routes?.[currentTab]"
         :salesData="salesData"
+        :isCheckBox="false"
     />
 
     <!-- Modal: Products -->

@@ -6,13 +6,14 @@ import { notify } from "@kyvg/vue3-notification"
 import InputSwitch from "primevue/inputswitch"
 import InputNumber from "primevue/inputnumber"
 import axios from "axios"
-
+import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
 import { useChatLanguages } from "@/Composables/useLanguages"
 
 const emit = defineEmits(["close"])
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
+const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 const userId = layout?.user?.id
 const isEditMode = ref(false)
 const agent = ref<any>(null)
@@ -91,6 +92,49 @@ const saveSettings = async () => {
     }
 }
 
+const notificationPermission = ref(Notification.permission)
+
+const enableBrowserNotification = async () => {
+    if (!("Notification" in window)) {
+        notify({
+            title: "Not Supported",
+            text: "Browser does not support notifications",
+            type: "error"
+        })
+        return
+    }
+
+    try {
+        const permission = await Notification.requestPermission()
+        notificationPermission.value = permission
+
+        if (permission === "granted") {
+            new Notification("Notification Enabled", {
+                body: "You will now receive chat notifications."
+            })
+
+            playNotificationSoundFile(soundUrl)
+
+            notify({
+                title: "Success",
+                text: "Browser notification enabled",
+                type: "success"
+            })
+        } else {
+            notify({
+                title: "Permission Denied",
+                text: "Please allow notifications in browser settings",
+                type: "error"
+            })
+        }
+    } catch (e) {
+        console.error(e)
+    }
+}
+
+
+
+
 watch(specializationValue, (val) => {
     form.value.specialization = val ? [val] : []
 })
@@ -152,6 +196,25 @@ onMounted(async () => {
             <Dropdown v-model="form.language_id" :options="languages" optionLabel="name" optionValue="id"
                 placeholder="Select language" :disabled="!isEditMode" class="w-full" />
         </div>
+
+        <div class="flex flex-col gap-2 pt-3 border-t">
+            <div class="flex items-center justify-between">
+                <span class="text-gray-700">Browser Notifications</span>
+
+                <Button label="Enable" type="primary" @click="enableBrowserNotification"
+                    v-if="notificationPermission !== 'granted'" />
+
+                <span v-else class="text-green-600 text-xs font-medium">
+                    Enabled
+                </span>
+            </div>
+
+            <div class="text-xs text-gray-400">
+                Allow browser notification and sound when new chat message arrives.
+            </div>
+        </div>
+
+
 
         <div class="flex justify-end gap-2 pt-3 border-t">
             <Button v-if="!isEditMode" type="edit" label="Edit" @click="isEditMode = true" />

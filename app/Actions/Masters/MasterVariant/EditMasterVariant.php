@@ -112,6 +112,12 @@ class EditMasterVariant extends OrgAction
                         ]
                     ],
                 ],
+                'warning'     => [
+                    'type'  => 'warning',
+                    'title' => 'Warning',
+                    'text'  => __('Adding a product into variants would force it as for sale'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle'],
+                ],
                 'formData' => [
                     'blueprint' => [
                         [

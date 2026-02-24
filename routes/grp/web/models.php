@@ -39,7 +39,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UpdateProduct;
-use App\Actions\Catalogue\Product\UpdateProductExternal;
+use App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct;
 use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
@@ -75,11 +75,15 @@ use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\Mailshot\PublishMailShot;
+use App\Actions\Comms\Mailshot\ResumeMailshot;
 use App\Actions\Comms\Mailshot\SendMailShotNow;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
+use App\Actions\Comms\Mailshot\StopMailshot;
+use App\Actions\Comms\Mailshot\SetMailshotSecondWaveStatus;
 use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
 use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
+use App\Actions\Comms\Mailshot\UpdateMailshotSecondWave;
 use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
@@ -128,6 +132,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWoo
 use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -347,7 +352,7 @@ use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiAsync;
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -600,7 +605,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::delete('{product:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inProduct'])->name('attachment.detach')->withoutScopedBindings();
 
     Route::name('external.')->prefix('external')->group(function () {
-        Route::patch('/{product:id}/update', UpdateProductExternal::class)->name('update');
+        Route::patch('/{product:id}/update', UpdateTradeUnitsForExternalProduct::class)->name('update');
     });
 });
 
@@ -701,6 +706,7 @@ Route::post('{customerSalesChannel:id}/shopify-batch-all', CreateNewBulkPortfoli
 Route::post('{customerSalesChannel:id}/woo-batch-upload', StoreBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/woo-batch-match', MatchBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/woo-batch-all', StoreBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_all')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/revive', ReviveInActiveWooChannel::class)->name('woo.revive')->withoutScopedBindings();
 
 Route::post('{customerSalesChannel:id}/ebay-batch-upload', StoreBulkNewProductToCurrentEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
 Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings();
@@ -792,6 +798,10 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::delete('', DeleteMailshot::class)->name('delete')->withoutScopedBindings();
         Route::post('as-new-template', [StoreMailshotAsNewTemplate::class, 'inMailshot'])->name('store.as-new-template')->withoutScopedBindings();
         Route::patch('recipient-filter', UpdateMailshotRecipientFilter::class)->name('recipient-filter.update')->withoutScopedBindings();
+        Route::post('stop-mailshot', StopMailshot::class)->name('stop')->withoutScopedBindings();
+        Route::post('resume-mailshot', ResumeMailshot::class)->name('resume')->withoutScopedBindings();
+        Route::post('second-wave', SetMailshotSecondWaveStatus::class)->name('second-wave')->withoutScopedBindings();
+        Route::patch('second-wave', UpdateMailshotSecondWave::class)->name('second-wave.update')->withoutScopedBindings();
     });
 
     Route::name('email-template.')->prefix('email-template')->group(function () {
@@ -868,6 +878,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('images/footer', [UploadImagesToWebsite::class, 'footer'])->name('footer.images.store');
     Route::post('images/favicon', [UploadImagesToWebsite::class, 'favicon'])->name('favicon.images.store');
     Route::post('images/sidebar', [UploadImagesToWebsite::class, 'sidebar'])->name('sidebar.images.store');
+    Route::post('images/sidebar', [UploadImagesToWebsite::class, 'menu'])->name('menu.images.store');
 
     Route::post('/banner', StoreBanner::class)->name('banner.store');
 
@@ -975,6 +986,7 @@ Route::delete('/guest/{guest:id}', DeleteGuest::class)->name('guest.delete');
 
 Route::name('collection.')->prefix('collection/{collection:id}')->group(function () {
     Route::post('attach-models', AttachModelsToCollection::class)->name('attach-models');
+    Route::patch('update', UpdateCollection::class)->name('update');
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
     Route::delete('delete', DeleteCollection::class)->name('delete');
     Route::patch('webpage-disable', DisableCollection::class)->name('webpage_disable');
@@ -1085,7 +1097,7 @@ Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name(
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
 Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigiAsync::class)->name('website_luigi.reindex')->withoutScopedBindings();
 
-Route::post('webpage/{webpage:id}/reindex-luigi', ReindexWebpageLuigiAsync::class)->name('webpage_luigi.reindex')->withoutScopedBindings();
+Route::post('webpage/{webpage:id}/reindex-luigi', ReindexWebpageLuigi::class)->name('webpage_luigi.reindex')->withoutScopedBindings();
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
 Route::patch('snapshot/{snapshot:id}/update', UpdateSnapshot::class)->name('snapshot.update');

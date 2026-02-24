@@ -62,7 +62,7 @@ const onSubmitSubscribe = async () => {
 						}"
 						class="hover-text-input"
 						:toogle="[
-							'heading', 'fontSize', 'bold', 'italic', 'underline', 'query', 'fontFamily',
+							'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'query', 'fontFamily',
 							'blockquote', 'divider', 'alignLeft', 'alignRight', 'customLink',
 							'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
 						]"
@@ -78,7 +78,7 @@ const onSubmitSubscribe = async () => {
 						}"
 						class="hover-text-input"
 						:toogle="[
-							'heading', 'fontSize', 'bold', 'italic', 'underline', 'query', 'fontFamily',
+							'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'query', 'fontFamily',
 							'blockquote', 'divider', 'alignLeft', 'alignRight', 'customLink',
 							'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
 						]"

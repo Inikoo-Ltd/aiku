@@ -108,8 +108,8 @@ class ShowWebpageWorkshop extends OrgAction
                 'luigi_tracker_id' => Arr::get($webpage->website->settings, 'luigisbox.tracker_id'),
                 'url'           => $url,
                 'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
-                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes)
-
+                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes),
+                'editable'      => true // INI-927 need passing permission
             ]
         );
     }

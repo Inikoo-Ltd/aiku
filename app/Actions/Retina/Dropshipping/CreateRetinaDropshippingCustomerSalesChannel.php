@@ -71,17 +71,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'ebay'        => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::EBAY->value)->count(),
                 ],
                 'tiktokAuth'         => [
-                    'url'                    => AuthenticateTiktokAccount::make()->redirectToTikTok($customer),
-                    'isAuthenticated'        => AuthenticateTiktokAccount::make()->checkIsAuthenticated($customer),
-                    'isAuthenticatedExpired' => AuthenticateTiktokAccount::make()->checkIsAuthenticatedExpired($customer),
-                    'tiktokName'             => $customer->tiktokUser?->name,
-                    'deleteAccountRoute'     => [
-                        'method'     => 'delete',
-                        'name'       => 'retina.models.dropshipping.tiktok.delete',
-                        'parameters' => [
-                            'tiktokUser' => $customer->tiktokUser?->id
-                        ]
-                    ]
+                    'url'                    => AuthenticateTiktokAccount::make()->redirectToTikTok($customer)
                 ],
                 'type_shopify'       => [
                     'shopify_url'  => '.'.config('shopify-app.my_shopify_domain'),

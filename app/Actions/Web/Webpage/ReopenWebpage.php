@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,10 +27,19 @@ class ReopenWebpage extends OrgAction
         $webpage->update(
             [
                 'redirect_webpage_id' => null,
-                'state' => WebpageStateEnum::LIVE,
+                'state'               => WebpageStateEnum::LIVE,
             ]
         );
 
+        foreach (Redirect::where('from_webpage_id', $webpage->id)->get() as $redirect) {
+            $redirect->forceDelete();
+        }
+        if ($redirect = Redirect::where('from_url', $webpage->canonical_url)->first()) {
+            $redirect->forceDelete();
+        }
+        if ($redirect = Redirect::where('from_path', $webpage->url)->first()) {
+            $redirect->forceDelete();
+        }
 
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);

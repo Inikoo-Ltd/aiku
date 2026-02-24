@@ -28,6 +28,7 @@ const props = defineProps<{
   },
   modelType?: string
   uploadImageRoute?: routeType,
+  editable?:boolean
 }>()
 
 const modelValue = defineModel()
@@ -122,14 +123,17 @@ const keyRender = ref(1)
   </div>
 
 
-  <component
-    :key="keyRender + currentView"
-    :is="getComponent(blueprint.type)"
-    :uploadRoutes="uploadImageRoute"
-    v-bind="blueprint?.props_data"
-    :modelValue="valueForField"
-    @update:modelValue="onPropertyUpdate"
-  />
+  <div :class="!editable ? 'pointer-events-none opacity-50 select-none' : ''">
+    <component
+      :key="keyRender + currentView"
+      :is="getComponent(blueprint.type)"
+      :uploadRoutes="uploadImageRoute"
+      v-bind="blueprint?.props_data"
+      :modelValue="valueForField"
+      @update:modelValue="onPropertyUpdate"
+    />
+  </div>
+
 
   <div v-if="blueprint.reset_value?.value" @click="() => (onPropertyUpdate(blueprint.reset_value.value), blueprint.reset_value.is_refresh_field_on_reset ? keyRender++ : null)" class="w-fit cursor-pointer text-xs text-gray-400 mt-1 hover:text-red-500 hover:underline">
     {{ trans("Click here to reset the value") }}

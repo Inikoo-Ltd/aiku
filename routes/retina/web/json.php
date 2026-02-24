@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerCollecti
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductCategorySalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
+use App\Actions\Dropshipping\Tiktok\User\UI\ShowTiktokUser;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
@@ -36,6 +37,8 @@ Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComToke
 
 Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', DownloadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.portfolio_images_zip');
 Route::get('dropshipping/{customerSalesChannel:id}/upload-portfolio-zip-images', UploadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.upload_portfolio_zip_images');
+
+Route::get('dropshipping/{tiktokUser:id}/tiktok-user', ShowTiktokUser::class)->name('dropshipping.customer_sales_channel.tiktok_user.show');
 
 Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProduct::class)->name('dropshipping.product.channels_list');
 Route::get('dropshipping/{productCategory:id}/pc-channels-list', GetRetinaSalesChannelInProductCategory::class)->name('dropshipping.product.channels_list_product_category')->withoutScopedBindings();

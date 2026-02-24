@@ -66,7 +66,7 @@ class ShowHumanResourcesDashboard extends OrgAction
                         ]
                     ],
                     [
-                        'name'  => __('working places'),
+                        'name'  => __('Working places'),
                         'stat'  => $this->organisation->humanResourcesStats->number_workplaces,
                         'route' => [
                             'name'       => 'grp.org.hr.workplaces.index',
@@ -74,7 +74,7 @@ class ShowHumanResourcesDashboard extends OrgAction
                         ]
                     ],
                     [
-                        'name'  => __('responsibilities'),
+                        'name'  => __('Responsibilities'),
                         'stat'  => $this->organisation->humanResourcesStats->number_job_positions,
                         'route' => [
                             'name'       => 'grp.org.hr.job_positions.index',

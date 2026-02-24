@@ -46,7 +46,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DebugWebhooks> $debugWebhooks
  * @property-read \App\Models\SysAdmin\Group $group

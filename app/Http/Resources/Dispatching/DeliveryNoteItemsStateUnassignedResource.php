@@ -31,12 +31,24 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $packedIn = $this->packed_in;
+        if ($packedIn == null) {
+            $packedIn = 1;
+        }
+
         $requiredFactionalData = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors($this->quantity_required)
             ),
             $this->packed_in
         );
+
+        $packedInMessage = '';
+        if ($packedIn == 1) {
+            $packedInMessage = '('.__('Individually packed').')';
+        } elseif ($packedIn > 1) {
+            $packedInMessage = '('.__('Pack of').": $packedIn".")";
+        }
 
         return [
             'id'                           => $this->id,
@@ -50,6 +62,7 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             'org_stock_id'                 => $this->org_stock_id,
             'batch_code'                   => $this->batch_code,
             'expiry_date'                  => $this->expiry_date,
+            'packed_in_message'            => $packedInMessage,
         ];
     }
 }

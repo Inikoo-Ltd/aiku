@@ -63,10 +63,18 @@ const bestOffer = computed(() => {
 const _popoverInfoCircle = ref<InstanceType<any> | null>(null)
 const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
+const cleanedDescription = computed(() => {
+  const html = props.fieldValue.family.description || ''
+
+  // remove <h1>...</h1>
+  return html.replace(/<h1[^>]*>.*?<\/h1>/gis, '')
+})
+
+
 </script>
 
 <template>
-  <div id="family-1-iris">
+  <div  :id="fieldValue?.id ? fieldValue?.id  : 'family-1-iris'"  component="family-1-iris" >
     <div :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), ...getStyles(fieldValue?.container?.properties), width : 'auto' }"  class="py-4 px-[10px] sm:px-[50px]"
       aria-label="Family Description Section">
       
@@ -81,21 +89,10 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
             class="flex flex-col md:flex-row gap-x-4 mt-4 gap-y-1 md:gap-y-2 mb-3 offers"
         >
 
-            <!-- <template v-for="(offer, idOffer, offIdx) in fieldValue?.family?.offers_data.offers">
-                <FamilyOfferLabelGR 
-                  v-if="offer.type == 'Category Quantity Ordered Order Interval'" 
-                />
-
-                <FamilyOfferLabelDiscount
-                    :offer="offer"
-                />
-            </template> -->
-
                 <DiscountByType 
                    :offers_data="fieldValue?.family?.offers_data"
                    :template="bestOffer.type == 'Category Quantity Ordered Order Interval' ? 'active-inactive-gr'  : 'max_discount'"
                 />
-
                 <DiscountByType
                     v-if="!layout?.user?.gr_data?.customer_is_gr && bestOffer.type == 'Category Quantity Ordered Order Interval'"
                    :offers_data="fieldValue?.family?.offers_data"
@@ -111,10 +108,10 @@ const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
         <!-- Main Description -->
         <div
-            v-if="fieldValue.family.description"
+            v-if="cleanedDescription"
             id="description-family-1-iris"
             xstyle="{ marginTop: 0 }"
-            v-html="fieldValue.family.description"
+            v-html="cleanedDescription"
             class="mt-6 text-justify"
         />
 

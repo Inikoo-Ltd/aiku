@@ -128,6 +128,7 @@ const props = defineProps<{
         slug: string
     }
 	history: {}
+	shop_type : string
 }>();
 
 
@@ -517,6 +518,7 @@ onMounted(() => {
 			:tab="currentTab"
 			:routes
 			:state="delivery_note.state"
+			:shop_type="shop_type"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError" />
 	</div>

@@ -44,11 +44,14 @@ class FulfillOrderToWooCommerce extends OrgAction
         $shipments = [];
         foreach ($deliveryNote->shipments as $shipment) {
             $shipments[] = [
-                'tracking_provider'    => 'Other',
+                'tracking_provider'    => $shipment->trade_as,
                 'tracking_number'      => $shipment->tracking,
                 'custom_tracking_link' => $shipment->combined_label_url,
                 'date_shipped'         => now()->timestamp // current timestamp
             ];
+
+            $shippingNote = __("Shipping Tracking ($shipment->tracking): $shipment->trade_as ") . $shipment->combined_label_url;
+            $wooCommerceUser->createCustomerOrderNote($fulfillOrderId, $shippingNote);
         }
 
         $wooCommerceUser->updateWooCommerceOrder($fulfillOrderId, [

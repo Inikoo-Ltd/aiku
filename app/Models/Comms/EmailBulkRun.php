@@ -12,6 +12,7 @@ use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -46,6 +47,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property-read \App\Models\Comms\EmailBulkRunIntervals|null $intervals
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailBulkRunRecipient> $recipients
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Comms\EmailBulkRunStats|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRun newModelQuery()
@@ -117,5 +119,28 @@ class EmailBulkRun extends Model
         return $this->morphMany(EmailDeliveryChannel::class, 'model');
     }
 
+    public function recipients(): HasMany
+    {
+        return $this->hasMany(EmailBulkRunRecipient::class);
+    }
 
+    public function sender(): string
+    {
+        if (app()->environment('production')) {
+            /** @var Shop $parent */
+            $parent = $this->shop;
+            //todo we need to set up sender and very SES etc
+            //   $sender = $parent->senderEmail->email_address;
+            $sender = $parent?->email;
+        } else {
+            $sender = config('app.email_address_in_non_production_env');
+        }
+
+        return $sender;
+    }
+
+    public function senderName(): string
+    {
+        return $this->shop?->name ?? '';
+    }
 }

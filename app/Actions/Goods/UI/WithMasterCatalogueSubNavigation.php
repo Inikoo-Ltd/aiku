@@ -68,7 +68,7 @@ trait WithMasterCatalogueSubNavigation
                     'parameters' => [
                         'masterShop' => $masterShop->slug,
                         '_query' => [
-                            'elements[status]' => 'active'
+                            'index_elements[status]' => 'active'
                         ]
                     ]
                 ],
@@ -86,7 +86,7 @@ trait WithMasterCatalogueSubNavigation
                     'parameters' => [
                         'masterShop' => $masterShop->slug,
                         '_query' => [
-                            'elements[status]' => 'active'
+                            'index_elements[status]' => 'active'
                         ]
                     ]
                 ],

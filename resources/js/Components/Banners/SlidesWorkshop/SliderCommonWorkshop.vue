@@ -5,63 +5,74 @@
   -->
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, inject } from "vue"
+import { get, set, cloneDeep } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
-
-// components
-import Corners from "@/Components/Banners/SlidesWorkshop/Fields/Corners/Corners.vue"
-import Range from "@/Components/Banners/SlidesWorkshop/Fields/Range.vue"
-import Colorpicker from '@/Components/Banners/SlidesWorkshop/Fields/ColorPicker.vue'
-import TextAlign from './Fields/TextAlign.vue'
-import SelectFont from './Fields/SelectFont.vue'
-import GradientColor from './Fields/GradientColor.vue'
-import BannerNavigation from '@/Components/Banners/SlidesWorkshop/Fields/BannerNavigation.vue'
-import Toogle from './Fields/PrimitiveToggle.vue'
-import PrimitiveInput from './Fields/PrimitiveInput.vue'
-import Select from './Fields/PrimitiveSelect.vue'
-import Radio from './Fields/PrimitiveRadio.vue'
+import { getComponent } from "@/Composables/getBannerFields"
 
 // icon
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch } from '@fal'
+import { faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
 library.add(faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch)
 
 const props = defineProps<{
-    currentComponentBeenEdited: Object,
-    blueprint: Array<Object>,
+  modelValue: any
+  blueprint: any[]
 }>()
 
-console.log(props)
-
-const getComponent = (componentName: string) => {
-    const components = {
-        'text': PrimitiveInput,
-        'corners': Corners,
-        'range': Range,
-        'colorpicker': Colorpicker,
-        'select': Select,
-        'radio': Radio,
-        'textAlign': TextAlign,
-        'selectFont': SelectFont,
-        'toogle':Toogle,
-        'gradientColor' : GradientColor,
-        'bannerNavigation' : BannerNavigation,
-        'number' : PrimitiveInput,
-    };
-    return components[componentName]
-};
-
-
+const emit = defineEmits(["update:modelValue"])
+const screenView = inject('screenView')
 const current = ref(0);
-
-
-const setCurrent = (key) => {
-    current.value = key
+const setCurrent = (key: number) => {
+  current.value = key
 }
 
+const getValue = (fieldData: string | string[]) => {
+    const rawVal = get(props.modelValue, fieldData.name)
+    const view = screenView.value!
+    return rawVal?.[view] ?? rawVal?.desktop ?? rawVal ?? null
+}
+
+
+
+const setValue = (fieldData: any, value: any) => {
+    const cloned = cloneDeep(props.modelValue || {})
+    const fieldName = fieldData.name
+
+    // responsive field (desktop/tablet/mobile)
+    if (Array.isArray(fieldData.useIn) && fieldData.useIn.length > 0) {
+        const responsiveValue = get(cloned, fieldName) || {}
+
+        set(cloned, fieldName, {
+            ...responsiveValue,
+            [screenView.value]: value
+        })
+
+        console.log('cloned after set:', cloned);
+
+        emit("update:modelValue", cloned)
+        return
+    }
+
+    // nested path array
+    if (Array.isArray(fieldName)) {
+        set(cloned, fieldName, value)
+    } else {
+        cloned[fieldName] = value
+    }
+
+    emit("update:modelValue", cloned)
+}
+
+defineExpose({
+    current,
+});
+
+
 </script>
+
 
 <template>
     <div class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x min-h-full">
@@ -101,9 +112,16 @@ const setCurrent = (key) => {
                     <!-- Fields -->
                     <dd class="flex text-sm text-gray-700 sm:mt-0 w-full">
                         <div class="relative flex-grow">
-                            <component :is="getComponent(fieldData['type'])" :data="currentComponentBeenEdited"
-                                :fieldName="fieldData.name" :fieldData="fieldData" :key="index" :counter="false">
-                            </component>
+                            <component 
+                                :is="getComponent(fieldData['type'])" 
+                                :model-value="getValue(fieldData)"
+                                @update:modelValue="setValue(fieldData, $event)"
+                                :data="modelValue"
+                                :fieldName="fieldData.name" 
+                                :fieldData="fieldData" 
+                                :key="index" 
+                                :counter="false"
+                            />
                         </div>
                     </dd>
                 </dl>

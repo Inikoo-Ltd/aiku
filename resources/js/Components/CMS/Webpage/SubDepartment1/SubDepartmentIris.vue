@@ -5,7 +5,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { faGalaxy, faTimesCircle } from "@fas";
 import { getStyles } from "@/Composables/styles"
 import Image from "@/Components/Image.vue";
-import { computed, ref } from "vue";
+import { computed, ref, inject } from "vue";
 import {
   faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse,
   faTruck, faTag, faPhone, faInfoCircle
@@ -32,7 +32,7 @@ library.add(
   faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt,
   faGlobe, faPercent, faPoundSign, faClock
 );
-
+const layout = inject("layout",{})
 const props = defineProps<{
   fieldValue: {
     collections: Array<Object>
@@ -53,14 +53,23 @@ const fallbackPerRow = {
 };
 
 const perRow = computed(() => {
-  return (
-    props.fieldValue?.settings?.per_row?.[props.screenType] ||
-    fallbackPerRow[props.screenType] ||
+  const base =
+    props.fieldValue?.settings?.per_row?.[props.screenType] ??
+    fallbackPerRow[props.screenType] ??
     1
-  );
-});
 
-const gridColsClass = computed(() => `grid-cols-${perRow.value}`);
+  if (layout.rightbasket?.show) {
+    if (props.screenType === 'mobile') {
+      return base 
+    }
+
+    return 3
+  }
+
+  return base
+})
+
+const gridColsClass = computed(() => `grid-cols-${perRow.value}`)
 
 const screenClass = computed(() => {
   switch (props.screenType) {
@@ -110,7 +119,7 @@ const textVisible = computed(() => {
 
 <template>
 
-  <div v-if="mergedItems.length" class="mx-auto" :class="screenClass"
+  <div v-if="mergedItems.length" class="mx-auto" :class="screenClass" :id="fieldValue?.id ? fieldValue?.id  : 'sub-department-1'"  component="sub-department-1"
     :style="getStyles(fieldValue?.container?.properties, screenType)">
    <!--  <h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">
       {{ trans("Browse By Sub-department") }}

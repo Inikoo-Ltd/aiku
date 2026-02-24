@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Payment\UI;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\UI\ShowOrgPaymentServiceProvider;
+use App\Actions\Accounting\Payment\WithPaymentSubNavigation;
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccount\WithPaymentAccountSubNavigation;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
@@ -42,8 +43,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPayments extends OrgAction
 {
-    use WithPaymentAccountSubNavigation;
     use WithAccountingSubNavigation;
+    use WithPaymentAccountSubNavigation;
+    use WithPaymentSubNavigation;
 
     private Fulfilment|Group|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice|Customer $parent;
 
@@ -53,6 +55,10 @@ class IndexPayments extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('payments.reference', $value);
             });
+        });
+
+        $methodFilter = AllowedFilter::callback('method', function ($query, $value) {
+            $query->where('payments.method', $value);
         });
 
         if ($prefix) {
@@ -112,6 +118,7 @@ class IndexPayments extends OrgAction
                 'payments.status',
                 'payments.date',
                 'payments.amount',
+                'payments.method',
                 'payment_accounts.name as payment_account_name',
                 'payment_accounts.slug as payment_accounts_slug',
                 'payment_service_providers.slug as payment_service_providers_slug',
@@ -123,9 +130,9 @@ class IndexPayments extends OrgAction
             ])
             ->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
-            ->allowedSorts(['reference', 'status', 'type', 'date', 'amount', 'payment_account_name'])
+            ->allowedSorts(['reference', 'status', 'type', 'date', 'amount', 'payment_account_name', 'method'])
             ->withBetweenDates(['date'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $methodFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -199,6 +206,7 @@ class IndexPayments extends OrgAction
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
                 $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
             }
+            $table->column(key: 'method', label: __('Method'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
         };
@@ -293,6 +301,8 @@ class IndexPayments extends OrgAction
             $subNavigation = $this->getSubNavigation($this->parent);
         } elseif ($this->parent instanceof Shop) {
             $subNavigation = $this->getSubNavigationShop($this->parent);
+        } elseif ($this->parent instanceof Organisation) {
+            $subNavigation = $this->getPaymentSubNavigation($this->parent);
         }
 
         return Inertia::render(

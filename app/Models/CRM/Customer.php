@@ -181,7 +181,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
  * @property-read Collection<int, Tag> $tags
  * @property-read TaxNumber|null $taxNumber
- * @property-read TiktokUser|null $tiktokUser
+ * @property-read Collection<int, TiktokUser> $tiktokUsers
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read Collection<int, TopUpPaymentApiPoint> $topUpPaymentApiPoint
  * @property-read Collection<int, TopUp> $topUps
@@ -441,9 +441,9 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasOne(EbayUser::class);
     }
 
-    public function tiktokUser(): HasOne
+    public function tiktokUsers(): HasMany
     {
-        return $this->hasOne(TiktokUser::class);
+        return $this->hasMany(TiktokUser::class);
     }
 
     public function amazonUsers(): HasMany

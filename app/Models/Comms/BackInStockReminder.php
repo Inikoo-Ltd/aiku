@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property string|null $source_id
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Product $product

@@ -175,8 +175,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_items_state_inspected
  * @property int $number_return_items_state_restocked
  * @property int $number_return_items_state_cancelled
- * @property int pending_back_in_stock_products_count
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property int $pending_back_in_stock_products_count
+ * @property string $average_clv
+ * @property string $average_historic_clv
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily
  * @property-read \App\Models\Catalogue\Product|null $top1dProduct

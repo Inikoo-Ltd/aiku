@@ -54,6 +54,7 @@ class UpdateVariant extends OrgAction
             // Attach minion
             Product::whereIn('id', $productIds)
                 ->update([
+                    'is_for_sale'       => true,
                     'is_main'           => false,
                     'variant_id'        => $variant->id,
                     'is_variant_leader' => false,
@@ -62,7 +63,8 @@ class UpdateVariant extends OrgAction
             // Attach leader
             Product::where('id', $variant->leader_id)
                 ->update([
-                    'is_main' => true,
+                    'is_for_sale'       => true,
+                    'is_main'           => true,
                     'is_variant_leader' => true,
                     'is_minion_variant' => false
                 ]);

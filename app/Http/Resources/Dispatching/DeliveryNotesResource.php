@@ -48,6 +48,14 @@ class DeliveryNotesResource extends JsonResource
 
     public function toArray($request): array
     {
+        if ($this->estimated_weight < 1000) {
+            $weight = $this->estimated_weight.' g';
+        } elseif ($this->estimated_weight < 10000) {
+            $weight = round($this->estimated_weight / 1000, 1).' Kg';
+        } else {
+            $weight = round($this->estimated_weight / 1000).' Kg';
+        }
+
         return [
             'id'                     => $this->id,
             'slug'                   => $this->slug,
@@ -58,7 +66,7 @@ class DeliveryNotesResource extends JsonResource
             'type'                   => $this->type,
             'weight'                 => $this->weight / 1000,
             'estimated_weight'       => $this->estimated_weight / 1000,
-            'effective_weight'       => $this->effective_weight / 1000,
+            'effective_weight'       => $weight,
             'created_at'             => $this->created_at,
             'updated_at'             => $this->updated_at,
             'shop_slug'              => $this->shop_slug,

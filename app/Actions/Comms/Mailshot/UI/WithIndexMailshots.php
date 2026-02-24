@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Mail\MailshotResource;
 use App\InertiaTable\InertiaTable;
@@ -44,6 +45,11 @@ trait WithIndexMailshots
             ->leftJoin('outboxes', 'mailshots.outbox_id', 'outboxes.id')
             ->leftJoin('mailshot_stats', 'mailshot_stats.mailshot_id', 'mailshots.id')
             ->leftJoin('post_rooms', 'outboxes.post_room_id', 'post_rooms.id');
+
+        $queryBuilder->where(function ($query) {
+            $query->where('mailshots.is_second_wave', false)
+                ->orWhereNotIn('mailshots.state', [MailshotStateEnum::READY->value, MailshotStateEnum::IN_PROCESS->value, MailshotStateEnum::SCHEDULED->value]);
+        });
 
         if ($outboxCode !== null) {
             $queryBuilder->where('mailshots.type', $outboxCode->value);
@@ -100,7 +106,7 @@ trait WithIndexMailshots
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
@@ -128,5 +134,4 @@ trait WithIndexMailshots
     {
         return MailshotResource::collection($mailshots);
     }
-
 }

@@ -74,8 +74,6 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
             'registrations_with_orders',
             'registrations_without_orders',
 
-            'registrations' => $routeTargets['registrations'],
-            'registrations_minified' => $routeTargets['registrations'],
             'registrations_delta',
 
             'invoices' => $routeTargets['invoices'],
@@ -86,6 +84,13 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
             'sales_grp_currency_minified',
             'sales_grp_currency_delta',
         ];
+
+        $registrationsColumns = $this->getDashboardColumnsFromArray($summedData, [
+            'registrations' => $routeTargets['registrations'],
+            'registrations_minified' => $routeTargets['registrations'],
+        ]);
+
+        $registrationsColumns = $this->addRegistrationsTooltip($registrationsColumns, $summedData);
 
         $columns = array_merge(
             [
@@ -99,7 +104,8 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
                     'align'           => 'left',
                 ],
             ],
-            $this->getDashboardColumnsFromArray($summedData, $columnsConfig)
+            $this->getDashboardColumnsFromArray($summedData, $columnsConfig),
+            $registrationsColumns
         );
 
         $columns['baskets_created_org_currency'] = $columns['baskets_created_grp_currency'];
@@ -127,5 +133,29 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
                 'align'           => 'left',
             ],
         ];
+    }
+
+    private function addRegistrationsTooltip(array $columns, array $data): array
+    {
+        $intervals = ['tdy', 'ld', '3d', '1w', '1m', '1q', '1y', 'all', 'ytd', 'qtd', 'mtd', 'wtd', 'lm', 'lw', 'ctm'];
+
+        foreach (['registrations', 'registrations_minified'] as $columnKey) {
+            if (isset($columns[$columnKey])) {
+                foreach ($intervals as $interval) {
+                    if (isset($columns[$columnKey][$interval])) {
+                        $withOrders = $data["registrations_with_orders_{$interval}"] ?? 0;
+                        $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
+
+                        $columns[$columnKey][$interval]['tooltip'] = sprintf(
+                            'With orders: %s | Without orders: %s',
+                            number_format($withOrders),
+                            number_format($withoutOrders)
+                        );
+                    }
+                }
+            }
+        }
+
+        return $columns;
     }
 }

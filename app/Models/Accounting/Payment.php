@@ -72,10 +72,11 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool|null $is_mit
  * @property string|null $debug_mit_status
  * @property bool|null $debug_mit_is_approved
+ * @property string|null $method
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Accounting\CreditTransaction|null $creditTransaction
  * @property-read Currency $currency
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\Invoice> $invoices
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders

@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\UI\IndexInvoicesInProduct;
 use App\Actions\Catalogue\Collection\UI\CreateCollection;
 use App\Actions\Catalogue\Collection\UI\EditCollection;
 use App\Actions\Catalogue\Collection\UI\IndexCollections;
@@ -54,6 +55,7 @@ Route::prefix('products')->as('products.')
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
         });
 
@@ -64,6 +66,7 @@ Route::prefix('products')->as('products.')
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
         });
 
@@ -74,6 +77,7 @@ Route::prefix('products')->as('products.')
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
         });
 
@@ -84,6 +88,7 @@ Route::prefix('products')->as('products.')
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
         });
 
@@ -94,6 +99,7 @@ Route::prefix('products')->as('products.')
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
         });
 
@@ -104,6 +110,7 @@ Route::prefix('products')->as('products.')
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
         });
 
@@ -114,6 +121,7 @@ Route::prefix('products')->as('products.')
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
         });
     });

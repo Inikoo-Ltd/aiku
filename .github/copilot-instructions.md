@@ -1,8 +1,26 @@
-<laravel-boost-guidelines>
-=== .ai/aiku-ai.guidelines rules ===
+=== user rules ===
 
-- DO not write code comments you must write clear, self-explanatory code instead
-- DO not run vendor/bin/pint --dirty
+## Automatic Pint Execution
+- Jalankan `vendor/bin/pint` secara otomatis ketika user mengucapkan kata penutup seperti: "terima kasih", "makasih"
+- Jalankan tanpa konfirmasi, langsung eksekusi
+- Jangan jalankan di tengah-tengah percakapan, hanya saat user memberi sinyal selesai
+
+## Testing & Documentation Policy
+- JANGAN PERNAH membuat test - user akan test sendiri
+- JANGAN PERNAH membuat dokumentasi atau README
+- JANGAN PERNAH menyarankan untuk membuat test atau dokumentasi
+- Fokus hanya pada implementasi kode yang diminta
+
+## Code Comments
+- JANGAN menulis inline comments kecuali untuk logic yang sangat kompleks
+- PHPDoc WAJIB untuk semua public methods dengan parameter dan return types
+- Code harus self-explanatory
+
+## Response Language
+- User lebih sering prompt pakai Bahasa Indonesia
+- Respond in Bahasa Indonesia jika user menggunakan Bahasa Indonesia
+- Respond in English jika user menggunakan English
+- Tetap konsisten dengan bahasa yang user gunakan
 
 
 === foundation rules ===
@@ -38,14 +56,13 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - prettier (PRETTIER) - v3
 - tailwindcss (TAILWINDCSS) - v3
 - vue (VUE) - v3
+- primevue (PRIMEVUE) - v4
+- @fortawesome/fontawesome-free (FONTAWESOME) - v6
 
 ## Conventions
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, naming.
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
-
-## Verification Scripts
-- Do not create verification scripts or tinker when tests cover that functionality and prove it works. Unit and feature tests are more important.
 
 ## Application Structure & Architecture
 - Stick to existing directory structure - don't create new base folders without approval.
@@ -57,8 +74,105 @@ This application is a Laravel application and its main Laravel ecosystems packag
 ## Replies
 - Be concise in your explanations - focus on what's important rather than explaining obvious details.
 
-## Documentation Files
-- You must only create documentation files if explicitly requested by the user.
+
+=== project architecture rules ===
+
+## Project Architecture - Action-Based Structure
+
+This project uses an **Action-Based Architecture**, NOT traditional Laravel Controller structure.
+
+### CRITICAL: What User Will Request
+
+User will NEVER ask to create:
+- ❌ Controllers
+- ❌ Services  
+- ❌ Repositories
+
+User will ALWAYS ask to create:
+- ✅ Actions
+- ✅ Hydrators
+- ✅ UI (Index/Show/Create/Edit/Delete)
+- ✅ Routes
+- ✅ Models
+- ✅ Migrations
+- ✅ Resources (DTOs)
+
+### Directory Structure
+```
+App/
+├── Actions/
+│   └── {Scope}/
+│       └── {Module}/
+│           ├── Hydrators/          # Background/async logic (dispatch)
+│           │   └── {Module}Hydrate{Purpose}.php
+│           ├── UI/                 # Display logic
+│           │   ├── Index{Module}.php    # List/table data
+│           │   ├── Show{Module}.php     # Single detail view
+│           │   ├── Create{Module}.php   # Create form
+│           │   ├── Edit{Module}.php     # Edit form
+│           │   └── Delete{Module}.php   # Delete confirmation
+│           ├── Store{Module}.php   # Main store logic
+│           ├── Update{Module}.php  # Main update logic
+│           └── Delete{Module}.php  # Main delete logic
+│
+└── Http/
+    └── Resources/
+        └── {Scope}/
+            └── {Module}Resource.php  # DTO/Normalization
+```
+
+### Naming Conventions
+
+#### Actions (Root Level - Main Logic)
+- `Store{Module}.php` - Create new record
+- `Update{Module}.php` - Update existing record
+- `Delete{Module}.php` - Delete record
+
+#### Hydrators (Background/Async)
+- `{Module}Hydrate{Purpose}.php` - Background processing
+- Run via dispatch for smooth async operation
+
+#### UI Actions (Display/Forms)
+- `Index{Module}.php` - Display list/table (many records)
+- `Show{Module}.php` - Display single record detail
+- `Create{Module}.php` or `Add{Module}.php` - Show create form
+- `Edit{Module}.php` - Show edit form
+- `Delete{Module}.php` - Show delete confirmation
+
+#### Resources (DTOs)
+- Always ends with `Resource.php`
+- Used for data normalization before sending to frontend
+- Purpose: Transform raw model/array data into normalized structure
+
+### File Reading Strategy for Actions
+
+When user requests to create/modify an Action, ALWAYS:
+
+1. **Check existing similar actions first:**
+```bash
+# User: "Buat action untuk store product"
+view App/Actions  # See available scopes
+view App/Actions/Catalogue  # If Catalogue scope exists
+view App/Actions/Catalogue/Product  # Check existing Product actions
+```
+
+2. **Read the most similar action as template:**
+```bash
+# If creating StoreProduct, read existing Store action
+view App/Actions/Catalogue/Asset/StoreAsset.php
+# Read its traits, parent class, dependencies
+```
+
+3. **Check for Hydrators if background processing needed:**
+```bash
+view App/Actions/Catalogue/Asset/Hydrators
+view App/Actions/Catalogue/Asset/Hydrators/AssetHydrateTransactions.php
+```
+
+4. **Check Resources for DTO pattern:**
+```bash
+view App/Http/Resources/Catalogue/CollectionResource.php
+```
 
 
 === boost rules ===
@@ -76,26 +190,130 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - You should use the `tinker` tool when you need to execute PHP to debug code or query Eloquent models directly.
 - Use the `database-query` tool when you only need to read from the database.
 
+## Temporary Scripts & Actions
+- BOLEH membuat temporary PHP scripts atau artisan commands untuk debugging/testing
+- WAJIB ditandai dengan comment: `// TEMPORARY - DELETE AFTER USE`
+- WAJIB dihapus setelah task selesai
+- Inform user bahwa script sudah dibuat dan harus dihapus setelah digunakan
+
 ## Reading Browser Logs With the `browser-logs` Tool
 - You can read browser logs, errors, and exceptions using the `browser-logs` tool from Boost.
 - Only recent browser logs will be useful - ignore old logs.
 
-## Searching Documentation (Critically Important)
-- Boost comes with a powerful `search-docs` tool you should use before any other approaches. This tool automatically passes a list of installed packages and their versions to the remote Boost API, so it returns only version-specific documentation specific for the user's circumstance. You should pass an array of packages to filter on if you know you need docs for particular packages.
-- The 'search-docs' tool is perfect for all Laravel related packages, including Laravel, Inertia, Livewire, Filament, Tailwind, Pest, Nova, Nightwatch, etc.
-- You must use this tool to search for Laravel-ecosystem documentation before falling back to other approaches.
-- Search the documentation before making code changes to ensure we are taking the correct approach.
-- Use multiple, broad, simple, topic based queries to start. For example: `['rate limiting', 'routing rate limiting', 'routing']`.
-- Do not add package names to queries - package information is already shared. For example, use `test resource table`, not `filament 4 test resource table`.
+## Documentation Search - MODIFIED
+- JANGAN gunakan `search-docs` tool
+- Lebih prioritaskan searching file dalam project menggunakan `view` tool
+- Cari pattern dari file yang sudah ada (migrations, models, actions, resources, dll)
+- Gunakan keyword searching untuk menemukan implementasi yang mirip
 
-### Available Search Syntax
-- You can and should pass multiple queries at once. The most relevant results will be returned first.
 
-1. Simple Word Searches with auto-stemming - query=authentication - finds 'authenticate' and 'auth'
-2. Multiple Words (AND Logic) - query=rate limit - finds knowledge containing both "rate" AND "limit"
-3. Quoted Phrases (Exact Position) - query="infinite scroll" - Words must be adjacent and in that order
-4. Mixed Queries - query=middleware "rate limit" - "middleware" AND exact phrase "rate limit"
-5. Multiple Queries - queries=["authentication", "middleware"] - ANY of these terms
+=== deep file analysis rules ===
+
+## Deep File Analysis - CRITICALLY IMPORTANT
+
+Sebelum memodifikasi atau membuat code, WAJIB membaca dan menganalisis:
+
+### 1. Full Dependency Chain
+Ketika membaca sebuah file, SELALU baca juga:
+- **Traits** yang di-use
+- **Interfaces** yang di-implement  
+- **Parent classes** yang di-extends
+- **Classes yang dipanggil** seperti:
+  - `Model::run()` → baca file Model dan method run()
+  - `Job::dispatch()` → baca file Job
+  - `Action::run()` → baca file Action
+  - `Hydrator::dispatch()` → baca file Hydrator
+  - `Resource::make()` → baca file Resource
+  - Dan semua static/dynamic method calls lainnya
+
+### 2. Action-Specific Workflow
+```
+User: "Buat action untuk store product"
+
+LANGKAH WAJIB:
+1. view App/Actions → lihat struktur scope yang ada
+2. view App/Actions/Catalogue → jika scope Catalogue ada
+3. view App/Actions/Catalogue/Product → cek action yang sudah ada
+4. Pilih action serupa sebagai reference (misal: StoreAsset.php)
+5. Baca action tersebut LENGKAP:
+   - Traits yang digunakan → BACA file trait-nya
+   - Parent class → BACA parent class
+   - Method yang dipanggil → BACA class/method tersebut
+   - Hydrator yang di-dispatch → BACA file hydrator
+   - Resource yang digunakan → BACA file resource
+   - Form Request → BACA file validation
+6. Baca Resource terkait:
+   - view App/Http/Resources/Catalogue/Product/ProductResource.php
+7. Baru buat action baru mengikuti pattern yang sama
+```
+
+### 3. Critical Rules
+- JANGAN assume isi sebuah trait/class tanpa membacanya
+- JANGAN skip membaca parent class
+- JANGAN skip membaca method yang dipanggil dari class lain
+- JANGAN skip membaca Hydrator yang di-dispatch
+- JANGAN skip membaca Resource yang digunakan
+- SELALU trace full flow dari request sampai response
+
+### 4. Verification Checklist Before Implementation
+Sebelum menulis code baru:
+1. ✅ Sudah baca action-action serupa di scope/module yang sama?
+2. ✅ Sudah baca semua traits yang digunakan?
+3. ✅ Sudah baca parent class jika ada?
+4. ✅ Sudah baca class/method yang dipanggil (Action, Hydrator, Resource)?
+5. ✅ Sudah baca Vue component jika ada Inertia::render()?
+6. ✅ Sudah baca Form Request untuk validation rules?
+7. ✅ Sudah pahami full flow dari UI → Action → Hydrator → Response?
+
+Jika ada yang belum → BACA DULU sebelum implement.
+
+
+=== inertia analysis rules ===
+
+## Inertia Frontend Analysis - CRITICALLY IMPORTANT
+
+### Ketika menemukan Inertia::render() di Action, WAJIB:
+```php
+// Contoh di UI Action:
+return Inertia::render(
+    'Org/Catalogue/Shop',  // ← BACA FILE INI
+    [
+        // ...
+    ]
+);
+```
+
+**LANGKAH WAJIB:**
+1. Konversi path ke file Vue: `Org/Catalogue/Shop` → `resources/js/Pages/Grp/Org/Catalogue/Shop.vue`
+2. BACA file Vue tersebut menggunakan `view` tool
+3. Analisis:
+   - Props yang diterima (products, title, filters)
+   - PrimeVue components yang digunakan (DataTable, Button, Dialog, dll)
+   - Layout yang digunakan
+   - Methods/composables yang dipanggil
+   - Resource structure yang diharapkan
+   - FontAwesome icons yang digunakan
+4. Jika ada component lain yang dipanggil → BACA component tersebut juga
+5. Verify bahwa Resource yang dikirim match dengan yang Vue component butuhkan
+
+### Example Analysis Flow
+```
+Action: ShowShop → Inertia::render('Org/Catalogue/Shop', [...])
+↓
+WAJIB BACA: resources/js/Pages/Grp/Org/Catalogue/Shop.vue
+↓
+Pahami FULL FLOW: Action → Resource → Vue Component → PrimeVue Components
+```
+
+### Critical Rules for Inertia
+- JANGAN modify UI Action tanpa membaca Vue component-nya
+- JANGAN modify Resource tanpa tahu Vue component butuh field apa
+- JANGAN assume struktur props tanpa membaca Vue file
+- JANGAN skip membaca nested components
+- SELALU verify props yang dikirim (dari Resource) match dengan yang diterima di Vue
+- SELALU trace Resource → Vue Props untuk memastikan consistency
+- SELALU perhatikan PrimeVue component props requirements
+- SELALU ikuti pattern FontAwesome icon usage yang sudah ada
 
 
 === php rules ===
@@ -120,47 +338,99 @@ protected function isAccessible(User $user, ?string $path = null): bool
 }
 </code-snippet>
 
-## Comments
-- Prefer PHPDoc blocks over comments. Never use comments within the code itself unless there is something _very_ complex going on.
-
 ## PHPDoc Blocks
-- Add useful array shape type definitions for arrays when appropriate.
+- WAJIB untuk semua models
 
 ## Enums
 - Typically, keys in an Enum should be TitleCase. For example: `FavoritePerson`, `BestLake`, `Monthly`.
 
 
-=== tests rules ===
+=== laravel/core rules ===
 
-## Test Enforcement
+## Do Things the Laravel Way
 
-- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
-- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test` with a specific filename or filter.
+- Use `php artisan make:` commands to create new files when appropriate.
+- Pass `--no-interaction` to all Artisan commands to ensure they work without user input.
+
+### Database
+- Always use proper Eloquent relationship methods with return type hints.
+- Prefer relationship methods over raw queries or manual joins.
+- Use Eloquent models and relationships before suggesting raw database queries.
+- Avoid `DB::`; prefer `Model::query()`.
+- Generate code that prevents N+1 query problems by using eager loading.
+- Use Laravel's query builder for very complex database operations.
+
+### Model Creation
+- When creating new models, create useful factories if needed.
+- JANGAN buat seeders atau tests - user akan handle sendiri.
+
+### APIs & Resources
+- This project uses Eloquent API Resources for DTO/normalization.
+- Resources always end with `Resource.php` suffix.
+- Place in `App/Http/Resources/{Scope}/{Module}/`.
+
+### Form Requests & Validation
+- Always create Form Request classes for validation rather than inline validation.
+- Include both validation rules and custom error messages.
+- Check sibling Form Requests to see if the application uses array or string based validation rules.
+
+### Queues & Background Processing
+- Use Hydrators (in `Actions/{Scope}/{Module}/Hydrators/`) for background processing.
+- Hydrators should implement `ShouldQueue` interface.
+- Dispatch Hydrators from main Actions for async operations.
+
+### Authentication & Authorization
+- Use Laravel's built-in authentication and authorization features (gates, policies, Sanctum, etc.).
+
+### URL Generation
+- When generating links to other pages, prefer named routes and the `route()` function.
+
+### Configuration
+- Use environment variables only in configuration files.
+- Never use the `env()` function directly outside of config files.
+- Always use `config('app.name')`, not `env('APP_NAME')`.
+
+
+=== laravel/v12 rules ===
+
+## Laravel 12
+
+- This project uses Laravel 12 but keeps **Laravel 10 structure**.
+- This is **perfectly fine** and recommended by Laravel.
+- Follow the existing structure - do NOT migrate to new Laravel 12 structure unless explicitly requested.
+
+### Laravel 10 Structure
+- Middleware typically lives in `app/Http/Middleware/`.
+- Service providers in `app/Providers/`.
+- There is no `bootstrap/app.php` application configuration in Laravel 10 structure:
+    - Middleware registration happens in `app/Http/Kernel.php`
+    - Exception handling is in `app/Exceptions/Handler.php`
+    - Console commands and schedule register in `app/Console/Kernel.php`
+
+### Database
+- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
+- Laravel 12 allows limiting eagerly loaded records natively: `$query->latest()->limit(10);`.
+
+### Models
+- Casts can be set in a `casts()` method on a model rather than the `$casts` property.
+- Follow existing conventions from other models.
 
 
 === inertia-laravel/core rules ===
 
 ## Inertia Core
 
-- Inertia.js components should be placed in the `resources/js/Pages` directory unless specified differently in the JS bundler (vite.config.js).
-- Use `Inertia::render()` for server-side routing instead of traditional Blade views.
-- Use `search-docs` for accurate guidance on all things Inertia.
-
-<code-snippet lang="php" name="Inertia::render Example">
-// routes/web.php example
-Route::get('/users', function () {
-    return Inertia::render('Users/Index', [
-        'users' => User::all()
-    ]);
-});
-</code-snippet>
+- Inertia.js components should be placed in the `resources/js/Pages` directory.
+- Use `Inertia::render()` in UI Actions to render views.
+- Always read the Vue component when you see `Inertia::render()`.
 
 
 === inertia-laravel/v2 rules ===
 
 ## Inertia v2
 
-- Make use of all Inertia features from v1 & v2. Check the documentation before making any changes to ensure we are taking the correct approach.
+- Make use of all Inertia features from v1 & v2.
+- Check existing implementations before making changes.
 
 ### Inertia v2 New Features
 - Polling
@@ -170,196 +440,8 @@ Route::get('/users', function () {
 - Lazy loading data on scroll
 
 ### Deferred Props & Empty States
-- When using deferred props on the frontend, you should add a nice empty state with pulsing / animated skeleton.
-
-### Inertia Form General Guidance
-- The recommended way to build forms when using Inertia is with the `<Form>` component - a useful example is below. Use `search-docs` with a query of `form component` for guidance.
-- Forms can also be built using the `useForm` helper for more programmatic control, or to follow existing conventions. Use `search-docs` with a query of `useForm helper` for guidance.
-- `resetOnError`, `resetOnSuccess`, and `setDefaultsOnSuccess` are available on the `<Form>` component. Use `search-docs` with a query of 'form component resetting' for guidance.
-
-
-=== laravel/core rules ===
-
-## Do Things the Laravel Way
-
-- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using the `list-artisan-commands` tool.
-- If you're creating a generic PHP class, use `php artisan make:class`.
-- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
-
-### Database
-- Always use proper Eloquent relationship methods with return type hints. Prefer relationship methods over raw queries or manual joins.
-- Use Eloquent models and relationships before suggesting raw database queries
-- Avoid `DB::`; prefer `Model::query()`. Generate code that leverages Laravel's ORM capabilities rather than bypassing them.
-- Generate code that prevents N+1 query problems by using eager loading.
-- Use Laravel's query builder for very complex database operations.
-
-### Model Creation
-- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `list-artisan-commands` to check the available options to `php artisan make:model`.
-
-### APIs & Eloquent Resources
-- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
-
-### Controllers & Validation
-- Always create Form Request classes for validation rather than inline validation in controllers. Include both validation rules and custom error messages.
-- Check sibling Form Requests to see if the application uses array or string based validation rules.
-
-### Queues
-- Use queued jobs for time-consuming operations with the `ShouldQueue` interface.
-
-### Authentication & Authorization
-- Use Laravel's built-in authentication and authorization features (gates, policies, Sanctum, etc.).
-
-### URL Generation
-- When generating links to other pages, prefer named routes and the `route()` function.
-
-### Configuration
-- Use environment variables only in configuration files - never use the `env()` function directly outside of config files. Always use `config('app.name')`, not `env('APP_NAME')`.
-
-### Testing
-- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
-- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
-- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
-
-### Vite Error
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
-
-
-=== laravel/v12 rules ===
-
-## Laravel 12
-
-- Use the `search-docs` tool to get version specific documentation.
-- This project upgraded from Laravel 10 without migrating to the new streamlined Laravel file structure.
-- This is **perfectly fine** and recommended by Laravel. Follow the existing structure from Laravel 10. We do not to need migrate to the new Laravel structure unless the user explicitly requests that.
-
-### Laravel 10 Structure
-- Middleware typically lives in `app/Http/Middleware/` and service providers in `app/Providers/`.
-- There is no `bootstrap/app.php` application configuration in a Laravel 10 structure:
-    - Middleware registration happens in `app/Http/Kernel.php`
-    - Exception handling is in `app/Exceptions/Handler.php`
-    - Console commands and schedule register in `app/Console/Kernel.php`
-    - Rate limits likely exist in `RouteServiceProvider` or `app/Http/Kernel.php`
-
-### Database
-- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
-- Laravel 11 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
-
-### Models
-- Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
-
-
-=== pennant/core rules ===
-
-## Laravel Pennant
-
-- This application uses Laravel Pennant for feature flag management, providing a flexible system for controlling feature availability across different organizations and user types.
-- Use the `search-docs` tool if available, in combination with existing codebase conventions, to assist the user effectively with feature flags.
-
-
-=== pint/core rules ===
-
-## Laravel Pint Code Formatter
-
-- You must run `vendor/bin/pint --dirty` before finalizing changes to ensure your code matches the project's expected style.
-- Do not run `vendor/bin/pint --test`, simply run `vendor/bin/pint` to fix any formatting issues.
-
-
-=== pest/core rules ===
-
-## Pest
-### Testing
-- If you need to verify a feature is working, write or update a Unit / Feature test.
-
-### Pest Tests
-- All tests must be written using Pest. Use `php artisan make:test --pest {name}`.
-- You must not remove any tests or test files from the tests directory without approval. These are not temporary or helper files - these are core to the application.
-- Tests should test all of the happy paths, failure paths, and weird paths.
-- Tests live in the `tests/Feature` and `tests/Unit` directories.
-- Pest tests look and behave like this:
-<code-snippet name="Basic Pest Test Example" lang="php">
-it('is true', function () {
-    expect(true)->toBeTrue();
-});
-</code-snippet>
-
-### Running Tests
-- Run the minimal number of tests using an appropriate filter before finalizing code edits.
-- To run all tests: `php artisan test`.
-- To run all tests in a file: `php artisan test tests/Feature/ExampleTest.php`.
-- To filter on a particular test name: `php artisan test --filter=testName` (recommended after making a change to a related file).
-- When the tests relating to your changes are passing, ask the user if they would like to run the entire test suite to ensure everything is still passing.
-
-### Pest Assertions
-- When asserting status codes on a response, use the specific method like `assertForbidden` and `assertNotFound` instead of using `assertStatus(403)` or similar, e.g.:
-<code-snippet name="Pest Example Asserting postJson Response" lang="php">
-it('returns all', function () {
-    $response = $this->postJson('/api/docs', []);
-
-    $response->assertSuccessful();
-});
-</code-snippet>
-
-### Mocking
-- Mocking can be very helpful when appropriate.
-- When mocking, you can use the `Pest\Laravel\mock` Pest function, but always import it via `use function Pest\Laravel\mock;` before using it. Alternatively, you can use `$this->mock()` if existing tests do.
-- You can also create partial mocks using the same import or self method.
-
-### Datasets
-- Use datasets in Pest to simplify tests which have a lot of duplicated data. This is often the case when testing validation rules, so consider going with this solution when writing tests for validation rules.
-
-<code-snippet name="Pest Dataset Example" lang="php">
-it('has emails', function (string $email) {
-    expect($email)->not->toBeEmpty();
-})->with([
-    'james' => 'james@laravel.com',
-    'taylor' => 'taylor@laravel.com',
-]);
-</code-snippet>
-
-
-=== pest/v4 rules ===
-
-## Pest 4
-
-- Pest v4 is a huge upgrade to Pest and offers: browser testing, smoke testing, visual regression testing, test sharding, and faster type coverage.
-- Browser testing is incredibly powerful and useful for this project.
-- Browser tests should live in `tests/Browser/`.
-- Use the `search-docs` tool for detailed guidance on utilizing these features.
-
-### Browser Testing
-- You can use Laravel features like `Event::fake()`, `assertAuthenticated()`, and model factories within Pest v4 browser tests, as well as `RefreshDatabase` (when needed) to ensure a clean state for each test.
-- Interact with the page (click, type, scroll, select, submit, drag-and-drop, touch gestures, etc.) when appropriate to complete the test.
-- If requested, test on multiple browsers (Chrome, Firefox, Safari).
-- If requested, test on different devices and viewports (like iPhone 14 Pro, tablets, or custom breakpoints).
-- Switch color schemes (light/dark mode) when appropriate.
-- Take screenshots or pause tests for debugging when appropriate.
-
-### Example Tests
-
-<code-snippet name="Pest Browser Test Example" lang="php">
-it('may reset the password', function () {
-    Notification::fake();
-
-    $this->actingAs(User::factory()->create());
-
-    $page = visit('/sign-in'); // Visit on a real browser...
-
-    $page->assertSee('Sign In')
-        ->assertNoJavascriptErrors() // or ->assertNoConsoleLogs()
-        ->click('Forgot Password?')
-        ->fill('email', 'nuno@laravel.com')
-        ->click('Send Reset Link')
-        ->assertSee('We have emailed your password reset link!')
-
-    Notification::assertSent(ResetPassword::class);
-});
-</code-snippet>
-
-<code-snippet name="Pest Smoke Testing Example" lang="php">
-$pages = visit(['/', '/about', '/contact']);
-
-$pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
-</code-snippet>
+- When using deferred props on the frontend, add skeleton/loading states.
+- PrimeVue provides Skeleton component for this purpose.
 
 
 === inertia-vue/core rules ===
@@ -369,75 +451,18 @@ $pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
 - Vue components must have a single root element.
 - Use `router.visit()` or `<Link>` for navigation instead of traditional links.
 
-<code-snippet name="Inertia Client Navigation" lang="vue">
-
-    import { Link } from '@inertiajs/vue3'
-    <Link href="/">Home</Link>
-
-</code-snippet>
-
-
-=== inertia-vue/v2/forms rules ===
-
-## Inertia + Vue Forms
-
-<code-snippet name="`<Form>` Component Example" lang="vue">
-
-<Form
-    action="/users"
-    method="post"
-    #default="{
-        errors,
-        hasErrors,
-        processing,
-        progress,
-        wasSuccessful,
-        recentlySuccessful,
-        setError,
-        clearErrors,
-        resetAndClearErrors,
-        defaults,
-        isDirty,
-        reset,
-        submit,
-  }"
->
-    <input type="text" name="name" />
-
-    <div v-if="errors.name">
-        {{ errors.name }}
-    </div>
-
-    <button type="submit" :disabled="processing">
-        {{ processing ? 'Creating...' : 'Create User' }}
-    </button>
-
-    <div v-if="wasSuccessful">User created successfully!</div>
-</Form>
-
-</code-snippet>
-
 
 === tailwindcss/core rules ===
 
 ## Tailwind Core
 
-- Use Tailwind CSS classes to style HTML, check and use existing tailwind conventions within the project before writing your own.
-- Offer to extract repeated patterns into components that match the project's conventions (i.e. Blade, JSX, Vue, etc..)
-- Think through class placement, order, priority, and defaults - remove redundant classes, add classes to parent or child carefully to limit repetition, group elements logically
-- You can use the `search-docs` tool to get exact examples from the official documentation when needed.
+- Use Tailwind CSS classes to style HTML.
+- Check and use existing Tailwind conventions within the project.
+- Offer to extract repeated patterns into components that match the project's conventions.
+- PrimeVue components have their own styling system - use Tailwind for custom elements only.
 
 ### Spacing
 - When listing items, use gap utilities for spacing, don't use margins.
-
-    <code-snippet name="Valid Flex Gap Spacing Example" lang="html">
-        <div class="flex gap-8">
-            <div>Superior</div>
-            <div>Michigan</div>
-            <div>Erie</div>
-        </div>
-    </code-snippet>
-
 
 ### Dark Mode
 - If existing pages and components support dark mode, new pages and components must support dark mode in a similar way, typically using `dark:`.
@@ -448,4 +473,13 @@ $pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
 ## Tailwind 3
 
 - Always use Tailwind CSS v3 - verify you're using only classes supported by this version.
-</laravel-boost-guidelines>
+
+## Remember
+- SELALU baca file existing sebelum membuat yang baru
+- SELALU trace dependencies (traits, parent class, called methods)
+- SELALU baca Vue component jika ada Inertia::render()
+- SELALU verify Resource match dengan Vue component needs
+- SELALU check PrimeVue component usage dari existing files
+- SELALU follow FontAwesome icon patterns yang sudah ada
+- JANGAN assume PrimeVue component API - baca existing files first
+- JANGAN skip any step - setiap step penting untuk consistency

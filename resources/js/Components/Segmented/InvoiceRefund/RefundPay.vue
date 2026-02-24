@@ -47,6 +47,7 @@ const props = defineProps<{
         payments: routeType
     }
     is_in_refund?: boolean
+    is_tax_only?: boolean
     handleTabUpdate: Function
 }>()
 console.log('popop', props.refund)
@@ -77,6 +78,11 @@ const onSubmitRefundToPaymentsMethod = (data, form: any) => {
 
 const maxRefund = (data) => {
     if (!data) return 0
+    
+    if(props.is_tax_only){
+        return -(props.invoice_pay.total_need_to_pay);
+    }
+
     const maxPossible = data.amount - data.refunded
     return Math.min(maxPossible, -props.invoice_pay.total_need_to_refund_in_payment_method || data.amount)
 }
@@ -335,7 +341,7 @@ const compToolTip = computed(() => {
                                 <!-- Column: amount -->
                                 <template #amount="{ data, index }">
                                     <div class="w-fit font-medium">
-                                        {{ useLocaleStore().currencyFormat(data.currency_code, data.amount) }}
+                                        {{ useLocaleStore().currencyFormat(data.currency_code, is_tax_only ? -(invoice_pay.total_need_to_pay) : data.amount) }}
                                     </div>
 
                                     <!-- Text: available refund -->
@@ -344,7 +350,7 @@ const compToolTip = computed(() => {
                                             {{ trans("Refunded") }}: {{ useLocaleStore().currencyFormat(data.currency_code, data.refunded) }}
                                         </div>
                                         <div @click="() => set(_formCell, [index, 'form', 'refund_amount'], data.amount-data.refunded)" v-tooltip="trans('Click to fill the input')" class="cursor-pointer text-gray-500 hover:text-gray-700 w-fit text-xs">
-                                            {{ trans("Available to refund") }}: {{ useLocaleStore().currencyFormat(data.currency_code, (data.amount-data.refunded).toFixed(2)) }}
+                                            {{ trans("Available to refund") }}: {{ useLocaleStore().currencyFormat(data.currency_code, is_tax_only ? -(invoice_pay.total_need_to_pay) : (data.amount-data.refunded).toFixed(2)) }}
                                         </div>
                                     </div>
                                 </template>
@@ -399,12 +405,10 @@ const compToolTip = computed(() => {
                                                     :invalid="!!usePage().props.errors?.reference"
                                                 />
                                             </div>
-
                                             <div v-if="usePage().props.errors?.reference" class="text-red-500 text-xs mt-1 italic">
                                                 *{{ usePage().props.errors.reference }}
                                             </div>
                                         </div>
-
                                         <div v-if="data.selected_action">
                                             <ActionCell
                                                 v-if="(data.amount - data.refunded) > 0 && props.invoice_pay.total_need_to_refund_in_payment_method !== 0"

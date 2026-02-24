@@ -211,12 +211,25 @@ class EditFamily extends OrgAction
                                             'languages'             => $languages,
                                             'mode'                  => 'single',
                                             'value'                 => $family->description,
-                                            'reviewed'              => $family->is_description_reviewed
+                                            'reviewed'              => $family->is_description_reviewed,
+                                            'toogle'  => [
+                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
                                         ]
                                         : [
                                             'type'  => 'textEditor',
                                             'label' => __('Description'),
-                                            'value' => $family->description
+                                            'value' => $family->description,
+                                            'options' => [
+                                                'counter' => true,
+                                            ],
+                                            'toogle'  => [
+                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
                                         ],
                                     'description_extra' => $family->masterProductCategory
                                         ? [
@@ -228,12 +241,25 @@ class EditFamily extends OrgAction
                                             'languages'     => $languages,
                                             'mode'          => 'single',
                                             'value'         => $family->description_extra,
-                                            'reviewed'      => $family->is_description_extra_reviewed
+                                            'reviewed'      => $family->is_description_extra_reviewed,
+                                            'toogle'  => [
+                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
                                         ]
                                         : [
                                             'type'  => 'textEditor',
                                             'label' => __('Extra description'),
-                                            'value' => $family->description_extra
+                                            'value' => $family->description_extra,
+                                            'options' => [
+                                                'counter' => true,
+                                            ],
+                                            'toogle'  => [
+                                                    'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                                    'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                                    'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            ],
                                         ],
                                 ]
                             ],

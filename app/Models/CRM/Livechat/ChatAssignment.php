@@ -78,6 +78,16 @@ class ChatAssignment extends Model
         ]);
     }
 
+    public function isActive(): bool
+    {
+        return $this->status === ChatAssignmentStatusEnum::ACTIVE;
+    }
+
+    public function isResolved(): bool
+    {
+        return $this->status === ChatAssignmentStatusEnum::RESOLVED;
+    }
+
 
 
 

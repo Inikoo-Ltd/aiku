@@ -10,10 +10,8 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateInventoryInWooPortfolio
@@ -25,7 +23,7 @@ class UpdateInventoryInWooPortfolio
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
-        $platform              = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
+        $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
 
         if ($customerSalesChannel === null) {
             $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
@@ -40,8 +38,6 @@ class UpdateInventoryInWooPortfolio
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
-
-
             if ($customerSalesChannel->ban_stock_update_util && $customerSalesChannel->ban_stock_update_util->gt(now())) {
                 continue;
             }
@@ -54,68 +50,23 @@ class UpdateInventoryInWooPortfolio
             $wooCommerceUser = $customerSalesChannel->user;
 
             if (!$wooCommerceUser) {
-
                 continue;
             }
 
             $wooCommerceUser->setTimeout(20);
             $result = $wooCommerceUser->checkConnection();
             if ($result) {
-
                 $customerSalesChannel->update([
                     'ban_stock_update_util' => null
                 ]);
 
-                $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
-                    ->whereNotNull('platform_product_id')
-                    ->where('item_type', 'Product')
-                    ->where('platform_status', true)
-                    ->get();
-
-
-                $first = true;
-                /** @var Portfolio $portfolio */
-                foreach ($portfolios as $portfolio) {
-                    if ($this->checkIfApplicable($portfolio)) {
-                        if ($first) {
-                            $wooCommerceUser->setTimeout(45);
-                            UpdateWooPortfolio::run($portfolio->id);
-                            $first = false;
-                        } else {
-                            // Add jitter to spread API calls and avoid bursts
-                            $delaySeconds = random_int(1, 120);
-                            UpdateWooPortfolio::dispatch($portfolio->id)->delay(now()->addSeconds($delaySeconds));
-                        }
-                    }
-
-                }
+                UpdateWooCustomerSalesChannelPortfolio::dispatch($customerSalesChannel);
             } else {
                 $customerSalesChannel->update([
                     'ban_stock_update_util' => now()->addSeconds(10)
                 ]);
             }
-
         }
-    }
-
-    public function checkIfApplicable(Portfolio $portfolio): bool
-    {
-        $applicable = false;
-
-
-
-        if (!$portfolio->stock_last_updated_at) {
-            $applicable = true;
-        } else {
-            /** @var Product $product */
-            $product = $portfolio->item;
-
-            if (!$product->available_quantity_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
-                $applicable = true;
-            }
-        }
-
-        return $applicable;
     }
 
 

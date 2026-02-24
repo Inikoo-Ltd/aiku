@@ -23,6 +23,7 @@ import { trans } from "laravel-vue-i18n";
 import LinkIris from "@/Components/Iris/LinkIris.vue";
 import { menuCategoriesToMenuStructure } from "@/Composables/Iris/useMenu"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import Image from "@/Components/Image.vue";
 
 library.add(
     faChevronLeft,
@@ -133,27 +134,26 @@ const computedSelectedSidebarData = computed(() => {
 
     const selectedProductCategories = !layout.iris?.sidebar ? compSelectedSidebar.value?.data?.fieldValue?.product_categories : compSelectedSidebar.value?.product_categories
     // const selectedProductCategories = compSelectedSidebar.value?.product_categories
-    console.log('sssss',compSelectedSidebar)
     const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
 
     return productCategoriesAuto
 })
 
-const selectedMenu = ref(get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=> !item.hidden))
+const selectedMenu = ref(get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item) => !item.hidden))
 watch(
     () => props.fieldValue.navigation,
     () => {
-        selectedMenu.value = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item)=> !item.hidden)
+        selectedMenu.value = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation.filter((item) => !item.hidden)
     },
     { deep: true }
 )
 
 // Section: Hover style
-const navHoverClass = ref(getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false))
+const navHoverClass = ref(getStyles(props.fieldValue?.hover?.container?.properties, props.screenType, false))
 watch(
     () => props.fieldValue?.hover,
     () => {
-        navHoverClass.value = getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false)
+        navHoverClass.value = getStyles(props.fieldValue?.hover?.container?.properties, props.screenType, false)
     },
     { deep: true }
 )
@@ -168,7 +168,7 @@ const internalHref = (url: string) => {
     if (!url) return '';
 
     const path = url.replace(/^(https?:\/\/)?(www\.)?[^/]+/, "");
-    
+
     return path
 }
 
@@ -185,11 +185,35 @@ const compIndexStyling1 = computed(() => {
 // Watcher: if finish visit link, close the Collapsed
 watch(loadingItem, (newVal) => {
     if (newVal) {
-        
+
     } else {
         isCollapsedOpen.value = false
         debSetCollapsedTrue.cancel()
     }
+})
+
+
+const getSubnavIndex = (col: number) => {
+    const imgPos = hoveredNavigation.value?.image_position
+    const hasImage = !!hoveredNavigation.value?.image
+
+    if (!hasImage) return col - 1
+
+    if (col === imgPos) return -1
+
+    if (col > imgPos) return col - 2
+
+    return col - 1
+}
+
+
+const imageCol = computed(() => {
+    if (!hoveredNavigation.value?.image) return null
+
+    const pos = Number(hoveredNavigation.value?.image_position)
+    if (pos >= 1 && pos <= 4) return pos
+
+    return 4 
 })
 </script>
 
@@ -213,18 +237,15 @@ watch(loadingItem, (newVal) => {
                     :style="{
                         border: `solid 1px ${fieldValue?.navigation_container?.properties?.text?.color || 'currentColor'}`,
                         color: fieldValue?.navigation_container?.properties?.text?.color
-                    }"
-                >
+                    }">
                     <FontAwesomeIcon icon="fal fa-bars" class="opacity-80 text-[10px]" fixed-width aria-hidden="true" />
                     <span class="font-medium">{{ trans("All Categories") }}</span>
                 </div>
                 <Transition>
-                    <div v-if="isAbleScrollToLeft"
-                        class="absolute -right-24 z-10 top-0 h-full w-24 pointer-events-none"
+                    <div v-if="isAbleScrollToLeft" class="absolute -right-24 z-10 top-0 h-full w-24 pointer-events-none"
                         :style="{
                             background: `linear-gradient(to right, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 45%, transparent 100%)`
-                        }"
-                    />
+                        }" />
                 </Transition>
 
                 <Transition>
@@ -237,12 +258,10 @@ watch(loadingItem, (newVal) => {
 
             <!-- Scroll Gradient + Arrows -->
             <Transition>
-                <div v-if="isAbleScrollToRight"
-                    class="absolute right-4 z-10 top-0 h-full w-24 pointer-events-none"
+                <div v-if="isAbleScrollToRight" class="absolute right-4 z-10 top-0 h-full w-24 pointer-events-none"
                     :style="{
                         background: `linear-gradient(to left, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 35%, transparent 100%)`
-                    }"
-                />
+                    }" />
             </Transition>
             <Transition>
                 <div v-if="isAbleScrollToRight" @click="scrollRight"
@@ -256,14 +275,11 @@ watch(loadingItem, (newVal) => {
                 class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide ml-5">
                 <!-- Navigation: Custom Top (if follow sidebar) -->
                 <template v-for="(navigation, idxNavigation) in compCustomTopNavigation" :key="idxNavigation">
-                    <component
-                        :is="navigation?.link?.href ? LinkIris : 'div'"
-                        @mouseenter="() => onMouseEnterMenu(navigation)"
-                        :type="navigation?.link?.type"
+                    <component :is="navigation?.link?.href ? LinkIris : 'div'"
+                        @mouseenter="() => onMouseEnterMenu(navigation)" :type="navigation?.link?.type"
                         :id="navigation?.link?.id"
-                        :style="compIndexStyling1?.includes(idxNavigation + 1) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
-                        :href="navigation?.link?.href"
-                        :canonical_url="navigation?.link?.canonical_url"
+                        :style="compIndexStyling1?.includes(idxNavigation + 1) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType) : getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                        :href="navigation?.link?.href" :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'navigation'
                             : navigation?.link?.href
@@ -279,16 +295,12 @@ watch(loadingItem, (newVal) => {
 
                 <!-- Navigation: main -->
                 <template v-for="(navigation, idxNavigation) in selectedMenu" :key="idxNavigation">
-                    <component
-                        :is="navigation?.link?.href ? LinkIris : 'div'"
-                        @mouseenter="() => onMouseEnterMenu(navigation)"
-                        :type="navigation?.link?.type"
-                        :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
-                        :href="navigation?.link?.href"
-                        :id="navigation?.link?.id"
+                    <component :is="navigation?.link?.href ? LinkIris : 'div'"
+                        @mouseenter="() => onMouseEnterMenu(navigation)" :type="navigation?.link?.type"
+                        :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType) : getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                        :href="navigation?.link?.href" :id="navigation?.link?.id"
                         :canonical_url="navigation?.link?.canonical_url"
-                        class="group w-full py-2 px-6 flex items-center justify-center transition duration-200"
-                        :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
+                        class="group w-full py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'navigation underline'
                             : navigation?.link?.href
                                 ? 'cursor-pointer navigation'
@@ -296,22 +308,20 @@ watch(loadingItem, (newVal) => {
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
                         <div class="ml-2">
                             <FontAwesomeIcon v-if="getNavigationIcon(navigation)" :icon="getNavigationIcon(navigation)"
-                                :spin="loadingItem === (navigation.id || navigation.label)" class="text-[8px] align-middle" />
+                                :spin="loadingItem === (navigation.id || navigation.label)"
+                                class="text-[8px] align-middle" />
                         </div>
                     </component>
                 </template>
 
                 <!-- Navigation: Custom Bottom (if follow sidebar) -->
                 <template v-for="(navigation, idxNavigation) in compCustomBottomNavigation" :key="idxNavigation">
-                    <component
-                        :is="navigation?.link?.href ? LinkIris : 'div'"
-                        @mouseenter="() => onMouseEnterMenu(navigation)"
-                        :type="navigation?.link?.type"
+                    <component :is="navigation?.link?.href ? LinkIris : 'div'"
+                        @mouseenter="() => onMouseEnterMenu(navigation)" :type="navigation?.link?.type"
                         :id="navigation?.link?.id"
                         xstyle="getStyles(fieldValue?.custom_navigation_styling?.custom_bottom?.properties, screenType)"
-                        :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0) + (selectedMenu?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
-                        :href="navigation?.link?.href"
-                        :canonical_url="navigation?.link?.canonical_url"
+                        :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0) + (selectedMenu?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType) : getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                        :href="navigation?.link?.href" :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'navigation'
                             : navigation?.link?.href
@@ -327,166 +337,81 @@ watch(loadingItem, (newVal) => {
             </nav>
 
             <!-- Drawer: Sub Navigation -->
-            <Collapse v-if="hoveredNavigation?.subnavs && hoveredNavigation.type === 'multiple'" :when="isCollapsedOpen" as="div"
-                class="z-[49] absolute left-0 top-full bg-white border-t w-full shadow-lg"
-                :style="getStyles(fieldValue?.container?.properties, screenType)"
-            >
-                <div class="grid grid-cols-4 gap-8 p-6">
-                    <div v-for="(subnav, idxSub) in hoveredNavigation?.subnavs" :key="subnav.title" class="">
-     
-                        <component
-                            :is="subnav?.link?.href ? LinkIris : 'div'"
-                            :href="internalHref(subnav?.link?.href)"
-                            :type="subnav?.link?.type" :target="subnav?.link?.target"
-                            :canonical_url="subnav?.link?.canonical_url"
-                            :id="subnav?.link?.id"
-                            :style="{
-                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-                                margin: 0,
-                                background: 'transparent',
-                                padding: 0,
-                                fontWeight: 600,
-                                ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
-                            }"
-                            class="relative font-semibold text-gray-700 transition flex items-center gap-x-3"
-                            @start="() => onClickSubnav(subnav)"
-                            @finish="() => loadingItem = null"
-                        >
-                            <div class="relative">
-                                {{ subnav.title }}
-                                <div class="top-1/2 -translate-y-1/2 absolute -left-6">
-                                    <LoadingIcon v-if="loadingItem === (subnav.id || subnav.label)" />
-                                    <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon" fixed-width class="text-[10px] text-gray-400" />
-                                </div>
-                            </div>
-                            <!-- Spinner / Icon -->
-                        </component>
+            <Collapse v-if="hoveredNavigation?.subnavs && hoveredNavigation.type === 'multiple'" :when="isCollapsedOpen"
+                as="div" class="z-[49] absolute left-0 top-full bg-white border-t w-full shadow-lg"
+                :style="getStyles(fieldValue?.container?.properties, screenType)">
+                <div class="grid grid-cols-4 gap-8 p-6 items-start">
 
-                        <!-- Section: list links Family -->
-                        <div v-for="(linkData, idxFam) in subnav?.links"
-                            :key="subnav.title"
-                            class="navigation"
-                            :style="{
-                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-                                margin: 0,
-                                background: 'transparent',
-                                padding: 0,
-                                fontWeight: 600,
-                                ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
-                            }"
-                        >
-                            <LinkIris v-if="linkData.link?.href" class="" :id="linkData.id" :href="internalHref(linkData.link.href)"
-                                :canonical_url="linkData.link.canonical_url" :type="linkData.link.type"
-                                @start="() => loadingItem = `${idxSub}_${idxFam}`"
-                                @finish="() => loadingItem = null"
-                            >
-                                <template #default>
-                                    <div class="py-1 relative">
-                                        <div class="top-1/2 -translate-y-1/2 absolute -left-6">
-                                            <LoadingIcon v-if="loadingItem == `${idxSub}_${idxFam}`" />
-                                            <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon" fixed-width class="text-[10px] text-gray-400" />
-                                        </div>
-                                        {{ linkData.label }}
-                                    </div>
-                                </template>
-                            </LinkIris>
-                            <div v-else class="py-1">{{ linkData.label }}</div>
+                    <template v-for="col in 4" :key="col">
+
+                        <!-- IMAGE COLUMN -->
+                        <div v-if="hoveredNavigation?.image && imageCol === col" class="w-full">
+                            <div class="w-full overflow-hidden rounded-lg bg-gray-50">
+                                <Image :src="hoveredNavigation.image" class="w-full h-full object-cover" />
+                            </div>
                         </div>
 
-                        <!-- Section: Sub Department - Collections -->
-                        <template v-if="subnav?.collections?.length">
-                            <div v-for="(linkData, idxCollection) in subnav?.collections"
-                                :key="subnav.title"
-                                class="relative font-semibold text-gray-700 transition flex items-center gap-x-3"
-                                :style="{
-                                    ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-                                    margin: 0,
-                                    background: 'transparent',
-                                    padding: 0,
-                                    fontWeight: 600,
-                                    ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
-                                }"
-                            >
-                                <LinkIris
-                                    class=""
-                                    :href="internalHref(linkData.url)"
-                                    type="internal"
-                                    :id="linkData.id"
-                                    @start="() => loadingItem = `${idxSub}_col${idxCollection}`"
-                                    @finish="() => loadingItem = null"
-                                >
-                                    <template #default>
-                                        <div class="py-1 relative">
-                                            {{ linkData.name }}
-                                            <!-- <FontAwesomeIcon v-tooltip="trans('Collection')" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" /> -->
+                        <div v-else>
+                            <template
+                                v-if="getSubnavIndex(col) >= 0 && hoveredNavigation?.subnavs?.[getSubnavIndex(col)]">
+                                <div>
+                                    <template
+                                        v-for="(subnav, idxSub) in [hoveredNavigation.subnavs[getSubnavIndex(col)]]"
+                                        :key="subnav.id || subnav.title">
+                                        <!-- TITLE -->
+                                        <component :is="subnav?.link?.href ? LinkIris : 'div'"
+                                            :href="internalHref(subnav?.link?.href)" :type="subnav?.link?.type"
+                                            :target="subnav?.link?.target" :canonical_url="subnav?.link?.canonical_url"
+                                            :id="subnav?.link?.id" :style="{
+                                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                                                margin: 0,
+                                                background: 'transparent',
+                                                padding: 0,
+                                                fontWeight: 600,
+                                                ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
+                                            }" class="relative font-semibold text-gray-700 flex items-center gap-x-3"
+                                            @start="() => onClickSubnav(subnav)" @finish="() => loadingItem = null">
+                                            <div class="relative">
+                                                {{ subnav.title }}
+                                                <div class="top-1/2 -translate-y-1/2 absolute -left-6">
+                                                    <LoadingIcon v-if="loadingItem === (subnav.id || subnav.label)" />
+                                                    <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon"
+                                                        fixed-width class="text-[10px] text-gray-400" />
+                                                </div>
+                                            </div>
+                                        </component>
+
+                                        <!-- LINKS -->
+                                        <div v-for="(linkData, idxFam) in subnav?.links" :key="linkData.id" :style="{
+                                            ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
+                                        }">
+                                            <LinkIris v-if="linkData.link?.href" :id="linkData.id"
+                                                :href="internalHref(linkData.link.href)"
+                                                :canonical_url="linkData.link.canonical_url" :type="linkData.link.type"
+                                                @start="() => loadingItem = `${col}_${idxFam}`"
+                                                @finish="() => loadingItem = null">
+                                                <template #default>
+                                                    <div class="py-1 relative">
+                                                        <div class="top-1/2 -translate-y-1/2 absolute -left-6">
+                                                            <LoadingIcon v-if="loadingItem == `${col}_${idxFam}`" />
+                                                        </div>
+                                                        {{ linkData.label }}
+                                                    </div>
+                                                </template>
+                                            </LinkIris>
+
+                                            <div v-else class="py-1">
+                                                {{ linkData.label }}
+                                            </div>
                                         </div>
+
                                     </template>
-                                </LinkIris>
-                            </div>
-                        </template>
-                    </div>
-
-                    <!-- Section: Department - Collection -->
-                    <div v-if="hoveredNavigation?.collections?.length" class="">
-                        <!-- <div
-                            :style="{
-                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-                                margin: 0,
-                                background: 'transparent',
-                                padding: 0,
-                                fontWeight: 600,
-                                ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
-                            }"
-                            class="font-semibold text-gray-700 transition flex items-center gap-x-3"
-                        >
-                            <span>
-                                {{ trans('Collection') }}
-                                <FontAwesomeIcon v-tooltip="trans('Collection on :department', { department: hoveredNavigation.label })" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" />
-                            </span>
-                        </div> -->
-
-                        <!-- Section: Collections in Department -->
-                        <div v-for="(linkData, idxCollection) in hoveredNavigation.collections" :key="linkData.id">
-                            <!-- LinkIris
-                                :id="linkData.id"
-                                :href="internalHref(linkData.url)"
-                                type="internal"
-                                @start="() => loadingItem = `depcol_${idxCollection}`"
-                                @finish="() => loadingItem = null"
-                            >
-                                <template #default>
-                                    <div class="py-1 relative">
-                                        <div class="top-1/2 -translate-y-1/2 absolute -left-6">
-                                            <LoadingIcon v-if="loadingItem == `depcol_${idxCollection}`" />
-                                        </div>
-                                        {{ linkData.name }}
-                                    </div>
-                                </template>
-                            </LinkIris> -->
-                                <component :is="linkData?.url ? LinkIris : 'div'"
-                                    :href="internalHref(linkData?.url)"
-                                     @start="() => loadingItem = `depcol_${idxCollection}`"
-                                     @finish="() => loadingItem = null"
-                                    :id="linkData?.id" :style="{
-                                        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-                                        margin: 0,
-                                        background: 'transparent',
-                                        padding: 0,
-                                        fontWeight: 600,
-                                        ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
-                                    }" class="relative font-semibold text-gray-700 transition flex items-center gap-x-3"
-                                    >
-                                    <div class="relative">
-                                        {{ linkData.name  }}
-                                        <div class="top-1/2 -translate-y-1/2 absolute -left-6">
-                                              <LoadingIcon v-if="loadingItem == `depcol_${idxCollection}`" />
-                                            <FontAwesomeIcon v-else-if="linkData.icon" :icon="linkData.icon" fixed-width
-                                                class="text-[10px] text-gray-400" />
-                                        </div>
-                                    </div>
-                                </component>
+                                </div>
+                            </template>
                         </div>
-                    </div>
+
+                    </template>
+
                 </div>
             </Collapse>
         </div>
@@ -528,7 +453,8 @@ watch(loadingItem, (newVal) => {
         color: v-bind('navHoverClass?.color || null') !important;
         font-family: v-bind('navHoverClass?.fontFamily || null') !important;
         font-size: v-bind('navHoverClass?.fontSize || null') !important;
-        font-style: v-bind('navHoverClass?.fontStyle || null') !important;;
+        font-style: v-bind('navHoverClass?.fontStyle || null') !important;
+        ;
     }
 }
 </style>

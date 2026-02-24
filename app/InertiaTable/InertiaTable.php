@@ -224,8 +224,11 @@ class InertiaTable
     protected function transformColumns(): Collection
     {
         $columns = $this->query('columns', []);
-
         $sort = $this->query('sort', $this->defaultSort);
+
+        if (is_string($columns)) {
+            $columns = $columns === '' ? [] : explode(',', $columns);
+        }
 
         return $this->columns->map(function (Column $column) use ($columns, $sort) {
             $key = $column->key;

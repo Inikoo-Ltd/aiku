@@ -14,6 +14,7 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -46,16 +47,59 @@ class MasterFamilyHydrateStatus implements ShouldBeUnique
             }
         }
 
+        $activeMasterAssets   = $masterFamily->masterAssets()->where('status', true)->count();
+        $inactiveMasterAssets = $masterFamily->masterAssets()->where('status', false)->count();
 
-        if ($numberShops == 0) {
-            $status = true;
-        } elseif ($numberShopsActive == 0) {
-            $status = false;
-        } else {
-            $status = true;
-        }
+
+        $status = $this->getStatus($activeMasterAssets, $inactiveMasterAssets, $numberShops, $numberShopsActive);
+
 
         UpdateMasterProductCategory::run($masterFamily, ['status' => $status]);
+    }
+
+    public function getStatus($activeMasterAssets, $inactiveMasterAssets, $numberShops, $numberShopsActive): bool
+    {
+        if ($activeMasterAssets == 0 && $inactiveMasterAssets == 0 && $numberShops == 0 && $numberShopsActive == 0) {
+            return true;
+        }
+
+        if ($activeMasterAssets == 0 && $numberShopsActive == 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+
+    public function getCommandSignature(): string
+    {
+        return 'master_product_categories:hydrate_status {masterProductCategory?}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        if ($masterProductCategorySlug = $command->argument('masterProductCategory')) {
+            $masterProductCategory = MasterProductCategory::where('slug', $masterProductCategorySlug)->firstOrFail();
+            $this->handle($masterProductCategory);
+            $command->info('Updated '.$masterProductCategory->name);
+
+            return 0;
+        }
+
+        $masterFamilies = MasterProductCategory::where('type', MasterProductCategoryTypeEnum::FAMILY);
+
+        $command->withProgressBar($masterFamilies->count(), function ($bar) use ($masterFamilies) {
+            $masterFamilies->chunk(100, function ($chunk) use ($bar) {
+                foreach ($chunk as $masterFamily) {
+                    $this->handle($masterFamily);
+                    $bar->advance();
+                }
+            });
+        });
+
+        $command->newLine();
+
+        return 0;
     }
 
 

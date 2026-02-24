@@ -24,6 +24,11 @@ export default {
 					type: "text",
 				},
 				{
+					key: ["link"],
+					label: "Link",
+					type: "link",
+				},
+				{
 					key: ['container',"properties",'dimension'],
 					label: "Dimension",
 					type: "dimension",

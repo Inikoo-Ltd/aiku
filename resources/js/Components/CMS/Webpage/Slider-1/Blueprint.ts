@@ -2,6 +2,12 @@ import SliderBlueprint from "./SliderBlueprint"
 export default {
 	blueprint: [
 		{
+			label: "# Id ",
+			key: ["id"],
+			type: "text",
+			information: "id selector is used to select one unique element!",
+		},
+		{
 			name: "slider Settings",
 			key: ["slider_data"],
 			replaceForm: [

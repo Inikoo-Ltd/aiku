@@ -18,7 +18,7 @@ import {
 	faTimesCircle,
 	faCheckCircle
 } from "@fal"
-import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
+import { faCircle, faPlay, faTrash, faPlus, faBarcode, faThumbtack } from "@fas"
 import { faImage } from "@far"
 import ImagePrime from "primevue/image"
 import { routeType } from "@/types/route"
@@ -53,7 +53,8 @@ library.add(
 	faLock,
 	faChevronUp,
 	faBox,
-	faVideo
+	faVideo,
+    faThumbtack
 )
 
 provide("layout", useLayoutStore())
@@ -226,18 +227,16 @@ const isModalProductForSale = ref(false)
 				v-on:click="isModalProductForSale = true"
 				v-tooltip="getTooltips()"
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer mx-2"
-				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
+				:class="data.availability_status.status ? 'border-green-500' : 'border-red-500'"
 			>
-				{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
-				(<span class="font-semibold" :class='data.availability_status.total_product_for_sale != data.availability_status.product.length ? "opacity-80" : ""'>
-					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.product.length}` }}
+				{{ data.availability_status.status ? trans('For Sale') : trans('Not For Sale') }}
+				(<span class="font-semibold" :class='data.availability_status.total_product_for_sale != data.availability_status.total_products ? "opacity-80" : ""'>
+					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.total_products}` }}
 				</span>)
-				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
 				<FontAwesomeIcon
-					v-if="data.availability_status?.from_trade_unit"
-					v-tooltip="getTooltips()"
-					icon="fal fa-atom"
-					:class="'ms-2 hover:cursor-pointer'"
+					v-if="!data.availability_status.is_for_sale"
+					icon="fas fa-thumbtack"
+					:class="'text-red-500 ms-2 hover:cursor-pointer'"
 				/>
 			</span>
 		</div>

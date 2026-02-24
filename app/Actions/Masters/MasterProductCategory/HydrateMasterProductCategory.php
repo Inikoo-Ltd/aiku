@@ -34,7 +34,6 @@ class HydrateMasterProductCategory extends HydrateModel
         MasterDepartmentHydrateMasterAssets::run($masterProductCategory);
         MasterDepartmentHydrateDepartments::run($masterProductCategory);
         MasterDepartmentHydrateMasterSubDepartments::run($masterProductCategory);
-
         MasterFamilyHydrateMasterAssets::run($masterProductCategory);
         MasterFamilyHydrateFamilies::run($masterProductCategory);
         MasterFamilyHydrateStatus::run($masterProductCategory);

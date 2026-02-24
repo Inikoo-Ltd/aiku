@@ -113,7 +113,7 @@ class StoreCustomerClient extends OrgAction
             'address'        => ['required', new ValidAddress()],
             'deactivated_at' => ['sometimes', 'nullable', 'date'],
             'status'         => ['sometimes', 'boolean'],
-
+            'platform_customer_id' => ['sometimes', 'nullable', 'string']
         ];
     }
 

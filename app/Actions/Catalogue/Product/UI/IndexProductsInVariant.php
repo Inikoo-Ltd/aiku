@@ -61,6 +61,7 @@ class IndexProductsInVariant extends OrgAction
                 'products.unit',
                 'products.units',
                 'products.asset_id',
+                'products.is_for_sale',
                 'products.available_quantity',
                 'shops.name as shop_name',
                 'shops.code as shop_code',

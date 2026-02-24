@@ -69,12 +69,12 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
         $senderName = "Customer";
 
         if ($this->message->sender_type->value === 'guest') {
-            $senderName = $this->message->chatSession?->guest_identifier;
+            $senderName = $this->message->chatSession?->guest_identifier ?? "Guest";
         }
 
         if ($this->message->sender_type->value === 'user') {
             $webUser = WebUser::find($this->message->sender_id);
-            $senderName = $webUser?->customer?->contact_name;
+            $senderName = $webUser?->customer?->contact_name ?? $webUser?->username ?? "Customer";
         }
 
         return $senderName;

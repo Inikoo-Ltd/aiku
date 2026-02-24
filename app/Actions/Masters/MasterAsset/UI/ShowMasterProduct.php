@@ -160,6 +160,18 @@ class ShowMasterProduct extends GrpAction
                             'tooltip' => __('Master Family'),
                             'icon'    => ['fal', 'folder']
                         ] : [],
+                        $masterAsset->masterFamily && !$masterAsset->masterDepartment && !$masterAsset->masterSubDepartment ? [
+                            'label'   => $masterAsset->masterFamily ? $masterAsset->masterFamily->name : 'family',
+                            'to'      => [
+                                'name'       => 'grp.masters.master_shops.show.master_families.show',
+                                'parameters' => [
+                                    'masterShop'   => $masterAsset->masterShop->slug,
+                                    'masterFamily' => $masterAsset->masterFamily->slug,
+                                ]
+                            ],
+                            'tooltip' => __('Master Family'),
+                            'icon'    => ['fal', 'folder']
+                        ] : [],
                         [
                             'label'   => $masterAsset->code,
                             'to'      => [
@@ -232,8 +244,10 @@ class ShowMasterProduct extends GrpAction
                 'trade_unit_slug'      => $masterAsset->tradeUnits?->first->slug,
                 'tabs'                 => [
                     'current'    => $this->tab,
-                    'navigation' => MasterAssetTabsEnum::navigation()
+                    'navigation' => MasterAssetTabsEnum::navigation($masterAsset)
                 ],
+                'masterVariant'        => $masterAsset->masterVariant,
+                'is_variant_leader'    => $masterAsset->is_variant_leader,
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductShowcase::run($masterAsset)

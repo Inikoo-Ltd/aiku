@@ -17,7 +17,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-    <div id="script">
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'script'"  component="script">
         <div :style="getStyles(layout?.app?.webpage_layout?.container?.properties, screenType)"
             class="w-full py-6 px-6 flex gap-x-10 editor-class overflow-x-auto font-mono">
             <div v-html="fieldValue.value"></div>

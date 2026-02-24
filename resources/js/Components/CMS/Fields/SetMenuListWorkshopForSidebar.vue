@@ -13,7 +13,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faTrash } from "@fas";
 import { useConfirm } from "primevue/useconfirm"
 import ConfirmPopup from "primevue/confirmpopup"
-import { faExclamationTriangle } from "@far";
+import { faExclamationTriangle, faEye, faEyeSlash } from "@far";
 import { trans } from "laravel-vue-i18n"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import { set } from "lodash-es";
@@ -139,6 +139,30 @@ const deleteNavigation = (item: any, area: 'top' | 'bottom') => {
     debouncedSendUpdate()
 }
 
+
+const toggleNavigationVisibility = (item: any, area: 'top' | 'bottom') => {
+    const targetArray =
+        area === 'top'
+            ? props.data.data.fieldValue.navigation
+            : props.data.data.fieldValue.navigation_bottom
+
+    const index = targetArray.findIndex(nav => nav.id === item.id)
+
+    if (index !== -1) {
+        const current = targetArray[index]
+
+        // ensure property exists
+        if (typeof current.hidden === 'undefined') {
+            current.hidden = false
+        }
+
+        current.hidden = !current.hidden
+    }
+
+    debouncedSendUpdate()
+}
+
+
 // Handle drag end untuk area yang berbeda
 const handleDragEnd = () => {
     autoSave();
@@ -209,9 +233,15 @@ const autoSave = async (event?) => {
                         <div class="text-xs text-gray-500">{{ element.type }}</div>
                     </div>
 
+
+                    <button  class="px-2 py-1"   @click.stop="() => toggleNavigationVisibility(element, 'top')">
+                        <FontAwesomeIcon :icon="element.hidden ? faEyeSlash : faEye"
+                            class="text-gray-400 hover:text-gray-700" />
+                    </button>
+
                     <!-- Delete Button -->
                     <button @click.stop="() => deleteNavigation(element, 'top')"
-                        class="opacity-0 group-hover:opacity-100 px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
+                        class="px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
                         title="Delete menu">
                         <FontAwesomeIcon :icon="faTrash" />
                     </button>
@@ -264,9 +294,14 @@ const autoSave = async (event?) => {
                         <div class="text-xs text-gray-500">{{ element.type }}</div>
                     </div>
 
+                    <button  class="px-2 py-1"   @click.stop="() => toggleNavigationVisibility(element, 'bottom')">
+                        <FontAwesomeIcon :icon="element.hidden ? faEyeSlash : faEye"
+                            class="text-gray-400 hover:text-gray-700" />
+                    </button>
+
                     <!-- Delete Button -->
                     <button @click.stop="() => deleteNavigation(element, 'bottom')"
-                        class="opacity-0 group-hover:opacity-100 px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
+                        class="px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
                         title="Delete menu">
                         <FontAwesomeIcon :icon="faTrash" />
                     </button>

@@ -41,6 +41,8 @@ import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faMagnifyingGlass, faMagnifyingGlassArrowRight } from '@fortawesome/free-solid-svg-icons'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import { faShapes, faStar } from '@fas'
+import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 
 
 library.add(
@@ -87,8 +89,9 @@ const props = defineProps<{
     stocks?: {}
     images?: {}
     attachments?: {}
+    family_slug : string
     luigi_data: {
-        webpage_id: string
+        webpage_id: number
         last_reindexed: string
         luigisbox_tracker_id: string
         luigisbox_private_key: string
@@ -99,7 +102,9 @@ const props = defineProps<{
     masterRoute?: routeType
     is_external_shop?: boolean
     product_state?: boolean
-    taxonomy: {
+    variant?: {}
+    is_variant_leader?: boolean
+   /*  taxonomy: {
         department?: {
             name: string
             tooltip: string
@@ -116,7 +121,7 @@ const props = defineProps<{
                 parameters: Record<string, string>
             }
         }
-    }
+    } */
     webpage_canonical_url?: string
     sales?: {}
     salesData?: object
@@ -148,17 +153,30 @@ const component = computed(() => {
         sales: ProductCategoryTimeSeriesTable,
         content: ProductContent,
     }
-    console.log(currentTab.value)
     return components[currentTab.value]
 })
 
 // Warning flag
-const showMissingTaxonomyMessage = computed(() => {
+/* const showMissingTaxonomyMessage = computed(() => {
     if(props.is_external_shop) {
         return false
     }
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
+ */
+
+
+const routeVariant = () => {
+    return route(
+        'grp.org.shops.show.catalogue.families.show.variants.show',
+        {
+            organisation: (route().params as RouteParams).organisation,
+            shop: (route().params as RouteParams).shop,
+            family: props.family_slug,
+            variant: props.variant.slug,
+        }
+    )
+}
 
 
 </script>
@@ -180,32 +198,52 @@ const showMissingTaxonomyMessage = computed(() => {
                     icon="fal fa-atom"
                 />
             </Link>
+            <!-- TODO PLEASE CHANGE TO HAVE LINK TO VARIANT -->
+            <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
+                <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
+            </Link>
+            
         </template>
 
         <template #button-reindex>
-            <ButtonWithLink
-                v-tooltip="trans('Use this feature to update data to Luigi Search.')"
-                method="post"
-                :style="'edit'"
-                size="sm"
-                :routeTarget="{name: 'grp.models.webpage_luigi.reindex', parameters: { webpage: luigi_data.webpage_id }}"
-            >
-                <template #icon>
-                    <FontAwesomeIcon :icon="faSearch"/>
-                </template>
-                <template #label>
-                    {{ trans('Reindex') }}
-                </template>
-            </ButtonWithLink>
+            <div class="w-fit">
+                <ButtonReindexWebpage
+                    :webpage="{
+                        id: luigi_data.webpage_id,
+                        luigi_data: {
+                            luigisbox_tracker_id: luigi_data.luigisbox_tracker_id,
+                            luigisbox_private_key: luigi_data.luigisbox_private_key
+                        }
+                    }"
+                >
+                    <template #default="{ isLoadingReindexing }">
+                        <Button
+                            v-tooltip="trans('Use this feature to update data to Luigi Search.')"
+                            method="post"
+                            :style="'edit'"
+                            size="sm"
+                            xrouteTarget="{name: 'grp.models.webpage_luigi.reindex', parameters: { webpage: luigi_data.webpage_id }}"
+                            :loading="isLoadingReindexing"
+                        >
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faSearch" class="" fixed-width aria-hidden="true" />
+                            </template>
+                            <template #label>
+                                {{ trans('Reindex') }}
+                            </template>
+                        </Button>
+                    </template>
+                </ButtonReindexWebpage>
+            </div>
         </template>
         <template #other>
         </template>
     </PageHeading>
 
 
-    <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">
+    <!-- <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">
         {{trans('Both department and family data are missing in taxonomy.')}}
-    </Message>
+    </Message> -->
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
@@ -237,5 +275,9 @@ const showMissingTaxonomyMessage = computed(() => {
     margin: 0;
     background: transparent;
     border: none;
+}
+
+:deep(.p-breadcrumb-list > li.p-breadcrumb-separator:first-child) {
+    display: none !important;
 }
 </style>

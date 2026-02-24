@@ -532,6 +532,7 @@ if (!function_exists('divideWithRemainder')) {
 if (!function_exists('riseDivisor')) {
     function riseDivisor(array $input, $raiser): array
     {
+
         if ($raiser === null) {
             return $input;
         }

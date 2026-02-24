@@ -106,6 +106,11 @@ class EditMasterDepartment extends OrgAction
                                     'options'   => [
                                         'counter'   => true,
                                     ],
+                                    'toogle'  => [
+                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                    ],
                                     'value' => $masterProductCategory->description
                                 ],
                                 'description_extra' => [
@@ -113,6 +118,11 @@ class EditMasterDepartment extends OrgAction
                                     'label' => __('Extra description'),
                                     'options'   => [
                                         'counter'   => true,
+                                    ],
+                                    'toogle'  => [
+                                          'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
+                                          'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
+                                          'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value' => $masterProductCategory->description_extra
                                 ],

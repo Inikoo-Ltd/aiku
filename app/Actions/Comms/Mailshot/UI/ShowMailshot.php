@@ -61,13 +61,27 @@ class ShowMailshot extends OrgAction
 
     public function htmlResponse(Mailshot $mailshot, ActionRequest $request): Response
     {
-        $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]);
+        $isShowActions = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY]) && !$mailshot->is_second_wave;
+
+        $isShowStop = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENDING]);
+
+        $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
 
         $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
             ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
             : 0;
 
+        $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_enabled;
+        $mailshotSecondWave = null;
+        if ($isSecondWaveActive) {
+            $mailshotSecondWave = $mailshot->secondWave;
+        }
+        $isHasParentMailshot = $mailshot->parentMailshot()->exists();
 
+        /* NOTE:
+         * is_second_wave_enabled is perspective from parent mailshot
+         * is_second_wave  is perspective from child mailshot
+         */
         return Inertia::render(
             'Comms/Mailshot',
             [
@@ -128,6 +142,34 @@ class ShowMailshot extends OrgAction
                                     $mailshot->slug
                                 ]
                             ]
+                        ] : [],
+                        $isShowStop ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Stop'),
+                            'icon'  => ["fal", "fa-pause"],
+                            'route' => [
+                                'name'       => "grp.models.shop.mailshot.stop",
+                                'parameters' => [
+                                    $this->shop->id,
+                                    $mailshot->id
+                                ],
+                                'method'     => 'post'
+                            ]
+                        ] : [],
+                        $isShowResume ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Resume'),
+                            'icon'  => ["fal", "fa-play"],
+                            'route' => [
+                                'name'       => "grp.models.shop.mailshot.resume",
+                                'parameters' => [
+                                    $this->shop->id,
+                                    $mailshot->id
+                                ],
+                                'method'     => 'post'
+                            ]
                         ] : []
                     ]
                 ],
@@ -159,7 +201,7 @@ class ShowMailshot extends OrgAction
                         )
                     )),
                 'sendMailshotRoute' => [
-                    'name' => match($mailshot->type) {
+                    'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.send',
                         MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.send',
                     },
@@ -170,7 +212,7 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'scheduleMailshotRoute' => [
-                    'name' => match($mailshot->type) {
+                    'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.schedule',
                         MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.schedule',
                     },
@@ -188,7 +230,7 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'indexRoute' => [
-                    'name' => match($mailshot->type) {
+                    'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.index',
                         MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshot.index',
                     },
@@ -198,7 +240,7 @@ class ShowMailshot extends OrgAction
                     ],
                 ],
                 'cancelScheduleMailshotRoute' => [
-                    'name' => match($mailshot->type) {
+                    'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.cancel-schedule',
                         MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.cancel-schedule',
                     },
@@ -208,9 +250,42 @@ class ShowMailshot extends OrgAction
                         'mailshot' => $mailshot->id
                     ],
                 ],
+                'setSecondWaveRoute' => [
+                    'name' => 'grp.models.shop.mailshot.second-wave',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
+                'updateSecondWaveRoute' => [
+                    'name' => 'grp.models.shop.mailshot.second-wave.update',
+                    'parameters' => [
+                        'shop' => $this->shop->id,
+                        'mailshot' => $mailshot->id
+                    ],
+                ],
+                'showLinkedMailShotRoute' => [
+                    'name' => match ($mailshot->type) {
+                        MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.show',
+                        MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.show',
+                    },
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug,
+                        'mailshot' => $isSecondWaveActive ? $mailshotSecondWave?->slug : $mailshot->parentMailshot?->slug,
+                    ],
+                ],
                 'status' => $mailshot->state->value,
+                'secondWaveStatus' => $mailshot->secondWave?->state?->value,
                 'estimatedRecipients' => $estimatedRecipients,
                 'mailshotType' => $mailshot->type->value,
+                'isSecondWaveActive' => $isSecondWaveActive,
+                'secondwaveSubject' => $mailshotSecondWave?->subject,
+                'secondwaveDelayHours' => $mailshotSecondWave?->send_delay_hours,
+                'isHasParentMailshot' => $isHasParentMailshot,
+                'isSecondWave' => $mailshot->is_second_wave,
+                'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
+
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(

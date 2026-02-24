@@ -9,50 +9,21 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Collection;
-use App\Models\Helpers\Media;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateCollectionImages extends OrgAction
 {
     use WithActionUpdate;
+    use CanUpdateImages;
 
-    public function handle(Collection $collection, array $modelData, bool $updateDependants = false): Collection
+    public function handle(Collection $collection, array $modelData): Collection
     {
-        $imageTypeMapping = [
-            'image_id' => 'main',
-        ];
-
-        $imageKeys = collect($imageTypeMapping)
-            ->keys()
-            ->filter(fn ($key) => Arr::exists($modelData, $key))
-            ->toArray();
-
-        foreach ($imageKeys as $imageKey) {
-            $mediaId = $modelData[$imageKey];
-
-            if ($mediaId === null) {
-                $collection->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                    ->updateExistingPivot(
-                        $collection->images()
-                            ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                            ->first()?->id,
-                        ['sub_scope' => null]
-                    );
-            } else {
-                $media = Media::find($mediaId);
-
-                if ($media) {
-                    $collection->images()->updateExistingPivot(
-                        $media->id,
-                        ['sub_scope' => $imageTypeMapping[$imageKey]]
-                    );
-                }
-            }
-        }
+        $this->updateImages($collection, $modelData);
 
         $collection = $this->update($collection, $modelData);
 
@@ -76,6 +47,6 @@ class UpdateCollectionImages extends OrgAction
     {
         $this->initialisationFromShop($collection->shop, $request);
 
-        $this->handle($collection, $this->validatedData, true);
+        $this->handle($collection, $this->validatedData);
     }
 }

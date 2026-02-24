@@ -52,8 +52,8 @@ import SeeAlso1Iris from "@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue"
 import family1Iris from "@/Components/CMS/Webpage/Family-1/family1Iris.vue"
 import FamiliesIris1 from "@/Components/CMS/Webpage/Families1/FamiliesIris1.vue"
 import FamiliesIris2 from "@/Components/CMS/Webpage/Families2/FamiliesIris2.vue"
+import FamiliesIris3 from "@/Components/CMS/Webpage/Families3/FamiliesIris3.vue"
 
-import Department1Iris from "@/Components/CMS/Webpage/Department1/Department1Iris.vue"
 
 import SubDepartment1Iris from "@/Components/CMS/Webpage/SubDepartment1/SubDepartmentIris.vue"
 import SubDepartment2Iris from "@/Components/CMS/Webpage/SubDepartment2/SubDepartmentIris.vue"
@@ -84,7 +84,6 @@ import TimelineIris from "@/Components/CMS/Webpage/Timeline/TimelineIris.vue"
 import Carousel1Iris from "@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue"
 import CarouselCtaIris from "@/Components/CMS/Webpage/CarouselCta/CarouselCtaIris.vue"
 import CarouselImageBackgroundIris from "@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundIris.vue"
-import Collections1Iris from "@/Components/CMS/Webpage/Collections1/Collections1Iris.vue"
 import CtaVideo1Iris from "@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue"
 import Video1Iris from "@/Components/CMS/Webpage/Video/Video1Iris.vue"
 import UserSubscribeIris from "@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue"
@@ -92,6 +91,9 @@ import Cta4Iris from "@/Components/CMS/Webpage/Cta4/Cta4Iris.vue"
 import BlogIris from "@/Components/CMS/Webpage/Blog/BlogIris.vue"
 import Step2Iris from "@/Components/CMS/Webpage/Step2/Step2Iris.vue"
 import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
+import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionIris.vue"
+import DepartmentDescriptionIris from "@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionIris.vue"
+import SubDepartmentDesciptionIris from "@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionIris.vue"
 
 
 const async = (loader: () => Promise<Component>) =>
@@ -112,44 +114,40 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"top-bar-2-fulfilment": Topbar2FulfilmentIris,
 		"top-bar-3-fulfilment": Topbar3FulfilmentIris,
 
-			//header
+		//header
 		"header-1": Header1Iris,
 		"header-2": Header2Iris,
 		
 
-			//menu
+		//menu
 		"menu-1": Menu1Workshop,
 
-			//footer
+		//footer
 		"footer-1": Footer1Iris,
 
-			//department
-		department: Department1Iris,
-		"department-1": Department1Iris,
+		 //description catalouge
+		'collection-description-1' : CollectionDescriptionIris,
+		'department-description-1' : DepartmentDescriptionIris,
+		'sub-department-description-1' : SubDepartmentDesciptionIris,
+		'family-1': family1Iris,
 
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,
 		"sub-departments-2": SubDepartment2Iris,
 
 		//family
-		"family-1": family1Iris,
 		"families-1": FamiliesIris1,
 		"families-2": FamiliesIris2,
+		"families-3": FamiliesIris3,
 
 		//product
-		"product-1": shop_type === "b2b"
-		? RenderEcommerceProduct
-		: RenderDropshippingProduct,
+		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
 
 		"product-2": RenderEcommerceProduct,
 
 		//product list
-		"products-1": shop_type === "b2b"
-		? ListProductsEcomIris
-		: ListProductsIris,
-
+		"products-1": shop_type === "b2b" ? ListProductsEcomIris : ListProductsIris,
 		"products-2": ListProductsEcomIris,
-
 
 		//see-also
 		"see-also-1": SeeAlso1Iris,
@@ -187,7 +185,6 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"carousel-cta": CarouselCtaIris,
 		"carousel-image-background": CarouselImageBackgroundIris,
 		"step-1": Step2Iris,
-		"collections-1": Collections1Iris,
 		"cta-video-1": CtaVideo1Iris,
 		video_1: Video1Iris,
 		"user-subscribe": UserSubscribeIris,

@@ -52,7 +52,11 @@
         @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', ''))
             <script data-jsd-embedded data-key="{{Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', '')}}" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
         @endif
-
+        <style>
+            #jsd-widget {
+                bottom: 44px !important;
+            }
+        </style>
     </head>
     <body class="font-sans antialiased h-full text-slate-700">
         @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
