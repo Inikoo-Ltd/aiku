@@ -223,14 +223,14 @@ const options = ref([
         ]" @update:model-value="changeType" />
       </div>
 
-      <div>
+      <div v-if="localNav.type == 'multiple'">
         <h3 class="font-medium text-gray-800 text-md mb-3">Image</h3>
         <UploadImage :model-value="localNav.image" :uploadRoutes="uploadImageRoute" option-value="value"
           option-label="label" @update:model-value="changeImage" />
       </div>
 
 
-      <div v-if="localNav.image">
+      <div v-if="localNav.image && localNav.type == 'multiple'">
         <h3 class="font-medium text-gray-800 text-md mb-3">Image Position</h3>
         <SelectButton :model-value="localNav.image_position" :options="options" optionLabel="name" optionValue="value"
           @update:model-value="changeImagePosition" />
@@ -321,7 +321,7 @@ const options = ref([
                 </template>
               </Disclosure>
             </template>
-          </draggable>Z
+          </draggable>
 
           <!-- Add Subnavigation Button -->
           <div class="flex justify-end mt-2">

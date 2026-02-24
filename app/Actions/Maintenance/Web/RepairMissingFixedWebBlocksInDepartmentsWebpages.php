@@ -13,6 +13,7 @@ use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
@@ -41,7 +42,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
     {
         /** @var ProductCategory $department */
         $department = $webpage->model;
-
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'department');
         if (count($countFamilyWebBlock) > 0) {
@@ -75,6 +75,9 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         if (count($countFamilyWebBlock) == 0) {
             $this->createWebBlock($webpage, 'sub-departments-1');
         }
+        
+        // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS->value);
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
 
@@ -107,26 +110,12 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
             };
         }
+        
+        // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
 
-
-        $productsWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
-
-        if (count($productsWebBlock) == 0) {
-            $command->error('Webpage '.$webpage->code.' Products Web Block not found');
-            $this->createWebBlock($webpage, 'products-1');
-        } elseif (count($productsWebBlock) > 1) {
-            $command->error('Webpage '.$webpage->code.' MORE than 1 Products Web Block found');
-        }
-
-
-        $productsWebBlock = $this->getWebpageBlocksByType($webpage, 'families-1');
-
-        if (count($productsWebBlock) == 0) {
-            $command->error('Webpage '.$webpage->code.' Families Web Block not found');
-            $this->createWebBlock($webpage, 'families-1');
-        } elseif (count($productsWebBlock) > 1) {
-            $command->error('Webpage '.$webpage->code.' MORE than 1 Families Web Block found');
-        }
+        // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
 
         $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
         if (count($countDepartmentDescriptionBlock) == 0) {

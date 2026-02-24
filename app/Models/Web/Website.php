@@ -308,6 +308,11 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Snapshot::class, 'unpublished_sub_department_snapshot_id');
     }
 
+    public function liveSubDepartmentSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_sub_department_snapshot_id');
+    }
+
     public function unpublishedFamilySnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_family_snapshot_id');
@@ -326,6 +331,11 @@ class Website extends Model implements Auditable, HasMedia
     public function unpublishedProductsSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_products_snapshot_id');
+    }
+
+    public function liveProductsSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_products_snapshot_id');
     }
 
     public function liveSnapshot(): BelongsTo
