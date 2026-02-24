@@ -145,21 +145,25 @@ class ShowClockingMachine extends OrgAction
                     'navigation' => $navigationData
                 ],
                 ClockingMachineTabsEnum::SHOWCASE->value => $this->tab == ClockingMachineTabsEnum::SHOWCASE->value ?
-                    fn() => GetClockingMachineShowcase::run($clockingMachine)
-                    : Inertia::lazy(fn() => GetClockingMachineShowcase::run($clockingMachine)),
+                    fn () => GetClockingMachineShowcase::run($clockingMachine)
+                    : Inertia::lazy(fn () => GetClockingMachineShowcase::run($clockingMachine)),
 
                 ClockingMachineTabsEnum::SCAN_QR_CODE->value =>
                 $this->tab == ClockingMachineTabsEnum::SCAN_QR_CODE->value
-                    ? fn() => GetClockingMachineShowcase::run($clockingMachine)
-                    : Inertia::lazy(fn() => GetClockingMachineShowcase::run($clockingMachine)),
+                    ? fn () => GetClockingMachineShowcase::run($clockingMachine)
+                    : Inertia::lazy(fn () => GetClockingMachineShowcase::run($clockingMachine)),
 
                 ClockingMachineTabsEnum::CLOCKINGS->value => $this->tab == ClockingMachineTabsEnum::CLOCKINGS->value ?
-                    fn() => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))
-                    : Inertia::lazy(fn() => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))),
+                    fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))->additional([
+                        'can_edit_clockings' => $this->canEdit,
+                    ])
+                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))->additional([
+                        'can_edit_clockings' => $this->canEdit,
+                    ])),
 
                 ClockingMachineTabsEnum::HISTORY->value => $this->tab == ClockingMachineTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($clockingMachine))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($clockingMachine)))
+                    fn () => HistoryResource::collection(IndexHistory::run($clockingMachine))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($clockingMachine)))
 
             ]
         )->table(IndexClockings::make()->tableStructure($clockingMachine, prefix: ClockingMachineTabsEnum::CLOCKINGS->value))
