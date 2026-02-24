@@ -26,8 +26,9 @@ export default {
                     value: ["image"],
                 },
                 {
-                    name: "video",
+                    name: ["layout", "video"],
                     type: "slideVideo",
+                    value: ["layout", "video"],
                     label: trans("Video"),
                     useIn: ["desktop", "tablet", "mobile"],
                 },

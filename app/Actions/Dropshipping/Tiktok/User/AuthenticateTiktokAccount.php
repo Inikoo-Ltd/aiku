@@ -12,7 +12,9 @@ use App\Actions\OrgAction;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\TiktokUser;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -35,6 +37,7 @@ class AuthenticateTiktokAccount extends OrgAction
     public function handle(array $modelData): TiktokUser|array|string|null
     {
         try {
+            $platform = Platform::where('type', PlatformTypeEnum::TIKTOK->value)->first();
             $response = Http::get(config('services.tiktok.auth_url')."/api/v2/token/get", [
                 'app_key' => config('services.tiktok.client_id'),
                 'app_secret' => config('services.tiktok.client_secret'),
@@ -61,21 +64,29 @@ class AuthenticateTiktokAccount extends OrgAction
                         'access_token_expire_in' => $userData['access_token_expire_in'],
                         'refresh_token' => $userData['refresh_token'],
                         'refresh_token_expire_in' => $userData['refresh_token_expire_in'],
+                        'platform_id' => $platform->id
                     ];
 
-                    $tiktokUser = TiktokUser::where('customer_id', $customer->id)
+                    $tiktokUser = TiktokUser::where('customer_id', $customer?->id)
                         ->where('tiktok_id', $userData['tiktok_id'])
                         ->first();
 
-                    if (!$tiktokUser) {
+                    if (!$tiktokUser && $customer?->id) {
                         $tiktokUser = StoreTiktokUser::make()->action($customer, $userData);
+                    } else if (!$tiktokUser && $customer === null) {
+                        $tiktokUser = TiktokUser::create($userData);
                     }
 
-                    $tiktokUser = UpdateTiktokUser::make()->action($tiktokUser, $userData);
+                    if($customer?->id) {
+                        $tiktokUser = UpdateTiktokUser::make()->action($tiktokUser, $userData);
+                    }
 
                     SaveShopDataTiktokChannel::run($tiktokUser);
                     $tiktokUser->refresh();
-                    CheckTiktokChannel::run($tiktokUser);
+
+                    if($customer?->id) {
+                        CheckTiktokChannel::run($tiktokUser);
+                    }
 
                     $model = $tiktokUser;
                 } else {

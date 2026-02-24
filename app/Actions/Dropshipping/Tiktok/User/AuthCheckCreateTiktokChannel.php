@@ -30,7 +30,7 @@ class AuthCheckCreateTiktokChannel extends RetinaAction
 
         $customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)
             ->where('platform_id', $platform->id)
-            ->whereIn('state', [CustomerSalesChannelStateEnum::AUTHENTICATED, CustomerSalesChannelStateEnum::READY])
+            ->where('state', CustomerSalesChannelStateEnum::AUTHENTICATED)
             ->first();
 
         if (!$customerSalesChannel) {
