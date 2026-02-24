@@ -1114,6 +1114,9 @@ const recalculateVat = async () => {
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
+            <div v-if="is_shop_external" class="absolute -top-1 md:top-auto md:bottom-1 left-0 md:left-12 bg-yellow-400 pb-px px-1 text-xxs">
+                {{ ctrans("External shop") }}
+            </div>
         </template>
 
         <template #button-replacement="{ action }">
@@ -1305,8 +1308,7 @@ const recalculateVat = async () => {
                     <span v-if="salesChannel" v-tooltip="trans('This order is from :salesChannel', { salesChannel: salesChannel.name})" class="font-normal text-sm opacity-70">({{ salesChannel.name }} <FontAwesomeIcon :icon="salesChannel.icon" class="" fixed-width aria-hidden="true" />)</span>
                 </div>
 
-                <div class="space-y-0.5 pl-1">
-                    
+                <div class="space-y-0.5 pl-1">                    
                     <!-- Field: Client -->
                     <div v-if="box_stats?.customer_client" class="pl-1 pb-2 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer client')" class="flex-none">
