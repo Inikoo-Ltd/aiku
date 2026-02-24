@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property bool $is_body_encoded
- * @property-read \App\Models\Comms\DispatchedEmail $dispatchedEmail
+ * @property-read \App\Models\Comms\DispatchedEmail|null $dispatchedEmail
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailCopy newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailCopy newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailCopy query()
