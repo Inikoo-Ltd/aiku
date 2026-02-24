@@ -6,7 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dropshipping\Tiktok\User\UI\OnboardingTiktokUser;
 use App\Actions\UI\AikuPublic\ShowHome;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowHome::class)->name('home');
+
+Route::get('tiktok/onboarding', OnboardingTiktokUser::class)->name('tiktok.onboarding');
