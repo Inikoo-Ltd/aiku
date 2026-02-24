@@ -103,7 +103,16 @@ const renderVideoUrl = (component) => {
 }
 
 const getCard = (component) => {
-    return get(component, ['layout', 'card'], {})
+    const view = props.view || 'desktop'
+    const card = get(component, ['layout', 'card'])
+
+    if (!card) return {}
+
+    if (card.desktop || card.tablet || card.mobile) {
+        return card[view] || card.desktop || {}
+    }
+
+    return card
 }
 
 const isYoutube = (url: string) =>

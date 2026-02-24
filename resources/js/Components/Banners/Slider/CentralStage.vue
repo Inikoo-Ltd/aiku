@@ -33,21 +33,7 @@ const getAlignClass = (align: string) => {
         :class="[{ 'left-0 text-left': data?.textAlign == 'left', 'right-0 text-right': data?.textAlign == 'right' }]"
         :style="`text-shadow : ${get(data, ['style', 'textShadow']) ? '2px 2px black;' : 'none'} `">
         <template v-if="data?.titles?.length">
-            <!-- <div v-for="(item, index) in data.titles" :key="index" class="absolute" :class="[
-                // Horizontal
-                item.align === 'left' ? 'left-0 text-left' : '',
-                item.align === 'center' ? 'left-1/2 -translate-x-1/2 text-center' : '',
-                item.align === 'right' ? 'right-0 text-right' : '',
-
-                // Vertical
-                item.vertical === 'top' ? 'top-0' : '',
-                item.vertical === 'middle' ? 'top-1/2 -translate-y-1/2' : '',
-                item.vertical === 'bottom' ? 'bottom-0' : ''
-            ]" :style="{ color: item.color }">
-                <div class="leading-none font-bold text-[25px] lg:text-[44px]">
-                    {{ item.text }}
-                </div>
-            </div> -->
+            <!-- titles in card -->
             <div>
                 <div v-for="(item, i) in data.titles.filter(t => t.vertical === 'top')" :key="'top-' + i"
                     :class="getAlignClass(item.align)" :style="{
