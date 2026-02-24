@@ -11,6 +11,7 @@ namespace App\Actions\UI\HumanResources;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -113,6 +114,7 @@ class ShowHumanResourcesDashboard extends OrgAction
     private function getOrgChartNodes(): array
     {
         $employees = $this->organisation->employees()
+            ->where('state', '!=', EmployeeStateEnum::LEFT->value)
             ->select(['id', 'contact_name', 'alias', 'job_title', 'slug', 'image_id'])
             ->with('image')
             ->orderBy('contact_name')
