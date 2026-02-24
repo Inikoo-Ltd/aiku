@@ -53,7 +53,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
 
                 DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
-            };
+            }
         }
 
         $collectionsWebBlock = $this->getWebpageBlocksByType($webpage, 'collections-1');
@@ -66,7 +66,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
 
                 DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
-            };
+            }
         }
 
 
@@ -75,7 +75,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         if (count($countFamilyWebBlock) == 0) {
             $this->createWebBlock($webpage, 'sub-departments-1');
         }
-        
+
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS->value);
 
@@ -108,9 +108,9 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
 
                 DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
-            };
+            }
         }
-        
+
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
 

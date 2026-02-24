@@ -9,7 +9,6 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
