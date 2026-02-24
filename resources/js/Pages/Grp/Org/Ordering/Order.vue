@@ -1134,6 +1134,9 @@ const recalculateVat = async () => {
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
+            <div v-if="is_shop_external" class="absolute -top-1 md:top-auto md:bottom-1 left-0 md:left-12 bg-yellow-400 pb-px px-1 text-xxs">
+                {{ ctrans("External shop") }}
+            </div>
         </template>
 
         <template #button-replacement="{ action }">

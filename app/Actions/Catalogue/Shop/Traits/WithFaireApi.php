@@ -10,18 +10,13 @@ trait WithFaireApi
     protected string $baseUrl = 'https://www.faire.com/external-api/v2/';
     protected array $defaultHeaders = [];
 
-    /**
-     * Initialize the API configuration
-     *
-     * @param string $token
-     * @return void
-     */
+
     protected function initializeApi($isFileDownload = false): void
     {
         $headers = [];
-        if (! $isFileDownload) {
+        if (!$isFileDownload) {
             $headers = [
-                'Accept' => 'application/json',
+                'Accept'       => 'application/json',
                 'Content-Type' => 'application/json'
             ];
         }
@@ -32,19 +27,12 @@ trait WithFaireApi
         ];
     }
 
-    /**
-     * Build API request configuration
-     *
-     * @param string $method
-     * @param string $endpoint
-     * @param array $params
-     * @return array
-     */
-    protected function buildRequest(string $method, string $endpoint, array $params = [], $data = [], $isFileDownload = false): array|string
+
+    protected function buildRequest(string $method, string $endpoint, array $params = [], array|null $data = [], $isFileDownload = false): array|string
     {
         $this->initializeApi($isFileDownload);
 
-        $url = $this->baseUrl . trim($endpoint, '/');
+        $url = $this->baseUrl.trim($endpoint, '/');
 
         $response = Http::withHeaders($this->defaultHeaders)
             ->withQueryParameters($params)
@@ -63,14 +51,15 @@ trait WithFaireApi
 
         return [
             'success' => false,
-            'error' => $response->json()
+            'error'   => $response->json()
         ];
     }
 
     /**
      * Get products with optional filtering
      *
-     * @param array $params
+     * @param  array  $params
+     *
      * @return array
      */
     public function getFaireProducts(array $params = []): array
@@ -78,34 +67,19 @@ trait WithFaireApi
         return $this->buildRequest('GET', 'products', $params);
     }
 
-    /**
-     * Get customers with optional filtering
-     *
-     * @param array $params
-     * @return array
-     */
+
     public function getFaireRetailers(string $retailerId): array
     {
         return $this->buildRequest('GET', "retailers/public/$retailerId");
     }
 
-    /**
-     * Get orders with optional filtering
-     *
-     * @param array $params
-     * @return array
-     */
+
     public function getFaireOrders(array $params = []): array
     {
         return $this->buildRequest('GET', 'orders', $params);
     }
 
-    /**
-     * Get brand details
-     *
-     * @param string|null $brandId
-     * @return array
-     */
+
     public function getFaireBrand(): array
     {
         $endpoint = 'brands/profile';
@@ -113,70 +87,35 @@ trait WithFaireApi
         return $this->buildRequest('GET', $endpoint);
     }
 
-    /**
-     * Get a specific product by ID
-     *
-     * @param string $productId
-     * @return array
-     */
     public function getFaireProduct(string $productId): array
     {
-        return $this->buildRequest('GET', "products/{$productId}");
+        return $this->buildRequest('GET', "products/$productId");
     }
 
-    /**
-     * Get a specific order by ID
-     *
-     * @param string $orderId
-     * @return array
-     */
     public function getFaireOrder(string $orderId): array
     {
-        return $this->buildRequest('GET', "orders/{$orderId}");
+        return $this->buildRequest('GET', "orders/$orderId");
     }
 
-    /**
-     * Update a specific order by ID
-     *
-     * @param string $orderId
-     * @return array
-     */
+
     public function acceptFaireOrder(string $orderId, array $attributes = []): array
     {
-        return $this->buildRequest('PUT', "orders/{$orderId}/processing", $attributes);
+        return $this->buildRequest('PUT', "orders/$orderId/processing", $attributes, null);
     }
 
-    /**
-     * Update a specific order by ID
-     *
-     * @param string $orderId
-     * @return array
-     */
     public function cancelFaireOrder(string $orderId, array $attributes = []): array
     {
-        return $this->buildRequest('PUT', "orders/{$orderId}/cancel", $attributes);
+        return $this->buildRequest('PUT', "orders/$orderId/cancel", $attributes);
     }
 
-    /**
-     * Update shipping to a specific order by ID
-     *
-     * @param string $orderId
-     * @return array
-     */
     public function updateShippingFaireOrder(string $orderId, array $attributes): array
     {
-        return $this->buildRequest('PUT', "orders/{$orderId}/shipments", $attributes);
+        return $this->buildRequest('PUT', "orders/$orderId/shipments", $attributes);
     }
 
-    /**
-     * Get packing PDF specific order by ID
-     *
-     * @param string $orderId
-     * @return array
-     */
     public function getPackingSlip(string $orderId): array|string
     {
-        return $this->buildRequest(method: 'GET', endpoint: "orders/{$orderId}/packing-slip-pdf", isFileDownload: true);
+        return $this->buildRequest(method: 'GET', endpoint: "orders/$orderId/packing-slip-pdf", isFileDownload: true);
     }
 
 
