@@ -98,8 +98,8 @@ const renderBackground = (component) => {
 }
 
 const renderVideoUrl = (component) => {
-    return get(component, ['video', props.view],
-        get(component, ['video', 'desktop'], null))
+    return get(component, ['layout', 'video', props.view],
+        get(component, ['layout', 'video', 'desktop'], null))
 }
 
 const getCard = (component) => {
