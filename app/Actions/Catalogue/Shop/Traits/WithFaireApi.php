@@ -55,13 +55,7 @@ trait WithFaireApi
         ];
     }
 
-    /**
-     * Get products with optional filtering
-     *
-     * @param  array  $params
-     *
-     * @return array
-     */
+
     public function getFaireProducts(array $params = []): array
     {
         return $this->buildRequest('GET', 'products', $params);

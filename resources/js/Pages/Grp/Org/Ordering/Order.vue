@@ -1540,7 +1540,7 @@ const recalculateVat = async () => {
                             v-model="isShippingExternal"
                             @update:modelValue="updateShippingExternal"
                         />
-                        <span class="text-sm text-gray-500">{{ trans("External Shipping") }}</span>
+                        <span class="text-sm text-gray-500">{{ external_shop?.external_shipping_label }}</span>
                     </div>
 
                     <!-- Field: Billing -->

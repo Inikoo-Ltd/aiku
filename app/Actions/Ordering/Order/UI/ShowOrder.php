@@ -377,8 +377,10 @@ class ShowOrder extends OrgAction
                 'shop_type'                   => $order->shop->type,
                 'is_shop_external'            => $this->shop->type == ShopTypeEnum::EXTERNAL,
                 'external_shop'               => $this->shop->type == ShopTypeEnum::EXTERNAL ? [
-                    'engine_value' => $this->shop->engine->value,
-                    'engine_label'  => ShopEngineEnum::from($this->shop->engine->value)->label()
+                    'xx' => 'xx',
+                    'engine_value'            => $this->shop->engine->value,
+                    'engine_label'            => ShopEngineEnum::from($this->shop->engine->value)->label(),
+                    'external_shipping_label' => $this->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
                 ] : null,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
                 'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
@@ -386,6 +388,7 @@ class ShowOrder extends OrgAction
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'                        => OrderResource::make($order),
                 'delivery_note'               => $deliveryNoteResource,
+
 
                 'payments_data'         => $paymentsData,
                 'payments_accounts'     => $paymentAccountData,
