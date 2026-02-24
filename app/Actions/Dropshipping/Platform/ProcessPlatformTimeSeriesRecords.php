@@ -10,17 +10,20 @@ namespace App\Actions\Dropshipping\Platform;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformTimeSeriesHydrateNumberRecords;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformTimeSeries;
+use App\Traits\BuildsInvoiceTimeSeriesQuery;
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
+    use BuildsInvoiceTimeSeriesQuery;
 
     public function getJobUniqueId(int $platformId, int $shopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -33,7 +36,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
         $to   .= ' 23:59:59';
 
         $platform = Platform::find($platformId);
-        $shop = Shop::find($shopId);
+        $shop     = Shop::find($shopId);
 
         if (!$platform && !$shop) {
             return;
@@ -52,7 +55,9 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to): void
     {
-        $results = DB::table('invoices')
+        $processedPeriods = [];
+
+        $query = DB::table('invoices')
             ->where('invoices.platform_id', $timeSeries->platform_id)
             ->where('invoices.shop_id', $shop->id)
             ->where('invoices.in_process', false)
@@ -60,113 +65,12 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
             ->where('invoices.date', '<=', $to)
             ->whereNull('invoices.deleted_at');
 
-        if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                DB::raw('EXTRACT(QUARTER FROM invoices.date) as quarter'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(QUARTER FROM invoices.date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                DB::raw('EXTRACT(MONTH FROM invoices.date) as month'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(MONTH FROM invoices.date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                DB::raw('EXTRACT(WEEK FROM invoices.date) as week'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(WEEK FROM invoices.date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
-            $results->select(
-                DB::raw('CAST(invoices.date AS DATE) as date'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices")
-            )->groupBy(DB::raw('CAST(invoices.date AS DATE)'));
-        }
-
-        $results = $results->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, customSelects: $this->platformInvoiceSelects())->get();
 
         foreach ($results as $result) {
-            if ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-                $periodFrom = Carbon::create((int) $result->year, ((int) $result->quarter - 1) * 3 + 1)->startOfQuarter();
-                $periodTo   = Carbon::create((int) $result->year, ((int) $result->quarter - 1) * 3 + 1)->endOfQuarter();
-                $period     = $result->year.' Q'.$result->quarter;
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-                $periodFrom = Carbon::create((int) $result->year, (int) $result->month)->startOfMonth();
-                $periodTo   = Carbon::create((int) $result->year, (int) $result->month)->endOfMonth();
-                $period     = $result->year.'-'.str_pad($result->month, 2, '0', STR_PAD_LEFT);
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-                $periodFrom = Carbon::create((int) $result->year)->week((int) $result->week)->startOfWeek();
-                $periodTo   = Carbon::create((int) $result->year)->week((int) $result->week)->endOfWeek();
-                $period     = $result->year.' W'.str_pad($result->week, 2, '0', STR_PAD_LEFT);
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
-                $periodFrom = Carbon::parse($result->date)->startOfDay();
-                $periodTo   = Carbon::parse($result->date)->endOfDay();
-                $period     = Carbon::parse($result->date)->format('Y-m-d');
-            } else {
-                $periodFrom = Carbon::parse((int) $result->year.'-01-01');
-                $periodTo   = Carbon::parse((int) $result->year.'-12-31');
-                $period     = $result->year;
-            }
+            ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $channels = DB::table('customer_sales_channels')
-                ->where('platform_id', $timeSeries->platform_id)
-                ->where('shop_id', $shop->id)
-                ->where('status', CustomerSalesChannelStatusEnum::OPEN)
-                ->where('created_at', '>=', $periodFrom)
-                ->where('created_at', '<=', $periodTo)
-                ->whereNull('deleted_at')
-                ->count();
-
-            $customers = DB::table('customer_sales_channels')
-                ->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
-                ->where('customer_sales_channels.platform_id', $timeSeries->platform_id)
-                ->where('customer_sales_channels.shop_id', $shop->id)
-                ->where('customer_sales_channels.created_at', '>=', $periodFrom)
-                ->where('customer_sales_channels.created_at', '<=', $periodTo)
-                ->whereNull('customer_sales_channels.deleted_at')
-                ->distinct('customer_sales_channels.customer_id')
-                ->count('customer_sales_channels.customer_id');
-
-            $portfolios = DB::table('portfolios')
-                ->where('portfolios.item_type', 'Product')
-                ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
-                ->where('portfolios.platform_id', $timeSeries->platform_id)
-                ->where('portfolios.shop_id', $shop->id)
-                ->where('portfolios.created_at', '>=', $periodFrom)
-                ->where('portfolios.created_at', '<=', $periodTo)
-                ->whereNull('portfolios.last_removed_at')
-                ->distinct('portfolios.item_id')
-                ->count('portfolios.item_id');
-
-            $customerClients = DB::table('customer_clients')
-                ->where('platform_id', $timeSeries->platform_id)
-                ->where('shop_id', $shop->id)
-                ->where('created_at', '>=', $periodFrom)
-                ->where('created_at', '<=', $periodTo)
-                ->whereNull('deleted_at')
-                ->count();
+            $metrics = $this->getPlatformPeriodMetrics($timeSeries, $shop, $periodFrom, $periodTo);
 
             $timeSeries->records()->updateOrCreate(
                 [
@@ -183,12 +87,96 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'sales_org_currency' => $result->sales_org_currency,
                     'sales_grp_currency' => $result->sales_grp_currency,
                     'invoices'           => $result->invoices,
-                    'channels'           => $channels,
-                    'customers'          => $customers,
-                    'portfolios'         => $portfolios,
-                    'customer_clients'   => $customerClients,
+                    ...$metrics,
+                ]
+            );
+
+            $processedPeriods[] = $period;
+        }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $shop, $from, $to, $processedPeriods);
+    }
+
+    protected function processPeriodsWithoutInvoices(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $metrics = $this->getPlatformPeriodMetrics($timeSeries, $shop, $periodData['from'], $periodData['to']);
+
+            $hasActivity = collect($metrics)->some(fn ($value) => $value > 0);
+
+            if (!$hasActivity) {
+                continue;
+            }
+
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'platform_time_series_id' => $timeSeries->id,
+                    'shop_id'                 => $shop->id,
+                    'period'                  => $periodData['period'],
+                    'frequency'               => $timeSeries->frequency->singleLetter(),
+                ],
+                [
+                    'organisation_id'    => $shop->organisation_id,
+                    'from'               => $periodData['from'],
+                    'to'                 => $periodData['to'],
+                    'sales'              => 0,
+                    'sales_org_currency' => 0,
+                    'sales_grp_currency' => 0,
+                    'invoices'           => 0,
+                    ...$metrics,
                 ]
             );
         }
+    }
+
+    protected function getPlatformPeriodMetrics(PlatformTimeSeries $timeSeries, Shop $shop, Carbon $periodFrom, Carbon $periodTo): array
+    {
+        $channels = DB::table('customer_sales_channels')
+            ->where('platform_id', $timeSeries->platform_id)
+            ->where('shop_id', $shop->id)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->where('created_at', '>=', $periodFrom)
+            ->where('created_at', '<=', $periodTo)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $customers = DB::table('customer_sales_channels')
+            ->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
+            ->where('customer_sales_channels.platform_id', $timeSeries->platform_id)
+            ->where('customer_sales_channels.shop_id', $shop->id)
+            ->where('customers.registered_at', '>=', $periodFrom)
+            ->where('customers.registered_at', '<=', $periodTo)
+            ->whereNull('customers.deleted_at')
+            ->distinct('customer_sales_channels.customer_id')
+            ->count('customer_sales_channels.customer_id');
+
+        $portfolios = DB::table('portfolios')
+            ->where('portfolios.item_type', 'Product')
+            ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
+            ->where('portfolios.platform_id', $timeSeries->platform_id)
+            ->where('portfolios.shop_id', $shop->id)
+            ->where('portfolios.created_at', '>=', $periodFrom)
+            ->where('portfolios.created_at', '<=', $periodTo)
+            ->where('portfolios.status', true)
+            ->whereNull('portfolios.last_removed_at')
+            ->distinct('portfolios.item_id')
+            ->count('portfolios.item_id');
+
+        $customerClients = DB::table('customer_clients')
+            ->where('platform_id', $timeSeries->platform_id)
+            ->where('shop_id', $shop->id)
+            ->where('created_at', '>=', $periodFrom)
+            ->where('created_at', '<=', $periodTo)
+            ->whereNull('deleted_at')
+            ->count();
+
+        return [
+            'channels'         => $channels,
+            'customers'        => $customers,
+            'portfolios'       => $portfolios,
+            'customer_clients' => $customerClients,
+        ];
     }
 }

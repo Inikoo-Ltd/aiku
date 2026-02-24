@@ -3,17 +3,25 @@
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\OrgAction;
-use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
 
 class AcceptFaireOrder extends OrgAction
 {
-    public function handle(Shop $shop, Order $order): array
-    {
-        $acceptedOrder = $shop->acceptFaireOrder($order->external_id);
+    public $commandSignature = 'faire:order_accepted {order}';
 
-        DownloadFairePackingPdfSlip::run($shop, $order);
+    public function handle(Order $order): array
+    {
+        $shop = $order->shop;
+        $acceptedOrder = $shop->acceptFaireOrder($order->external_id);
+        DownloadFairePackingPdfSlip::dispatch($order);
 
         return $acceptedOrder;
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+        $this->handle($order);
     }
 }

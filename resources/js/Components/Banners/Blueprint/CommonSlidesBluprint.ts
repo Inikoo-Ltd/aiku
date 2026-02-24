@@ -19,8 +19,8 @@ export default {
                     },
                 },
                 {
-                    name: "navigation",  // data name in object workshop
-                    type: "bannerNavigation",  // type input
+                    name: "navigation",
+                    type: "bannerNavigation", 
                     label: trans("Navigation"),
                     value: null,
                     options: [
@@ -62,7 +62,7 @@ export default {
                 },
             ],
         },
-        {
+       /*  {
             title: "corners",
             icon: ["fal", "fa-expand-arrows"],
             fields: [
@@ -74,7 +74,7 @@ export default {
                     optionType: ["cornerText", "linkButton", "ribbon", 'clear'],
                 },
             ],
-        },
+        }, */
         {
             title: "central stage",
             icon: ["fal", "fa-align-center"],
@@ -136,7 +136,10 @@ export default {
                     type: "radio",
                     label: trans("Font Size"),
                     value: ["common", "centralStage", "style", "fontSize"],
-                    defaultValue: { fontTitle: "text-[25px] md:text-[32px] lg:text-[44px]", fontSubtitle: "text-[12px] md:text-[15px] lg:text-[20px]" },
+                    defaultValue: { 
+                        fontTitle: "text-[25px] md:text-[32px] lg:text-[44px]", 
+                        fontSubtitle: "text-[12px] md:text-[15px] lg:text-[20px]" 
+                    },
                     options: [
                         {
                             label: "Extra Small",

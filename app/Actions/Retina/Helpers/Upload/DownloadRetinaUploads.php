@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Helpers\Upload;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\ExportRecentBulkPortfolioErrorUploads;
 use App\Models\Helpers\Upload;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -23,7 +24,7 @@ class DownloadRetinaUploads
 
     public function handle(Upload $upload): BinaryFileResponse
     {
-        return response()->download(storage_path('app/'.$upload->path . '/' . $upload->filename));
+        return ExportRecentBulkPortfolioErrorUploads::run($upload);
     }
 
     public function asController(Upload $upload): BinaryFileResponse

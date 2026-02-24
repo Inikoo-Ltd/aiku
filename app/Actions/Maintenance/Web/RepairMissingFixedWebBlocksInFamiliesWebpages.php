@@ -116,9 +116,12 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $this->createWebBlock($webpage, 'luigi-last-seen-1');
         }
 
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
+        }
+
         $webpage->refresh();
-
-
 
 
         $this->setFamilyWebBlockOnTop($webpage);
@@ -152,17 +155,18 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $familyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first()->model_has_web_blocks_id;
 
 
-        $trendsWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
-        $lastSeenWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
+        $trendsWebBlock     = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
+        $lastSeenWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
+        $lastBoughtWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1')->first()->model_has_web_blocks_id;
 
 
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
         $count = $webpage->webBlocks()->count();
 
-        $trendsWebBlockPosition = $count + 101;
-        $lastSeenWebBlockPosition       = $count + 102;
-
+        $trendsWebBlockPosition     = $count + 101;
+        $lastBoughtWebBlockPosition = $count + 102;
+        $lastSeenWebBlockPosition   = $count + 103;
 
 
         $runningPosition = 2;
@@ -173,6 +177,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 $webBlocks[$key] = $trendsWebBlockPosition;
             } elseif ($key == $lastSeenWebBlock) {
                 $webBlocks[$key] = $lastSeenWebBlockPosition;
+            } elseif ($key == $lastBoughtWebBlock) {
+                $webBlocks[$key] = $lastBoughtWebBlockPosition;
             } else {
                 $webBlocks[$key] = $runningPosition;
                 $runningPosition++;

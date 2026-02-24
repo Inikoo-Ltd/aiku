@@ -604,6 +604,18 @@ class IndexInvoices extends OrgAction
                 ),
             ),
 
+            'grp.org.shops.show.dashboard.invoices.unpaid.index' =>
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    trim('(' . __('Unpaid') . ') ')
+                ),
+            ),
+
             'grp.org.fulfilments.show.crm.customers.show.invoices.index' =>
             array_merge(
                 ShowFulfilmentCustomer::make()->getBreadcrumbs($routeParameters),

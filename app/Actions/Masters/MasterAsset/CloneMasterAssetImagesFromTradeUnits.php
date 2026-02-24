@@ -16,6 +16,8 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'urgent';
+
     public function getJobUniqueId(MasterAsset $masterAsset): string
     {
         return $masterAsset->id;
@@ -23,7 +25,7 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
 
     public function handle(MasterAsset $masterAsset): void
     {
-        if (!$masterAsset->is_single_trade_unit) {
+        if (!$masterAsset->is_single_trade_unit || !$masterAsset->follow_trade_unit_media) {
             return;
         }
 
@@ -34,15 +36,15 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
 
         foreach ($tradeUnit->images as $image) {
             $images[$image->id] = [
-                'is_public'       => true,
-                'scope'           => 'photo',
-                'sub_scope'       => $image->pivot->sub_scope,
-                'caption'         => $image->pivot->caption,
-                'group_id'        => $masterAsset->group_id,
-                'position'        => $position++,
-                'created_at'      => now(),
-                'updated_at'      => now(),
-                'data'            => '{}'
+                'is_public'  => true,
+                'scope'      => 'photo',
+                'sub_scope'  => $image->pivot->sub_scope,
+                'caption'    => $image->pivot->caption,
+                'group_id'   => $masterAsset->group_id,
+                'position'   => $position++,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'data'       => '{}'
 
             ];
         }
@@ -65,8 +67,8 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
             'art3_image_id'            => $tradeUnit->art3_image_id,
             'art4_image_id'            => $tradeUnit->art4_image_id,
             'art5_image_id'            => $tradeUnit->art5_image_id,
+            'video_url'                => $tradeUnit->video_url,
         ]);
-
     }
 
 

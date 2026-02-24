@@ -128,8 +128,15 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             $command->error('Webpage '.$webpage->code.' MORE than 1 Families Web Block found');
         }
 
+        $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
+        if (count($countDepartmentDescriptionBlock) == 0) {
+            $this->createWebBlock($webpage, 'department-description-1');
+        }
 
         $webpage->refresh();
+        $this->setDescriptionWebBlockOnTop($webpage);
+        $webpage->refresh();
+
         UpdateWebpageContent::run($webpage);
         foreach ($webpage->webBlocks as $webBlock) {
             print $webBlock->webBlockType->code."\n";
@@ -151,6 +158,31 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 );
             }
         }
+    }
+
+    public function setDescriptionWebBlockOnTop(Webpage $webpage): void
+    {
+        $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first()->model_has_web_blocks_id;
+        $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
+
+
+        $runningPosition = 2;
+        foreach ($webBlocks as $key => $position) {
+            if ($key == $departmentDescriptionWebBlock) {
+                $webBlocks[$key] = 1;
+            } else {
+                $webBlocks[$key] = $runningPosition;
+                $runningPosition++;
+            }
+        }
+
+
+        foreach ($webBlocks as $key => $position) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $key)
+                ->update(['position' => $position]);
+        }
+        UpdateWebpageContent::run($webpage);
     }
 
 

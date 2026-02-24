@@ -97,7 +97,7 @@ const props = withDefaults(defineProps<{
     editable: true,
     type: 'Bubble',
     toogle: () => [
-        'heading', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'query', "fontFamily",
+        'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'query', "fontFamily",
         'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
         'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear', "image", "video", "table"
     ]
@@ -572,21 +572,21 @@ onMounted(async () => {
 
                         <!-- Section: Heading 1,2,3 -->
                         <TiptapToolbarGroup>
-                            <TiptapToolbarButton v-if="toogle.includes('heading')" label="Heading 1"
+                            <TiptapToolbarButton v-if="toogle.includes('heading1')" label="Heading 1"
                                 :is-active="editorInstance?.isActive('heading', { level: 1 })"
                                 @click="editorInstance?.chain().focus().toggleHeading({ level: 1 }).run()"
                                 class="toolbar-button">
                                 <FontAwesomeIcon :icon="faH1" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('heading')" label="Heading 2"
+                            <TiptapToolbarButton v-if="toogle.includes('heading2')" label="Heading 2"
                                 :is-active="editorInstance?.isActive('heading', { level: 2 })"
                                 @click="editorInstance?.chain().focus().toggleHeading({ level: 2 }).run()"
                                 class="toolbar-button">
                                 <FontAwesomeIcon :icon="faH2" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('heading')" label="Heading 3"
+                            <TiptapToolbarButton v-if="toogle.includes('heading3')" label="Heading 3"
                                 :is-active="editorInstance?.isActive('heading', { level: 3 })"
                                 @click="editorInstance?.chain().focus().toggleHeading({ level: 3 }).run()"
                                 class="toolbar-button">

@@ -36,7 +36,7 @@ trait WithMasterAssetTradeUnits
 
         $masterAsset->tradeUnits()->sync($tradeUnits);
         $masterAsset->stocks()->sync($stocks);
-
+        ModelHydrateSingleTradeUnits::run($masterAsset);
         MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
         MasterAssetHydrateMarketingWeightFromTradeUnits::run($masterAsset->id);
         MasterAssetHydrateGrossWeightFromTradeUnits::run($masterAsset->id);

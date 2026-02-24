@@ -26,7 +26,7 @@ class SplitShopifyFulfillmentRequest extends OrgAction
             $fulfillmentOrderItemsDefined = [];
             foreach ($lineItems as $fulfillmentOrderItems) {
                 $lineItem = $fulfillmentOrderItems['node'];
-                $productId = $lineItem['lineItem']['product']['id'];
+                $productId = Arr::get($lineItem, 'lineItem.product.id');
 
                 /** @var Portfolio $portfolio */
                 $portfolio = $shopifyUser->customerSalesChannel->portfolios()
@@ -111,6 +111,7 @@ class SplitShopifyFulfillmentRequest extends OrgAction
             ];
 
             list($status, $response) = $this->doPost($shopifyUser, $mutation, $variables);
+
             $body = $response['body']->toArray();
 
             $remainingFulfillmentOrder = Arr::get($body, 'data.fulfillmentOrderSplit.fulfillmentOrderSplits.0.remainingFulfillmentOrder');

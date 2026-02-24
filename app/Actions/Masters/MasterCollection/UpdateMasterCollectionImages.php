@@ -9,61 +9,22 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\UpdateCollectionImages;
+use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Helpers\Media;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Catalogue\Collection\UpdateCollectionImages;
 
 class UpdateMasterCollectionImages extends GrpAction
 {
     use WithActionUpdate;
+    use CanUpdateImages;
 
-    public function handle(MasterCollection $masterCollection, array $modelData, bool $updateDependants = false)
+    public function handle(MasterCollection $masterCollection, array $modelData, bool $updateDependants = false): MasterCollection
     {
-        $imageTypeMapping = [
-            'image_id' => 'main',
-        ];
-
-        $imageKeys = collect($imageTypeMapping)
-            ->keys()
-            ->filter(fn ($key) => Arr::exists($modelData, $key))
-            ->toArray();
-
-        foreach ($imageKeys as $imageKey) {
-            $mediaId = $modelData[$imageKey];
-
-            if ($mediaId === null) {
-                $masterCollection->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                    ->updateExistingPivot(
-                        $masterCollection->images()
-                            ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                            ->first()?->id,
-                        ['sub_scope' => null]
-                    );
-            } else {
-                $media = Media::find($mediaId);
-
-                if ($media) {
-                    $masterCollection->images()
-                        ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                        ->updateExistingPivot(
-                            $masterCollection->images()
-                                ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                                ->first()?->id,
-                            ['sub_scope' => null]
-                        );
-
-                    $masterCollection->images()->updateExistingPivot(
-                        $media->id,
-                        ['sub_scope' => $imageTypeMapping[$imageKey]]
-                    );
-                }
-            }
-
-        }
+        $this->updateImages($masterCollection, $modelData);
 
         $this->update($masterCollection, $modelData);
 
@@ -83,7 +44,7 @@ class UpdateMasterCollectionImages extends GrpAction
     public function updateDependants(MasterCollection $seedMasterCollection, array $modelData): void
     {
         foreach ($seedMasterCollection->childrenCollections as $collection) {
-            UpdateCollectionImages::run($collection, $modelData, false);
+            UpdateCollectionImages::run($collection, $modelData);
         }
     }
 

@@ -118,7 +118,9 @@ class StoreOrderFromShopify extends OrgAction
      */
     public function digestShopifyCustomerClient(ShopifyUser $shopifyUser, array $shopifyOrderData): CustomerClient
     {
-        $reference = (string) Arr::get($shopifyOrderData, 'customer.id');
+        $receiverDetail = Arr::get($shopifyOrderData, 'shipping_address');
+
+        $reference = trim(Arr::get($receiverDetail, 'firstName') . ' ' . Arr::get($receiverDetail, 'lastName'));
 
         $customerClientID = DB::table('customer_clients')
             ->select('id')
@@ -133,20 +135,21 @@ class StoreOrderFromShopify extends OrgAction
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, [
                 'reference'    => $reference,
                 'email'        => Arr::get($shopifyOrderData, 'customer.email'),
-                'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.firstName').' '.Arr::get($shopifyOrderData, 'customer.lastName')),
-                'phone'        => Arr::get($shopifyOrderData, 'customer.phone'),
-                'address'      => $deliveryAddress
+                'contact_name' => Arr::get($receiverDetail, 'firstName').' '.Arr::get($receiverDetail, 'lastName'),
+                'phone'        => Arr::get($receiverDetail, 'phone'),
+                'address'      => $deliveryAddress,
+                'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
             ]);
         } else {
             $customerClient = CustomerClient::find($customerClientID->id);
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
                 'email'        => Arr::get($shopifyOrderData, 'customer.email'),
-                'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.firstName').' '.Arr::get($shopifyOrderData, 'customer.lastName')),
-                'phone'        => Arr::get($shopifyOrderData, 'customer.phone'),
-                'address'      => $deliveryAddress
+                'contact_name' => Arr::get($receiverDetail, 'firstName').' '.Arr::get($receiverDetail, 'lastName'),
+                'phone'        => Arr::get($receiverDetail, 'phone'),
+                'address'      => $deliveryAddress,
+                'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
             ]);
         }
-
 
         return $customerClient;
     }

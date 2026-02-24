@@ -32,7 +32,7 @@ const onOpenGallery = (index: number) => {
 </script>
 
 <template>
-  <div class="bg-white" :style="getStyles(properties)">
+  <div class="bg-white" :style="getStyles(properties)" :id="fieldValue?.id ? fieldValue?.id  : 'gallery'"  component="gallery" >
     <div class="w-full">
 
 

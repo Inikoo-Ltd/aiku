@@ -20,7 +20,6 @@ import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
-import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -60,7 +59,6 @@ const newMessage = ref("")
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
 
-const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 // file upload
 const imageInput = ref<HTMLInputElement>()
 const fileInput = ref<HTMLInputElement>()
@@ -396,7 +394,6 @@ const initSocket = () => {
             message.sender_type !== "agent" &&
             !notifiedMessageIds.has(message.id)
         ) {
-            playNotificationSoundFile(soundUrl)
             notifiedMessageIds.add(message.id)
         }
 
@@ -717,7 +714,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     sendTypingStatus(false)
                 }
             " @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
-                class="flex-1 resize-none border rounded-lg px-3 py-2 text-sm leading-5 focus:outline-none" />
+                class="flex-1 resize-none border rounded-lg px-3 py-3 text-sm leading-5 focus:outline-none" />
 
             <Button @click="sendMessage" :icon="faPaperPlane"></Button>
         </footer>

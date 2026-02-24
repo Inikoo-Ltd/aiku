@@ -24,6 +24,7 @@ class GetProductImages
         return [
             'id'                  => $product->id,
             'bucket_images'       => $product->bucket_images,
+            'editable'            => false,
             'images_category_box' => $this->getImagesData($product),
             'images_update_route' => [
                 'method'     => 'patch',

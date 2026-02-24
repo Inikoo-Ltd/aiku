@@ -52,12 +52,14 @@ class ShowOfferCampaign extends OrgAction
     {
         return match ($offerCampaign->type) {
             OfferCampaignTypeEnum::VOLUME_DISCOUNT => $this->getVolumeDiscountHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::FIRST_ORDER     => $this->getFirstOrderHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::FIRST_ORDER => $this->getFirstOrderHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::CUSTOMER_OFFERS => $this->getCustomerOffersHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::SHOP_OFFERS     => $this->getShopOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::SHOP_OFFERS => $this->getShopOffersHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::CATEGORY_OFFERS => $this->getCategoryOffersHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::PRODUCT_OFFERS  => $this->getProductOffersHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::DISCRETIONARY   => $this->getDiscretionaryHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::PRODUCT_OFFERS => $this->getProductOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::DISCRETIONARY => $this->getDiscretionaryHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::SHIPPING => $this->getDiscretionaryHtmlResponse($offerCampaign, $request), // todo make its own action
+
         };
     }
 

@@ -13,6 +13,7 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
+import { faExternalLink } from "@fal"
 
 library.add(faImage, faOctopusDeploy)
 
@@ -32,6 +33,7 @@ const props = defineProps<{
         parameters: []
     }
     products?: any
+    webpage_canonical_url?: string
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -60,6 +62,11 @@ const component = computed(() => {
                     color="#4B0082"
                 />
             </Link>
+    </template>
+        <template #other>
+            <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
+                <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
+            </a>
         </template>
     </PageHeading>
 

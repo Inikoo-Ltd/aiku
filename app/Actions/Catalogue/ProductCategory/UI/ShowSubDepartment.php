@@ -14,6 +14,7 @@ use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\ProductCategoryTimeSeriesResource;
@@ -39,6 +40,9 @@ class ShowSubDepartment extends OrgAction
 
     public function handle(ProductCategory $subDepartment): ProductCategory
     {
+        if ($subDepartment->type != ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            abort(404);
+        }
         return $subDepartment;
     }
 

@@ -185,7 +185,7 @@ const baseUrl = `${window.location.origin}/`
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'" id="product-iris-2-ecom"
+    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-iris-2-ecom'"  component="product-iris-2-ecom"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',

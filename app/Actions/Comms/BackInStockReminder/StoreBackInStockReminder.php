@@ -9,6 +9,7 @@
 
 namespace App\Actions\Comms\BackInStockReminder;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePendingBackInStockReminders;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\Comms\BackInStockReminder;
@@ -48,6 +49,9 @@ class StoreBackInStockReminder extends OrgAction
         $snapshotModelData = $modelData;
         data_set($snapshotModelData, 'customer_id', $customer->id);
         data_set($snapshotModelData, 'back_in_stock_reminder_id', $reminder->id);
+
+        ShopHydratePendingBackInStockReminders::dispatch($this->shop);
+
         // create back in stock reminder snapshot
         StoreBackInStockReminderSnapshot::run($snapshotModelData);
 

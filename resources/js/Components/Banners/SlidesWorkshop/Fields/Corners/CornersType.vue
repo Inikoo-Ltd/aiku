@@ -1,290 +1,247 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
-import { ref, watch, computed } from 'vue'
-import Input from '@/Components/Banners/SlidesWorkshop/Fields/PrimitiveInput.vue'
-import Colorpicker from '@/Components/Banners/SlidesWorkshop/Fields/ColorPicker.vue'
-import Radio from '@/Components/Banners/SlidesWorkshop/Fields/PrimitiveRadio.vue'
-import { get, cloneDeep, set } from 'lodash-es'
-import { faLock } from '@fas'
-import { faTimes } from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { ref, watch, computed, inject } from "vue"
+import { get, set, cloneDeep } from "lodash-es"
+import { faLock } from "@fas"
+import { faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { getComponent } from "@/Composables/getBannerFields"
+
 library.add(faLock, faTimes)
-const emits = defineEmits(['clear']);
-const props = defineProps<{
-    section: any
-    fieldData : any
+
+const emits = defineEmits<{
+  (e: "update:modelValue", value: any): void
+  (e: "clear", value: any): void
 }>()
 
+const props = defineProps<{
+  modelValue: any
+  fieldData: any
+}>()
+
+const section = computed({
+  get: () => props.modelValue,
+  set: (val) => {
+    emits("update:modelValue", cloneDeep(val))
+  },
+})
+
+const screenView = inject<any>("screenView")
+
 const optionType = [
-    {
-        label: 'Corner text',
-        value: 'cornerText',
-        fields: [
-            {
-                name: 'title',
-                type: 'input',
-                label: trans('title'),
-                value: null,
-                placeholder: "Holiday Sales!"
-            },
-            {
-                name: 'subtitle',
-                type: 'input',
-                label: trans('subtitle'),
-                value: null,
-                placeholder: "Holiday sales up to 80% all items."
-            },
-            {
-                name: 'linkOfText',
-                type: 'input',
-                label: trans('Link'),
-                value: null,
-                defaultValue : 'https://',
-                placeholder: "https://www.example.com"
-            },
-            {
-                name: 'width',
-                type: 'number',
-                label: trans('width'),
-                value: 100,
-                placeholder: "100",
-                suffix: "%",
-            },
-            {
-                name: 'color',
-                type: 'colorPicker',
-                label: trans('text color'),
-                icon: 'far fa-text',
-                value: null
-            },
-            {
-                name: "fontSize",
-                type: "radio",
-                label: trans("Font Size"),
-                value: null,
-                defaultValue: { fontTitle: "text-[25px] lg:text-[44px]", fontSubtitle: "text-[12px] lg:text-[20px]" },
-                options: [
-                    { label: "Extra Small", value: {
-                            fontTitle: "text-[13px] lg:text-[21px]",
-                            fontSubtitle: "text-[8px] lg:text-[12px]"
-                        }
-                    },
-                    {
-                        label: "Small",
-                        value: {
-                            fontTitle: "text-[18px] lg:text-[32px]",
-                            fontSubtitle: "text-[10px] lg:text-[15px]"
-                        }
-                    },
-                    {
-                        label: "Normal",
-                        value: {
-                            fontTitle: "text-[25px] lg:text-[44px]",
-                            fontSubtitle: "text-[12px] lg:text-[20px]"
-                        }
-                    },
-                    {
-                        label: "Large", value: {
-                            fontTitle: "text-[30px] lg:text-[60px]",
-                            fontSubtitle: "text-[15px] lg:text-[25px]"
-                        }
-                    },
-                    {
-                        label: "Extra Large",
-                        value: {
-                            fontTitle: "text-[40px] lg:text-[70px]",
-                            fontSubtitle: "text-[20px] lg:text-[30px]"
-                        },
-                    },
-                ],
-            },
-        ]
-    },
-    {
-        label: 'Link button',
-        value: 'linkButton',
-        fields: [
-            {
-                name: 'text',
-                type: 'input',
-                label: trans('Title'),
-                value: null,
-                placeholder: "Buy Now!"
-            },
-            {
-                name: 'target',
-                type: 'input',
-                label: trans('Link'),
-                value: 'null',
-                defaultValue : 'https://',
-                placeholder: 'https://www.example.com'
-                // info : 'use https:// or http://',
-                // rules:{
-                //     pattern : '^(http|https)://',
-                //     message : 'please input https:// or http://'
-                // }
-            },
-            {
-                name: 'button_color',
-                type: 'colorPicker',
-                label: trans('Button color'),
-                value: 'rgb(244, 63, 94)'
-            },
-            {
-                name: 'text_color',
-                type: 'colorPicker',
-                label: trans('Text color'),
-                icon: 'far fa-text',
-                value: 'rgb(244, 63, 94)'
-            },
-        ]
-    },
-    // {
-    //     label: 'Slide Controls',
-    //     value: "slideControls",
-    //     fields: [],
-    // },
-    {
-        label: 'Ribbon',
-        value: "ribbon",
-        fields: [
-            {
-                name: 'text',
-                type: 'input',
-                label: trans('Text'),
-                value: null,
-                placeholder: 'Holiday Sales!'
-            },
-            {
-                name: 'ribbon_color',
-                type: 'colorPicker',
-                label: trans('Ribbon color'),
-                value: 'rgb(244, 63, 94)'
-            },
-            {
-                name: 'text_color',
-                type: 'colorPicker',
-                label: trans('Text color'),
-                icon: 'far fa-text',
-                value: 'rgb(0, 0, 0)'
-            },
-        ]
-    },
+  {
+    label: "Corner text",
+    value: "cornerText",
+    fields: [
+      { name: ["data", "title"], type: "input", label: trans("Title"), placeholder: "Holiday Sales!" },
+      { name: ["data", "subtitle"], type: "input", label: trans("Subtitle"), placeholder: "Holiday sales up to 80% all items." },
+      { name: ["data", "linkOfText"], type: "input", label: trans("Link"), defaultValue: "https://", placeholder: "https://www.example.com" },
+      { name: ["data", "width"], type: "number", label: trans("Width"), placeholder: "100", suffix: "%" },
+      { name: ["data", "color"], type: "colorpicker", label: trans("Text color") },
+      {
+        name: "FontSize",
+        type: "radio",
+        label: trans("Font Size"),
+        defaultValue: { fontTitle: "text-[25px] lg:text-[44px]", fontSubtitle: "text-[12px] lg:text-[20px]" },
+        options: [
+          { label: "Extra Small", value: { fontTitle: "text-[13px] lg:text-[21px]", fontSubtitle: "text-[8px] lg:text-[12px]" } },
+          { label: "Small", value: { fontTitle: "text-[18px] lg:text-[32px]", fontSubtitle: "text-[10px] lg:text-[15px]" } },
+          { label: "Normal", value: { fontTitle: "text-[25px] lg:text-[44px]", fontSubtitle: "text-[12px] lg:text-[20px]" } },
+          { label: "Large", value: { fontTitle: "text-[30px] lg:text-[60px]", fontSubtitle: "text-[15px] lg:text-[25px]" } },
+          { label: "Extra Large", value: { fontTitle: "text-[40px] lg:text-[70px]", fontSubtitle: "text-[20px] lg:text-[30px]" } },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Link button",
+    value: "linkButton",
+    fields: [
+      { name: ["data", "text"], type: "input", label: trans("Title"), placeholder: "Buy Now!" },
+      { name: ["data", "target"], type: "input", label: trans("Link"), defaultValue: "https://", placeholder: "https://www.example.com" },
+      { name: ["data", "button_color"], type: "colorpicker", label: trans("Button color"), defaultValue: "rgb(244, 63, 94)" },
+      { name: ["data", "text_color"], type: "colorpicker", label: trans("Text color"), defaultValue: "rgb(255,255,255)" },
+    ],
+  },
+  {
+    label: "Ribbon",
+    value: "ribbon",
+    fields: [
+      { name: ["data", "text"], type: "input", label: trans("Text"), placeholder: "Holiday Sales!" },
+      { name: ["data", "ribbon_color"], type: "colorpicker", label: trans("Ribbon color") },
+      { name: ["data", "text_color"], type: "colorpicker", label: trans("Text color") },
+    ],
+  },
 ]
 
-
-
-const clickTypeCorner = (index, value) => {
-    activeType.value = value
-    props.section.valueForm = {
-        ...props.section.valueForm,
-        data: get(props.section,['valueForm','temporaryData',value.value],null),
-        type: value.value
-    }
-}
-
-const onUpdateFieldCorner =(field, newValue)=>{
-   set(props.section,["valueForm","temporaryData",activeType.value.value,field.name],newValue)
-   set(props.section,["valueForm","data",field.name],newValue)
-}
-
-
 const filterType = () => {
-    let FinalData = optionType
-    if (props.fieldData?.optionType) {
-        const data = optionType.filter((item) => {
-            // Check if the item's value is present in the optionType array
-            return props.fieldData?.optionType.includes(item.value);
-        });
-        FinalData = data;
-    }
-    if(props.section.id == "topMiddle" || props.section.id == "bottomMiddle" ){
-       const index = FinalData.findIndex((item)=>item.value == 'ribbon')
-       if(index) FinalData.splice(index,1)
-    }
-    return FinalData
+  let FinalData = [...optionType]
+
+  if (props.fieldData?.optionType) {
+    FinalData = optionType.filter((item) =>
+      props.fieldData.optionType.includes(item.value)
+    )
+  }
+
+  if (section.value?.id === "topMiddle" || section.value?.id === "bottomMiddle") {
+    const index = FinalData.findIndex((item) => item.value === "ribbon")
+    if (index !== -1) FinalData.splice(index, 1)
+  }
+
+  return FinalData
 }
 
 const Type = ref(filterType())
 
-const onClear =()=>{
-    emits("clear",props.section);
-    set(props.section,["valueForm"],null)
-}
-
-const findDefaultActive=(data)=>{
-    const nextactive = Type.value.find((item)=>item.value == get(props.section,['valueForm','type']))
-    return nextactive
+const findDefaultActive = () => {
+  return Type.value.find(
+    (item) => item.value === get(section.value, "type")
+  )
 }
 
 const activeType = ref(findDefaultActive())
 
-watch(props.section, (newValue) => {
-    Type.value = filterType()
-    const nextactive = Type.value.find((item)=>item.value == get(newValue,['valueForm','type']))
-    activeType.value = nextactive
-})
+const clickTypeCorner = (index: number, value: any) => {
+  const current = cloneDeep(section.value || {})
 
+  const prevType = current?.type
+  const tempStore = current?.temporaryData || {}
+
+  // simpan hanya data dari type sebelumnya
+  if (prevType) {
+    tempStore[prevType] = cloneDeep(current?.data || {})
+  }
+
+  // ambil data dari type baru jika ada
+  const nextData = tempStore[value.value]
+    ? cloneDeep(tempStore[value.value])
+    : {}
+
+  const nextSection = {
+    ...current,
+    type: value.value,
+    data: nextData,
+    temporaryData: tempStore,
+  }
+
+  activeType.value = value
+  section.value = nextSection
+}
+
+
+const onClear = () => {
+  emits("clear", section.value)
+}
+
+const getValue = (fieldData: any) => {
+  const rawVal = get(props.modelValue, fieldData.name)
+  const view = screenView?.value
+
+  if (!rawVal) return null
+  if (!view) return rawVal
+
+  return rawVal?.[view] ?? rawVal?.desktop ?? rawVal ?? null
+}
+
+const setValue = (fieldData: any, value: any) => {
+  const cloned = cloneDeep(props.modelValue || {})
+  const fieldName = fieldData.name
+
+  if (Array.isArray(fieldData.useIn) && fieldData.useIn.length > 0) {
+    const responsiveValue = get(cloned, fieldName) || {}
+
+    set(cloned, fieldName, {
+      ...responsiveValue,
+      [screenView?.value]: value,
+    })
+
+    emits("update:modelValue", cloned)
+    return
+  }
+
+  if (Array.isArray(fieldName)) {
+    set(cloned, fieldName, value)
+  } else {
+    cloned[fieldName] = value
+  }
+
+  emits("update:modelValue", cloned)
+}
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    Type.value = filterType()
+    activeType.value = Type.value.find(
+      (item) => item.value === get(newValue, "type")
+    )
+  },
+  { deep: true, immediate: true }
+)
 </script>
 
 <template>
-    <!-- Choose: The type of component (after select Corners) -->
-    <div class="h-full">
-        <!-- Choose: Card -->
-        <div class="w-full flex">
-            <span class="isolate flex w-full rounded-md gap-x-2">
-                <!-- Select the type of Corner: Text, Link Button, Slide Controls, Ribbon -->
-                <button v-for="(item, index) in Type" :key="item + section.id + index" type="button"
-                    @click="clickTypeCorner(index, item)" :class="[
-                        'py-2', 'px-4', 'rounded',
-                        get(activeType,'value') == item.value ? 'bg-gray-300 text-gray-600 ring-2 ring-gray-500' : 'hover:bg-gray-200/70 border border-gray-400'
-                    ]">
-                    {{ item.label }}
-                </button>
+  <div class="h-full flex flex-col">
 
-                <!-- Button: clear -->
-                <div v-if="get(activeType,'value')"  @click="onClear" class="px-1.5 flex items-center gap-x-1 text-red-500 hover:text-red-600 cursor-pointer" >
-                    <FontAwesomeIcon icon='fal fa-times' class='text-sm' aria-hidden='true' />
-                    <span>{{ trans('Clear') }}</span>
-                </div>
-            </span>
+    <!-- TYPE SELECTOR -->
+    <div class="w-full">
+      <div class="flex items-center gap-2 flex-wrap">
+
+        <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+          <button
+            v-for="(item, index) in Type"
+            :key="item.value + modelValue?.id + index"
+            type="button"
+            @click="clickTypeCorner(index, item)"
+            :class="[
+              'px-4 py-2 text-sm rounded-md transition-all duration-150',
+              get(activeType, 'value') === item.value
+                ? 'bg-white shadow-sm text-gray-900 border border-gray-300'
+                : 'text-gray-500 hover:text-gray-800 hover:bg-gray-200/70'
+            ]"
+          >
+            {{ item.label }}
+          </button>
         </div>
 
-        <!-- Field -->
-        <div class="mt-6 block" v-if="activeType">
-            <dl v-for="(field, index ) in activeType.fields" :key="field.name + index"
-                class="pb-4 flex flex-col max-w-lg gap-1">
-                <dt class="text-sm font-medium text-gray-500">
-                    <div class="inline-flex items-start leading-none">
-                        <span>{{ field.label }}</span>
-                    </div>
-                </dt>
-                <dd class="sm:col-span-2">
-                    <!-- Available Field on Corners -->
-                    <div class="mt-1 flex text-sm text-gray-700 sm:mt-0">
-                        <div v-if="field.type == 'input' || field.type == 'number'" class="relative flex-grow">
-                            <Input :key="field.label + section.id + index"
-                                :value="get(section, ['valueForm', 'data', field.name],get(section, ['valueForm', 'temporaryData', activeType.value, field.name]))"
-                                :fieldData="{...field,...get(section, ['valueForm', 'temporaryData', activeType.value])}" 
-                                @onChange="(newValue)=>onUpdateFieldCorner(field, newValue)" />
-                        </div>
-                        <div v-if="field.type == 'colorPicker'" class="relative flex-grow">
-                            <Colorpicker :key="field.label + section.id + index"
-                                :color="get(section, ['valueForm', 'data', field.name],get(section, ['valueForm', 'temporaryData', activeType.value, field.name]))"
-                                :fieldData="{...field,...get(section, ['valueForm', 'temporaryData', activeType.value])}" 
-                                @onChange="(newValue)=>onUpdateFieldCorner(field, newValue)"
-                                />
-                        </div>
-                        <div v-if="field.type == 'radio'" class="relative flex-grow">
-                            <Radio :key="field.label + index + index"
-                                :radioValue="get(section, ['valueForm', 'data', field.name],get(section, ['valueForm', 'temporaryData', activeType.value, field.name]))"
-                                :fieldData="{ options: field.options, defaultValue: field.defaultValue }" 
-                                @onChange="(newValue)=>onUpdateFieldCorner(field, newValue)"/>
-                        </div>
-                    </div>
-                </dd>
-        </dl>
-    </div>
-</div></template>
+        <!-- CLEAR -->
+        <button
+          v-if="get(activeType, 'value')"
+          @click="onClear"
+          class="ml-1 flex items-center gap-1 text-xs text-red-500 hover:text-red-600 transition"
+        >
+          <FontAwesomeIcon icon="fal fa-times" />
+          <span>{{ trans('Clear') }}</span>
+        </button>
 
+      </div>
+    </div>
+
+    <!-- FIELDS -->
+    <div v-if="activeType" class="mt-6 space-y-5">
+
+      <div
+        v-for="(field, index) in activeType.fields"
+        :key="field.name + index"
+        class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow transition"
+      >
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          {{ field.label }}
+        </label>
+
+        <div class="w-full">
+          <component
+            :is="getComponent(field['type'])"
+            :model-value="getValue(field)"
+            @update:modelValue="setValue(field, $event)"
+            :fieldData="field"
+            :key="field.type + index + field.label"
+          />
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</template>

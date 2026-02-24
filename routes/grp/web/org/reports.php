@@ -16,6 +16,8 @@ use App\Actions\Accounting\SageInvoices\ExportSageInvoices;
 use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
 use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
+use App\Actions\Inventory\Reports\DownloadPackagingReport;
+use App\Actions\Inventory\Reports\UI\IndexPackagingReport;
 use App\Actions\Reports\PostRoomRoutes;
 use App\Actions\Reports\ShowOrganisationSalesReport;
 use App\Actions\UI\Reports\IndexReports;
@@ -40,6 +42,9 @@ Route::get('/sage-invoices/export', ExportSageInvoices::class)->name('sage-invoi
 
 Route::get('/montana-invoices', IndexMontanaInvoicesReport::class)->name('montana-invoices');
 Route::get('/montana-invoices/export', ExportMontanaInvoices::class)->name('montana-invoices.export');
+
+Route::get('/packaging', IndexPackagingReport::class)->name('packaging');
+Route::get('/packaging/download', DownloadPackagingReport::class)->name('packaging.download');
 
 Route::name("sent_emails.")->prefix('sent-emails')
     ->group(function () {

@@ -13,6 +13,7 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Analytics\WebUserRequest;
+use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Snapshot;
@@ -104,10 +105,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, ModelHasWebBlocks> $modelHasWebBlocks
  * @property-read Organisation $organisation
  * @property-read Webpage|null $parent
+ * @property-read \App\Models\Web\Redirect|null $redirect
  * @property-read Webpage|null $redirectWebpage
  * @property-read \App\Models\Web\Redirect|null $redirectedTo
  * @property-read \App\Models\Helpers\Media|null $seoImage
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read Shop $shop
  * @property-read Collection<int, Snapshot> $snapshots
  * @property-read \App\Models\Web\WebpageStats|null $stats
  * @property-read Collection<int, \App\Models\Web\WebpageTimeSeries> $timeSeries
@@ -355,6 +357,11 @@ class Webpage extends Model implements Auditable, HasMedia
     public function webBlockHistories(): HasMany
     {
         return $this->hasMany(WebBlockHistory::class);
+    }
+
+    public function redirect(): BelongsTo
+    {
+        return $this->belongsTo(Redirect::class);
     }
 
 }

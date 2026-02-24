@@ -24,6 +24,14 @@ class UploadImagesToBanner extends OrgAction
     {
         $this->initialisationFromShop($banner->shop, $request);
 
-        return $this->handle($banner->group, 'banner', $this->validatedData);
+        $medias = $this->handle($banner->group, 'banner', $this->validatedData);
+
+        $banner->update([
+            'compiled_layout' => $banner->unpublishedSnapshot->compiledLayout()
+        ]);
+
+        UpdateBannerImage::run($banner);
+
+        return $medias;
     }
 }

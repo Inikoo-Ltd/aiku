@@ -2,6 +2,7 @@
 import { onMounted } from "vue"
 import { router } from "@inertiajs/vue3"
 import { Head } from "@inertiajs/vue3"
+import { Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -100,13 +101,13 @@ onMounted(() => {
 
 		<template #cell(action)="{ item }">
 			<div class="flex items-center gap-2">
-				<a :href="editRoute(item.id)">
+				<Link :href="editRoute(item.id)">
 					<Button
 						v-tooltip="trans('Edit Agent')"
 						type="secondary"
 						icon="fa-pencil"
 						size="s" />
-				</a>
+				</Link>
 				<ModalConfirmationDelete
 					:routeDelete="{
 						name: 'grp.org.crm.agents.delete',

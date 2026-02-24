@@ -63,6 +63,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property string|null $source_alt_id
  * @property string|null $source_alt2_id
+ * @property bool $is_second_wave_enabled
+ * @property bool $is_second_wave
+ * @property int|null $parent_mailshot_id
+ * @property int $send_delay_hours
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\Comms\EmailDeliveryChannel> $channels
  * @property-read Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
@@ -71,7 +75,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read Model|\Eloquent $parent
+ * @property-read Mailshot|null $parentMailshot
  * @property-read Collection<int, \App\Models\Comms\MailshotRecipient> $recipients
+ * @property-read Mailshot|null $secondWave
  * @property-read Shop|null $shop
  * @property-read \App\Models\Comms\MailshotStats|null $stats
  * @method static \Database\Factories\Comms\MailshotFactory factory($count = null, $state = [])
@@ -198,6 +204,13 @@ class Mailshot extends Model implements Auditable
         return $this->morphMany(EmailDeliveryChannel::class, 'model');
     }
 
+    public function secondWave(): HasOne
+    {
+        return $this->hasOne(Mailshot::class, 'parent_mailshot_id');
+    }
 
-
+    public function parentMailshot(): BelongsTo
+    {
+        return $this->belongsTo(Mailshot::class, 'parent_mailshot_id');
+    }
 }

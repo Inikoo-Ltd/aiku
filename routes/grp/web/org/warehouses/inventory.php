@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrgStock;
 use App\Actions\Fulfilment\Pallet\UI\EditPallet;
 use App\Actions\Fulfilment\Pallet\UI\IndexDamagedPallets;
 use App\Actions\Fulfilment\Pallet\UI\IndexLostPallets;
@@ -59,6 +60,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
+            Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
 
         });
     });
@@ -71,6 +73,8 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
+            Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
+
         });
     });
 
@@ -82,6 +86,8 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
+            Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
+
         });
     });
 
@@ -93,6 +99,8 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
+            Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
+
         });
     });
 
@@ -104,6 +112,8 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
+            Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
+
         });
     });
 
@@ -115,6 +125,8 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
+            Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
+
         });
     });
 
@@ -126,6 +138,8 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
+            Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
+
         });
     });
 });

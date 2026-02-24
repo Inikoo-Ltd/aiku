@@ -29,13 +29,9 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
     {
         $layout = Arr::pull($modelData, 'layout');
 
-
-
         list($layout, $slides) = ParseBannerLayout::run($layout);
 
-
         data_set($modelData, 'layout', $layout);
-
 
         if ($slides) {
             $existingSlides = Slide::where('snapshot_id', $snapshot->id)->get()->pluck('ulid')->toArray();
@@ -49,17 +45,12 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
 
             foreach ($slides as $ulid => $slideData) {
                 $slide = Slide::where('ulid', $ulid)->first();
+
                 if ($slide) {
-                    UpdateSlide::run(
-                        $slide,
-                        Arr::only($slideData, ['layout', 'imageData'])
-                    );
+                    UpdateSlide::run($slide, $slideData);
                 } else {
                     data_set($slideData, 'ulid', $ulid);
-                    StoreSlide::run(
-                        snapshot: $snapshot,
-                        modelData: $slideData,
-                    );
+                    StoreSlide::run(snapshot: $snapshot, modelData: $slideData);
                 }
             }
         }
@@ -81,7 +72,6 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
         return $banner;
     }
 
-
     public function rules(): array
     {
         return [
@@ -91,11 +81,7 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $this->set(
-            'layout',
-            $this->only(['type', 'delay', 'common', 'components', 'navigation'])
-        );
-
+        $this->set('layout', $this->only(['type', 'delay', 'common', 'components', 'navigation']));
     }
 
     public function asController(Banner $banner, ActionRequest $request): Banner

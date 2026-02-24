@@ -16,7 +16,7 @@ import Overview2Blueprint from "@/Components/CMS/Webpage/Overview2/Blueprint"
 import OverviewBlueprint from "@/Components/CMS/Webpage/Overview/Blueprint"
 import TextBlueprint from "@/Components/CMS/Webpage/Text/Blueprint"
 import ScriptBlueprint from "@/Components/CMS/Webpage/Script/Blueprint"
-import WowsbarBannerBlueprint from "@/Components/CMS/Webpage/WowsbarBanner/Blueprint"
+import { blueprint as WowsbarBannerBlueprint  } from "@/Components/CMS/Webpage/WowsbarBanner/Blueprint"
 import PricingBlueprint from "@/Components/CMS/Webpage/Pricing/Blueprint"
 import TimelineBlueprint from "@/Components/CMS/Webpage/Timeline/Blueprint"
 import TextColumn from "@/Components/CMS/Webpage/TextColumn/Blueprint"
@@ -29,7 +29,6 @@ import ColumnLayout3Blueprint from "@/Components/CMS/Webpage/Column3/Blueprint"
 import ColumnLayout4Blueprint from "@/Components/CMS/Webpage/Column4/Blueprint"
 import DisclosureBlueprint from "@/Components/CMS/Webpage/Disclosure/Blueprint"
 import FamilyBluprint from "@/Components/CMS/Webpage/Family-1/Blueprint"
-import DepartmentBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
 import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blueprint"
@@ -39,16 +38,20 @@ import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint
 import ProductsList2Blueprint from '@/Components/CMS/Webpage/Products2/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
-import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
 import Families2Blueprint from '@/Components/CMS/Webpage/Families2/Blueprint'
+import Families3Blueprint from '@/Components/CMS/Webpage/Families3/Blueprint'
 import CtaCarousel from '@/Components/CMS/Webpage/CarouselCta/Blueprint'
 import CarouselImageBackgroundIrisBlueprint from "@/Components/CMS/Webpage/CarouselImageBackground/Blueprint"
 import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBestseller"
 import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/Blueprint"
 import TimelineIris2 from "@/Components/CMS/Webpage/Step2/Blueprint"
 import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
+import CollectionDescription from '@/Components/CMS/Webpage/CollectionDescription/Blueprint'
+import DepartmentDescription from "@/Components/CMS/Webpage/DepartmentDescription/Blueprint"
+import SubDepartmentDesciption from "@/Components/CMS/Webpage/SubDepartmentDesciption/Blueprint"
+
 
 import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
 import Product1DSBlueprint from '@/Components/CMS/Webpage/Product1/Dropshipping/Blueprint'
@@ -63,7 +66,7 @@ import SliderBlueprint  from "@/Components/CMS/Webpage/Slider-1/Blueprint"
 
 
 
-export const getBlueprint = (componentName: string, data?: object) => {
+export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
 		// topbar
 		"top-bar-1-fulfilment": Topbar1Fulfilment.blueprint,
@@ -80,20 +83,20 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		// footer
 		"footer-1": Footer1Blueprint.blueprint,
 
-		// departments
-		"departments": DepartmentBlueprint.blueprint,
-		"department-1": DepartmentBlueprint.blueprint,
-
 		// sub-department
 		"sub-departments-1": SubDepartment1Blueprint.blueprint,
 		"sub-departments-2": SubDepartment2Blueprint.blueprint,
 
 		// family
-		"family-1": FamilyBluprint.blueprint,
+		'collection-description-1' : CollectionDescription.blueprint,
+		'department-description-1' : DepartmentDescription.blueprint,
+		'sub-department-description-1' : SubDepartmentDesciption.blueprint,
+		'family-1': FamilyBluprint.blueprint,
 
 		// families list
 		"families-1": Families1Blueprint.blueprint,
 		"families-2": Families2Blueprint.blueprint,
+		"families-3": Families3Blueprint.blueprint,
 
 		// products list
 		"products-1": ProductsList1Blueprint.blueprint,
@@ -116,7 +119,8 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		'recommendation-customer-recently-bought-1': () => RecommendersCustomerRecentlyBought(data).blueprint,
 
 		// misc
-		"banner": WowsbarBannerBlueprint.blueprint,
+		/* "banner": WowsbarBannerBlueprint.blueprint, */
+		"banner": WowsbarBannerBlueprint(data,id).blueprint,
 		"bento-grid-1": BentoGridBlueprint.blueprint,
 		"bricks": GalleryBlueprint.blueprint,
 		"cta1": CTABlueprint.blueprint,
@@ -142,7 +146,6 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"carousel-1": Carousel1Blueprint.blueprint,
 		"cta-video-1": CTAVideo1Blueprint.blueprint,
 		"video-1": VideoBlueprint.blueprint,
-		"collections-1": CollectionBluprint.blueprint,
 		"user-subscribe": UserSubscribe.blueprint,
 		"cta4": Cta4Blueprint.blueprint,
 		'carousel-cta' : CtaCarousel.blueprint,

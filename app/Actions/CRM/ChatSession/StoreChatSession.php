@@ -14,6 +14,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
+use App\Models\CRM\WebUser;
 
 class StoreChatSession
 {
@@ -74,6 +75,10 @@ class StoreChatSession
 
             $chatSession = ChatSession::create($chatSessionData);
 
+            if ($chatSession->web_user_id) {
+                $this->storeMetadata($chatSession, $chatSession->web_user_id);
+            }
+
             $this->logSessionOpen($chatSession, $modelData, $isGuest, $guestIdentifier);
 
             DB::commit();
@@ -90,6 +95,31 @@ class StoreChatSession
             throw $e;
         }
     }
+
+    private function storeMetadata(ChatSession $chatSession, int $webUserId): void
+    {
+        $webUser = WebUser::find($webUserId);
+        $old = $chatSession->metadata ?? [];
+        $new = [
+            'name'  => $old['name']
+                ?? ($webUser?->customer->contact_name
+                    ?? $webUser?->customer->name
+                    ?? null),
+
+            'email' => $old['email']
+                ?? ($webUser?->customer->email
+                    ?? $webUser?->email
+                    ?? null),
+
+            'phone' => $old['phone']
+                ?? ($webUser?->customer->phone ?? null),
+        ];
+
+        $chatSession->update([
+            'metadata' => $new,
+        ]);
+    }
+
 
 
     public function jsonResponse(ChatSession $chatSession): ChatSessionResource

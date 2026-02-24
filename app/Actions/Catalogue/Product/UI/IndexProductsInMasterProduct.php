@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -41,6 +42,7 @@ class IndexProductsInMasterProduct extends OrgAction
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', 'organisations.id');
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.master_product_id', $masterAsset->id);
+        $queryBuilder->where('shops.state', '!=', ShopStateEnum::CLOSED->value);
 
         $queryBuilder
             ->defaultSort('products.code')
@@ -57,7 +59,9 @@ class IndexProductsInMasterProduct extends OrgAction
                 'products.unit',
                 'products.units',
                 'products.asset_id',
+                'products.master_product_id',
                 'products.available_quantity',
+                'products.is_for_sale',
                 'shops.name as shop_name',
                 'shops.code as shop_code',
                 'currencies.code as currency_code',

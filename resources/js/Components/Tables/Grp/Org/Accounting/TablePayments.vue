@@ -13,46 +13,55 @@ import { useLocaleStore } from "@/Stores/locale"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faSeedling, faTimes } from "@fal"
+import { inject } from "vue"
 
 library.add(faSeedling, faCheck, faTimes)
 const locale = useLocaleStore();
-
+const layout = inject('layout')
 defineProps<{
 	data: object
 	tab?: string
 }>()
 
 function paymentsRoute(payment: Payment) {
-	return route(payment.route.name, payment.route.params )
+	return route(payment.route.name, payment.route.params)
 
 }
+
+const formatReference = (payment) => {
+	if (payment?.reference) {
+		return `${payment.reference} - ${payment.id}`
+	}
+	return `${payment.id}`
+}
+
+
 </script>
 
 <template>
 	<Table :resource="data" :name="tab" class="mt-5">
 		<template #cell(reference)="{ item: payment }">
 			<div>
-				<template v-if="payment.reference">
-					<Link :href="paymentsRoute(payment)" class="primaryLink">
-						{{ payment["reference"] }} - {{ `${payment['id']}` }}
-					</Link>
-				</template>
+				<component :is="!layout.retina ? Link : 'span'" v-if="!layout.retina" :href="paymentsRoute(payment)"
+					class="primaryLink">
+					{{ formatReference(payment) }}
+				</component>
+
 				<template v-else>
-                    <Link :href="paymentsRoute(payment)" class="primaryLink">
-						{{ payment["reference"] }} {{ `${payment['id']}` }}
-					</Link>
+					{{ formatReference(payment) }}
 				</template>
 			</div>
 		</template>
+
 		<template #cell(status)="{ item }">
 			<Icon :data="item.state_icon" class="" />
 		</template>
 		<template #cell(amount)="{ item: item }">
-            <div class="text-gray-500">{{ useLocaleStore().currencyFormat( item.currency_code, item.amount)  }}</div>
-        </template>
+			<div class="text-gray-500">{{ useLocaleStore().currencyFormat(item.currency_code, item.amount) }}</div>
+		</template>
 		<template #cell(refunded)="{ item: item }">
-            <div class="text-gray-500">{{ useLocaleStore().currencyFormat( item.currency_code, item.refunded)  }}</div>
-        </template>
+			<div class="text-gray-500">{{ useLocaleStore().currencyFormat(item.currency_code, item.refunded) }}</div>
+		</template>
 
 	</Table>
 </template>

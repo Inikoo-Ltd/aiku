@@ -116,6 +116,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Media|null $favicon
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read Snapshot|null $liveFamilySnapshot
  * @property-read Snapshot|null $liveSnapshot
  * @property-read Collection<int, \App\Models\Web\WebsiteLlmsTxt> $llmsTxt
  * @property-read Media|null $logo
@@ -310,6 +311,11 @@ class Website extends Model implements Auditable, HasMedia
     public function unpublishedFamilySnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_family_snapshot_id');
+    }
+
+    public function liveFamilySnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_family_snapshot_id');
     }
 
     public function unpublishedProductSnapshot(): BelongsTo

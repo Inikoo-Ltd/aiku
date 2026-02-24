@@ -127,7 +127,7 @@ onMounted(startAutoMove)
 onBeforeUnmount(stopAutoMove)
 </script>
 <template>
-  <div id="slider" class="relative overflow-hidden">
+  <div :id="fieldValue?.id ? fieldValue?.id  : 'slider'"  component="slider" class="relative overflow-hidden">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="containerStyles">
 
       <div
@@ -203,7 +203,6 @@ onBeforeUnmount(stopAutoMove)
 
 /* hover opacity + zoom 1.5x */
 .group:hover .slider-image{
-  transform: scale(1.3);
   opacity:.55;
   z-index:5;
 }

@@ -27,7 +27,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { trans } from "laravel-vue-i18n"
-import { faTriangle, faEquals, faMinus, faShapes, faStar} from "@fas"
+import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack} from "@fas"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
 import axios from "axios"
@@ -37,7 +37,7 @@ import { notify } from "@kyvg/vue3-notification"
 
 
 
-library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil)
+library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack)
 
 
 const props = defineProps<{
@@ -266,7 +266,15 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [product.organisation_slug, product.shop_slug, product.slug])
-
+        case "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.index":
+            return route(
+                "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    product.slug
+                ]
+            )
         default:
             if (product.asset_id) {
                 return route(
@@ -275,6 +283,18 @@ function productRoute(product: Product) {
             } else return ""
 
     }
+}
+
+const productHasPendingReminderRoute = (product: Product) => {
+        return route(
+            "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show",
+            {
+                organisation: (route().params as RouteParams).organisation,
+                shop: (route().params as RouteParams).shop,
+                product: product.slug,
+                tab: 'reminders'
+            }
+        )
 }
 
 function masterProductRoute(product: {}) {
@@ -389,7 +409,7 @@ function variantRoute(product: MasterProduct): string {
             organisation: params.organisation,
             shop: params.shop,
             subDepartment: params.subDepartment,
-            family: params.family,
+            family: params.family ?? product.family_slug,
             variant: product.variant_slug,
         }
     )
@@ -732,7 +752,7 @@ const saveTradeUnits = (value, product) => {
             <div class="whitespace-nowrap">
                 <Link :href="(masterProductRoute(product) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
                     :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
+                <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
                 {{ product["code"] }}
@@ -761,7 +781,6 @@ const saveTradeUnits = (value, product) => {
             </div>
         </template>
 
-
         <template #cell(variant_slug)="{ item: product }">
             <Link v-if="product.variant_slug" :href="variantRoute(product) as string"
                 class="inline-block" v-tooltip="product.is_variant_leader
@@ -769,6 +788,7 @@ const saveTradeUnits = (value, product) => {
                     : trans('Follower product of ') + product.variant_code">
                 <span class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
+               
                border transition-colors duration-150" :class="product.is_variant_leader
                 ? 'bg-yellow-50 border-yellow-200'
                 : 'bg-gray-50 border-gray-200'">
@@ -782,6 +802,11 @@ const saveTradeUnits = (value, product) => {
                     </span>
                 </span>
             </Link>
+        <!--     <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
+               rounded-md text-medium font-medium
+               border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
+                -
+            </span> -->
         </template>
 
         <template #cell(shop_code)="{ item: product }">
@@ -842,19 +867,27 @@ const saveTradeUnits = (value, product) => {
                     </button>
                 </span>
             </div>
-
         </template>
 
+        <template #cell(number_of_distinct_reminders)="{ item }">
+            <Link :href="productHasPendingReminderRoute(item)" class="primaryLink">
+                {{ item['number_of_distinct_reminders'] }}
+            </Link>
+        </template>
+
+        <template #cell(available_quantity)="{ item }">
+            {{ item['available_quantity'] ?? 0 }}
+        </template>
 
         <template #checkbox="data">
             <FontAwesomeIcon
-                v-if="selectedProductsId[data.data.id]"
+                v-if="selectedProductsId?.[data.data.id]"
                 @click="() => emits('selectedRow', { [data.data.id]: false })"
                 icon='fas fa-check-square'
                 class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
                 fixed-width aria-hidden='true' />
             <FontAwesomeIcon
-                v-if="!selectedProductsId[data.data.id]"
+                v-if="!selectedProductsId?.[data.data.id]"
                 @click="() => emits('selectedRow', { [data.data.id]: true })"
                 icon='fal fa-square'
                 class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'

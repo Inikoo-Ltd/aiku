@@ -3,7 +3,6 @@ import { inject, computed } from "vue";
 import { trans } from "laravel-vue-i18n";
 import ShopSales from "@/Components/Shop/ShopSales.vue";
 import ShopInvoices from "@/Components/Shop/ShopInvoices.vue";
-import TopPerformers from "@/Components/Shop/TopPerformers.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 
 const props = defineProps<{
@@ -163,10 +162,5 @@ const registrationsRatio = computed(() => {
                 </div>
             </div>
         </div>
-
-        <TopPerformers
-            :packers="data.top_performance?.top_packers?.[interval]"
-            :pickers="data.top_performance?.top_pickers?.[interval]"
-        />
     </div>
 </template>

@@ -1,9 +1,15 @@
 export default {
-    blueprint: [
-      {
-        name: "Layout",
-        key: ["value"],
-        type: "layout_type",
-      }
-    ]
-  }
+	blueprint: [
+		{
+			label: "# Id ",
+			key: ["id"],
+			type: "text",
+			information: "id selector is used to select one unique element!",
+		},
+		{
+			name: "Layout",
+			key: ["value"],
+			type: "layout_type",
+		},
+	],
+}

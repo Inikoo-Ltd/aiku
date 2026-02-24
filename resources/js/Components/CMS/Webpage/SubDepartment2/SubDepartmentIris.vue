@@ -88,6 +88,7 @@ const idxSlideLoading = ref<number | null>(null)
     v-if="mergedItems.length"
     class="mx-auto"
     :class="screenClass"
+    :id="fieldValue?.id ? fieldValue?.id  : 'sub-department-2'"  component="sub-department-2"
     :style="getStyles(fieldValue?.container?.properties, screenType)"
   >
     <div class="grid gap-4 auto-rows-fr" :class="gridColsClass">

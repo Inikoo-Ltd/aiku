@@ -35,14 +35,23 @@ class CheckWooChannel
         }
 
         $webhooks = Arr::get($wooCommerceUser->settings, 'webhooks', []);
-        if (! Arr::has($wooCommerceUser->settings, 'webhooks')) {
+        if (blank($webhooks)) {
             $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
-        }
 
-        if (!blank($webhooks)) {
             $this->update($wooCommerceUser, [
                 'settings' => array_merge($wooCommerceUser->settings, [
                     'webhooks' => $webhooks
+                ])
+            ]);
+        }
+
+        $weightOption = Arr::get($wooCommerceUser->settings, 'weight_option', []);
+        if (blank($weightOption)) {
+            $weightOption = $wooCommerceUser->getProductWeightSettings();
+
+            $this->update($wooCommerceUser, [
+                'settings' => array_merge($wooCommerceUser->settings, [
+                    'weight_option' => $weightOption
                 ])
             ]);
         }

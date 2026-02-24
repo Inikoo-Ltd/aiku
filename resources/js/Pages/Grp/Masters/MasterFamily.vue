@@ -13,7 +13,7 @@ import {
     faBrowser,
     faUpload,
 } from "@fal"
-import { faExclamationTriangle } from "@fas"
+import { faExclamationTriangle, faCactus } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { computed, inject, ref } from "vue"
@@ -48,7 +48,9 @@ library.add(
     faProjectDiagram,
     faUser,
     faMoneyBillWave,
-    faBrowser, faExclamationTriangle
+    faBrowser,
+    faExclamationTriangle,
+    faCactus
 )
 
 
@@ -151,7 +153,7 @@ const showDialog = ref(false);
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+     <div  class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
      <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
@@ -204,5 +206,9 @@ const showDialog = ref(false);
     margin: 0;
     background: transparent;
     border: none;
+}
+
+:deep(.p-breadcrumb-list > li.p-breadcrumb-separator:first-child) {
+    display: none !important;
 }
 </style>

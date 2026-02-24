@@ -19,7 +19,6 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreIrisPortfolioToMultiChannels extends IrisAction
@@ -52,22 +51,19 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
                 ->get()
                 ->keyBy(fn ($p) => "{$p->customer_sales_channel_id}-{$p->item_id}");
 
-        DB::transaction(function () use ($channels, $items, $existingPortfolios) {
 
-            $channels->each(function ($custSalesChannel) use ($items, $existingPortfolios) {
-                $items->each(function ($item) use ($custSalesChannel, $existingPortfolios) {
-                    $compositeKey = $custSalesChannel->id . '-' . $item->id;
-                    if ($existingPortfolios->has($compositeKey)) {
-                        $portfolio = $existingPortfolios->get($compositeKey);
-                        if (!$portfolio->status) {
-                            UpdatePortfolio::make()->action($portfolio, ['status' => true]);
-                        }
-                    } else {
-                        StorePortfolio::make()->action($custSalesChannel, $item, []);
+        $channels->each(function ($custSalesChannel) use ($items, $existingPortfolios) {
+            $items->each(function ($item) use ($custSalesChannel, $existingPortfolios) {
+                $compositeKey = $custSalesChannel->id . '-' . $item->id;
+                if ($existingPortfolios->has($compositeKey)) {
+                    $portfolio = $existingPortfolios->get($compositeKey);
+                    if (!$portfolio->status) {
+                        UpdatePortfolio::make()->action($portfolio, ['status' => true]);
                     }
-                });
+                } else {
+                    StorePortfolio::make()->action($custSalesChannel, $item, []);
+                }
             });
-
         });
     }
 

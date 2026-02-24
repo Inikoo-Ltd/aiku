@@ -8,6 +8,9 @@ import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNot
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
+import OfflineChatForm from "../OfflineChatForm.vue"
+import { router } from "@inertiajs/vue3"
+import { faSpinner } from "@fal"
 
 interface ChatMessage {
     id: number
@@ -97,6 +100,8 @@ const loadChatSession = () => {
 }
 
 const createSession = async (): Promise<ChatSessionData | null> => {
+    syncLoginState()
+
     const existing = loadChatSession()
     if (existing) {
         chatSession.value = existing
@@ -106,12 +111,12 @@ const createSession = async (): Promise<ChatSessionData | null> => {
     loading.value = true
     try {
         const payload: any = {
-            language_id: 64,
+            language_id: 68,
             priority: "normal",
             shop_id: layout?.iris?.shop?.id,
         }
 
-        if (isLoggedIn.value) {
+        if (isLoggedIn.value && layout.user?.id) {
             payload.web_user_id = layout.user?.id
         }
 
@@ -171,9 +176,14 @@ const getMessages = async (loadMore = false) => {
             messagesLocal.value.unshift(...fetched)
         }
 
-        if (res.data?.data?.session_status === "closed") {
+        const sessionStatus = res.data?.data?.session_status
+
+        if (sessionStatus === "closed") {
             isRating.value = true
             rating.value = res.data?.data?.rating ?? 0
+        } else {
+            isRating.value = false
+            rating.value = 0
         }
     } finally {
         isLoadingMore.value = false
@@ -190,7 +200,6 @@ const sendMessage = async ({
     file?: File | null
 }) => {
     if (!chatSession.value?.ulid) return
-
     const tempId = `tmp-${crypto.randomUUID()}`
 
     const localMessage: LocalChatMessage = {
@@ -331,19 +340,50 @@ const forceScrollBottom = () => {
 }
 
 const initChat = async () => {
-    const session = await createSession()
-    if (!session) return
+    if (!chatSession.value?.ulid) {
+        console.error("No session available")
+        return
+    }
     await getMessages()
     initWebSocket()
     forceScrollBottom()
 }
 
-const toggle = () => {
+const statusChat = ref(false)
+const chatHours = ref({
+    start: '',
+    end: ''
+})
+
+const isUser = ref<boolean>(false)
+const isCheckingStatus = ref(false)
+const toggle = async () => {
     open.value = !open.value
     if (open.value) {
         unreadMessageIds.clear()
         unreadCount.value = 0
-        initChat()
+
+        isCheckingStatus.value = true
+        try {
+            let session = loadChatSession()
+
+            if (!session) {
+                session = await createSession()
+                if (!session) return
+            } else {
+                chatSession.value = session
+            }
+            await checkChatStatus(session.ulid)
+
+            if (statusChat.value) {
+                await initChat()
+            }
+
+        } catch (e) {
+            console.error("Chat status fetch failed", e)
+        } finally {
+            isCheckingStatus.value = false
+        }
     }
 }
 
@@ -371,6 +411,38 @@ const openSessionFromHistory = async (ulid: string) => {
     forceScrollBottom()
 }
 
+const checkChatStatus = async (sessionUlid: string) => {
+    isCheckingStatus.value = true
+
+    try {
+        const res = await axios.get(`${baseUrl}/app/api/chats/status`, {
+            params: {
+                shop_id: layout?.iris?.shop?.id,
+                ulid: sessionUlid
+            },
+        })
+
+        const config = res.data.chat_config
+
+        statusChat.value = config?.is_online ?? false
+        isUser.value = config?.is_metadata ?? false
+
+        if (config?.schedule) {
+            chatHours.value = {
+                start: config.schedule.start,
+                end: config.schedule.end
+            }
+        }
+
+    } catch (e) {
+        console.error("Chat status fetch failed", e)
+        statusChat.value = false
+    } finally {
+        isCheckingStatus.value = false
+    }
+}
+
+
 const startNewSession = async () => {
     localStorage.removeItem("chat")
     stopChatWebSocket()
@@ -380,10 +452,20 @@ const startNewSession = async () => {
     const session = await createSession()
     if (!session) return
 
-    await getMessages()
-    initWebSocket()
-    forceScrollBottom()
+    await checkChatStatus(session.ulid)
+
+    if (statusChat.value) {
+        await getMessages()
+        initWebSocket()
+        forceScrollBottom()
+    }
 }
+
+const handleOfflineSession = (sessionData: ChatSessionData) => {
+    chatSession.value = sessionData
+    saveChatSession(sessionData)
+}
+
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
 
 onMounted(() => {
@@ -412,12 +494,13 @@ defineExpose({
     isInitialLoad,
     isLoadingMore,
 })
+
 </script>
 
 <template>
     <div>
         <button ref="buttonRef" @click="toggle"
-            class="fixed bottom-20 right-5 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary">
+            class="fixed bottom-36 right-5 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary">
             <FontAwesomeIcon :icon="faMessage" class="text-base" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
                bg-red-500 text-white text-[10px] font-semibold
@@ -430,7 +513,7 @@ defineExpose({
             enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="chat">
             <div v-if="open" ref="panelRef"
-                class="fixed right-3 z-[70] w-[calc(100vw-1.5rem)] sm:w-[350px] bg-[#f6f6f7] rounded-md overflow-hidden border shadow-xl bottom-32 sm:bottom-[9rem] max-h-[calc(100dvh-7rem)] sm:max-h-[calc(100dvh-12rem)] flex flex-col">
+                class="fixed right-3 bottom-[180px] z-[70] w-[calc(100vw-1.5rem)] sm:w-[350px] bg-[#f6f6f7] rounded-md overflow-hidden border shadow-xl  max-h-[calc(100dvh-7rem)] sm:max-h-[calc(100dvh-12rem)] flex flex-col ">
                 <div class="flex justify-between items-center px-3 py-2 border-b text-sm font-semibold">
                     <span>{{ trans("Chat Support") }}</span>
 
@@ -449,10 +532,19 @@ defineExpose({
                     </div>
                 </div>
 
-                <MessageArea v-if="activeMenu == 'chat'" :messages="messagesLocal" :session="chatSession"
-                    :loading="loading" :isRating="isRating" :rating="rating" :isLoggedIn="isLoggedIn"
-                    @send-message="sendMessage" @reload="(loadMore: any) => getMessages(loadMore)"
-                    @mounted="forceScrollBottom" @new-session="startNewSession" :assignedAgent="assignedAgent" />
+                <div v-if="isCheckingStatus" class="flex flex-col items-center bg-white">
+                    <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-2xl" />
+                    <span class="text-sm">{{ trans("Connecting...") }}</span>
+                </div>
+
+                <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat" :messages="messagesLocal"
+                    :session="chatSession" :loading="loading" :isRating="isRating" :rating="rating" :isUser="isUser"
+                    :isLoggedIn="isLoggedIn" @send-message="sendMessage"
+                    @reload="(loadMore: any) => getMessages(loadMore)" @mounted="forceScrollBottom"
+                    @new-session="startNewSession" :assignedAgent="assignedAgent" />
+
+                <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat" :hours="chatHours"
+                    :session="chatSession" :isLoggedIn="isLoggedIn" @session-created="handleOfflineSession" />
 
                 <div v-if="activeMenu === 'history'"
                     class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">

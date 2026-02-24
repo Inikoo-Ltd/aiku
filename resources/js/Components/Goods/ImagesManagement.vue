@@ -259,16 +259,7 @@ function onDeleteFilesInList(categoryBox: any) {
 </script>
 
 <template>
-    <div v-if="!editable" class="px-10 pt-4">
-        <Message severity="warn" closable>
-            <template #icon>
-                <FontAwesomeIcon :icon="faInfoCircle" />
-            </template>
-            <span class="ml-2">
-                You can only view this image because of insufficient permissions.
-            </span>
-        </Message>
-    </div>
+
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 px-10 py-4">
         <!-- Left: Drop Areas -->

@@ -52,7 +52,16 @@ class FamiliesInCollectionResource extends JsonResource
             'name'                    => $this->name,
             'description'             => $this->description,
             'number_current_products' => $this->number_current_products ?? 0,
-
+            'master_product_category_id' => $this->master_product_category_id,
+            'status_icon'            => $this->status ? [
+                'tooltip' => __('Active'),
+                'icon'    => 'fas fa-check-circle',
+                'class'   => 'text-green-400'
+            ] : [
+                'tooltip' => __('Closed'),
+                'icon'    => 'fas fa-times-circle',
+                'class'   => 'text-red-400'
+            ],
         ];
     }
 }

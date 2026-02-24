@@ -26,7 +26,6 @@ use App\Models\Helpers\Country;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -94,22 +93,7 @@ class StoreOrderFromWooCommerce extends OrgAction
      */
     public function digestWooCustomerClient(WooCommerceUser $wooCommerceUser, array $wooOrderData): CustomerClient
     {
-        $reference = Arr::get($wooOrderData, 'customer_id');
-        if (!$reference || $reference == 0 || $reference == '0') {
-            $reference = Arr::get($wooOrderData, 'billing.email');
-            if (!$reference) {
-                $reference = Arr::get($wooOrderData, 'billing.phone');
-            }
-            if (!$reference) {
-                $reference = trim(Arr::get($wooOrderData, 'billing.first_name').' '.Arr::get($wooOrderData, 'billing.last_name').' '.Arr::get($wooOrderData, 'billing.company'));
-            }
-            if (!$reference) {
-                $reference = Str::random();
-            }
-        }
-
-
-        $reference = (string)$reference;
+        $reference = trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name').' '.Arr::get($wooOrderData, 'shipping.company'));
 
         $customerClientID = DB::table('customer_clients')
             ->select('id')
@@ -117,23 +101,22 @@ class StoreOrderFromWooCommerce extends OrgAction
             ->where('reference', $reference)
             ->first();
 
-
         if (!$customerClientID) {
             $customerClient = StoreCustomerClient::make()->action($wooCommerceUser->customerSalesChannel, [
                 'reference'    => $reference,
                 'email'        => Arr::get($wooOrderData, 'billing.email'),
-                'contact_name' => trim(Arr::get($wooOrderData, 'billing.first_name').' '.Arr::get($wooOrderData, 'billing.last_name')),
-                'company_name' => Arr::get($wooOrderData, 'billing.company'),
-                'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'billing.phone')),
+                'contact_name' => trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name')),
+                'company_name' => Arr::get($wooOrderData, 'shipping.company'),
+                'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'shipping.phone')),
                 'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
             ]);
         } else {
             $customerClient = CustomerClient::find($customerClientID->id);
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
                 'email'        => Arr::get($wooOrderData, 'billing.email'),
-                'contact_name' => trim(Arr::get($wooOrderData, 'billing.first_name').' '.Arr::get($wooOrderData, 'billing.last_name')),
-                'company_name' => Arr::get($wooOrderData, 'billing.company'),
-                'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'billing.phone')),
+                'contact_name' => trim(Arr::get($wooOrderData, 'shipping.first_name').' '.Arr::get($wooOrderData, 'shipping.last_name')),
+                'company_name' => Arr::get($wooOrderData, 'shipping.company'),
+                'phone'        => $this->sanitizePhone(Arr::get($wooOrderData, 'shipping.phone')),
                 'address'      => $this->digestWooAddress(Arr::get($wooOrderData, 'billing'))->toArray(),
 
             ]);

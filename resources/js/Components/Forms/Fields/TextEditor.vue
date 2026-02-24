@@ -14,6 +14,7 @@ const props = defineProps<{
         readonly?: boolean
         copyButton: boolean
         maxLength?: number
+        toogle?: string[]
     }
 }>()
 
@@ -21,7 +22,7 @@ const props = defineProps<{
 
 <template>
   <div class="">
-    <Editor v-model="form[fieldName]">
+    <Editor v-model="form[fieldName]" :toogle="fieldData.toogle">
       <template #editor-content="{ editor }">
         <div class="editor-wrapper h-full border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-[var(--theme-color-0)]">
           <EditorContent :editor="editor" class="editor-content focus:outline-none" />

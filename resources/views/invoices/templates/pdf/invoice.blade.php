@@ -281,6 +281,18 @@
                         <br>
                         {{ __('Date') }}: {{ $transaction->handling_date }}
                     @endif
+                    @if($commodity_codes && $transaction->model?->tariff_code)
+                        <br>
+                        {{ __('Tariff Code') }}: {{ $transaction->model->tariff_code }}
+                    @endif
+                    @if($weight && $transaction->model?->marketing_weight)
+                        <br>
+                        {{ __('Weight') }}: {{ $transaction->model->marketing_weight }}g
+                    @endif
+                    @if($country_of_origin && $transaction->model?->country_of_origin)
+                        <br>
+                        {{ __('Country of Origin') }}: {{ $transaction->model->country_of_origin }}
+                    @endif
                 @endif
             </td>
 

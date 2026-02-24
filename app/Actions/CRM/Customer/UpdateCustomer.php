@@ -71,8 +71,6 @@ class UpdateCustomer extends OrgAction
                 if ($customer->address) {
                     UpdateAddress::run($customer->address, $contactAddressData, $customer, 'contact address');
                 } else {
-
-
                     $this->addAddressToModelFromArray(
                         model: $customer,
                         addressData: $contactAddressData,
@@ -171,10 +169,10 @@ class UpdateCustomer extends OrgAction
             $customer->orders()
                 ->where(function ($q) {
                     $q->where('state', OrderStateEnum::CREATING)
-                    ->orWhereHas('deliveryNotes', function ($q) {
-                        $q->where('is_cash_on_delivery', true)
-                            ->whereNotIn('state', [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::FINALISED]);
-                    });
+                        ->orWhereHas('deliveryNotes', function ($q) {
+                            $q->where('is_cash_on_delivery', true)
+                                ->whereNotIn('state', [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::FINALISED]);
+                        });
                 })
                 ->with(['organisation', 'billingAddress', 'deliveryAddress'])
                 ->each(function ($order) use ($customer) {
@@ -327,6 +325,7 @@ class UpdateCustomer extends OrgAction
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
             $rules['registered_at']      = ['sometimes', 'nullable', 'date'];
+            $rules['reference']          = ['sometimes', 'string', 'max:255'];
 
 
             $rules['phone']           = ['sometimes', 'nullable', 'string', 'max:255'];

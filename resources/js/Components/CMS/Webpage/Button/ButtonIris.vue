@@ -25,7 +25,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-    <div id="button">
+    <div v :id="fieldValue?.id ? fieldValue?.id  : 'button'"  component="button">
         <div class="flex m-4" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType),

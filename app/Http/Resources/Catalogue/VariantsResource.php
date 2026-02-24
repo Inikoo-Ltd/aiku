@@ -55,6 +55,7 @@ class VariantsResource extends JsonResource
             'shop_slug'                     => $this->shop?->slug,
             'organisation_slug'             => $this->organisation?->slug,
             'family_slug'                   => $this->family?->slug,
+            'product_list'                  => $this->allProduct?->toArray(),
         ];
     }
 }

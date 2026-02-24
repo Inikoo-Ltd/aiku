@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\Hydrators;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAverageClv;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\Hydrators\WithHydrateInvoices;
 use App\Actions\Traits\WithEnumStats;
@@ -172,6 +173,9 @@ class CustomerHydrateClv implements ShouldBeUnique
 
         // --- Update stats efficiently ---
         $customer->stats()->update($stats);
+
+        // --- Trigger shop average CLV update ---
+        ShopHydrateAverageClv::dispatch($customer->shop);
     }
 
     private function setDefaultStats(Customer $customer): void
@@ -191,6 +195,9 @@ class CustomerHydrateClv implements ShouldBeUnique
             'today_timeline_position' => 0,
             'next_order_timeline_position' => null,
         ]);
+
+        // --- Trigger shop average CLV update ---
+        ShopHydrateAverageClv::dispatch($customer->shop);
     }
 
     private function calculateTimelinePositions(?Carbon $firstOrderDate, ?Carbon $nextOrderDate): array

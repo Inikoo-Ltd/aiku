@@ -90,7 +90,6 @@ class IndexRetinaPortfolios extends RetinaAction
 
         return $query->defaultSort('-portfolios.id')
             ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter(), $this->getForSaleFilter()])
-            // ->ddRawSql()
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -292,6 +291,15 @@ class IndexRetinaPortfolios extends RetinaAction
                     'navigation' => CustomerSalesChannelPortfolioTabsEnum::navigation()
                 ],
 
+                'bulk_import_product' => [
+                    'title' => [
+                        'label' => __("Bulk Import Portfolios"),
+                        'information' => __('The list of column file: portfolios')
+                    ],
+                    'progressDescription'   => __('Importing portfolios'),
+                    'upload_spreadsheet' => $this->buildUploadSpreadsheetConfig($this->customerSalesChannel)
+                ],
+
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
                     'bulk_unlink'               => [
@@ -322,6 +330,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         ],
                         PlatformTypeEnum::EBAY => [
                             'name' => 'retina.models.portfolio.store_new_ebay_product'
+                        ],
+                        PlatformTypeEnum::TIKTOK => [
+                            'name' => 'retina.models.portfolio.store_new_tiktok_product'
                         ],
                         default => false
                     },
@@ -517,5 +528,38 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ]
             );
+    }
+    protected function buildUploadSpreadsheetConfig(CustomerSalesChannel $customerSalesChannel): array
+    {
+        $downloadRoute = 'retina.dropshipping.portfolio_template.export';
+
+        return [
+            'event'           => 'action-progress',
+            'channel'         => 'retina.personal.'.$this->webUser->id,
+            'required_fields' => ['sku', 'title'],
+            'template'        => [
+                'label' => 'Download template (.xlsx)',
+            ],
+            'route'           => [
+                'upload'   => [
+                    'name'       => 'retina.models.customer_sales_channel.portfolios.bulk_import',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->id
+                    ]
+                ],
+                'history'  => [
+                    'name'       => 'retina.dropshipping.customer_sales_channels.portfolios.bulk_import_history',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->slug
+                    ]
+                ],
+                'download' => [
+                    'name'       => $downloadRoute,
+                    'parameters' => [
+                        'type'               => 'xlsx'
+                    ]
+                ],
+            ],
+        ];
     }
 }

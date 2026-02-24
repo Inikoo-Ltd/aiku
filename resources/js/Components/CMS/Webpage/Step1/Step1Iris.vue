@@ -48,7 +48,7 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-	<div id="cta1" :style="{
+	<div  :id="fieldValue?.id ? fieldValue?.id  : 'step-1'"  component="step-1" :style="{
 		...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 		...getStyles(fieldValue.container?.properties, screenType),
 		width: 'auto'

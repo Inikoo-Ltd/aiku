@@ -29,10 +29,7 @@ class StoreRedirect extends OrgAction
         data_set($modelData, 'organisation_id', $webpage->organisation_id);
         data_set($modelData, 'shop_id', $webpage->shop_id);
         data_set($modelData, 'website_id', $webpage->website_id);
-
-        $url = 'https://'.$webpage->website->domain . '/' . $webpage->url;
-
-        data_set($modelData, 'from_url', $url);
+        data_set($modelData, 'from_url', $webpage->canonical_url);
         data_set($modelData, 'from_path', $webpage->url);
 
         return $webpage->redirectedTo()->create($modelData);

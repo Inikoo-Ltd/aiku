@@ -5,13 +5,14 @@
  * created on 04-04-2025-11h-52m
  * github: https://github.com/KirinZero0
  * copyright 2025
-*/
+ */
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
@@ -48,6 +49,9 @@ class IndexCustomerSalesChannels extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(CustomerSalesChannel::class);
+        $queryBuilder->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN);
+        $queryBuilder->whereNull('customer_sales_channels.deleted_at');
+
         if ($parent instanceof Customer) {
             $queryBuilder->where('customer_sales_channels.customer_id', $parent->id);
         } else {
@@ -57,6 +61,7 @@ class IndexCustomerSalesChannels extends OrgAction
         if ($shop) {
             $queryBuilder->where('customer_sales_channels.shop_id', $shop->id);
         }
+
         $queryBuilder->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id');
         $queryBuilder->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id');
 
@@ -81,13 +86,12 @@ class IndexCustomerSalesChannels extends OrgAction
             'platforms.type as platform_type',
             'platforms.code as platform_code',
             'platforms.name as platform_name',
-        ])
-            ->selectSub(function ($subquery) {
-                $subquery->from('orders')
-                    ->selectRaw('COALESCE(SUM(total_amount), 0)')
-                    ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
-                    ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
-            }, 'total_amount');
+        ])->selectSub(function ($subquery) {
+            $subquery->from('orders')
+                ->selectRaw('COALESCE(SUM(total_amount), 0)')
+                ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
+                ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
+        }, 'total_amount');
 
         return $queryBuilder->defaultSort('customer_sales_channels.reference')
             ->allowedSorts(['reference', 'name', 'number_clients', 'number_portfolios', 'number_orders', 'total_amount', 'platform_status', 'customer_company_name'])
@@ -99,38 +103,15 @@ class IndexCustomerSalesChannels extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
-        $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
-        $icon          = ['fal', 'fa-user'];
-        $title         = $this->parent->name;
-        $iconRight     = [
-            'icon'  => ['fal', 'fa-user-friends'],
-            'title' => $title
-        ];
-        $afterTitle    = [
-
-            'label' => __('Sales Channels')
-        ];
-
-
-        $actions = [];
-
-
         return Inertia::render(
             'Org/Dropshipping/CustomerSalesChannels',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Sales Channels'),
                 'pageHead'    => [
-                    'title'         => $title,
-                    'afterTitle'    => $afterTitle,
-                    'iconRight'     => $iconRight,
-                    'icon'          => $icon,
-                    'subNavigation' => $subNavigation,
-                    'actions'       => $actions
-
+                    'title'         => $this->parent->name,
+                    'icon'          => ['fal', 'fa-user'],
+                    'subNavigation' => $this->getCustomerDropshippingSubNavigation($this->parent, $request),
                 ],
                 'data'        => CustomerSalesChannelsResource::collection($platforms),
             ]
@@ -146,18 +127,20 @@ class IndexCustomerSalesChannels extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+
             $table
                 ->betweenDates(['created_at'])
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), sortable: true);
+
             if ($parent instanceof Platform) {
                 $table->column(key: 'customer_company_name', label: __('Customer'), sortable: true);
             }
 
-            $table->column(key: 'number_portfolios', label: __('Portfolios'), sortable: true)
+            $table
+                ->column(key: 'number_portfolios', label: __('Portfolios'), sortable: true)
                 ->column(key: 'number_clients', label: __('Clients'), sortable: true)
-
                 ->column(key: 'number_orders', label: __('Orders'), sortable: true)
                 ->column(key: 'total_amount', label: __('Sales'), sortable: true, align: 'right');
 
@@ -165,9 +148,7 @@ class IndexCustomerSalesChannels extends OrgAction
                 $table->column(key: 'platform_status', label: __('Status'), sortable: true);
             }
 
-
-            $table->column(key: 'action', label: __('Actions'), searchable: true)
-                ->defaultSort('reference');
+            $table->column(key: 'action', label: __('Actions'), searchable: true)->defaultSort('reference');
         };
     }
 
@@ -194,7 +175,6 @@ class IndexCustomerSalesChannels extends OrgAction
                         'label' => __('Channels'),
                         'icon'  => 'fal fa-bars',
                     ],
-
                 ]
             ]
         );

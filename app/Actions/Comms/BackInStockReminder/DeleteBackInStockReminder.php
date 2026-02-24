@@ -9,6 +9,7 @@
 
 namespace App\Actions\Comms\BackInStockReminder;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePendingBackInStockReminders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Comms\BackInStockReminder;
@@ -29,6 +30,7 @@ class DeleteBackInStockReminder extends OrgAction
         UpdateBackInStockReminderSnapshot::make()->action($this->backInStockReminder->id, $snapshotModelData);
 
         $backInStockReminder->delete();
+        ShopHydratePendingBackInStockReminders::dispatch($backInStockReminder->shop);
 
         return $backInStockReminder;
     }

@@ -119,6 +119,7 @@ class IndexOfferCampaigns extends OrgAction
             $table->withModelOperations($modelOperations);
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+            $table->column(key: 'type', label: '', type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

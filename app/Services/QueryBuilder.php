@@ -242,7 +242,8 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         string $frequency,
         ?string $prefix = null,
         bool $includeLY = true,
-        ?string $localKey = null
+        ?string $localKey = null,
+        array $additionalFilters = []
     ): array {
         // Parse date filter from request
         $argumentName = ($prefix ? $prefix . '_' : '') . 'between';
@@ -298,6 +299,10 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             ->where("$timeSeriesTable.frequency", $frequency)
             ->groupBy("$timeSeriesTable.$foreignKey")
             ->select("$timeSeriesTable.$foreignKey");
+
+        foreach ($additionalFilters as $column => $value) {
+            $subQuery->where("{$timeSeriesRecordsTable}.{$column}", $value);
+        }
 
         // Build SELECT raw statements for aggregation (for the subquery)
         // and prepare selectRaw return values (referencing the subquery alias)

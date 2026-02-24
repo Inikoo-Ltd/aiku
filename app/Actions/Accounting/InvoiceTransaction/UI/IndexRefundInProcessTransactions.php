@@ -50,12 +50,17 @@ class IndexRefundInProcessTransactions extends OrgAction
 
         if (RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value === $prefix) {
             $queryBuilder->select(array_merge([
-            'invoice_transactions.id',
-            'invoice_transactions.updated_at',
-            'invoice_transactions.in_process',
-            'quantity',
-            'net_amount',
-            ], $commonSelect))->where('invoice_transactions.invoice_id', $invoice->id);
+                'invoice_transactions.id',
+                'invoice_transactions.updated_at',
+                'invoice_transactions.in_process',
+                'quantity',
+                'net_amount',
+            ], $commonSelect))
+            ->where('invoice_transactions.invoice_id', $invoice->id);
+
+            if ($refund->is_tax_only) {
+                $queryBuilder->addSelect('tax_amount');
+            }
         } else {
             $queryBuilder->leftJoin('invoice_transactions as original_invoice_transaction', 'invoice_transactions.original_invoice_transaction_id', 'original_invoice_transaction.id')
             ->select(array_merge([
@@ -64,7 +69,20 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'original_invoice_transaction.in_process',
                 'original_invoice_transaction.quantity',
                 'original_invoice_transaction.net_amount',
-            ], $commonSelect))->where('invoice_transactions.invoice_id', $refund->id);
+            ], $commonSelect))
+            ->where('invoice_transactions.invoice_id', $refund->id);
+
+            if ($refund->is_tax_only) {
+                $queryBuilder->addSelect('original_invoice_transaction.tax_amount');
+            }
+        }
+
+        if ($refund->is_tax_only) {
+            $queryBuilder
+                ->leftJoin('tax_categories', 'tax_categories.id', 'invoice_transactions.tax_category_id')
+                ->addSelect([
+                    'tax_categories.rate as tax_rate',
+                ]);
         }
 
 

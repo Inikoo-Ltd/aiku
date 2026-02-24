@@ -65,7 +65,7 @@ const isLoadingMetaRight = ref(false)
             :is="stat.metaRight?.route?.name ? Link : 'div'"
             :href="stat.metaRight?.route?.name ? route(stat.metaRight?.route.name, stat.metaRight?.route.parameters) : ''"
             class="text-base rounded group/mr absolute top-6 right-5 px-2 flex gap-x-0.5 items-center font-normal"
-            :class="stat.metaRight?.route?.name ? 'cursor-pointer' : 'cursor-default'"
+            :class="[stat.metaRight?.route?.name ? 'cursor-pointer' : 'cursor-default', stat.metaRight.customClass]"
             @click.prevent="false"
             :style="{
                 background: `color-mix(in srgb, white 90%, ${stat.color})`,

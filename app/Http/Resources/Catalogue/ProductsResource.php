@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -47,6 +48,11 @@ use Illuminate\Support\Arr;
  * @property mixed $unit
  * @property mixed $master_product_id
  * @property mixed $web_images
+ * @property mixed $variant_slug
+ * @property mixed $is_variant_leader
+ * @property mixed $variant_code
+ * @property mixed $webpage
+ * @property mixed $is_for_sale
  *
  * @method imageSources(int $int, int $int1)
  */
@@ -54,12 +60,26 @@ class ProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
+
+        $state = $this->state->stateIcon()[$this->state->value];
+        if ($this->state != ProductStateEnum::DISCONTINUED && !$this->is_for_sale) {
+            $state = [
+                'tooltip' => __('Not for sale'),
+                'icon'    => 'fas fa-thumbtack',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
+            ];
+        }
+
+
+
+
         return [
             'id'                        => $this->id,
             'slug'                      => $this->slug,
             'code'                      => $this->code,
             'name'                      => $this->name,
-            'state'                     => $this->state->stateIcon()[$this->state->value],
+            'state'                     => $state,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
             'shop_slug'                 => $this->shop_slug,
@@ -99,7 +119,8 @@ class ProductsResource extends JsonResource
             'variant_slug'              => $this->variant_slug,
             'is_variant_leader'         => $this->is_variant_leader,
             'variant_code'              => $this->variant_code,
-            'iris_url'                  => $this->webpage?->canonical_url
+            'iris_url'                  => $this->webpage?->canonical_url,
+            'is_for_sale'               => $this->is_for_sale
         ];
     }
 

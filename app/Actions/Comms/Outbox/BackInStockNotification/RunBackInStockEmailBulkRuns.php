@@ -14,6 +14,7 @@ use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePendingBackInStockReminders;
 use App\Models\Catalogue\Product;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
@@ -48,8 +49,8 @@ class RunBackInStockEmailBulkRuns
 
         /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
-
-            if (!$outbox->shop->is_aiku) {
+            $shop = $outbox->shop;
+            if (!$shop->is_aiku) {
                 continue;
             }
 
@@ -151,6 +152,7 @@ class RunBackInStockEmailBulkRuns
             // Delete processed back_in_stock_reminders
             if (!empty($deleteBackInStockReminderIds)) {
                 BulkDeleteBackInStockReminder::run($deleteBackInStockReminderIds);
+                ShopHydratePendingBackInStockReminders::run($shop);
                 // reset array to avoid re-deleting the same IDs
                 $deleteBackInStockReminderIds = [];
             }

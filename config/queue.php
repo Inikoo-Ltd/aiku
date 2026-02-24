@@ -70,7 +70,7 @@ return [
 
         'redis'              => [
             'driver'       => 'redis',
-            'connection'   => 'default',
+            'connection'   => 'horizon',
             'queue'        => env('REDIS_QUEUE', 'default'),
             'retry_after'  => 160,
             'block_for'    => null,
@@ -79,7 +79,7 @@ return [
 
         'redis-long-running' => [
             'driver'       => 'redis',
-            'connection'   => 'default',
+            'connection'   => 'horizon',
             'queue'        => 'default-long',
             'retry_after'  => 7250,
             'block_for'    => null,

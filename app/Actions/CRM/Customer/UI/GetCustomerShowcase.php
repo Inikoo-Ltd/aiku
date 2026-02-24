@@ -16,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 
 class GetCustomerShowcase
 {
@@ -90,9 +91,15 @@ class GetCustomerShowcase
                     'customer' => $customer->id
                 ]
             ],
+            'shop'              => [
+                'id' => $customer->shop->id,
+                'name' => $customer->shop->name,
+                'slug' => $customer->shop->slug,
+                'type' => $customer->shop->type,
+            ],
             'stats' => $customer->stats,
             'currency'  => CurrencyResource::make($customer->shop->currency)->toArray(request()),
-            'balance'  => [
+            'balance'  => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? [
                 'route_store'    => [
                     'name'       => 'grp.models.customer.credit-transaction.store',
                     'parameters' => [
@@ -115,7 +122,7 @@ class GetCustomerShowcase
                 'decrease_reasons_options' => CreditTransactionReasonEnum::getDecreaseReasons(),
 
                 'type_options' => CreditTransactionTypeEnum::getOptions()
-            ],
+            ] : null,
             'editWebUser' => $webUserRoute,
             'tag_routes' => $tagRoute,
             'tags_selected_id' => $customer->tags->pluck('id')->toArray(),

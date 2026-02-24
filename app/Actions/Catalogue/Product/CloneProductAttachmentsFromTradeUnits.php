@@ -17,6 +17,8 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'urgent';
+
     public function getJobUniqueId(Product $product): string
     {
         return $product->id;
@@ -28,25 +30,25 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
             return;
         }
 
-        $attachments   = [];
+        $attachments        = [];
         $processedChecksums = [];
-        $tradeUnit = $product->tradeUnits->first();
+        $tradeUnit          = $product->tradeUnits->first();
         /** @var \App\Models\Helpers\Media $publicAttachments */
         $publicAttachments = $tradeUnit->attachments()
             ->wherePivotIn('scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
             ->get();
 
         foreach ($publicAttachments as $publicAttachment) {
-            $checksum = $publicAttachment->checksum;
+            $checksum                      = $publicAttachment->checksum;
             $processedChecksums[$checksum] = true;
 
             $attachments[$publicAttachment->id] = [
-                'scope'           => $publicAttachment->pivot->scope,
-                'caption'         => $publicAttachment->pivot->caption,
-                'group_id'        => $product->group_id,
-                'created_at'      => now(),
-                'updated_at'      => now(),
-                'data'            => '{}',
+                'scope'      => $publicAttachment->pivot->scope,
+                'caption'    => $publicAttachment->pivot->caption,
+                'group_id'   => $product->group_id,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'data'       => '{}',
 
             ];
         }
@@ -56,18 +58,18 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
         if ($tradeUnitFamily) {
             /** @var \App\Models\Helpers\Media $familyAttachments */
             $familyAttachments = $tradeUnitFamily->attachments()->wherePivotIn('scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
-            ->get();
+                ->get();
             foreach ($familyAttachments as $familyAttachment) {
                 if (array_key_exists($familyAttachment->checksum, $processedChecksums)) {
                     continue;
                 }
                 $attachments[$familyAttachment->id] = [
-                    'scope'           => $familyAttachment->pivot->scope,
-                    'caption'         => $familyAttachment->pivot->caption,
-                    'group_id'        => $product->group_id,
-                    'created_at'      => now(),
-                    'updated_at'      => now(),
-                    'data'            => '{}'
+                    'scope'      => $familyAttachment->pivot->scope,
+                    'caption'    => $familyAttachment->pivot->caption,
+                    'group_id'   => $product->group_id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                    'data'       => '{}'
 
                 ];
             }
@@ -76,6 +78,5 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
         $product->attachments()->sync($attachments);
 
         BreakProductInWebpagesCache::dispatch($product)->delay(1);
-
     }
 }

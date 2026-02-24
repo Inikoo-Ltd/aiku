@@ -67,43 +67,20 @@ const form = useForm(formFields)
 form['fieldType'] = 'edit'
 
 const submit = () => {
-    if (props.fieldData?.confirmation?.description) {
-        const confirmed = confirm(props.fieldData.confirmation.description)
-
-        if (confirmed) {
-            form.post(
-                route(updateRoute.name, updateRoute.parameters), 
-                { 
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        if(props.fieldData.revisit_after_save){
-                            router.reload()
-                        }
-                    }
+    form.post(
+        route(updateRoute.name, updateRoute.parameters),
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                if (props.fieldData.revisit_after_save) {
+                    router.reload()
                 }
-            )
-        } else {
-            return
+                isModalConfirmation.value = false
+            },
         }
-    }
-
-    else {
-        form.post(
-            route(updateRoute.name, updateRoute.parameters), 
-            { 
-                preserveScroll: true,
-                onSuccess: () => {
-                    if(props.fieldData.revisit_after_save){
-                        router.reload()
-                    }
-                    isModalConfirmation.value = false
-                },
-            }
-        )
-    }
-
-
+    )
 }
+
 
 
 const classVerification = ref('')
@@ -252,7 +229,7 @@ const isModalConfirmation = ref(false)
 
                 <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                     <div class="text-base font-semibold">
-                        {{ fieldData.saveConfirmation?.title ?? trans("Are you sure want to pick all from magic place?") }}
+                        {{ fieldData.saveConfirmation?.title ?? trans("Are you sure ?") }}
                     </div>
                     <div class="mt-2">
                         <p class="text-sm text-gray-500">

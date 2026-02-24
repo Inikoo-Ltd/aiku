@@ -77,7 +77,7 @@ const fieldSideEditor = [
                 type: "multi_editorhtml",
                 props_data: {
                     toogle: [
-                        'heading', 'fontSize', 'bold', 'italic', 'underline', "fontFamily",
+                        'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', "fontFamily",
                         'alignLeft', 'alignRight', "link",
                         'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
                     ]

@@ -102,7 +102,7 @@ class EditShop extends OrgAction
             __('Shop details'),
             __('Properties'),
             __('Languages'),
-            __('Faire Keys'),
+            __('Faire Settings'),
             __('Shopify Keys'),
             __('Wix Keys'),
         ];
@@ -343,11 +343,11 @@ class EditShop extends OrgAction
                                         'key_value' => 'stand_alone_invoice_numbers'
                                     ],
                                     'format' => [
-                                        'label' => __('format'),
+                                        'label' => __('Format'),
                                         'key_value' => 'stand_alone_invoice_numbers_format'
                                     ],
                                     'sequence' => [
-                                        'label' => __('sequence'),
+                                        'label' => __('Last incremental number'),
                                         'key_value' => 'stand_alone_invoice_numbers_serial'
                                     ],
                                 ],
@@ -361,7 +361,7 @@ class EditShop extends OrgAction
                                         'key_value' => 'stand_alone_refund_numbers_format'
                                     ],
                                     'sequence' => [
-                                        'label' => __('Sequence'),
+                                        'label' => __('Last incremental number'),
                                         'key_value' => 'stand_alone_refund_numbers_serial'
                                     ],
                                 ],
@@ -472,7 +472,7 @@ class EditShop extends OrgAction
                 $shop->type === ShopTypeEnum::EXTERNAL ?
                     match ($shop->engine) {
                         ShopEngineEnum::FAIRE => [
-                            'label' => __('Faire Keys'),
+                            'label' => __('Faire Settings'),
                             'icon'   => 'fa-light fa-key',
                             'fields' => [
                                 'faire_access_token' => [
@@ -482,6 +482,11 @@ class EditShop extends OrgAction
                                     'showWarning'    => !is_null($shop->external_shop_connection_failed_at),
                                     'warningTitle'   => __('We are having troubles connecting to the platform'),
                                     'warningBody'    => __('Error Message') . ": " . $shop->external_shop_connection_error
+                                ],
+                                'faire_order_from_date' => [
+                                    'type'  => 'date',
+                                    'label' => __('Faire Order From Date'),
+                                    'value' => Arr::get($shop->settings, 'faire.order_from_date', '')
                                 ]
                             ],
                         ],

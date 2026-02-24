@@ -44,6 +44,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $master_variant_id
  * @property string $slug
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProduct
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $allProductForSale
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
@@ -143,6 +144,12 @@ class Variant extends Model implements Auditable, HasMedia
     public function allProduct(): HasMany
     {
         return $this->hasMany(Product::class, 'variant_id');
+    }
+
+    public function allProductForSale(): HasMany
+    {
+        return $this->hasMany(Product::class, 'variant_id')
+                ->where('is_for_sale', true);
     }
 
     public function leaderProduct(): HasOne

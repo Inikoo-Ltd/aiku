@@ -27,7 +27,7 @@ watch(
 </script>
 
 <template>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center"
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'column-4'"  component="column-4"  class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center"
         :style="getStyles(fieldValue?.container?.properties,screenType)"
     >
         <!-- <pre>{{ fieldValue }}</pre> -->

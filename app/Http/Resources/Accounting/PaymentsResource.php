@@ -42,6 +42,7 @@ class PaymentsResource extends JsonResource
             'reference'  => $this->reference,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'method'     => $this->method,
             'amount'     => $this->amount,
             'route' => match ($request->route()->getName()) {
                 'grp.org.shops.show.crm.customers.show' => [

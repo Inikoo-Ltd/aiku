@@ -6,5 +6,5 @@
 
 export interface BackInStockRemainder {
     id : number
-    product_slug: string
+    slug: string
 }

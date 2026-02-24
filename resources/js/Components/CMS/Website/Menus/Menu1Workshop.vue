@@ -133,7 +133,6 @@ const computedSelectedSidebarData = computed(() => {
 
     const selectedProductCategories = !layout.iris?.sidebar ? compSelectedSidebar.value?.data?.fieldValue?.product_categories : compSelectedSidebar.value?.product_categories
     // const selectedProductCategories = compSelectedSidebar.value?.product_categories
-    console.log('sssss',compSelectedSidebar)
     const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
 
     return productCategoriesAuto

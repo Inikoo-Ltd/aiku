@@ -234,6 +234,7 @@ class AppServiceProvider extends ServiceProvider
                 'OutBoxHasSubscriber'           => 'App\Models\Comms\OutBoxHasSubscriber',
                 'BackInStockReminderSnapshot'   => 'App\Models\Comms\BackInStockReminderSnapshot',
                 'BackInStockReminder'           => 'App\Models\Comms\BackInStockReminder',
+                'ExternalEmailRecipient'        => 'App\Models\Comms\ExternalEmailRecipient',
 
                 // Catalogue
                 'Shop'                          => 'App\Models\Catalogue\Shop',

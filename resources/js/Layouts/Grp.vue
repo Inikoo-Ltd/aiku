@@ -47,7 +47,7 @@ import {
 	faRulerTriangle,
 	faRulerCombined,
 	faAtom,
-	faAtomAlt,
+	faAtomAlt, faGift,
 	faBan,
 	faSnooze,
 	faFileInvoice,
@@ -67,18 +67,19 @@ import {
 	faSkull,
 	faSkullCow,
 	faToggleOn,
-	faBroadcastTower,
+	faBroadcastTower, faImage,
 	faEye,
 	faEyeSlash,
 	faCheckDouble,
 	faSmile,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot,
+	faShare, faUndoAlt, faRobot, faUnlink,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import {
 	faAsterisk as fasAsterisk,
 	faBoxHeart,
+	faBadgePercent,
 	faExclamation,
 	faInfo,
 	faPlay,
@@ -95,10 +96,11 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
+import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 
 library.add(
 	faRainbow,
-	faAtomAlt,
+	faAtomAlt, faGift,
 	faOctopusDeploy,
 	faPoll,
 	faPhotoVideo, faQuestionCircle,
@@ -117,7 +119,7 @@ library.add(
 	faSkull,
 	faSkullCow,
 	faToggleOn,
-	faBroadcastTower,
+	faBroadcastTower, faImage,
 	faEye,
 	faEyeSlash,
 	faCheckDouble,
@@ -164,7 +166,8 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot
+	faShare, faUndoAlt, faRobot, faUnlink,
+	faBadgePercent
 )
 
 provide("layout", useLayoutStore())
@@ -270,10 +273,19 @@ const requestNotificationPermission = () => {
 	if (Notification.permission === "default") {
 		Notification.requestPermission()
 	}
+	if (Notification.permission === "denied") {
+			notify({
+				title: trans('Alert'),
+				text: trans('You must allow notification to get notif from chat'),
+				type: "error"
+			})
+		}
 }
 
+const baseUrl = layout?.appUrl ?? ""
+const myAgentId = layout.user?.id
 onMounted(() => {
-	requestNotificationPermission()
+	fetchUnreadCount(baseUrl, '', myAgentId)
 	checkScreenType()
 	onCheckAppVersion()
 	setColorStyleRoot(layout?.app?.theme)

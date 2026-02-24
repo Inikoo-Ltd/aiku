@@ -69,7 +69,7 @@ class IndexMasterProducts extends GrpAction
                         $activeMasterProducts
                     ],
                     'discontinued' => [
-                        __('Discontinued'),
+                        __('Discontinued/Not for sale'),
                         $discontinuedMasterProducts
                     ],
                 ],
@@ -195,7 +195,6 @@ class IndexMasterProducts extends GrpAction
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
-                includeLY: true
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales'];
@@ -263,7 +262,7 @@ class IndexMasterProducts extends GrpAction
 
         return $queryBuilder
             ->defaultSort('master_assets.code')
-            ->allowedSorts(['code', 'name', 'used_in', 'sales', 'invoices'])
+            ->allowedSorts(['code', 'name', 'used_in', 'sales', 'invoices', 'variant_slug'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -310,18 +309,20 @@ class IndexMasterProducts extends GrpAction
                 $table
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
             } else {
                 $table
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'status_icon', label: '', type: 'icon')
                     ->column(key: 'code', label: __('Code'), sortable: true);
 
-                if ($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY) {
-                    $table->column(key: 'variant_slug', label: 'Variant');
-                }
+                // if ($parent instanceof MasterProductCategory && $parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+                //     $table->column(key: 'variant_slug', label: 'Variant');
+                // }
+                $table->column(key: 'variant_slug', label: 'Variant', sortable: true);
+
 
                 $table
                     ->column(key: 'name', label: __('Name'), sortable: true)
@@ -442,16 +443,14 @@ class IndexMasterProducts extends GrpAction
                         ],
                     ] : [],
                 ],
-                'variantSlugs'            => $isFamily ? $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
+                'variantSlugs'            => $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'masterProductCategoryId' => $this->parent->id,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
-
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => MasterProductsTabsEnum::navigation(),
                 ],
-
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)
                     : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))),
@@ -462,7 +461,7 @@ class IndexMasterProducts extends GrpAction
 
             ]
         )->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))
-        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true));
+            ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true));
     }
 
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array

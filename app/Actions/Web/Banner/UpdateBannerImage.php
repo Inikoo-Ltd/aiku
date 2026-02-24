@@ -10,6 +10,7 @@ namespace App\Actions\Web\Banner;
 
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Models\Web\Banner;
+use App\Models\Web\Slide;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -18,7 +19,6 @@ class UpdateBannerImage
 {
     use AsAction;
     use HasBannerCommand;
-
 
     public function handle(Banner $banner): Banner
     {
@@ -48,7 +48,6 @@ class UpdateBannerImage
 
     public function asCommand(Command $command): int
     {
-
         if ($banner = $this->getBanner($command)) {
             $banner = $this->handle($banner);
 
@@ -56,7 +55,6 @@ class UpdateBannerImage
             return 0;
         }
         return 1;
-
     }
 
 }
