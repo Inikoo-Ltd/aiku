@@ -46,8 +46,12 @@ const ComponentsBlueprint = ref(SlidesBluprint.data)
 
 /* ---------------- helpers ---------------- */
 const getComponents = () => props.modelValue.components || []
+
 const setComponents = (val: SlideWorkshopData[]) => {
-  props.modelValue.components = val
+  emits("update:modelValue", {
+    ...props.modelValue,
+    components: val
+  })
 }
 const findIndex = (ulid: string) =>
   getComponents().findIndex((i: any) => i.ulid === ulid)
