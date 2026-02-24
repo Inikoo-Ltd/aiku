@@ -12,16 +12,33 @@ namespace App\Actions\Web\WebLayoutTemplate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Web\WebLayoutTemplate\WebLayoutTemplateType;
-use App\Models\Catalogue\Shop;
+use App\Models\Web\WebBlock;
+use App\Models\Web\WebLayoutTemplate;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreWebLayoutTemplate extends OrgAction
 {
     use WithWebEditAuthorisation;
 
-    public function handle(Webpage $webpage, array $modelData) 
+    public function handle(Webpage|WebBlock $parent, array $modelData): WebLayoutTemplate
+    {
+        if($parent instanceof Webpage){
+            $modelData = $this->handleWebpageLayout($parent, $modelData);
+        }
+
+        $webBlockLayout = DB::transaction(function () use ($modelData) {
+            $webBlockLayout = WebLayoutTemplate::create($modelData);
+            
+            return $webBlockLayout;
+        });
+
+        return $webBlockLayout;
+    }
+
+    public function handleWebpageLayout(Webpage $webpage, array $modelData): array
     {
         $orders = [];
         $webBlocks = Arr::pull($modelData, 'block.web_blocks');
@@ -41,13 +58,14 @@ class StoreWebLayoutTemplate extends OrgAction
         data_set($modelData, 'scope', $webpage->sub_type);
         // Will insert to column
         data_set($modelData, 'data', $data);
-        // TODO CONTINUE FROM HERE
-        dd($modelData);
+
+        return $modelData;
     }
 
     public function parseWebBlockListToLayout(array $webBlocks): array
     {
         $listWebBlocks = [];
+        // TODO CHECK FOR SYSTEM WEB BLOCK, DO NOT COPY EVERYTHING IF IT IS
         foreach ($webBlocks as $index => $item) {
             $keepData = Arr::only($item, ['name', 'show', 'type']);
             data_set($keepData, 'layout', data_get($item, 'web_block.layout'));
@@ -66,10 +84,10 @@ class StoreWebLayoutTemplate extends OrgAction
         ];
     }
 
-    public function asController(Webpage $webpage, ActionRequest $request)
+    public function asController(Webpage $webpage, ActionRequest $request): WebLayoutTemplate
     {
         $this->initialisationFromShop($webpage->shop, $request);
 
-        $this->handle($webpage, $this->validatedData);
+        return $this->handle($webpage, $this->validatedData);
     }
 }

@@ -17,11 +17,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /** 
  * @mixin \Eloquent
  */
-class WebLayoutTemplate extends Model
+class WebLayoutTemplate extends Model implements Auditable
 {
     use HasFactory;
     use SoftDeletes;
@@ -38,4 +39,8 @@ class WebLayoutTemplate extends Model
 
     protected $guarded = [];
 
+    // public function getRouteKeyName(): string
+    // {
+    //     return 'slug';
+    // }
 }
