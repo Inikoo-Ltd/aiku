@@ -26,6 +26,7 @@ const emit = defineEmits<{
 }>()
 
 const chartContainer = ref<HTMLElement | null>(null)
+const svgElement = ref<SVGSVGElement | null>(null)
 const transform = ref({ x: 0, y: 0, scale: 1 })
 const isDragging = ref(false)
 const panStartPointer = ref({ x: 0, y: 0 })
@@ -87,6 +88,10 @@ const enableNodeToggle = false
 const defaultScale = 10
 const searchQuery = ref("")
 const searchResultIndex = ref(0)
+let focusAnimationFrame: number | null = null
+const minFocusAnimationDuration = 280
+const maxFocusAnimationDuration = 700
+const motionBlurPx = ref(0)
 
 interface LayoutNode {
 	node: OrgNodeData
@@ -333,6 +338,11 @@ onMounted(() => {
 
 onUnmounted(() => {
 	window.removeEventListener("keydown", handleKeydown)
+	if (focusAnimationFrame !== null) {
+		cancelAnimationFrame(focusAnimationFrame)
+		focusAnimationFrame = null
+	}
+	motionBlurPx.value = 0
 })
 
 const centerChart = () => {
@@ -445,6 +455,102 @@ const getContainerCenter = (): { x: number; y: number } => {
 	}
 }
 
+const getSvgPointFromClient = (clientX: number, clientY: number): { x: number; y: number } | null => {
+	if (!svgElement.value) {
+		return null
+	}
+
+	const ctm = svgElement.value.getScreenCTM()
+	if (!ctm) {
+		return null
+	}
+
+	const point = svgElement.value.createSVGPoint()
+	point.x = clientX
+	point.y = clientY
+	const svgPoint = point.matrixTransform(ctm.inverse())
+
+	return { x: svgPoint.x, y: svgPoint.y }
+}
+
+const getViewportCenterInSvg = (): { x: number; y: number } => {
+	if (!chartContainer.value) {
+		return { x: svgWidth.value / 2, y: svgHeight.value / 2 }
+	}
+
+	const rect = chartContainer.value.getBoundingClientRect()
+	const centerX = rect.left + rect.width / 2
+	const centerY = rect.top + rect.height / 2
+	return getSvgPointFromClient(centerX, centerY) || { x: svgWidth.value / 2, y: svgHeight.value / 2 }
+}
+
+const animateTransformTo = (targetX: number, targetY: number, targetScale: number) => {
+	const start = performance.now()
+	const initial = { ...transform.value }
+	const distance = Math.hypot(targetX - initial.x, targetY - initial.y)
+	const scaleDistance = Math.abs(targetScale - initial.scale) * 240
+	const duration = Math.min(
+		maxFocusAnimationDuration,
+		Math.max(minFocusAnimationDuration, 260 + (distance + scaleDistance) * 0.12)
+	)
+
+	if (focusAnimationFrame !== null) {
+		cancelAnimationFrame(focusAnimationFrame)
+		focusAnimationFrame = null
+		motionBlurPx.value = 0
+	}
+
+	let lastX = initial.x
+	let lastY = initial.y
+	let lastScale = initial.scale
+	let lastTime = start
+
+	const step = (now: number) => {
+		const elapsed = Math.min(1, (now - start) / duration)
+		const eased =
+			elapsed < 0.5
+				? 4 * elapsed * elapsed * elapsed
+				: 1 - Math.pow(-2 * elapsed + 2, 3) / 2
+
+		const nextX = initial.x + (targetX - initial.x) * eased
+		const nextY = initial.y + (targetY - initial.y) * eased
+		const nextScale = initial.scale + (targetScale - initial.scale) * eased
+		const dt = Math.max(1, now - lastTime)
+		const panVelocity = Math.hypot(nextX - lastX, nextY - lastY) / dt
+		const scaleVelocity = Math.abs(nextScale - lastScale) / dt
+		const frameBlur = Math.min(3, panVelocity * 0.25 + scaleVelocity * 55)
+
+		motionBlurPx.value = motionBlurPx.value * 0.65 + frameBlur * 0.35
+		transform.value.x = nextX
+		transform.value.y = nextY
+		transform.value.scale = nextScale
+		lastX = nextX
+		lastY = nextY
+		lastScale = nextScale
+		lastTime = now
+
+		if (elapsed < 1) {
+			focusAnimationFrame = requestAnimationFrame(step)
+			return
+		}
+
+		focusAnimationFrame = null
+		motionBlurPx.value = 0
+	}
+
+	focusAnimationFrame = requestAnimationFrame(step)
+}
+
+const chartMotionStyle = computed(() => {
+	if (motionBlurPx.value <= 0.02) {
+		return {}
+	}
+
+	return {
+		filter: `blur(${motionBlurPx.value.toFixed(2)}px)`,
+	}
+})
+
 const focusNodeInView = (nodeId: string, preferredScale: number = transform.value.scale) => {
 	if (!chartContainer.value) {
 		return
@@ -458,10 +564,11 @@ const focusNodeInView = (nodeId: string, preferredScale: number = transform.valu
 	const scale = Math.min(Math.max(preferredScale, minScale), maxScale)
 	const nodeCenterX = targetNode.x + nodeWidth / 2
 	const nodeCenterY = targetNode.y + nodeHeight / 2
+	const viewportCenter = getViewportCenterInSvg()
 
-	transform.value.scale = scale
-	transform.value.x = chartContainer.value.clientWidth / 2 - nodeCenterX * scale
-	transform.value.y = chartContainer.value.clientHeight / 2 - nodeCenterY * scale
+	const targetX = viewportCenter.x - nodeCenterX * scale
+	const targetY = viewportCenter.y - nodeCenterY * scale
+	animateTransformTo(targetX, targetY, scale)
 	focusedNodeId.value = nodeId
 }
 
@@ -716,12 +823,15 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 			@mouseleave="handleMouseUp"
 			@wheel="handleWheel">
 			<svg
+				ref="svgElement"
 				class="org-chart-svg"
 				:width="svgWidth"
 				:height="svgHeight"
 				:viewBox="`0 0 ${svgWidth} ${svgHeight}`"
 				preserveAspectRatio="xMidYMid meet">
 				<g
+					class="org-chart-motion-layer"
+					:style="chartMotionStyle"
 					:transform="`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`">
 					<g class="org-chart-connectors">
 						<path
@@ -909,6 +1019,10 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 .org-chart-svg {
 	width: 100%;
 	height: 100%;
+}
+
+.org-chart-motion-layer {
+	will-change: transform, filter;
 }
 
 .connector-line {
