@@ -11,10 +11,31 @@ interface OrgNodeData {
 	reports?: OrgNodeData[]
 }
 
-interface NodeDragStartPayload {
+interface EmployeePayload {
+	group: OrgNodeData
+	employee: OrgNodeData
+}
+
+interface LayoutNode {
 	node: OrgNodeData
-	clientX: number
-	clientY: number
+	x: number
+	y: number
+	children: LayoutNode[]
+}
+
+interface NavigationTarget {
+	key: string
+	type: "group" | "employee"
+	groupId: string
+	node: OrgNodeData
+	searchableText: string
+}
+
+interface LayoutLine {
+	x1: number
+	y1: number
+	x2: number
+	y2: number
 }
 
 const props = defineProps<{
@@ -25,286 +46,216 @@ const emit = defineEmits<{
 	nodeClick: [node: OrgNodeData]
 }>()
 
+const employeeLimit = 10
 const chartContainer = ref<HTMLElement | null>(null)
 const svgElement = ref<SVGSVGElement | null>(null)
 const transform = ref({ x: 0, y: 0, scale: 1 })
-const isDragging = ref(false)
-const panStartPointer = ref({ x: 0, y: 0 })
-const panStartTransform = ref({ x: 0, y: 0 })
 const focusedNodeId = ref<string | null>(null)
-const expandedNodes = ref<Set<string>>(new Set())
+const focusedEmployeeId = ref<string | null>(null)
+const focusedNavigationKey = ref<string | null>(null)
 const svgWidth = ref(1200)
 const svgHeight = ref(800)
-const nodeOffsets = ref<Map<string, { x: number; y: number }>>(new Map())
-const activeNodeDrag = ref<{
-	nodeId: string
-	startClientX: number
-	startClientY: number
-	originX: number
-	originY: number
-	moved: boolean
-} | null>(null)
-const justDraggedNodeId = ref<string | null>(null)
-
-const displayNodes = computed(() => {
-	return props.nodes ?? []
-})
-
-const getInitialExpandedNodes = (nodes: OrgNodeData[], maxDepth: number): Set<string> => {
-	const expandedIds = new Set<string>()
-
-	const walk = (entries: OrgNodeData[], depth: number) => {
-		for (const entry of entries) {
-			const children = entry.reports || []
-			if (children.length === 0) {
-				continue
-			}
-
-			if (depth <= maxDepth) {
-				expandedIds.add(entry.id)
-			}
-
-			if (depth < maxDepth) {
-				walk(children, depth + 1)
-			}
-		}
-	}
-
-	walk(nodes, 0)
-
-	return expandedIds
-}
-
-const nodeWidth = 200
-const nodeHeight = 100
-const horizontalGap = 40
-const verticalGap = 80
-const minScale = 0.2
-const maxScale = Number.POSITIVE_INFINITY
-const zoomInStep = 1.35
-const zoomOutStep = 0.75
-const panSpeed = 5
-const enableNodeToggle = false
-const defaultScale = 1.8
+const containerWidth = ref(1200)
+const containerHeight = ref(800)
 const searchQuery = ref("")
 const searchResultIndex = ref(0)
 let focusAnimationFrame: number | null = null
+let searchBlurAnimationFrame: number | null = null
+let focusScrollAnimationFrame: number | null = null
 const minFocusAnimationDuration = 280
 const maxFocusAnimationDuration = 700
 const motionBlurPx = ref(0)
 let resizeObserver: ResizeObserver | null = null
 let centerChartTimer: ReturnType<typeof setTimeout> | null = null
 
-interface LayoutNode {
-	node: OrgNodeData
-	x: number
-	y: number
-	children: LayoutNode[]
+const nodeTopOffset = 40
+const verticalGroupGap = 40
+const minScale = 0.2
+const maxScale = Number.POSITIVE_INFINITY
+const zoomInStep = 1.35
+const zoomOutStep = 0.75
+const defaultScale = 1.8
+const searchFocusDuration = 560
+
+const displayNodes = computed(() => {
+	return props.nodes ?? []
+})
+
+const getVisibleEmployees = (group: OrgNodeData): OrgNodeData[] => {
+	return (group.reports ?? []).slice(0, employeeLimit)
 }
 
-const getNodeOffset = (nodeId: string): { x: number; y: number } => {
-	return nodeOffsets.value.get(nodeId) || { x: 0, y: 0 }
+const getGridColumns = (): number => {
+	if (containerWidth.value >= 1024) {
+		return 3
+	}
+
+	if (containerWidth.value >= 600) {
+		return 2
+	}
+
+	return 1
 }
 
-const calculateLayout = (
-	nodes: OrgNodeData[],
-	x: number,
-	y: number,
-	depth: number
-): LayoutNode[] => {
-	if (!nodes || nodes.length === 0) return []
+const chartNodeWidth = computed(() => {
+	const columns = getGridColumns()
+	if (columns === 3) {
+		return 640
+	}
 
-	const result: LayoutNode[] = []
+	if (columns === 2) {
+		return 460
+	}
 
-	if (nodes.length === 1) {
-		const node = nodes[0]
-		const children = expandedNodes.value.has(node.id)
-			? calculateLayout(node.reports || [], x, y + nodeHeight + verticalGap, depth + 1)
-			: []
-		result.push({ node, x, y, children })
-	} else {
-		let currentX = x
-		const childArrays: LayoutNode[][] = []
+	return 300
+})
 
-		for (const node of nodes) {
-			const childLayout = expandedNodes.value.has(node.id)
-				? calculateLayout(
-						node.reports || [],
-						currentX,
-						y + nodeHeight + verticalGap,
-						depth + 1
-					)
-				: []
-			childArrays.push(childLayout)
+const maxVisibleEmployeesPerNode = computed(() => {
+	if (displayNodes.value.length === 0) {
+		return 0
+	}
 
-			const subtreeWidth = calculateSubtreeWidth(childLayout)
-			currentX += subtreeWidth + horizontalGap
+	return Math.max(...displayNodes.value.map((group) => getVisibleEmployees(group).length), 0)
+})
+
+const chartNodeHeight = computed(() => {
+	const rows = Math.ceil(maxVisibleEmployeesPerNode.value / getGridColumns())
+	const employeeCardHeight = 54
+	const employeeGap = 10
+	const headerHeight = 96
+	const connectorHeight = 16
+	const bottomPadding = 18
+	const gridHeight = rows > 0 ? rows * employeeCardHeight + (rows - 1) * employeeGap : 0
+
+	return Math.max(170, headerHeight + connectorHeight + gridHeight + bottomPadding)
+})
+
+const calculateLayout = (nodes: OrgNodeData[], x: number, y: number): LayoutNode[] => {
+	if (nodes.length === 0) {
+		return []
+	}
+
+	return nodes.map((node, index) => {
+		return {
+			node,
+			x,
+			y: y + index * (chartNodeHeight.value + verticalGroupGap),
+			children: [],
 		}
-
-		currentX = x
-		for (let i = 0; i < nodes.length; i++) {
-			const node = nodes[i]
-			const subtreeWidth = calculateSubtreeWidth(childArrays[i])
-			const nodeX = currentX + (subtreeWidth - nodeWidth) / 2
-
-			result.push({
-				node,
-				x: nodeX,
-				y,
-				children: childArrays[i],
-			})
-
-			currentX += subtreeWidth + horizontalGap
-		}
-	}
-
-	return result
+	})
 }
 
-const calculateSubtreeWidth = (layoutNodes: LayoutNode[]): number => {
-	if (!layoutNodes || layoutNodes.length === 0) return nodeWidth
-	if (layoutNodes.length === 1) {
-		const childWidth = calculateSubtreeWidth(layoutNodes[0].children)
-		return Math.max(nodeWidth, childWidth)
-	}
-
-	let width = 0
-	for (const ln of layoutNodes) {
-		width += calculateSubtreeWidth(ln.children)
-	}
-	width += (layoutNodes.length - 1) * horizontalGap
-	return Math.max(width, nodeWidth * layoutNodes.length)
+const calculateSubtreeWidth = (_layoutNodes: LayoutNode[]): number => {
+	return chartNodeWidth.value
 }
 
-const renderTree = (
-	layoutNodes: LayoutNode[]
-): { nodes: LayoutNode[]; lines: { x1: number; y1: number; x2: number; y2: number }[] } => {
-	const lines: { x1: number; y1: number; x2: number; y2: number }[] = []
-	const nodes: LayoutNode[] = []
-
-	const traverse = (ln: LayoutNode) => {
-		const currentOffset = getNodeOffset(ln.node.id)
-		nodes.push({
-			...ln,
-			x: ln.x + currentOffset.x,
-			y: ln.y + currentOffset.y,
-		})
-
-		if (ln.children && ln.children.length > 0) {
-			const parentX = ln.x + currentOffset.x + nodeWidth / 2
-			const parentY = ln.y + currentOffset.y + nodeHeight
-
-			for (const child of ln.children) {
-				const childOffset = getNodeOffset(child.node.id)
-				const childX = child.x + childOffset.x + nodeWidth / 2
-				const childY = child.y + childOffset.y
-
-				lines.push({
-					x1: parentX,
-					y1: parentY,
-					x2: parentX,
-					y2: parentY + verticalGap / 2,
-				})
-				lines.push({
-					x1: parentX,
-					y1: parentY + verticalGap / 2,
-					x2: childX,
-					y2: parentY + verticalGap / 2,
-				})
-				lines.push({
-					x1: childX,
-					y1: parentY + verticalGap / 2,
-					x2: childX,
-					y2: childY,
-				})
-
-				traverse(child)
-			}
-		}
+const renderTree = (layoutNodes: LayoutNode[]): { nodes: LayoutNode[]; lines: LayoutLine[] } => {
+	return {
+		nodes: layoutNodes,
+		lines: [],
 	}
-
-	for (const ln of layoutNodes) {
-		traverse(ln)
-	}
-
-	return { nodes, lines }
 }
 
 const layout = computed(() => {
-	const tempLayout = calculateLayout(displayNodes.value, 0, 40, 0)
+	const tempLayout = calculateLayout(displayNodes.value, 0, nodeTopOffset)
 	const totalTreeWidth = calculateSubtreeWidth(tempLayout)
-	const startX = (Math.max(svgWidth.value, totalTreeWidth) - nodeWidth) / 2
-	const treeLayout = calculateLayout(displayNodes.value, startX, 40, 0)
+	const startX = (Math.max(containerWidth.value, totalTreeWidth) - totalTreeWidth) / 2
+	const treeLayout = calculateLayout(displayNodes.value, startX, nodeTopOffset)
 
-	// Update SVG dimensions to fit content
 	const maxX = calculateMaxX(treeLayout, 0)
 	const maxY = calculateMaxY(treeLayout, 0)
-	svgWidth.value = Math.max(chartContainer.value?.clientWidth || 1200, maxX + nodeWidth + 100)
-	svgHeight.value = Math.max(chartContainer.value?.clientHeight || 800, maxY + nodeHeight + 100)
+	const contentWidth = maxX + chartNodeWidth.value + 100
+	const contentHeight = maxY + chartNodeHeight.value + 100
+	svgWidth.value = Math.max(containerWidth.value, contentWidth * transform.value.scale)
+	svgHeight.value = Math.max(containerHeight.value, contentHeight * transform.value.scale)
 
 	return renderTree(treeLayout)
 })
 
 const calculateMaxX = (layoutNodes: LayoutNode[], maxX: number): number => {
-	for (const ln of layoutNodes) {
-		maxX = Math.max(maxX, ln.x)
-		if (ln.children.length > 0) {
-			maxX = calculateMaxX(ln.children, maxX)
-		}
+	for (const layoutNode of layoutNodes) {
+		maxX = Math.max(maxX, layoutNode.x)
 	}
+
 	return maxX
 }
 
 const calculateMaxY = (layoutNodes: LayoutNode[], maxY: number): number => {
-	for (const ln of layoutNodes) {
-		maxY = Math.max(maxY, ln.y)
-		if (ln.children.length > 0) {
-			maxY = calculateMaxY(ln.children, maxY)
-		}
+	for (const layoutNode of layoutNodes) {
+		maxY = Math.max(maxY, layoutNode.y)
 	}
+
 	return maxY
 }
 
-const visibleFlatNodes = computed(() => {
-	return layout.value.nodes.map((layoutNode) => layoutNode.node)
+const navigationTargets = computed<NavigationTarget[]>(() => {
+	const targets: NavigationTarget[] = []
+
+	for (const group of displayNodes.value) {
+		targets.push({
+			key: `group:${group.id}`,
+			type: "group",
+			groupId: group.id,
+			node: group,
+			searchableText: [group.name, group.title, group.department]
+				.filter(Boolean)
+				.join(" ")
+				.toLowerCase(),
+		})
+
+		for (const employee of getVisibleEmployees(group)) {
+			targets.push({
+				key: `employee:${group.id}:${employee.id}`,
+				type: "employee",
+				groupId: group.id,
+				node: employee,
+				searchableText: [employee.name, employee.title, employee.department, group.name]
+					.filter(Boolean)
+					.join(" ")
+					.toLowerCase(),
+			})
+		}
+	}
+
+	return targets
 })
 
-const searchResultIds = computed(() => {
+const navigationTargetMap = computed(() => {
+	return new Map(navigationTargets.value.map((target) => [target.key, target]))
+})
+
+const searchResultKeys = computed(() => {
 	const keyword = searchQuery.value.trim().toLowerCase()
 	if (!keyword) {
 		return []
 	}
 
-	return visibleFlatNodes.value
-		.filter((node) => {
-			return [node.name, node.title, node.department]
-				.filter(Boolean)
-				.join(" ")
-				.toLowerCase()
-				.includes(keyword)
-		})
-		.map((node) => node.id)
+	return navigationTargets.value
+		.filter((target) => target.searchableText.includes(keyword))
+		.map((target) => target.key)
 })
+
+const setFocusedTarget = (target: NavigationTarget) => {
+	focusedNavigationKey.value = target.key
+	focusedNodeId.value = target.groupId
+	focusedEmployeeId.value = target.type === "employee" ? target.node.id : null
+}
+
+const clearFocusedTarget = () => {
+	focusedNavigationKey.value = null
+	focusedNodeId.value = null
+	focusedEmployeeId.value = null
+}
 
 watch(
 	displayNodes,
-	(nodes) => {
+	() => {
 		if (focusAnimationFrame !== null) {
 			cancelAnimationFrame(focusAnimationFrame)
 			focusAnimationFrame = null
 		}
 
 		motionBlurPx.value = 0
-		isDragging.value = false
-		activeNodeDrag.value = null
-		justDraggedNodeId.value = null
-		nodeOffsets.value = new Map()
-
-		expandedNodes.value = getInitialExpandedNodes(
-			nodes,
-			enableNodeToggle ? 1 : Number.MAX_SAFE_INTEGER
-		)
-		focusedNodeId.value = nodes[0]?.id || null
 
 		requestAnimationFrame(() => {
 			scheduleCenterChart()
@@ -313,46 +264,57 @@ watch(
 	{ immediate: true }
 )
 
-watch(visibleFlatNodes, (nodes) => {
-	if (nodes.length === 0) {
-		focusedNodeId.value = null
-		return
-	}
+watch(
+	navigationTargets,
+	(targets) => {
+		if (targets.length === 0) {
+			clearFocusedTarget()
+			return
+		}
 
-	const focusedId = focusedNodeId.value
-	if (focusedId && nodes.some((node) => node.id === focusedId)) {
-		return
-	}
+		if (focusedNavigationKey.value && navigationTargetMap.value.has(focusedNavigationKey.value)) {
+			return
+		}
 
-	focusedNodeId.value = nodes[0].id
-})
+		setFocusedTarget(targets[0])
+	},
+	{ immediate: true }
+)
 
 watch(searchQuery, () => {
 	searchResultIndex.value = 0
 })
 
-watch(searchResultIds, (resultIds) => {
-	if (resultIds.length === 0) {
+watch(searchResultKeys, (resultKeys) => {
+	if (resultKeys.length === 0) {
 		searchResultIndex.value = 0
 		return
 	}
 
-	if (searchResultIndex.value >= resultIds.length) {
+	if (searchResultIndex.value >= resultKeys.length) {
 		searchResultIndex.value = 0
 	}
 })
 
 onMounted(() => {
 	if (chartContainer.value) {
-		svgWidth.value = Math.max(chartContainer.value.clientWidth, 1200)
-		svgHeight.value = Math.max(chartContainer.value.clientHeight, 800)
+		containerWidth.value = Math.max(chartContainer.value.clientWidth, 1200)
+		containerHeight.value = Math.max(chartContainer.value.clientHeight, 800)
+		svgWidth.value = containerWidth.value
+		svgHeight.value = containerHeight.value
 		resizeObserver = new ResizeObserver(() => {
+			if (!chartContainer.value) {
+				return
+			}
+
+			containerWidth.value = Math.max(chartContainer.value.clientWidth, 1200)
+			containerHeight.value = Math.max(chartContainer.value.clientHeight, 800)
 			scheduleCenterChart()
 		})
 		resizeObserver.observe(chartContainer.value)
 	}
-	window.addEventListener("keydown", handleKeydown)
 
+	window.addEventListener("keydown", handleKeydown)
 	scheduleCenterChart(100)
 })
 
@@ -363,14 +325,27 @@ onUnmounted(() => {
 		resizeObserver.disconnect()
 		resizeObserver = null
 	}
+
 	if (centerChartTimer !== null) {
 		clearTimeout(centerChartTimer)
 		centerChartTimer = null
 	}
+
 	if (focusAnimationFrame !== null) {
 		cancelAnimationFrame(focusAnimationFrame)
 		focusAnimationFrame = null
 	}
+
+	if (searchBlurAnimationFrame !== null) {
+		cancelAnimationFrame(searchBlurAnimationFrame)
+		searchBlurAnimationFrame = null
+	}
+
+	if (focusScrollAnimationFrame !== null) {
+		cancelAnimationFrame(focusScrollAnimationFrame)
+		focusScrollAnimationFrame = null
+	}
+
 	motionBlurPx.value = 0
 })
 
@@ -393,112 +368,69 @@ const centerChart = (): boolean => {
 		return false
 	}
 
-	const containerWidth = chartContainer.value.clientWidth
-	const containerHeight = chartContainer.value.clientHeight
-	if (containerWidth <= 0 || containerHeight <= 0) {
+	const currentContainerWidth = chartContainer.value.clientWidth
+	const currentContainerHeight = chartContainer.value.clientHeight
+	if (currentContainerWidth <= 0 || currentContainerHeight <= 0) {
 		return false
 	}
 
 	const bounds = getLayoutBounds()
 	const boundsWidth = Math.max(1, bounds.maxX - bounds.minX)
 	const boundsHeight = Math.max(1, bounds.maxY - bounds.minY)
-	const fitScale = Math.min(containerWidth / boundsWidth, containerHeight / boundsHeight)
+	const fitScale = Math.min(currentContainerWidth / boundsWidth, currentContainerHeight / boundsHeight)
 	const autoScale = Math.max(minScale, fitScale * 1.4)
 	const scale = Math.min(Math.max(Math.max(defaultScale, autoScale), minScale), maxScale)
 	const centerX = bounds.minX + boundsWidth / 2
 	const centerY = bounds.minY + boundsHeight / 2
 
 	transform.value.scale = scale
-	transform.value.x = containerWidth / 2 - centerX * scale
-	transform.value.y = containerHeight / 2 - centerY * scale
+	centerWorldPoint(centerX, centerY, scale, "auto")
 
 	return true
 }
 
-// Re-center when nodes are expanded/collapsed
-watch(
-	expandedNodes,
-	() => {
-		scheduleCenterChart(50)
-	},
-	{ deep: true }
-)
-
-const findNodeById = (nodeId: string, nodes: OrgNodeData[]): OrgNodeData | null => {
-	for (const node of nodes) {
-		if (node.id === nodeId) {
-			return node
-		}
-
-		const children = node.reports || []
-		if (children.length === 0) {
-			continue
-		}
-
-		const found = findNodeById(nodeId, children)
-		if (found) {
-			return found
-		}
-	}
-
-	return null
-}
-
-const handleMouseDown = (e: MouseEvent) => {
-	if (e.button !== 0) return
-	e.preventDefault()
-	isDragging.value = true
-	panStartPointer.value = { x: e.clientX, y: e.clientY }
-	panStartTransform.value = { x: transform.value.x, y: transform.value.y }
-}
-
-const handleMouseMove = (e: MouseEvent) => {
-	if (activeNodeDrag.value) {
-		const deltaX = e.clientX - activeNodeDrag.value.startClientX
-		const deltaY = e.clientY - activeNodeDrag.value.startClientY
-		const hasMoved = Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2
-
-		if (hasMoved) {
-			activeNodeDrag.value.moved = true
-		}
-
-		nodeOffsets.value.set(activeNodeDrag.value.nodeId, {
-			x: activeNodeDrag.value.originX + deltaX,
-			y: activeNodeDrag.value.originY + deltaY,
-		})
-		nodeOffsets.value = new Map(nodeOffsets.value)
+const applyZoomAtContainerPoint = (newScale: number, containerX: number, containerY: number) => {
+	if (!chartContainer.value) {
+		transform.value.scale = newScale
 		return
 	}
 
-	if (!isDragging.value) return
-	const speed = panSpeed * Math.max(1, Math.sqrt(transform.value.scale))
-	const deltaX = (e.clientX - panStartPointer.value.x) * speed
-	const deltaY = (e.clientY - panStartPointer.value.y) * speed
-	transform.value.x = panStartTransform.value.x + deltaX
-	transform.value.y = panStartTransform.value.y + deltaY
-}
-
-const handleMouseUp = () => {
-	if (activeNodeDrag.value) {
-		justDraggedNodeId.value = activeNodeDrag.value.moved ? activeNodeDrag.value.nodeId : null
-		activeNodeDrag.value = null
-	}
-
-	isDragging.value = false
-}
-
-const applyZoomAtContainerPoint = (newScale: number, containerX: number, containerY: number) => {
 	const oldScale = transform.value.scale
 	if (newScale === oldScale) {
 		return
 	}
 
-	const worldX = (containerX - transform.value.x) / oldScale
-	const worldY = (containerY - transform.value.y) / oldScale
+	const container = chartContainer.value
+	const worldX = (container.scrollLeft + containerX) / oldScale
+	const worldY = (container.scrollTop + containerY) / oldScale
+
+	if (focusScrollAnimationFrame !== null) {
+		cancelAnimationFrame(focusScrollAnimationFrame)
+		focusScrollAnimationFrame = null
+	}
 
 	transform.value.scale = newScale
-	transform.value.x = containerX - worldX * newScale
-	transform.value.y = containerY - worldY * newScale
+	const targetLeft = worldX * newScale - containerX
+	const targetTop = worldY * newScale - containerY
+	container.scrollTo({
+		left: targetLeft,
+		top: targetTop,
+		behavior: "auto",
+	})
+
+	requestAnimationFrame(() => {
+		if (!chartContainer.value) {
+			return
+		}
+
+		const nextContainer = chartContainer.value
+		const clamped = getClampedScrollPosition(nextContainer, targetLeft, targetTop)
+		nextContainer.scrollTo({
+			left: clamped.left,
+			top: clamped.top,
+			behavior: "auto",
+		})
+	})
 }
 
 const getContainerCenter = (): { x: number; y: number } => {
@@ -530,17 +462,171 @@ const getLayoutBounds = (): { minX: number; minY: number; maxX: number; maxY: nu
 	for (const node of layout.value.nodes) {
 		minX = Math.min(minX, node.x)
 		minY = Math.min(minY, node.y)
-		maxX = Math.max(maxX, node.x + nodeWidth)
-		maxY = Math.max(maxY, node.y + nodeHeight)
+		maxX = Math.max(maxX, node.x + chartNodeWidth.value)
+		maxY = Math.max(maxY, node.y + chartNodeHeight.value)
 	}
 
 	return { minX, minY, maxX, maxY }
 }
 
-const getSvgPointFromClient = (
-	clientX: number,
-	clientY: number
-): { x: number; y: number } | null => {
+const getClampedScrollPosition = (
+	container: HTMLElement,
+	left: number,
+	top: number
+): { left: number; top: number } => {
+	const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth)
+	const maxTop = Math.max(0, container.scrollHeight - container.clientHeight)
+
+	return {
+		left: Math.min(Math.max(0, left), maxLeft),
+		top: Math.min(Math.max(0, top), maxTop),
+	}
+}
+
+const animateContainerScrollTo = (
+	container: HTMLElement,
+	left: number,
+	top: number,
+	duration: number
+) => {
+	const clamped = getClampedScrollPosition(container, left, top)
+
+	if (duration <= 0) {
+		container.scrollTo({
+			left: clamped.left,
+			top: clamped.top,
+			behavior: "auto",
+		})
+		return
+	}
+
+	const start = performance.now()
+	const startLeft = container.scrollLeft
+	const startTop = container.scrollTop
+	const deltaLeft = clamped.left - startLeft
+	const deltaTop = clamped.top - startTop
+
+	if (Math.abs(deltaLeft) < 0.5 && Math.abs(deltaTop) < 0.5) {
+		container.scrollTo({
+			left: clamped.left,
+			top: clamped.top,
+			behavior: "auto",
+		})
+		return
+	}
+
+	if (focusScrollAnimationFrame !== null) {
+		cancelAnimationFrame(focusScrollAnimationFrame)
+		focusScrollAnimationFrame = null
+	}
+
+	const step = (now: number) => {
+		const progress = Math.min(1, (now - start) / duration)
+		const eased =
+			progress < 0.5
+				? 4 * progress * progress * progress
+				: 1 - Math.pow(-2 * progress + 2, 3) / 2
+		const nextLeft = startLeft + deltaLeft * eased
+		const nextTop = startTop + deltaTop * eased
+
+		container.scrollTo({
+			left: nextLeft,
+			top: nextTop,
+			behavior: "auto",
+		})
+
+		if (progress < 1) {
+			focusScrollAnimationFrame = requestAnimationFrame(step)
+			return
+		}
+
+		focusScrollAnimationFrame = null
+	}
+
+	focusScrollAnimationFrame = requestAnimationFrame(step)
+}
+
+const centerWorldPoint = (
+	worldX: number,
+	worldY: number,
+	scale: number,
+	behavior: ScrollBehavior = "smooth",
+	duration: number = searchFocusDuration
+) => {
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			if (!chartContainer.value) {
+				return
+			}
+
+			const container = chartContainer.value
+			const targetLeft = worldX * scale - container.clientWidth / 2
+			const targetTop = worldY * scale - container.clientHeight / 2
+			const clamped = getClampedScrollPosition(container, targetLeft, targetTop)
+
+			if (behavior === "smooth") {
+				animateContainerScrollTo(container, clamped.left, clamped.top, duration)
+			} else {
+				container.scrollTo({
+					left: clamped.left,
+					top: clamped.top,
+					behavior: "auto",
+				})
+			}
+		})
+	})
+}
+
+const centerNodeElement = (
+	nodeId: string,
+	behavior: ScrollBehavior = "smooth",
+	duration: number = searchFocusDuration
+): boolean => {
+	if (!chartContainer.value) {
+		return false
+	}
+
+	const container = chartContainer.value
+	const nodeElements = container.querySelectorAll<SVGForeignObjectElement>("foreignObject[data-node-id]")
+	let nodeElement: SVGForeignObjectElement | null = null
+
+	for (const element of nodeElements) {
+		if (element.dataset.nodeId === nodeId) {
+			nodeElement = element
+			break
+		}
+	}
+
+	if (!nodeElement) {
+		return false
+	}
+
+	const containerRect = container.getBoundingClientRect()
+	const nodeRect = nodeElement.getBoundingClientRect()
+	const targetLeft =
+		container.scrollLeft +
+		(nodeRect.left - containerRect.left) -
+		(container.clientWidth - nodeRect.width) / 2
+	const targetTop =
+		container.scrollTop +
+		(nodeRect.top - containerRect.top) -
+		(container.clientHeight - nodeRect.height) / 2
+	const clamped = getClampedScrollPosition(container, targetLeft, targetTop)
+
+	if (behavior === "smooth") {
+		animateContainerScrollTo(container, clamped.left, clamped.top, duration)
+	} else {
+		container.scrollTo({
+			left: clamped.left,
+			top: clamped.top,
+			behavior: "auto",
+		})
+	}
+
+	return true
+}
+
+const getSvgPointFromClient = (clientX: number, clientY: number): { x: number; y: number } | null => {
 	if (!svgElement.value) {
 		return null
 	}
@@ -566,9 +652,7 @@ const getViewportCenterInSvg = (): { x: number; y: number } => {
 	const rect = chartContainer.value.getBoundingClientRect()
 	const centerX = rect.left + rect.width / 2
 	const centerY = rect.top + rect.height / 2
-	return (
-		getSvgPointFromClient(centerX, centerY) || { x: svgWidth.value / 2, y: svgHeight.value / 2 }
-	)
+	return getSvgPointFromClient(centerX, centerY) || { x: svgWidth.value / 2, y: svgHeight.value / 2 }
 }
 
 const animateTransformTo = (targetX: number, targetY: number, targetScale: number) => {
@@ -636,7 +720,11 @@ const chartMotionStyle = computed(() => {
 	}
 })
 
-const focusNodeInView = (nodeId: string, preferredScale: number = transform.value.scale) => {
+const focusNodeInView = (
+	nodeId: string,
+	preferredScale: number = transform.value.scale,
+	smoothDuration: number = searchFocusDuration
+) => {
 	if (!chartContainer.value) {
 		return
 	}
@@ -647,26 +735,44 @@ const focusNodeInView = (nodeId: string, preferredScale: number = transform.valu
 	}
 
 	const scale = Math.min(Math.max(preferredScale, minScale), maxScale)
-	const nodeCenterX = targetNode.x + nodeWidth / 2
-	const nodeCenterY = targetNode.y + nodeHeight / 2
-	const viewportCenter = getViewportCenterInSvg()
+	const nodeCenterX = targetNode.x + chartNodeWidth.value / 2
+	const nodeCenterY = targetNode.y + chartNodeHeight.value / 2
+	transform.value.scale = scale
 
-	const targetX = viewportCenter.x - nodeCenterX * scale
-	const targetY = viewportCenter.y - nodeCenterY * scale
-	animateTransformTo(targetX, targetY, scale)
-	focusedNodeId.value = nodeId
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			const centered = centerNodeElement(nodeId, "smooth", smoothDuration)
+			if (!centered) {
+				centerWorldPoint(nodeCenterX, nodeCenterY, scale, "smooth", smoothDuration)
+			}
+		})
+	})
 }
 
-const focusSearchResult = (index: number) => {
-	const total = searchResultIds.value.length
+const focusTargetByKey = (
+	key: string,
+	preferredScale: number = transform.value.scale,
+	smoothDuration: number = searchFocusDuration
+) => {
+	const target = navigationTargetMap.value.get(key)
+	if (!target) {
+		return
+	}
+
+	focusNodeInView(target.groupId, preferredScale, smoothDuration)
+	setFocusedTarget(target)
+}
+
+const focusSearchResult = (index: number, smoothDuration: number = searchFocusDuration) => {
+	const total = searchResultKeys.value.length
 	if (total === 0) {
 		return
 	}
 
 	const normalized = ((index % total) + total) % total
 	searchResultIndex.value = normalized
-	const nodeId = searchResultIds.value[normalized]
-	focusNodeInView(nodeId, Math.max(transform.value.scale, 1.25))
+	const targetKey = searchResultKeys.value[normalized]
+	focusTargetByKey(targetKey, Math.max(transform.value.scale, 1.25), smoothDuration)
 }
 
 const focusNextSearchResult = () => {
@@ -677,8 +783,38 @@ const focusPreviousSearchResult = () => {
 	focusSearchResult(searchResultIndex.value - 1)
 }
 
-const runSearch = () => {
-	focusSearchResult(searchResultIndex.value)
+const triggerSearchMotionBlur = () => {
+	const start = performance.now()
+	const duration = 260
+	const peakBlur = 2.6
+
+	if (searchBlurAnimationFrame !== null) {
+		cancelAnimationFrame(searchBlurAnimationFrame)
+		searchBlurAnimationFrame = null
+	}
+
+	const step = (now: number) => {
+		const progress = Math.min(1, (now - start) / duration)
+		motionBlurPx.value = peakBlur * (1 - progress)
+
+		if (progress < 1) {
+			searchBlurAnimationFrame = requestAnimationFrame(step)
+			return
+		}
+
+		searchBlurAnimationFrame = null
+		motionBlurPx.value = 0
+	}
+
+	searchBlurAnimationFrame = requestAnimationFrame(step)
+}
+
+const runSearch = (withMotionBlur: boolean = false) => {
+	if (withMotionBlur) {
+		triggerSearchMotionBlur()
+	}
+
+	focusSearchResult(searchResultIndex.value, 680)
 }
 
 const clearSearch = () => {
@@ -697,6 +833,10 @@ const isTextInputElement = (target: EventTarget | null): boolean => {
 }
 
 const handleWheel = (e: WheelEvent) => {
+	if (!e.ctrlKey && !e.metaKey) {
+		return
+	}
+
 	const delta = e.deltaY > 0 ? zoomOutStep : zoomInStep
 	const newScale = Math.min(Math.max(transform.value.scale * delta, minScale), maxScale)
 	const didScaleChange = newScale !== transform.value.scale
@@ -704,8 +844,6 @@ const handleWheel = (e: WheelEvent) => {
 	e.preventDefault()
 
 	if (!didScaleChange) {
-		transform.value.x -= e.deltaX
-		transform.value.y -= e.deltaY
 		return
 	}
 
@@ -721,52 +859,32 @@ const handleWheel = (e: WheelEvent) => {
 	applyZoomAtContainerPoint(newScale, center.x, center.y)
 }
 
-const handleNodeToggle = (id: string) => {
-	if (!enableNodeToggle) {
-		return
-	}
-
-	const target = findNodeById(id, displayNodes.value)
-	if (!target || (target.reports?.length || 0) === 0) {
-		return
-	}
-
-	if (expandedNodes.value.has(id)) {
-		expandedNodes.value.delete(id)
-	} else {
-		expandedNodes.value.add(id)
-	}
-	expandedNodes.value = new Set(expandedNodes.value)
-}
-
 const handleNodeFocus = (node: OrgNodeData) => {
-	focusedNodeId.value = node.id
+	const target = navigationTargetMap.value.get(`group:${node.id}`)
+	if (!target) {
+		return
+	}
+
+	setFocusedTarget(target)
 }
 
 const handleNodeClick = (node: OrgNodeData) => {
-	if (activeNodeDrag.value?.nodeId === node.id) {
-		return
-	}
-
-	if (justDraggedNodeId.value === node.id) {
-		justDraggedNodeId.value = null
-		return
-	}
-
+	handleNodeFocus(node)
 	emit("nodeClick", node)
 }
 
-const handleNodeDragStart = (payload: NodeDragStartPayload) => {
-	const offset = getNodeOffset(payload.node.id)
-	activeNodeDrag.value = {
-		nodeId: payload.node.id,
-		startClientX: payload.clientX,
-		startClientY: payload.clientY,
-		originX: offset.x,
-		originY: offset.y,
-		moved: false,
+const handleEmployeeFocus = (payload: EmployeePayload) => {
+	const target = navigationTargetMap.value.get(`employee:${payload.group.id}:${payload.employee.id}`)
+	if (!target) {
+		return
 	}
-	focusedNodeId.value = payload.node.id
+
+	setFocusedTarget(target)
+}
+
+const handleEmployeeClick = (payload: EmployeePayload) => {
+	handleEmployeeFocus(payload)
+	emit("nodeClick", payload.employee)
 }
 
 const handleKeydown = (e: KeyboardEvent) => {
@@ -774,33 +892,33 @@ const handleKeydown = (e: KeyboardEvent) => {
 		return
 	}
 
-	if (visibleFlatNodes.value.length === 0) {
+	if (navigationTargets.value.length === 0) {
 		return
 	}
 
-	const lastIndex = visibleFlatNodes.value.length - 1
-	const focusedIndex = focusedNodeId.value
-		? visibleFlatNodes.value.findIndex((n) => n.id === focusedNodeId.value)
-		: -1
-	const currentIndex = focusedIndex === -1 ? 0 : focusedIndex
+	const currentIndex = focusedNavigationKey.value
+		? Math.max(
+				navigationTargets.value.findIndex((target) => target.key === focusedNavigationKey.value),
+				0
+			)
+		: 0
+	const lastIndex = navigationTargets.value.length - 1
 
 	if (e.key === "ArrowDown" || e.key === "ArrowRight") {
 		e.preventDefault()
 		const nextIndex = Math.min(currentIndex + 1, lastIndex)
-		const nextNodeId = visibleFlatNodes.value[nextIndex].id
-		focusNodeInView(nextNodeId)
+		focusTargetByKey(navigationTargets.value[nextIndex].key)
 	} else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
 		e.preventDefault()
 		const prevIndex = Math.max(currentIndex - 1, 0)
-		const prevNodeId = visibleFlatNodes.value[prevIndex].id
-		focusNodeInView(prevNodeId)
+		focusTargetByKey(navigationTargets.value[prevIndex].key)
 	} else if (e.key === "Enter") {
-		const node = visibleFlatNodes.value[currentIndex]
-		if (enableNodeToggle && node.reports && node.reports.length > 0) {
-			handleNodeToggle(node.id)
-		} else {
-			handleNodeClick(node)
+		const currentTarget = navigationTargets.value[currentIndex]
+		if (!currentTarget) {
+			return
 		}
+
+		emit("nodeClick", currentTarget.node)
 	}
 }
 
@@ -819,20 +937,6 @@ const zoomOut = () => {
 	const center = getContainerCenter()
 	applyZoomAtContainerPoint(newScale, center.x, center.y)
 }
-
-const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
-	const findNode = (nodes: LayoutNode[]): LayoutNode | null => {
-		for (const ln of nodes) {
-			if (ln.node.id === nodeId) return ln
-			const found = findNode(ln.children)
-			if (found) return found
-		}
-		return null
-	}
-
-	const found = findNode(layout.value.nodes)
-	return found ? { x: found.x, y: found.y } : null
-}
 </script>
 
 <template>
@@ -842,25 +946,25 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 				v-model="searchQuery"
 				type="text"
 				class="search-input"
-				placeholder="Search The Employee or Jobdesks"
-				@keydown.enter.prevent="runSearch" />
+				placeholder="Search The Employee or Jobdesk"
+				@keydown.enter.prevent="runSearch(true)" />
 			<button
 				class="search-btn"
-				:disabled="searchResultIds.length === 0"
+				:disabled="searchResultKeys.length === 0"
 				title="Previous result"
 				@click="focusPreviousSearchResult">
 				↑
 			</button>
 			<button
 				class="search-btn"
-				:disabled="searchResultIds.length === 0"
+				:disabled="searchResultKeys.length === 0"
 				title="Next result"
 				@click="focusNextSearchResult">
 				↓
 			</button>
 			<button
 				class="search-btn search-find-btn"
-				:disabled="searchResultIds.length === 0"
+				:disabled="searchResultKeys.length === 0"
 				@click="runSearch">
 				Find
 			</button>
@@ -869,9 +973,9 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 			</button>
 			<span class="search-count">
 				{{
-					searchResultIds.length === 0
+					searchResultKeys.length === 0
 						? "0"
-						: `${searchResultIndex + 1}/${searchResultIds.length}`
+						: `${searchResultIndex + 1}/${searchResultKeys.length}`
 				}}
 			</span>
 		</div>
@@ -918,10 +1022,6 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 		<div
 			ref="chartContainer"
 			class="org-chart-container"
-			@mousedown="handleMouseDown"
-			@mousemove="handleMouseMove"
-			@mouseup="handleMouseUp"
-			@mouseleave="handleMouseUp"
 			@wheel="handleWheel">
 			<svg
 				ref="svgElement"
@@ -933,7 +1033,7 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 				<g
 					class="org-chart-motion-layer"
 					:style="chartMotionStyle"
-					:transform="`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`">
+					:transform="`scale(${transform.scale})`">
 					<g class="org-chart-connectors">
 						<path
 							v-for="(line, index) in layout.lines"
@@ -945,31 +1045,30 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 					<foreignObject
 						v-for="ln in layout.nodes"
 						:key="ln.node.id"
+						:data-node-id="ln.node.id"
 						:x="ln.x"
 						:y="ln.y"
-						:width="nodeWidth"
-						:height="nodeHeight">
+						:width="chartNodeWidth"
+						:height="chartNodeHeight">
 						<OrgNode
 							:node="ln.node"
 							:is-focused="focusedNodeId === ln.node.id"
-							:is-expanded="enableNodeToggle ? expandedNodes.has(ln.node.id) : true"
-							:has-children="(ln.node.reports?.length ?? 0) > 0"
-							:disable-toggle="!enableNodeToggle"
-							@toggle="handleNodeToggle"
+							:focused-employee-id="focusedNodeId === ln.node.id ? focusedEmployeeId : null"
 							@focus="handleNodeFocus"
-							@drag-start="handleNodeDragStart"
-							@select="handleNodeClick" />
+							@employee-focus="handleEmployeeFocus"
+							@select="handleNodeClick"
+							@employee-select="handleEmployeeClick" />
 					</foreignObject>
 				</g>
 			</svg>
 		</div>
 
 		<div class="org-chart-help">
-			<span>🖱️Drag to pan</span>
-			<span>🖱️Scroll to zoom</span>
+			<span>🖱️ Scroll canvas</span>
+			<span>🖱️Ctrl + Scroll to zoom</span>
 			<span>⌨️ Arrow keys to navigate</span>
 			<span>👍Enter to select</span>
-			<span>👌Click The node to Move Around</span>
+			<span>👌Click node to select</span>
 			<span>✨Click reset to re-center</span>
 		</div>
 	</div>
@@ -1111,17 +1210,16 @@ const getNodePosition = (nodeId: string): { x: number; y: number } | null => {
 .org-chart-container {
 	width: 100%;
 	height: 100%;
-	cursor: grab;
-	overflow: hidden;
-}
-
-.org-chart-container:active {
-	cursor: grabbing;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
 .org-chart-svg {
-	width: 100%;
-	height: 100%;
+	display: block;
+	width: auto;
+	height: auto;
+	min-width: 100%;
+	min-height: 100%;
 }
 
 .org-chart-motion-layer {
