@@ -30,6 +30,7 @@ use App\InertiaTable\InertiaTable;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Models\HumanResources\OvertimeType;
+use App\Models\HumanResources\Holiday;
 
 class IndexClockingEmployees extends OrgAction
 {
@@ -460,6 +461,10 @@ class IndexClockingEmployees extends OrgAction
                             ])
                             ->values(),
                     ]),
+                ClockingEmployeesTabsEnum::CALENDAR->value =>
+                $data['tab'] === ClockingEmployeesTabsEnum::CALENDAR->value
+                    ? fn () => $this->getCalendarData($request)
+                    : Inertia::lazy(fn () => $this->getCalendarData($request)),
             ]
         )
             ->table(
@@ -506,6 +511,75 @@ class IndexClockingEmployees extends OrgAction
                 ]
             ]
         );
+    }
+
+    protected function getCalendarData(ActionRequest $request): array
+    {
+        $year = (int) $request->input('year', now()->year);
+        $month = $request->integer('month') ?: null;
+
+        if (!$this->employee || !$this->employee->organisation_id) {
+            return [
+                'year' => $year,
+                'month' => $month,
+                'holidays' => [],
+                'holidayRanges' => [],
+            ];
+        }
+
+        $holidays = Holiday::query()
+            ->where('organisation_id', $this->employee->organisation_id)
+            ->where('year', $year)
+            ->get();
+
+        $holidayDates = [];
+
+        foreach ($holidays as $holiday) {
+            $currentDate = $holiday->from->copy();
+            while ($currentDate->lte($holiday->to)) {
+                $dateKey = $currentDate->format('Y-m-d');
+
+                if (!array_key_exists($dateKey, $holidayDates)) {
+                    $holidayDates[$dateKey] = [
+                        'date'   => $dateKey,
+                        'labels' => [],
+                    ];
+                }
+
+                if ($holiday->label) {
+                    $holidayDates[$dateKey]['labels'][] = $holiday->label;
+                }
+
+                $currentDate->addDay();
+            }
+        }
+
+        $calendarHolidays = array_values(array_map(
+            static function (array $item): array {
+                return [
+                    'date'  => $item['date'],
+                    'label' => implode(', ', $item['labels']),
+                ];
+            },
+            $holidayDates
+        ));
+
+        $holidayRanges = $holidays->map(
+            static function (Holiday $holiday): array {
+                return [
+                    'from'  => $holiday->from->format('Y-m-d'),
+                    'to'    => $holiday->to->format('Y-m-d'),
+                    'label' => $holiday->label,
+                ];
+            }
+        )->values();
+
+        return [
+            'year' => $year,
+            'month' => $month,
+            'holidays' => $calendarHolidays,
+            'holidayRanges' => $holidayRanges,
+        ];
     }
 
     protected function resolvePeriodRange(): ?array
