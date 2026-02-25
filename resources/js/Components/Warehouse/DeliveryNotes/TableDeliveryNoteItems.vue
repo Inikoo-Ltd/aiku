@@ -608,9 +608,7 @@ const submitTransactionAsWaiting = () => {
                             
                             <!-- Button: Pick from magic place -->
                             <Button
-                                v-if="
-                                    layout.app.environment === 'local'
-                                    && !itemValue.is_handled
+                                v-if="!itemValue.is_handled
                                     && Number(countStockInAllLocations(itemValue.locations)) < itemValue.quantity_to_pick
                                 "
                                 @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
@@ -685,7 +683,6 @@ const submitTransactionAsWaiting = () => {
 
                     <div class="flex gap-x-2 gap-y-1 items-center">
                         <Button
-                            v-if="layout.app.environment === 'local'"
                             @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
                             type="warning"
                             key="4"
