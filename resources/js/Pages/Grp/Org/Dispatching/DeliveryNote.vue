@@ -447,7 +447,7 @@ onMounted(() => {
 		</template> -->
 
 		<!-- Button: Select trolley (only for Ecom) -->
-		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-start-picking="{ action }">
+		<template v-if="props.shop.type === 'b2b'"  #button-start-picking="{ action }">
 			<ButtonSelectTrolleys
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
@@ -457,7 +457,7 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select picked bays (only for Ecom) -->
-		<template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-as-packed="{ action }">
+		<template v-if="props.shop.type === 'b2b'"  #button-set-as-packed="{ action }">
 			<ButtonSelectBays
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"

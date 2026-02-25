@@ -651,6 +651,7 @@ const submitTransactionAsWaiting = () => {
 
                             <!-- Button: Set Transaction as Waiting -->
                             <Button
+                                v-if="layout.app.environment === 'local'"
                                 @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue)"
                                 type="tertiary"
                                 iconRight="fal fa-hourglass-half"

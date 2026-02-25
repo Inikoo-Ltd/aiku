@@ -416,16 +416,31 @@ const submitChangeTrolley = () => {
                 </div>
 
                 <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_create_replacement">
-                    <div v-if="boxStats?.picker?.contact_name">
-                        <dl v-tooltip="trans('Picker name')"
-                            class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
-                            <dt class="flex-none">
-                                {{ trans("Picker") }}:
-                            </dt>
-                            <dd class="text-gray-500">
-                                {{ boxStats?.picker?.contact_name }}
-                            </dd>
-                        </dl>
+                    <div class="flex gap-x-4 items-center">
+                        <!-- Section: Picker name -->
+                        <div v-if="boxStats?.picker?.contact_name">
+                            <dl v-tooltip="trans('Picker name')"
+                                class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                                <dt class="flex-none">
+                                    {{ trans("Picker") }}:
+                                </dt>
+                                <dd class="text-gray-500">
+                                    {{ boxStats?.picker?.contact_name }}
+                                </dd>
+                            </dl>
+                        </div>
+                        <!-- Section: Packer name -->
+                        <div v-if="boxStats?.packer?.contact_name">
+                            <dl v-tooltip="trans('Packer name')"
+                                class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                                <dt class="flex-none">
+                                    {{ trans("Packer") }}:
+                                </dt>
+                                <dd class="text-gray-500">
+                                    {{ boxStats?.packer?.contact_name }}
+                                </dd>
+                            </dl>
+                        </div>
                     </div>
 
                     <!-- Section: Trolleys -->
@@ -444,6 +459,20 @@ const submitChangeTrolley = () => {
                         <span class="opacity-50 hover:opacity-100 cursor-pointer" @click="isModalEditTrolley = true">
                             <FontAwesomeIcon icon="fal fa-pencil" class="text-xs" fixed-width aria-hidden="true" />
                         </span>
+                    </div>
+
+                    
+                    <!-- Section: Picked Bays -->
+                    <div v-if="boxStats?.picked_bay?.name">
+                        <dl v-tooltip="trans('Picked bay name')"
+                            class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                            <dt class="flex-none">
+                                {{ trans("Picked bay") }}:
+                            </dt>
+                            <dd class="text-gray-500">
+                                {{ boxStats?.picked_bay?.contact_name }}
+                            </dd>
+                        </dl>
                     </div>
                     
                     <div class="!mt-2 border-t border-gray-300 w-full" />

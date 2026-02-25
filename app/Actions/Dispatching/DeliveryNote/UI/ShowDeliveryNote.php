@@ -542,6 +542,8 @@ class ShowDeliveryNote extends OrgAction
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
             'picker'                       => $deliveryNote->pickerUser,
             'packer'                       => $deliveryNote->packerUser,
+            'picked_bay'                   => $deliveryNote->pickedBay,  // TODO: correct or not?
+            'trolleys'                     => $trolleys,
             'parcels'                      => $deliveryNote->parcels,
             'external_order'               => [
                 'status'                  => (bool)$order->external_id,
@@ -592,7 +594,6 @@ class ShowDeliveryNote extends OrgAction
                 ]
 
             ],
-            'trolleys'                     => $trolleys
         ];
     }
 
