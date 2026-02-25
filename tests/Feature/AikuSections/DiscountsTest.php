@@ -91,14 +91,14 @@ test('seed offer campaigns', function () {
     $this->group->refresh();
     $this->organisation->refresh();
 
-    expect($this->group->discountsStats->number_offer_campaigns)->toBe(8)
-        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(0)
+    expect($this->group->discountsStats->number_offer_campaigns)->toBe(9)
+        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(1)
         ->and($this->group->discountsStats->number_offer_campaigns_state_in_process)->toBe(8)
-        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(8)
-        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(0)
+        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(9)
+        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(1)
         ->and($this->organisation->discountsStats->number_offer_campaigns_state_in_process)->toBe(8)
-        ->and($shop->discountsStats->number_offer_campaigns)->toBe(8)
-        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(0)
+        ->and($shop->discountsStats->number_offer_campaigns)->toBe(9)
+        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(1)
         ->and($shop->discountsStats->number_offer_campaigns_state_in_process)->toBe(8);
 });
 

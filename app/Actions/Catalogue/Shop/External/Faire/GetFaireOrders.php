@@ -90,6 +90,7 @@ class GetFaireOrders extends OrgAction
 
 
                 $orderData = [
+                    'is_shipping_by_external' => Arr::get($shop->settings, 'is_shipping_by_external'),
                     'external_id'         => $externalId,
                     'marketplace_id'      => $externalId,
                     'reference'           => $faireOrder['display_id'],
@@ -175,7 +176,7 @@ class GetFaireOrders extends OrgAction
                         'warehouse_id' => $warehouse->id
                     ]);
 
-                    //AcceptFaireOrder::run($order);
+                    AcceptFaireOrder::run($order);
 
 
                 }

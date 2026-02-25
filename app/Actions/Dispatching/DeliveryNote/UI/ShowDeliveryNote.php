@@ -22,7 +22,6 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -417,31 +416,26 @@ class ShowDeliveryNote extends OrgAction
         $order     = $deliveryNote->orders->first();
 
         $additionalShipmentRoutes = [];
-
-        if($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
-            $additionalShipmentRoutes = [
-                'submit_platform_route' => [
-                    'name'       => match ($order->platform->type) {
-                        PlatformTypeEnum::TIKTOK => 'grp.models.delivery_note.shipment.store_tiktok',
-                        default => 'grp.models.delivery_note.shipment.store',
-                    },
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
+        if ($order->is_shipping_by_external) {
+            if ($order->shop->engine == ShopEngineEnum::FAIRE) {
+                $additionalShipmentRoutes = [
+                    'submit_platform_route' => [
+                        'name' => 'grp.models.delivery_note.shipment.store_faire',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
                     ]
-                ]
-            ];
-        } else if($order->shop->type == ShopTypeEnum::EXTERNAL) {
-            $additionalShipmentRoutes = [
-                'submit_platform_route' => [
-                    'name'       => match ($order->shop->engine) {
-                        ShopEngineEnum::FAIRE => 'grp.models.delivery_note.shipment.store_faire',
-                        default => 'grp.models.delivery_note.shipment.store',
-                    },
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
+                ];
+            } elseif ($order->platform->type == PlatformTypeEnum::TIKTOK) {
+                $additionalShipmentRoutes = [
+                    'submit_platform_route' => [
+                        'name' => 'grp.models.delivery_note.shipment.store_tiktok',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
                     ]
-                ]
-            ];
+                ];
+            }
         } else {
             $additionalShipmentRoutes = [
                 'submit_route' => [
@@ -458,6 +452,7 @@ class ShowDeliveryNote extends OrgAction
             'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
             'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
             'is_collection'    => (bool)$deliveryNote->collection_address_id,
+            'is_shipping_by_external' => $deliveryNote->is_shipping_by_external,
             'is_replacement'   => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT,
             'customer'         => array_merge(
                 CustomerResource::make($deliveryNote->customer)->getArray(),

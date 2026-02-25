@@ -54,6 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\TiktokUserHasOrder> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
+ * @property-read \App\Models\Dropshipping\Platform|null $platform
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\TiktokUserHasProduct> $products
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser newModelQuery()
@@ -124,5 +125,10 @@ class TiktokUser extends Model
     public function customerSalesChannel(): BelongsTo
     {
         return $this->belongsTo(CustomerSalesChannel::class);
+    }
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
     }
 }

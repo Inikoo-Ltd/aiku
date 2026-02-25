@@ -78,6 +78,7 @@ class GetOrderDeliveryAddressManagement
                 'home_address_id'                => $order->customer->address_id,
                 'current_selected_address_id'    => $order->delivery_address_id,
                 'collection_address_id'          => $order->collection_address_id,
+                'is_shipping_by_external'        => $order->is_shipping_by_external,
                 'selected_delivery_addresses_id' => $orderDeliveryAddressIds,
                 'routes_list'                    => [
                     'switch_route' => [

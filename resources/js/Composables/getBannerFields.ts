@@ -16,12 +16,16 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import SlideBackground from "@/Components/Banners/SlidesWorkshop/Fields/SlideBackground.vue"
 import ColorBackground from "@/Components/Banners/Slider/ColorBackground.vue"
+import SlideVideo from "@/Components/Banners/SlidesWorkshop/Fields/SlideVideo.vue"
+import RangeSlider from "@/Components/Banners/SlidesWorkshop/Fields/RangeSlider.vue"
+import CardsBuilder from "@/Components/Banners/SlidesWorkshop/Fields/CardsBuilder.vue"
 
 const componentsMap: Record<string, any> = {
 	text: PureInput,
 	number: PureInputNumber,
 	corners: Corners,
 	range: Range,
+	rangeSlider: RangeSlider,
 	colorpicker: Colorpicker,
 	select: PureMultiselect,
 	radio: Radio,
@@ -32,6 +36,8 @@ const componentsMap: Record<string, any> = {
 	bannerNavigation: BannerNavigation,
 	slideBackground: SlideBackground,
 	"color-background": ColorBackground,
+	slideVideo: SlideVideo,
+	cardsBuilder: CardsBuilder,
 }
 
 export const getComponent = (componentName: string) => {

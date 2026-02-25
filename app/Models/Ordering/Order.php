@@ -152,13 +152,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $commission_amount
  * @property string $profit_amount
  * @property string|null $margin
+ * @property bool $is_shipping_by_external
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
  * @property-read Address|null $collectionAddress
  * @property-read Currency $currency
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
@@ -242,15 +243,16 @@ class Order extends Model implements HasMedia, Auditable
         'commission_amount' => 'decimal:2',
 
 
-        'state'               => OrderStateEnum::class,
-        'status'              => OrderStatusEnum::class,
-        'handing_type'        => OrderHandingTypeEnum::class,
-        'pay_status'          => OrderPayStatusEnum::class,
-        'pay_detailed_status' => OrderPayDetailedStatusEnum::class,
-        'shipping_engine'     => OrderShippingEngineEnum::class,
-        'charges_engine'      => OrderChargesEngineEnum::class,
-        'to_be_paid_by'       => OrderToBePaidByEnum::class,
-        'with_replacement'    => 'boolean',
+        'state'                   => OrderStateEnum::class,
+        'status'                  => OrderStatusEnum::class,
+        'handing_type'            => OrderHandingTypeEnum::class,
+        'pay_status'              => OrderPayStatusEnum::class,
+        'pay_detailed_status'     => OrderPayDetailedStatusEnum::class,
+        'shipping_engine'         => OrderShippingEngineEnum::class,
+        'charges_engine'          => OrderChargesEngineEnum::class,
+        'to_be_paid_by'           => OrderToBePaidByEnum::class,
+        'with_replacement'        => 'boolean',
+        'is_shipping_by_external' => 'boolean'
     ];
 
     protected $attributes = [
@@ -272,14 +274,8 @@ class Order extends Model implements HasMedia, Auditable
 
     protected array $auditInclude = [
         'reference',
-        'total_amount',
-        'charges_amount',
-        'net_amount',
-        'goods_amount',
-        'shipping_amount',
-        'payment_amount',
-        'commission_amount',
         'handing_type',
+        'is_shipping_by_external'
     ];
 
 
