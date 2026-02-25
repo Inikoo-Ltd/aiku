@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 class UpdateDeliveryNoteStateToPicked extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
 
     /**
@@ -26,7 +28,9 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-       // return DB::transaction(function () use ($deliveryNote) {
+        $oldState = $deliveryNote->state;
+
+        $deliveryNote = DB::transaction(function () use ($deliveryNote) {
             data_set($modelData, 'picked_at', now());
             data_set($modelData, 'state', DeliveryNoteStateEnum::PICKED->value);
 
@@ -35,10 +39,13 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
             }
 
             return $this->update($deliveryNote, $modelData);
-     //   });
+        });
+
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PICKED);
+
+        return $deliveryNote;
     }
-
-
 
 
 }

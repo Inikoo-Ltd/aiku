@@ -154,7 +154,6 @@ class ShowDeliveryNote extends OrgAction
             ->exists();
 
         $actions = [];
-
         if (!$hasUnHandledItems) {
             $actions[] = [
                 'type'    => 'button',
@@ -171,12 +170,7 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ];
         }
-        // else {
-        //     $actions[] = [
-        //         'type'    => 'button',
-        //         'key'     => 'set-for-waiting',
-        //     ];
-        // }
+
 
         return $actions;
     }
@@ -249,14 +243,7 @@ class ShowDeliveryNote extends OrgAction
 
         return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
-                //                [
-                //                    'type'      => 'button',
-                //                    'style'     => 'save',
-                //                    'tooltip'   => __('Unassigned'),
-                //                    'label' => __('Put in Queue'),
-                //                    'iconRight' => 'fas fa-arrow-right',
-                //                    'key'       => 'to-queue',
-                //                ],
+
                 [
                     'type'    => 'button',
                     'style'   => 'save',
@@ -338,7 +325,37 @@ class ShowDeliveryNote extends OrgAction
                 ],
             ],
             DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
-
+            DeliveryNoteStateEnum::PACKING => [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Set as packed'),
+                    'label'   => __('Set as packed'),
+                    'key'     => 'follow-back-end',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.packed',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ]
+            ],
+            DeliveryNoteStateEnum::PICKED => [
+                [
+                    'type'  => 'button',
+                    'style' => 'save',
+                    'label' => __('Start packing'),
+                    'key'   => 'action',
+                    'route' => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.packing',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ]
+            ],
             DeliveryNoteStateEnum::PACKED => [
                 count($deliveryNote->parcels ?? []) ? [
                     'type'    => 'button',

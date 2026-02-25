@@ -26,7 +26,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePack
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPacking;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicking;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
@@ -55,7 +55,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('handling-blocked', UpdateDeliveryNoteStateToHandlingBlocked::class)->name('handling_blocked');
         Route::patch('handling-blocked-with-picked-bay', UpdateDeliveryNoteStateToHandlingBlockedWithPickedBay::class)->name('handling_blocked_with_picked_bay');
-        Route::patch('packing', UpdateDeliveryNoteStateToPacking::class)->name('packing');
+        Route::patch('packing', StartPackingDeliveryNote::class)->name('packing');
         Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
         Route::patch('packed', UpdateDeliveryNoteStatePacked::class)->name('packed');
         Route::patch('packed-with-picked-bay', SetPackedWithPickingBaysDeliveryNote::class)->name('packed_with_picked_bay');
