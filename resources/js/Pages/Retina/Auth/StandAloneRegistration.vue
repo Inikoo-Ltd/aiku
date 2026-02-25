@@ -118,6 +118,7 @@ const submit = () => {
 		})
 	} else {
 		form.setError("password", "password not match")
+		form.setError("password_confirmation", "Password does not match")
 	}
 }
 
@@ -204,14 +205,16 @@ const isUserInputPassed = (dataToCheck: {}) => {
 										</InputIcon>
 
 										<!-- and make the input itself full-width -->
-										<InputText
-											v-model="form.email"
-											type="email"
-											id="email"
-											name="email"
-											class="w-full"
-											xdisabled
-											required />
+										<div :class="form.errors.email ? 'errorShake' : ''">
+											<InputText
+												v-model="form.email"
+												type="email"
+												id="email"
+												name="email"
+												class="w-full"
+												xdisabled
+												required />
+										</div>
 									</IconField>
 
 									<p v-if="form.errors.email" class="text-sm text-red-600 mt-1">
@@ -234,6 +237,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 										v-model="form.password"
 										@update:modelValue="(e) => form.clearErrors('password')"
 										:type="'password'"
+										:class="form.errors.password ? 'errorShake' : ''"
 										required />
 									<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
 										{{ form.errors.password }}
@@ -254,6 +258,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 									<PureInput
 										v-model="form.password_confirmation"
 										:type="'password'"
+										:class="form.errors.password_confirmation ? 'errorShake' : ''"
 										required />
 									<p
 										v-if="form.errors.password_confirmation"
