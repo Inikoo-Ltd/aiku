@@ -2,7 +2,6 @@ export const blueprint = (data?: {}, id: number) => {
 	const banner = data?.layout?.web_blocks?.find((item) => item.id == id) ?? null
 	const banner_data = banner?.web_block?.layout?.data?.fieldValue ?? null
 
-	console.log('banner_data',banner_data, banner)
 	return {
 		blueprint: [
 			{

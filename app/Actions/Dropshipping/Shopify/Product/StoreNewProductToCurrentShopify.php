@@ -32,7 +32,7 @@ class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUniqu
         $this->handle($portfolio, []);
     }
 
-    public function handle(Portfolio $portfolio, array $modelData): void
+    public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
         $result1 = StoreShopifyProduct::run($portfolio, $modelData);
 
@@ -44,9 +44,8 @@ class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUniqu
             }
         }
 
-        UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
+        return $portfolio;
     }
-
 
     public function asController(Portfolio $portfolio, ActionRequest $request): void
     {

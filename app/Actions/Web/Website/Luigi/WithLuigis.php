@@ -91,17 +91,17 @@ trait WithLuigis
             'Authorization'   => "Hello $publicKey:$signature",
         ];
 
-        Log::info('compressed: ' . $compressed);
+        Log::info('compressed: '.$compressed);
         $bodyToPrint = 'encoded body';
         if ($compressed) {
             $header['Content-Encoding'] = 'gzip';
             $body                       = gzencode(json_encode($body), 9);
         } else {
-            $body = json_encode($body);
+            $body        = json_encode($body);
             $bodyToPrint = $body;
         }
 
-        Log::info('Starting request to Luigi Box API ' . $publicKey . ' (' . $date . ')...');
+        Log::info('Starting request to Luigi Box API '.$publicKey.' ('.$date.')...');
         Log::info('Headers: ', $header);
         Log::info('Body: ', ['body' => $bodyToPrint]);
         Log::info('Loading...');
@@ -115,23 +115,21 @@ trait WithLuigis
                 );
         } catch (\Exception $e) {
             throw new Exception('Failed to call Luigis Box API: '.$e->getMessage());
-
         }
-
 
 
         if ($response->failed()) {
             Log::error('Failed to send request to Luigis Box API: '.$response->body(), [
-                'ResponseBody'      => $response->body(),
+                'ResponseBody' => $response->body(),
             ]);
             throw new Exception('Failed to send request to Luigis Box API: '.$response->body());
         } else {
             Log::info('Successfully sent request to Luigis Box API', [
-                'ResponseBody'      => $response->body(),
+                'ResponseBody' => $response->body(),
             ]);
+
             return json_decode($response->body(), true);
         }
-
     }
 
 
@@ -197,7 +195,12 @@ trait WithLuigis
             $body = [
                 'objects' => $objects
             ];
-            $this->request($parent, '/v1/content', $body);
+
+            try {
+                $this->request($parent, '/v1/content', $body);
+            } catch (Exception $e) {
+                //
+            }
         }
     }
 
@@ -225,7 +228,12 @@ trait WithLuigis
             $body = [
                 'objects' => $objects
             ];
-            $this->request($parent, '/v1/content', $body);
+
+            try {
+                $this->request($parent, '/v1/content', $body);
+            } catch (Exception $e) {
+                //
+            }
         }
     }
 
@@ -248,7 +256,13 @@ trait WithLuigis
                     $body       = [
                         'objects' => $batch
                     ];
-                    $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
+
+                    try {
+                        $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
+                    } catch (Exception $e) {
+                        //
+                    }
+
                     print "Deleted count ".count($batch)." from website: $website->name\n";
                 }
             });
@@ -283,7 +297,11 @@ trait WithLuigis
                 ]
             ];
         }
-        $this->request($website, '/v1/content/delete', $body, 'delete');
+        try {
+            $this->request($website, '/v1/content/delete', $body, 'delete');
+        } catch (Exception $e) {
+            //
+        }
     }
 
     /**
@@ -299,8 +317,11 @@ trait WithLuigis
                 ]
             ]
         ];
-
-        $this->request($website, '/v1/content/delete', $body, 'delete');
+        try {
+            $this->request($website, '/v1/content/delete', $body, 'delete');
+        } catch (Exception $e) {
+            //
+        }
     }
 
     /**
@@ -308,16 +329,20 @@ trait WithLuigis
      */
     public function deleteContentManual(Website $website, array $object): void
     {
-        $this->request(
-            $website,
-            '/v1/content/delete',
-            [
-                'objects' => [
-                    $object
-                ]
-            ],
-            'delete'
-        );
+        try {
+            $this->request(
+                $website,
+                '/v1/content/delete',
+                [
+                    'objects' => [
+                        $object
+                    ]
+                ],
+                'delete'
+            );
+        } catch (Exception $e) {
+            //
+        }
     }
 
     public function getIdentity(Webpage $webpage): string

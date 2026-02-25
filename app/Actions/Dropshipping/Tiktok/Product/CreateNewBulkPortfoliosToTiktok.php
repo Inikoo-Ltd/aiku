@@ -14,13 +14,20 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateNewBulkPortfoliosToTiktok extends OrgAction
+class CreateNewBulkPortfoliosToTiktok extends OrgAction implements ShouldBeUnique
 {
     use WithActionUpdate;
+
+    public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): int
+    {
+        return $customerSalesChannel->id;
+    }
 
     /**
      * @throws \Exception
@@ -35,28 +42,33 @@ class CreateNewBulkPortfoliosToTiktok extends OrgAction
             ->get();
 
         $totalNumber = count($portfoliosIds);
-        $failNumber = 0;
-        $successNumber = 0;
 
-        /** @var \App\Models\Dropshipping\Portfolio $portfolio */
+        // Use a unique key per job/session to avoid cross-request pollution
+        $cacheKey = 'upload_progress_' . $customerSalesChannel->id . '_' . uniqid();
+        Cache::put($cacheKey . '_success', 0, now()->addHour());
+        Cache::put($cacheKey . '_fail', 0, now()->addHour());
+
         foreach ($portfoliosIds as $portfoliosId) {
             $portfolio = Portfolio::find($portfoliosId->id);
             if ($portfolio) {
                 $portfolio = StoreProductToTiktok::run($portfolio);
 
                 if ($portfolio->platform_status) {
-                    $successNumber++;
+                    Cache::increment($cacheKey . '_success');
                 } else {
-                    $failNumber++;
+                    Cache::increment($cacheKey . '_fail');
                 }
 
                 UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
-                    'total' => $totalNumber,
-                    'success' => $successNumber,
-                    'fail' => $failNumber
+                    'total'   => $totalNumber,
+                    'success' => Cache::get($cacheKey . '_success'),
+                    'fail'    => Cache::get($cacheKey . '_fail'),
                 ]);
             }
         }
+
+        Cache::forget($cacheKey . '_success');
+        Cache::forget($cacheKey . '_fail');
     }
 
     public function rules(): array

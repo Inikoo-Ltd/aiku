@@ -34,7 +34,7 @@ Broadcast::channel('woo.{wooCommerceUserId}.upload-product.{portfolioId}', funct
     return true;
 });
 
-Broadcast::channel('channel.{customerSalesChannelId}.upload-product.{portfolioId}', function (int|string $customerSalesChannelId, int|string $portfolioId) {
+Broadcast::channel('channel.{customerSalesChannelId}.upload-product', function (int|string $customerSalesChannelId) {
     return true;
 });
 

@@ -503,4 +503,8 @@ onMounted(() => {
 #retina-confetti {
     pointer-events: none;
 }
+
+.text-primary {
+  color: v-bind("layout.iris.theme.color[4]") ;
+}
 </style>

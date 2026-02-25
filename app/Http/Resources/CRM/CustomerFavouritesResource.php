@@ -14,6 +14,7 @@ use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -47,7 +48,6 @@ class CustomerFavouritesResource extends JsonResource
     public function toArray($request): array
     {
 
-
         $favourite = false;
         if ($request->user()) {
             $customer = $request->user()->customer;
@@ -79,7 +79,13 @@ class CustomerFavouritesResource extends JsonResource
             $media = Media::find($this->image_id);
         }
 
+        $productOffersData = json_decode($this->product_offers_data, true);
+
+        $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
+        $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
+
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
+        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($this->rrp, $bestPercentageOffOfferFactor * $this->price, $this->units);
 
         return [
             'id'                   => $this->id,
@@ -110,7 +116,15 @@ class CustomerFavouritesResource extends JsonResource
             'price_per_unit'       => $pricePerUnit,
             'available_quantity'   => $this->available_quantity,
             'is_coming_soon'       => $this->status === ProductStatusEnum::COMING_SOON,
-            'is_on_demand'         => $this->is_on_demand
+            'is_on_demand'         => $this->is_on_demand,
+
+            'discounted_price'           => round($this->price * $bestPercentageOffOfferFactor, 2),
+            'discounted_price_per_unit'  => $pricePerUnitDiscounted,
+            'discounted_profit'          => $profitDiscounted,
+            'discounted_profit_per_unit' => $profitPerUnitDiscounted,
+            'discounted_margin'          => $marginDiscounted,
+            'discounted_percentage'      => percentage($bestPercentageOff, 1),
+            'product_offers_data'        => $productOffersData,
         ];
     }
 }

@@ -218,3 +218,24 @@ const onUnselectBackInStock = (product: ProductResource) => {
         </template>
     </GridProducts>
 </template>
+
+
+<style scoped lang="scss">
+:deep(.discount .background-primary) {
+  background-color: v-bind("layout.iris.theme.color[4]") !important;
+}
+
+:deep(.discount .text-primary) {
+  color: v-bind("layout.iris.theme.color[4]") !important;
+}
+
+
+:deep(.discount .offer-trigger-label) {
+  @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
+
+  border-color: v-bind("layout.iris.theme.color[4]") !important;
+  color: v-bind("layout.iris.theme.color[4]") !important;
+}
+
+
+</style>
