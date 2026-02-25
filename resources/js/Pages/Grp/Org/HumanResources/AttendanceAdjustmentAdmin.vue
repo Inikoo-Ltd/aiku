@@ -9,10 +9,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { faCheckCircle, faTimesCircle, faClock } from "@fal"
+import { faCheckCircle, faTimesCircle, faClock, faPaperclip } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
-library.add(faCheckCircle, faTimesCircle, faClock)
+library.add(faCheckCircle, faTimesCircle, faClock, faPaperclip)
 
 const props = defineProps<{
 	title: string
@@ -146,6 +146,26 @@ const closeRejectModal = () => {
 				<span class="text-gray-600 text-sm truncate max-w-xs block">{{
 					adjustment.reason
 				}}</span>
+			</template>
+
+			<template #cell(attachments)="{ item: adjustment }">
+				<div class="flex flex-wrap gap-1">
+					<a
+						v-for="attachment in adjustment.attachments ?? []"
+						:key="attachment.id"
+						:href="attachment.url"
+						target="_blank"
+						rel="noopener"
+						class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-50 rounded">
+						<FontAwesomeIcon :icon="faPaperclip" class="mr-1" fixed-width />
+						{{ attachment.name }}
+					</a>
+					<span
+						v-if="!adjustment.attachments || adjustment.attachments.length === 0"
+						class="text-gray-400 text-xs">
+						—
+					</span>
+				</div>
 			</template>
 
 			<template #cell(actions)="{ item: adjustment }">
