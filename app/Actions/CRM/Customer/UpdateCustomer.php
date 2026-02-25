@@ -107,6 +107,7 @@ class UpdateCustomer extends OrgAction
             $customer->refresh();
             data_set($modelData, 'location', $customer->address->getLocation());
         }
+
         if (Arr::has($modelData, 'delivery_address')) {
             $deliveryAddressData = Arr::get($modelData, 'delivery_address');
             Arr::forget($modelData, 'delivery_address');
@@ -187,6 +188,10 @@ class UpdateCustomer extends OrgAction
                     ]);
                     CalculateOrderTotalAmounts::run($order, false, false);
                 });
+        }
+
+        if (Arr::has($modelData, 'disable_order_auto_processing')) {
+            data_set($modelData, 'settings.disable_order_auto_processing', Arr::pull($modelData, 'disable_order_auto_processing', false));
         }
 
         if (Arr::hasAny($modelData, ['contact_name', 'company_name'])) {
@@ -312,7 +317,7 @@ class UpdateCustomer extends OrgAction
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
-
+            'disable_order_auto_processing'                         => ['sometimes', 'boolean']
         ];
 
         if ($this?->asAction) {
