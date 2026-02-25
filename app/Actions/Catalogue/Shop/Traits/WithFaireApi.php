@@ -94,7 +94,7 @@ trait WithFaireApi
 
     public function acceptFaireOrder(string $orderId, array $attributes = []): array
     {
-        return $this->buildRequest('PUT', "orders/$orderId/processing", $attributes, null);
+        return $this->buildRequest('PUT', "orders/$orderId/processing", [], $attributes);
     }
 
     public function cancelFaireOrder(string $orderId, array $attributes = []): array

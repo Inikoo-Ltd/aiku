@@ -172,12 +172,13 @@ class GetFaireOrders extends OrgAction
                     }
 
                     $order     = SubmitOrder::make()->action($order);
+                    /** @var \App\Models\Inventory\Warehouse $warehouse */
                     $warehouse = $order->shop->organisation->warehouses()->first();
                     SendOrderToWarehouse::make()->action($order, [
                         'warehouse_id' => $warehouse->id
                     ]);
 
-                    AcceptFaireOrder::run($order);
+                    //AcceptFaireOrder::run($order);
 
 
                 }
