@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Link } from '@inertiajs/vue3'
-import { inject, ref, computed } from 'vue'
+import {  computed } from 'vue'
 import Icon from '../Icon.vue'
-import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { router } from '@inertiajs/vue3'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -33,9 +30,8 @@ const props = defineProps<{
 }>()
 
 const states = computed(() => {
-    const firstGroup = Object.values(props.data)[0] as any
+    const firstGroup = Object.values(props.data)[1] as any
     if (!firstGroup?.cases) return []
-
     return Object.values(firstGroup.cases).map((item: any) => ({
         key: item.key,
         label: item.label
@@ -58,6 +54,7 @@ const goToRoute = (item: any) => {
 
 <template>
 <div class="p-4">
+
     <DataTable
         :value="rows"
         responsiveLayout="stack"
@@ -110,6 +107,7 @@ const goToRoute = (item: any) => {
             v-for="state in states"
             :key="state.key"
         >
+
             <template #header>
                 <div class="w-full flex justify-center font-semibold">
                     {{ state.label }}
