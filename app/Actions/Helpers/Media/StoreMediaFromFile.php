@@ -24,7 +24,6 @@ class StoreMediaFromFile
         if (!$extension) {
             $extension = pathinfo($imageData['path'], PATHINFO_EXTENSION);
         }
-
         $media = $model->addMedia($imageData['path'])
             ->preservingOriginal()
             ->withProperties(
