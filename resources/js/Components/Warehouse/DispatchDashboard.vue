@@ -2,9 +2,12 @@
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link } from '@inertiajs/vue3'
-import { inject, ref } from 'vue'
+import { inject, ref, computed } from 'vue'
 import Icon from '../Icon.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
+import { router } from '@inertiajs/vue3'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 import { Icon as IconTS } from '@/types/Utils/Icon'
 
 const props = defineProps<{
@@ -29,51 +32,117 @@ const props = defineProps<{
     }
 }>()
 
-const locale = inject('locale', aikuLocaleStructure)
-const isLoadingSub = ref<null | string>(null)
+const states = computed(() => {
+    const firstGroup = Object.values(props.data)[0] as any
+    if (!firstGroup?.cases) return []
+
+    return Object.values(firstGroup.cases).map((item: any) => ({
+        key: item.key,
+        label: item.label
+    }))
+})
+
+const rows = computed(() => {
+    return Object.values(props.data).map((group: any) => ({
+        label: group.label,
+        total: group.count,
+        ...group.cases
+    }))
+})
+
+const goToRoute = (item: any) => {
+    if (!item?.route?.name) return
+    router.visit(route(item.route.name, item.route.parameters))
+}
 </script>
 
 <template>
-    <div class="flex flex-wrap p-4 gap-x-4 gap-y-4">
-        <div v-for="(dash, idxDash) in data" class="w-full max-w-sm px-5 py-4 lg:px-6 lg:py-6 rounded-lg bg-white shadow border border-gray-200">
-            <div class="text-lg font-semibold text-gray-400 xmb-1.5 lg:mb-3">
-                {{ dash.label }}
-            </div>
-            <div class="flex flex-col gap-1">
-                <!-- Total Count -->
-                <div class="flex items-center">
-                    <span class="text-3xl font-bold text-org-500">
-                        {{ locale.number(dash.count) }}
+<div class="p-4">
+    <DataTable
+        :value="rows"
+        responsiveLayout="stack"
+        breakpoint="768px"
+        stripedRows
+        class="p-datatable-sm text-sm"
+    >
+        <!-- CHANNEL -->
+        <Column>
+            <template #header>
+                <div class="w-full flex justify-start font-semibold">
+                    Channel
+                </div>
+            </template>
+
+            <template #body="{ data }">
+                <div
+                    class="flex justify-between md:justify-start"
+                    data-label="Channel"
+                >
+                    <span class="font-semibold text-gray-700">
+                        {{ data.label }}
                     </span>
-                    <span class="ml-2 text-sm text-gray-500">{{ dash.sublabel }}</span>
                 </div>
-                
-                <!-- Breakdown of each case -->
-                <div class="flex flex-wrap gap-4">
-                    <component
-                        v-for="(item, idx) in dash.cases"
-                        :is="item.route?.name ? Link : 'div'"
-                        :href="item.route?.name ? route(item.route.name, item.route.parameters) : '#'"
-                        :key="item.key"
-                        class="flex items-center gap-2 px-2 py-1 lg:px-1 lg:py-0.5 rounded"
-                        :class="item.route?.name ? 'hover:bg-gray-200' : ''"
-                        xv-tooltip="item.label"
-                        @start="() => isLoadingSub = `${idxDash}${idx}`"
-                    >
-                        <LoadingIcon
-                            v-if="isLoadingSub === `${idxDash}${idx}`"
-                        />
+            </template>
+        </Column>
+
+        <!-- TOTAL -->
+        <Column>
+            <template #header>
+                <div class="w-full flex justify-center font-semibold">
+                    Total
+                </div>
+            </template>
+
+            <template #body="{ data }">
+                <div
+                    class="flex justify-between md:justify-center"
+                    data-label="Total"
+                >
+                    <span class="font-bold text-indigo-600">
+                        {{ data.total ?? 0 }}
+                    </span>
+                </div>
+            </template>
+        </Column>
+
+        <!-- DYNAMIC STATES -->
+        <Column
+            v-for="state in states"
+            :key="state.key"
+        >
+            <template #header>
+                <div class="w-full flex justify-center font-semibold">
+                    {{ state.label }}
+                </div>
+            </template>
+
+            <template #body="{ data }">
+                <div
+                    class="flex justify-between md:justify-center items-center gap-2
+                           cursor-pointer hover:bg-gray-100 rounded-md py-1 transition"
+                    :data-label="state.label"
+                    @click="goToRoute(data[state.key])"
+                >
+                    <div class="flex items-center gap-2">
                         <Icon
-                            v-else-if="item.icon_state"
-                            :data="item.icon_state"
+                            v-if="data[state.key]?.icon_state"
+                            :data="data[state.key].icon_state"
                         />
-                        <FontAwesomeIcon v-else :icon="item.icon" class="" fixed-width aria-hidden="true" />
-                        <span class="text-base font-medium">
-                            {{ locale.number(item.value || 0) }}
+
+                        <FontAwesomeIcon
+                            v-else-if="data[state.key]?.icon"
+                            :icon="data[state.key].icon"
+                            class="text-gray-400"
+                        />
+
+                        <span class="font-medium">
+                            {{ data[state.key]?.value ?? 0 }}
                         </span>
-                    </component>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            </template>
+        </Column>
+
+    </DataTable>
+</div>
 </template>

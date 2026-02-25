@@ -153,13 +153,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $profit_amount
  * @property string|null $margin
  * @property bool $is_shipping_by_external
+ * @property \Illuminate\Support\Carbon|null $picked_at
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
  * @property-read Address|null $collectionAddress
  * @property-read Currency $currency
- * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\CRM\Customer $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
@@ -216,6 +217,7 @@ class Order extends Model implements HasMedia, Auditable
         'submitted_at'           => 'datetime',
         'in_warehouse_at'        => 'datetime',
         'handling_at'            => 'datetime',
+        'picked_at'              => 'datetime',
         'packed_at'              => 'datetime',
         'finalised_at'           => 'datetime',
         'dispatched_at'          => 'datetime',

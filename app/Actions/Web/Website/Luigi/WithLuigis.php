@@ -68,8 +68,8 @@ trait WithLuigis
             $website = $parent->website;
         }
 
-        if (!$website->migrated) {
-            abort(404, 'Website not migrated');
+        if(!$website->migrated){
+           abort(404, 'Website not migrated');
         }
 
         $accessToken = $this->getAccessToken($website);

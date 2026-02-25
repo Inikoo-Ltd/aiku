@@ -255,6 +255,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_external_shop_delivery_note_items_state_cancelled
  * @property int $number_external_shop_delivery_note_items_state_out_of_stock
  * @property int $number_external_shop_delivery_note_items_state_no_dispatched
+ * @property int $number_delivery_notes_state_picked
+ * @property int $number_delivery_notes_state_packing
+ * @property int $number_delivery_notes_cancelled_at_state_picked
+ * @property int $number_orders_state_picked
+ * @property int $number_orders_state_packing
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newQuery()

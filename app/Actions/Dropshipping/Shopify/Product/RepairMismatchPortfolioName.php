@@ -11,11 +11,8 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -51,7 +48,7 @@ class RepairMismatchPortfolioName
                 ->exists();
 
             $itemId = [];
-            if(! $portfolioCodeExists) {
+            if (! $portfolioCodeExists) {
                 $itemId = [
                     'item_id' => $product->id
                 ];

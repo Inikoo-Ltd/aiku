@@ -62,6 +62,7 @@ const props = defineProps<{
 	}
 	autoSave?: boolean
 	isWithRefreshModel?: boolean
+	denominator?: number
 }>()
 
 const emits = defineEmits<{
@@ -168,7 +169,11 @@ const onClickMinusButton = () => {
 	) {
 		return false // Prevent decreasing when the quantity is at or below the min value
 	} else {
-		form.quantity-- // Decrease the quantity if it's above the minimum
+		if (props.denominator) {
+			form.quantity = Number(form.quantity) - Number((1 / props.denominator).toPrecision(25)) // Increase quantity if it's less than the max
+		} else {
+			form.quantity--
+		}
 	}
 }
 const onClickPlusButton = () => {
@@ -179,7 +184,11 @@ const onClickPlusButton = () => {
 	) {
 		return false // Prevent increase if quantity is at or exceeds max value
 	} else {
-		form.quantity++ // Increase quantity if it's less than the max
+		if (props.denominator) {
+			form.quantity = Number(form.quantity) + Number((1 / props.denominator).toPrecision(25)) // Increase quantity if it's less than the max
+		} else {
+			form.quantity++
+		}
 	}
 }
 </script>
@@ -187,7 +196,6 @@ const onClickPlusButton = () => {
 <template>
 	<div class="relative w-fit" :class="parentClass">
 		<div
-			v-if="true"
 			class="flex items-center justify-center border border-gray-300 rounded gap-y-1 px-1 py-0.5">
 			<slot name="prefix"></slot>
 			<!-- Button: Save -->
@@ -240,28 +248,35 @@ const onClickPlusButton = () => {
 
 				<!-- Input -->
 				<div
-					class="mx-1 text-center tabular-nums rounded-md"
+					class="mx-1 text-center tabular-nums rounded"
 					:style="{
 						border: `1px dashed ${(colorTheme ? colorTheme : null) || '#374151'}55`,
 					}">
 					<InputNumber
-						v-model="form.quantity"
-						@update:model-value="(e) => (form.quantity = e)"
-						@input="(e) => (form.quantity = e.value)"
+						vxmodel="form.quantity"
+						:modelValue="props.denominator ? Math.floor(form.quantity * props.denominator) : form.quantity"
+						@update:model-value="(e) => (props.denominator? (form.quantity = e/props.denominator) : (form.quantity = e))"
+						@input="(e) => (props.denominator ? (form.quantity = e.value/props.denominator) : (form.quantity = e.value))"
 						buttonLayout="horizontal"
 						:min="min || 0"
 						:max="max || undefined"
 						style="width: 100%"
 						:disabled="props.readonly || form.processing"
 						inputClass="!p-1 lg:!p-0"
+						:suffix="props.denominator ? '/' + props.denominator : undefined"
 						:inputStyle="{
-							width: bindToTarget?.fluid ? undefined : '50px',
+							width: bindToTarget?.fluid ? undefined : (
+								props.denominator
+									? '75px'
+									: '50px'
+							),
 							color: props.readonly ? '#6b7280' : colorTheme ?? '#374151',
 							border: 'none',
 							textAlign: 'center',
 							background: (colorTheme ? colorTheme + '22' : null) ?? 'transparent',
 						}"
-						v-bind="bindToTarget" />
+						v-bind="bindToTarget"
+					/>
 				</div>
 
 				<!-- Button: Plus -->
@@ -319,27 +334,5 @@ const onClickPlusButton = () => {
 			<slot name="suffix"></slot>
 		</div>
 
-		<div
-            v-else
-			class="mx-1 text-center tabular-nums rounded-md"
-		>
-			<InputNumber
-				:modelValue="form.quantity"
-				buttonLayout="horizontal"
-				:min="min || 0"
-				:max="max || undefined"
-                :disabled="true"     
-				style="width: 100%"
-				:inputStyle="{
-					padding: '0px',
-					width: bindToTarget?.fluid ? undefined : '50px',
-					color: colorTheme ?? '#374151',
-					border: 'none',
-					textAlign: 'center',
-					background: (colorTheme ? colorTheme + '22' : null) ?? 'transparent',
-				}"
-				v-bind="bindToTarget"
-			/>
-		</div>
 	</div>
 </template>

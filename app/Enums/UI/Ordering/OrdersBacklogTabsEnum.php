@@ -22,10 +22,12 @@ enum OrdersBacklogTabsEnum: string
     case SUBMITTED_UNPAID = 'submitted_unpaid';
 
 
-    case IN_WAREHOUSE = 'in_warehouse'; // Waiting to be picked
-    case HANDLING = 'handling';  // Being picked
-    case HANDLING_BLOCKED = 'handling_blocked';  // Being picked
+    case IN_WAREHOUSE = 'in_warehouse'; // Waiting to be picking
+    case HANDLING = 'handling';  // Being picking
+    case HANDLING_BLOCKED = 'handling_blocked';  // Being picking
 
+    case PICKED = 'picked';
+    case PACKING = 'packing';
     case PACKED = 'packed';
     case FINALISED = 'finalised';  // Invoiced and ready to be dispatched
 

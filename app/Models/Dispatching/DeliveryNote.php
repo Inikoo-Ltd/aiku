@@ -21,6 +21,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\HumanResources\Employee;
+use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -111,6 +112,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_items_state_queued
  * @property int $number_items_state_handling
  * @property int $number_items_state_handling_blocked
+ * @property int $number_items_state_picked
+ * @property int $number_items_state_packing
  * @property int $number_items_state_packed
  * @property int $number_items_state_finalised
  * @property int $number_items_state_dispatched
@@ -166,6 +169,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
  * @property-read Collection<int, Sowing> $sowings
+ * @property-read Collection<int, \App\Models\Dispatching\Trolley> $trolleys
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
@@ -342,6 +346,16 @@ class DeliveryNote extends Model implements Auditable
             'delivery_note_id',
             'picking_session_id'
         );
+    }
+
+    public function trolleys(): BelongsToMany
+    {
+        return $this->belongsToMany(Trolley::class, 'delivery_note_has_trolleys');
+    }
+
+    public function pickedBays(): BelongsToMany
+    {
+        return $this->belongsToMany(PickedBay::class, 'picked_bay_has_delivery_notes');
     }
 
 }
