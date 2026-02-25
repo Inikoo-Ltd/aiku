@@ -37,7 +37,7 @@ class DashboardPlatformSalesResource extends JsonResource
                 ],
             ],
             'label_minified' => [
-                'formatted_value' => $data['slug'] ?? $data['code'] ?? 'Unknown',
+                'formatted_value' => $data['name'] ?? $data['code'] ?? 'Unknown',
                 'align'           => 'left',
                 'icon'            => $data['slug'] ?? 'unknown',
                 'route_target'    => $isShop ? [
