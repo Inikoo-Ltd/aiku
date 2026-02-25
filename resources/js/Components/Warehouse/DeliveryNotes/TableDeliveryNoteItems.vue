@@ -608,7 +608,11 @@ const submitTransactionAsWaiting = () => {
                             
                             <!-- Button: Pick from magic place -->
                             <Button
-                                v-if="layout.app.environment === 'local' && !itemValue.is_handled && Number(countStockInAllLocations(itemValue.locations)) < 1"
+                                v-if="
+                                    layout.app.environment === 'local'
+                                    && !itemValue.is_handled
+                                    && Number(countStockInAllLocations(itemValue.locations)) < itemValue.quantity_to_pick
+                                "
                                 @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
                                 type="warning"
                                 key="4"
@@ -734,9 +738,11 @@ const submitTransactionAsWaiting = () => {
     <Modal :isOpen="isModalLocation" @onClose="() => onCloseModal()" width="w-full max-w-2xl" :dialogStyle="{
         background: '#ffffffcc'
     }">
-        <div class="text-center font-semibold mb-4 text-2xl">
+        <div class="text-center font-semibold text-2xl">
             Location list for {{ selectedItemValue?.org_stock_code }}:
-
+        </div>
+        <div class="mb-4 italic opacity-60 xtext-sm text-center">
+            Total stocks on all locations: <span class="font-bold">{{ countStockInAllLocations(selectedItemValue?.locations) }}</span> stocks
         </div>
 
         <div class="rounded p-1 grid grid-cols-3 justify-between gap-x-6 items-center divide-x divide-gray-300">
