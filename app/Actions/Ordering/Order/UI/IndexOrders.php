@@ -140,6 +140,10 @@ class IndexOrders extends OrgAction
             $query->where('orders.state', OrderStateEnum::HANDLING);
         } elseif ($this->bucket == 'handling_blocked') {
             $query->where('orders.state', OrderStateEnum::HANDLING_BLOCKED);
+        } elseif ($this->bucket == 'picked') {
+            $query->where('orders.state', OrderStateEnum::PICKED);
+        } elseif ($this->bucket == 'packing') {
+            $query->where('orders.state', OrderStateEnum::PACKING);
         } elseif ($this->bucket == 'packed') {
             $query->where('orders.state', OrderStateEnum::PACKED);
         } elseif ($this->bucket == 'finalised') {

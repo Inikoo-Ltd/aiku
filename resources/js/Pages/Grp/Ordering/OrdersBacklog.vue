@@ -11,7 +11,7 @@ import TabsBox from "@/Components/Navigation/TabsBox.vue"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping } from '@fal'
+import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen } from '@fal'
 import { ref } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
@@ -42,7 +42,7 @@ const props = defineProps<{
 
 
 
-library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping)
+library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen)
 
 
 const currentTab = ref(props.tabs.current)
@@ -57,7 +57,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
     <KeepAlive>
       <TabsBox :tabs_box="tabs.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
     </KeepAlive>
-    
+
     <TableOrders :key="currentTab" :tab="currentTab" :data="props[currentTab]"></TableOrders>
 
 </template>
