@@ -67,7 +67,7 @@ class RegisterCustomer extends OrgAction
             }
             $customer->refresh();
 
-            if(Arr::has($modelData, 'tiktok_code')) {
+            if (Arr::has($modelData, 'tiktok_code')) {
                 ProcessUnregisterCustomerTiktokUser::run($customer, $modelData);
             }
 

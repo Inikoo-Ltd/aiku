@@ -36,7 +36,7 @@ class CheckTiktokChannel
             $platformStatus       = true;
         }
 
-        if($tiktokUser->tiktok_shop_id) {
+        if ($tiktokUser->tiktok_shop_id) {
             $tiktokShop = collect($tiktokShop)
                 ->where('id', $tiktokUser->tiktok_shop_id)
                 ->first();

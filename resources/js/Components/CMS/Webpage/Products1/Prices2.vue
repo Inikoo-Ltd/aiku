@@ -111,9 +111,7 @@ const showMemberPrice = computed(() => {
 })
 
 const showDiscount = computed(() => {
-    return props.basketButton
-        && !props.product.is_coming_soon
-        && !layout?.user?.gr_data?.customer_is_gr
+    return !props.product.is_coming_soon  && !layout?.user?.gr_data?.customer_is_gr
 })
 
 const showLeftBlock = computed(() => {

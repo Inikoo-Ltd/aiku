@@ -9,24 +9,18 @@
 namespace App\Actions\Dropshipping\Tiktok\User;
 
 use App\Actions\OrgAction;
-use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\TiktokUser;
 use Carbon\Carbon;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use function Pest\Laravel\instance;
 
 class AuthenticateTiktokAccount extends OrgAction
 {
@@ -48,7 +42,7 @@ class AuthenticateTiktokAccount extends OrgAction
             $data = json_decode($response->getBody(), true);
 
             $customer = null;
-            if(Arr::get($modelData, 'state')) {
+            if (Arr::get($modelData, 'state')) {
                 $customer = Customer::find(base64_decode(Arr::get($modelData, 'state')));
             }
 
@@ -73,18 +67,18 @@ class AuthenticateTiktokAccount extends OrgAction
 
                     if (!$tiktokUser && $customer?->id) {
                         $tiktokUser = StoreTiktokUser::make()->action($customer, $userData);
-                    } else if (!$tiktokUser && $customer === null) {
+                    } elseif (!$tiktokUser && $customer === null) {
                         $tiktokUser = TiktokUser::create($userData);
                     }
 
-                    if($customer?->id) {
+                    if ($customer?->id) {
                         $tiktokUser = UpdateTiktokUser::make()->action($tiktokUser, $userData);
                     }
 
                     SaveShopDataTiktokChannel::run($tiktokUser);
                     $tiktokUser->refresh();
 
-                    if($customer?->id) {
+                    if ($customer?->id) {
                         CheckTiktokChannel::run($tiktokUser);
                     }
 

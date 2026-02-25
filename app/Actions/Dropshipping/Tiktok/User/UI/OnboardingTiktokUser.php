@@ -28,7 +28,7 @@ class OnboardingTiktokUser extends OrgAction
     {
         $tiktokUser = TiktokUser::find($modelData['tiktok_user_id']);
 
-        if(! $tiktokUser) {
+        if (! $tiktokUser) {
             return Arr::get($modelData, 'message', 'Something went wrong.');
         }
 
@@ -42,17 +42,17 @@ class OnboardingTiktokUser extends OrgAction
         $website = null;
         $status = false;
         $needCreateCustomer = false;
-        if($model instanceof TiktokUser) {
+        if ($model instanceof TiktokUser) {
             $tiktokUser = $model;
             $message = __('Your account is now connected to your TikTok seller account.');
             $status = true;
-            if($tiktokUser->customerSalesChannel?->shop?->website) {
+            if ($tiktokUser->customerSalesChannel?->shop?->website) {
                 $website = $tiktokUser->customerSalesChannel->shop->website;
             }
-            if($tiktokUser->customer_id == null) {
+            if ($tiktokUser->customer_id == null) {
                 $needCreateCustomer = true;
             }
-        } else if(is_string($model)) {
+        } elseif (is_string($model)) {
             $message = $model;
         }
 

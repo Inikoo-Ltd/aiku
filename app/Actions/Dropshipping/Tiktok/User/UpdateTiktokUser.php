@@ -10,7 +10,6 @@ namespace App\Actions\Dropshipping\Tiktok\User;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,7 +24,7 @@ class UpdateTiktokUser extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser, array $modelData): TiktokUser
     {
-        if(Arr::has($modelData, 'tiktok_shop_id') && Arr::has($modelData, 'tiktok_shop_chiper')) {
+        if (Arr::has($modelData, 'tiktok_shop_id') && Arr::has($modelData, 'tiktok_shop_chiper')) {
             $tiktokUser = CloneTiktokUser::run($tiktokUser, $modelData);
         }
 

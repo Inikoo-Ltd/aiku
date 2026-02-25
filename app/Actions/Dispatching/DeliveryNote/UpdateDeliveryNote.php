@@ -181,6 +181,7 @@ class UpdateDeliveryNote extends OrgAction
             'finalised_at'            => ['sometimes', 'nullable', 'date'],
             'shipping_zone_schema_id' => ['sometimes', 'nullable'],
             'shipping_zone_id'        => ['sometimes', 'nullable'],
+            'is_shipping_by_external' => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
