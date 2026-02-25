@@ -190,6 +190,15 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
+                        [
+                            'label' => __('Holidays'),
+                            'icon'  => ['fal', 'fa-umbrella'],
+                            'root'  => 'grp.org.hr.holidays.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.holidays.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
 
                         [
                             'label' => __('Employees'),
