@@ -83,6 +83,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Role> $roles
  * @property-read \App\Models\Inventory\WarehouseStats|null $stats
  * @property-read Collection<int, \App\Models\Inventory\WarehouseTimeSeries> $timeSeries
+ * @property-read Collection<int, Trolley> $trolleys
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Collection<int, UniversalSearch> $universalSearches
  * @property-read Collection<int, \App\Models\Inventory\WarehouseArea> $warehouseAreas

@@ -28,13 +28,23 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int|null $approved_by
  * @property \Illuminate\Support\Carbon|null $approved_at
  * @property string|null $approval_comment
- * @property array $data
+ * @property array<array-key, mixed>|null $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read User|null $approver
  * @property-read \App\Models\HumanResources\Employee $employee
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\HumanResources\Timesheet|null $timesheet
- * @property-read \App\Models\SysAdmin\User|null $approver
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceAdjustment newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceAdjustment newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceAdjustment onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceAdjustment query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceAdjustment withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AttendanceAdjustment withoutTrashed()
+ * @mixin \Eloquent
  */
 class AttendanceAdjustment extends Model implements HasMedia
 {

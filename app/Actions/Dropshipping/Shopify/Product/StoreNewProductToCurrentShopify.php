@@ -9,7 +9,6 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\OrgAction;
-use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\ActionRequest;

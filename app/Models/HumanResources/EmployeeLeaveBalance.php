@@ -21,6 +21,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read int $annual_remaining
  * @property-read int $medical_remaining
  * @property-read int $unpaid_remaining
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance query()
+ * @mixin \Eloquent
  */
 class EmployeeLeaveBalance extends Model
 {

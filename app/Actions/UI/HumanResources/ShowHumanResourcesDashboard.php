@@ -12,7 +12,6 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
-use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;

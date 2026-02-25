@@ -112,8 +112,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_items_state_queued
  * @property int $number_items_state_handling
  * @property int $number_items_state_handling_blocked
- * @property int $number_items_state_picked
- * @property int $number_items_state_packing
  * @property int $number_items_state_packed
  * @property int $number_items_state_finalised
  * @property int $number_items_state_dispatched
@@ -145,10 +143,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $tracking_number for search purposes
  * @property array<array-key, mixed> $shipping_data for UI purposes
  * @property bool $is_shipping_by_external
+ * @property \Illuminate\Support\Carbon|null $picked_at
+ * @property \Illuminate\Support\Carbon|null $packing_at
+ * @property int $number_items_state_picked
+ * @property int $number_items_state_packing
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
@@ -161,6 +163,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Employee|null $packer
  * @property-read User|null $packerUser
  * @property-read Collection<int, \App\Models\Dispatching\Packing> $packings
+ * @property-read Collection<int, PickedBay> $pickedBays
  * @property-read Employee|null $picker
  * @property-read User|null $pickerUser
  * @property-read Collection<int, PickingSession> $pickingSessions

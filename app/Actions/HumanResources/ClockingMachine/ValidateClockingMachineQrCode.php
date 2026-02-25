@@ -13,7 +13,6 @@ use App\Enums\HumanResources\Clocking\ClockingActionEnum;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Actions\HumanResources\Clocking\StoreClocking;
-use App\Actions\HumanResources\ClockingMachine\StoreQrScanLog;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\WorkSchedule;
 

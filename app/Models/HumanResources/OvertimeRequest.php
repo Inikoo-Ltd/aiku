@@ -34,6 +34,20 @@ use App\Models\HumanResources\Overtime\OvertimeRequestApprover;
  * @property int|null $recorded_by_employee_id
  * @property int $lieu_requested_minutes
  * @property int|null $requested_by_employee_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\HumanResources\Employee|null $approvedBy
+ * @property-read \App\Models\HumanResources\Employee|null $approver
+ * @property-read \App\Models\HumanResources\Employee $employee
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \App\Models\HumanResources\OvertimeType $overtimeType
+ * @property-read \App\Models\HumanResources\Employee|null $recordedBy
+ * @property-read \App\Models\HumanResources\Employee|null $requestedBy
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OvertimeRequest newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OvertimeRequest newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OvertimeRequest query()
+ * @mixin \Eloquent
  */
 class OvertimeRequest extends Model
 {

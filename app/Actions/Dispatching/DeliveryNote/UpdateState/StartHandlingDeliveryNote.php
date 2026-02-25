@@ -57,7 +57,7 @@ class StartHandlingDeliveryNote extends OrgAction
 
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
-            $deliveryNote=UpdateDeliveryNote::run($deliveryNote, $modelData);
+            $deliveryNote = UpdateDeliveryNote::run($deliveryNote, $modelData);
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());

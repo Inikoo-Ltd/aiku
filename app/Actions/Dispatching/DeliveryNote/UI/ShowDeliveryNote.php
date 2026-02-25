@@ -454,7 +454,7 @@ class ShowDeliveryNote extends OrgAction
             if ($order->shop->engine == ShopEngineEnum::FAIRE) {
                 $additionalShipmentRoutes = [
                     'get_external_shipment_route' => [
-                        'label'=>__('Get shipment from Faire'),
+                        'label' => __('Get shipment from Faire'),
                         'name'       => 'grp.models.delivery_note.shipment.store_faire',
                         'parameters' => [
                             'deliveryNote' => $deliveryNote->id
@@ -464,7 +464,7 @@ class ShowDeliveryNote extends OrgAction
             } elseif ($order->platform->type == PlatformTypeEnum::TIKTOK) {
                 $additionalShipmentRoutes = [
                     'get_external_shipment_route' => [
-                        'label'=>__('Get shipment from Tiktok'),
+                        'label' => __('Get shipment from Tiktok'),
                         'name'       => 'grp.models.delivery_note.shipment.store_tiktok',
                         'parameters' => [
                             'deliveryNote' => $deliveryNote->id

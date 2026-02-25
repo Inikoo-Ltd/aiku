@@ -21,16 +21,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $total_working_hours
  * @property numeric $overtime_hours
  * @property int $total_leave_days
- * @property array $leave_breakdown
+ * @property array<array-key, mixed>|null $leave_breakdown
  * @property numeric $attendance_percentage
  * @property numeric $avg_daily_hours
  * @property numeric $overtime_ratio
- * @property array $data
+ * @property array<array-key, mixed>|null $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\HumanResources\Employee $employee
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeAnalytics newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeAnalytics newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeAnalytics query()
+ * @mixin \Eloquent
  */
 class EmployeeAnalytics extends Model
 {
@@ -42,7 +46,7 @@ class EmployeeAnalytics extends Model
         'total_working_hours'  => 'decimal:2',
         'overtime_hours'       => 'decimal:2',
         'leave_breakdown'      => 'array',
-        'attendance_percentage'=> 'decimal:2',
+        'attendance_percentage' => 'decimal:2',
         'avg_daily_hours'      => 'decimal:2',
         'overtime_ratio'       => 'decimal:2',
         'data'                 => 'array',

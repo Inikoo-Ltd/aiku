@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
-use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -53,7 +52,7 @@ class StartPackingDeliveryNote extends OrgAction
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
 
-        $deliveryNote=UpdateDeliveryNote::run($deliveryNote, $modelData);
+            $deliveryNote = UpdateDeliveryNote::run($deliveryNote, $modelData);
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first(), true);
@@ -68,7 +67,7 @@ class StartPackingDeliveryNote extends OrgAction
 
             foreach ($deliveryNote->pickedBays as $pickedBay) {
                 DB::table('picked_bay_has_delivery_notes')
-                    ->where('delivery_note_id', $deliveryNote->id)->where('picked_bay_id',$pickedBay->id)->delete();
+                    ->where('delivery_note_id', $deliveryNote->id)->where('picked_bay_id', $pickedBay->id)->delete();
                 PickedBayHydrateNumberDeliveryNotes::run($pickedBay->id);
             }
 

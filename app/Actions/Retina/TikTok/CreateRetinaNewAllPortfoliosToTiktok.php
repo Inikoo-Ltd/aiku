@@ -8,11 +8,9 @@
 
 namespace App\Actions\Retina\TikTok;
 
-use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\Dropshipping\Tiktok\Product\CreateNewAllPortfoliosToTiktok;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 

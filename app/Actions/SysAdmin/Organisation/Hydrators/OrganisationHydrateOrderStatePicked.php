@@ -1,6 +1,7 @@
 <?php
+
 /*
- * Author: Raul Perusquia <raul@inikoo.com>  
+ * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 25 Feb 2026 19:58:28 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */

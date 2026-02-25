@@ -23,10 +23,10 @@ use Spatie\Sluggable\SlugOptions;
 
 /**
  * @property int $id
- * @property int $group_id
- * @property int $organisation_id
+ * @property int|null $group_id
+ * @property int|null $organisation_id
  * @property string $tiktok_id
- * @property int $customer_id
+ * @property int|null $customer_id
  * @property bool $status
  * @property string $name
  * @property string|null $username
@@ -47,12 +47,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $tiktok_warehouse_id
  * @property string|null $tiktok_shop_chiper
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\PlatformHasClient> $clients
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
- * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\TiktokUserHasOrder> $orders
- * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \App\Models\SysAdmin\Organisation|null $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \App\Models\Dropshipping\Platform|null $platform
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\TiktokUserHasProduct> $products

@@ -52,7 +52,7 @@ class UpdateCollection extends OrgAction
         if (!$collection->image_id && $originalImageId) {
             $collection->images()->detach($originalImageId);
         }
-        
+
         if (Arr::has($changes, 'description_title')) {
             UpdateCollectionAndMasterTranslations::make()->action($collection, [
                 'translations' => [

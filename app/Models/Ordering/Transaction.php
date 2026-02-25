@@ -97,7 +97,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $margin
  * @property bool $is_cut_view
  * @property-read Asset|null $asset
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE
  * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks

@@ -97,7 +97,7 @@ class UpdateMasterCollection extends GrpAction
                     if (Arr::has($changed, 'description_title')) {
                         $dataToBeUpdated['description_title'] = $masterCollection->description_title;
                     }
-                    
+
                     if (Arr::has($changed, 'description_extra')) {
                         $dataToBeUpdated['description_extra'] = $masterCollection->description_extra;
                     }

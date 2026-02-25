@@ -33,7 +33,7 @@ class ShowEmployeeAnalytics extends OrgAction
                 'id'           => $employee->id,
                 'slug'         => $employee->slug,
                 'contact_name' => $employee->contact_name,
-                'worker_number'=> $employee->worker_number,
+                'worker_number' => $employee->worker_number,
             ],
             'attendance'  => $attendance,
             'leave'       => $leave,

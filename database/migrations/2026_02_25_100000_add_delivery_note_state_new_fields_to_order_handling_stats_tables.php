@@ -28,26 +28,26 @@ return new class () extends Migration {
                 $table->unsignedInteger('number_orders_state_picked')->default(0);
                 $table->unsignedInteger('number_orders_state_packing')->default(0);
 
-                $table->decimal('orders_state_picked_amount',16)->default(0);
-                $table->decimal('orders_state_picked_amount_org_currency',16)->default(0);
-                $table->decimal('orders_state_picked_amount_grp_currency',16)->default(0);
+                $table->decimal('orders_state_picked_amount', 16)->default(0);
+                $table->decimal('orders_state_picked_amount_org_currency', 16)->default(0);
+                $table->decimal('orders_state_picked_amount_grp_currency', 16)->default(0);
 
-                $table->decimal('orders_state_packing_amount',16)->default(0);
-                $table->decimal('orders_state_packing_amount_org_currency',16)->default(0);
-                $table->decimal('orders_state_packing_amount_grp_currency',16)->default(0);
+                $table->decimal('orders_state_packing_amount', 16)->default(0);
+                $table->decimal('orders_state_packing_amount_org_currency', 16)->default(0);
+                $table->decimal('orders_state_packing_amount_grp_currency', 16)->default(0);
 
                 $table->unsignedInteger('number_orders_picked_today')->default(0);
                 $table->unsignedInteger('number_orders_packing_today')->default(0);
 
 
-                $table->decimal('orders_picked_today_amount',16)->default(0);
-                $table->decimal('orders_packing_today_amount',16)->default(0);
+                $table->decimal('orders_picked_today_amount', 16)->default(0);
+                $table->decimal('orders_packing_today_amount', 16)->default(0);
 
-                $table->decimal('orders_picked_today_amount_org_currency',16)->default(0);
-                $table->decimal('orders_packing_today_amount_org_currency',16)->default(0);
+                $table->decimal('orders_picked_today_amount_org_currency', 16)->default(0);
+                $table->decimal('orders_packing_today_amount_org_currency', 16)->default(0);
 
-                $table->decimal('orders_picked_today_amount_grp_currency',16)->default(0);
-                $table->decimal('orders_packing_today_amount_grp_currency',16)->default(0);
+                $table->decimal('orders_picked_today_amount_grp_currency', 16)->default(0);
+                $table->decimal('orders_packing_today_amount_grp_currency', 16)->default(0);
 
 
 

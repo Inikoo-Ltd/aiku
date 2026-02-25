@@ -59,7 +59,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stock_movements_type_return_dispatch
  * @property int $number_org_stock_movements_type_return_picked
  * @property int $number_org_stock_movements_type_return_consumption
- * @property int $number_org_stock_movements_state_picked
+ * @property int $number_org_stock_movements_type_picked
  * @property int $number_org_stock_movements_type_location_transfer
  * @property int $number_org_stock_movements_type_found
  * @property int $number_org_stock_movements_type_consumption

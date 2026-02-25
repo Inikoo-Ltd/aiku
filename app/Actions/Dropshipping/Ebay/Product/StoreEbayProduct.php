@@ -16,7 +16,6 @@ use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
-use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;

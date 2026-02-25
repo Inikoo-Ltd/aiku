@@ -27,12 +27,22 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int|null $approved_by
  * @property \Illuminate\Support\Carbon|null $approved_at
  * @property string|null $rejection_reason
- * @property array $data
+ * @property array<array-key, mixed>|null $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read User|null $approver
  * @property-read \App\Models\HumanResources\Employee $employee
- * @property-read \App\Models\SysAdmin\User|null $approver
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave withoutTrashed()
+ * @mixin \Eloquent
  */
 class Leave extends Model implements HasMedia
 {

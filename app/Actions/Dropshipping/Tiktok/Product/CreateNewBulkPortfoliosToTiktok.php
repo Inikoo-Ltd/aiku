@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Product;
 
-use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Events\UploadProductToSalesChannelProgressEvent;

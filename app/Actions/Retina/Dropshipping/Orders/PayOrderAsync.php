@@ -25,10 +25,10 @@ class PayOrderAsync extends RetinaAction
     {
         $customer = $order->customer;
 
-        // If customer turns on disable order auto processing on their profile settings, would not process it automatically | Done as per Maria request from Customer complaint. 
+        // If customer turns on disable order auto processing on their profile settings, would not process it automatically | Done as per Maria request from Customer complaint.
         // By default this is false, so everything would run as it is unless they turn this setting on.
-        if(data_get($customer->settings, 'disable_order_auto_processing', false)) {
-            return;    
+        if (data_get($customer->settings, 'disable_order_auto_processing', false)) {
+            return;
         }
 
         if ($customer->balance >= $order->total_amount) {
