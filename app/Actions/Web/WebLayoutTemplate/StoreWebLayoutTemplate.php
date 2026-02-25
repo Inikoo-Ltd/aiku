@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Web\WebBlockType\WebBlockSystemEnum;
 use App\Enums\Web\WebLayoutTemplate\WebLayoutTemplateType;
+use App\Models\SysAdmin\User;
 use App\Models\Web\WebBlock;
 use App\Models\Web\WebLayoutTemplate;
 use App\Models\Web\Webpage;
@@ -24,15 +25,18 @@ class StoreWebLayoutTemplate extends OrgAction
 {
     use WithWebEditAuthorisation;
 
+    private User $user;
+
     public function handle(Webpage|WebBlock $parent, array $modelData): WebLayoutTemplate
     {
-        if($parent instanceof Webpage){
+        // TODO template for WebBlock
+        if ($parent instanceof Webpage) {
             $modelData = $this->handleWebpageLayout($parent, $modelData);
         }
 
         $webBlockLayout = DB::transaction(function () use ($modelData) {
             $webBlockLayout = WebLayoutTemplate::create($modelData);
-            
+
             return $webBlockLayout;
         });
 
@@ -43,23 +47,22 @@ class StoreWebLayoutTemplate extends OrgAction
     {
         $orders = [];
         $webBlocks = Arr::pull($modelData, 'block.web_blocks');
-        
+
         data_forget($modelData, 'block');
         foreach ($webBlocks as $index => $item) {
-            data_set($orders, $item['type'], $index);
+            data_set($orders, $item['type'], ['position' => $index]);
         }
         $data = [];
         data_set($data, 'orders', $orders);
-        data_set($data, 'layout', $this->parseWebBlockListToLayout($webBlocks));
-        
-        
+        data_set($data, 'web_blocks', $this->parseWebBlockListToLayout($webBlocks));
+
         // Handles layout for Webpage/WebBlock in future
         data_set($modelData, 'type', WebLayoutTemplateType::WEBPAGE);
         // Handles scope limitations (Product Page / Collections / Family, etc)
         data_set($modelData, 'scope', $webpage->sub_type);
         // Will insert to column
         data_set($modelData, 'data', $data);
-        data_set($modelData, 'author_id', auth()->user()->id);
+        data_set($modelData, 'author_id', $this->user->id);
 
         return $modelData;
     }
@@ -72,7 +75,7 @@ class StoreWebLayoutTemplate extends OrgAction
         foreach ($webBlocks as $index => $item) {
             $keepData = Arr::only($item, ['name', 'show', 'type']);
             // Check for system web blocks, this will be generated on BE based on saved styles of each website, no need to save the layout
-            if(!in_array(data_get($item, 'type'), $listSystemWebBlock)){
+            if (!in_array(data_get($item, 'type'), $listSystemWebBlock)) {
                 data_set($keepData, 'layout', data_get($item, 'web_block.layout'));
             }
             data_set($listWebBlocks, $item['type'], $keepData);
@@ -90,7 +93,7 @@ class StoreWebLayoutTemplate extends OrgAction
         ];
     }
 
-    public function getValidationMessages(): array 
+    public function getValidationMessages(): array
     {
         return [
             // Label
@@ -108,6 +111,7 @@ class StoreWebLayoutTemplate extends OrgAction
 
     public function asController(Webpage $webpage, ActionRequest $request): WebLayoutTemplate
     {
+        $this->user = $request->user();
         $this->initialisationFromShop($webpage->shop, $request);
 
         return $this->handle($webpage, $this->validatedData);

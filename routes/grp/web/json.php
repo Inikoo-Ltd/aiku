@@ -97,6 +97,7 @@ use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
 use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
+use App\Actions\Web\WebLayoutTemplate\FetchWebLayoutTemplateList;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use Illuminate\Support\Facades\Route;
@@ -268,3 +269,5 @@ Route::get('product-category/{productCategory:id}/last-ordered-products', GetLas
 
 
 Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
+
+Route::get('/layout-template/{webpage}/template-list', FetchWebLayoutTemplateList::class)->name('layout_template.list_template');

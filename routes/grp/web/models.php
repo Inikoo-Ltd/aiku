@@ -350,6 +350,7 @@ use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
+use App\Actions\Web\WebLayoutTemplate\ApplyWebLayoutTemplate;
 use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
@@ -743,6 +744,7 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
 
 Route::name('layout_template.')->prefix('/layout-template/{webpage}')->group(function () {
     Route::post('/store', StoreWebLayoutTemplate::class)->name('store');
+    Route::post('{template:id}/apply-template', ApplyWebLayoutTemplate::class)->name('apply_template')->withoutScopedBindings();
 });
 
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {

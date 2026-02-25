@@ -10,16 +10,15 @@
 namespace App\Models\Web;
 
 use App\Enums\Web\WebLayoutTemplate\WebLayoutTemplateType;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
-/** 
+/**
  * @mixin \Eloquent
  */
 class WebLayoutTemplate extends Model implements Auditable
@@ -29,7 +28,7 @@ class WebLayoutTemplate extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'          => 'object',
+        'data'          => 'array',
         'type'          => WebLayoutTemplateType::class,
     ];
 
@@ -43,4 +42,9 @@ class WebLayoutTemplate extends Model implements Auditable
     // {
     //     return 'slug';
     // }
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
 }
