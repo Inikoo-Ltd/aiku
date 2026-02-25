@@ -567,7 +567,6 @@ const closeUploadImage = (visible) => {
     imageUploadSetting.value = null
 }
 
-
 const saveAsTemplate = async (payload) => {
   const label = payload.label.trim();
   if (!label) return;
@@ -575,23 +574,24 @@ const saveAsTemplate = async (payload) => {
   isLoadingPublish.value = true;
   console.log(payload)
 
-  try {
-    const response = await axios.post(
-      route('grp.models.layout_template.store', {webpage: route().params.webpage}),
-      payload
-    );
-
-    if (response?.status === 200) {
+  await axios.post(
+    route('grp.models.layout_template.store', {webpage: route().params.webpage}),
+    payload
+  )
+  .then((response) => {
+    // Created after post is usually 201
+    if(response.status === 201){
       notify({
         title: trans("Template saved"),
         text: trans("Webpage data has been saved as a template successfully"),
         type: "success"
       });
-
+      
       dialogSaveAsTemplateVisible.value = false;
       nameAsTemplate.value = "";
     }
-  } catch (error: any) {
+  })
+  .catch((error) => {
     notify({
       title: trans("Something went wrong"),
       text:
@@ -600,9 +600,10 @@ const saveAsTemplate = async (payload) => {
         trans("Unknown error occurred"),
       type: "error"
     });
-  } finally {
+  })
+  .finally(() => {
     isLoadingPublish.value = false;
-  } 
+  });
 };
 
 
@@ -730,7 +731,8 @@ console.log('props_workshop',props)
           @setVisible="setHideBlock" 
           @onSaveSiteSettings="onSaveSiteSettings"
           @onDuplicateBlock="duplicateBlock"
-          @update:selected-tab="(e) => selectedTab = e"  @save-template="saveAsTemplate"/>
+          @update:selected-tab="(e) => selectedTab = e"  
+          @save-template="saveAsTemplate"/>
       </div>
 
       <!-- Toggle Button -->
@@ -828,8 +830,7 @@ console.log('props_workshop',props)
       <label class="text-sm font-medium text-gray-700">
         {{ trans("Label") }}
       </label>
-
-      <PureInput v-model="nameAsTemplate" placeholder="Enter template name" class="w-full" autofocus />
+      <PureInput v-model="nameAsTemplate" placeholder="Enter template name" class="w-full" autofocus/>
     </div>
 
     <template #footer>

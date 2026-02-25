@@ -40,39 +40,52 @@ enum WebBlockSystemEnum: string
                 'sub-departments-1',
                 'sub-departments-2',
             ],
-
             self::FAMILIES => [
                 'families-1',
                 'families-2',
                 'families-3',
             ],
-
             self::LIST_PRODUCTS => [
                 'products-1',
                 'products-2',
             ],
-            
             self::PRODUCTS => [
                 'product-1',
-                'product-2'
+                'product-2',
             ],
-
             //description
             self::DEPARTMENT => [
                'department-description-1',
             ],
-
             self::SUB_DEPARTMENT => [
                'sub-department-description-1',
             ],
-
             self::FAMILY => [
                'family-1',
             ],
-
-             self::COLLECTION => [
+            self::COLLECTION => [
                'collection-description-1',
             ],
         };
     }
+
+    public static function listSystemWebBlock(): array
+    {
+        return [
+            'sub-departments-1',
+            'sub-departments-2',
+            'families-1',
+            'families-2',
+            'families-3',
+            'products-1',
+            'products-2',
+            'product-1',
+            'product-2',
+            'department-description-1',
+            'sub-department-description-1',
+            'family-1',
+            'collection-description-1',
+        ];
+    } 
 }
+

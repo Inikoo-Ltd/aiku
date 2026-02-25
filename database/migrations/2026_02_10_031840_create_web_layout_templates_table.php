@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('web_layout_templates', function (Blueprint $table) {
             $table->id();
             
-            $table->string('label')->index();
+            $table->string('label')->unique()->index();
+            $table->unsignedInteger('author_id');
+            $table->foreign('author_id')->references('id')->on('users');
             $table->string('type');
             $table->string('scope');
             $table->jsonb('data');

@@ -11,6 +11,7 @@ namespace App\Actions\Web\WebLayoutTemplate;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Enums\Web\WebBlockType\WebBlockSystemEnum;
 use App\Enums\Web\WebLayoutTemplate\WebLayoutTemplateType;
 use App\Models\Web\WebBlock;
 use App\Models\Web\WebLayoutTemplate;
@@ -58,6 +59,7 @@ class StoreWebLayoutTemplate extends OrgAction
         data_set($modelData, 'scope', $webpage->sub_type);
         // Will insert to column
         data_set($modelData, 'data', $data);
+        data_set($modelData, 'author_id', auth()->user()->id);
 
         return $modelData;
     }
@@ -65,10 +67,14 @@ class StoreWebLayoutTemplate extends OrgAction
     public function parseWebBlockListToLayout(array $webBlocks): array
     {
         $listWebBlocks = [];
-        // TODO CHECK FOR SYSTEM WEB BLOCK, DO NOT COPY EVERYTHING IF IT IS
+        $listSystemWebBlock = WebBlockSystemEnum::listSystemWebBlock();
+
         foreach ($webBlocks as $index => $item) {
             $keepData = Arr::only($item, ['name', 'show', 'type']);
-            data_set($keepData, 'layout', data_get($item, 'web_block.layout'));
+            // Check for system web blocks, this will be generated on BE based on saved styles of each website, no need to save the layout
+            if(!in_array(data_get($item, 'type'), $listSystemWebBlock)){
+                data_set($keepData, 'layout', data_get($item, 'web_block.layout'));
+            }
             data_set($listWebBlocks, $item['type'], $keepData);
         }
 
@@ -78,9 +84,25 @@ class StoreWebLayoutTemplate extends OrgAction
     public function rules(): array
     {
         return [
-            'label'                     =>      ['required', 'string'],
+            'label'                     =>      ['required', 'string', 'unique:web_layout_templates,label'],
             'block.*'                   =>      ['required', 'array'],
             'block.web_block'           =>      ['sometimes', 'array'],
+        ];
+    }
+
+    public function getValidationMessages(): array 
+    {
+        return [
+            // Label
+            'label.required' => 'A template label is required.',
+            'label.string'   => 'The template label must be a valid text value.',
+            'label.unique'   => 'This template label already exists. Please choose a different label.',
+
+            // Block (generic + wildcard)
+            'block.required' => 'Error in parsing Web Block formats, please contact the developer in charge.',
+            'block.array'    => 'Error in parsing Web Block formats, please contact the developer in charge.',
+            'block.*'        => 'Error in parsing Web Block formats, please contact the developer in charge.',
+            'block.web_block.array' => 'Error in parsing Web Block formats, please contact the developer in charge.',
         ];
     }
 
