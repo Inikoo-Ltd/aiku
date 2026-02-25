@@ -11,13 +11,16 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEnvelope } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBuilding, faGlobe, faPhone, faUser, faInfoCircle } from "@fal"
-import { faAsterisk } from "@fas"
+import { faAsterisk, faExclamationTriangle } from "@fas"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
 import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
+import Modal from "@/Components/Utils/Modal.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { get } from "lodash-es"
 
-library.add(faEnvelope, faUser, faAsterisk, faInfoCircle, faPhone, faBuilding, faGlobe)
+library.add(faEnvelope, faUser, faAsterisk, faExclamationTriangle, faInfoCircle, faPhone, faBuilding, faGlobe)
 
 // Set default layout
 // defineOptions({ layout: RetinaShowIris })
@@ -70,11 +73,25 @@ const form = useForm({
 const isLoading = ref(false)
 
 const submit = () => {
-	isLoading.value = true
+    const fieldsOfSelectedCountry = get(props.countriesAddressData, [get(form, ['contact_address', 'country_id'], []), 'fields'], {});
+
+    let isAddressFieldFailedPass = false
+    for (const [fieldName, fieldData] of Object.entries(fieldsOfSelectedCountry)) {
+        if (fieldData.required && !get(form, ['contact_address', fieldName])) {
+            form.setError(fieldName, `${fieldName} is required`);
+            isAddressFieldFailedPass = true;
+        } else {
+            form.clearErrors(fieldName);
+        }
+    }
+    if (isAddressFieldFailedPass) {
+        return;
+    }
 
 	const { isDirty, errors, __rememberable, hasErrors, progress, wasSuccessful, ...xxx } = form
-
 	if (form.password == form.password_confirmation) {
+		if (isUserInputPassed(xxx)) return  // Check <script> and HTML tag in user input
+		
 		form
 		.transform((data) => ({
 			...data,
@@ -82,6 +99,9 @@ const submit = () => {
 		}))
 		.post(route(props.registerRoute.name, props.registerRoute.parameters), {
 			preserveScroll: true,
+			onStart: () => {
+				isLoading.value = true
+			},
 			onError: () => {
 				isLoading.value = false
 			},
@@ -93,12 +113,12 @@ const submit = () => {
 				window.dataLayer.push({
 					event: 'registrationSuccess'
 				})
-				// router.get(route('retina.dashboard.show'))
 				window.location.href = await getRefRedirect()
 			}
 		})
 	} else {
 		form.setError("password", "password not match")
+		form.setError("password_confirmation", "Password does not match")
 	}
 }
 
@@ -115,6 +135,31 @@ provide('registrationWarning', registrationWarning)
 
 const is_agree_tnc = ref(false)
 const is_error_tnc = ref(false)
+
+// Section: Sanitize user's input, wether it contains <script> tag or HTML tag
+const isModalRemoveScript = ref(false)
+const isModalRemoveHtml = ref(false)
+const isUserInputPassed = (dataToCheck: {}) => {
+	// Check if any field contains <script> tag (for isModalRemoveScript)
+	for (const key in dataToCheck) {
+		const inputValue = dataToCheck[key]
+		if (/<script>/i.test(inputValue)) {
+			isModalRemoveScript.value = true
+			form.errors[key] = "Script tags are not allowed."
+			return true // Stop further checks if a script tag is found
+		}
+	}
+
+	// Check if any field contains HTML tags (for isModalRemoveHtml)
+	for (const key in dataToCheck) {
+		const inputValue = dataToCheck[key]
+		if (/<[^>]+>/i.test(inputValue) && !/<script>/i.test(inputValue)) {
+			isModalRemoveHtml.value = true
+			form.errors[key] = "HTML tags are not allowed."
+			return true // Stop further checks if HTML tags are found
+		}
+	}
+}
 </script>
 
 <template>
@@ -160,14 +205,16 @@ const is_error_tnc = ref(false)
 										</InputIcon>
 
 										<!-- and make the input itself full-width -->
-										<InputText
-											v-model="form.email"
-											type="email"
-											id="email"
-											name="email"
-											class="w-full"
-											xdisabled
-											required />
+										<div :class="form.errors.email ? 'errorShake' : ''">
+											<InputText
+												v-model="form.email"
+												type="email"
+												id="email"
+												name="email"
+												class="w-full"
+												xdisabled
+												required />
+										</div>
 									</IconField>
 
 									<p v-if="form.errors.email" class="text-sm text-red-600 mt-1">
@@ -190,6 +237,7 @@ const is_error_tnc = ref(false)
 										v-model="form.password"
 										@update:modelValue="(e) => form.clearErrors('password')"
 										:type="'password'"
+										:class="form.errors.password ? 'errorShake' : ''"
 										required />
 									<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
 										{{ form.errors.password }}
@@ -210,6 +258,7 @@ const is_error_tnc = ref(false)
 									<PureInput
 										v-model="form.password_confirmation"
 										:type="'password'"
+										:class="form.errors.password_confirmation ? 'errorShake' : ''"
 										required />
 									<p
 										v-if="form.errors.password_confirmation"
@@ -299,6 +348,66 @@ const is_error_tnc = ref(false)
 				</form>
 			</div>
 		</div>
+
+		<!-- Modal: if user put <script> in the field -->
+		<Modal :isOpen="isModalRemoveScript" @onClose="isModalRemoveScript = false" width="w-full max-w-lg">
+			<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+				<div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+					<div>
+						<div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100" >
+							<FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-red-500 text-4xl" fixed aria-hidden='true' />
+						</div>
+						
+						<div class="mt-3 text-center sm:mt-3">
+							<div as="h3" class="font-semibold text-2xl text-red-600">
+								{{ trans('Don\'t do that to us') }}!
+							</div>
+							<div class="mt-2 text-sm opacity-75">
+								{{ trans('Please remove the script before you submit') }}
+							</div>
+						</div>
+					</div>
+
+					<div class="mt-5 sm:mt-6">
+						<Button
+							@click="() => isModalRemoveScript = false"
+							:label="trans('Okay')"
+							full
+						/>
+					</div>
+				</div>
+			</div>
+		</Modal>
+		
+		<!-- Modal: if user put HTML code in the field -->
+		<Modal :isOpen="isModalRemoveHtml" width="w-full max-w-2xl" @close="isModalRemoveHtml = false">
+			<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+				<div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+					<div>
+						<div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100" >
+							<FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-amber-500 text-4xl" fixed aria-hidden='true' />
+						</div>
+						
+						<div class="mt-3 text-center sm:mt-3">
+							<div as="h3" class="font-semibold text-2xl text-amber-600">
+								{{ trans('Remove the HTML code') }}!
+							</div>
+							<div class="mt-2 text-sm opacity-75">
+								{{ trans('It looks like you have added HTML code. Please remove the HTML code before you submit.') }}
+							</div>
+						</div>
+					</div>
+
+					<div class="mt-5 sm:mt-6">
+						<Button
+							@click="() => isModalRemoveHtml = false"
+							:label="trans('Okay')"
+							full
+						/>
+					</div>
+				</div>
+			</div>
+		</Modal>
 	</div>
 </template>
 

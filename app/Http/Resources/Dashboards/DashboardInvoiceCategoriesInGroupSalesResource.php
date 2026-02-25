@@ -55,7 +55,12 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
 
         $organisationCode = $data['organisation_code'] ?? 'Unknown';
         $name = $data['name'] ?? 'Unknown';
+        $isGlobalMarketplaces = (bool) ($data['is_global_marketplaces'] ?? false);
+
         $label = $organisationCode ? $organisationCode . ': ' . $name : $name;
+        if ($isGlobalMarketplaces) {
+            $label = $name . ' (' . $organisationCode . ')';
+        }
 
         $columns = [
             'label' => [
@@ -80,12 +85,12 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
                 'invoices' => $routeTargets['invoices'],
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
-                'sales_org_currency',
-                'sales_org_currency_minified',
-                'sales_org_currency_delta',
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
+                'sales_org_currency_external',
+                'sales_org_currency_external_minified',
+                'sales_org_currency_external_delta',
+                'sales_grp_currency_external',
+                'sales_grp_currency_external_minified',
+                'sales_grp_currency_external_delta',
             ])
         );
 

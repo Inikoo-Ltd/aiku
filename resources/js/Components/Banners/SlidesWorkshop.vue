@@ -13,6 +13,7 @@ import { routeType } from "@/types/route"
 import CommonSlidesBluprint from "./Blueprint/CommonSlidesBluprint"
 import SlidesBluprint from "./Blueprint/SlidesBluprint"
 import IndexSlidesControl from "./SlidesWorkshop/IndexSlidesControl.vue"
+import { cloneDeep } from "lodash-es"
 
 type SlideWorkshopData = any
 
@@ -46,8 +47,12 @@ const ComponentsBlueprint = ref(SlidesBluprint.data)
 
 /* ---------------- helpers ---------------- */
 const getComponents = () => props.modelValue.components || []
+
 const setComponents = (val: SlideWorkshopData[]) => {
-  props.modelValue.components = val
+  emits("update:modelValue", {
+    ...props.modelValue,
+    components: val
+  })
 }
 const findIndex = (ulid: string) =>
   getComponents().findIndex((i: any) => i.ulid === ulid)
@@ -63,17 +68,21 @@ watch(
   (val) => {
     if (!val?.ulid) return
 
-    const list = [...getComponents()]
+    const list = cloneDeep(getComponents())
     const index = findIndex(val.ulid)
     if (index === -1) return
 
-    list[index] = { ...val }
-    setComponents(list)
+    list[index] = cloneDeep(val)
+
+    emits("update:modelValue", {
+      ...props.modelValue,
+      components: list
+    })
+
     emits("jumpToIndex", val.ulid)
   },
   { deep: true }
 )
-
 
 const removeComponent = (slide: SlideWorkshopData) => {
   const list = [...getComponents()]

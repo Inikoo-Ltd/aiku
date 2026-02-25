@@ -31,8 +31,6 @@ import { faExternalLink, faExclamationTriangle } from '@far'
 
 library.add(faExternalLink, faEyeSlash, faExclamationTriangle)
 
-
-
 const props = defineProps<{
     production?: boolean
     jumpToIndex?: string  // ulid
@@ -44,7 +42,7 @@ const swiperRef = ref(null)
 const intSwiperKey = ref(1)
 
 const filteredNulls = (corners: CornersData) => {
-    if(corners) {
+    if (corners) {
         return Object.fromEntries(Object.entries(corners).filter(([_, v]) => v != null))
     }
 
@@ -81,8 +79,8 @@ const renderImage = (component) => {
                 view = "tablet";
             }
         }
-        return get(component, ['image', view, 'source'],get(component, ['image','desktop', 'source'], null))
-    } else return get(component, ['image', props.view, 'source'], get(component, ['image','desktop', 'source'], null))
+        return get(component, ['image', view, 'source'], get(component, ['image', 'desktop', 'source'], null))
+    } else return get(component, ['image', props.view, 'source'], get(component, ['image', 'desktop', 'source'], null))
 }
 
 const renderBackground = (component) => {
@@ -95,77 +93,187 @@ const renderBackground = (component) => {
                 view = "tablet";
             }
         }
-        return get(component, ['layout', 'background', view ], get(component, ['layout', 'background', 'desktop'], 'gray'))
+        return get(component, ['layout', 'background', view], get(component, ['layout', 'background', 'desktop'], 'gray'))
     } else return get(component, ['layout', 'background', props.view], get(component, ['layout', 'background', 'desktop'], 'gray'))
 }
+
+const renderVideoUrl = (component) => {
+    return get(component, ['layout', 'video', props.view],
+        get(component, ['layout', 'video', 'desktop'], null))
+}
+
+const getCard = (component) => {
+    const view = props.view || 'desktop'
+    const card = get(component, ['layout', 'card'])
+
+    if (!card) return null
+
+    if (card.desktop || card.tablet || card.mobile) {
+        return card[view] || card.desktop || {}
+    }
+
+    return card
+}
+
+const isYoutube = (url: string) =>
+    url?.includes("youtube.com") || url?.includes("youtu.be")
+
+const isDirectVideo = (url: string) =>
+    url?.match(/\.(mp4|webm|ogg)$/i)
+
+const bannerHeight = computed(() => {
+    return get(props.data, ['common', 'height', props.view],
+        get(props.data, ['common', 'height', 'desktop'], 400))
+})
+
+const getCardScale = computed(() => {
+    if (props.view === 'mobile') return 0.6
+    if (props.view === 'tablet') return 0.8
+    return 1
+})
 
 const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true
 })
-
 </script>
 
 <template>
     <div class="relative w-full">
-        <div class="relative mx-auto transition-all duration-200 ease-in-out" :class="[
-            // production ? 'w-full' : 'mx-auto',
+        <div class="relative mx-auto transition-all duration-300 ease-in-out" :class="[
             $props.view
-                ? { 'aspect-[2/1] w-[100%]' : $props.view == 'mobile',
-                    'aspect-[3/1] w-[100%]' : $props.view == 'tablet',
-                    'aspect-[4/1] w-full' : $props.view == 'desktop'}
+                ? {
+                    'aspect-[2/1] max-w-[375px] w-full': $props.view == 'mobile',
+
+                    'aspect-[3/1] max-w-[768px] w-full': $props.view == 'tablet',
+
+                    'aspect-[4/1] w-full': $props.view == 'desktop'
+                }
                 : 'aspect-[2/1] md:aspect-[3/1] lg:aspect-[4/1] w-full'
-        ]">
+        ]" :style="{ height: bannerHeight + 'px' }">
+
             <!-- Add v-if to avoid error in SSR -->
             <template v-if="isMounted">
-                <Swiper ref="swiperRef"
-                    :key="'banner' + intSwiperKey"
-                    :slideToClickedSlide="true"
-                    :spaceBetween="get(data,['common','spaceBetween']) ? data.common.spaceBetween : 0"
-                    :slidesPerView="1"
-                    :centeredSlides="true"
-                    :loop="data.components.filter((item)=>item.ulid).length > 1"
-                    :autoplay="{
-                        delay: data.delay,
-                        disableOnInteraction: false,
-                    }"
-                    :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
+                <Swiper ref="swiperRef" :key="'banner' + intSwiperKey" :slideToClickedSlide="true"
+                    :spaceBetween="get(data, ['common', 'spaceBetween']) ? data.common.spaceBetween : 0"
+                    :slidesPerView="1" :centeredSlides="true"
+                    :loop="data.components.filter((item) => item.ulid).length > 1" :autoplay="false" :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
                         clickable: true,
                         renderBullet: (index, className) => {
                             return `<span class='${className}'></span>`
                         },
-                    } : false"
-                    :navigation="!data.navigation || data.navigation?.sideNav?.value"
-                    :modules="[Autoplay, Pagination, Navigation]" class="mySwiper"
-                >
-                    <SwiperSlide v-for="component in data.components.filter((item)=>item.ulid)" :key="component.id">
+                    } : false" :navigation="!data.navigation || data.navigation?.sideNav?.value"
+                    :modules="[Autoplay, Pagination, Navigation]" class="mySwiper">
+                    <SwiperSlide v-for="component in data.components.filter((item) => item.ulid)" :key="component.id">
                         <!-- Slide: Image -->
-                        <div v-if="get(component, ['layout', 'backgroundType', props.view],get(component, ['layout', 'backgroundType','desktop'], 'image')) == 'image'" class="relative w-full h-full">
+                        <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"
+                            class="relative w-full h-full">
                             <Image :src="renderImage(component)" alt="Wowsbar" />
                         </div>
-                        <div v-else :style="{ background: renderBackground(component)}" class="w-full h-full" />
+                        <div v-else-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'video'"
+                            class="relative w-full h-full overflow-hidden">
+
+                            <!-- Direct mp4 -->
+                            <video v-if="isDirectVideo(renderVideoUrl(component))" :src="renderVideoUrl(component)"
+                                autoplay muted loop playsinline class="w-full h-full object-cover" />
+
+                            <!-- YouTube -->
+                            <iframe v-else-if="isYoutube(renderVideoUrl(component))"
+                                :src="`https://www.youtube.com/embed/${renderVideoUrl(component).split('v=')[1]}?autoplay=1&mute=1&loop=1&playlist=${renderVideoUrl(component).split('v=')[1]}`"
+                                class="w-full h-full" allow="autoplay" />
+
+                        </div>
+                        <div v-else :style="{ background: renderBackground(component) }" class="w-full h-full" />
                         <!-- Section: Not Visible (for workshop) -->
-                        <div v-if="get(component, ['visibility'], true) === false" class="absolute h-full w-full bg-gray-800/50 z-10 " />
+                        <div v-if="get(component, ['visibility'], true) === false"
+                            class="absolute h-full w-full bg-gray-800/50 z-10 " />
                         <div class="z-[11] absolute left-7 flex flex-col gap-y-2">
-                            <FontAwesomeIcon v-if="get(component, ['visibility'], true) === false" icon='fas fa-eye-slash' class=' text-orange-400 text-4xl' aria-hidden='true' />
-                            <span v-if="get(component, ['visibility'], true) === false" class="text-orange-400/60 text-sm italic select-none" aria-hidden='true'>
+                            <FontAwesomeIcon v-if="get(component, ['visibility'], true) === false"
+                                icon='fas fa-eye-slash' class=' text-orange-400 text-4xl' aria-hidden='true' />
+                            <span v-if="get(component, ['visibility'], true) === false"
+                                class="text-orange-400/60 text-sm italic select-none" aria-hidden='true'>
                                 <FontAwesomeIcon icon='far fa-exclamation-triangle' class='' aria-hidden='true' />
                                 Not visible
                             </span>
                         </div>
                         <!-- <FontAwesomeIcon v-if="!!component?.layout?.link" icon='far fa-external-link' class='text-gray-300/50 text-xl absolute top-2 right-2' aria-hidden='true' /> -->
-                        <a v-if="!!component?.layout?.link" :href="`https://${useRemoveHttps(component?.layout?.link)}`" target="_top" class="absolute bg-transparent w-full h-full" />
-                        <SlideCorner v-for="(slideCorner, position) in filteredNulls(component?.layout?.corners)" :position="position" :corner="slideCorner" :commonCorner="data.common.corners" />
+                        <a v-if="!!component?.layout?.link" :href="`https://${useRemoveHttps(component?.layout?.link)}`"
+                            target="_top" class="absolute bg-transparent w-full h-full" />
+                        <SlideCorner v-for="(slideCorner, position) in filteredNulls(component?.layout?.corners)"
+                            :position="position" :corner="slideCorner" :commonCorner="data.common.corners" />
                         <!-- CentralStage: slide-centralstage (prioritize) and common-centralStage -->
-                        <CentralStage v-if="component?.layout?.centralStage?.title?.length > 0 || component?.layout?.centralStage?.subtitle?.length > 0" :data="component?.layout?.centralStage" />
-                        <CentralStage v-else-if="data.common?.centralStage?.title?.length > 0 || data.common?.centralStage?.subtitle?.length > 0" :data="data.common?.centralStage" />
+                        <template v-if="getCard(component) && Object.keys(getCard(component)).length">
+                            <template v-for="(card, key) in getCard(component)" :key="key">
+                                <template v-if="card?.enabled">
+
+                                    <div class="absolute inset-0 flex" :class="[
+                                        {
+                                            'justify-start pl-10': card.horizontal === 'left',
+                                            'justify-center': card.horizontal === 'center',
+                                            'justify-end pr-10': card.horizontal === 'right'
+                                        },
+                                        {
+                                            'items-start pt-10': card.vertical === 'top',
+                                            'items-center': card.vertical === 'middle',
+                                            'items-end pb-10': card.vertical === 'bottom'
+                                        }
+                                    ]">
+
+                                        <div class="relative" :style="{
+                                            width: (card.width || 60) + '%',
+                                            height: (card.height || 300) + 'px',
+                                            background: card.hideCard ? 'transparent' : (card.background || '#ffffff'),
+                                            padding: (card.padding || 30) + 'px',
+                                            borderRadius: (card.radius || 10) + 'px',
+                                            opacity: card.opacity ?? 1,
+                                            transform: `translate(${card.offsetX || 0}px, ${card.offsetY || 0}px) scale(${getCardScale})`,
+                                            transformOrigin: 'center'
+                                        }" :class="card.shadow && !card.hideCard ? 'shadow-2xl' : ''">
+                                            <CentralStage :data="{
+                                                titles: card.titles,
+                                                textAlign: card.textAlign,
+                                            }" :class="[
+                                                card.textAlign === 'center'
+                                                    ? 'left-0 right-0 text-center'
+                                                    : '',
+
+                                                card.textVertical === 'top'
+                                                    ? 'top-0'
+                                                    : '',
+                                                card.textVertical === 'middle'
+                                                    ? 'top-1/2 -translate-y-1/2'
+                                                    : '',
+                                                card.textVertical === 'bottom'
+                                                    ? 'bottom-0'
+                                                    : ''
+                                            ]" />
+
+                                        </div>
+
+                                    </div>
+
+                                </template>
+                            </template>
+                        </template>
+                        <template
+                            v-if="component?.layout?.centralStage?.title || component?.layout?.centralStage?.subtitle">
+                            <CentralStage :data="component.layout.centralStage" />
+                        </template>
+
+                        <template v-else-if="data.common?.centralStage?.title
+                            || data.common?.centralStage?.subtitle">
+                            <CentralStage :data="data.common.centralStage" />
+                        </template>
+
                     </SwiperSlide>
-                    <div v-if="data.navigation?.bottomNav?.value && data.navigation?.bottomNav?.type?.value == 'buttons'" class="absolute bottom-1 left-1/2 -translate-x-1/2 z-10">
+                    <div v-if="data.navigation?.bottomNav?.value && data.navigation?.bottomNav?.type?.value == 'buttons'"
+                        class="absolute bottom-1 left-1/2 -translate-x-1/2 z-10">
                         <SlideControls :dataBanner="data" :swiperRef="swiperRef" />
                     </div>
                 </Swiper>
                 <!-- Reserved Corner: Button Controls -->
-                <SlideCorner class="z-10" v-for="(corner, position) in filteredNulls(data.common?.corners)" :position="position" :corner="corner"   :swiperRef="swiperRef"/>
+                <SlideCorner class="z-10" v-for="(corner, position) in filteredNulls(data.common?.corners)"
+                    :position="position" :corner="corner" :swiperRef="swiperRef" />
             </template>
 
             <div v-else class="absolute inset-0 skeleton h-full w-full">
@@ -209,8 +317,8 @@ onMounted(() => {
 }
 
 // Navigation: Arrow
-:deep(.swiper-button-prev), :deep(.swiper-button-next) {
+:deep(.swiper-button-prev),
+:deep(.swiper-button-next) {
     color: v-bind(compColorNav) !important;
 }
-
 </style>

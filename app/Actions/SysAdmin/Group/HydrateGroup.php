@@ -50,6 +50,8 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateHandling;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateHandlingBlocked;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateInWarehouse;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePacked;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePacking;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePicked;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateSubmitted;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
@@ -57,7 +59,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletDeliveries;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePallets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePickedBays;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePickingTrolleys;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTrolleys;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePostRooms;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductsWithNoFamily;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
@@ -201,6 +203,8 @@ class HydrateGroup extends HydrateModel
         GroupHydrateOrderStateInWarehouse::run($group->id);
         GroupHydrateOrderStateHandling::run($group->id);
         GroupHydrateOrderStateHandlingBlocked::run($group->id);
+        GroupHydrateOrderStatePicked::run($group->id);
+        GroupHydrateOrderStatePacking::run($group->id);
         GroupHydrateOrderStatePacked::run($group->id);
         GroupHydrateOrderStateFinalised::run($group->id);
         GroupHydrateOrdersDispatchedToday::run($group->id);
@@ -247,7 +251,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateMasterFamiliesWithNoDepartment::run($group);
         GroupHydrateInvoiceCategories::dispatch($group);
 
-        GroupHydratePickingTrolleys::run($group);
+        GroupHydrateTrolleys::run($group);
         GroupHydratePickedBays::run($group);
 
     }

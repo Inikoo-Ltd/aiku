@@ -35,7 +35,6 @@ class UploadProductToWooCommerceProgressEvent implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        Log::info('Broadcasting WooCommerce upload progress', $this->portfolio->toArray());
         return [
             new PrivateChannel("woo.{$this->wooCommerceUser->id}.upload-product.{$this->portfolio->id}")
 
@@ -44,11 +43,6 @@ class UploadProductToWooCommerceProgressEvent implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        Log::info('Broadcasting WooCommerce upload progress', [
-            'wooCommerceUserId' => $this->wooCommerceUser->id,
-            'portfolioId'       => $this->portfolio->id,
-        ]);
-
         return [
             'portfolio' => $this->portfolio,
         ];

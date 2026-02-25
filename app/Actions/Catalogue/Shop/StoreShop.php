@@ -23,7 +23,6 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
-use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\Organisation\SetIconAsShopLogo;
 use App\Actions\Traits\Rules\WithStoreShopRules;
 use App\Actions\Traits\WithModelAddressActions;
@@ -243,7 +242,6 @@ class StoreShop extends OrgAction
         OrganisationHydrateShops::dispatch($organisation)->delay($this->hydratorsDelay);
         ProspectQuerySeeder::dispatch($shop);
         SeedShopOutboxes::dispatch($shop);
-        SeedJobPositions::dispatch($organisation);
         SetIconAsShopLogo::dispatch($shop)->delay($this->hydratorsDelay);
         SeedShopOfferCampaigns::dispatch($shop);
         SeedTrafficSources::dispatch($shop);
@@ -251,6 +249,8 @@ class StoreShop extends OrgAction
             MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);
         }
         CreateDiscretionaryCharges::run($shop);
+
+
 
         return $shop;
     }
@@ -417,8 +417,8 @@ class StoreShop extends OrgAction
     {
         return Redirect::route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $shop->slug])
             ->with('notification', [
-                'status'  => 'success',
-                'title' => __('Your shop is still being created.'),
+                'status'      => 'success',
+                'title'       => __('Your shop is still being created.'),
                 'description' => __('Please wait approximately 45 minutes for the shop to be fully created.'),
             ]);
     }

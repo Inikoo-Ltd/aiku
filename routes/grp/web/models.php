@@ -39,7 +39,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
 use App\Actions\Catalogue\Product\UpdateMultipleProductsFamily;
 use App\Actions\Catalogue\Product\UpdateProduct;
-use App\Actions\Catalogue\Product\UpdateProductExternal;
+use App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct;
 use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
@@ -112,6 +112,7 @@ use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
+use App\Actions\Dispatching\Trolley\UpdateTrolley;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
@@ -608,7 +609,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::delete('{product:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inProduct'])->name('attachment.detach')->withoutScopedBindings();
 
     Route::name('external.')->prefix('external')->group(function () {
-        Route::patch('/{product:id}/update', UpdateProductExternal::class)->name('update');
+        Route::patch('/{product:id}/update', UpdateTradeUnitsForExternalProduct::class)->name('update');
     });
 });
 
@@ -881,6 +882,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('images/footer', [UploadImagesToWebsite::class, 'footer'])->name('footer.images.store');
     Route::post('images/favicon', [UploadImagesToWebsite::class, 'favicon'])->name('favicon.images.store');
     Route::post('images/sidebar', [UploadImagesToWebsite::class, 'sidebar'])->name('sidebar.images.store');
+    Route::post('images/sidebar', [UploadImagesToWebsite::class, 'menu'])->name('menu.images.store');
 
     Route::post('/banner', StoreBanner::class)->name('banner.store');
 
@@ -1144,6 +1146,8 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
     Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
     Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
 });
+Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
+
 
 require __DIR__.'/models/inventory/warehouse.php';
 require __DIR__.'/models/goods_in/return.php';

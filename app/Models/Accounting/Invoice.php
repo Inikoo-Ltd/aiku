@@ -123,6 +123,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_re recargo de equivalencia
  * @property string|null $external_id
  * @property bool $is_tax_only
+ * @property numeric $commission_amount
+ * @property string $profit_amount
+ * @property string|null $margin
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -180,6 +183,7 @@ class Invoice extends Model implements Auditable
         'last_fetched_at'     => 'datetime',
         'grp_exchange'        => 'decimal:4',
         'org_exchange'        => 'decimal:4',
+        'commission_amount'   => 'decimal:2',
         'tax_number_status'   => 'boolean',
     ];
 
@@ -202,6 +206,7 @@ class Invoice extends Model implements Auditable
         'status',
         'email',
         'phone',
+        'commission_amount',
     ];
 
     public function getRouteKeyName(): string

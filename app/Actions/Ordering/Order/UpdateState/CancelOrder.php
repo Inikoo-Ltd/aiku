@@ -10,9 +10,11 @@ namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
+use App\Actions\Catalogue\Shop\External\Faire\CancelFaireOrder;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
-use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
+use App\Actions\Dropshipping\Tiktok\Order\CancelFulfillOrderTiktok;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -115,6 +117,7 @@ class CancelOrder extends OrgAction
             if ($order->customerSalesChannel?->user && app()->isProduction()) {
                 match ($order->customerSalesChannel->platform->type) {
                     PlatformTypeEnum::SHOPIFY => CancelFulfillOrderToShopify::run($order),
+                    PlatformTypeEnum::TIKTOK => CancelFulfillOrderTiktok::run($order),
                     default => null,
                 };
             } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {
@@ -122,6 +125,10 @@ class CancelOrder extends OrgAction
                     'public_notes' => __('We\'re unable update order to customer\'s sales channel due to their sales channel are not found or already deleted.')
                 ]);
             }
+        }
+
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && app()->isProduction()) {
+            CancelFaireOrder::run($order->shop, $order);
         }
 
         $this->orderHydrators($order);

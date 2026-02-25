@@ -33,7 +33,8 @@ class IndexTopListedProductsInPlatform extends OrgAction
                 'assets.id',
                 'assets.code',
                 'assets.name',
-                DB::raw('COUNT(portfolios.id) as total_listed')
+                DB::raw('COUNT(portfolios.id) as total_listed'),
+                DB::raw('COUNT(DISTINCT portfolios.customer_id) as total_customers')
             )
             ->join('assets', function ($join) {
                 $join->on('portfolios.item_id', '=', 'assets.id')
@@ -50,7 +51,7 @@ class IndexTopListedProductsInPlatform extends OrgAction
         }
 
         return $query
-            ->allowedSorts(['total_listed', 'assets.name', 'assets.code'])
+            ->allowedSorts(['total_listed', 'total_customers', 'assets.name', 'assets.code'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -72,6 +73,7 @@ class IndexTopListedProductsInPlatform extends OrgAction
                 ])
                 ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
+                ->column(key: 'total_customers', label: __('Customers'), sortable: true)
                 ->column(key: 'total_listed', label: __('Total Listed'), sortable: true)
                 ->defaultSort('-total_listed');
         };

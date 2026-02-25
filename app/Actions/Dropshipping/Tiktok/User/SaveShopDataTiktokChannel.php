@@ -24,6 +24,10 @@ class SaveShopDataTiktokChannel
     {
         $shopData = [];
         $tiktokShop = $tiktokUser->getAuthorizedShop();
+        data_set($shopData, 'data.authorized_shop', Arr::get($tiktokShop, 'data.shops'));
+
+        $tiktokUser = $this->update($tiktokUser, $shopData);
+
         $tiktokWarehouses = $tiktokUser->getWarehouses();
         $tiktokUser->updateWebhook('ORDER_STATUS_CHANGE', route('webhooks.tiktok.orders.create'));
 
@@ -34,19 +38,10 @@ class SaveShopDataTiktokChannel
             }
         }
 
-        data_set($shopData, 'data.authorized_shop', Arr::get($tiktokShop, 'data.shops'));
         data_set($shopData, 'data.warehouse', Arr::get($tiktokWarehouses, 'data.warehouses'));
-
-        if (!$tiktokUser->tiktok_shop_id) {
-            data_set($shopData, 'tiktok_shop_id', Arr::get($tiktokShop, 'data.shops.0.id'));
-        }
 
         if (!$tiktokUser->tiktok_warehouse_id) {
             data_set($shopData, 'tiktok_warehouse_id', Arr::get($defaultWarehouse, 'id'));
-        }
-
-        if (!$tiktokUser->tiktok_shop_chiper) {
-            data_set($shopData, 'tiktok_shop_chiper', Arr::get($tiktokShop, 'data.shops.0.chiper'));
         }
 
         $this->update($tiktokUser, $shopData);

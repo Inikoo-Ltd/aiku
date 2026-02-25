@@ -21,6 +21,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\HumanResources\Employee;
+use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -111,6 +112,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_items_state_queued
  * @property int $number_items_state_handling
  * @property int $number_items_state_handling_blocked
+ * @property int $number_items_state_picked
+ * @property int $number_items_state_packing
  * @property int $number_items_state_packed
  * @property int $number_items_state_finalised
  * @property int $number_items_state_dispatched
@@ -141,6 +144,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property ShopTypeEnum|null $shop_type
  * @property string|null $tracking_number for search purposes
  * @property array<array-key, mixed> $shipping_data for UI purposes
+ * @property bool $is_shipping_by_external
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -165,6 +169,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
  * @property-read Collection<int, Sowing> $sowings
+ * @property-read Collection<int, \App\Models\Dispatching\Trolley> $trolleys
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
@@ -186,23 +191,24 @@ class DeliveryNote extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'               => 'array',
-        'parcels'            => 'array',
-        'state'              => DeliveryNoteStateEnum::class,
-        'type'               => DeliveryNoteTypeEnum::class,
-        'shop_type'          => ShopTypeEnum::class,
-        'date'               => 'datetime',
-        'shipping_data'      => 'array',
-        'order_submitted_at' => 'datetime',
-        'assigned_at'        => 'datetime',
-        'picking_at'         => 'datetime',
-        'picked_at'          => 'datetime',
-        'packing_at'         => 'datetime',
-        'packed_at'          => 'datetime',
-        'dispatched_at'      => 'datetime',
-        'cancelled_at'       => 'datetime',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data'                    => 'array',
+        'parcels'                 => 'array',
+        'state'                   => DeliveryNoteStateEnum::class,
+        'type'                    => DeliveryNoteTypeEnum::class,
+        'shop_type'               => ShopTypeEnum::class,
+        'date'                    => 'datetime',
+        'shipping_data'           => 'array',
+        'order_submitted_at'      => 'datetime',
+        'assigned_at'             => 'datetime',
+        'picking_at'              => 'datetime',
+        'picked_at'               => 'datetime',
+        'packing_at'              => 'datetime',
+        'packed_at'               => 'datetime',
+        'dispatched_at'           => 'datetime',
+        'cancelled_at'            => 'datetime',
+        'fetched_at'              => 'datetime',
+        'last_fetched_at'         => 'datetime',
+        'is_shipping_by_external' => 'boolean'
     ];
 
     protected $attributes = [
@@ -340,6 +346,16 @@ class DeliveryNote extends Model implements Auditable
             'delivery_note_id',
             'picking_session_id'
         );
+    }
+
+    public function trolleys(): BelongsToMany
+    {
+        return $this->belongsToMany(Trolley::class, 'delivery_note_has_trolleys');
+    }
+
+    public function pickedBays(): BelongsToMany
+    {
+        return $this->belongsToMany(PickedBay::class, 'picked_bay_has_delivery_notes');
     }
 
 }

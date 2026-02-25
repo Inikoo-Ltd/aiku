@@ -210,6 +210,27 @@ class IndexDeliveryNotes extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function picked(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'picked';
+        $this->shopType = 'all';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function pickedShopTypes(Organisation $organisation, Warehouse $warehouse, string $shopType, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'picked';
+        $this->shopType = $shopType;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket, shopType: $shopType);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
     public function packed(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
@@ -224,6 +245,27 @@ class IndexDeliveryNotes extends OrgAction
     {
         $this->parent = $warehouse;
         $this->bucket = 'packed';
+        $this->shopType = $shopType;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket, shopType: $shopType);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function packing(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'packing';
+        $this->shopType = 'all';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function packingShopTypes(Organisation $organisation, Warehouse $warehouse, string $shopType, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'packing';
         $this->shopType = $shopType;
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
 
@@ -306,6 +348,8 @@ class IndexDeliveryNotes extends OrgAction
             'grp.org.warehouses.show.dispatching.queued.delivery-notes',
             'grp.org.warehouses.show.dispatching.handling.delivery-notes',
             'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes',
+            'grp.org.warehouses.show.dispatching.picked.delivery-notes',
+            'grp.org.warehouses.show.dispatching.packing.delivery-notes',
             'grp.org.warehouses.show.dispatching.packed.delivery-notes',
             'grp.org.warehouses.show.dispatching.finalised.delivery-notes',
             'grp.org.warehouses.show.dispatching.dispatched.delivery-notes' =>
@@ -330,6 +374,8 @@ class IndexDeliveryNotes extends OrgAction
             'grp.org.warehouses.show.dispatching.queued.delivery-notes.shop',
             'grp.org.warehouses.show.dispatching.handling.delivery-notes.shop',
             'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes.shop',
+            'grp.org.warehouses.show.dispatching.picked.delivery-notes.shop',
+            'grp.org.warehouses.show.dispatching.packing.delivery-notes.shop',
             'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
             'grp.org.warehouses.show.dispatching.finalised.delivery-notes.shop',
             'grp.org.warehouses.show.dispatching.dispatched.delivery-notes.shop' =>

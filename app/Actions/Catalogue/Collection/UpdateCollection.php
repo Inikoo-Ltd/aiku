@@ -52,7 +52,30 @@ class UpdateCollection extends OrgAction
         if (!$collection->image_id && $originalImageId) {
             $collection->images()->detach($originalImageId);
         }
+        
+        if (Arr::has($changes, 'description_title')) {
+            UpdateCollectionAndMasterTranslations::make()->action($collection, [
+                'translations' => [
+                    'description_title' => [$collection->shop->language->code => Arr::pull($modelData, 'description_title')]
+                ]
+            ]);
+        }
 
+        if (Arr::has($changes, 'description')) {
+            UpdateCollectionAndMasterTranslations::make()->action($collection, [
+                'translations' => [
+                    'description' => [$collection->shop->language->code => Arr::pull($modelData, 'description')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changes, 'description_extra')) {
+            UpdateCollectionAndMasterTranslations::make()->action($collection, [
+                'translations' => [
+                    'description_extra' => [$collection->shop->language->code => Arr::pull($modelData, 'description_extra')]
+                ]
+            ]);
+        }
 
         if (Arr::hasAny($changes, ['code', 'name'])) {
             CollectionRecordSearch::dispatch($collection);

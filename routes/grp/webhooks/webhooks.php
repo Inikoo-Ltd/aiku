@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
 use App\Actions\Dropshipping\ShopifyUser\WebhookUninstalledShopifyUser;
+use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
@@ -64,4 +65,5 @@ Route::middleware('verify.shopify.webhook')->group(function () {
 
 Route::prefix('tiktok')->as('webhooks.tiktok.')->group(function () {
     Route::post('orders', HandleOrderIncomingTiktok::class)->name('orders.create');
+    Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
 });

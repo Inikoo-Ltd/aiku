@@ -23,6 +23,7 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -220,8 +221,8 @@ class ShowOrder extends OrgAction
         if ($order->state != OrderStateEnum::CANCELLED) {
             $wrapped_actions = [
                 [
-                    'type'    => 'button',
-                    'route'   => [
+                    'type'  => 'button',
+                    'route' => [
                         'name'       => 'grp.org.shops.show.ordering.orders.edit',
                         'parameters' => [
                             'organisation' => $order->organisation->slug,
@@ -328,7 +329,6 @@ class ShowOrder extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrderTabsEnum::navigation()
                 ],
-                'shop_type'   => $order->shop->type,
                 'routes'      => [
                     'modify'                     => [
                         'name'       => 'grp.models.order.modification.save',
@@ -374,6 +374,14 @@ class ShowOrder extends OrgAction
                 'notes'                       => $this->getOrderNotes($order),
                 'timelines'                   => $finalTimeline,
                 'readonly'                    => false,
+                'shop_type'                   => $order->shop->type,
+                'is_shop_external'            => $this->shop->type == ShopTypeEnum::EXTERNAL,
+                'external_shop'               => $this->shop->type == ShopTypeEnum::EXTERNAL ? [
+                    'xx' => 'xx',
+                    'engine_value'            => $this->shop->engine->value,
+                    'engine_label'            => ShopEngineEnum::from($this->shop->engine->value)->label(),
+                    'external_shipping_label' => $this->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
+                ] : null,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
                 'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
                 'box_stats'                   => $this->getOrderBoxStats($order),
@@ -381,13 +389,14 @@ class ShowOrder extends OrgAction
                 'data'                        => OrderResource::make($order),
                 'delivery_note'               => $deliveryNoteResource,
 
-                'payments_data'     => $paymentsData,
-                'payments_accounts' => $paymentAccountData,
-                'state'             => $order->state->value,
+
+                'payments_data'         => $paymentsData,
+                'payments_accounts'     => $paymentAccountData,
+                'state'                 => $order->state->value,
                 'route_recalculate_vat' => [
                     // Show button if order is creating (not submitted) and deliveryNote has is_cash_on_delivery true and it's not in those condition. Based on Dimitar requests.
-                    'showButton' => in_array($order->state, [OrderStateEnum::CREATING]) ||
-                        $order->deliveryNotes()
+                    'showButton' => in_array($order->state, [OrderStateEnum::CREATING])
+                        || $order->deliveryNotes()
                             ->where('is_cash_on_delivery', true)
                             ->whereNotIn('state', [
                                 DeliveryNoteStateEnum::DISPATCHED,
@@ -397,10 +406,10 @@ class ShowOrder extends OrgAction
                             ->exists(),
                     'name'       => 'grp.models.order.recalculate-vat',
                     'parameters' => [
-                        'order'        => $order->id
+                        'order' => $order->id
                     ]
                 ],
-                'proforma_invoice' => [
+                'proforma_invoice'      => [
                     'check_list'         => [
                         [
                             'label' => __('Pro mode'),
@@ -452,7 +461,7 @@ class ShowOrder extends OrgAction
                         ]
                     ]
                 ],
-                'attachmentRoutes' => [
+                'attachmentRoutes'      => [
                     'attachRoute' => [
                         'name'       => 'grp.models.order.attachment.attach',
                         'parameters' => [
@@ -514,9 +523,9 @@ class ShowOrder extends OrgAction
                         ],
                     ]
                 ],
-                'salesChannel'  => $order->salesChannel ? [
-                    'name'  => $order->salesChannel->name,
-                    'icon'  => $order->salesChannel->type->icon()
+                'salesChannel' => $order->salesChannel ? [
+                    'name' => $order->salesChannel->name,
+                    'icon' => $order->salesChannel->type->icon()
                 ] : null,
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?

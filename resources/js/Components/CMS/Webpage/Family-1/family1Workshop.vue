@@ -46,7 +46,7 @@ const props = defineProps<{
 const { modelValue, webpageData, blockData } = toRefs(props)
 
 const departmentEdit = ref(false)
-const name = ref(modelValue.value.family.name || '')
+const name = ref(modelValue.value.family.description_title || modelValue.value.family.name  )
 const showExtra = ref(false)
 const layout: any = inject("layout", {})
 
@@ -73,8 +73,8 @@ const saveDescription = debounce(async (key: string, value: string) => {
 }, 1000)
 
 watch(name, (val) => {
-  modelValue.value.family.name = val
-  saveDescription('name', val)
+  modelValue.value.family.description_title = val
+  saveDescription('description_title', val)
 })
 
 

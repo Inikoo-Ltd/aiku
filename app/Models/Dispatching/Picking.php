@@ -39,7 +39,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property PickingTypeEnum|null $type
  * @property string|null $last_picked_at
- * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
+ * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Location|null $location

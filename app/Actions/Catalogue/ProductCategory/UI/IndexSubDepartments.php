@@ -130,15 +130,15 @@ class IndexSubDepartments extends OrgAction
                 timeSeriesRecordsTable: 'product_category_time_series_records',
                 foreignKey: 'product_category_id',
                 aggregateColumns: [
-                    'sales_grp_currency' => 'sales',
-                    'invoices'           => 'invoices'
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices'
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix
             );
 
-            $selects[] = $timeSeriesData['selectRaw']['sales'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
@@ -150,7 +150,7 @@ class IndexSubDepartments extends OrgAction
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products', 'sales', 'invoices'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products', 'sales_grp_currency_external', 'invoices'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -210,8 +210,8 @@ class IndexSubDepartments extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), sortable: true)
-                    ->column(key: 'sales', label: __('Sales'), sortable: true, align: 'right')
-                    ->column(key: 'sales_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), align: 'right');
             } else {

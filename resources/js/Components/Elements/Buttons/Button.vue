@@ -86,7 +86,7 @@ switch (props.size) {
     sizeClass = "rounded-sm px-1 py-0.5 md:px-2 md:py-1 text-xxs";
     break;
   case "xs":
-    sizeClass = "rounded-sm px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs";
+    sizeClass = "rounded px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs";
     break;
   case "sm":
   case "s":
@@ -108,7 +108,8 @@ switch (props.size) {
 // Auto add label for several conditions
 const getActionLabel = (label: string | undefined) => {
   if (label) {
-    return trans(label);
+    return label
+    // return trans(label);
   } else {
     switch (props.style || props.type) {
       case "edit":

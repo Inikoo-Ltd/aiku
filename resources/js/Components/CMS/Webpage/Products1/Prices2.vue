@@ -111,9 +111,7 @@ const showMemberPrice = computed(() => {
 })
 
 const showDiscount = computed(() => {
-    return props.basketButton
-        && !props.product.is_coming_soon
-        && !layout?.user?.gr_data?.customer_is_gr
+    return !props.product.is_coming_soon  && !layout?.user?.gr_data?.customer_is_gr
 })
 
 const showLeftBlock = computed(() => {
@@ -207,11 +205,7 @@ const _popoverProfit = ref(null)
 
 
                 <!-- RIGHT -->
-                <div :class="[
-                    hasOffer
-                        ? 'flex flex-col justify-end text-right text-xs'
-                        : 'text-xs'
-                ]">
+                <div class="flex flex-col justify-end text-right text-xs">
 
                     <div v-if="product?.rrp_per_unit > 0"
                         v-tooltip="trans('Recommended retail price') + ' (' + trans('Excl. Vat') + ')'"
@@ -245,16 +239,12 @@ const _popoverProfit = ref(null)
 
 
 <style scoped>
-.text-primary {
-    color: var(--theme-color-4) !important;
-}
 
 .discount :deep(.offer-trigger-label) {
     @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
-    border-color: var(--theme-color-4) !important;
-    color: var(--theme-color-4) !important;
+    border-color: var(--theme-color-4);
+    color: var(--theme-color-4);
 }
-
 
 .break-safe {
     overflow-wrap: anywhere;

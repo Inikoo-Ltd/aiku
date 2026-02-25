@@ -80,6 +80,7 @@ class IndexRetinaFamilies extends RetinaAction
                 'product_categories.name',
                 'product_categories.state',
                 'product_categories.description',
+                'product_categories.web_images',
                 'product_categories.created_at',
                 'product_categories.image_id',
                 'product_categories.updated_at',

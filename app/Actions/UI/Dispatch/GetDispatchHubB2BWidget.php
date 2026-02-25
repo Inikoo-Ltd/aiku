@@ -20,7 +20,7 @@ class GetDispatchHubB2BWidget
     {
         $organisation = $warehouse->organisation;
         return [
-            'label'    => __('B2B'),
+            'label'    => __('Wholesale'),
             'tooltip'    => __('B2B Delivery Notes'),
             'sublabel' => __('In Todo'),
             'count'    => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_unassigned + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_queued + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_handling
@@ -63,6 +63,26 @@ class GetDispatchHubB2BWidget
                     'value' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_handling_blocked,
                     'route' => [
                         'name'       => 'grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes.shop',
+                        'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2B->value]
+                    ],
+                ],
+                'picked'           => [
+                    'label' => __('Picked'),
+                    'key'   => 'picked',
+                    'icon'  => 'fal fa-box',
+                    'value' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_picked,
+                    'route' => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.picked.delivery-notes.shop',
+                        'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2B->value]
+                    ],
+                ],
+                'packing'           => [
+                    'label' => __('Packing'),
+                    'key'   => 'packing',
+                    'icon'  => 'fal fa-box',
+                    'value' => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_packing,
+                    'route' => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.packing.delivery-notes.shop',
                         'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2B->value]
                     ],
                 ],

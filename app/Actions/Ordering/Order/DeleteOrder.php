@@ -15,6 +15,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class DeleteOrder extends OrgAction
@@ -23,27 +24,33 @@ class DeleteOrder extends OrgAction
     use WithActionUpdate;
     use HasOrderHydrators;
 
-    public string $commandSignature = 'cancel:delete {id}';
+    public string $commandSignature = 'order:delete {id}';
 
     /**
      * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
      */
-    public function handle(Order $order, array $deletedData = []): Order
+    public function handle(Order $order): Order
     {
         if (in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED])) {
-            $order->delete();
+            $order = DB::transaction(function () use ($order) {
+                DB::table('model_has_fixed_addresses')->where('model_type', 'Order')->where('model_id', $order->id)->delete();
 
-            $order->billingAddress()->forceDelete();
-            $order->deliveryAddress()->forceDelete();
+                $order->transactions()->forceDelete();
+                $order->forceDelete();
 
-            foreach ($order->addresses as $address) {
-                $address->forceDelete();
-            }
+                $order->billingAddress()->forceDelete();
+                $order->deliveryAddress()->forceDelete();
 
-            $order = $this->update($order, $deletedData, ['data']);
-            $order->transactions()->delete();
+                foreach ($order->addresses as $address) {
+                    $address->forceDelete();
+                }
+
+
+
+                return $order;
+            });
             $this->orderHandlingHydrators($order, $order->state);
-
 
             return $order;
         }
@@ -51,16 +58,18 @@ class DeleteOrder extends OrgAction
         throw ValidationException::withMessages(['order' => 'You can not delete this order']);
     }
 
+
     /**
+     * @throws \Throwable
      * @throws \Illuminate\Validation\ValidationException
      */
     public function asCommand(Command $command): int
     {
-
         try {
             $order = Order::findOrFail($command->argument('id'));
         } catch (Exception) {
             $command->error('Order not found');
+
             return 1;
         }
 

@@ -148,11 +148,9 @@ const props = defineProps<{
 const step = ref(props.step)
 const isPlatformManual = computed(() => props.platform_data.type === "manual")
 const isOpenModalPortfolios = ref(false)
-const isOpenModalDownloadImages = ref(false)
-const isOpenModalSuspended = ref(false)
-const isTestConnectionSuccess = ref(false)
 const isOpenModalCloneProgress = ref(false)
 const isOpenModalFetchProgress = ref(false)
+const isOpenModalUploadProgress = ref(false)
 const cloneProgressData = ref({
 	data: {
 		number_success: 0,
@@ -161,12 +159,31 @@ const cloneProgressData = ref({
 	done: 0,
 	total: 0,
 })
+
+const uploadProgressData = ref({
+	data: {
+		number_success: 0,
+		number_fails: 0,
+	},
+	done: 0,
+	total: 0,
+})
+
 const cloneSourceChannelName = ref("")
 const isLoadingUpload = ref(false)
 const isLoadingClone = ref(false)
 const selectedData = reactive({
 	products: [] as number[],
 })
+const isHiddenBulkButton = ref(false);
+
+const showBulkButton = () => {
+	isHiddenBulkButton.value = false;
+}
+
+const hideBulkButton = () => {
+	isHiddenBulkButton.value = true;
+}
 
 const onUploadToShopify = () => {
 	if (!props.routes.bulk_upload?.name) {
@@ -490,6 +507,10 @@ const submitPortfolioAction = async (action: any) => {
 			params: method === "get" ? data : undefined,
 		})
 
+		if(action.label === 'bulk-create') {
+			isOpenModalUploadProgress.value = true;
+		}
+
 		debReloadPage()
 		onSuccessEditCheckmark(action.label)
 	} catch (error: any) {
@@ -573,6 +594,31 @@ const initSocketFetchListener = () => {
 	)
 }
 
+const initSocketUploadListener = () => {
+	fetchChannel = window.Echo.private(`channel.${props.customer_sales_channel.id}.upload-product`).listen(
+		".channel-upload-progress",
+		(eventData: any) => {
+			isOpenModalUploadProgress.value = true
+			uploadProgressData.value = {
+				done: eventData.statistics?.success,
+				total: eventData.statistics?.total,
+				data: {
+					number_fails: eventData.statistics?.fail,
+					number_success: eventData.statistics?.success
+				}
+			}
+
+			isSocketActive.value = false
+			if (eventData.statistics?.success + eventData.statistics?.fail == eventData.statistics?.total) {
+				setTimeout(() => {
+					isOpenModalUploadProgress.value = false
+					window.location.reload()
+				}, 1000)
+			}
+		}
+	)
+}
+
 watch(
 	() => props.download_portfolio_customer_sales_channel_url,
 	() => {
@@ -592,6 +638,7 @@ watch(
 // === STORAGE & SOCKET SYNC ===
 onMounted(() => {
 	initSocketFetchListener()
+	initSocketUploadListener()
 
 	const storedCode = sessionStorage.getItem("download_code")
 	if (storedCode) {
@@ -784,6 +831,12 @@ const isDownloadingExtendedProperties = ref(false)
 const extendedColumns = [
 	{ key: "product_code", label: "Product code" },
 	{ key: "product_user_reference", label: "Product user reference" },
+	{ key: "department_code", label: "Department code" },
+	{ key: "department_name", label: "Department name" },
+	{ key: "subdepartment_code", label: "Sub Department code" },
+	{ key: "subdepartment_name", label: "Sub Department name" },
+	{ key: "family_code", label: "Family code" },
+	{ key: "family_name", label: "Family name" },
 	{ key: "product_name", label: "Product name" },
 	{ key: "materials_ingredients", label: "Materials/Ingredients" },
 	{ key: "unit_dimensions", label: "Unit dimensions" },
@@ -795,8 +848,12 @@ const extendedColumns = [
 	{ key: "hts_us", label: "HTS US" },
 	{ key: "data_updated", label: "Data updated" },
 ]
-const selectedExtendedColumns = ref<string[]>([])
-const selectedProductStates = ref<string[]>([])
+
+const selectedExtendedColumns = ref<string[]>(
+	extendedColumns.map((c) => c.key)
+)
+
+const selectedProductStates = ref<string[]>(["active"])
 const selectedProductAvailibility = ref<string[]>([])
 const excludedColumns = computed(() => {
 	return extendedColumns.filter((col) => !selectedExtendedColumns.value.includes(col.key))
@@ -876,94 +933,102 @@ const layout = inject("layout", layoutStructure)
 						class="h-9 px-3 py-0 border-0 rounded-none border-r" />
 				</a>
 				<Button
-					@click="(e) => _export_popover?.toggle(e)"
+					@click="(e : MouseEvent) => _export_popover?.toggle(e)"
 					v-tooltip="trans('Other Export Options')"
 					:icon="faEllipsisV"
 					class="h-9 px-2 py-0 border-0 rounded-none border-r"
 					type="tertiary" />
 				<Popover ref="_export_popover">
-					<div class="w-64 relative">
-						<div class="text-sm mb-2">
-							{{ trans("Select Columns that you need to Export") }}:
-						</div>
-						<div class="flex flex-col gap-y-2">
-							<div class="mt-3 border-t pt-2 space-y-2 text-sm">
-								<div class="font-medium">
-									{{ trans("Selected Columns") }}
-								</div>
+    				<div class="w-72 flex flex-col max-h-[75vh] bg-white rounded-md shadow-lg">
 
-								<label
-									v-for="col in extendedColumns.filter((c) =>
-										selectedExtendedColumns.includes(c.key)
-									)"
-									:key="col.key"
-									class="flex items-center gap-2 cursor-pointer">
-									<input
-										type="checkbox"
-										:value="col.key"
-										v-model="selectedExtendedColumns" />
-									{{ trans(col.label) }}
-								</label>
-							</div>
-						</div>
-						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
-							<div class="font-medium">
-								{{ trans("Excluded Columns") }}
-							</div>
+    				    <div class="px-4 py-3 border-b bg-gray-50 flex justify-between items-center sticky top-0 z-10">
+    				        <span class="font-semibold text-sm text-gray-700">{{ trans("Export Options") }}</span>
+    				        <button @click="toggleSelectAll" class="text-xs text-blue-600 hover:underline font-medium">
+    				            {{ allSelected ? trans('Deselect All') : trans('Select All') }}
+    				        </button>
+    				    </div>
 
-							<label
-								v-for="col in excludedColumns"
-								:key="col.key"
-								class="flex items-center gap-2 cursor-pointer opacity-70">
-								<input
-									type="checkbox"
-									:value="col.key"
-									v-model="selectedExtendedColumns" />
-								{{ trans(col.label) }}
-							</label>
-						</div>
-						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
-							<div class="font-medium">
-								{{ trans("Product State") }}
-							</div>
+    				    <div class="p-4 overflow-y-auto space-y-5 text-sm">
 
-							<label
-								v-for="state in productStates"
-								:key="state.key"
-								class="flex items-center gap-2 cursor-pointer opacity-70">
-								<input
-									type="checkbox"
-									:value="state.key"
-									v-model="selectedProductStates" />
-								{{ trans(state.label) }}
-							</label>
-						</div>
-						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
-							<div class="font-medium">
-								{{ trans("Product Sale Status") }}
-							</div>
+    				        <div>
+    				            <div class="font-medium text-gray-800 mb-2">
+    				                {{ trans("Columns to Export") }}
+    				            </div>
+    				            <div class="space-y-2">
+    				                <label
+    				                    v-for="col in extendedColumns"
+    				                    :key="col.key"
+    				                    class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+    				                >
+    				                    <input
+    				                        type="checkbox"
+    				                        :value="col.key"
+    				                        v-model="selectedExtendedColumns"
+    				                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    				                    />
+    				                    <span :class="{'opacity-60': !selectedExtendedColumns.includes(col.key)}">
+    				                        {{ trans(col.label) }}
+    				                    </span>
+    				                </label>
+    				            </div>
+    				        </div>
 
-							<label
-								v-for="availibility in productAvailibility"
-								:key="availibility.key"
-								class="flex items-center gap-2 cursor-pointer opacity-70">
-								<input
-									type="checkbox"
-									:value="availibility.key"
-									v-model="selectedProductAvailibility" />
-								{{ trans(availibility.label) }}
-							</label>
-						</div>
-						<div class="mt-3 border-t pt-2 px-0 space-y-2 text-sm">
-							<Button
-								:loading="isDownloadingExtendedProperties"
-								:disabled="isDownloadingExtendedProperties"
-								type="primary"
-								class="w-full !px-3 !py-2 !justify-center"
-								@click="onDownloadExtendedProperties"
-								:label="trans('Export Extended Properties')" />
-						</div>
-					</div>
+    				        <div class="border-t pt-4">
+    				            <div class="font-medium text-gray-800 mb-2">
+    				                {{ trans("Product State") }}
+    				            </div>
+    				            <div class="space-y-2">
+    				                <label
+    				                    v-for="state in productStates"
+    				                    :key="state.key"
+    				                    class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+    				                >
+    				                    <input
+    				                        type="checkbox"
+    				                        :value="state.key"
+    				                        v-model="selectedProductStates"
+    				                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    				                    />
+    				                    <span>{{ trans(state.label) }}</span>
+    				                </label>
+    				            </div>
+    				        </div>
+
+    				        <div class="border-t pt-4">
+    				            <div class="font-medium text-gray-800 mb-2">
+    				                {{ trans("Product Sale Status") }}
+    				            </div>
+    				            <div class="space-y-2">
+    				                <label
+    				                    v-for="availibility in productAvailibility"
+    				                    :key="availibility.key"
+    				                    class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+    				                >
+    				                    <input
+    				                        type="checkbox"
+    				                        :value="availibility.key"
+    				                        v-model="selectedProductAvailibility"
+    				                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    				                    />
+    				                    <span>{{ trans(availibility.label) }}</span>
+    				                </label>
+    				            </div>
+    				        </div>
+
+    				    </div>
+
+    				    <div class="p-3 border-t bg-white sticky bottom-0 z-10">
+    				        <Button
+    				            :loading="isDownloadingExtendedProperties"
+    				            :disabled="isDownloadingExtendedProperties"
+    				            type="primary"
+    				            class="w-full !px-3 !py-2 !justify-center"
+    				            @click="onDownloadExtendedProperties"
+    				            :label="trans('Export Extended Properties')"
+    				        />
+    				    </div>
+
+    				</div>
 				</Popover>
 
 				<a
@@ -1173,6 +1238,68 @@ const layout = inject("layout", layoutStructure)
 		</div>
 	</div>
 	<!-- Section: Alert if there is product not synced -->
+	<div
+		v-if="selectedProducts.length > 0"
+		class="px-4 pt-4 grid justify-items-end"
+	>
+		<div class="gap-x-3 flex">
+			<Button
+				v-if="selectedProducts.length > 0"
+				v-tooltip="
+					trans('Edit Product :platform', { platform: props.platform_data?.name })
+				"
+				:type="'tertiary'"
+				:label="trans('Edit Price (:_count)', { _count: selectedProducts?.length })"
+				:loading="loadingAction.includes('bulk-edit')"
+				@click="openBulkEditModal()"
+				:icon="['fal', 'fa-pencil']"
+				size="xs" />
+
+			<Button
+				v-if="selectedProducts.length > 0"
+				v-tooltip="
+					trans('Unlink & Delete Product :platform', {
+						platform: props.platform_data?.name,
+					})
+				"
+				:type="'delete'"
+				:label="
+					trans('Unlink & Delete (:_count)', { _count: selectedProducts?.length })
+				"
+				:loading="loadingAction.includes('bulk-unlink')"
+				@click="
+					() =>
+						submitPortfolioAction({
+							label: 'bulk-unlink',
+							name: props.routes.bulk_unlink.name,
+							parameters: { customerSalesChannel: customer_sales_channel.id },
+							method: 'post',
+						})
+				"
+				size="xs" />
+
+			<Button
+				v-if="selectedProducts.length > 0 && !isHiddenBulkButton"
+				v-tooltip="
+					trans('Upload as new product to the :platform', {
+						platform: props.platform_data?.name,
+					})
+				"
+				:type="'create'"
+				:label="trans('Create New (:_count)', { _count: selectedProducts?.length })"
+				:loading="loadingAction.includes('bulk-create')"
+				@click="
+					() =>
+						submitPortfolioAction({
+							label: 'bulk-create',
+							name: props.routes.bulk_upload.name,
+							parameters: { customerSalesChannel: customer_sales_channel.id },
+							method: 'post',
+						})
+				"
+				size="xs" />
+		</div>
+	</div>
 	<Message
 		v-if="
 			is_platform_connected &&
@@ -1226,66 +1353,6 @@ const layout = inject("layout", layoutStructure)
 					:label="trans('Use existing')"
 					type="tertiary" />
 
-				<div
-					v-if="selectedProducts.length > 0"
-					class="space-x-2 border-r border-gray-400 pr-2">
-					<Button
-						v-if="selectedProducts.length > 0"
-						v-tooltip="
-							trans('Edit Product :platform', { platform: props.platform_data?.name })
-						"
-						:type="'tertiary'"
-						:label="trans('Edit Price (:_count)', { _count: selectedProducts?.length })"
-						:loading="loadingAction.includes('bulk-edit')"
-						@click="openBulkEditModal()"
-						:icon="['fal', 'fa-pencil']"
-						size="xs" />
-
-					<Button
-						v-if="selectedProducts.length > 0"
-						v-tooltip="
-							trans('Unlink & Delete Product :platform', {
-								platform: props.platform_data?.name,
-							})
-						"
-						:type="'delete'"
-						:label="
-							trans('Unlink & Delete (:_count)', { _count: selectedProducts?.length })
-						"
-						:loading="loadingAction.includes('bulk-unlink')"
-						@click="
-							() =>
-								submitPortfolioAction({
-									label: 'bulk-unlink',
-									name: props.routes.bulk_unlink.name,
-									parameters: { customerSalesChannel: customer_sales_channel.id },
-									method: 'post',
-								})
-						"
-						size="xs" />
-
-					<Button
-						v-if="selectedProducts.length > 0"
-						v-tooltip="
-							trans('Upload as new product to the :platform', {
-								platform: props.platform_data?.name,
-							})
-						"
-						:type="'create'"
-						:label="trans('Create New (:_count)', { _count: selectedProducts?.length })"
-						:loading="loadingAction.includes('bulk-create')"
-						@click="
-							() =>
-								submitPortfolioAction({
-									label: 'bulk-create',
-									name: props.routes.bulk_upload.name,
-									parameters: { customerSalesChannel: customer_sales_channel.id },
-									method: 'post',
-								})
-						"
-						size="xs" />
-				</div>
-
 				<div>
 					<ButtonWithLink
 						v-if="
@@ -1301,6 +1368,7 @@ const layout = inject("layout", layoutStructure)
 						}"
 						@success="
 							() => {
+								isOpenModalUploadProgress = true
 								;((progessbar = {
 									...progessbar,
 									done: false,
@@ -1366,6 +1434,8 @@ const layout = inject("layout", layoutStructure)
 				" />
 			<RetinaTablePortfoliosShopify
 				v-else-if="platform_data.type === 'shopify'"
+				@showBulkButton="showBulkButton()"
+				@hideBulkButton="hideBulkButton()"
 				:data="props.products"
 				:tab="'products'"
 				:selectedData
@@ -1380,6 +1450,8 @@ const layout = inject("layout", layoutStructure)
 				:count_product_not_synced="count_product_not_synced" />
 			<RetinaTablePortfoliosPlatform
 				v-else
+				@showBulkButton="showBulkButton()"
+				@hideBulkButton="hideBulkButton()"
 				:data="props.products"
 				:tab="'products'"
 				:selectedData
@@ -1926,6 +1998,118 @@ const layout = inject("layout", layoutStructure)
 							v-if="
 								cloneProgressData.done >= cloneProgressData.total &&
 								cloneProgressData.total > 0
+							"
+							class="mt-4 text-sm text-gray-600">
+							{{ trans("Page will reload automatically...") }}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</Modal>
+
+	<!-- Modal: Upload Progress -->
+	<Modal
+		:isOpen="isOpenModalUploadProgress"
+		@onClose="
+			uploadProgressData.done >= uploadProgressData.total && uploadProgressData.total > 0
+				? (isOpenModalUploadProgress = false)
+				: null
+		"
+		width="w-full max-w-md">
+		<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+			<div
+				class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+				<div>
+					<div
+						class="mx-auto flex size-12 items-center justify-center rounded-full"
+						:class="
+							uploadProgressData.done >= uploadProgressData.total &&
+							uploadProgressData.total > 0
+								? uploadProgressData.data.number_fails > 0
+									? 'bg-yellow-100'
+									: 'bg-green-100'
+								: 'bg-gray-100'
+						">
+						<FontAwesomeIcon
+							v-if="
+								uploadProgressData.done >= uploadProgressData.total &&
+								uploadProgressData.total > 0
+							"
+							:icon="
+								uploadProgressData.data.number_fails > 0
+									? 'fas fa-exclamation-triangle'
+									: 'fas fa-check'
+							"
+							:class="
+								uploadProgressData.data.number_fails > 0
+									? 'text-yellow-500'
+									: 'text-green-500'
+							"
+							class="text-2xl"
+							fixed-width
+							aria-hidden="true" />
+						<FontAwesomeIcon
+							v-else
+							icon="fas fa-spinner"
+							class="text-gray-500 text-2xl animate-spin"
+							fixed-width
+							aria-hidden="true" />
+					</div>
+
+					<div class="mt-3 text-center sm:mt-5">
+						<div as="h3" class="font-semibold text-xl">
+							<template
+								v-if="
+									uploadProgressData.done >= uploadProgressData.total &&
+									uploadProgressData.total > 0
+								">
+								{{ trans("Uploading Complete!") }}
+							</template>
+							<template v-else>
+								{{ trans("Uploading Portfolios...") }}
+							</template>
+						</div>
+
+						<!-- Percentage Display -->
+						<div v-if="uploadProgressData.total > 0" class="mt-4">
+							<div
+								class="text-4xl font-bold tabular-nums transition-all duration-300"
+								:class="
+									uploadProgressData.done >= uploadProgressData.total
+										? uploadProgressData.data.number_fails > 0
+											? 'text-yellow-500'
+											: 'text-green-500'
+										: 'text-gray-700'
+								">
+								{{
+									Math.round(
+										((uploadProgressData.done + uploadProgressData.data.number_fails) / uploadProgressData.total) * 100
+									)
+								}}%
+							</div>
+						</div>
+
+						<!-- Progress Bar -->
+						<div class="mt-4 px-4">
+							<PureProgressBar
+								v-if="uploadProgressData.total > 0"
+								:progressBars="uploadProgressData" />
+							<div
+								v-else
+								class="flex items-center justify-center gap-2 text-gray-500">
+								<FontAwesomeIcon
+									icon="fas fa-spinner"
+									class="animate-spin"
+									aria-hidden="true" />
+								<span>{{ trans("Preparing...") }}</span>
+							</div>
+						</div>
+
+						<div
+							v-if="
+								uploadProgressData.done >= uploadProgressData.total &&
+								uploadProgressData.total > 0
 							"
 							class="mt-4 text-sm text-gray-600">
 							{{ trans("Page will reload automatically...") }}

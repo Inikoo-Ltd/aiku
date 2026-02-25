@@ -76,9 +76,9 @@ class IndexOfferCampaigns extends OrgAction
             timeSeriesRecordsTable: 'offer_campaign_time_series_records',
             foreignKey: 'offer_campaign_id',
             aggregateColumns: [
-                'orders'             => 'orders',
-                'invoices'           => 'invoices',
-                'sales_grp_currency' => 'sales',
+                'orders'                      => 'orders',
+                'invoices'                    => 'invoices',
+                'sales_grp_currency_external' => 'sales_grp_currency_external',
             ],
             frequency: TimeSeriesFrequencyEnum::DAILY->value,
             prefix: $prefix,
@@ -87,11 +87,11 @@ class IndexOfferCampaigns extends OrgAction
 
         $selects[] = $timeSeriesData['selectRaw']['orders'];
         $selects[] = $timeSeriesData['selectRaw']['invoices'];
-        $selects[] = $timeSeriesData['selectRaw']['sales'];
+        $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
 
         return $query->defaultSort('offer_campaigns.id')
             ->select($selects)
-            ->allowedSorts(['code', 'name', 'state', 'number_current_offers', 'orders', 'invoices', 'sales'])
+            ->allowedSorts(['code', 'name', 'state', 'number_current_offers', 'orders', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -124,7 +124,7 @@ class IndexOfferCampaigns extends OrgAction
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);

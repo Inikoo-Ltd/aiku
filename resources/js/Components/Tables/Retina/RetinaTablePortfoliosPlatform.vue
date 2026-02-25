@@ -127,6 +127,11 @@ const props = defineProps<{
 	disabled?: boolean
 }>()
 
+const emits = defineEmits<{
+    (e: 'showBulkButton'): void
+    (e: 'hideBulkButton'): void
+}>()
+
 const errorBluk = ref([])
 const _table = ref(null)
 function portfolioRoute(product: Product) {
@@ -144,6 +149,8 @@ const locale = inject("locale", aikuLocaleStructure)
 const layout = inject("layout", retinaLayoutStructure)
 const isEbay = computed(() => props.platform_data?.type === "ebay")
 const selectedProducts = defineModel<number[]>("selectedProducts")
+const selectedInvalidProductsCreate = ref<number[]>([]);
+
 const onUnchecked = (itemId: number) => {
 	props.selectedData.products = props.selectedData.products.filter(
 		(product) => product !== itemId
@@ -166,15 +173,10 @@ const selectSocketiBasedPlatform = (porto: { id: number }) => {
 			event: `ebay.${props.platform_user_id}.upload-product.${porto.id}`,
 			action: ".ebay-upload-progress",
 		}
-	} else if (props.platform_data.type === "amazon") {
+	} else {
 		return {
-			event: `amazon.${props.platform_user_id}.upload-product.${porto.id}`,
-			action: ".amazon-upload-progress",
-		}
-	} else if (props.platform_data.type === "magento") {
-		return {
-			event: `magento.${props.platform_user_id}.upload-product.${porto.id}`,
-			action: ".magento-upload-progress",
+			event: `channel.${props.customerSalesChannel?.id}.upload-product.${porto.id}`,
+			action: ".channel-upload-progress",
 		}
 	}
 }
@@ -188,91 +190,6 @@ const debReloadPage = debounce(() => {
 		except: ["auth", "breadcrumbs", "flash", "layout", "localeData", "pageHead", "ziggy"],
 	})
 }, 1200)
-
-onMounted(() => {
-	errorBluk.value = []
-
-	const activeListeners = new Map<string | number, { event: string; action: string }>()
-	let isCompleted = false // flag untuk menandai progress sudah selesai
-
-	props.data?.data?.forEach((porto) => {
-		const socketConfig = selectSocketiBasedPlatform(porto)
-		if (!socketConfig) return
-
-		// === replace listener jika sudah ada untuk ID yang sama ===
-		if (activeListeners.has(porto.id)) {
-			const oldConfig = activeListeners.get(porto.id)
-			if (oldConfig) {
-				window.Echo.private(oldConfig.event).stopListening(oldConfig.action)
-			}
-		}
-
-		activeListeners.set(porto.id, socketConfig)
-
-		window.Echo.private(socketConfig.event).listen(socketConfig.action, (eventData) => {
-			const progress = props.progressToUploadToEcom?.data
-			if (!progress) return
-
-			// === Error handler (all platforms) ===
-			if (eventData.errors_response) {
-				set(props.progressToUploadToShopify, [porto.id], "error")
-				setTimeout(() => {
-					set(props.progressToUploadToShopify, [porto.id], null)
-				}, 3000)
-				return
-			}
-
-			const pf = eventData.portfolio
-
-			// ✅ kalau sudah complete, hanya simpan error tapi jangan update success/fail count lagi
-			if (isCompleted) {
-				if (
-					!pf.has_valid_platform_product_id ||
-					!pf.platform_status ||
-					!pf.exist_in_platform
-				) {
-					if (!errorBluk.value.includes(pf.item_code)) {
-						errorBluk.value.push(pf)
-					}
-				}
-				return
-			}
-
-			// === Unified handling for ALL platforms ===
-			const isSuccess =
-				pf.has_valid_platform_product_id && pf.platform_status && pf.exist_in_platform
-
-			if (isSuccess) {
-				progress.number_success += 1
-			} else {
-				progress.number_fails += 1
-				if (!errorBluk.value.includes(pf.item_code)) {
-					errorBluk.value.push(pf)
-				}
-			}
-
-			const totalFinished = progress.number_success + progress.number_fails
-
-			// 🚀 tandai selesai hanya sekali
-			if (
-				totalFinished === props.count_product_not_synced ||
-				totalFinished === selectedProducts.value.length
-			) {
-				isCompleted = true
-				props.progressToUploadToEcom.done = true
-
-				setTimeout(() => {
-					progress.number_success = 0
-					progress.number_fails = 0
-					selectedProducts.value = []
-					props.progressToUploadToEcom.total = 0
-				}, 5000)
-
-				debReloadPage()
-			}
-		})
-	})
-})
 
 // Table: Filter out-of-stock and discontinued
 const compTableFilterStatus = computed(() => {
@@ -402,13 +319,29 @@ const openEditModal = (item) => {
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
 	if (!selectedProducts.value) return
 
+    const changeButtonState = disableCreateNew(item);
+
 	if (checked) {
 		if (!selectedProducts.value.includes(item.id)) {
 			selectedProducts.value.push(item.id)
 		}
+
+        if (!selectedInvalidProductsCreate.value?.includes(item.id) && changeButtonState){
+            selectedInvalidProductsCreate.value?.push(item.id)
+        }
 	} else {
 		selectedProducts.value = selectedProducts.value.filter((id) => id != item.id)
+
+        if (changeButtonState){
+            selectedInvalidProductsCreate.value = selectedInvalidProductsCreate.value?.filter(id => id != item.id)
+        }
 	}
+
+    if(selectedInvalidProductsCreate.value.length > 0){
+        emits('hideBulkButton');
+    }else{
+        emits('showBulkButton');
+    }
 }
 
 const onCheckedAll = ({ data, allChecked }) => {
@@ -424,6 +357,22 @@ const onCheckedAll = ({ data, allChecked }) => {
 }
 
 const onDisableCheckbox = (item) => {
+	if (disableButtons(item)) {
+		return true
+	}
+
+	if (
+		!isEbay.value &&
+		item.platform_status &&
+		item.exist_in_platform &&
+		item.has_valid_platform_product_id
+	) {
+		return true
+	}
+	return false
+}
+
+const disableCreateNew = (item) => {
 	if (disableButtons(item)) {
 		return true
 	}
@@ -614,7 +563,6 @@ const compTableFilterForSale = computed(() => {
 		@onCheckedAll="(data) => onCheckedAll(data)"
 		checkboxKey="id"
 		:isChecked="(item) => selectedProducts.includes(item.id)"
-		:disabledCheckbox="(item) => onDisableCheckbox(item)"
 		:rowColorFunction="
 			(item) => {
 				if (disableButtons(item)) {
@@ -741,8 +689,25 @@ const compTableFilterForSale = computed(() => {
 			</div>
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
 				<div>{{ trans("Stocks:") }} {{ locale.number(product.quantity_left) }}</div>
-				<div>{{ trans("Weight:") }} {{ locale.number(product.weight / 1000) }} kg</div>
 			</div>
+
+            <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
+                <div>
+                    {{ trans("Weight:") }} <span v-tooltip="trans('Marketing weight')">{{
+                        locale.number(product.marketing_weight / 1000)
+                    }}Kg</span> / <span
+                    v-tooltip="trans('Weight including packing')">{{
+                        locale.number(product.weight / 1000)
+                    }}Kg</span>
+                </div>
+            </div>
+
+            <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
+                <div>
+                    {{ trans("Dimension:") }}
+                    {{ product.dimension }}
+                </div>
+            </div>
 
 			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
 				<div v-if="customerSalesChannel.include_vat">

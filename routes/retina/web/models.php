@@ -20,9 +20,13 @@ use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
+use App\Actions\Dropshipping\Tiktok\Product\CreateNewAllPortfoliosToTiktok;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreRetinaNewProductToCurrentTiktok;
+use App\Actions\Dropshipping\Tiktok\User\AuthCheckCreateTiktokChannel;
+use App\Actions\Dropshipping\Tiktok\User\CheckTiktokChannel;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
+use App\Actions\Dropshipping\Tiktok\User\UpdateTiktokUser;
 use App\Actions\Dropshipping\WooCommerce\CheckTemporaryWooUserApiKeys;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Product\CreateNewBulkPortfolioToWooCommerce;
@@ -148,6 +152,8 @@ use App\Actions\Retina\SysAdmin\DeleteRetinaWebUser;
 use App\Actions\Retina\SysAdmin\StoreRetinaWebUser;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Retina\SysAdmin\UpdateRetinaWebUser;
+use App\Actions\Retina\TikTok\CreateRetinaNewAllPortfoliosToTiktok;
+use App\Actions\Retina\TikTok\CreateRetinaNewBulkPortfoliosToTiktok;
 use App\Actions\Retina\UI\Profile\UpdateRetinaProfile;
 use App\Actions\Retina\Woo\CreateRetinaNewAllPortfoliosToWoo;
 use App\Actions\Retina\Woo\CreateRetinaNewBulkPortfoliosToWoo;
@@ -344,12 +350,18 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', StoreNewProductToCurrentEbay::class)->name('woo.single_upload')->withoutScopedBindings();
 
+    Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/tiktok-batch-all', CreateRetinaNewAllPortfoliosToTiktok::class)->name('tiktok.batch_all')->withoutScopedBindings();
+
     Route::post('{amazonUser:id}/amazon-batch-upload', SyncronisePortfoliosToAmazon::class)->name('amazon.batch_upload')->withoutScopedBindings();
     Route::post('{amazonUser:id}/amazon-single-upload/{portfolio:id}', SyncronisePortfolioToAmazon::class)->name('amazon.single_upload')->withoutScopedBindings();
 
     Route::post('{magentoUser:id}/magento-batch-upload', SyncronisePortfoliosToMagento::class)->name('magento.batch_upload')->withoutScopedBindings();
     Route::post('{magentoUser:id}/magento-single-upload/{portfolio:id}', SyncronisePortfolioToMagento::class)->name('magento.single_upload')->withoutScopedBindings();
 
+    Route::get('tiktok/create-new-check', AuthCheckCreateTiktokChannel::class)->name('tiktok.auth_new_check')->withoutScopedBindings();
+    Route::get('tiktok/{tiktokUser:id}/check', CheckTiktokChannel::class)->name('tiktok.check')->withoutScopedBindings();
+    Route::patch('tiktok/{tiktokUser:id}', UpdateTiktokUser::class)->name('tiktok.update')->withoutScopedBindings();
     Route::delete('tiktok/{tiktokUser:id}', DeleteTiktokUser::class)->name('tiktok.delete')->withoutScopedBindings();
     Route::get('tiktok/{tiktokUser:id}/sync-products', GetProductsFromTiktokApi::class)->name('tiktok.product.sync')->withoutScopedBindings();
 

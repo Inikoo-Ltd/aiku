@@ -31,6 +31,7 @@ const props = defineProps<{
   products: {},
   showcase: {},
   customers: {},
+  top_listed_families: {},
   top_listed_products: {},
   top_sold_products: {},
   tabs: {
@@ -48,6 +49,7 @@ const component = computed(() => {
     products: TablePortfolios,
     channels: TableCustomerSalesChannels,
     customers: PlatformTableCustomers,
+    top_listed_families: TableTopListedProducts,
     top_listed_products: TableTopListedProducts,
     top_sold_products: TableTopSoldProducts
   }

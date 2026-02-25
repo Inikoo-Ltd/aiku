@@ -232,6 +232,7 @@ const autoSave = async (value: any) => {
 			<SideMenuWorkshop
 				:data="Navigation"
 				:webBlockTypes="webBlockTypes"
+				:uploadImageRoute
 				@auto-save="autoSave"
 				@sendToIframe="sendToIframe"
 			/>

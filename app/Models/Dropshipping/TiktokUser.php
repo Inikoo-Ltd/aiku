@@ -45,6 +45,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_sales_channel_id
  * @property string|null $tiktok_shop_id
  * @property string|null $tiktok_warehouse_id
+ * @property string|null $tiktok_shop_chiper
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\PlatformHasClient> $clients
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
@@ -53,6 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\TiktokUserHasOrder> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
+ * @property-read \App\Models\Dropshipping\Platform|null $platform
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\TiktokUserHasProduct> $products
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser newModelQuery()
@@ -123,5 +125,10 @@ class TiktokUser extends Model
     public function customerSalesChannel(): BelongsTo
     {
         return $this->belongsTo(CustomerSalesChannel::class);
+    }
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
     }
 }

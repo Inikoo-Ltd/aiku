@@ -93,7 +93,7 @@ trait WithTiktokApiServices
                 default => throw new \Exception("Unsupported HTTP method: $method"),
             };
 
-            if (!Arr::get($response->json(), 'data')) {
+            if (Arr::get($response->json(), 'message') !== "Success") {
                 throw new \Exception(Arr::get($response->json(), 'message'));
             }
 
@@ -213,6 +213,64 @@ trait WithTiktokApiServices
         $path = "/fulfillment/$this->version/orders/$orderId/shipping_info/update";
 
         return $this->makeApiRequest('POST', $path, $shippingData, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getOrderLabel(string $packageId): array
+    {
+        $path = "/fulfillment/$this->version/packages/$packageId/shipping_documents";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ], true, [
+            'document_type' => 'SHIPPING_LABEL'
+        ]);
+    }
+
+    public function createOrderPackage(string $orderId): array
+    {
+        $path = "/fulfillment/202512/packages";
+
+        return $this->makeApiRequest('POST', $path, [
+            'ship_type' => "1",
+            'order_id' => $orderId,
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function shipPackage(string $packageId): array
+    {
+        $path = "/fulfillment/$this->version/packages/$packageId/ship";
+
+        return $this->makeApiRequest('POST', $path, [
+            'handover_method' => 'PICKUP'
+        ], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function getPackageDetail(string $packageId): array
+    {
+        $path = "/fulfillment/$this->version/packages/$packageId";
+
+        return $this->makeApiRequest('GET', $path, [], true, [
+            'content-type' => 'application/json'
+        ]);
+    }
+
+    public function cancelFulfilOrder(string $orderId): array
+    {
+        $path = "/return_refund/$this->version/cancellations";
+
+        return $this->makeApiRequest('POST', $path, [
+            'order_id' => $orderId,
+            'cancel_reason' => match ($this->customerSalesChannel?->shop?->country?->code) {
+                'GB' => 'seller_cancel_reason_out_of_stock_uk',
+                default => 'seller_cancel_reason_out_of_stock'
+            }
+        ], true, [
             'content-type' => 'application/json'
         ]);
     }

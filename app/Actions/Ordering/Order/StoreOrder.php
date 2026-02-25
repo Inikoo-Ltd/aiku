@@ -104,11 +104,11 @@ class StoreOrder extends OrgAction
         }
 
         if ($parent instanceof Customer) {
-            $modelData['customer_id'] = $parent->id;
-            $modelData['currency_id'] = $parent->shop->currency_id;
-            $modelData['shop_id']     = $parent->shop_id;
+            $modelData['customer_id']      = $parent->id;
+            $modelData['currency_id']      = $parent->shop->currency_id;
+            $modelData['shop_id']          = $parent->shop_id;
             $modelData['sales_channel_id'] = Arr::get($modelData, 'sales_channel_id');
-            $shop                     = $parent->shop;
+            $shop                          = $parent->shop;
         } elseif ($parent instanceof CustomerClient) {
             $modelData['customer_id']               = $parent->customer_id;
             $modelData['customer_client_id']        = $parent->id;
@@ -317,12 +317,16 @@ class StoreOrder extends OrgAction
             'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
             'platform_id'               => ['sometimes', 'nullable', 'integer'],
             'platform_order_id'         => ['sometimes', 'nullable'],
+            'is_shipping_by_external'   => ['sometimes', 'nullable'],
             'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
             'data'                      => ['sometimes', 'array'],
-            'marketplace_id'            => ['sometimes', Rule::unique('orders', 'marketplace_id')->where(function ($query) {
-                $query->where('group_id', $this->shop->group_id);
-            })],
+            'marketplace_id'            => [
+                'sometimes',
+                Rule::unique('orders', 'marketplace_id')->where(function ($query) {
+                    $query->where('group_id', $this->shop->group_id);
+                })
+            ],
             'sales_channel_id'          => [
                 'sometimes',
                 'required',
@@ -332,7 +336,7 @@ class StoreOrder extends OrgAction
             ],
             'billing_address'           => ['sometimes', 'required', new ValidAddress()], // only need when parent is Shop
             'delivery_address'          => ['sometimes', 'required', new ValidAddress()],  // only need when the parent is Shop|CustomerClient
-
+            'commission_amount'         => ['sometimes', 'numeric'],
 
         ];
 
