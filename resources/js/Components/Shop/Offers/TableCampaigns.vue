@@ -44,8 +44,8 @@ function campaignRoute(campaign: {}) {
             </Link>
         </template>
 
-        <template #cell(sales)="{ item: campaign }">
-            <span class="tabular-nums">{{ locale.currencyFormat('GBP', campaign.sales) }}</span>
+        <template #cell(sales_grp_currency_external)="{ item: campaign }">
+            <span class="tabular-nums">{{ locale.currencyFormat('GBP', campaign.sales_grp_currency_external) }}</span>
         </template>
     </Table>
 </template>

@@ -11,7 +11,7 @@ interface IntervalData {
     visitors?: {
         all?: IntervalDataItem
     }
-    sales_org_currency?: {
+    sales_org_currency_external?: {
         mtd?: IntervalDataItem
         lm?: IntervalDataItem
     }
@@ -35,8 +35,8 @@ const props = defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 
 const getExpectedSales = computed(() => {
-    const currentMonthSales = props.shopBlocks?.interval_data?.sales_org_currency?.mtd?.raw_value
-    const lastMonthSales = props.shopBlocks?.interval_data?.sales_org_currency?.lm?.raw_value
+    const currentMonthSales = props.shopBlocks?.interval_data?.sales_org_currency_external?.mtd?.raw_value
+    const lastMonthSales = props.shopBlocks?.interval_data?.sales_org_currency_external?.lm?.raw_value
     const currentMonthOrders = props.shopBlocks?.interval_data?.orders?.mtd?.raw_value
     const lastMonthOrders = props.shopBlocks?.interval_data?.orders?.lm?.raw_value
 

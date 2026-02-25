@@ -43,9 +43,9 @@ class GetShopTimeSeriesStats
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
                 [
-                    'sales'                        => 'sales',
-                    'sales_org_currency'           => 'sales_org_currency',
-                    'sales_grp_currency'           => 'sales_grp_currency',
+                    'sales_external'               => 'sales_external',
+                    'sales_org_currency_external'  => 'sales_org_currency_external',
+                    'sales_grp_currency_external'  => 'sales_grp_currency_external',
                     'lost_revenue'                 => 'lost_revenue',
                     'lost_revenue_org_currency'    => 'lost_revenue_org_currency',
                     'lost_revenue_grp_currency'    => 'lost_revenue_grp_currency',

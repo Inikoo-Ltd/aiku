@@ -80,12 +80,12 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
                 'invoices' => $routeTargets['invoices'],
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
-                'sales_org_currency',
-                'sales_org_currency_minified',
-                'sales_org_currency_delta',
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
+                'sales_org_currency_external',
+                'sales_org_currency_external_minified',
+                'sales_org_currency_external_delta',
+                'sales_grp_currency_external',
+                'sales_grp_currency_external_minified',
+                'sales_grp_currency_external_delta',
             ])
         );
 
