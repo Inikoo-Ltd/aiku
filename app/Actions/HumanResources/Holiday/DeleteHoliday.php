@@ -11,6 +11,7 @@ namespace App\Actions\HumanResources\Holiday;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Holiday;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,13 +30,21 @@ class DeleteHoliday extends OrgAction
         return $this->handle($holiday);
     }
 
-    public function asController(Holiday $holiday, ActionRequest $request): bool
+    public function asController(Organisation $organisation, Holiday $holiday, ActionRequest $request): bool
     {
+        $this->initialisation($organisation, $request);
+
         return $this->handle($holiday);
     }
 
     public function htmlResponse(): RedirectResponse
     {
-        return Redirect::back()->with('success', __('Holiday deleted successfully.'));
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Holiday successfully deleted.'),
+        ]);
+
+        return Redirect::back();
     }
 }

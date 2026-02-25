@@ -165,7 +165,7 @@ const getActionIcon = (icon: any) => {
 </script>
 
 <template>
-  <button type="button"  :style="injectStyle ?? {}"
+  <button :style="injectStyle ?? {}"
           class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
           :class="[
             full ? 'w-full justify-center' : 'xmin-w-max',

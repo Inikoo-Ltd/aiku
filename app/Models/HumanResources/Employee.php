@@ -242,6 +242,11 @@ class Employee extends Model implements HasMedia, Auditable
         return $this->hasOne(EmployeeStats::class);
     }
 
+    public function latestAnalytics(): HasOne
+    {
+        return $this->hasOne(EmployeeAnalytics::class)->latestOfMany();
+    }
+
     public function timesheets(): MorphMany
     {
         return $this->morphMany(Timesheet::class, 'subject');

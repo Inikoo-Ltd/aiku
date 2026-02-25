@@ -31,6 +31,13 @@ class StoreHoliday extends OrgAction
             $modelData['year'] = (int) date('Y', strtotime($modelData['from']));
         }
 
+        if (Arr::has($modelData, 'is_recurring')) {
+            $data = Arr::get($modelData, 'data', []);
+            $data['is_recurring'] = (bool) $modelData['is_recurring'];
+            $modelData['data'] = $data;
+            unset($modelData['is_recurring']);
+        }
+
         return $organisation->holidays()->create($modelData);
     }
 
@@ -43,21 +50,33 @@ class StoreHoliday extends OrgAction
             'from'  => ['required', 'date'],
             'to'    => ['required', 'date', 'after_or_equal:from'],
             'data'  => ['nullable', 'array'],
+            'is_recurring' => ['nullable', 'boolean'],
         ];
-    }
-
-    public function action(Organisation $organisation, array $modelData): Holiday
-    {
-        return $this->handle($organisation, $modelData);
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Holiday
     {
-        return $this->handle($organisation, $request->validated());
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation, $this->validatedData);
+    }
+
+    public function action(Organisation $organisation, array $modelData): Holiday
+    {
+        $this->asAction = true;
+        $this->initialisation($organisation, $modelData);
+
+        return $this->handle($organisation, $this->validatedData);
     }
 
     public function htmlResponse(Holiday $holiday): RedirectResponse
     {
-        return Redirect::back()->with('success', __('Holiday created successfully.'));
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Holiday successfully created.'),
+        ]);
+
+        return Redirect::back();
     }
 }

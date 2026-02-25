@@ -11,8 +11,8 @@ namespace App\Actions\HumanResources\Calendar;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
-use App\Http\Resources\HumanResources\EmployeesResource;
 use App\Http\Resources\HumanResources\EmployeeResource;
+use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Closure;
@@ -28,6 +28,7 @@ use App\Services\QueryBuilder;
 class IndexCalendars extends OrgAction
 {
     use WithHumanResourcesAuthorisation;
+    use WithCalendarSubNavigation;
 
     public function handle($prefix = null): LengthAwarePaginator
     {
@@ -75,24 +76,71 @@ class IndexCalendars extends OrgAction
     }
 
 
-    public function htmlResponse(LengthAwarePaginator $employees): Response
+    public function htmlResponse(LengthAwarePaginator $employees, ActionRequest $request): Response
     {
+        $year  = (int) $request->input('year', now()->year);
+        $month = $request->integer('month') ?: null;
+
+        $holidays = Holiday::query()
+            ->where('organisation_id', $this->organisation->id)
+            ->where('year', $year)
+            ->get();
+
+        $holidayDates = [];
+
+        foreach ($holidays as $holiday) {
+            $currentDate = $holiday->from->copy();
+            while ($currentDate->lte($holiday->to)) {
+                $dateKey = $currentDate->format('Y-m-d');
+
+                if (!array_key_exists($dateKey, $holidayDates)) {
+                    $holidayDates[$dateKey] = [
+                        'date'   => $dateKey,
+                        'labels' => [],
+                    ];
+                }
+
+                if ($holiday->label) {
+                    $holidayDates[$dateKey]['labels'][] = $holiday->label;
+                }
+
+                $currentDate->addDay();
+            }
+        }
+
+        $calendarHolidays = array_values(array_map(
+            static function (array $item): array {
+                return [
+                    'date'  => $item['date'],
+                    'label' => implode(', ', $item['labels']),
+                ];
+            },
+            $holidayDates
+        ));
+
+        $holidayRanges = $holidays->map(
+            static function (Holiday $holiday): array {
+                return [
+                    'from'  => $holiday->from->format('Y-m-d'),
+                    'to'    => $holiday->to->format('Y-m-d'),
+                    'label' => $holiday->label,
+                ];
+            }
+        )->values();
+
         return Inertia::render(
             'Org/HumanResources/Calendar',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Employees'),
+                'title'       => __('Calendar'),
                 'pageHead'    => [
-                    'title'  => __('Employees'),
-                    'create' => $this->canEdit ? [
-                        'route' => [
-                            'name'       => 'grp.org.hr.employees.create',
-                            'parameters' => array_values(request()->route()->originalParameters())
-                        ],
-                        'label' => __('Employee')
-                    ] : false,
+                    'title'         => __('Calendar'),
+                    'subNavigation' => $this->getCalendarSubNavigation(),
                 ],
-                'data'        => EmployeesResource::collection($employees),
+                'year'           => $year,
+                'month'          => $month,
+                'holidays'       => $calendarHolidays,
+                'holidayRanges'  => $holidayRanges,
             ]
         )->table($this->tableStructure());
     }
@@ -115,13 +163,12 @@ class IndexCalendars extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.hr.employees.index',
+                            'name'       => 'grp.org.hr.calendars.index',
                             'parameters' => array_values(request()->route()->originalParameters())
                         ],
-                        'label' => __('Employees'),
-                        'icon'  => 'fal fa-bars',
+                        'label' => __('Calendars'),
+                        'icon'  => 'fal fa-calendar',
                     ],
-
                 ]
             ]
         );
