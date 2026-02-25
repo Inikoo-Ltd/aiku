@@ -483,7 +483,7 @@ const saveTradeUnits = (value, product) => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
-        
+
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">
                 <Image :src="product['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
@@ -672,19 +672,19 @@ const saveTradeUnits = (value, product) => {
             </div>
         </template>
 
-        <template #cell(sales)="{ item: product }">
-            {{ locale.currencyFormat(product.currency_code, product.sales) }}
+        <template #cell(sales_grp_currency_external)="{ item: product }">
+            {{ locale.currencyFormat(product.currency_code, product.sales_grp_currency_external) }}
         </template>
 
-        <template #cell(sales_delta)="{ item }">
-            <div v-if="item.sales_delta">
-                <span>{{ item.sales_delta.formatted }}</span>
+        <template #cell(sales_grp_currency_external_delta)="{ item }">
+            <div v-if="item.sales_grp_currency_external_delta">
+                <span>{{ item.sales_grp_currency_external_delta.formatted }}</span>
                 <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
+                    :icon="getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[
-                        getIntervalChangesIcon(item.sales_delta.is_positive).class,
-                        getIntervalStateColor(item.sales_delta.is_positive),
+                        getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_grp_currency_external_delta.is_positive),
                     ]"
                     fixed-width
                     aria-hidden="true"
@@ -788,7 +788,7 @@ const saveTradeUnits = (value, product) => {
                     : trans('Follower product of ') + product.variant_code">
                 <span class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
-               
+
                border transition-colors duration-150" :class="product.is_variant_leader
                 ? 'bg-yellow-50 border-yellow-200'
                 : 'bg-gray-50 border-gray-200'">

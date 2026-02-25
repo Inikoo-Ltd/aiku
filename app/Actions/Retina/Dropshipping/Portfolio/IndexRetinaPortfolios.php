@@ -174,6 +174,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
+                PlatformTypeEnum::TIKTOK => [
+                    'name'       => 'retina.models.dropshipping.tiktok.batch_upload',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
                 PlatformTypeEnum::EBAY => [
                     'name'       => 'retina.models.dropshipping.ebay.batch_upload',
                     'parameters' => [
@@ -210,6 +216,12 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 PlatformTypeEnum::EBAY => [
                     'name'       => 'retina.models.dropshipping.ebay.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+                PlatformTypeEnum::TIKTOK => [
+                    'name'       => 'retina.models.dropshipping.tiktok.batch_all',
                     'parameters' => [
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]

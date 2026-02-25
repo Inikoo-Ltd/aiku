@@ -142,20 +142,16 @@ onMounted(() => {
 				/>
 			</div>
 
-			<div v-else>
+			
+		</section>
+
+		<div v-else>
 				<EmptyState
 					:data="{
-						title:
-							data.state !== 'switch_off'
-								? trans('You do not have slides to show')
-								: trans('You turn off the banner'),
-						description:
-							data.state !== 'switch_off'
-								? trans('Create new slides in the workshop to get started')
-								: trans('need re-publish the banner at workshop'),
+						title: trans('You do not have slides to show'),
+						description: trans('Create new slides in the workshop to get started')
 					}"
 				/>
 			</div>
-		</section>
 	</div>
 </template>

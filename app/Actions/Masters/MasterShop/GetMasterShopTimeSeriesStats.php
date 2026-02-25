@@ -40,7 +40,7 @@ class GetMasterShopTimeSeriesStats
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
                 [
-                    'sales_grp_currency'           => 'sales_grp_currency',
+                    'sales_grp_currency_external'  => 'sales_grp_currency_external',
                     'lost_revenue_grp_currency'    => 'lost_revenue_grp_currency',
                     'baskets_created_grp_currency' => 'baskets_created_grp_currency',
                     'baskets_updated_grp_currency' => 'baskets_updated_grp_currency',

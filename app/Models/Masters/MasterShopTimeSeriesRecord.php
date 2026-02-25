@@ -14,7 +14,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $master_shop_time_series_id
  * @property string $frequency
- * @property string|null $sales_grp_currency
+ * @property string|null $sales_grp_currency_external
+ * @property string|null $sales_grp_currency_internal
  * @property string|null $lost_revenue_grp_currency
  * @property string|null $baskets_created_grp_currency
  * @property string|null $baskets_updated_grp_currency

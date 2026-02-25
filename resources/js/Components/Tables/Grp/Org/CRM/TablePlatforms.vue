@@ -55,8 +55,8 @@ function platformRoute(platform: any) {
             </span>
         </template> -->
 
-        <template #cell(sales)="{ item: platform }">
-            {{ locale.currencyFormat('GBP', platform.sales) }}
+        <template #cell(sales_grp_currency_external)="{ item: platform }">
+            {{ locale.currencyFormat('GBP', platform.sales_grp_currency_external) }}
         </template>
     </Table>
 </template>

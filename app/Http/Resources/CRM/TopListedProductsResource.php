@@ -18,10 +18,11 @@ class TopListedProductsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'           => $this->id,
-            'code'         => $this->code,
-            'name'         => $this->name,
-            'total_listed' => $this->total_listed,
+            'id'              => $this->id,
+            'code'            => $this->code,
+            'name'            => $this->name,
+            'total_customers' => $this->total_customers,
+            'total_listed'    => $this->total_listed,
         ];
     }
 }

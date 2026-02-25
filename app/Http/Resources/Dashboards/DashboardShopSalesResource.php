@@ -93,15 +93,15 @@ class DashboardShopSalesResource extends JsonResource
             $registrationsColumns,
             $this->getDashboardColumnsFromArray($data, [
                 'registrations_delta',
-                'sales',
-                'sales_minified',
-                'sales_delta',
-                'sales_org_currency',
-                'sales_org_currency_minified',
-                'sales_org_currency_delta',
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
+                'sales_external',
+                'sales_external_minified',
+                'sales_external_delta',
+                'sales_org_currency_external',
+                'sales_org_currency_external_minified',
+                'sales_org_currency_external_delta',
+                'sales_grp_currency_external',
+                'sales_grp_currency_external_minified',
+                'sales_grp_currency_external_delta',
             ])
         );
 

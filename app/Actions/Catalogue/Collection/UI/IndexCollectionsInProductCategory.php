@@ -19,6 +19,7 @@ use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\CollectionsTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
@@ -65,46 +66,72 @@ class IndexCollectionsInProductCategory extends OrgAction
         });
         $queryBuilder->where('model_has_collections.model_id', $parent->id);
         $queryBuilder->where('model_has_collections.model_type', 'ProductCategory');
-
         $queryBuilder->leftjoin('collection_stats', 'collections.id', 'collection_stats.collection_id');
-
         $queryBuilder
             ->leftJoin('webpages', function ($join) {
                 $join->on('collections.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'Collection');
             });
-
         $queryBuilder
             ->leftJoin('shops', 'collections.shop_id', '=', 'shops.id')
-            ->leftJoin('websites', 'websites.shop_id', '=', 'shops.id');
+            ->leftJoin('websites', 'websites.shop_id', '=', 'shops.id')
+            ->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
 
+        $selects = [
+            'collections.id',
+            'collections.code',
+            'collections.state',
+            'collections.name',
+            'collections.description',
+            'collections.created_at',
+            'collections.updated_at',
+            'collections.slug',
+            'collection_stats.number_families',
+            'collection_stats.number_products',
+            'collection_stats.number_parents',
+            'collections.master_collection_id',
+            'webpages.id as webpage_id',
+            'webpages.state as webpage_state',
+            'webpages.url as webpage_url',
+            'webpages.slug as webpage_slug',
+            'websites.slug as website_slug',
+            'currencies.code as currency_code',
+        ];
+
+        if ($prefix === CollectionsTabsEnum::SALES->value) {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'collection_time_series',
+                timeSeriesRecordsTable: 'collection_time_series_records',
+                foreignKey: 'collection_id',
+                aggregateColumns: [
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices'
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
 
         $queryBuilder
             ->defaultSort('collections.code')
-            ->select([
-                'collections.id',
-                'collections.code',
-                'collections.state',
-                'collections.name',
-                'collections.description',
-                'collections.created_at',
-                'collections.updated_at',
-                'collections.slug',
-                'collection_stats.number_families',
-                'collection_stats.number_products',
-                'collection_stats.number_parents',
-                'collections.master_collection_id',
-                'webpages.id as webpage_id',
-                'webpages.state as webpage_state',
-                'webpages.url as webpage_url',
-                'webpages.slug as webpage_slug',
-                'websites.slug as website_slug',
-            ]);
-
+            ->select($selects);
 
         return $queryBuilder
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['code', 'name', 'number_families', 'number_products'])
+            ->allowedSorts([
+                'code',
+                'name',
+                'number_families',
+                'number_products',
+                'sales_grp_currency_external',
+                'invoices',
+            ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -116,6 +143,9 @@ class IndexCollectionsInProductCategory extends OrgAction
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
+            if ($prefix === CollectionsTabsEnum::SALES->value) {
+                $table->betweenDates(['date']);
+            }
 
             $table
                 ->withGlobalSearch()
@@ -127,15 +157,22 @@ class IndexCollectionsInProductCategory extends OrgAction
                     ]
                 );
 
-            $table
-                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
-
-            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false);
-            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false);
-            $table->column(key: 'actions', label: '', searchable: true);
+            if ($prefix === CollectionsTabsEnum::SALES->value) {
+                $table->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+            } else {
+                $table->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
+                $table->column(key: 'number_families', label: __('Families'), canBeHidden: false);
+                $table->column(key: 'number_products', label: __('Products'), canBeHidden: false);
+                $table->column(key: 'actions', label: '', searchable: true);
+            }
         };
     }
 
@@ -259,8 +296,8 @@ class IndexCollectionsInProductCategory extends OrgAction
                     : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
 
                 CollectionsTabsEnum::SALES->value => $this->tab == CollectionsTabsEnum::SALES->value ?
-                    fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollections::run($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
+                    fn () => CollectionsResource::collection($this->handle($productCategory, prefix: CollectionsTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => CollectionsResource::collection($this->handle($productCategory, prefix: CollectionsTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($productCategory, prefix: CollectionsTabsEnum::INDEX->value))
           ->table($this->tableStructure($productCategory, prefix: CollectionsTabsEnum::SALES->value));

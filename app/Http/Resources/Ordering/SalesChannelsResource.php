@@ -15,16 +15,16 @@ class SalesChannelsResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id'                => $this->id,
-            'name'              => $this->name,
-            'slug'              => $this->slug,
-            'code'              => $this->code,
-            'type'              => $this->type,
-            'is_active'         => $this->getIsActiveIcon(),
-            'show_in_dashboard' => $this->getShowInDashboardIcon(),
-            'refunds'           => $this->refunds,
-            'invoices'          => $this->invoices,
-            'sales'             => $this->sales,
+            'id'                          => $this->id,
+            'name'                        => $this->name,
+            'slug'                        => $this->slug,
+            'code'                        => $this->code,
+            'type'                        => $this->type,
+            'is_active'                   => $this->getIsActiveIcon(),
+            'show_in_dashboard'           => $this->getShowInDashboardIcon(),
+            'refunds'                     => $this->refunds,
+            'invoices'                    => $this->invoices,
+            'sales_grp_currency_external' => $this->sales_grp_currency_external,
         ];
     }
 
