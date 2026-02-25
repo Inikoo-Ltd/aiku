@@ -55,7 +55,12 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
 
         $organisationCode = $data['organisation_code'] ?? 'Unknown';
         $name = $data['name'] ?? 'Unknown';
+        $isGlobalMarketplaces = (bool) ($data['is_global_marketplaces'] ?? false);
+
         $label = $organisationCode ? $organisationCode . ': ' . $name : $name;
+        if ($isGlobalMarketplaces) {
+            $label = $name . ' (' . $organisationCode . ')';
+        }
 
         $columns = [
             'label' => [
