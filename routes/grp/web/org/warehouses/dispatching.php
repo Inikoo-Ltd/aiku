@@ -47,6 +47,12 @@ Route::get('/delivery-notes/handling/shop/{shopType}', [IndexDeliveryNotes::clas
 Route::get('/delivery-notes/handling-blocked', [IndexDeliveryNotes::class, 'handlingBlocked'])->name('handling-blocked.delivery-notes');
 Route::get('/delivery-notes/handling-blocked/shop/{shopType}', [IndexDeliveryNotes::class, 'handlingBlockedShopTypes'])->name('handling-blocked.delivery-notes.shop');
 
+Route::get('/delivery-notes/picked', [IndexDeliveryNotes::class, 'picked'])->name('picked.delivery-notes');
+Route::get('/delivery-notes/picked/shop/{shopType}', [IndexDeliveryNotes::class, 'pickedShopTypes'])->name('picked.delivery-notes.shop');
+
+Route::get('/delivery-notes/packing', [IndexDeliveryNotes::class, 'packing'])->name('packing.delivery-notes');
+Route::get('/delivery-notes/packing/shop/{shopType}', [IndexDeliveryNotes::class, 'packingShopTypes'])->name('packing.delivery-notes.shop');
+
 Route::get('/delivery-notes/packed', [IndexDeliveryNotes::class, 'packed'])->name('packed.delivery-notes');
 Route::get('/delivery-notes/packed/shop/{shopType}', [IndexDeliveryNotes::class, 'packedShopTypes'])->name('packed.delivery-notes.shop');
 
