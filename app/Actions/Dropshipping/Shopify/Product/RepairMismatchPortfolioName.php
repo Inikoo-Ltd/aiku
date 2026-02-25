@@ -16,6 +16,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -44,10 +45,22 @@ class RepairMismatchPortfolioName
                 continue;
             }
 
+            $portfolioCodeExists = Portfolio::where('item_type', $product->getMorphClass())
+                ->where('customer_sales_channel_id', $customerSalesChannel->id)
+                ->where('item_id', $product->id)
+                ->exists();
+
+            $itemId = [];
+            if(! $portfolioCodeExists) {
+                $itemId = [
+                    'item_id' => $product->id
+                ];
+            }
+
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'item_name' => $product->name,
                 'customer_product_name' => $product->name,
-                'item_id' => $product->id,
+                ...$itemId,
                 'sku' => StorePortfolio::make()->getSku($product)
             ]);
 

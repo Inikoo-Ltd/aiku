@@ -416,7 +416,7 @@ class ShowDeliveryNote extends OrgAction
         $order     = $deliveryNote->orders->first();
 
         $additionalShipmentRoutes = [];
-        if ($order->is_shipping_by_external) {
+        if ($deliveryNote->is_shipping_by_external) {
             if ($order->shop->engine == ShopEngineEnum::FAIRE) {
                 $additionalShipmentRoutes = [
                     'submit_platform_route' => [
