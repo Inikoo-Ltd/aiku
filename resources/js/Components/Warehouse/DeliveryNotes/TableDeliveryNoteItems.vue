@@ -409,13 +409,17 @@ const GetQuantityToPickFractional = (item) => {
                         class="bg-yellow-200 text-yellow-600 px-1 whitespace-nowrap"
                     >
                         <FontAwesomeIcon icon="fas fa-wand-magic" class="" fixed-width aria-hidden="true" />
-                        {{ Number(picking.quantity_picked) }}
+                        <FractionDisplay v-if="picking.quantity_picked_fractional"
+                            :fractionData="picking.quantity_picked_fractional" />
+                        <span v-else>
+                            {{ picking.quantity_picked }}
+                        </span>
                     </div>
 
                     <div class="">
                         <ButtonWithLink
                             v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0"
-                            v-tooltip="ctrans('Undo pick :qtyPicked items', { qtyPicked: Number(item.quantity_picked).toString()})"
+                            v-tooltip="ctrans('Undo pick :qtyPicked items', { qtyPicked: Number(picking.quantity_picked).toString()})"
                             type="negative"
                             :size="screenType != 'mobile' ? 'xxs' : 'md'"
                             icon="fal fa-undo-alt"
