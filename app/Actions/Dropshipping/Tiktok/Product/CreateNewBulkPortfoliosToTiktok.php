@@ -59,11 +59,11 @@ class CreateNewBulkPortfoliosToTiktok extends OrgAction implements ShouldBeUniqu
                     Cache::increment($cacheKey . '_fail');
                 }
 
-                broadcast(new UploadProductToSalesChannelProgressEvent($customerSalesChannel, $portfolio, [
+                UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
                     'total'   => $totalNumber,
                     'success' => Cache::get($cacheKey . '_success'),
                     'fail'    => Cache::get($cacheKey . '_fail'),
-                ]));
+                ]);
             }
         }
 
