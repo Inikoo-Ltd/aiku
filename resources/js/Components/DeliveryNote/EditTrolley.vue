@@ -8,6 +8,10 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '../Elements/Buttons/Button.vue'
 import { router } from '@inertiajs/vue3'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTrashUndoAlt } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faTrashUndoAlt)
 
 const props = defineProps<{
     warehouse: {
@@ -62,7 +66,7 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
     // Section: Submit
     router.patch(
         route(
-            'grp.models.delivery_note.state.handling_with_trolley',
+            'grp.models.delivery_note.state.change_trolley',
             {
                 deliveryNote: props.deliveryNote.id
             }
@@ -100,15 +104,13 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
 
 <template>
     <div>
-        <Button
-            :label="trans('Start Picking')"
-            @click="() => isOpenModal = true" 
-            icon="fal fa-dolly-flatbed-alt"
-        />
+        <span class="opacity-50 hover:opacity-100 cursor-pointer" @click="isOpenModal = true">
+            <FontAwesomeIcon icon="fal fa-pencil" class="text-xs" fixed-width aria-hidden="true" />
+        </span>
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="font-bold text-xl text-center mb-8">
-                {{ trans("Select trolley to start picking") }}
+                {{ trans("Select trolley to change") }}
             </div>
 
             <div class="mb-1">
@@ -150,7 +152,6 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
 
                                 </Button>
                             </a>
-
                         </div>
                     </div>
                 </div>
@@ -158,11 +159,11 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
 
             <Button
                 @click="() => submitSelectTrolley(null)"
-                :label="trans('Skip')"
+                :label="trans('Unassign Trolley')"
                 full
-                iconRight="far fa-arrow-right"
+                iconRight="fal fa-trash-undo-alt"
                 class="mt-4"
-                type="dashed"
+                type="negative"
                 :disabled="isLoadingSubmitTrolley !== undefined"
                 :loading="isLoadingSubmitTrolley === null"
             />

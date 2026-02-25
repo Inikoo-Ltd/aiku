@@ -20,7 +20,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
 import Icon from "@/Components/Icon.vue"
 import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
-import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+import EditTrolley from "@/Components/DeliveryNote/EditTrolley.vue"
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -225,47 +225,6 @@ const updateCollection = async (e: Event) => {
     }
 }
 
-
-// Section: Modal Edit Trolleys
-const isModalEditTrolley = ref(false)
-const isLoadingSubmitEditTrolley = ref(false)
-const newTrolleyToSubmitId = ref<number|null>(null)
-const submitChangeTrolley = () => {
-    // Section: Submit
-    router.patch(
-        route('grp.models.delivery_note.state.change_trolley', {
-            deliveryNote: props.deliveryNote.id
-        }),
-        {
-            trolley: newTrolleyToSubmitId.value
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                isLoadingSubmitEditTrolley.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-                newTrolleyToSubmitId.value = null
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to change trolley"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmitEditTrolley.value = false
-            },
-        }
-    )
-}
 </script>
 
 <template>
@@ -456,9 +415,10 @@ const submitChangeTrolley = () => {
                             </dd>
                         </dl>
 
-                        <span class="opacity-50 hover:opacity-100 cursor-pointer" @click="isModalEditTrolley = true">
-                            <FontAwesomeIcon icon="fal fa-pencil" class="text-xs" fixed-width aria-hidden="true" />
-                        </span>
+                        <EditTrolley
+                            :warehouse="warehouse"
+                            :deliveryNote="deliveryNote"
+                        />
                     </div>
 
                     
@@ -736,52 +696,6 @@ const submitChangeTrolley = () => {
         </Modal>
 
         <!-- Modal: change trolley -->
-        <Modal
-            :isOpen="isModalEditTrolley"
-            width="w-full max-w-2xl"
-            @close="isModalEditTrolley = false"
-        >
-            <div class="px-6">
-                <h2 class="text-2xl font-bold mxb-4 text-center">{{ trans('Change trolley') }}</h2>
-                <!-- <p class="italic mb-6 text-center opacity-70 text-sm">Enter the details to create a category offer</p> -->
-                <div class="mt-8 space-y-8">
-        
-                    <div>
-                        <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle"/>
-                            {{ trans('Select available trolley') }}:
-                        </label>
-        
-                        <div class="pl-4">
-                            <PureMultiselectInfiniteScroll
-                                v-model="newTrolleyToSubmitId"
-                                :fetchRoute="{
-                                    name: 'grp.json.available_trolleys.list',
-                                    parameters: {
-                                        warehouse: props.warehouse.slug,
-                                    }
-                                }"
-                            />
-                        </div>
-                    </div>
-                </div>
-        
-                <div class="mt-8 flex justify-end space-x-4">
-                    <Button
-                        @click="isModalEditTrolley = false"
-                        type="cancel"
-                    />
-                    <Button
-                        full
-                        icon="fad fa-save"
-                        :label="trans('Change trolley')"
-                        @click="submitChangeTrolley"
-                        :loading="isLoadingSubmitEditTrolley"
-                    >
-                    </Button>
-                </div>
-            </div>
-        </Modal>
     </div>
 </template>
 
