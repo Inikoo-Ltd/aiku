@@ -178,7 +178,7 @@ class GetFaireOrders extends OrgAction
                         'warehouse_id' => $warehouse->id
                     ]);
 
-                    //AcceptFaireOrder::run($order);
+                    AcceptFaireOrder::run($order);
 
 
                 }
