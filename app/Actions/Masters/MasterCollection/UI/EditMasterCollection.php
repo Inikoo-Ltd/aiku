@@ -59,7 +59,8 @@ class EditMasterCollection extends OrgAction
                     'blueprint' =>
                         [
                             [
-                                'title'  => __('Master Collection'),
+                                'label'  => __('Name/Description'),
+                                'icon'   => 'fa-light fa-tag',
                                 'fields' => [
                                     'code' => [
                                         'type'     => 'input',
@@ -73,11 +74,65 @@ class EditMasterCollection extends OrgAction
                                         'value'    => $masterCollection->name,
                                         'required' => true
                                     ],
-                                    'description' => [
-                                        'type'     => 'textarea',
-                                        'label'    => __('Description'),
-                                        'value'    => $masterCollection->description,
-                                        'required' => false
+                                    'description'       => [
+                                        'type'    => 'textEditor',
+                                        'label'   => __('Description'),
+                                        'options' => [
+                                            'counter' => true,
+                                        ],
+                                        'value'   => $masterCollection->description,
+                                        'toogle'  => [
+                                            'heading2',
+                                            'heading3',
+                                            'fontSize',
+                                            'bold',
+                                            'italic',
+                                            'underline',
+                                            'bulletList',
+                                            "fontFamily",
+                                            'orderedList',
+                                            'blockquote',
+                                            'divider',
+                                            'alignLeft',
+                                            'alignRight',
+                                            "customLink",
+                                            'alignCenter',
+                                            'undo',
+                                            'redo',
+                                            'highlight',
+                                            'color',
+                                            'clear'
+                                        ],
+                                    ],
+                                    'description_extra' => [
+                                        'type'    => 'textEditor',
+                                        'label'   => __('Extra description'),
+                                        'options' => [
+                                            'counter' => true,
+                                        ],
+                                        'value'   => $masterCollection->description_extra,
+                                        'toogle'  => [
+                                            'heading2',
+                                            'heading3',
+                                            'fontSize',
+                                            'bold',
+                                            'italic',
+                                            'underline',
+                                            'bulletList',
+                                            "fontFamily",
+                                            'orderedList',
+                                            'blockquote',
+                                            'divider',
+                                            'alignLeft',
+                                            'alignRight',
+                                            "customLink",
+                                            'alignCenter',
+                                            'undo',
+                                            'redo',
+                                            'highlight',
+                                            'color',
+                                            'clear'
+                                        ],
                                     ],
                                 ]
                             ]
