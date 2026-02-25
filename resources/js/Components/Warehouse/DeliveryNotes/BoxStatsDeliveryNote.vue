@@ -486,7 +486,7 @@ const submitChangeTrolley = () => {
                     </dl>
 
                     <!-- Section: Parcels -->
-                    <div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
+                    <div v-if="['packing', 'packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
                         class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
                         <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
                             fixed-width aria-hidden='true' />
