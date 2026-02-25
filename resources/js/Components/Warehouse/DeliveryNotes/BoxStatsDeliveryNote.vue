@@ -423,14 +423,21 @@ const updateCollection = async (e: Event) => {
 
                     
                     <!-- Section: Picked Bays -->
-                    <div v-if="boxStats?.picked_bay?.name">
+                    <div v-if="boxStats?.picked_bays?.length">
                         <dl v-tooltip="trans('Picked bay name')"
                             class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
-                                {{ trans("Picked bay") }}:
+                                {{ trans("Picked bays") }} ({{ boxStats?.picked_bays?.length }}):
                             </dt>
                             <dd class="text-gray-500">
-                                {{ boxStats?.picked_bay?.contact_name }}
+                                <span
+                                    v-for="bay in boxStats?.picked_bays"
+                                    :key="bay.id"
+                                    :to="`/bays/${bay.id}`"
+                                    xclass="underline opacity-70 hover:opacity-100"
+                                >
+                                    {{ bay?.name ?? '-' }}
+                                </span>
                             </dd>
                         </dl>
                     </div>
