@@ -402,10 +402,20 @@ const GetQuantityToPickFractional = (item) => {
                         </span>
                     </div>
 
+                    <!-- Label: number of magic pick -->
+                    <div
+                        v-if="picking.type === 'magic_pick'"
+                        v-tooltip="ctrans(':qtyPicked items are picked from magic place', { qtyPicked: Number(picking.quantity_picked).toString()})"
+                        class="bg-yellow-200 text-yellow-600 px-1 whitespace-nowrap"
+                    >
+                        <FontAwesomeIcon icon="fas fa-wand-magic" class="" fixed-width aria-hidden="true" />
+                        {{ Number(picking.quantity_picked) }}
+                    </div>
+
                     <div class="">
                         <ButtonWithLink
                             v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0"
-                            v-tooltip="trans('Undo pick')"
+                            v-tooltip="ctrans('Undo pick :qtyPicked items', { qtyPicked: Number(item.quantity_picked).toString()})"
                             type="negative"
                             :size="screenType != 'mobile' ? 'xxs' : 'md'"
                             icon="fal fa-undo-alt"
@@ -534,6 +544,7 @@ const GetQuantityToPickFractional = (item) => {
                                 </template>
                             </NumberWithButtonSave>
                             
+                            <!-- Button: Pick from magic place -->
                             <Button
                                 v-if="layout.app.environment === 'local' && !itemValue.is_handled && Number(countStockInAllLocations(itemValue.locations)) < 1"
                                 @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
@@ -554,6 +565,7 @@ const GetQuantityToPickFractional = (item) => {
                                 </template>
                             </Button>
 
+                            <!-- Button: Not picked -->
                             <ButtonWithLink
                                 v-if="!itemValue.is_handled"
                                 type="negative"
