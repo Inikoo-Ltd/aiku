@@ -99,7 +99,7 @@ class IndexAttendanceAdjustmentsAdmin extends OrgAction
                 ->column(key: 'status_label', label: __('Status'))
                 ->column(key: 'reason', label: __('Reason'))
                 ->column(key: 'attachments', label: __('Attachments'))
-                ->column(key: 'actions', label: '')
+                ->column(key: 'actions', label: 'Actions')
                 ->defaultSort('-created_at');
         };
     }
