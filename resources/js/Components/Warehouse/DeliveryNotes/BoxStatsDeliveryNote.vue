@@ -495,7 +495,7 @@ const submitChangeTrolley = () => {
                                 <div class="text-gray-500">{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
                                 <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
-                                <template v-if="!(boxStats?.shipments?.length >= 1) && deliveryNote?.state === 'packed'">
+                                <template v-if="!(boxStats?.shipments?.length >= 1) && (deliveryNote?.state === 'packed' || deliveryNote?.state === 'packing')">
                                     <div v-if="boxStats?.parcels?.length"
                                         @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
                                         class="cursor-pointer text-gray-400 hover:text-gray-600">
