@@ -77,16 +77,16 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
                 isLoadingSubmitTrolley.value = trolleyId
             },
             onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
+                // notify({
+                //     title: trans("Success"),
+                //     text: trans("Successfully submit the data"),
+                //     type: "success"
+                // })
             },
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to submit"),
+                    text: trans("Failed to select trolley"),
                     type: "error"
                 })
             },
