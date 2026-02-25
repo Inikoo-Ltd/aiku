@@ -85,7 +85,7 @@ class PickedBay extends Model implements Auditable
 
     public function deliveryNotes(): BelongsToMany
     {
-        return $this->belongsToMany(DeliveryNote::class, 'delivery_note_has_trolleys')
+        return $this->belongsToMany(DeliveryNote::class, 'picked_bay_has_delivery_notes')
             ->withTimestamps();
     }
 
