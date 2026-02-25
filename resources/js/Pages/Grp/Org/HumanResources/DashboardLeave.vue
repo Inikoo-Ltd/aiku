@@ -12,31 +12,70 @@ import { faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv } fro
 
 library.add(faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv)
 
+type LeaveItem = {
+	id: number
+	employee_name: string
+	start_date: string
+	end_date: string
+	type: string
+	type_label: string
+	duration_days: number
+	reason: string
+	status: string
+}
+
+type EmployeeCalendarRow = {
+	id: number
+	name: string
+	leaves: LeaveItem[]
+}
+
+type CalendarDay = {
+	date: string
+	day_of_month: number
+	is_current_month: boolean
+	is_weekend: boolean
+	week_index: number
+}
+
+type CalendarWeek = {
+	week_index: number
+	start: string
+	end: string
+	days: CalendarDay[]
+}
+
+type LeaveSegment = {
+	id: string
+	leave: LeaveItem
+	weekIndex: number
+	startCol: number
+	endColExclusive: number
+	continuesLeft: boolean
+	continuesRight: boolean
+	segmentStart: string
+	segmentEnd: string
+}
+
 const props = defineProps<{
 	pageHead: PageHeadingTypes
 	title: string
 	filters: {
 		year: number
 		month: number
-		employee_id?: number
-		type?: string
+		employee_id?: number | null
+		type?: string | null
+		view?: "month" | "week"
+		week_start?: string | null
 	}
-	calendarData: {
-		id: number
-		name: string
-		leaves: {
-			id: number
-			start_date: string
-			end_date: string
-			type: string
-			type_label: string
-			duration_days: number
-			reason: string
-			status: string
-		}[]
-	}[]
+	calendarData: EmployeeCalendarRow[]
 	daysInMonth: number
 	monthName: string
+	weeks: CalendarWeek[]
+	visibleRange: {
+		start: string
+		end: string
+	}
 	employeeOptions: { value: number; label: string }[]
 	typeOptions: { value: string; label: string }[]
 	type_options?: Record<string, string>
@@ -44,9 +83,16 @@ const props = defineProps<{
 }>()
 
 const showModal = ref(false)
-const selectedLeave = ref<any>(null)
+const selectedLeave = ref<LeaveItem | null>(null)
 const isExportModalOpen = ref(false)
 const isExporting = ref(false)
+
+const selectedYear = ref<number>(props.filters.year)
+const selectedMonth = ref<number>(props.filters.month)
+const selectedEmployeeId = ref<number | null>(props.filters.employee_id ?? null)
+const selectedType = ref<string | null>(props.filters.type ?? null)
+const selectedView = ref<"month" | "week">(props.filters.view ?? "month")
+const selectedWeekStart = ref<string>(props.filters.week_start ?? props.visibleRange.start)
 
 const exportForm = useForm({
 	from: "",
@@ -58,16 +104,6 @@ const exportForm = useForm({
 	employee_id: null as number | null,
 	format: "xlsx",
 })
-
-const openModal = (leave: any) => {
-	selectedLeave.value = leave
-	showModal.value = true
-}
-
-const closeModal = () => {
-	showModal.value = false
-	selectedLeave.value = null
-}
 
 const monthOptions = computed(() => {
 	return Array.from({ length: 12 }, (_, i) => {
@@ -89,84 +125,303 @@ const yearOptions = computed(() => {
 	})
 })
 
-const updateFilter = () => {
-	router.get(
-		route("grp.org.hr.leaves.dashboard", route().params),
-		{
-			year: props.filters.year,
-			month: props.filters.month,
-			employee_id: props.filters.employee_id,
-			type: props.filters.type,
-		},
-		{
-			preserveState: true,
-			preserveScroll: true,
-		}
-	)
+const weekdayLabels = [trans("Mo"), trans("Tu"), trans("We"), trans("Th"), trans("Fr"), trans("Sa"), trans("Su")]
+
+const parseDateKey = (value: string): Date => {
+	const [year, month, day] = value.split("-").map(Number)
+	return new Date(year, (month || 1) - 1, day || 1)
 }
 
-const prevMonth = () => {
-	let newMonth = props.filters.month - 1
-	let newYear = props.filters.year
-	if (newMonth < 1) {
-		newMonth = 12
-		newYear--
-	}
-
-	router.visit(
-		route("grp.org.hr.leaves.dashboard", { ...route().params, year: newYear, month: newMonth })
-	)
+const toDateKey = (date: Date): string => {
+	const year = date.getFullYear()
+	const month = String(date.getMonth() + 1).padStart(2, "0")
+	const day = String(date.getDate()).padStart(2, "0")
+	return `${year}-${month}-${day}`
 }
 
-const nextMonth = () => {
-	let newMonth = props.filters.month + 1
-	let newYear = props.filters.year
-	if (newMonth > 12) {
-		newMonth = 1
-		newYear++
-	}
-
-	router.visit(
-		route("grp.org.hr.leaves.dashboard", { ...route().params, year: newYear, month: newMonth })
-	)
+const addDays = (dateKey: string, amount: number): string => {
+	const date = parseDateKey(dateKey)
+	date.setDate(date.getDate() + amount)
+	return toDateKey(date)
 }
 
-const days = computed(() => {
-	return Array.from({ length: props.daysInMonth }, (_, i) => i + 1)
-})
-
-const getDayName = (day: number) => {
-	const date = new Date(props.filters.year, props.filters.month - 1, day)
-	return date.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2)
+const diffDays = (from: string, to: string): number => {
+	const fromDate = parseDateKey(from)
+	const toDate = parseDateKey(to)
+	const msInDay = 24 * 60 * 60 * 1000
+	return Math.round((toDate.getTime() - fromDate.getTime()) / msInDay)
 }
 
-const isWeekend = (day: number) => {
-	const date = new Date(props.filters.year, props.filters.month - 1, day)
-	const dayOfWeek = date.getDay()
-	return dayOfWeek === 0 || dayOfWeek === 6
+const minDateKey = (a: string, b: string): string => {
+	return a <= b ? a : b
 }
 
-const getLeavesForDay = (leaves: any[], day: number) => {
-	const dateStr = `${props.filters.year}-${String(props.filters.month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+const maxDateKey = (a: string, b: string): string => {
+	return a >= b ? a : b
+}
 
-	return leaves.filter((leave) => {
-		const start = leave.start_date
-		const end = leave.end_date
-		return dateStr >= start && dateStr <= end
+const formatRangeDate = (dateKey: string): string => {
+	return parseDateKey(dateKey).toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
 	})
 }
 
-const getTypeColor = (type: string): string => {
+const visibleWeeks = computed<CalendarWeek[]>(() => props.weeks ?? [])
+
+const headerDays = computed<CalendarDay[]>(() => {
+	if (visibleWeeks.value.length === 0) {
+		return []
+	}
+
+	return visibleWeeks.value[0].days
+})
+
+const displayPeriodLabel = computed(() => {
+	if (selectedView.value === "month") {
+		return `${props.monthName} ${selectedYear.value}`
+	}
+
+	if (visibleWeeks.value.length === 0) {
+		return trans("Week")
+	}
+
+	const week = visibleWeeks.value[0]
+	return `${formatRangeDate(week.start)} - ${formatRangeDate(week.end)}`
+})
+
+const openModal = (leave: LeaveItem) => {
+	selectedLeave.value = leave
+	showModal.value = true
+}
+
+const closeModal = () => {
+	showModal.value = false
+	selectedLeave.value = null
+}
+
+const buildRequestData = (): Record<string, any> => {
+	return {
+		year: selectedYear.value,
+		month: selectedMonth.value,
+		employee_id: selectedEmployeeId.value ?? undefined,
+		type: selectedType.value ?? undefined,
+		view: selectedView.value,
+		week_start: selectedView.value === "week" ? selectedWeekStart.value : undefined,
+	}
+}
+
+const updateFilter = () => {
+	router.get(route("grp.org.hr.leaves.dashboard", route().params), buildRequestData(), {
+		preserveState: true,
+		preserveScroll: true,
+	})
+}
+
+const changeView = (view: "month" | "week") => {
+	if (selectedView.value === view) {
+		return
+	}
+
+	selectedView.value = view
+
+	if (view === "week" && !selectedWeekStart.value) {
+		selectedWeekStart.value = props.visibleRange.start
+	}
+
+	updateFilter()
+}
+
+const prevRange = () => {
+	if (selectedView.value === "month") {
+		let newMonth = selectedMonth.value - 1
+		let newYear = selectedYear.value
+
+		if (newMonth < 1) {
+			newMonth = 12
+			newYear -= 1
+		}
+
+		selectedMonth.value = newMonth
+		selectedYear.value = newYear
+		updateFilter()
+		return
+	}
+
+	selectedWeekStart.value = addDays(selectedWeekStart.value, -7)
+	const weekStartDate = parseDateKey(selectedWeekStart.value)
+	selectedYear.value = weekStartDate.getFullYear()
+	selectedMonth.value = weekStartDate.getMonth() + 1
+	updateFilter()
+}
+
+const nextRange = () => {
+	if (selectedView.value === "month") {
+		let newMonth = selectedMonth.value + 1
+		let newYear = selectedYear.value
+
+		if (newMonth > 12) {
+			newMonth = 1
+			newYear += 1
+		}
+
+		selectedMonth.value = newMonth
+		selectedYear.value = newYear
+		updateFilter()
+		return
+	}
+
+	selectedWeekStart.value = addDays(selectedWeekStart.value, 7)
+	const weekStartDate = parseDateKey(selectedWeekStart.value)
+	selectedYear.value = weekStartDate.getFullYear()
+	selectedMonth.value = weekStartDate.getMonth() + 1
+	updateFilter()
+}
+
+const getLeaveColor = (type: string): string => {
 	switch (type) {
 		case "annual":
-			return "#3B82F6"
+			return "#2563EB"
 		case "medical":
-			return "#EF4444"
+			return "#F97316"
 		case "unpaid":
-			return "#6B7280"
+			return "#DC2626"
 		default:
 			return "#4F46E5"
 	}
+}
+
+const createLeaveSegments = (employee: EmployeeCalendarRow): Record<number, LeaveSegment[]> => {
+	const weekSegments: Record<number, LeaveSegment[]> = {}
+
+	for (const week of visibleWeeks.value) {
+		weekSegments[week.week_index] = []
+	}
+
+	const sortedLeaves = [...employee.leaves].sort((a, b) => {
+		if (a.start_date === b.start_date) {
+			return b.duration_days - a.duration_days
+		}
+		return a.start_date.localeCompare(b.start_date)
+	})
+
+	for (const leave of sortedLeaves) {
+		if (!leave.start_date || !leave.end_date) {
+			continue
+		}
+
+		const clippedStart = maxDateKey(leave.start_date, props.visibleRange.start)
+		const clippedEnd = minDateKey(leave.end_date, props.visibleRange.end)
+
+		if (clippedStart > clippedEnd) {
+			continue
+		}
+
+		for (const week of visibleWeeks.value) {
+			if (clippedStart > week.end || clippedEnd < week.start) {
+				continue
+			}
+
+			const segmentStart = maxDateKey(clippedStart, week.start)
+			const segmentEnd = minDateKey(clippedEnd, week.end)
+			const startCol = diffDays(week.start, segmentStart) + 1
+			const endColExclusive = diffDays(week.start, segmentEnd) + 2
+
+			weekSegments[week.week_index].push({
+				id: `${leave.id}-${week.week_index}-${segmentStart}`,
+				leave,
+				weekIndex: week.week_index,
+				startCol,
+				endColExclusive,
+				continuesLeft: leave.start_date < segmentStart,
+				continuesRight: leave.end_date > segmentEnd,
+				segmentStart,
+				segmentEnd,
+			})
+		}
+	}
+
+	return weekSegments
+}
+
+const isCollision = (left: LeaveSegment, right: LeaveSegment): boolean => {
+	return left.startCol < right.endColExclusive && right.startCol < left.endColExclusive
+}
+
+const buildWeekLanes = (segments: LeaveSegment[]): LeaveSegment[][] => {
+	const lanes: LeaveSegment[][] = []
+
+	const sortedSegments = [...segments].sort((a, b) => {
+		if (a.startCol === b.startCol) {
+			return b.endColExclusive - a.endColExclusive
+		}
+		return a.startCol - b.startCol
+	})
+
+	for (const segment of sortedSegments) {
+		let placed = false
+
+		for (const lane of lanes) {
+			if (lane.every((existing) => !isCollision(existing, segment))) {
+				lane.push(segment)
+				placed = true
+				break
+			}
+		}
+
+		if (!placed) {
+			lanes.push([segment])
+		}
+	}
+
+	return lanes
+}
+
+const employeeLaneData = computed(() => {
+	return props.calendarData.map((employee) => {
+		const segmentsByWeek = createLeaveSegments(employee)
+		const lanesByWeek: Record<number, LeaveSegment[][]> = {}
+
+		for (const week of visibleWeeks.value) {
+			lanesByWeek[week.week_index] = buildWeekLanes(segmentsByWeek[week.week_index] ?? [])
+		}
+
+		return {
+			...employee,
+			lanesByWeek,
+		}
+	})
+})
+
+const getLanesForWeek = (employee: { lanesByWeek: Record<number, LeaveSegment[][]> }, weekIndex: number) => {
+	return employee.lanesByWeek[weekIndex] ?? []
+}
+
+const getWeekContainerHeight = (laneCount: number): string => {
+	const minHeight = 40
+	const laneHeight = 28
+	const padding = 8
+	return `${Math.max(minHeight, laneCount * laneHeight + padding)}px`
+}
+
+const getLeaveSegmentStyle = (segment: LeaveSegment): Record<string, string | number> => {
+	const isPending = segment.leave.status === "pending"
+
+	return {
+		gridColumn: `${segment.startCol} / ${segment.endColExclusive}`,
+		backgroundColor: getLeaveColor(segment.leave.type),
+		opacity: isPending ? 0.7 : 1,
+		border: isPending ? "1px dashed rgba(255,255,255,0.9)" : "none",
+		borderTopLeftRadius: segment.continuesLeft ? "0" : "9999px",
+		borderBottomLeftRadius: segment.continuesLeft ? "0" : "9999px",
+		borderTopRightRadius: segment.continuesRight ? "0" : "9999px",
+		borderBottomRightRadius: segment.continuesRight ? "0" : "9999px",
+	}
+}
+
+const getLeaveTooltip = (segment: LeaveSegment): string => {
+	return `${segment.leave.employee_name} - ${segment.leave.type_label} (${segment.segmentStart} to ${segment.segmentEnd})`
 }
 
 const openExportModal = () => {
@@ -226,16 +481,33 @@ const submitExport = () => {
 	<div class="mt-5 bg-white shadow-sm rounded-lg p-4">
 		<div class="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
 			<div class="flex gap-2 items-center">
-				<Button type="secondary" :icon="faChevronLeft" size="sm" @click="prevMonth" />
-				<h2 class="text-xl font-bold text-gray-800 w-48 text-center">
-					{{ monthName }} {{ filters.year }}
+				<Button type="secondary" :icon="faChevronLeft" size="sm" @click="prevRange" />
+				<h2 class="text-xl font-bold text-gray-800 min-w-[20rem] text-center">
+					{{ displayPeriodLabel }}
 				</h2>
-				<Button type="secondary" :icon="faChevronRight" size="sm" @click="nextMonth" />
+				<Button type="secondary" :icon="faChevronRight" size="sm" @click="nextRange" />
 			</div>
 
 			<div class="flex gap-2 items-center flex-wrap">
+				<div class="inline-flex rounded-md shadow-sm overflow-hidden border border-gray-200">
+					<button
+						type="button"
+						class="px-3 py-2 text-sm"
+						:class="selectedView === 'month' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+						@click="changeView('month')">
+						{{ trans("Month") }}
+					</button>
+					<button
+						type="button"
+						class="px-3 py-2 text-sm border-l border-gray-200"
+						:class="selectedView === 'week' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+						@click="changeView('week')">
+						{{ trans("Week") }}
+					</button>
+				</div>
+
 				<select
-					v-model="filters.employee_id"
+					v-model="selectedEmployeeId"
 					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
 					<option :value="null">{{ trans("All Employees") }}</option>
@@ -248,7 +520,7 @@ const submitExport = () => {
 				</select>
 
 				<select
-					v-model="filters.type"
+					v-model="selectedType"
 					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
 					<option :value="null">{{ trans("All Types") }}</option>
@@ -258,7 +530,7 @@ const submitExport = () => {
 				</select>
 
 				<select
-					v-model="filters.year"
+					v-model="selectedYear"
 					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
 					<option v-for="year in yearOptions" :key="year.value" :value="year.value">
@@ -267,7 +539,7 @@ const submitExport = () => {
 				</select>
 
 				<select
-					v-model="filters.month"
+					v-model="selectedMonth"
 					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
 					<option v-for="month in monthOptions" :key="month.value" :value="month.value">
@@ -278,60 +550,78 @@ const submitExport = () => {
 		</div>
 
 		<div class="overflow-x-auto">
-			<div class="min-w-max">
-				<table class="w-full border-collapse">
-					<thead>
-						<tr>
-							<th
-								class="p-2 border-b border-r border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-10 w-48 min-w-[12rem]">
-								{{ trans("Employee") }}
-							</th>
-							<th
-								v-for="day in days"
-								:key="day"
-								class="p-1 border-b border-gray-200 bg-gray-50 text-center w-10 min-w-[2.5rem]"
-								:class="{ 'bg-gray-100': isWeekend(day) }">
-								<div class="text-xs font-semibold text-gray-700">{{ day }}</div>
-								<div class="text-[10px] text-gray-500">{{ getDayName(day) }}</div>
-							</th>
-						</tr>
-					</thead>
-					<tbody class="bg-white divide-y divide-gray-200">
-						<tr
-							v-for="employee in calendarData"
-							:key="employee.id"
-							class="hover:bg-gray-50">
-							<td
-								class="p-2 border-r border-gray-200 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">
-								{{ employee.name }}
-							</td>
-							<td
-								v-for="day in days"
-								:key="day"
-								class="p-1 border-r border-gray-100 h-12 relative align-top"
-								:class="{ 'bg-gray-50': isWeekend(day) }">
-								<div class="w-full h-full flex flex-col gap-0.5 justify-center">
-									<template
-										v-for="leave in getLeavesForDay(employee.leaves, day)"
-										:key="leave.id">
-										<div
-											class="flex-1 min-h-[4px] rounded w-full cursor-pointer group relative flex items-center justify-center text-[10px] text-white font-medium hover:opacity-80 transition-opacity"
-											:style="{ backgroundColor: getTypeColor(leave.type) }"
-											:title="`${leave.type_label} (${leave.duration_days} days)`"
-											@click="openModal(leave)">
-											{{ leave.duration_days }}
-										</div>
-									</template>
+			<div class="min-w-[56rem]">
+				<div class="grid grid-cols-[12rem_minmax(0,1fr)] border border-gray-200 rounded-t-lg overflow-hidden">
+					<div class="bg-gray-50 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-10 border-r border-gray-200">
+						{{ trans("Employee") }}
+					</div>
+					<div class="grid grid-cols-7 bg-gray-50">
+						<div
+							v-for="(day, index) in headerDays"
+							:key="day.date"
+							class="px-2 py-1 text-center border-r border-gray-200 last:border-r-0"
+							:class="{ 'bg-gray-100': day.is_weekend }">
+							<div class="text-xs font-semibold text-gray-700">{{ weekdayLabels[index] }}</div>
+							<div v-if="selectedView === 'week'" class="text-[10px] text-gray-500">
+								{{ day.day_of_month }}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div v-if="employeeLaneData.length === 0" class="border-x border-b border-gray-200 p-8 text-center text-gray-500 rounded-b-lg">
+					{{ trans("No employees found.") }}
+				</div>
+
+				<div
+					v-for="employee in employeeLaneData"
+					:key="employee.id"
+					class="grid grid-cols-[12rem_minmax(0,1fr)] border-x border-b border-gray-200 bg-white">
+					<div class="px-3 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 sticky left-0 z-10 bg-white">
+						{{ employee.name }}
+					</div>
+
+					<div class="p-2 space-y-2">
+						<div
+							v-for="week in visibleWeeks"
+							:key="`${employee.id}-${week.week_index}`"
+							class="relative border border-gray-100 rounded overflow-hidden"
+							:style="{ minHeight: getWeekContainerHeight(getLanesForWeek(employee, week.week_index).length) }">
+							<div class="absolute inset-0 grid grid-cols-7">
+								<div
+									v-for="day in week.days"
+									:key="`${employee.id}-${week.week_index}-${day.date}`"
+									class="relative border-r border-gray-100 last:border-r-0"
+									:class="{
+										'bg-gray-50': day.is_weekend,
+										'bg-gray-100/50': selectedView === 'month' && !day.is_current_month,
+									}">
+									<div class="absolute top-1 right-1 text-[10px] text-gray-400">
+										{{ day.day_of_month }}
+									</div>
 								</div>
-							</td>
-						</tr>
-						<tr v-if="calendarData.length === 0">
-							<td :colspan="daysInMonth + 1" class="p-8 text-center text-gray-500">
-								{{ trans("No employees found.") }}
-							</td>
-						</tr>
-					</tbody>
-				</table>
+							</div>
+
+							<div class="relative p-1 space-y-1">
+								<div
+									v-for="(lane, laneIndex) in getLanesForWeek(employee, week.week_index)"
+									:key="`${employee.id}-${week.week_index}-${laneIndex}`"
+									class="grid grid-cols-7 gap-1 h-6">
+									<button
+										v-for="segment in lane"
+										:key="segment.id"
+										type="button"
+										class="h-6 px-2 text-left text-[10px] text-white font-medium hover:brightness-95 transition-all truncate"
+										:style="getLeaveSegmentStyle(segment)"
+										:title="getLeaveTooltip(segment)"
+										@click="openModal(segment.leave)">
+										<span class="truncate block">{{ segment.leave.type_label }}</span>
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -360,7 +650,7 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-500">{{
 							trans("Employee")
 						}}</label>
-						<div class="mt-1 text-sm text-gray-900">{{ selectedLeave.name }}</div>
+						<div class="mt-1 text-sm text-gray-900">{{ selectedLeave.employee_name }}</div>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
@@ -396,10 +686,8 @@ const submitExport = () => {
 							<span
 								class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
 								:class="{
-									'bg-green-100 text-green-800':
-										selectedLeave.status === 'approved',
-									'bg-yellow-100 text-yellow-800':
-										selectedLeave.status === 'pending',
+									'bg-green-100 text-green-800': selectedLeave.status === 'approved',
+									'bg-yellow-100 text-yellow-800': selectedLeave.status === 'pending',
 									'bg-red-100 text-red-800': selectedLeave.status === 'rejected',
 								}">
 								{{ capitalize(selectedLeave.status) }}
@@ -558,7 +846,7 @@ const submitExport = () => {
 						nativeType="submit"
 						:label="trans('Export')"
 						:loading="isExporting"
-						icon="fal fa-download" />
+						:icon="exportForm.format === 'xlsx' ? faFileExcel : faFileCsv" />
 				</div>
 			</form>
 		</div>
