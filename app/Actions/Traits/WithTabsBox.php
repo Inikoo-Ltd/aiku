@@ -143,7 +143,7 @@ trait WithTabsBox
                         'value'       => $parent->orderHandlingStats?->number_orders_state_picked,
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PICKED->value],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_packed_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_picke_amount$currency"},
                             'type'  => 'currency'
                         ]
                     ],
@@ -153,7 +153,7 @@ trait WithTabsBox
                         'value'       => $parent->orderHandlingStats?->number_orders_state_packing,
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PACKING->value],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_packed_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_packing_amount$currency"},
                             'type'  => 'currency'
                         ]
                     ],
