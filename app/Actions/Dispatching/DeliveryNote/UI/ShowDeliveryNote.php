@@ -489,6 +489,14 @@ class ShowDeliveryNote extends OrgAction
                 'name' => $trolley->name,
             ];
         }
+        $pickedBays = [];
+        foreach ($deliveryNote->pickedBays as $pickedBay) {
+            $pickedBays[] = [
+                'id'   => $pickedBay->id,
+                'slug' => $pickedBay->slug,
+                'name' => $pickedBay->code,
+            ];
+        }
 
         return [
             'state'                        => $deliveryNote->state,
@@ -542,7 +550,7 @@ class ShowDeliveryNote extends OrgAction
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
             'picker'                       => $deliveryNote->pickerUser,
             'packer'                       => $deliveryNote->packerUser,
-            'picked_bay'                   => $deliveryNote->pickedBay,  // TODO: correct or not?
+            'picked_bays'                  => $pickedBays,
             'trolleys'                     => $trolleys,
             'parcels'                      => $deliveryNote->parcels,
             'external_order'               => [

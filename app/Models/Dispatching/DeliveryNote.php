@@ -21,6 +21,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\HumanResources\Employee;
+use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -350,6 +351,11 @@ class DeliveryNote extends Model implements Auditable
     public function trolleys(): BelongsToMany
     {
         return $this->belongsToMany(Trolley::class, 'delivery_note_has_trolleys');
+    }
+
+    public function pickedBays(): BelongsToMany
+    {
+        return $this->belongsToMany(PickedBay::class, 'picked_bay_has_delivery_notes');
     }
 
 }
