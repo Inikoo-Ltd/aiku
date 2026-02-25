@@ -132,8 +132,8 @@ class ShowRetinaAccountManagement extends RetinaAction
                             'fields' => [
                                 'disable_order_auto_processing'    => [
                                     'type'  => 'toggle',
-                                    'label' => __('Prevent order automatic processing'),
-                                    'information'   => __('Enabling this would cause your order to be processed manually. Please proceed with caution.'),
+                                    'label' => __('Require manual order approval'),
+                                    'information' => __('When enabled, imported orders will not be charged automatically. You can review the order details and choose how to pay before processing.'),
                                     'value' => data_get($customer->settings, 'disable_order_auto_processing', false),
                                 ]
                             ]
