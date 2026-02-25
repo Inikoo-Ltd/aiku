@@ -30,13 +30,13 @@ class ProcessUnregisterCustomerTiktokUser extends RetinaAction
         $decodedData = json_decode(base64_decode(Arr::get($modelData, 'tiktok_code')), true);
         $tiktokUserId = Arr::get($decodedData, 'tiktok_user_id');
 
-        if(! $tiktokUserId) {
+        if (! $tiktokUserId) {
             return;
         }
 
         $tiktokUser = TiktokUser::find($tiktokUserId);
 
-        if(! $tiktokUser) {
+        if (! $tiktokUser) {
             return;
         }
 

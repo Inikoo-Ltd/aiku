@@ -115,6 +115,32 @@ const compWidthBanner = computed(() => {
     return compSlidesPerView.value > compHandleBannerLessSlide.value.length ? compHandleBannerLessSlide.value.length : compSlidesPerView.value
 })
 
+const bannerHeight = computed(() => {
+  return get(
+    props.data,
+    ['common', 'height', props.view],
+    get(props.data, ['common', 'height', 'desktop'], 400)
+  )
+})
+
+const getCard = (component: any) => {
+  const view = props.view || 'desktop'
+  const card = get(component, ['layout', 'card'])
+
+  if (!card) return null
+
+  if (card.desktop || card.tablet || card.mobile) {
+    return card[view] || card.desktop || null
+  }
+
+  return card
+}
+
+const getCardScale = computed(() => {
+  if (props.view === 'mobile') return 0.6
+  if (props.view === 'tablet') return 0.8
+  return 1
+})
 
 const isMounted = ref(false)
 onMounted(() => {
@@ -124,6 +150,7 @@ onMounted(() => {
 
 <template>
  <div class="h-full w-auto relative shadow overflow-hidden mx-auto transition-all duration-200 ease-in-out" :style="{
+        height: bannerHeight + 'px',
         backgroundColor: props.data.common.spaceColor,
         aspectRatio:
             $props.view == 'mobile' ? '1/1'
@@ -157,13 +184,42 @@ onMounted(() => {
                 <SwiperSlide v-for="component in compHandleBannerLessSlide" :key="component.id"
                     class="h-full overflow-hidden aspect-square">
                     <!-- Section: image or background -->
-                    <div v-if="get(component, ['layout', 'backgroundType', 'desktop'], 'image') === 'image'"
+                    <div v-if="get(component, ['layout', 'backgroundType',props.view || 'desktop'], 'image') === 'image'"
                         class="relative w-full h-full">
-                        <Image :src="get(component, ['image', 'desktop', 'source'], null)"
+                        <Image :src="get(component, ['image',props.view || 'desktop', 'source'], null)"
                             alt="Wowsbar" />
                     </div>
+                    <!-- Video -->
+                    <div
+                        v-else-if="get(component, ['layout', 'backgroundType', props.view || 'desktop'], 'image') === 'video'"
+                        class="relative w-full h-full overflow-hidden"
+                        >
+                        <!-- Direct video -->
+                        <video
+                            v-if="get(component, ['layout', 'video', props.view || 'desktop'])?.match(/\.(mp4|webm|ogg)$/i)"
+                            :src="get(component, ['layout', 'video', props.view || 'desktop'])"
+                            autoplay muted loop playsinline
+                            class="w-full h-full object-cover"
+                        />
+
+                        <!-- YouTube -->
+                        <iframe
+                            v-else-if="get(component, ['layout', 'video', props.view || 'desktop'])?.includes('youtube')"
+                            :src="`https://www.youtube.com/embed/${
+                            get(component, ['layout', 'video', props.view || 'desktop'])
+                                ?.split('v=')[1]
+                                ?.split('&')[0]
+                            }?autoplay=1&mute=1&loop=1&playlist=${
+                            get(component, ['layout', 'video', props.view || 'desktop'])
+                                ?.split('v=')[1]
+                                ?.split('&')[0]
+                            }`"
+                            class="w-full h-full"
+                            allow="autoplay"
+                        />
+                    </div>
                     <div v-else
-                        :style="{ background: get(component, ['layout', 'background', 'desktop'], 'gray') }"
+                        :style="{ background: get(component, ['layout', 'background',props.view || 'desktop'], 'gray') }"
                         class="w-full h-full" />
                     <!-- Section: Not Visible (for workshop) -->
                     <div v-if="get(component, ['visibility'], true) === false"
@@ -182,11 +238,60 @@ onMounted(() => {
                     <SlideCorner v-for="(slideCorner, position) in filteredNulls(component?.layout?.corners)"
                         :position="position" :corner="slideCorner" />
                     <!-- CentralStage: slide-centralstage (prioritize) and common-centralStage -->
+                     <!-- Card -->
+                    <template v-if="getCard(component)">
+                        <template v-for="(card, key) in getCard(component)" :key="key">
+                            <template v-if="card?.enabled">
+
+                            <div
+                                class="absolute inset-0 flex"
+                                :class="[
+                                {
+                                    'justify-start pl-10': card.horizontal === 'left',
+                                    'justify-center': card.horizontal === 'center',
+                                    'justify-end pr-10': card.horizontal === 'right'
+                                },
+                                {
+                                    'items-start pt-10': card.vertical === 'top',
+                                    'items-center': card.vertical === 'middle',
+                                    'items-end pb-10': card.vertical === 'bottom'
+                                }
+                                ]"
+                            >
+
+                                <div
+                                class="relative"
+                                :style="{
+                                    width: (card.width || 60) + '%',
+                                    height: (card.height || 300) + 'px',
+                                    background: card.hideCard ? 'transparent' : (card.background || '#ffffff'),
+                                    padding: (card.padding || 30) + 'px',
+                                    borderRadius: (card.radius || 10) + 'px',
+                                    opacity: card.opacity ?? 1,
+                                    transform: `translate(${card.offsetX || 0}px, ${card.offsetY || 0}px) scale(${getCardScale})`,
+                                    transformOrigin: 'center'
+                                }"
+                                :class="card.shadow && !card.hideCard ? 'shadow-2xl' : ''"
+                                >
+
+                                <CentralStage
+                                    :data="{
+                                    titles: card.titles,
+                                    textAlign: card.textAlign,
+                                    }"
+                                />
+
+                                </div>
+                            </div>
+
+                            </template>
+                        </template>
+                    </template>
                     <CentralStage
-                        v-if="component?.layout?.centralStage?.title?.length > 0 || component?.layout?.centralStage?.subtitle?.length > 0"
+                        v-if="component?.layout?.centralStage?.title || component?.layout?.centralStage?.subtitle"
                         :data="component?.layout?.centralStage" />
                     <CentralStage
-                        v-else-if="data.common?.centralStage?.title?.length > 0 || data.common?.centralStage?.subtitle?.length > 0"
+                        v-if="data.common?.centralStage?.title || data.common?.centralStage?.subtitle"
                         :data="data.common?.centralStage" />
                 </SwiperSlide>
                 <div v-if="data.navigation?.bottomNav?.value && data.navigation?.bottomNav?.type?.value == 'buttons'" class="absolute bottom-1 left-1/2 -translate-x-1/2 z-10">

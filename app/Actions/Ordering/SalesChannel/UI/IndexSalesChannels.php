@@ -55,9 +55,9 @@ class IndexSalesChannels extends OrgAction
             timeSeriesRecordsTable: 'sales_channel_time_series_records',
             foreignKey: 'sales_channel_id',
             aggregateColumns: [
-                'refunds'            => 'refunds',
-                'invoices'           => 'invoices',
-                'sales_grp_currency' => 'sales',
+                'refunds'                     => 'refunds',
+                'invoices'                    => 'invoices',
+                'sales_grp_currency_external' => 'sales_grp_currency_external',
             ],
             frequency: TimeSeriesFrequencyEnum::DAILY->value,
             includeLY: false,
@@ -65,10 +65,10 @@ class IndexSalesChannels extends OrgAction
 
         $selects[] = $timeSeriesData['selectRaw']['refunds'];
         $selects[] = $timeSeriesData['selectRaw']['invoices'];
-        $selects[] = $timeSeriesData['selectRaw']['sales'];
+        $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
 
         return $query->defaultSort('id')
-            ->allowedSorts(['id', 'name', 'code', 'type', 'is_active', 'refunds', 'invoices', 'sales'])
+            ->allowedSorts(['id', 'name', 'code', 'type', 'is_active', 'refunds', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'name', 'code'])
             ->withPaginator($prefix)
             ->withQueryString();
@@ -90,7 +90,7 @@ class IndexSalesChannels extends OrgAction
             $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'refunds', label: __('Refunds'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->defaultSort('id');
         };
     }

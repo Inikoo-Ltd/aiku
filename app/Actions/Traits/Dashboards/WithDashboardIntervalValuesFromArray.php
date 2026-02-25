@@ -116,7 +116,7 @@ trait WithDashboardIntervalValuesFromArray
             $dataType = DashboardDataType::DELTA_LAST_YEAR;
         }
 
-        if (str_ends_with($columnFingerprint, '_currency')) {
+        if (str_contains($columnFingerprint, '_currency')) {
             if ($dataType != DashboardDataType::DELTA_LAST_YEAR) {
                 $dataType = $dataType == DashboardDataType::NUMBER_MINIFIED
                     ? DashboardDataType::CURRENCY_MINIFIED
@@ -124,9 +124,9 @@ trait WithDashboardIntervalValuesFromArray
             }
         }
 
-        if (str_ends_with($columnFingerprint, '_org_currency')) {
+        if (str_contains($columnFingerprint, '_org_currency')) {
             $options['currency'] = $data['organisation_currency_code'] ?? 'GBP';
-        } elseif (str_ends_with($columnFingerprint, '_grp_currency')) {
+        } elseif (str_contains($columnFingerprint, '_grp_currency')) {
             $options['currency'] = $data['group_currency_code'] ?? 'GBP';
         }
 
@@ -139,7 +139,7 @@ trait WithDashboardIntervalValuesFromArray
             $dataType = DashboardDataType::PERCENTAGE;
         }
 
-        if (in_array($columnFingerprint, ['sales', 'revenue', 'baskets_created', 'baskets_updated'])) {
+        if (in_array($columnFingerprint, ['sales_external', 'revenue', 'baskets_created', 'baskets_updated'])) {
             if ($dataType == DashboardDataType::NUMBER) {
                 $dataType = DashboardDataType::CURRENCY;
             } elseif ($dataType == DashboardDataType::NUMBER_MINIFIED) {

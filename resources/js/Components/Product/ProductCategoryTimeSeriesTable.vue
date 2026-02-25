@@ -56,9 +56,15 @@ const getInvoicesRoute = (filterDate?: string) => {
             <span class="font-medium text-gray-700">{{ item.period }}</span>
         </template>
 
-        <template #cell(sales)="{ item }">
-            <div :class="item.sales >= 0 ? 'text-gray-700' : 'text-red-500'">
-                {{ locale.currencyFormat(item.currency_code ?? currency, item.sales) }}
+        <template #cell(sales_external)="{ item }">
+            <div v-if="item.sales_external" :class="item.sales_external >= 0 ? 'text-gray-700' : 'text-red-500'">
+                {{ locale.currencyFormat(item.currency_code ?? currency, item.sales_external) }}
+            </div>
+        </template>
+
+        <template #cell(sales_grp_currency_external)="{ item }">
+            <div v-if="item.sales_grp_currency_external" :class="item.sales_grp_currency_external >= 0 ? 'text-gray-700' : 'text-red-500'">
+                {{ locale.currencyFormat(item.currency_code ?? currency, item.sales_grp_currency_external) }}
             </div>
         </template>
 

@@ -40,9 +40,9 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
             'registrations',
             'registrations_with_orders',
             'registrations_without_orders',
-            'sales',
-            'sales_org_currency',
-            'sales_grp_currency',
+            'sales_external',
+            'sales_org_currency_external',
+            'sales_grp_currency_external',
         ];
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
@@ -100,13 +100,13 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
 
-                'sales',
-                'sales_minified',
-                'sales_delta',
+                'sales_external',
+                'sales_external_minified',
+                'sales_external_delta',
 
-                'sales_org_currency',
-                'sales_org_currency_minified',
-                'sales_org_currency_delta',
+                'sales_org_currency_external',
+                'sales_org_currency_external_minified',
+                'sales_org_currency_external_delta',
             ];
         } else {
             $columnsConfig = [
@@ -122,13 +122,13 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
 
-                'sales_org_currency',
-                'sales_org_currency_minified',
-                'sales_org_currency_delta',
+                'sales_org_currency_external',
+                'sales_org_currency_external_minified',
+                'sales_org_currency_external_delta',
 
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
+                'sales_grp_currency_external',
+                'sales_grp_currency_external_minified',
+                'sales_grp_currency_external_delta',
             ];
         }
 
@@ -168,15 +168,15 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
         );
 
         if ($parentType === 'Organisation') {
-            $columns['sales'] = $columns['sales_org_currency'];
-            $columns['sales_minified'] = $columns['sales_org_currency_minified'];
-            $columns['sales_delta'] = $columns['sales_org_currency_delta'];
+            $columns['sales_external'] = $columns['sales_org_currency_external'];
+            $columns['sales_external_minified'] = $columns['sales_org_currency_external_minified'];
+            $columns['sales_external_delta'] = $columns['sales_org_currency_external_delta'];
             $columns['baskets_created'] = $columns['baskets_created_org_currency'];
             $columns['baskets_created_minified'] = $columns['baskets_created_org_currency_minified'];
         } else {
-            $columns['sales_org_currency'] = $columns['sales_grp_currency'];
-            $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
-            $columns['sales_org_currency_delta'] = $columns['sales_grp_currency_delta'];
+            $columns['sales_org_currency_external'] = $columns['sales_grp_currency_external'];
+            $columns['sales_org_currency_external_minified'] = $columns['sales_grp_currency_external_minified'];
+            $columns['sales_org_currency_external_delta'] = $columns['sales_grp_currency_external_delta'];
             $columns['baskets_created_org_currency'] = $columns['baskets_created_grp_currency'];
             $columns['baskets_created_org_currency_minified'] = $columns['baskets_created_grp_currency_minified'];
         }

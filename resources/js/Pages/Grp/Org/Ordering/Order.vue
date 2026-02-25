@@ -1527,7 +1527,7 @@ const recalculateVat = async () => {
         <BoxStatPallet class="py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="">
-                    <div class="font-semibold xmb-2 text-base">
+                    <div v-if="is_shop_external" class="font-semibold xmb-2 text-base">
                         {{ trans("Delivery") }}
                         <span v-if="salesChannel" v-tooltip="trans('This order is from :salesChannel', { salesChannel: salesChannel.name})" class="font-normal text-sm opacity-70">({{ salesChannel.name }} <FontAwesomeIcon :icon="salesChannel.icon" class="" fixed-width aria-hidden="true" />)</span>
                     </div>
@@ -1540,11 +1540,11 @@ const recalculateVat = async () => {
                             v-model="isShippingExternal"
                             @update:modelValue="updateShippingExternal"
                         />
-                        <span class="text-sm text-gray-500">{{ trans("External Shipping") }}</span>
+                        <span class="text-sm text-gray-500">{{ external_shop?.external_shipping_label }}</span>
                     </div>
 
                     <!-- Field: Billing -->
-                    <dl v-if="!is_shop_external" class="xmt-3 relative flex items-start w-full flex-none gap-x-1 py-1">
+                    <dl v-if="!is_shop_external" class="mt-2 relative flex items-start w-full flex-none gap-x-1 py-1">
                         <!-- <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />

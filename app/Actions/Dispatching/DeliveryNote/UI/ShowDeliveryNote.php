@@ -22,7 +22,6 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -417,7 +416,7 @@ class ShowDeliveryNote extends OrgAction
         $order     = $deliveryNote->orders->first();
 
         $additionalShipmentRoutes = [];
-        if ($order->is_shipping_by_external) {
+        if ($deliveryNote->is_shipping_by_external) {
             if ($order->shop->engine == ShopEngineEnum::FAIRE) {
                 $additionalShipmentRoutes = [
                     'submit_platform_route' => [
@@ -427,7 +426,7 @@ class ShowDeliveryNote extends OrgAction
                         ]
                     ]
                 ];
-            } else if($order->platform->type == PlatformTypeEnum::TIKTOK) {
+            } elseif ($order->platform->type == PlatformTypeEnum::TIKTOK) {
                 $additionalShipmentRoutes = [
                     'submit_platform_route' => [
                         'name' => 'grp.models.delivery_note.shipment.store_tiktok',

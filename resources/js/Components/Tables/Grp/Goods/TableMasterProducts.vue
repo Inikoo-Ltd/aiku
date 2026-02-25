@@ -56,7 +56,7 @@ function masterFamilyRoute(masterProduct: MasterProduct) {
 
 function masterProductRoute(masterProduct: MasterProduct) {
     let masterShop = masterProduct.master_shop_slug ?? (route().params as RouteParams).masterShop;
-    
+
     if (route().current() == "grp.masters.master_products.index") {
         return route(
             "grp.masters.master_products.show",
@@ -372,7 +372,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </div>
         </template>
 
-         <template #cell(unit)="{ item: product }"> 
+         <template #cell(unit)="{ item: product }">
                <!--  <PureInput v-if="onEditOpen.includes(product.id)" :key="product.id" v-model="editingValues[product.id].unit"></PureInput> -->
                 <span >{{ product.unit }}</span>
         </template>
@@ -415,19 +415,19 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         </template>
 
-        <template #cell(sales)="{ item: product }">
-            <span class="tabular-nums">{{ locale.currencyFormat(product.currency_code, product.sales) }}</span>
+        <template #cell(sales_grp_currency_external)="{ item: product }">
+            <span class="tabular-nums">{{ locale.currencyFormat(product.currency_code, product.sales_grp_currency_external) }}</span>
         </template>
 
-        <template #cell(sales_delta)="{ item }">
-            <div v-if="item.sales_delta">
-                <span>{{ item.sales_delta.formatted }}</span>
+        <template #cell(sales_grp_currency_external_delta)="{ item }">
+            <div v-if="item.sales_grp_currency_external_delta">
+                <span>{{ item.sales_grp_currency_external_delta.formatted }}</span>
                 <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
+                    :icon="getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[
-                        getIntervalChangesIcon(item.sales_delta.is_positive).class,
-                        getIntervalStateColor(item.sales_delta.is_positive),
+                        getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_grp_currency_external_delta.is_positive),
                     ]"
                     fixed-width
                     aria-hidden="true"

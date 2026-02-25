@@ -206,4 +206,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
+
+:deep(#LuigiTrends1 .swiper-wrapper) {
+  height: 100% !important;
+}
 </style>
