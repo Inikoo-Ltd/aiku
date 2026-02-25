@@ -93,9 +93,9 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
     private function generateBladeValue(?float $value, Shop $shop, ?float $orgExchangeRate, bool $isBold = false): string
     {
-        $currencySymbol = $shop->currency->symbol ?? '£';
-        $orgCurrencySymbol = $shop->organisation->currency->symbol ?? '£';
-        $currenciesDiffer = $shop->currency->id !== $shop->organisation->currency->id;
+        $currency = $shop->currency;
+        $orgCurrency = $shop->organisation->currency;
+        $currenciesDiffer = $currency->id !== $orgCurrency->id;
         $exchangeRate = $orgExchangeRate ?? 1;
         $fontWeight = $isBold ? 'bold' : 'normal';
         $fontSize = $isBold ? '16px' : '14px';
@@ -108,14 +108,14 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 </div>',
                 $fontSize,
                 $fontWeight,
-                $orgCurrencySymbol,
+                $orgCurrency->symbol,
                 round($value * $exchangeRate, 2),
-                $currencySymbol,
+                $currency->symbol,
                 round($value, 2)
             );
         }
 
-        return $currencySymbol . $value;
+        return $currency->symbol . $value;
     }
 
     private function generateOrderTransactionsHtml($transactions, Currency $currency, Currency $organisationCurrency): string
@@ -147,7 +147,6 @@ class SendNewOrderEmailToSubscribers extends OrgAction
             $priceDisplay = '';
             $quantity = $transaction->quantity_ordered ?? 1;
 
-            // \Log::info();
             if ($currenciesDiffer) {
                 // Show both currencies with organisation currency above
                 if ($offerData && isset($offerData['o'])) {
@@ -201,13 +200,13 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                             %s%s
                         </div>',
                         $currencySymbol,
-                        ($product->price ?? '0') * $quantity,
+                        ($product->price ?? 0) * $quantity,
                         $currencySymbol,
-                        ($transaction->net_amount ?? '0') * $quantity
+                        $transaction->net_amount
                     );
                 } else {
                     // Without discount - normal display
-                    $priceDisplay = $currencySymbol . (($transaction->net_amount ?? '0') * $quantity);
+                    $priceDisplay = $currencySymbol . $transaction->net_amount;
                 }
             }
 
