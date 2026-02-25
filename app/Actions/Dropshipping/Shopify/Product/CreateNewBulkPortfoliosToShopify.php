@@ -10,9 +10,11 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,13 +34,35 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
 
-        /** @var \App\Models\Dropshipping\Portfolio $portfolio */
+        $totalNumber = count($portfoliosIds);
+
+        // Use a unique key per job/session to avoid cross-request pollution
+        $cacheKey = 'upload_progress_' . $customerSalesChannel->id . '_' . uniqid();
+        Cache::put($cacheKey . '_success', 0, now()->addHour());
+        Cache::put($cacheKey . '_fail', 0, now()->addHour());
+
+        /** @var Portfolio $portfolio */
         foreach ($portfoliosIds as $portfoliosId) {
             $portfolio = Portfolio::find($portfoliosId->id);
             if ($portfolio) {
-                StoreNewProductToCurrentShopify::dispatch($portfolio);
+                $portfolio = StoreNewProductToCurrentShopify::run($portfolio);
+
+                if ($portfolio->platform_status) {
+                    Cache::increment($cacheKey . '_success');
+                } else {
+                    Cache::increment($cacheKey . '_fail');
+                }
+
+                broadcast(new UploadProductToSalesChannelProgressEvent($customerSalesChannel, $portfolio, [
+                    'total'   => $totalNumber,
+                    'success' => Cache::get($cacheKey . '_success'),
+                    'fail'    => Cache::get($cacheKey . '_fail'),
+                ]));
             }
         }
+
+        Cache::forget($cacheKey . '_success');
+        Cache::forget($cacheKey . '_fail');
     }
 
     public function rules(): array
