@@ -276,7 +276,6 @@ const saveRename = (index: number) => {
     fieldValue.blocks.name = value
   }
 
-  console.log(block)
   sendBlockUpdate(block)
   editingIndex.value = null
 }
@@ -485,7 +484,7 @@ const cancelRename = () => {
 							v-else
 							class="flex flex-col items-center text-center py-6 text-gray-500">
 							<FontAwesomeIcon :icon="['fal', 'browser']" class="text-4xl mb-2" />
-							<span class="text-sm font-medium">You don't have any blocks</span>
+							<span class="text-sm font-medium">{{trans("You don't have any blocks")}}</span>
 						</div>
 						<div
 							v-if="isAddBlockLoading"

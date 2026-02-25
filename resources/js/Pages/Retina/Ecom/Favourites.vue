@@ -200,22 +200,46 @@ console.log('sdfsdf',props)
         :resource="data"
         :basket-transactions="basketTransactions"
         :preserve-scroll="true"
-        class="mt-5"
+        class="mt-5 "
 		:key="key"
     >
-        <template #card="{ item }">
-            <ProductRenderEcom
-                :product="item"
-                :hasInBasket="item"
-                :isLoadingRemindBackInStock="isLoadingRemindBackInStock.includes(item.id)"
-                :isLoadingFavourite="isLoadingFavourite.includes(item.id)"
-                @setBackInStock="onAddBackInStock"
-                @unsetBackInStock="onUnselectBackInStock"
-                @set-favorite="onAddFavourite"
-                @unset-favorite="onUnselectFavourite"
-				:addToBasketRoute="addToBasketRoute"
-				:update-basket-quantity-route="updateBasketQuantityRoute"
-            />
+        <template #card="{ item }"> 
+            <div   class="offers">
+                <ProductRenderEcom
+                    :product="item"
+                    :hasInBasket="item"
+                    :basketButton="false"
+                    :isLoadingRemindBackInStock="isLoadingRemindBackInStock.includes(item.id)"
+                    :isLoadingFavourite="isLoadingFavourite.includes(item.id)"
+                    @setBackInStock="onAddBackInStock"
+                    @unsetBackInStock="onUnselectBackInStock"
+                    @set-favorite="onAddFavourite"
+                    @unset-favorite="onUnselectFavourite"
+                    :addToBasketRoute="addToBasketRoute"
+                    :update-basket-quantity-route="updateBasketQuantityRoute"
+                />
+            </div>
         </template>
     </GridProducts>
 </template>
+
+
+<style scoped lang="scss">
+:deep(.discount .background-primary) {
+  background-color: v-bind("layout.iris.theme.color[4]") !important;
+}
+
+:deep(.discount .text-primary) {
+  color: v-bind("layout.iris.theme.color[4]") !important;
+}
+
+
+:deep(.discount .offer-trigger-label) {
+  @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
+
+  border-color: v-bind("layout.iris.theme.color[4]") !important;
+  color: v-bind("layout.iris.theme.color[4]") !important;
+}
+
+
+</style>

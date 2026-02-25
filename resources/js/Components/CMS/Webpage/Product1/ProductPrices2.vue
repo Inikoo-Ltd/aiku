@@ -75,9 +75,6 @@ const bestOffer = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-.text-primary {
-  color: var(--theme-color-4) !important;
-}
 
 .text-by-offer {
   @apply text-red-600
