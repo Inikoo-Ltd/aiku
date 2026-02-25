@@ -18,6 +18,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteStatePacked extends OrgAction
@@ -28,8 +29,9 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
     private DeliveryNote $deliveryNote;
     protected User $user;
 
+
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
@@ -39,30 +41,40 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
         data_set($modelData, 'packer_user_id', $this->user->id);
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKED->value);
 
-        foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
-            StorePacking::make()->action($item, $this->user, []);
-        }
-        $defaultParcel = [
-            [
-                'weight'     => $deliveryNote->effective_weight / 1000,
-                'dimensions' => [5, 5, 5]
-            ]
-        ];
 
-        data_set($modelData, 'parcels', $defaultParcel);
-
-        if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-            UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
-        }
-
-        $deliveryNote = $this->update($deliveryNote, $modelData);
-
-        if ($deliveryNote->pickingSessions) {
-            foreach ($deliveryNote->pickingSessions as $pickingSession) {
-                AutoFinishPackingPickingSession::run($pickingSession);
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
+            foreach ($deliveryNote->deliveryNoteItems->filter(fn($item) => $item->packings->isEmpty()) as $item) {
+                StorePacking::make()->action($item, $this->user, []);
             }
-        }
+            $defaultParcel = [
+                [
+                    'weight'     => $deliveryNote->effective_weight / 1000,
+                    'dimensions' => [5, 5, 5]
+                ]
+            ];
 
+            data_set($modelData, 'parcels', $defaultParcel);
+
+            if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+                UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
+            }
+
+            $deliveryNote = $this->update($deliveryNote, $modelData);
+
+            if ($deliveryNote->pickingSessions) {
+                foreach ($deliveryNote->pickingSessions as $pickingSession) {
+                    AutoFinishPackingPickingSession::run($pickingSession);
+                }
+            }
+
+            foreach ($deliveryNote->trolleys as $trolley) {
+                DB::table('delivery_note_has_trolleys')
+                    ->where('delivery_note_id', $deliveryNote->id)->where('trolley_id', $trolley->id)->delete();
+                $trolley->update(['current_delivery_note_id' => null]);
+            }
+
+            return $deliveryNote;
+        });
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKED);
@@ -72,7 +84,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
 
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
      */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
@@ -83,8 +95,9 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
      */
     public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {

@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
+use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacking;
 use App\Actions\OrgAction;
@@ -28,6 +29,9 @@ class StartPackingDeliveryNote extends OrgAction
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
         $oldState = $deliveryNote->state;
@@ -47,7 +51,8 @@ class StartPackingDeliveryNote extends OrgAction
         data_set($modelData, 'packer_user_id', $user->id);
 
 
-    //    $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
+
         $deliveryNote=UpdateDeliveryNote::run($deliveryNote, $modelData);
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
@@ -61,8 +66,15 @@ class StartPackingDeliveryNote extends OrgAction
 
             DeliveryNoteHydrateItems::dispatch($deliveryNote)->delay($this->hydratorsDelay);
 
-//            return $deliveryNote;
-//        });
+            foreach ($deliveryNote->pickedBays as $pickedBay) {
+                DB::table('picked_bay_has_delivery_notes')
+                    ->where('delivery_note_id', $deliveryNote->id)->where('picked_bay_id',$pickedBay->id)->delete();
+                PickedBayHydrateNumberDeliveryNotes::run($pickedBay->id);
+            }
+
+
+            return $deliveryNote;
+        });
 
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
@@ -71,6 +83,9 @@ class StartPackingDeliveryNote extends OrgAction
         return $deliveryNote;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
@@ -78,6 +93,9 @@ class StartPackingDeliveryNote extends OrgAction
         return $this->handle($deliveryNote, $request->user());
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);

@@ -112,6 +112,7 @@ class IndexOrders extends OrgAction
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')->where('shops.state', ShopStateEnum::OPEN);
 
+
         if ($this->bucket == 'creating' || $this->bucket == OrdersBacklogTabsEnum::IN_BASKET->value) {
             $query->where('orders.state', OrderStateEnum::CREATING);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
@@ -262,7 +263,7 @@ class IndexOrders extends OrgAction
                 ->withEmptyState(
                     [
                         'title' => $noResults,
-                        'count' => $stats->number_orders ?? 0
+                        'count' => $stats->number_orders ?? 10
                     ]
                 );
 
@@ -320,7 +321,7 @@ class IndexOrders extends OrgAction
         $customerId    = null;
         $navigation    = OrdersTabsEnum::navigation();
         $subNavigation = null;
-        $shop          = null;
+
         if ($this->parent instanceof CustomerClient) {
             unset($navigation[OrdersTabsEnum::STATS->value]);
             $subNavigation = $this->getCustomerClientSubNavigation($this->parent, $this->customerSalesChannel);

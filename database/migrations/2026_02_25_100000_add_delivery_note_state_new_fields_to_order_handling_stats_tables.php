@@ -25,6 +25,18 @@ return new class () extends Migration {
                 $table->unsignedInteger('number_delivery_notes_state_picked')->default(0);
                 $table->unsignedInteger('number_delivery_notes_state_packing')->default(0);
 
+                $table->unsignedInteger('number_orders_state_picked')->default(0);
+                $table->unsignedInteger('number_orders_state_packing')->default(0);
+
+                $table->unsignedInteger('orders_state_picked_amount')->default(0);
+                $table->unsignedInteger('orders_state_picked_amount_org_currency')->default(0);
+                $table->unsignedInteger('orders_state_picked_amount_grp_currency')->default(0);
+
+                $table->unsignedInteger('orders_state_packing_amount')->default(0);
+                $table->unsignedInteger('orders_state_packing_amount_org_currency')->default(0);
+                $table->unsignedInteger('orders_state_packing_amount_grp_currency')->default(0);
+
+
                 // Weights
                 $table->decimal('weight_delivery_notes_state_picked', 16)->default(0);
                 $table->decimal('weight_delivery_notes_state_packing', 16)->default(0);
@@ -53,6 +65,8 @@ return new class () extends Migration {
                     'weight_delivery_notes_state_packing',
                     'number_items_delivery_notes_state_picked',
                     'number_items_delivery_notes_state_packing',
+                    'number_orders_state_picked',
+                    'number_orders_state_packing',
                 ]);
             });
         }
