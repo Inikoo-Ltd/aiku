@@ -507,7 +507,10 @@ const submitPortfolioAction = async (action: any) => {
 			params: method === "get" ? data : undefined,
 		})
 
-		isOpenModalUploadProgress.value = true;
+		if(action.label === 'bulk-create') {
+			isOpenModalUploadProgress.value = true;
+		}
+
 		debReloadPage()
 		onSuccessEditCheckmark(action.label)
 	} catch (error: any) {
@@ -596,7 +599,6 @@ const initSocketUploadListener = () => {
 		".channel-upload-progress",
 		(eventData: any) => {
 			isOpenModalUploadProgress.value = true
-			console.log(eventData)
 			uploadProgressData.value = {
 				done: eventData.statistics?.success,
 				total: eventData.statistics?.total,
@@ -938,16 +940,16 @@ const layout = inject("layout", layoutStructure)
 					type="tertiary" />
 				<Popover ref="_export_popover">
     				<div class="w-72 flex flex-col max-h-[75vh] bg-white rounded-md shadow-lg">
-					
+
     				    <div class="px-4 py-3 border-b bg-gray-50 flex justify-between items-center sticky top-0 z-10">
     				        <span class="font-semibold text-sm text-gray-700">{{ trans("Export Options") }}</span>
     				        <button @click="toggleSelectAll" class="text-xs text-blue-600 hover:underline font-medium">
     				            {{ allSelected ? trans('Deselect All') : trans('Select All') }}
     				        </button>
     				    </div>
-					
+
     				    <div class="p-4 overflow-y-auto space-y-5 text-sm">
-						
+
     				        <div>
     				            <div class="font-medium text-gray-800 mb-2">
     				                {{ trans("Columns to Export") }}
@@ -970,7 +972,7 @@ const layout = inject("layout", layoutStructure)
     				                </label>
     				            </div>
     				        </div>
-						
+
     				        <div class="border-t pt-4">
     				            <div class="font-medium text-gray-800 mb-2">
     				                {{ trans("Product State") }}
@@ -991,7 +993,7 @@ const layout = inject("layout", layoutStructure)
     				                </label>
     				            </div>
     				        </div>
-						
+
     				        <div class="border-t pt-4">
     				            <div class="font-medium text-gray-800 mb-2">
     				                {{ trans("Product Sale Status") }}
@@ -1012,9 +1014,9 @@ const layout = inject("layout", layoutStructure)
     				                </label>
     				            </div>
     				        </div>
-						
+
     				    </div>
-					
+
     				    <div class="p-3 border-t bg-white sticky bottom-0 z-10">
     				        <Button
     				            :loading="isDownloadingExtendedProperties"
@@ -1025,7 +1027,7 @@ const layout = inject("layout", layoutStructure)
     				            :label="trans('Export Extended Properties')"
     				        />
     				    </div>
-					
+
     				</div>
 				</Popover>
 
