@@ -148,11 +148,9 @@ const props = defineProps<{
 const step = ref(props.step)
 const isPlatformManual = computed(() => props.platform_data.type === "manual")
 const isOpenModalPortfolios = ref(false)
-const isOpenModalDownloadImages = ref(false)
-const isOpenModalSuspended = ref(false)
-const isTestConnectionSuccess = ref(false)
 const isOpenModalCloneProgress = ref(false)
 const isOpenModalFetchProgress = ref(false)
+const isOpenModalUploadProgress = ref(false)
 const cloneProgressData = ref({
 	data: {
 		number_success: 0,
@@ -161,6 +159,16 @@ const cloneProgressData = ref({
 	done: 0,
 	total: 0,
 })
+
+const uploadProgressData = ref({
+	data: {
+		number_success: 0,
+		number_fails: 0,
+	},
+	done: 0,
+	total: 0,
+})
+
 const cloneSourceChannelName = ref("")
 const isLoadingUpload = ref(false)
 const isLoadingClone = ref(false)
@@ -499,6 +507,7 @@ const submitPortfolioAction = async (action: any) => {
 			params: method === "get" ? data : undefined,
 		})
 
+		isOpenModalUploadProgress.value = true;
 		debReloadPage()
 		onSuccessEditCheckmark(action.label)
 	} catch (error: any) {
@@ -582,6 +591,32 @@ const initSocketFetchListener = () => {
 	)
 }
 
+const initSocketUploadListener = () => {
+	fetchChannel = window.Echo.private(`channel.${props.customer_sales_channel.id}.upload-product`).listen(
+		".channel-upload-progress",
+		(eventData: any) => {
+			isOpenModalUploadProgress.value = true
+			console.log(eventData)
+			uploadProgressData.value = {
+				done: eventData.statistics?.success,
+				total: eventData.statistics?.total,
+				data: {
+					number_fails: eventData.statistics?.fail,
+					number_success: eventData.statistics?.success
+				}
+			}
+
+			isSocketActive.value = false
+			if (eventData.statistics?.success + eventData.statistics?.fail == eventData.statistics?.total) {
+				setTimeout(() => {
+					isOpenModalUploadProgress.value = false
+					window.location.reload()
+				}, 1000)
+			}
+		}
+	)
+}
+
 watch(
 	() => props.download_portfolio_customer_sales_channel_url,
 	() => {
@@ -601,6 +636,7 @@ watch(
 // === STORAGE & SOCKET SYNC ===
 onMounted(() => {
 	initSocketFetchListener()
+	initSocketUploadListener()
 
 	const storedCode = sessionStorage.getItem("download_code")
 	if (storedCode) {
@@ -1182,7 +1218,7 @@ const layout = inject("layout", layoutStructure)
 		</div>
 	</div>
 	<!-- Section: Alert if there is product not synced -->
-	<div 
+	<div
 		v-if="selectedProducts.length > 0"
 		class="px-4 pt-4 grid justify-items-end"
 	>
@@ -1312,6 +1348,7 @@ const layout = inject("layout", layoutStructure)
 						}"
 						@success="
 							() => {
+								isOpenModalUploadProgress = true
 								;((progessbar = {
 									...progessbar,
 									done: false,
@@ -1941,6 +1978,118 @@ const layout = inject("layout", layoutStructure)
 							v-if="
 								cloneProgressData.done >= cloneProgressData.total &&
 								cloneProgressData.total > 0
+							"
+							class="mt-4 text-sm text-gray-600">
+							{{ trans("Page will reload automatically...") }}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</Modal>
+
+	<!-- Modal: Upload Progress -->
+	<Modal
+		:isOpen="isOpenModalUploadProgress"
+		@onClose="
+			uploadProgressData.done >= uploadProgressData.total && uploadProgressData.total > 0
+				? (isOpenModalUploadProgress = false)
+				: null
+		"
+		width="w-full max-w-md">
+		<div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+			<div
+				class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+				<div>
+					<div
+						class="mx-auto flex size-12 items-center justify-center rounded-full"
+						:class="
+							uploadProgressData.done >= uploadProgressData.total &&
+							uploadProgressData.total > 0
+								? uploadProgressData.data.number_fails > 0
+									? 'bg-yellow-100'
+									: 'bg-green-100'
+								: 'bg-gray-100'
+						">
+						<FontAwesomeIcon
+							v-if="
+								uploadProgressData.done >= uploadProgressData.total &&
+								uploadProgressData.total > 0
+							"
+							:icon="
+								uploadProgressData.data.number_fails > 0
+									? 'fas fa-exclamation-triangle'
+									: 'fas fa-check'
+							"
+							:class="
+								uploadProgressData.data.number_fails > 0
+									? 'text-yellow-500'
+									: 'text-green-500'
+							"
+							class="text-2xl"
+							fixed-width
+							aria-hidden="true" />
+						<FontAwesomeIcon
+							v-else
+							icon="fas fa-spinner"
+							class="text-gray-500 text-2xl animate-spin"
+							fixed-width
+							aria-hidden="true" />
+					</div>
+
+					<div class="mt-3 text-center sm:mt-5">
+						<div as="h3" class="font-semibold text-xl">
+							<template
+								v-if="
+									uploadProgressData.done >= uploadProgressData.total &&
+									uploadProgressData.total > 0
+								">
+								{{ trans("Uploading Complete!") }}
+							</template>
+							<template v-else>
+								{{ trans("Uploading Portfolios...") }}
+							</template>
+						</div>
+
+						<!-- Percentage Display -->
+						<div v-if="uploadProgressData.total > 0" class="mt-4">
+							<div
+								class="text-4xl font-bold tabular-nums transition-all duration-300"
+								:class="
+									uploadProgressData.done >= uploadProgressData.total
+										? uploadProgressData.data.number_fails > 0
+											? 'text-yellow-500'
+											: 'text-green-500'
+										: 'text-gray-700'
+								">
+								{{
+									Math.round(
+										((uploadProgressData.done + uploadProgressData.data.number_fails) / uploadProgressData.total) * 100
+									)
+								}}%
+							</div>
+						</div>
+
+						<!-- Progress Bar -->
+						<div class="mt-4 px-4">
+							<PureProgressBar
+								v-if="uploadProgressData.total > 0"
+								:progressBars="uploadProgressData" />
+							<div
+								v-else
+								class="flex items-center justify-center gap-2 text-gray-500">
+								<FontAwesomeIcon
+									icon="fas fa-spinner"
+									class="animate-spin"
+									aria-hidden="true" />
+								<span>{{ trans("Preparing...") }}</span>
+							</div>
+						</div>
+
+						<div
+							v-if="
+								uploadProgressData.done >= uploadProgressData.total &&
+								uploadProgressData.total > 0
 							"
 							class="mt-4 text-sm text-gray-600">
 							{{ trans("Page will reload automatically...") }}
