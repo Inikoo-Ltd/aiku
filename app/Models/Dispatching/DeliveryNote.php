@@ -111,6 +111,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_items_state_queued
  * @property int $number_items_state_handling
  * @property int $number_items_state_handling_blocked
+ * @property int $number_items_state_picked
+ * @property int $number_items_state_packing
  * @property int $number_items_state_packed
  * @property int $number_items_state_finalised
  * @property int $number_items_state_dispatched
