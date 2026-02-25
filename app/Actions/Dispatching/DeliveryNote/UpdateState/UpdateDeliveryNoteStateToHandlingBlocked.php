@@ -2,40 +2,38 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 23 Feb 2023 16:47:00 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Created: Wed, 11 Feb 2026 12:25:04 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dispatching\DeliveryNote;
+namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
-use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateDeliveryNoteStateToPicking extends OrgAction
+class UpdateDeliveryNoteStateToHandlingBlocked extends OrgAction
 {
     use WithActionUpdate;
-    use HasDeliveryNoteHydrators;
+
+    private DeliveryNote $deliveryNote;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        $oldState = $deliveryNote->state;
-        data_set($modelData, 'picking_at', now());
-        data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING);
+        data_set($modelData, 'handling_blocked_at', now());
+        data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
 
-        $deliveryNote = $this->update($deliveryNote, $modelData);
+        //todo update order state
 
-        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
-
-        return $deliveryNote;
+        return $this->update($deliveryNote, $modelData);
     }
+
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
+        $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote);
@@ -43,6 +41,7 @@ class UpdateDeliveryNoteStateToPicking extends OrgAction
 
     public function action(DeliveryNote $deliveryNote): DeliveryNote
     {
+        $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, []);
 
         return $this->handle($deliveryNote);

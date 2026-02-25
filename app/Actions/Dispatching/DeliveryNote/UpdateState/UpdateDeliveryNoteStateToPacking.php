@@ -2,38 +2,30 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 11 Feb 2026 12:25:04 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
+ * Created: Thu, 23 Feb 2023 16:47:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dispatching\DeliveryNote;
+namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateDeliveryNoteStateToHandlingBlocked extends OrgAction
+class UpdateDeliveryNoteStateToPacking extends OrgAction
 {
     use WithActionUpdate;
 
-    private DeliveryNote $deliveryNote;
-
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        data_set($modelData, 'handling_blocked_at', now());
-        data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
-
-        //todo update order state
+        data_set($modelData, 'packing_at', now());
 
         return $this->update($deliveryNote, $modelData);
     }
 
-
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
-        $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote);
@@ -41,7 +33,6 @@ class UpdateDeliveryNoteStateToHandlingBlocked extends OrgAction
 
     public function action(DeliveryNote $deliveryNote): DeliveryNote
     {
-        $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, []);
 
         return $this->handle($deliveryNote);

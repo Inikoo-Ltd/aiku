@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Dispatching\DeliveryNote;
+namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;

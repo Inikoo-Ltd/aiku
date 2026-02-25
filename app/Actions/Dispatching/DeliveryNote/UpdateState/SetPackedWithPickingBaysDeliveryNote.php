@@ -7,10 +7,9 @@
  * Copyright: 2026
 */
 
-namespace App\Actions\Dispatching\DeliveryNote;
+namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickedBay;

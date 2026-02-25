@@ -7,7 +7,7 @@
  * Copyright: 2026
 */
 
-namespace App\Actions\Dispatching\DeliveryNote;
+namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
 use App\Actions\OrgAction;
