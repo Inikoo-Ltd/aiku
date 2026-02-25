@@ -78,11 +78,11 @@ const submitSelectBay = (bayId?: number|null) => {
                 isLoadingSubmitBay.value = bayId
             },
             onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
+                // notify({
+                //     title: trans("Success"),
+                //     text: trans("Successfully submit the data"),
+                //     type: "success"
+                // })
             },
             onError: errors => {
                 notify({
