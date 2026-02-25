@@ -45,7 +45,7 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction
         foreach ($portfoliosIds as $portfoliosId) {
             $portfolio = Portfolio::find($portfoliosId->id);
             if ($portfolio) {
-                $portfolio = StoreNewProductToCurrentShopify::run($portfolio);
+                $portfolio = StoreNewProductToCurrentShopify::run($portfolio, []);
 
                 if ($portfolio->platform_status) {
                     Cache::increment($cacheKey . '_success');
