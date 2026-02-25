@@ -33,11 +33,11 @@ return new class () extends Migration {
 
         foreach ($tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName) {
-                if (! Schema::hasColumn($tableName, 'number_delivery_notes_type_picked')) {
-                    $table->unsignedInteger('number_delivery_notes_type_picked')->default(0);
+                if (! Schema::hasColumn($tableName, 'number_delivery_notes_state_picked')) {
+                    $table->unsignedInteger('number_delivery_notes_state_picked')->default(0);
                 }
-                if (! Schema::hasColumn($tableName, 'number_delivery_notes_type_packing')) {
-                    $table->unsignedInteger('number_delivery_notes_type_packing')->default(0);
+                if (! Schema::hasColumn($tableName, 'number_delivery_notes_state_packing')) {
+                    $table->unsignedInteger('number_delivery_notes_state_packing')->default(0);
                 }
                 if (! Schema::hasColumn($tableName, 'number_delivery_notes_cancelled_at_state_picked')) {
                     $table->unsignedInteger('number_delivery_notes_cancelled_at_state_picked')->default(0);
@@ -45,11 +45,11 @@ return new class () extends Migration {
                 if (! Schema::hasColumn($tableName, 'number_delivery_notes_cancelled_at_state_packed')) {
                     $table->unsignedInteger('number_delivery_notes_cancelled_at_state_packed')->default(0);
                 }
-                if (! Schema::hasColumn($tableName, 'number_orders_type_picked')) {
-                    $table->unsignedInteger('number_orders_type_picked')->default(0);
+                if (! Schema::hasColumn($tableName, 'number_orders_state_picked')) {
+                    $table->unsignedInteger('number_orders_state_picked')->default(0);
                 }
-                if (! Schema::hasColumn($tableName, 'number_orders_type_packing')) {
-                    $table->unsignedInteger('number_orders_type_packing')->default(0);
+                if (! Schema::hasColumn($tableName, 'number_orders_state_packing')) {
+                    $table->unsignedInteger('number_orders_state_packing')->default(0);
                 }
             });
         }
@@ -78,12 +78,12 @@ return new class () extends Migration {
         foreach ($tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName) {
                 $columns = [
-                    'number_delivery_notes_type_picked',
-                    'number_delivery_notes_type_packing',
+                    'number_delivery_notes_state_picked',
+                    'number_delivery_notes_state_packing',
                     'number_delivery_notes_cancelled_at_state_picked',
                     'number_delivery_notes_cancelled_at_state_packed',
-                    'number_orders_type_picked',
-                    'number_orders_type_packing',
+                    'number_orders_state_picked',
+                    'number_orders_state_packing',
                 ];
 
                 foreach ($columns as $column) {

@@ -9,7 +9,8 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
+use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickedBay;
@@ -26,10 +27,13 @@ class SetPackedWithPickingBaysDeliveryNote extends OrgAction
             $pickedBay = PickedBay::find($modelData['picked_bay']);
         }
         if ($pickedBay) {
-            AttachTrolleyToDeliveryNote::run($trolley, $deliveryNote);
+            AttachDeliveryNoteToPickedBay::run($pickedBay, $deliveryNote);
         }
 
-        dd("maybe can copy from SetDeliveryNoteStateAsPacked. selected picking bay id: $pickingBay");
+        return UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+
+
+
     }
 
 

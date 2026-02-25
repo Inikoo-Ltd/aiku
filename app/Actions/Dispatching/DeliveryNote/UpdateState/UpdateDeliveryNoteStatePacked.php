@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 23 Feb 2023 16:47:00 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Created: Wed, 25 Feb 2026 11:40:43 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dispatching\DeliveryNote;
+namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\Packing\StorePacking;
@@ -20,7 +20,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
-class FinishPackDeliveryNote extends OrgAction
+class UpdateDeliveryNoteStatePacked extends OrgAction
 {
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;

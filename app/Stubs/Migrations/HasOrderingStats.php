@@ -61,8 +61,8 @@ trait HasOrderingStats
             $table->unsignedInteger('number_orders_handing_type_'.$case->snake())->default(0);
         }
 
-        $table->unsignedInteger('number_orders_type_picked')->default(0);
-        $table->unsignedInteger('number_orders_type_packing')->default(0);
+        $table->unsignedInteger('number_orders_state_picked')->default(0);
+        $table->unsignedInteger('number_orders_state_packing')->default(0);
 
         foreach (OrderStateEnum::cases() as $case) {
             if ($case->value != 'cancelled') {
@@ -94,8 +94,8 @@ trait HasOrderingStats
             $table->dropColumn('number_orders_handing_type_'.$case->snake());
         }
 
-        $table->dropColumn('number_orders_type_picked');
-        $table->dropColumn('number_orders_type_packing');
+        $table->dropColumn('number_orders_state_picked');
+        $table->dropColumn('number_orders_state_packing');
 
         foreach (OrderStateEnum::cases() as $case) {
             if ($case->value != 'cancelled') {
@@ -146,8 +146,8 @@ trait HasOrderingStats
             $table->unsignedInteger('number_delivery_notes_type_'.$case->snake())->default(0);
         }
 
-        $table->unsignedInteger('number_delivery_notes_type_picked')->default(0);
-        $table->unsignedInteger('number_delivery_notes_type_packing')->default(0);
+        $table->unsignedInteger('number_delivery_notes_state_picked')->default(0);
+        $table->unsignedInteger('number_delivery_notes_state_packing')->default(0);
 
         foreach (DeliveryNoteStateEnum::cases() as $case) {
             $table->unsignedInteger('number_delivery_notes_state_'.$case->snake())->default(0);

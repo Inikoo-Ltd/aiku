@@ -361,7 +361,7 @@ onMounted(() => {
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
 				<div class="flex items-center justify-between w-full">
 					<span class="text-sm text-gray-700 font-medium mx-2">
-						{{ trans("Picking View") }}
+						{{ trans("Worker View") }}
 					</span>
 					<ToggleSwitch v-model="pickingView">
 						<template #handle="{ checked }">

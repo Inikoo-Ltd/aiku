@@ -36,6 +36,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $picking_session_id
  * @property bool $status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \App\Models\Dispatching\DeliveryNote|null $deliveryNote
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\DeliveryNote> $deliveryNotes
  * @property-read Group $group
  * @property-read Organisation $organisation
