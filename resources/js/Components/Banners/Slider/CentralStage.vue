@@ -29,9 +29,16 @@ const getAlignClass = (align: string) => {
 <template>
     <component :is="data?.linkOfText ? 'a' : 'div'"
         v-if="(data?.titles && data.titles.length) || data?.title || data?.subtitle"
-        :href="`https://${removeHttps(data?.linkOfText)}`" target="_top" class="absolute inset-0 px-4 lg:px-6"
-        :class="[{ 'left-0 text-left': data?.textAlign == 'left', 'right-0 text-right': data?.textAlign == 'right' }]"
-        :style="`text-shadow : ${get(data, ['style', 'textShadow']) ? '2px 2px black;' : 'none'} `">
+        :href="`https://${removeHttps(data?.linkOfText)}`" target="_top"
+        class="absolute inset-0 flex flex-col px-4 lg:px-6" :class="[
+            data?.textVertical === 'top' ? 'justify-start pt-10' :
+                data?.textVertical === 'bottom' ? 'justify-end pb-10' :
+                    'justify-center',
+
+            data?.textAlign === 'left' ? 'items-start text-left' :
+                data?.textAlign === 'right' ? 'items-end text-right' :
+                    'items-center text-center'
+        ]" :style="`text-shadow : ${get(data, ['style', 'textShadow']) ? '2px 2px black;' : 'none'} `">
         <template v-if="data?.titles?.length">
             <!-- titles in card -->
             <div>
