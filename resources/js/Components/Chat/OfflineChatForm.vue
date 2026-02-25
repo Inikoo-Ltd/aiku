@@ -92,7 +92,9 @@ const submitOffline = async () => {
             <Textarea v-model="form.message" :placeholder="trans('Your message')" rows="4" required />
 
             <div v-if="error" class="text-xs text-red-600">{{ error }}</div>
-            <Button type="save" :label="loading ? 'Sending...' : 'Send offline message'" :icon="faPaperPlane"
+            <Button type="save" :label="loading
+                ? ctrans('Sending')
+                : ctrans('Send offline message')" :icon="faPaperPlane"
                 :disabled="loading || !form.name || !form.email || !form.message" class="justify-center"
                 @click="submitOffline" />
 

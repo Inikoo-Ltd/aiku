@@ -28,14 +28,21 @@ class CheckTiktokChannel
         $tiktokShop = Arr::get($tiktokUser->getAuthorizedShop(), 'data.shops');
 
         if (Arr::get($tiktokShop, '0')) {
-            $platformStatus       = true;
             $canConnectToPlatform = true;
             $existInPlatform      = true;
         }
 
-        $tiktokShop = collect($tiktokShop)
-            ->where('id', $tiktokUser->tiktok_shop_id)
-            ->first();
+        if (Arr::get($tiktokShop, '0') && $tiktokUser->tiktok_shop_id && $tiktokUser->tiktok_shop_chiper) {
+            $platformStatus       = true;
+        }
+
+        if($tiktokUser->tiktok_shop_id) {
+            $tiktokShop = collect($tiktokShop)
+                ->where('id', $tiktokUser->tiktok_shop_id)
+                ->first();
+        } else {
+            $tiktokShop = Arr::get($tiktokShop, '0');
+        }
 
         $data = [
             'name'                    => Arr::get($tiktokShop, 'name'),

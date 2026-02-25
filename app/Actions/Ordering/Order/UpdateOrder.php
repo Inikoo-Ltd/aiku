@@ -203,6 +203,7 @@ class UpdateOrder extends OrgAction
             'tax_category_id'         => ['sometimes', Rule::exists('tax_categories', 'id')],
             'shipping_zone_schema_id' => ['sometimes', 'nullable'],
             'shipping_zone_id'        => ['sometimes', 'nullable'],
+            'is_shipping_by_external'        => ['sometimes', 'nullable'],
         ];
 
 

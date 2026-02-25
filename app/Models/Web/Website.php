@@ -117,7 +117,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Snapshot|null $liveFamilySnapshot
+ * @property-read Snapshot|null $liveProductsSnapshot
  * @property-read Snapshot|null $liveSnapshot
+ * @property-read Snapshot|null $liveSubDepartmentSnapshot
  * @property-read Collection<int, \App\Models\Web\WebsiteLlmsTxt> $llmsTxt
  * @property-read Media|null $logo
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
@@ -308,6 +310,11 @@ class Website extends Model implements Auditable, HasMedia
         return $this->belongsTo(Snapshot::class, 'unpublished_sub_department_snapshot_id');
     }
 
+    public function liveSubDepartmentSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_sub_department_snapshot_id');
+    }
+
     public function unpublishedFamilySnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_family_snapshot_id');
@@ -326,6 +333,11 @@ class Website extends Model implements Auditable, HasMedia
     public function unpublishedProductsSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_products_snapshot_id');
+    }
+
+    public function liveProductsSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_products_snapshot_id');
     }
 
     public function liveSnapshot(): BelongsTo

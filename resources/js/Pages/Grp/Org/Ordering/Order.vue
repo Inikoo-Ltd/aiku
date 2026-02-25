@@ -63,8 +63,8 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy, 
-    faParachuteBox, 
+    faCopy,
+    faParachuteBox,
     faSortNumericDown,
     faMoneyCheckEditAlt,
     faReceipt
@@ -92,6 +92,7 @@ import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import error from "@/Components/Utils/Error.vue"
 import order from "@/Pages/Grp/Org/Ordering/Order.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import Toggle from "@/Components/Pure/Toggle.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -241,6 +242,10 @@ const props = defineProps<{
     payments: {}
     readonly?: boolean
     is_shop_external?: boolean
+    external_shop?: {
+        engine_value: string
+        engine_label: string
+    }
     attachments?: {}
     invoices?: {}
     attachmentRoutes?: {}
@@ -490,7 +495,8 @@ const confirm2 = (action) => {
 };
 
 //start: collection feature
-const isCollection = ref<boolean>(props.delivery_address_management.addresses.collection_address_id ? true : false)
+const isCollection = ref<boolean>(!!props.delivery_address_management.addresses.collection_address_id)
+const isShippingExternal = ref<boolean>(!!props.delivery_address_management.addresses.is_shipping_by_external)
 const collectionBy = ref<string>(props.box_stats?.shipping_notes ? 'thirdParty' : 'myself')
 const textValue = ref<string | null>(props.box_stats?.shipping_notes)
 const labelPercentage = ref("")
@@ -508,6 +514,26 @@ const updateCollection = async (e: Event) => {
         notify({
             title: trans("Something went wrong."),
             text: trans("Failed to update to collection"),
+            type: "error",
+        })
+    }
+}
+
+const updateShippingExternal = async (e: boolean) => {
+    // console.log('eee', e)
+    // const target = e.target as HTMLInputElement
+    // const payload = {
+	// 	is_shipping_by_external: e
+    // }
+    try {
+        router.patch(route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters), {
+            is_shipping_by_external: e
+        })
+    } catch (error) {
+        console.error(error)
+        notify({
+            title: trans("Something went wrong."),
+            text: trans("Failed to update shipping method"),
             type: "error",
         })
     }
@@ -1114,6 +1140,14 @@ const recalculateVat = async () => {
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
+            <div v-if="is_shop_external && external_shop" class="absolute -top-1 md:top-auto md:bottom-0.5 left-0 md:left-12 text-xxs">
+                <div v-if="external_shop?.engine_value === 'faire'" class="pb-px px-1 bg-black text-white">
+                    {{ external_shop?.engine_label }}
+                </div>
+                <div v-else class="pb-px px-1 bg-yellow-400">
+                    {{ external_shop?.engine_label }}
+                </div>
+            </div>
         </template>
 
         <template #button-replacement="{ action }">
@@ -1227,7 +1261,7 @@ const recalculateVat = async () => {
                 </Button>
 
             </div>
-            
+
             <!-- Button: Undo to basket -->
             <ModalConfirmationDelete
                 v-if="data?.data?.state === 'submitted'"
@@ -1306,7 +1340,7 @@ const recalculateVat = async () => {
                 </div>
 
                 <div class="space-y-0.5 pl-1">
-                    
+
                     <!-- Field: Client -->
                     <div v-if="box_stats?.customer_client" class="pl-1 pb-2 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer client')" class="flex-none">
@@ -1490,12 +1524,27 @@ const recalculateVat = async () => {
         <!-- end: Order Section -->
 
         <!-- Box: Payment/Invoices/Delivery Notes  -->
-        <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
+        <BoxStatPallet class="py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="">
+                    <div class="font-semibold xmb-2 text-base">
+                        {{ trans("Delivery") }}
+                        <span v-if="salesChannel" v-tooltip="trans('This order is from :salesChannel', { salesChannel: salesChannel.name})" class="font-normal text-sm opacity-70">({{ salesChannel.name }} <FontAwesomeIcon :icon="salesChannel.icon" class="" fixed-width aria-hidden="true" />)</span>
+                    </div>
+
+                    <!-- Toggle: Shipping External -->
+                    <div v-if="props.data?.data?.state !== 'dispatched' && !isCollection && is_shop_external"
+                        class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
+                        <FontAwesomeIcon icon='fal fa-truck' class='text-gray-400' fixed-width aria-hidden='true' />
+                        <Toggle
+                            v-model="isShippingExternal"
+                            @update:modelValue="updateShippingExternal"
+                        />
+                        <span class="text-sm text-gray-500">{{ trans("External Shipping") }}</span>
+                    </div>
 
                     <!-- Field: Billing -->
-                    <dl class="xmt-3 relative flex items-start w-full flex-none gap-x-1 py-1">
+                    <dl v-if="!is_shop_external" class="xmt-3 relative flex items-start w-full flex-none gap-x-1 py-1">
                         <!-- <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
