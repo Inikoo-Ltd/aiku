@@ -14,8 +14,12 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('shop_platform_stats', function (Blueprint $table) {
-            $table->unsignedInteger('number_orders_state_picked')->default(0)->after('number_orders_state_handling_blocked');
-            $table->unsignedInteger('number_orders_state_packing')->default(0)->after('number_orders_state_picked');
+            if (! Schema::hasColumn('shop_platform_stats', 'number_orders_state_picked')) {
+                $table->unsignedInteger('number_orders_state_picked')->default(0)->after('number_orders_state_handling_blocked');
+            }
+            if (! Schema::hasColumn('shop_platform_stats', 'number_orders_state_packing')) {
+                $table->unsignedInteger('number_orders_state_packing')->default(0)->after('number_orders_state_picked');
+            }
         });
     }
 
@@ -23,7 +27,12 @@ return new class () extends Migration {
     public function down(): void
     {
         Schema::table('shop_platform_stats', function (Blueprint $table) {
-            $table->dropColumn(['number_orders_state_picked', 'number_orders_state_packing']);
+            if (Schema::hasColumn('shop_platform_stats', 'number_orders_state_picked')) {
+                $table->dropColumn('number_orders_state_picked');
+            }
+            if (Schema::hasColumn('shop_platform_stats', 'number_orders_state_packing')) {
+                $table->dropColumn('number_orders_state_packing');
+            }
         });
     }
 };
