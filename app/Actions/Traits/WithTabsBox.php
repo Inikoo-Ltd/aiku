@@ -138,6 +138,26 @@ trait WithTabsBox
                         ]
                     ],
                     [
+                        'tab_slug'    => 'picked',
+                        'label'       => __('Picked'),
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_picked,
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PICKED->value],
+                        'information' => [
+                            'label' => $parent->orderHandlingStats?->{"orders_state_packed_amount$currency"},
+                            'type'  => 'currency'
+                        ]
+                    ],
+                    [
+                        'tab_slug'    => 'packing',
+                        'label'       => __('Packing'),
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_packing,
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PACKING->value],
+                        'information' => [
+                            'label' => $parent->orderHandlingStats?->{"orders_state_packed_amount$currency"},
+                            'type'  => 'currency'
+                        ]
+                    ],
+                    [
                         'tab_slug'    => 'packed',
                         'label'       => __('Packed'),
                         'value'       => $parent->orderHandlingStats?->number_orders_state_packed,
