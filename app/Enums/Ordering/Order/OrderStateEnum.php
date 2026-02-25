@@ -83,7 +83,7 @@ enum OrderStateEnum: string
                 ]
             ],
             'handling'         => [
-                'tooltip' => __('Handling'),
+                'tooltip' => __('Picking'),
                 'icon'    => 'fal fa-apple-crate',
                 'class'   => 'text-gray-500',
                 'color'   => 'slate',
@@ -114,7 +114,7 @@ enum OrderStateEnum: string
             ],
             'handling_blocked' => [
                 'tooltip' => __('Handling Blocked'),
-                'icon'    => 'fal fa-ban',
+                'icon'    => 'fal fa-snooze',
                 'class'   => 'text-red-500',
                 'color'   => 'slate',
                 'app'     => [

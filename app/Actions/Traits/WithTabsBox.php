@@ -103,12 +103,12 @@ trait WithTabsBox
                 'tabs'          => [
                     [
                         'tab_slug'    => 'in_warehouse',
-                        'label'       => __('Waiting to be picked'),
+                        'label'       => __('Ready to be picked'),
                         'value'       => $parent->orderHandlingStats?->number_orders_state_in_warehouse,
                         'type'        => 'number',
                         'icon_data'   => [
-                            'tooltip' => __('Waiting'),
-                            'icon'    => 'fal fa-snooze',
+                            'tooltip' => __('To do'),
+                            'icon'    => 'fal fa-clock',
                         ],
                         'information' => [
                             'label' => $parent->orderHandlingStats?->{"orders_state_in_warehouse_amount$currency"},
@@ -128,7 +128,7 @@ trait WithTabsBox
                     ],
                     [
                         'tab_slug'    => 'handling_blocked',
-                        'label'       => __('Picking Blocked'),
+                        'label'       => __('Waiting'),
                         'value'       => $parent->orderHandlingStats?->number_orders_state_handling_blocked,
                         'type'        => 'number',
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
