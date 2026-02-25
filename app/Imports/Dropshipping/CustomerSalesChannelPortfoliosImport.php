@@ -49,12 +49,11 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
         $rowData = $row->only($fields)->all();
 
         $modelData = [
-            'sku' => $rowData['sku'],
-            // 'customer_product_name' => $rowData['title']
+            'sku' => $rowData['sku']
         ];
 
         try {
-            $product = Product::where('code', $modelData['sku'])->first();
+            $product = Product::where('shop_id', $this->customerSalesChannel->shop_id)->where('code', $modelData['sku'])->first();
 
             if (! $product->is_for_sale) {
                 throw ValidationException::withMessages(['sku' => 'Product is not for sale.']);
