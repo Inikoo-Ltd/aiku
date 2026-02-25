@@ -143,7 +143,7 @@ trait WithTabsBox
                         'value'       => $parent->orderHandlingStats?->number_orders_state_picked,
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PICKED->value],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_picke_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_picked_amount$currency"},
                             'type'  => 'currency'
                         ]
                     ],
