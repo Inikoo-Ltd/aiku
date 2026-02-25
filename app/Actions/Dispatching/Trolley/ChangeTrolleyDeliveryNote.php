@@ -1,37 +1,35 @@
 <?php
 
 /*
- * Author: Vika Aqordi
- * Created on 19-02-2026-16h-37m
- * Github: https://github.com/aqordeon
- * Copyright: 2026
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 25 Feb 2026 16:10:39 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Dispatching\DeliveryNote;
+namespace App\Actions\Dispatching\Trolley;
 
-use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Trolley;
-use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class ChangeTrolleyDeliveryNote extends OrgAction
 {
-    public function handle(DeliveryNote $deliveryNote, User $user, array $modelData): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
-        dd($modelData);
-
-        // Code below will result add trolley, instead of replace trollley
         $trolley = null;
         if (Arr::has($modelData, 'trolley') && $modelData['trolley']) {
             $trolley = Trolley::find($modelData['trolley']);
         }
 
         if ($trolley) {
-            AttachTrolleyToDeliveryNote::run($trolley, $deliveryNote);
+            SyncDeliveryNoteTrolleys::run($deliveryNote, [
+                'trolleys' => [
+                    $trolley->id
+                ]
+            ]);
         }
 
         return $deliveryNote;
@@ -42,6 +40,7 @@ class ChangeTrolleyDeliveryNote extends OrgAction
     {
         return [
             'trolley' => [
+                'required',
                 'nullable',
                 'integer',
                 Rule::exists('trolleys', 'id')->where('organisation_id', $this->organisation->id)
@@ -52,7 +51,7 @@ class ChangeTrolleyDeliveryNote extends OrgAction
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
-        $this->handle($deliveryNote, $request->user(), $this->validatedData);
+        $this->handle($deliveryNote, $this->validatedData);
     }
 
 
