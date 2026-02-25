@@ -63,9 +63,9 @@ class DashboardMasterShopSalesInGroupResource extends JsonResource
             $registrationsColumns,
             $this->getDashboardColumnsFromArray($data, [
                 'registrations_delta',
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
+                'sales_grp_currency_external',
+                'sales_grp_currency_external_minified',
+                'sales_grp_currency_external_delta',
             ])
         );
 

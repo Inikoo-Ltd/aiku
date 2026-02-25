@@ -32,9 +32,9 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
         $fields = [
             'refunds',
             'invoices',
-            'sales',
-            'sales_org_currency',
-            'sales_grp_currency',
+            'sales_external',
+            'sales_org_currency_external',
+            'sales_grp_currency_external',
         ];
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
@@ -74,9 +74,9 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
 
-                'sales_org_currency',
-                'sales_org_currency_minified',
-                'sales_org_currency_delta',
+                'sales_org_currency_external',
+                'sales_org_currency_external_minified',
+                'sales_org_currency_external_delta',
             ];
         } else {
             $columnsConfig = [
@@ -88,9 +88,9 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
 
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
+                'sales_grp_currency_external',
+                'sales_grp_currency_external_minified',
+                'sales_grp_currency_external_delta',
             ];
         }
 
@@ -110,13 +110,13 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
         );
 
         if ($parentType === 'Organisation') {
-            $columns['sales'] = $columns['sales_org_currency'];
-            $columns['sales_minified'] = $columns['sales_org_currency_minified'];
-            $columns['sales_delta'] = $columns['sales_org_currency_delta'];
+            $columns['sales_external'] = $columns['sales_org_currency_external'];
+            $columns['sales_external_minified'] = $columns['sales_org_currency_external_minified'];
+            $columns['sales_external_delta'] = $columns['sales_org_currency_external_delta'];
         } else {
-            $columns['sales_org_currency'] = $columns['sales_grp_currency'];
-            $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
-            $columns['sales_org_currency_delta'] = $columns['sales_grp_currency_delta'];
+            $columns['sales_org_currency_external'] = $columns['sales_grp_currency_external'];
+            $columns['sales_org_currency_external_minified'] = $columns['sales_grp_currency_external_minified'];
+            $columns['sales_org_currency_external_delta'] = $columns['sales_grp_currency_external_delta'];
         }
 
         return [

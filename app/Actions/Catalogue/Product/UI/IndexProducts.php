@@ -72,9 +72,9 @@ class IndexProducts extends OrgAction
                 timeSeriesRecordsTable: 'asset_time_series_records',
                 foreignKey: 'asset_id',
                 aggregateColumns: [
-                    'customers_invoiced' => 'customers_invoiced',
-                    'sales_grp_currency' => 'sales',
-                    'invoices'           => 'invoices'
+                    'customers_invoiced'          => 'customers_invoiced',
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices'
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
@@ -84,9 +84,9 @@ class IndexProducts extends OrgAction
 
             $selects[] = $timeSeriesData['selectRaw']['customers_invoiced'];
             $selects[] = $timeSeriesData['selectRaw']['customers_invoiced_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
@@ -127,7 +127,7 @@ class IndexProducts extends OrgAction
                 'department_slug',
                 'family_slug',
                 'customers_invoiced',
-                'sales',
+                'sales_grp_currency_external',
                 'invoices',
             ])
             ->allowedFilters([$globalSearch])
@@ -185,8 +185,8 @@ class IndexProducts extends OrgAction
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customers_invoiced', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'customers_invoiced_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: true, align: 'right')
-                ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                 ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
         };

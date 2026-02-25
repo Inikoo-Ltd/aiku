@@ -62,11 +62,11 @@ class IndexPlatforms extends OrgAction
             timeSeriesRecordsTable: 'platform_time_series_records',
             foreignKey: 'platform_id',
             aggregateColumns: [
-                'channels'           => 'channels',
-                'customers'          => 'customers',
-                'portfolios'         => 'portfolios',
-                'customer_clients'   => 'customer_clients',
-                'sales_grp_currency' => 'sales',
+                'channels'                    => 'channels',
+                'customers'                   => 'customers',
+                'portfolios'                  => 'portfolios',
+                'customer_clients'            => 'customer_clients',
+                'sales_grp_currency_external' => 'sales_grp_currency_external',
             ],
             frequency: TimeSeriesFrequencyEnum::DAILY->value,
             includeLY: false,
@@ -79,10 +79,10 @@ class IndexPlatforms extends OrgAction
         $selects[] = $timeSeriesData['selectRaw']['customers'];
         $selects[] = $timeSeriesData['selectRaw']['portfolios'];
         $selects[] = $timeSeriesData['selectRaw']['customer_clients'];
-        $selects[] = $timeSeriesData['selectRaw']['sales'];
+        $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
 
         return $queryBuilder
-            ->allowedSorts(['id', 'code', 'slug', 'name', 'type', 'channels', 'customers', 'portfolios', 'customer_clients', 'sales'])
+            ->allowedSorts(['id', 'code', 'slug', 'name', 'type', 'channels', 'customers', 'portfolios', 'customer_clients', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -103,7 +103,7 @@ class IndexPlatforms extends OrgAction
                 ->column(key: 'customers', label: __('Customers'), canBeHidden: false, sortable: true)
                 ->column(key: 'portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true)
                 ->column(key: 'customer_clients', label: __('Clients'), canBeHidden: false, sortable: true)
-                ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right');
+                ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right');
         };
     }
 
