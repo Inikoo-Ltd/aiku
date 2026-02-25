@@ -12,6 +12,7 @@ use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
 use App\Models\Analytics\AikuSection;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\PickingRoute;
+use App\Models\Dispatching\Trolley;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;

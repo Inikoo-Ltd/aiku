@@ -28,7 +28,7 @@ class OrganisationHydratePickedBays implements ShouldBeUnique
     {
         $allPickedBays = $organisation->pickedBays()->count();
         $currentPickedBays = $organisation->pickedBays()->where('status', true)->count();
-        $usedPickedBays = $organisation->pickedBays()->where('status', true)->whereNotNull('current_delivery_note_id')->count();
+        $usedPickedBays    = $organisation->pickedBays()->where('status', true)->where('number_delivery_notes', '>', 0)->count();
 
 
         $stats = [

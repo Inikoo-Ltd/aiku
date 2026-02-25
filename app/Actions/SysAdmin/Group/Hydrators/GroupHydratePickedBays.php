@@ -22,23 +22,21 @@ class GroupHydratePickedBays implements ShouldBeUnique
 
     public function getJobUniqueId(Group $group): string
     {
-        return (string) $group->id;
+        return (string)$group->id;
     }
 
     public function handle(Group $group): void
     {
-        $allPickedBays = $group->pickedBays()->count();
+        $allPickedBays     = $group->pickedBays()->count();
         $currentPickedBays = $group->pickedBays()->where('status', true)->count();
-        $usedPickedBays = $group->pickedBays()->where('status', true)
-            ->whereNotNull('current_delivery_note_id')->count();
+        $usedPickedBays    = $group->pickedBays()->where('status', true)->where('number_delivery_notes', '>', 0)->count();
 
 
         $stats = [
-            'number_current_picked_bays' => $currentPickedBays,
+            'number_current_picked_bays'        => $currentPickedBays,
             'number_current_picked_bays_in_use' => $usedPickedBays,
-            'number_picked_bays' => $allPickedBays
+            'number_picked_bays'                => $allPickedBays
         ];
-
 
 
         $group->inventoryStats()->update($stats);
