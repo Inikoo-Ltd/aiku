@@ -44,7 +44,7 @@ class AttendanceAdjustmentResource extends JsonResource
             'attachments'         => $this->getMedia('attachments')?->map(fn ($media) => [
                 'id'   => $media->id,
                 'name' => $media->file_name,
-                'url'  => $media->getUrl(),
+                'url'  => route('grp.media.download', ['media' => $media->ulid]),
             ]),
         ];
     }
