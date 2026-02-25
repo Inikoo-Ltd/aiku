@@ -829,6 +829,12 @@ const isDownloadingExtendedProperties = ref(false)
 const extendedColumns = [
 	{ key: "product_code", label: "Product code" },
 	{ key: "product_user_reference", label: "Product user reference" },
+	{ key: "department_code", label: "Department code" },
+	{ key: "department_name", label: "Department name" },
+	{ key: "subdepartment_code", label: "Sub Department code" },
+	{ key: "subdepartment_name", label: "Sub Department name" },
+	{ key: "family_code", label: "Family code" },
+	{ key: "family_name", label: "Family name" },
 	{ key: "product_name", label: "Product name" },
 	{ key: "materials_ingredients", label: "Materials/Ingredients" },
 	{ key: "unit_dimensions", label: "Unit dimensions" },
@@ -840,8 +846,12 @@ const extendedColumns = [
 	{ key: "hts_us", label: "HTS US" },
 	{ key: "data_updated", label: "Data updated" },
 ]
-const selectedExtendedColumns = ref<string[]>([])
-const selectedProductStates = ref<string[]>([])
+
+const selectedExtendedColumns = ref<string[]>(
+	extendedColumns.map((c) => c.key)
+)
+
+const selectedProductStates = ref<string[]>(["active"])
 const selectedProductAvailibility = ref<string[]>([])
 const excludedColumns = computed(() => {
 	return extendedColumns.filter((col) => !selectedExtendedColumns.value.includes(col.key))
@@ -921,94 +931,102 @@ const layout = inject("layout", layoutStructure)
 						class="h-9 px-3 py-0 border-0 rounded-none border-r" />
 				</a>
 				<Button
-					@click="(e) => _export_popover?.toggle(e)"
+					@click="(e : MouseEvent) => _export_popover?.toggle(e)"
 					v-tooltip="trans('Other Export Options')"
 					:icon="faEllipsisV"
 					class="h-9 px-2 py-0 border-0 rounded-none border-r"
 					type="tertiary" />
 				<Popover ref="_export_popover">
-					<div class="w-64 relative">
-						<div class="text-sm mb-2">
-							{{ trans("Select Columns that you need to Export") }}:
-						</div>
-						<div class="flex flex-col gap-y-2">
-							<div class="mt-3 border-t pt-2 space-y-2 text-sm">
-								<div class="font-medium">
-									{{ trans("Selected Columns") }}
-								</div>
-
-								<label
-									v-for="col in extendedColumns.filter((c) =>
-										selectedExtendedColumns.includes(c.key)
-									)"
-									:key="col.key"
-									class="flex items-center gap-2 cursor-pointer">
-									<input
-										type="checkbox"
-										:value="col.key"
-										v-model="selectedExtendedColumns" />
-									{{ trans(col.label) }}
-								</label>
-							</div>
-						</div>
-						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
-							<div class="font-medium">
-								{{ trans("Excluded Columns") }}
-							</div>
-
-							<label
-								v-for="col in excludedColumns"
-								:key="col.key"
-								class="flex items-center gap-2 cursor-pointer opacity-70">
-								<input
-									type="checkbox"
-									:value="col.key"
-									v-model="selectedExtendedColumns" />
-								{{ trans(col.label) }}
-							</label>
-						</div>
-						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
-							<div class="font-medium">
-								{{ trans("Product State") }}
-							</div>
-
-							<label
-								v-for="state in productStates"
-								:key="state.key"
-								class="flex items-center gap-2 cursor-pointer opacity-70">
-								<input
-									type="checkbox"
-									:value="state.key"
-									v-model="selectedProductStates" />
-								{{ trans(state.label) }}
-							</label>
-						</div>
-						<div class="mt-3 border-t pt-2 space-y-2 text-sm">
-							<div class="font-medium">
-								{{ trans("Product Sale Status") }}
-							</div>
-
-							<label
-								v-for="availibility in productAvailibility"
-								:key="availibility.key"
-								class="flex items-center gap-2 cursor-pointer opacity-70">
-								<input
-									type="checkbox"
-									:value="availibility.key"
-									v-model="selectedProductAvailibility" />
-								{{ trans(availibility.label) }}
-							</label>
-						</div>
-						<div class="mt-3 border-t pt-2 px-0 space-y-2 text-sm">
-							<Button
-								:loading="isDownloadingExtendedProperties"
-								:disabled="isDownloadingExtendedProperties"
-								type="primary"
-								class="w-full !px-3 !py-2 !justify-center"
-								@click="onDownloadExtendedProperties"
-								:label="trans('Export Extended Properties')" />
-						</div>
-					</div>
+    				<div class="w-72 flex flex-col max-h-[75vh] bg-white rounded-md shadow-lg">
+					
+    				    <div class="px-4 py-3 border-b bg-gray-50 flex justify-between items-center sticky top-0 z-10">
+    				        <span class="font-semibold text-sm text-gray-700">{{ trans("Export Options") }}</span>
+    				        <button @click="toggleSelectAll" class="text-xs text-blue-600 hover:underline font-medium">
+    				            {{ allSelected ? trans('Deselect All') : trans('Select All') }}
+    				        </button>
+    				    </div>
+					
+    				    <div class="p-4 overflow-y-auto space-y-5 text-sm">
+						
+    				        <div>
+    				            <div class="font-medium text-gray-800 mb-2">
+    				                {{ trans("Columns to Export") }}
+    				            </div>
+    				            <div class="space-y-2">
+    				                <label
+    				                    v-for="col in extendedColumns"
+    				                    :key="col.key"
+    				                    class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+    				                >
+    				                    <input
+    				                        type="checkbox"
+    				                        :value="col.key"
+    				                        v-model="selectedExtendedColumns"
+    				                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    				                    />
+    				                    <span :class="{'opacity-60': !selectedExtendedColumns.includes(col.key)}">
+    				                        {{ trans(col.label) }}
+    				                    </span>
+    				                </label>
+    				            </div>
+    				        </div>
+						
+    				        <div class="border-t pt-4">
+    				            <div class="font-medium text-gray-800 mb-2">
+    				                {{ trans("Product State") }}
+    				            </div>
+    				            <div class="space-y-2">
+    				                <label
+    				                    v-for="state in productStates"
+    				                    :key="state.key"
+    				                    class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+    				                >
+    				                    <input
+    				                        type="checkbox"
+    				                        :value="state.key"
+    				                        v-model="selectedProductStates"
+    				                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    				                    />
+    				                    <span>{{ trans(state.label) }}</span>
+    				                </label>
+    				            </div>
+    				        </div>
+						
+    				        <div class="border-t pt-4">
+    				            <div class="font-medium text-gray-800 mb-2">
+    				                {{ trans("Product Sale Status") }}
+    				            </div>
+    				            <div class="space-y-2">
+    				                <label
+    				                    v-for="availibility in productAvailibility"
+    				                    :key="availibility.key"
+    				                    class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+    				                >
+    				                    <input
+    				                        type="checkbox"
+    				                        :value="availibility.key"
+    				                        v-model="selectedProductAvailibility"
+    				                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+    				                    />
+    				                    <span>{{ trans(availibility.label) }}</span>
+    				                </label>
+    				            </div>
+    				        </div>
+						
+    				    </div>
+					
+    				    <div class="p-3 border-t bg-white sticky bottom-0 z-10">
+    				        <Button
+    				            :loading="isDownloadingExtendedProperties"
+    				            :disabled="isDownloadingExtendedProperties"
+    				            type="primary"
+    				            class="w-full !px-3 !py-2 !justify-center"
+    				            @click="onDownloadExtendedProperties"
+    				            :label="trans('Export Extended Properties')"
+    				        />
+    				    </div>
+					
+    				</div>
 				</Popover>
 
 				<a
