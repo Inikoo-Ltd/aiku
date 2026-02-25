@@ -102,7 +102,7 @@ const submitSelectBay = (bayId?: number|null) => {
 <template>
     <div>
         <Button
-            :label="trans('Finish picking')"
+            :label="trans('Finish pickingxx')"
             @click="() => isOpenModal = true" 
             icon="fas fa-monument"
         />
