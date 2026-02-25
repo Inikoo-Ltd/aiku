@@ -30,6 +30,8 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
         $layout = Arr::pull($modelData, 'layout');
 
         list($layout, $slides) = ParseBannerLayout::run($layout);
+        // Set order based on ulid => index | Do not remove
+        data_set($layout, 'orders', array_flip(array_keys($slides)));
 
         data_set($modelData, 'layout', $layout);
 

@@ -108,7 +108,8 @@ switch (props.size) {
 // Auto add label for several conditions
 const getActionLabel = (label: string | undefined) => {
   if (label) {
-    return trans(label);
+    return label
+    // return trans(label);
   } else {
     switch (props.style || props.type) {
       case "edit":

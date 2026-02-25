@@ -39,7 +39,7 @@ const getFormValue = (data: any, fieldName: string | string[]) => {
 
 const cornersValue = computed({
     get() {
-        return props.modelValue
+        return props.modelValue || {}
     },
     set(val) {
         console.log('finalData to emit:', val)
@@ -52,45 +52,45 @@ const cornersValue = computed({
 const section = ref<any>(null)
 
 
-const cornersSection = ref([
+const cornersSection = computed(() => [
     {
         label: trans("Top left"),
-        valueForm: get(cornersValue.value, [`topLeft`]),
+        valueForm: get(cornersValue.value, "topLeft"),
         id: "topLeft",
     },
     {
         label: trans("Top middle"),
-        valueForm: get(cornersValue.value, [`topMiddle`]) || get(cornersValue.value, [`topBottom`]),
+        valueForm: get(cornersValue.value, "topMiddle"),
         id: "topMiddle",
     },
     {
         label: trans("Top right"),
-        valueForm: get(cornersValue.value, [`topRight`]),
+        valueForm: get(cornersValue.value, "topRight"),
         id: "topRight",
     },
     {
-        label: trans("bottom left"),
-        valueForm: get(cornersValue.value, [`bottomLeft`]),
+        label: trans("Bottom left"),
+        valueForm: get(cornersValue.value, "bottomLeft"),
         id: "bottomLeft",
     },
     {
-        label: trans("Bottom Middle"),
-        valueForm: get(cornersValue.value, [`bottomMiddle`]),
+        label: trans("Bottom middle"),
+        valueForm: get(cornersValue.value, "bottomMiddle"),
         id: "bottomMiddle",
     },
     {
         label: trans("Bottom right"),
-        valueForm: get(cornersValue.value, [`bottomRight`]),
+        valueForm: get(cornersValue.value, "bottomRight"),
         id: "bottomRight",
     },
-]);
+])
 
 const cornerSideClick = (value: any) => {
     section.value = cloneDeep(value)
 }
 
 const updateFormValue = (newValue: any) => {
-    if(!section.value) return;
+    if (!section.value) return;
     const newCorners = {
         ...cornersValue.value,
         [section.value.id]: newValue,
@@ -124,14 +124,14 @@ const clear = (sec: any) => {
                                 ? 'bg-amber-100 border-amber-400 text-amber-700 shadow-inner'
                                 : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-amber-50 hover:border-amber-300 hover:text-gray-700 cursor-pointer'
                     ]" @click="
-            () => {
-                common &&
-                    get(common, ['corners', cornerSection.id]) &&
-                    !isNull(common.corners[cornerSection.id])
-                    ? null
-                    : cornerSideClick(cornerSection)
-            }
-        ">
+                        () => {
+                            common &&
+                                get(common, ['corners', cornerSection.id]) &&
+                                !isNull(common.corners[cornerSection.id])
+                                ? null
+                                : cornerSideClick(cornerSection)
+                        }
+                    ">
                     <!-- locked -->
                     <div v-if="
                         common &&
@@ -152,12 +152,8 @@ const clear = (sec: any) => {
 
         <!-- editor -->
         <div v-if="section" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <CornersType 
-                :modelValue="modelValue[section.id]" 
-                :fieldData="fieldData" 
-                @update:modelValue="updateFormValue" 
-                @clear="clear" 
-            />
+            <CornersType :modelValue="modelValue?.[section.id] || {}" :fieldData="fieldData"
+                @update:modelValue="updateFormValue" @clear="clear" />
         </div>
     </div>
 </template>

@@ -23,6 +23,7 @@ use App\Actions\CRM\ChatSession\TranslateSessionMessages;
 use App\Actions\CRM\ChatSession\GetChatAgentSpecializations;
 use App\Actions\CRM\ChatSession\GetChatStatus;
 use App\Actions\CRM\ChatSession\StoreOfflineMessage;
+use App\Actions\CRM\ChatSession\GetAgentUnreadMessagesSummary;
 
 Route::get('/ping', function () {
     return 'pong';
@@ -51,6 +52,7 @@ Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail:
 
 Route::get('agents', GetChatAgents::class)->name('agents.index');
 Route::get('/agents/specializations', GetChatAgentSpecializations::class)->name('agent.specializations');
+Route::get('/users/{id}/unread-messages', GetAgentUnreadMessagesSummary::class)->name('user.unread-messages');
 
 Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
     ->name('agents.store');

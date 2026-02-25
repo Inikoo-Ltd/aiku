@@ -141,6 +141,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property ShopTypeEnum|null $shop_type
  * @property string|null $tracking_number for search purposes
  * @property array<array-key, mixed> $shipping_data for UI purposes
+ * @property bool $is_shipping_by_external
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -187,23 +188,24 @@ class DeliveryNote extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'               => 'array',
-        'parcels'            => 'array',
-        'state'              => DeliveryNoteStateEnum::class,
-        'type'               => DeliveryNoteTypeEnum::class,
-        'shop_type'          => ShopTypeEnum::class,
-        'date'               => 'datetime',
-        'shipping_data'      => 'array',
-        'order_submitted_at' => 'datetime',
-        'assigned_at'        => 'datetime',
-        'picking_at'         => 'datetime',
-        'picked_at'          => 'datetime',
-        'packing_at'         => 'datetime',
-        'packed_at'          => 'datetime',
-        'dispatched_at'      => 'datetime',
-        'cancelled_at'       => 'datetime',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'data'                    => 'array',
+        'parcels'                 => 'array',
+        'state'                   => DeliveryNoteStateEnum::class,
+        'type'                    => DeliveryNoteTypeEnum::class,
+        'shop_type'               => ShopTypeEnum::class,
+        'date'                    => 'datetime',
+        'shipping_data'           => 'array',
+        'order_submitted_at'      => 'datetime',
+        'assigned_at'             => 'datetime',
+        'picking_at'              => 'datetime',
+        'picked_at'               => 'datetime',
+        'packing_at'              => 'datetime',
+        'packed_at'               => 'datetime',
+        'dispatched_at'           => 'datetime',
+        'cancelled_at'            => 'datetime',
+        'fetched_at'              => 'datetime',
+        'last_fetched_at'         => 'datetime',
+        'is_shipping_by_external' => 'boolean'
     ];
 
     protected $attributes = [

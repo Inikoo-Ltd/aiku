@@ -7,7 +7,13 @@ import { ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const props = defineProps<{
-    webpage: {}
+    webpage: {
+        id: number
+        luigi_data: {
+            luigisbox_tracker_id: string
+            luigisbox_private_key: string
+        }
+    }
 }>()
 
 
@@ -51,26 +57,30 @@ const aaa = async () => {
 </script>
 
 <template>
-
-    <Button
+    <div
         v-if="webpage?.luigi_data?.luigisbox_tracker_id"
         @click="aaa"
-        icon="fal fa-search"
-        method="post"
-        :type="webpage?.luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'"
-        full
-        :loading="isLoadingReindexing"
+        class="w-full"
     >
-        <template #label>
-            <span class="text-xs">
-                {{ trans('Reindex Webpage Search') }}
-            </span>
-        </template>
-        <template #iconRight>
-            <div v-if="!webpage?.luigi_data?.luigisbox_private_key"
-                v-tooltip="trans('Please input Luigi Private Key do start reindexing')" class="text-amber-500">
-                <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
-            </div>
-        </template>
-    </Button>
+        <slot :isLoadingReindexing>
+            <Button
+                icon="fal fa-search"
+                :type="webpage?.luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'"
+                full
+                :loading="isLoadingReindexing"
+            >
+                <template #label>
+                    <span class="text-xs">
+                        {{ trans('Reindex Webpage Search') }}
+                    </span>
+                </template>
+                <template #iconRight>
+                    <div v-if="!webpage?.luigi_data?.luigisbox_private_key"
+                        v-tooltip="trans('Please input Luigi Private Key do start reindexing')" class="text-amber-500">
+                        <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                    </div>
+                </template>
+            </Button>
+        </slot>
+    </div>
 </template>

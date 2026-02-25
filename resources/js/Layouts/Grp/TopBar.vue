@@ -281,7 +281,7 @@ const label = {
                                 />
 
                                 <transition>
-                                    <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y-0 divide-gray-400 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                    <MenuItems class="absolute left-0 mt-2 w-64 origin-top-right divide-y-0 divide-gray-400 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                                         <MenuItem v-slot="{ active }" as="div"
                                                 @click="() => router.visit(route('grp.org.shops.index', {
                                                     organisation: layoutStore.currentParams.organisation
@@ -297,16 +297,18 @@ const label = {
 
                                         <MenuPopoverList
                                             v-if="layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length"
-                                            icon="fal fa-store-alt"
+                                            xicon="fal fa-store-alt"
                                             :navKey="'shop'"
                                             :closeMenu="closeMenu"
+                                            class="pt-1"
                                         />
 
                                         <MenuPopoverList
                                             v-if="layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length"
-                                            icon="fal fa-hand-holding-box"
+                                            xicon="fal fa-hand-holding-box"
                                             :navKey="'fulfilment'"
                                             :closeMenu="closeMenu"
+                                            class="pb-1"
                                         />
                                     </MenuItems>
                                 </transition>

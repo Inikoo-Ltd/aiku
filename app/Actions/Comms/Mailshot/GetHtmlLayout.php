@@ -24,7 +24,12 @@ class GetHtmlLayout extends OrgAction
 
     public function handle(Mailshot|EmailBulkRun $parent): string
     {
-        return $parent->email->liveSnapshot->compiled_layout;
+        if ($parent instanceof EmailBulkRun) {
+            $compiledLayout = $parent->outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
+        } else {
+            $compiledLayout = $parent->email->liveSnapshot->compiled_layout;
+        }
+        return $compiledLayout;
     }
 
     public function extractLayout(Mailshot|EmailBulkRun $parent, DispatchedEmail $dispatchedEmail, $unsubscribeUrl): string

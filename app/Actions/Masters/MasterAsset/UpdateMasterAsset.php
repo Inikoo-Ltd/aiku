@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
@@ -237,6 +238,14 @@ class UpdateMasterAsset extends OrgAction
             MasterAssetHydrateAssets::run($masterAsset->id);
         }
 
+
+        if ($masterAsset->wasChanged('follow_trade_unit_media') && $masterAsset->follow_trade_unit_media && $masterAsset->is_single_trade_unit) {
+            CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+            foreach ($masterAsset->products as $product) {
+                CloneProductImagesFromTradeUnits::run($product);
+            }
+        }
+
         return $masterAsset;
     }
 
@@ -282,6 +291,7 @@ class UpdateMasterAsset extends OrgAction
             'description_extra_i8n'        => ['sometimes', 'array'],
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
+            'follow_trade_unit_media'      => ['sometimes', 'boolean'],
             'tax_category'                 => ['sometimes', 'array']
         ];
 

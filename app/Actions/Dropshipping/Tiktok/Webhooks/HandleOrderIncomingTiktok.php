@@ -9,9 +9,11 @@
 namespace App\Actions\Dropshipping\Tiktok\Webhooks;
 
 use App\Actions\Dropshipping\Tiktok\Order\ShowTiktokOrderApi;
-use App\Actions\Dropshipping\Tiktok\Order\StoreTiktokOrder;
+use App\Actions\Dropshipping\Tiktok\Order\ValidateIncomingTiktokOrder;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\TiktokUser;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,16 +30,22 @@ class HandleOrderIncomingTiktok
     {
         DB::transaction(function () use ($modelData) {
             $shopId = Arr::get($modelData, 'shop_id');
-            $tiktokUsers = TiktokUser::where('data->authorized_shop->id', $shopId)->get();
+            $tiktokUser = TiktokUser::where('tiktok_shop_id', $shopId)->firstOrFail();
 
             $payload = Arr::get($modelData, 'data');
             $orderId = Arr::get($payload, 'order_id');
 
-            foreach ($tiktokUsers as $tiktokUser) {
-                $orders = ShowTiktokOrderApi::run($tiktokUser, $orderId);
-                foreach (Arr::get($orders, 'data.orders') as $order) {
-                    if (Arr::get($order, 'status') === 'AWAITING_SHIPMENT') {
-                        StoreTiktokOrder::run($tiktokUser, $order);
+            $orders = ShowTiktokOrderApi::run($tiktokUser, $orderId);
+
+            foreach (Arr::get($orders, 'data.orders', []) as $order) {
+                if (Arr::get($order, 'status') === 'AWAITING_SHIPMENT') {
+                    ValidateIncomingTiktokOrder::run($tiktokUser, $order);
+                } elseif (Arr::get($order, 'status') === 'CANCELLED') {
+                    $orderToBeCancel = Order::where('customer_id', $tiktokUser->customer_id)
+                        ->where('platform_order_id', Arr::get($order, 'id'))
+                        ->first();
+                    if ($orderToBeCancel) {
+                        CancelOrder::run($orderToBeCancel);
                     }
                 }
             }

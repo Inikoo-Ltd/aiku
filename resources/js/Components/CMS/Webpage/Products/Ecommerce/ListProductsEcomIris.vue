@@ -397,6 +397,7 @@ const responsiveGridClass = computed(() => {
 
     if(layout.rightbasket?.show) 
     {
+        if(props.screenType == 'mobile') return `grid-cols-2`
         return `grid-cols-3`
     }
     return `grid-cols-${count}`

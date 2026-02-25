@@ -41,6 +41,7 @@ const addressFieldData = {
         country_id: 48,
     },
     options: props.countriesAddressData,
+    isWithRequiredField: true,
 }
 
 
@@ -83,7 +84,7 @@ const toggleInterest = (interestValue: string) => {
         </label>
 
         <div class="mt-2">
-            <IconField>
+            <IconField :class="form.errors.contact_name ? 'errorShake' : ''">
                 <InputIcon>
                     <FontAwesomeIcon :icon="faUser" />
                 </InputIcon>
@@ -169,7 +170,7 @@ const toggleInterest = (interestValue: string) => {
             >{{ trans("Website") }}</label
         >
         <div class="mt-2">
-            <IconField class="w-full">
+            <IconField class="w-full" :class="form.errors.contact_website ? 'errorShake' : ''">
                 <InputIcon>
                     <FontAwesomeIcon :icon="faGlobe" />
                 </InputIcon>

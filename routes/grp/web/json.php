@@ -12,6 +12,7 @@ use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Collection\Json\GetCollectionsForWorkshop;
 use App\Actions\Catalogue\Collection\Json\GetWebpagesInCollection;
+use App\Actions\Catalogue\Product\Json\GetAllTradeUnitsInProduct;
 use App\Actions\Catalogue\Product\Json\GetExternalProductTradeUnits;
 use App\Actions\Catalogue\Product\Json\GetGrpProductOfVariant;
 use App\Actions\Catalogue\Product\Json\GetLastOrderedProducts;
@@ -93,6 +94,7 @@ use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterS
 use App\Actions\Ordering\Order\GetChargesInOrder;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
+use App\Actions\SysAdmin\Group\Json\GetAllTradeUnitsInGroup;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
 use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
 use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
@@ -233,9 +235,9 @@ Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-hist
 
 Route::get('master-product-category/{masterProductCategory:id}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
-Route::get('master-product-category/{masterProductCategory:id}/all-trade-units', GetAllTradeUnits::class)->name('master-product-category.all-trade-units')->withoutScopedBindings();
+Route::get('master-product-category/all-trade-units', GetAllTradeUnitsInGroup::class)->name('master_product_category.all_trade_units');
 
-Route::get('product/{product:id}/trade-units/all', [GetAllTradeUnits::class, 'inExternal'])->name('trade-units.all.under-product')->withoutScopedBindings();
+Route::get('product/{product:id}/trade-units/all', GetAllTradeUnitsInProduct::class)->name('trade-units.all.under-product')->withoutScopedBindings();
 Route::get('product/{product:id}/trade-units/recommended', [GetRecommendedTradeUnits::class, 'inExternal'])->name('trade-units.recommended.under-product')->withoutScopedBindings();
 
 Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::class)->name('master-family.all-master-family')->withoutScopedBindings();

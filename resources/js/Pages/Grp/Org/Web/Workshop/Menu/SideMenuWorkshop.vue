@@ -27,6 +27,7 @@ import { faHeart, faLowVision } from "@far"
 import { debounce, get } from "lodash"
 import { trans } from "laravel-vue-i18n"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { routeType } from "@/types/route"
 
 
 library.add(
@@ -47,6 +48,7 @@ library.add(
 const data = defineModel<any>("data")
 
 defineProps<{
+	uploadImageRoute : routeType
 	webBlockTypes: {
 		data: Array<any>
 	}
@@ -145,6 +147,7 @@ const updateFieldValue = (value: any) => {
 					<SetMenuListWorkshop
 						v-model:data="data"
 						@update:data="autoSave"
+						:uploadImageRoute
 					/>
 
 					<Transition name="slide-to-right">

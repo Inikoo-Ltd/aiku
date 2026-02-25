@@ -8,7 +8,7 @@
 
 namespace App\Actions\Web\WebBlock;
 
-use App\Http\Resources\Web\WebBlockDepartmentsResource;
+use App\Http\Resources\Web\WebBlockProductCategoryDescriptionResource;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -21,7 +21,7 @@ class GetWebBlockDepartment
         $permissions =  ['edit','hidden'];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.department', WebBlockDepartmentsResource::make($webpage->model)->toArray(request()));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.department', WebBlockProductCategoryDescriptionResource::make($webpage->model)->toArray(request()));
         return $webBlock;
     }
 

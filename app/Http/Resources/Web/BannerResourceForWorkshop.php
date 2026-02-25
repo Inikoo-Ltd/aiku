@@ -40,6 +40,8 @@ class BannerResourceForWorkshop extends JsonResource
             $snapshot          = $banner->unpublishedSnapshot;
             $unpublishedSnapshot = SnapshotResource::make($snapshot)->getArray();
         }
+
+        // dd($banner->unpublishedSnapshot->compiledLayout());
         return [
             'id'                 => $banner->id,
             'type'               => $banner->type,

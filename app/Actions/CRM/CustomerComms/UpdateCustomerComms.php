@@ -53,6 +53,7 @@ class UpdateCustomerComms extends OrgAction
             'is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
             'is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
             'is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
+            'is_subscribed_to_price_change_notification' => ['sometimes', 'boolean'],
         ];
     }
 

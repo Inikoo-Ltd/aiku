@@ -19,7 +19,6 @@ use App\Actions\Dropshipping\Ebay\ShowCallbackSuccessRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\StoreMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
-use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
@@ -152,11 +151,6 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 });
 
 Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order_upload_templates');
-
-
-Route::prefix('tiktok')->name('tiktok.')->group(function () {
-    Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
-});
 
 Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');

@@ -11,6 +11,7 @@ namespace App\Http\Resources\Catalogue;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $slug
@@ -42,34 +43,42 @@ class ProductsWebpageResource extends JsonResource
             $webImages = $this->web_images;
         }
 
+        $productOffersData = is_string($this->offers_data)
+            ? json_decode($this->offers_data, true)
+            : $this->offers_data;
+        $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
+        $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
+
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
+        [$marginDiscounted, $rrpPerUnitDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $unitsDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($this->rrp, $bestPercentageOffOfferFactor * $this->price, $this->units);
+
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
         return [
-            'id'              => $this->id,
-            'slug'            => $this->slug,
-            'image_id'        => $this->image_id,
-            'code'            => $this->code,
-            'name'            => $this->name,
-            'stock'           => $this->available_quantity,
-            'price'           => $this->price,
-            'price_per_unit'  => $pricePerUnit,
-            'description'     => $this->description,
-            'state'           => $this->state,
-            'created_at'      => $this->created_at,
-            'updated_at'      => $this->updated_at,
-            'unit'            => $this->unit,
-            'status'          => $this->status,
-            'rrp'             => $this->rrp,
-            'web_images'      => $webImages,
-            'url'             => $this->webpage?->url,
-            'canonical_url'   => $this->webpage?->canonical_url,
-            'margin'          => $margin,
-            'profit'          => $profit,
-            'profit_per_unit' => $profitPerUnit,
-            'rrp_per_unit'    => $rrpPerUnit,
-            'units'           => $units,
-            'is_variant'      => !($this->is_variant_leader || $this->is_variant_minion),
+            'id'                            => $this->id,
+            'code'                          => $this->code,
+            'name'                          => $this->name,
+            'stock'                         => $this->available_quantity,
+            'price'                         => $this->price,
+            'price_per_unit'                => $pricePerUnit,
+            'profit'                        => $profit,
+            'profit_per_unit'               => $profitPerUnit,
+            'rrp'                           => $this->rrp,
+            'rrp_per_unit'                  => $rrpPerUnit,
+            'margin'                        => $margin,
+            'web_images'                    => $this->web_images,
+            'url'                           => $this->url,
+            'unit'                          => $this->unit,
+            'units'                         => $units,
+            'offers_data'                   => $this->offers_data,
+            'discounted_price'              => $bestPercentageOff ? round($this->price * $bestPercentageOffOfferFactor, 2) : null,
+            'discounted_price_per_unit'     => $pricePerUnitDiscounted,
+            'discounted_profit'             => $profitDiscounted,
+            'discounted_profit_per_unit'    => $profitPerUnitDiscounted,
+            'discounted_margin'             => $marginDiscounted,
+            'discounted_percentage'         => percentage($bestPercentageOff, 1),
+            'product_offers_data'           => $productOffersData,
         ];
     }
 }

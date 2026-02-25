@@ -393,7 +393,7 @@ class ShowProduct extends OrgAction
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
                 ],
                 'is_external_shop'      => $isExternalShop,
-                'family_slug'           => $product->family->slug,
+                'family_slug'           => $product->family->slug ?? null,
                 'product_state'         => $product->state->value,
                 'webpage_canonical_url' => $product->webpage?->canonical_url,
                 'is_single_trade_unit'  => $product->is_single_trade_unit,

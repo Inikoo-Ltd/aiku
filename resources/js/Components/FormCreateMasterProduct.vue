@@ -331,7 +331,7 @@ const selectorTab = [
         label: trans("All"),
         search: true,
         routeFetch: {
-            name: "grp.json.master-product-category.all-trade-units",
+            name: "grp.json.master_product_category.all_trade_units",
             parameters: { masterProductCategory: props.masterProductCategoryId },
         },
     },

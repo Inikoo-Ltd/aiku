@@ -16,7 +16,7 @@ import Overview2Blueprint from "@/Components/CMS/Webpage/Overview2/Blueprint"
 import OverviewBlueprint from "@/Components/CMS/Webpage/Overview/Blueprint"
 import TextBlueprint from "@/Components/CMS/Webpage/Text/Blueprint"
 import ScriptBlueprint from "@/Components/CMS/Webpage/Script/Blueprint"
-import WowsbarBannerBlueprint from "@/Components/CMS/Webpage/WowsbarBanner/Blueprint"
+import { blueprint as WowsbarBannerBlueprint  } from "@/Components/CMS/Webpage/WowsbarBanner/Blueprint"
 import PricingBlueprint from "@/Components/CMS/Webpage/Pricing/Blueprint"
 import TimelineBlueprint from "@/Components/CMS/Webpage/Timeline/Blueprint"
 import TextColumn from "@/Components/CMS/Webpage/TextColumn/Blueprint"
@@ -66,7 +66,7 @@ import SliderBlueprint  from "@/Components/CMS/Webpage/Slider-1/Blueprint"
 
 
 
-export const getBlueprint = (componentName: string, data?: object) => {
+export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
 		// topbar
 		"top-bar-1-fulfilment": Topbar1Fulfilment.blueprint,
@@ -119,7 +119,8 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		'recommendation-customer-recently-bought-1': () => RecommendersCustomerRecentlyBought(data).blueprint,
 
 		// misc
-		"banner": WowsbarBannerBlueprint.blueprint,
+		/* "banner": WowsbarBannerBlueprint.blueprint, */
+		"banner": WowsbarBannerBlueprint(data,id).blueprint,
 		"bento-grid-1": BentoGridBlueprint.blueprint,
 		"bricks": GalleryBlueprint.blueprint,
 		"cta1": CTABlueprint.blueprint,

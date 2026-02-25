@@ -117,7 +117,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
         $quantityToPickFractional   = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->packed_in);
         $quantityToPickFractionalDS = $quantityToPickFractional;
 
-        if (floor($quantityToPick) == $quantityToPick) {
+        if (floor($quantityToPick) == $quantityToPick && $packedIn > 1) {
             $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
         }
 

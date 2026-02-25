@@ -73,7 +73,7 @@ import {
 	faCheckDouble,
 	faSmile,
 	faMailBulk,
-	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument
+	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument,faUnlink
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -97,6 +97,7 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
+import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 
 library.add(
@@ -169,6 +170,7 @@ library.add(
 	faAsterisk,
 	faMailBulk,
 	faShare, faUndoAlt,faRobot,faMonument, faDollyFlatbedAlt, faViruses,
+	faShare, faUndoAlt, faRobot, faUnlink,
 	faBadgePercent
 )
 
@@ -283,8 +285,10 @@ const requestNotificationPermission = () => {
 		}
 }
 
+const baseUrl = layout?.appUrl ?? ""
+const myAgentId = layout.user?.id
 onMounted(() => {
-	requestNotificationPermission()
+	fetchUnreadCount(baseUrl, '', myAgentId)
 	checkScreenType()
 	onCheckAppVersion()
 	setColorStyleRoot(layout?.app?.theme)

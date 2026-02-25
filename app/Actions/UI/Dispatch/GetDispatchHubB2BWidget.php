@@ -20,7 +20,7 @@ class GetDispatchHubB2BWidget
     {
         $organisation = $warehouse->organisation;
         return [
-            'label'    => __('B2B'),
+            'label'    => __('Wholesale'),
             'tooltip'    => __('B2B Delivery Notes'),
             'sublabel' => __('In Todo'),
             'count'    => $organisation->orderingStats->number_b2b_shop_delivery_notes_state_unassigned + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_queued + $organisation->orderingStats->number_b2b_shop_delivery_notes_state_handling

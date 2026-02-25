@@ -303,7 +303,7 @@ const submitTransactionAsWaiting = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingSetAsWaiting.value = true
             },
             onSuccess: () => {
@@ -460,10 +460,24 @@ const submitTransactionAsWaiting = () => {
                         </span>
                     </div>
 
+                    <!-- Label: number of magic pick -->
+                    <div
+                        v-if="picking.type === 'magic_pick'"
+                        v-tooltip="ctrans(':qtyPicked items are picked from magic place', { qtyPicked: Number(picking.quantity_picked).toString()})"
+                        class="bg-yellow-200 text-yellow-600 px-1 whitespace-nowrap"
+                    >
+                        <FontAwesomeIcon icon="fas fa-wand-magic" class="" fixed-width aria-hidden="true" />
+                        <FractionDisplay v-if="picking.quantity_picked_fractional"
+                            :fractionData="picking.quantity_picked_fractional" />
+                        <span v-else>
+                            {{ picking.quantity_picked }}
+                        </span>
+                    </div>
+
                     <div class="">
                         <ButtonWithLink
                             v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0"
-                            v-tooltip="trans('Undo pick')"
+                            v-tooltip="ctrans('Undo pick :qtyPicked items', { qtyPicked: Number(picking.quantity_picked).toString()})"
                             type="negative"
                             :size="screenType != 'mobile' ? 'xxs' : 'md'"
                             icon="fal fa-undo-alt"
@@ -592,6 +606,7 @@ const submitTransactionAsWaiting = () => {
                                 </template>
                             </NumberWithButtonSave>
                             
+                            <!-- Button: Pick from magic place -->
                             <Button
                                 v-if="layout.app.environment === 'local' && !itemValue.is_handled && Number(countStockInAllLocations(itemValue.locations)) < 1"
                                 @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
@@ -613,6 +628,7 @@ const submitTransactionAsWaiting = () => {
                             </Button>
 
                             <!-- Button: Set Transaction as not picked -->
+                            <!-- Button: Not picked -->
                             <ButtonWithLink
                                 v-if="!itemValue.is_handled"
                                 type="negative"
@@ -630,7 +646,7 @@ const submitTransactionAsWaiting = () => {
                                     </div>
                                 </template>
                             </ButtonWithLink>
-                            
+
                             <!-- Button: Set Transaction as Waiting -->
                             <Button
                                 @click="() => (isOpenModalSetAsWaiting = true, selectedTransactionToSetAsWaiting = itemValue)"
@@ -880,10 +896,10 @@ const submitTransactionAsWaiting = () => {
             <div>
                 <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">
                     <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle"/>
-        
+
                     {{ trans('Select type waiting') }}:
                 </label>
-        
+
                 <div class="pl-4 grid grid-cols-2 py-1 px-2 gap-x-4">
                     <div v-for="waitingType in listSetAsWaitingType" :key="waitingType.value">
                         <Button
@@ -895,16 +911,16 @@ const submitTransactionAsWaiting = () => {
                             xdisabled="isLoadingSubmitBay !== undefined"
                             xloading="isLoadingSubmitBay === waitingType.value"
                         />
-                        
+
                     </div>
                 </div>
             </div>
 
             <div>
-                <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">            
+                <label for="amount" class="font-medium mb-1 flex items-center gap-x-1">
                     {{ trans('Reason') }}:
                 </label>
-        
+
                 <div class="pl-4">
                     <PureTextarea
                         v-model="dataToSendAsWaiting.reason"

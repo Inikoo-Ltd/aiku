@@ -881,13 +881,13 @@ const saveTradeUnits = (value, product) => {
 
         <template #checkbox="data">
             <FontAwesomeIcon
-                v-if="selectedProductsId[data.data.id]"
+                v-if="selectedProductsId?.[data.data.id]"
                 @click="() => emits('selectedRow', { [data.data.id]: false })"
                 icon='fas fa-check-square'
                 class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
                 fixed-width aria-hidden='true' />
             <FontAwesomeIcon
-                v-if="!selectedProductsId[data.data.id]"
+                v-if="!selectedProductsId?.[data.data.id]"
                 @click="() => emits('selectedRow', { [data.data.id]: true })"
                 icon='fal fa-square'
                 class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'

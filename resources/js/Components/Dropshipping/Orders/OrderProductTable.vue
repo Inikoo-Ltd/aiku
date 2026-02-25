@@ -46,6 +46,7 @@ const props = defineProps<{
     modifyRoute?: routeType
     fetchRoute?: routeType
     routesProductsListModification?: routeType
+    is_shop_external: boolean
 }>()
 
 const layout = inject("layout", {})
@@ -320,7 +321,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             routeUpdate.name,
             routeUpdate.parameters
         ),
-        { 
+        {
             is_cut_view: newVal
         },
         {
@@ -390,7 +391,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
 
                 <div class="flex items-center justify-end gap-2">
                     <!-- Editable when creating and not in edit mode -->
-                    <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)"
+                    <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id) && !is_shop_external"
                         class="w-fit flex gap-x-2">
                         <NumberWithButtonSave
                             :modelValue="Number(item.quantity_ordered)"
@@ -406,7 +407,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                             }"
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         />
-                        
+
                         <span
                             v-if="layout.app.environment == 'local'"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
@@ -460,7 +461,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
                             <Button
-                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))"
+                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external"
                                 @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
                                 v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
                                 :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400" />
@@ -503,7 +504,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
         </Table>
 
         <!-- Section: Modal edit discretionary discount -->
-        <Modal v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))" :isOpen="isOpenModalEditNetAmount" @onClose="() => onCloseModalNetAmount()" width="w-full max-w-lg">
+        <Modal v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external" :isOpen="isOpenModalEditNetAmount" @onClose="() => onCloseModalNetAmount()" width="w-full max-w-lg">
             <div class="text-center mb-4">
                 <div class="font-semibold text-2xl">Update for {{ selectedItemToEditNetAmount?.asset_code }}:</div>
                 <div class="opacity-80 italic text-sm">

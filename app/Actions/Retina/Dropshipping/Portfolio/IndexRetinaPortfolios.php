@@ -331,6 +331,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::EBAY => [
                             'name' => 'retina.models.portfolio.store_new_ebay_product'
                         ],
+                        PlatformTypeEnum::TIKTOK => [
+                            'name' => 'retina.models.portfolio.store_new_tiktok_product'
+                        ],
                         default => false
                     },
                     'single_match' => match ($this->customerSalesChannel->platform->type) {
