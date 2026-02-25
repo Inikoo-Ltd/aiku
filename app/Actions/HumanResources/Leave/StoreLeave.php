@@ -8,6 +8,7 @@ use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeLeaveBalance;
+use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\Timesheet;
 use Illuminate\Http\Request;
@@ -164,6 +165,25 @@ class StoreLeave extends OrgAction
 
         if ($hasTimesheet) {
             $validator->errors()->add('start_date', __('You have existing attendance records in this period. Please request an adjustment instead.'));
+        }
+
+        $holidayOverlap = Holiday::query()
+            ->where('organisation_id', $this->employee->organisation_id)
+            ->whereDate('from', '<=', $endDate->toDateString())
+            ->whereDate('to', '>=', $startDate->toDateString())
+            ->orderBy('from')
+            ->first();
+
+        if ($holidayOverlap) {
+            $label = $holidayOverlap->label ?: __('Holiday');
+            $validator->errors()->add(
+                'start_date',
+                __('Leave cannot be submitted for holiday dates. Overlaps with :label (:from - :to).', [
+                    'label' => $label,
+                    'from'  => $holidayOverlap->from->format('Y-m-d'),
+                    'to'    => $holidayOverlap->to->format('Y-m-d'),
+                ])
+            );
         }
 
         $type = request()->input('type');
