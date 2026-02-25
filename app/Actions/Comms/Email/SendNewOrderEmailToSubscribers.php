@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Helpers\Currency;
 use App\Models\Ordering\Order;
@@ -51,12 +52,19 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 'customer_name'                => $customer->name,
                 'order_reference'              => $order->reference,
                 'order_total'                  => $order->total_amount,
+                'blade_order_total'            => $this->generateBladeValue($order->total_amount, $order->shop, $order->org_exchange, true),
                 'goods_amount'                 => $order->goods_amount,
+                'blade_goods_amount'           => $this->generateBladeValue($order->goods_amount, $order->shop, $order->org_exchange),
                 'charges_amount'               => $order->charges_amount,
+                'blade_charges_amount'         => $this->generateBladeValue($order->charges_amount, $order->shop, $order->org_exchange),
                 'shipping_amount'              => $order->shipping_amount,
+                'blade_shipping_amount'        => $this->generateBladeValue($order->shipping_amount, $order->shop, $order->org_exchange),
                 'net_amount'                   => $order->net_amount,
+                'blade_net_amount'             => $this->generateBladeValue($order->net_amount, $order->shop, $order->org_exchange),
                 'tax_amount'                   => $order->tax_amount,
+                'blade_tax_amount'             => $this->generateBladeValue($order->tax_amount, $order->shop, $order->org_exchange),
                 'payment_amount'               => $order->payment_amount,
+                'blade_payment_amount'         => $this->generateBladeValue($order->payment_amount, $order->shop, $order->org_exchange),
                 'payment_type'                 => $order->payments()->first()->paymentAccount->name ?? 'N/A',
                 'blade_new_order_transactions' => $this->generateOrderTransactionsHtml($transactions, $order->shop->currency, $order->shop->organisation->currency),
                 'date'                         => $order->submitted_at->format('F jS, Y'),
@@ -83,6 +91,32 @@ class SendNewOrderEmailToSubscribers extends OrgAction
         );
     }
 
+    private function generateBladeValue(?float $value, Shop $shop, ?float $orgExchangeRate, bool $isBold = false): string
+    {
+        $currencySymbol = $shop->currency->symbol ?? '£';
+        $orgCurrencySymbol = $shop->organisation->currency->symbol ?? '£';
+        $currenciesDiffer = $shop->currency->id !== $shop->organisation->currency->id;
+        $exchangeRate = $orgExchangeRate ?? 1;
+        $fontWeight = $isBold ? 'bold' : 'normal';
+        $fontSize = $isBold ? '16px' : '14px';
+
+        if ($currenciesDiffer) {
+            return sprintf(
+                '<div style="text-align: right;">
+                    <div style="font-size: %s; font-weight: %s;">%s%s</div>
+                    <div style="font-size: 11px; color: #666;">%s%s</div>
+                </div>',
+                $fontSize,
+                $fontWeight,
+                $orgCurrencySymbol,
+                round($value * $exchangeRate, 2),
+                $currencySymbol,
+                round($value, 2)
+            );
+        }
+
+        return $currencySymbol . $value;
+    }
 
     private function generateOrderTransactionsHtml($transactions, Currency $currency, Currency $organisationCurrency): string
     {
@@ -111,21 +145,70 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
             // Generate price display based on currency difference
             $priceDisplay = '';
+            $quantity = $transaction->quantity_ordered ?? 1;
+
+            // \Log::info();
             if ($currenciesDiffer) {
                 // Show both currencies with organisation currency above
-                $priceDisplay = sprintf(
-                    '<div style="text-align: right;">
-                        <div style="font-size: 16px; font-weight: bold;">%s%s</div>
-                        <div style="font-size: 11px; color: #666; margin-top: 2px;">%s%s</div>
-                    </div>',
-                    $orgCurrencySymbol,
-                    $transaction->org_net_amount ?? $transaction->net_amount ?? '0',
-                    $currencySymbol,
-                    $transaction->net_amount ?? '0'
-                );
+                if ($offerData && isset($offerData['o'])) {
+                    $originalPrice = ($product->price ?? 0) * $quantity;
+
+                    $orgOriginalPrice = round($originalPrice * $transaction->org_exchange, 2);
+                    $orgDiscountedPrice = round($transaction->net_amount * $transaction->org_exchange, 2);
+
+                    // With discount - show strikethrough original price
+                    $priceDisplay = sprintf(
+                        '<div style="text-align: right;">
+                            <div style="font-size: 16px; font-weight: bold;">
+                                <span style="text-decoration: line-through; margin-right: 4px; font-size: 10px;">%s%s</span>
+                                %s%s
+                            </div>
+                            <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                                <span style="text-decoration: line-through; margin-right: 4px; font-size: 10px;">%s%s</span>
+                                %s%s
+                            </div>
+                        </div>',
+                        $orgCurrencySymbol,
+                        $orgOriginalPrice,
+                        $orgCurrencySymbol,
+                        $orgDiscountedPrice,
+                        $currencySymbol,
+                        $originalPrice,
+                        $currencySymbol,
+                        $transaction->net_amount
+                    );
+                } else {
+
+                    // Without discount - normal display
+                    $priceDisplay = sprintf(
+                        '<div style="text-align: right;">
+                            <div style="font-size: 16px; font-weight: bold;">%s%s</div>
+                            <div style="font-size: 11px; color: #666; margin-top: 2px;">%s%s</div>
+                        </div>',
+                        $orgCurrencySymbol,
+                        $transaction->org_net_amount,
+                        $currencySymbol,
+                        $transaction->net_amount
+                    );
+                }
             } else {
                 // Show single currency
-                $priceDisplay = $currencySymbol . ($transaction->net_amount ?? '0');
+                if ($offerData && isset($offerData['o'])) {
+                    // With discount - show strikethrough original price
+                    $priceDisplay = sprintf(
+                        '<div style="text-align: right;">
+                            <span style="text-decoration: line-through; margin-right: 4px; color: #666;">%s%s</span>
+                            %s%s
+                        </div>',
+                        $currencySymbol,
+                        ($product->price ?? '0') * $quantity,
+                        $currencySymbol,
+                        ($transaction->net_amount ?? '0') * $quantity
+                    );
+                } else {
+                    // Without discount - normal display
+                    $priceDisplay = $currencySymbol . (($transaction->net_amount ?? '0') * $quantity);
+                }
             }
 
             // Generate discount label if offer data exists
