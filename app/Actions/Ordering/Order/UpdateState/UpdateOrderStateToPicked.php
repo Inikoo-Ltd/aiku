@@ -65,7 +65,7 @@ class UpdateOrderStateToPicked extends OrgAction
 
             $this->orderHydrators($order);
             $this->orderHandlingHydrators($order, $oldState);
-            $this->orderHandlingHydrators($order, OrderStateEnum::PACKED);
+            $this->orderHandlingHydrators($order, OrderStateEnum::PICKED);
 
             return $order;
         }

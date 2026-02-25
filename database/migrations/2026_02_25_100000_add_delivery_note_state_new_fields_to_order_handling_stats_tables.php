@@ -28,13 +28,29 @@ return new class () extends Migration {
                 $table->unsignedInteger('number_orders_state_picked')->default(0);
                 $table->unsignedInteger('number_orders_state_packing')->default(0);
 
-                $table->unsignedInteger('orders_state_picked_amount')->default(0);
-                $table->unsignedInteger('orders_state_picked_amount_org_currency')->default(0);
-                $table->unsignedInteger('orders_state_picked_amount_grp_currency')->default(0);
+                $table->decimal('orders_state_picked_amount',16)->default(0);
+                $table->decimal('orders_state_picked_amount_org_currency',16)->default(0);
+                $table->decimal('orders_state_picked_amount_grp_currency',16)->default(0);
 
-                $table->unsignedInteger('orders_state_packing_amount')->default(0);
-                $table->unsignedInteger('orders_state_packing_amount_org_currency')->default(0);
-                $table->unsignedInteger('orders_state_packing_amount_grp_currency')->default(0);
+                $table->decimal('orders_state_packing_amount',16)->default(0);
+                $table->decimal('orders_state_packing_amount_org_currency',16)->default(0);
+                $table->decimal('orders_state_packing_amount_grp_currency',16)->default(0);
+
+                $table->unsignedInteger('number_orders_picked_today')->default(0);
+                $table->unsignedInteger('number_orders_packing_today')->default(0);
+
+
+                $table->decimal('orders_picked_today_amount',16)->default(0);
+                $table->decimal('orders_packing_today_amount',16)->default(0);
+
+                $table->decimal('orders_picked_today_amount_org_currency',16)->default(0);
+                $table->decimal('orders_packing_today_amount_org_currency',16)->default(0);
+
+                $table->decimal('orders_picked_today_amount_grp_currency',16)->default(0);
+                $table->decimal('orders_packing_today_amount_grp_currency',16)->default(0);
+
+
+
 
 
                 // Weights
@@ -67,6 +83,20 @@ return new class () extends Migration {
                     'number_items_delivery_notes_state_packing',
                     'number_orders_state_picked',
                     'number_orders_state_packing',
+                    'orders_state_picked_amount',
+                    'orders_state_packing_amount',
+                    'orders_state_picked_amount_org_currency',
+                    'orders_state_packing_amount_org_currency',
+                    'orders_state_picked_amount_grp_currency',
+                    'orders_state_packing_amount_grp_currency',
+                    'number_orders_picked_today',
+                    'number_orders_packing_today',
+                    'orders_picked_today_amount',
+                    'orders_packing_today_amount',
+                    'orders_picked_today_amount_org_currency',
+                    'orders_packing_today_amount_org_currency',
+                    'orders_picked_today_amount_grp_currency',
+                    'orders_packing_today_amount_grp_currency',
                 ]);
             });
         }

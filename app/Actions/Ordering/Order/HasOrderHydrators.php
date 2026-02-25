@@ -16,6 +16,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandling;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandlingBlocked;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateInWarehouse;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePacked;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePacking;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePicked;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateSubmitted;
 use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateOrders;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
@@ -30,6 +32,8 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateHandling;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateHandlingBlocked;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateInWarehouse;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePacked;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePacking;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePicked;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateSubmitted;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrdersDispatchedToday;
@@ -39,6 +43,8 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateHan
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateHandlingBlocked;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateInWarehouse;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStatePacked;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStatePacking;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStatePicked;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateSubmitted;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
@@ -95,6 +101,14 @@ trait HasOrderHydrators
             GroupHydrateOrderStateHandlingBlocked::dispatch($order->group_id);
             OrganisationHydrateOrderStateHandlingBlocked::dispatch($order->organisation_id);
             ShopHydrateOrderStateHandlingBlocked::dispatch($order->shop_id);
+        } elseif ($orderState == OrderStateEnum::PICKED) {
+            GroupHydrateOrderStatePicked::dispatch($order->group_id);
+            OrganisationHydrateOrderStatePicked::dispatch($order->organisation_id);
+            ShopHydrateOrderStatePicked::dispatch($order->shop_id);
+        } elseif ($orderState == OrderStateEnum::PACKING) {
+            GroupHydrateOrderStatePacking::dispatch($order->group_id);
+            OrganisationHydrateOrderStatePacking::dispatch($order->organisation_id);
+            ShopHydrateOrderStatePacking::dispatch($order->shop_id);
         } elseif ($orderState == OrderStateEnum::PACKED) {
             GroupHydrateOrderStatePacked::dispatch($order->group_id);
             OrganisationHydrateOrderStatePacked::dispatch($order->organisation_id);
