@@ -92,30 +92,30 @@ class DashboardHeaderOffersResource extends JsonResource
                     'align'             => 'right',
                     'scope'             => 'invoices'
                 ],
-                'sales' => [
+                'sales_grp_currency_external' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
                     'sortable'          => true,
                     'align'             => 'right',
-                    'scope'             => 'invoices'
+                    'scope'             => 'sales_grp_currency_external'
                 ],
-                'sales_minified' => [
+                'sales_grp_currency_external_minified' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'minified',
                     'sortable'          => true,
                     'align'             => 'right',
-                    'scope'             => 'invoices'
+                    'scope'             => 'sales_grp_currency_external'
                 ],
-                'sales_delta' => [
+                'sales_grp_currency_external_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'always',
                     'data_display_type' => 'always',
                     'sortable'          => true,
                     'align'             => 'right',
-                    'scope'             => 'invoices'
+                    'scope'             => 'sales_grp_currency_external'
                 ],
             ]
         ];

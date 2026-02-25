@@ -36,8 +36,8 @@ class GetOrganisationTimeSeriesStats
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
                 [
-                    'sales_org_currency'           => 'sales_org_currency',
-                    'sales_grp_currency'           => 'sales_grp_currency',
+                    'sales_org_currency_external'  => 'sales_org_currency_external',
+                    'sales_grp_currency_external'  => 'sales_grp_currency_external',
                     'lost_revenue_org_currency'    => 'lost_revenue_org_currency',
                     'lost_revenue_grp_currency'    => 'lost_revenue_grp_currency',
                     'baskets_created_org_currency' => 'baskets_created_org_currency',

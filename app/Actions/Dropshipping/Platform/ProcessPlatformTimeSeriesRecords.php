@@ -80,13 +80,13 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'frequency'               => $timeSeries->frequency->singleLetter(),
                 ],
                 [
-                    'organisation_id'    => $shop->organisation_id,
-                    'from'               => $periodFrom,
-                    'to'                 => $periodTo,
-                    'sales'              => $result->sales,
-                    'sales_org_currency' => $result->sales_org_currency,
-                    'sales_grp_currency' => $result->sales_grp_currency,
-                    'invoices'           => $result->invoices,
+                    'organisation_id'             => $shop->organisation_id,
+                    'from'                        => $periodFrom,
+                    'to'                          => $periodTo,
+                    'sales_external'              => $result->sales_external,
+                    'sales_org_currency_external' => $result->sales_org_currency_external,
+                    'sales_grp_currency_external' => $result->sales_grp_currency_external,
+                    'invoices'                    => $result->invoices,
                     ...$metrics,
                 ]
             );
@@ -118,13 +118,13 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'frequency'               => $timeSeries->frequency->singleLetter(),
                 ],
                 [
-                    'organisation_id'    => $shop->organisation_id,
-                    'from'               => $periodData['from'],
-                    'to'                 => $periodData['to'],
-                    'sales'              => 0,
-                    'sales_org_currency' => 0,
-                    'sales_grp_currency' => 0,
-                    'invoices'           => 0,
+                    'organisation_id'             => $shop->organisation_id,
+                    'from'                        => $periodData['from'],
+                    'to'                          => $periodData['to'],
+                    'sales_external'              => 0,
+                    'sales_org_currency_external' => 0,
+                    'sales_grp_currency_external' => 0,
+                    'invoices'                    => 0,
                     ...$metrics,
                 ]
             );
