@@ -17,27 +17,35 @@ class ApproveLeave extends OrgAction
 {
     public function handle(Leave $leave): Leave
     {
+        $balanceYear = $leave->start_date?->year ?? now()->year;
+
         $leave->update([
             'status' => LeaveStatusEnum::APPROVED,
             'approved_by' => Auth::id(),
             'approved_at' => now(),
         ]);
 
-        $balance = EmployeeLeaveBalance::where('employee_id', $leave->employee_id)
-            ->where('year', now()->year)
-            ->first();
+        $balance = EmployeeLeaveBalance::firstOrCreate(
+            [
+                'employee_id' => $leave->employee_id,
+                'year'        => $balanceYear,
+            ],
+            [
+                'annual_days'  => 14,
+                'medical_days' => 14,
+                'unpaid_days'  => 0,
+            ]
+        );
 
-        if ($balance) {
-            $field = match ($leave->type->value) {
-                'annual' => 'annual_used',
-                'medical' => 'medical_used',
-                'unpaid' => 'unpaid_used',
-                default => null,
-            };
+        $field = match ($leave->type->value) {
+            'annual' => 'annual_used',
+            'medical' => 'medical_used',
+            'unpaid' => 'unpaid_used',
+            default => null,
+        };
 
-            if ($field) {
-                $balance->increment($field, $leave->duration_days);
-            }
+        if ($field) {
+            $balance->increment($field, $leave->duration_days);
         }
 
         return $leave;

@@ -168,14 +168,17 @@ class StoreLeave extends OrgAction
 
         $type = request()->input('type');
         $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
+        $balanceYear = $startDate->year;
+
         $balance = EmployeeLeaveBalance::firstOrCreate(
             [
                 'employee_id' => $this->employee->id,
-                'year'        => now()->year,
+                'year'        => $balanceYear,
             ],
             [
                 'annual_days'  => 14,
                 'medical_days' => 14,
+                'unpaid_days'  => 0,
             ]
         );
 
