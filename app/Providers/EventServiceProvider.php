@@ -9,6 +9,8 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Osiset\ShopifyApp\Messaging\Events\ShopAuthenticatedEvent;
+use App\Models\Ordering\Order;
+use App\Observers\Ordering\OrderObserver;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -36,7 +38,7 @@ class EventServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        Order::observe(OrderObserver::class);
     }
 
     /**

@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Traits\HasNotificationSettings;
 
 /**
  * @property int $id
@@ -127,6 +128,7 @@ class User extends Authenticatable implements HasMedia, Auditable
 {
     use HasEmail;
     use HasRoles;
+    use HasNotificationSettings;
     use WithPushNotifications;
     use IsUserable;
     use HasImage;
