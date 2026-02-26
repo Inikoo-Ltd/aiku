@@ -5,8 +5,7 @@
  * Created on: 15-05-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
- *
-*/
+ */
 
 namespace App\Actions\UI\Dispatch;
 
@@ -43,7 +42,6 @@ class GetDispatchHubShowcase
         if ($organisationCatalogueStats->number_current_shops_type_dropshipping) {
             $stats['dropshipping'] = GetDispatchHubDropshippingWidget::run($warehouse);
         }
-
 
         return $stats;
     }
