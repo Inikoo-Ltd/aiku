@@ -154,7 +154,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
     } catch (e: any) {
         notify({
             title: trans('Failed Scan QR'),
-            text: trans(`${e.response?.data?.message}`),
+            text: e.response?.data?.message,
             type: 'error',
         })
 
@@ -231,7 +231,7 @@ const submitNotes = async () => {
     } catch (e: any) {
         notify({
             title: trans('Failed submit notes'),
-            text: trans(`${e.response?.data?.message}`),
+            text: e.response?.data?.message,
             type: 'error',
         })
 
