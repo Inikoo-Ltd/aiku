@@ -35,6 +35,7 @@ import {
 	faBox,
 	faEllipsisV,
 	faDownload,
+	faTimes,
 } from "@fal"
 import { faCheck } from "@fas"
 import axios from "axios"
@@ -175,14 +176,14 @@ const isLoadingClone = ref(false)
 const selectedData = reactive({
 	products: [] as number[],
 })
-const isHiddenBulkButton = ref(false);
+const isHiddenBulkButton = ref(false)
 
 const showBulkButton = () => {
-	isHiddenBulkButton.value = false;
+	isHiddenBulkButton.value = false
 }
 
 const hideBulkButton = () => {
-	isHiddenBulkButton.value = true;
+	isHiddenBulkButton.value = true
 }
 
 const onUploadToShopify = () => {
@@ -507,8 +508,8 @@ const submitPortfolioAction = async (action: any) => {
 			params: method === "get" ? data : undefined,
 		})
 
-		if(action.label === 'bulk-create') {
-			isOpenModalUploadProgress.value = true;
+		if (action.label === "bulk-create") {
+			isOpenModalUploadProgress.value = true
 		}
 
 		debReloadPage()
@@ -595,28 +596,30 @@ const initSocketFetchListener = () => {
 }
 
 const initSocketUploadListener = () => {
-	fetchChannel = window.Echo.private(`channel.${props.customer_sales_channel.id}.upload-product`).listen(
-		".channel-upload-progress",
-		(eventData: any) => {
-			isOpenModalUploadProgress.value = true
-			uploadProgressData.value = {
-				done: eventData.statistics?.success,
-				total: eventData.statistics?.total,
-				data: {
-					number_fails: eventData.statistics?.fail,
-					number_success: eventData.statistics?.success
-				}
-			}
-
-			isSocketActive.value = false
-			if (eventData.statistics?.success + eventData.statistics?.fail == eventData.statistics?.total) {
-				setTimeout(() => {
-					isOpenModalUploadProgress.value = false
-					window.location.reload()
-				}, 1000)
-			}
+	fetchChannel = window.Echo.private(
+		`channel.${props.customer_sales_channel.id}.upload-product`
+	).listen(".channel-upload-progress", (eventData: any) => {
+		isOpenModalUploadProgress.value = true
+		uploadProgressData.value = {
+			done: eventData.statistics?.success,
+			total: eventData.statistics?.total,
+			data: {
+				number_fails: eventData.statistics?.fail,
+				number_success: eventData.statistics?.success,
+			},
 		}
-	)
+
+		isSocketActive.value = false
+		if (
+			eventData.statistics?.success + eventData.statistics?.fail ==
+			eventData.statistics?.total
+		) {
+			setTimeout(() => {
+				isOpenModalUploadProgress.value = false
+				window.location.reload()
+			}, 1000)
+		}
+	})
 }
 
 watch(
@@ -801,12 +804,12 @@ onBeforeUnmount(() => {
 
 const productAvailibility = [
 	{
-		key: 'exclude_not_for_sale',
-		label: trans('Exclude products that are not for sale')
+		key: "exclude_not_for_sale",
+		label: trans("Exclude products that are not for sale"),
 	},
 	{
-		key: 'exclude_out_of_stocks',
-		label: trans('Exclude products that are out of stock')
+		key: "exclude_out_of_stocks",
+		label: trans("Exclude products that are out of stock"),
 	},
 ]
 
@@ -849,9 +852,7 @@ const extendedColumns = [
 	{ key: "data_updated", label: "Data updated" },
 ]
 
-const selectedExtendedColumns = ref<string[]>(
-	extendedColumns.map((c) => c.key)
-)
+const selectedExtendedColumns = ref<string[]>(extendedColumns.map((c) => c.key))
 
 const selectedProductStates = ref<string[]>(["active"])
 const selectedProductAvailibility = ref<string[]>([])
@@ -882,7 +883,7 @@ const onDownloadExtendedProperties = () => {
 	const url = downloadUrl("extended_properties", {
 		columns: selectedExtendedColumns.value,
 		product_states: selectedProductStates.value,
-		product_availibility: selectedProductAvailibility.value
+		product_availibility: selectedProductAvailibility.value,
 	})
 
 	if (!url) {
@@ -933,102 +934,101 @@ const layout = inject("layout", layoutStructure)
 						class="h-9 px-3 py-0 border-0 rounded-none border-r" />
 				</a>
 				<Button
-					@click="(e : MouseEvent) => _export_popover?.toggle(e)"
+					@click="(e: MouseEvent) => _export_popover?.toggle(e)"
 					v-tooltip="trans('Other Export Options')"
 					:icon="faEllipsisV"
 					class="h-9 px-2 py-0 border-0 rounded-none border-r"
 					type="tertiary" />
 				<Popover ref="_export_popover">
-    				<div class="w-72 flex flex-col max-h-[75vh] bg-white rounded-md shadow-lg">
+					<div class="w-72 flex flex-col max-h-[75vh] bg-white rounded-md shadow-lg">
+						<div
+							class="px-4 py-3 border-b bg-gray-50 flex justify-between items-center sticky top-0 z-10">
+							<span class="font-semibold text-sm text-gray-700">{{
+								trans("Export Options")
+							}}</span>
+							<button
+								@click="toggleSelectAll"
+								class="text-xs text-blue-600 hover:underline font-medium">
+								{{ allSelected ? trans("Deselect All") : trans("Select All") }}
+							</button>
+						</div>
 
-    				    <div class="px-4 py-3 border-b bg-gray-50 flex justify-between items-center sticky top-0 z-10">
-    				        <span class="font-semibold text-sm text-gray-700">{{ trans("Export Options") }}</span>
-    				        <button @click="toggleSelectAll" class="text-xs text-blue-600 hover:underline font-medium">
-    				            {{ allSelected ? trans('Deselect All') : trans('Select All') }}
-    				        </button>
-    				    </div>
+						<div class="p-4 overflow-y-auto space-y-5 text-sm">
+							<div>
+								<div class="font-medium text-gray-800 mb-2">
+									{{ trans("Columns to Export") }}
+								</div>
+								<div class="space-y-2">
+									<label
+										v-for="col in extendedColumns"
+										:key="col.key"
+										class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+										<input
+											type="checkbox"
+											:value="col.key"
+											v-model="selectedExtendedColumns"
+											class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+										<span
+											:class="{
+												'opacity-60': !selectedExtendedColumns.includes(
+													col.key
+												),
+											}">
+											{{ trans(col.label) }}
+										</span>
+									</label>
+								</div>
+							</div>
 
-    				    <div class="p-4 overflow-y-auto space-y-5 text-sm">
+							<div class="border-t pt-4">
+								<div class="font-medium text-gray-800 mb-2">
+									{{ trans("Product State") }}
+								</div>
+								<div class="space-y-2">
+									<label
+										v-for="state in productStates"
+										:key="state.key"
+										class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+										<input
+											type="checkbox"
+											:value="state.key"
+											v-model="selectedProductStates"
+											class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+										<span>{{ trans(state.label) }}</span>
+									</label>
+								</div>
+							</div>
 
-    				        <div>
-    				            <div class="font-medium text-gray-800 mb-2">
-    				                {{ trans("Columns to Export") }}
-    				            </div>
-    				            <div class="space-y-2">
-    				                <label
-    				                    v-for="col in extendedColumns"
-    				                    :key="col.key"
-    				                    class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
-    				                >
-    				                    <input
-    				                        type="checkbox"
-    				                        :value="col.key"
-    				                        v-model="selectedExtendedColumns"
-    				                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-    				                    />
-    				                    <span :class="{'opacity-60': !selectedExtendedColumns.includes(col.key)}">
-    				                        {{ trans(col.label) }}
-    				                    </span>
-    				                </label>
-    				            </div>
-    				        </div>
+							<div class="border-t pt-4">
+								<div class="font-medium text-gray-800 mb-2">
+									{{ trans("Product Sale Status") }}
+								</div>
+								<div class="space-y-2">
+									<label
+										v-for="availibility in productAvailibility"
+										:key="availibility.key"
+										class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+										<input
+											type="checkbox"
+											:value="availibility.key"
+											v-model="selectedProductAvailibility"
+											class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+										<span>{{ trans(availibility.label) }}</span>
+									</label>
+								</div>
+							</div>
+						</div>
 
-    				        <div class="border-t pt-4">
-    				            <div class="font-medium text-gray-800 mb-2">
-    				                {{ trans("Product State") }}
-    				            </div>
-    				            <div class="space-y-2">
-    				                <label
-    				                    v-for="state in productStates"
-    				                    :key="state.key"
-    				                    class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
-    				                >
-    				                    <input
-    				                        type="checkbox"
-    				                        :value="state.key"
-    				                        v-model="selectedProductStates"
-    				                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-    				                    />
-    				                    <span>{{ trans(state.label) }}</span>
-    				                </label>
-    				            </div>
-    				        </div>
-
-    				        <div class="border-t pt-4">
-    				            <div class="font-medium text-gray-800 mb-2">
-    				                {{ trans("Product Sale Status") }}
-    				            </div>
-    				            <div class="space-y-2">
-    				                <label
-    				                    v-for="availibility in productAvailibility"
-    				                    :key="availibility.key"
-    				                    class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
-    				                >
-    				                    <input
-    				                        type="checkbox"
-    				                        :value="availibility.key"
-    				                        v-model="selectedProductAvailibility"
-    				                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-    				                    />
-    				                    <span>{{ trans(availibility.label) }}</span>
-    				                </label>
-    				            </div>
-    				        </div>
-
-    				    </div>
-
-    				    <div class="p-3 border-t bg-white sticky bottom-0 z-10">
-    				        <Button
-    				            :loading="isDownloadingExtendedProperties"
-    				            :disabled="isDownloadingExtendedProperties"
-    				            type="primary"
-    				            class="w-full !px-3 !py-2 !justify-center"
-    				            @click="onDownloadExtendedProperties"
-    				            :label="trans('Export Extended Properties')"
-    				        />
-    				    </div>
-
-    				</div>
+						<div class="p-3 border-t bg-white sticky bottom-0 z-10">
+							<Button
+								:loading="isDownloadingExtendedProperties"
+								:disabled="isDownloadingExtendedProperties"
+								type="primary"
+								class="w-full !px-3 !py-2 !justify-center"
+								@click="onDownloadExtendedProperties"
+								:label="trans('Export Extended Properties')" />
+						</div>
+					</div>
 				</Popover>
 
 				<a
@@ -1072,7 +1072,7 @@ const layout = inject("layout", layoutStructure)
 			</div>
 
 			<Button
-				@click="(e) => _import_modal = true"
+				@click="(e) => (_import_modal = true)"
 				v-tooltip="trans('Import from xlsx file')"
 				:icon="faUpload"
 				xloading="!!isLoadingSpecificChannel.length"
@@ -1238,16 +1238,11 @@ const layout = inject("layout", layoutStructure)
 		</div>
 	</div>
 	<!-- Section: Alert if there is product not synced -->
-	<div
-		v-if="selectedProducts.length > 0"
-		class="px-4 pt-4 grid justify-items-end"
-	>
+	<div v-if="selectedProducts.length > 0" class="px-4 pt-4 grid justify-items-end">
 		<div class="gap-x-3 flex">
 			<Button
 				v-if="selectedProducts.length > 0"
-				v-tooltip="
-					trans('Edit Product :platform', { platform: props.platform_data?.name })
-				"
+				v-tooltip="trans('Edit Product :platform', { platform: props.platform_data?.name })"
 				:type="'tertiary'"
 				:label="trans('Edit Price (:_count)', { _count: selectedProducts?.length })"
 				:loading="loadingAction.includes('bulk-edit')"
@@ -1263,9 +1258,7 @@ const layout = inject("layout", layoutStructure)
 					})
 				"
 				:type="'delete'"
-				:label="
-					trans('Unlink & Delete (:_count)', { _count: selectedProducts?.length })
-				"
+				:label="trans('Unlink & Delete (:_count)', { _count: selectedProducts?.length })"
 				:loading="loadingAction.includes('bulk-unlink')"
 				@click="
 					() =>
@@ -2084,14 +2077,35 @@ const layout = inject("layout", layoutStructure)
 								">
 								{{
 									Math.round(
-										((uploadProgressData.done + uploadProgressData.data.number_fails) / uploadProgressData.total) * 100
+										(uploadProgressData.done /
+											uploadProgressData.total) *
+											100
 									)
 								}}%
 							</div>
 						</div>
 
+						<div class="mt-4 px-4" v-if="uploadProgressData.total > 0">
+							<div class="flex justify-center text-xs gap-4">
+								<span class="flex items-center gap-1 text-lime-600">
+									<FontAwesomeIcon
+										:icon="faCheck"
+										class="w-3.5 h-3.5"
+										v-tooltip="'success to upload'" />
+									{{ uploadProgressData.done }}
+								</span>
+								<span class="flex items-center gap-1 text-red-500">
+									<FontAwesomeIcon
+										:icon="faTimes"
+										class="w-3.5 h-3.5"
+										v-tooltip="'failed to upload'" />
+									{{ uploadProgressData.data.number_fails }}
+								</span>
+							</div>
+						</div>
+
 						<!-- Progress Bar -->
-						<div class="mt-4 px-4">
+						<!--						<div class="mt-4 px-4">
 							<PureProgressBar
 								v-if="uploadProgressData.total > 0"
 								:progressBars="uploadProgressData" />
@@ -2104,7 +2118,7 @@ const layout = inject("layout", layoutStructure)
 									aria-hidden="true" />
 								<span>{{ trans("Preparing...") }}</span>
 							</div>
-						</div>
+						</div>-->
 
 						<div
 							v-if="
@@ -2125,6 +2139,5 @@ const layout = inject("layout", layoutStructure)
 		:title="bulk_import_product.title"
 		:progressDescription="bulk_import_product.progressDescription"
 		:preview_template="bulk_import_product.preview_template"
-		:upload_spreadsheet="bulk_import_product.upload_spreadsheet"
-	/>
+		:upload_spreadsheet="bulk_import_product.upload_spreadsheet" />
 </template>
