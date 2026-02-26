@@ -26,7 +26,19 @@ class GetGroupNavigation
             'route'   => [
                 'name' => 'grp.dashboard.show'
             ],
-            'topMenu' => []
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        "tooltip" => __("Catalogue"),
+                        "icon"    => ["fal", "fa-books"],
+                        'root'    => '',
+                        "route"   => [
+                            "name"       => '',
+                            "parameters" => [],
+                        ],
+                    ],
+                ]
+            ]
         ];
         $groupNavigation['clocking-machines'] = $this->getClockingMachinesNavs(); //need permission for just employees can access
 

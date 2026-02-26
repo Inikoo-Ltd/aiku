@@ -8,14 +8,15 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\UI\IndexTopListedFamilies;
+use App\Actions\Catalogue\UI\IndexTopListedProducts;
+use App\Actions\Catalogue\UI\IndexTopSoldProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\Shop\ShopEngineEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Http\Resources\Catalogue\DepartmentResource;
-use App\Http\Resources\Catalogue\FamilyResource;
-use App\Http\Resources\Catalogue\ProductResource;
+use App\Enums\Catalogue\CatalogueTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
+use App\Http\Resources\CRM\TopListedProductsResource;
+use App\Http\Resources\CRM\TopSoldProductsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -26,389 +27,20 @@ class ShowCatalogue extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-
     public function handle(Shop $shop): Shop
     {
         return $shop;
     }
 
-
-
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(CatalogueTabsEnum::values());
 
         return $this->handle($shop);
     }
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-        $timesUpdate = ['1d', '1w', '1m', '1y', 'all'];
-
-        $topFamily     = [];
-        $topDepartment = [];
-        $topProduct    = [];
-
-        //        foreach ($timesUpdate as $timeUpdate) {
-        //            $family = $shop->stats->{'top'.$timeUpdate.'Family'};
-        //
-        //            $topFamily[$timeUpdate] = $family ? FamilyResource::make($family) : null;
-        //
-        //            $department                 = $shop->stats->{'top'.$timeUpdate.'Department'};
-        //            $topDepartment[$timeUpdate] = $department ? DepartmentResource::make($department) : null;
-        //
-        //            $product                 = $shop->stats->{'top'.$timeUpdate.'Product'};
-        //            $topProduct[$timeUpdate] = $product ? ProductResource::make($product) : null;
-        //        }
-
-        $stats = [
-            [
-                'label'     => __('Current Products'),
-                'route'     => [
-                    'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
-                    'parameters' => [
-                        'organisation' => $shop->organisation->slug,
-                        'shop'         => $shop->slug
-                    ]
-                ],
-                'icon'      => 'fal fa-cube',
-                "color"     => "#38bdf8",
-                'value'     => $shop->stats->number_current_products,
-                'metaRight' => $shop->engine == ShopEngineEnum::AIKU ? [
-                    'tooltip' => __('Variants'),
-                    'icon'    => [
-                        'icon'  => 'fal fa-cubes',
-                        'class' => ''
-                    ],
-                    'count'   => $shop->stats->number_current_product_variants,
-                ] : null,
-                'metas'     => [
-
-                    [
-                        "icon"    => [
-                            "tooltip" => "active",
-                            "icon"    => "fas fa-check-circle",
-                            "class"   => "text-green-500"
-                        ],
-                        "count"   => $shop->stats->number_products_state_active,
-                        "tooltip" => "Active",
-                        'route'   => [
-                            'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
-                            'parameters' => [
-                                'organisation' => $shop->organisation->slug,
-                                'shop'         => $shop->slug,
-                            ]
-                        ],
-                    ],
-                    [
-                        "icon"    => [
-                            "tooltip" => "discontinuing",
-                            "icon"    => "fas fa-times-circle",
-                            "class"   => "text-amber-500"
-                        ],
-                        "count"   => $shop->stats->number_products_state_discontinuing,
-                        "tooltip" => "Discontinuing"
-                    ],
-                    [
-                        "icon"    => [
-                            "tooltip" => "discontinued",
-                            "icon"    => "fas fa-times-circle",
-                            "class"   => "text-red-500"
-                        ],
-                        "count"   => $shop->stats->number_products_state_discontinued,
-                        "tooltip" => "Discontinued",
-                        'route'   => [
-                            'name'       => 'grp.org.shops.show.catalogue.products.discontinued_products.index',
-                            'parameters' => [
-                                'organisation' => $shop->organisation->slug,
-                                'shop'         => $shop->slug,
-                            ]
-                        ],
-                    ],
-                    [
-                        "tooltip" => "Products In Process",
-                        "icon"    => [
-                            'icon'  => 'fal fa-seedling',
-                            'class' => 'text-green-500 animate-pulse'
-                        ],
-                        "count"   => $shop->stats->number_products_state_in_process,
-                        'route'   => [
-                            'name'       => 'grp.org.shops.show.catalogue.products.in_process_products.index',
-                            'parameters' => [
-                                'organisation' => $shop->organisation->slug,
-                                'shop'         => $shop->slug,
-                            ]
-                        ],
-                    ],
-                ]
-            ],
-        ];
-
-
-        if ($shop->engine == ShopEngineEnum::AIKU) {
-            $stats = array_merge(
-                [
-                [
-                    'label' => __('Departments'),
-                    'route' => [
-                        'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                        'parameters' => [
-                            'organisation' => $shop->organisation->slug,
-                            'shop'         => $shop->slug
-                        ]
-                    ],
-                    'icon'  => 'fal fa-folder-tree',
-                    "color" => "#a3e635",
-                    'value' => $shop->stats->number_current_departments,
-                    'metaRight' => [
-                        'tooltip' => __('Sub Departments'),
-                        'icon'    => [
-                            'icon'  => 'fal fa-folder-download',
-                            'class' => ''
-                        ],
-                        'route' => [
-                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
-                            'parameters' => [
-                                'organisation' => $shop->organisation->slug,
-                                'shop'         => $shop->slug
-                            ]
-                        ],
-                        'count'   => $shop->stats->number_current_sub_departments,
-                    ],
-                    'metas'     => [
-
-                        [
-                            'tooltip' => __('Active departments'),
-                            "icon"    => [
-                                "tooltip" => "active",
-                                "icon"    => "fas fa-check-circle",
-                                "class"   => "text-green-500"
-                            ],
-                            'count'   => $shop->stats->number_departments_state_active,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                'parameters' => [
-                                    'organisation'          => $shop->organisation->slug,
-                                    'shop'                  => $shop->slug,
-                                    'index_elements[state]' => 'active'
-                                ]
-                            ],
-                        ],
-
-                        [
-                            'tooltip' => __('Discontinuing'),
-                            'icon'    => [
-                                'icon'  => 'fas fa-times-circle',
-                                'class' => 'text-amber-500'
-                            ],
-                            'count'   => $shop->stats->number_departments_state_discontinuing,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                'parameters' => [
-                                    'organisation'          => $shop->organisation->slug,
-                                    'shop'                  => $shop->slug,
-                                    'index_elements[state]' => 'discontinuing'
-                                ]
-                            ],
-                        ],
-                        [
-                            'tooltip' => __('Discontinued Departments'),
-                            'icon'    => [
-                                'icon'  => 'fas fa-times-circle',
-                                'class' => 'text-red-500'
-                            ],
-                            'count'   => $shop->stats->number_departments_state_discontinued,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                'parameters' => [
-                                    'organisation'          => $shop->organisation->slug,
-                                    'shop'                  => $shop->slug,
-                                    'index_elements[state]' => 'discontinued'
-                                ]
-                            ],
-                        ],
-                        [
-                            'tooltip' => __('In process'),
-                            'icon'    => [
-                                'icon'  => 'fal fa-seedling',
-                                'class' => 'text-green-500 animate-pulse'
-                            ],
-                            'count'   => $shop->stats->number_departments_state_in_process,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                'parameters' => [
-                                    'organisation'          => $shop->organisation->slug,
-                                    'shop'                  => $shop->slug,
-                                    'index_elements[state]' => 'in_process'
-                                ]
-                            ],
-                        ],
-                    ]
-                ],
-                [
-                    'label' => __('Families'),
-                    'route' => [
-                        'name'       => 'grp.org.shops.show.catalogue.families.index',
-                        'parameters' => [
-                            'organisation' => $shop->organisation->slug,
-                            'shop'         => $shop->slug
-                        ]
-                    ],
-                    'icon'  => 'fal fa-folder',
-                    "color" => "#e879f9",
-                    'value' => $shop->stats->number_current_families,
-                    'metas' => [
-                        [
-                            'tooltip' => __('Active families'),
-                            "icon"    => [
-                                "tooltip" => "active",
-                                "icon"    => "fas fa-check-circle",
-                                "class"   => "text-green-500"
-                            ],
-                            'count'   => $shop->stats->number_families_state_active,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.families.index',
-                                'parameters' => [
-                                    'organisation'          => $shop->organisation->slug,
-                                    'shop'                  => $shop->slug,
-                                    'index_elements[state]' => 'active'
-                                ]
-                            ],
-                        ],
-                        [
-                            'tooltip' => __('Discontinuing families'),
-                            'icon'    => [
-                                'icon'  => 'fas fa-times-circle',
-                                'class' => 'text-amber-500'
-                            ],
-                            'count'   => $shop->stats->number_families_state_discontinuing,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.families.index',
-                                'parameters' => [
-                                    'organisation'          => $shop->organisation->slug,
-                                    'shop'                  => $shop->slug,
-                                    'index_elements[state]' => 'discontinuing'
-                                ]
-                            ],
-                        ],
-                        [
-                            'tooltip' => __('Discontinued families'),
-                            'icon'    => [
-                                'icon'  => 'fas fa-times-circle',
-                                'class' => 'text-red-500'
-                            ],
-                            'count'   => $shop->stats->number_families_state_discontinued,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.families.index',
-                                'parameters' => [
-                                    'organisation'          => $shop->organisation->slug,
-                                    'shop'                  => $shop->slug,
-                                    'index_elements[state]' => 'discontinued'
-                                ]
-                            ],
-                        ],
-                        [
-                            'tooltip' => __('Families in process'),
-                            'icon'    => [
-                                'icon'  => 'fal fa-seedling',
-                                'class' => 'text-green-500 animate-pulse'
-                            ],
-                            'count'   => $shop->stats->number_families_state_in_process,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.families.index',
-                                'parameters' => [
-                                    'organisation'          => $shop->organisation->slug,
-                                    'shop'                  => $shop->slug,
-                                    'index_elements[state]' => 'in_process'
-                                ]
-                            ],
-                        ],
-                    ]
-                ],
-            ],
-                $stats,
-                [
-                [
-                    'label' => __('Collections'),
-                    'route' => [
-                        'name'       => 'grp.org.shops.show.catalogue.collections.active.index',
-                        'parameters' => [
-                            'organisation' => $shop->organisation->slug,
-                            'shop'         => $shop->slug
-                        ]
-                    ],
-                    'icon'  => 'fal fa-album-collection',
-                    "color" => "#4f46e5",
-                    'value' => $shop->stats->number_collections_state_active,
-                    'metas' => [
-                        [
-                            'hide'    => $shop->stats->number_collections_products_status_discontinuing == 0,
-                            'tooltip' => __('Discontinuing collections'),
-                            'icon'    => [
-                                'icon'  => 'fas fa-exclamation-triangle',
-                                'class' => 'text-amber-500'
-                            ],
-                            'count'   => $shop->stats->number_collections_products_status_discontinuing,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.collections.active.index',
-                                'parameters' => [
-                                    'organisation'    => $shop->organisation->slug,
-                                    'shop'            => $shop->slug,
-                                    'index_elements[state]' => 'discontinuing'
-                                ]
-                            ],
-                        ],
-                        [
-                            'hide'    => $shop->stats->number_collections_products_status_discontinued == 0,
-                            'tooltip' => __('Discontinued collections'),
-                            'icon'    => [
-                                'icon'  => 'fas fa-exclamation-triangle',
-                                'class' => 'text-red-500'
-                            ],
-                            'count'   => $shop->stats->number_collections_products_status_discontinued,
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.catalogue.collections.active.index',
-                                'parameters' => [
-                                    'organisation'    => $shop->organisation->slug,
-                                    'shop'            => $shop->slug,
-                                    'index_elements[state]' => 'discontinued'
-                                ]
-                            ],
-                        ],
-                    ]
-                ],
-                [
-                    'label'           => __('Stray Families'),
-                    'is_negative'     => true,
-                    'route'           => [
-                        'name'       => 'grp.org.shops.show.catalogue.families.no_department.index',
-                        'parameters' => [
-                            'organisation' => $shop->organisation->slug,
-                            'shop'         => $shop->slug
-                        ]
-                    ],
-                    'icon'            => 'fal fa-folder',
-                    "backgroundColor" => "#ff000011",
-                    'value'           => $shop->stats->number_families_no_department,
-                ],
-                [
-                    'label'           => __('Orphan Products'),
-                    'is_negative'     => true,
-                    'route'           => [
-                        'name'       => 'grp.org.shops.show.catalogue.products.orphan_products.index',
-                        'parameters' => [
-                            'organisation' => $shop->organisation->slug,
-                            'shop'         => $shop->slug
-                        ]
-                    ],
-                    'icon'            => 'fal fa-cube',
-                    "backgroundColor" => "#ff000011",
-                    'value'           => $shop->stats->number_products_no_family,
-                ],
-            ]
-            );
-        }
-
         return Inertia::render(
             'Org/Catalogue/Catalogue',
             [
@@ -427,59 +59,40 @@ class ShowCatalogue extends OrgAction
                         'title' => __('Catalogue'),
                         'icon'  => 'fal fa-books'
                     ],
-
                 ],
-                'top_selling' => [
-                    'family'     => [
-                        'label' => __('Top Family'),
-                        'icon'  => 'fal fa-folder',
-                        'value' => $topFamily
-                    ],
-                    'department' => [
-                        'label' => __('Top Department'),
-                        'icon'  => 'fal fa-folder-tree',
-                        'value' => $topDepartment
-                    ],
-                    'product'    => [
-                        'label' => __('Top Product'),
-                        'icon'  => 'fal fa-folder-tree',
-                        'value' => $topProduct
-                    ],
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => CatalogueTabsEnum::navigation()
                 ],
-                'stats'       => array_merge($stats, [
-                    [
-                        'label'           => __('Out Of Stock Products'),
-                        'is_negative'     => true,
-                        'route'           => [
-                            'name'       => 'grp.org.shops.show.catalogue.products.out_of_stock_products.index',
-                            'parameters' => [
-                                'organisation' => $shop->organisation->slug,
-                                'shop'         => $shop->slug
-                            ]
-                        ],
-                        'icon'            => 'fal fa-cube',
-                        "backgroundColor" => "#ff000011",
-                        'value'           => $shop->stats->number_products_status_out_of_stock,
-                        'metaRight' => $shop->type == ShopTypeEnum::EXTERNAL ? null : [
-                            'tooltip' => __('Back In Stock Reminders'),
-                            'customClass'   => 'border border-red-500',
-                            'icon'    => [
-                                'icon'  => 'fal fa-mail-bulk',
-                                'class' => 'mr-1'
-                            ],
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.index',
-                                'parameters' => [
-                                    'organisation' => $shop->organisation->slug,
-                                    'shop'         => $shop->slug
-                                ]
-                            ],
-                            'count'   => $shop->stats->number_current_sub_departments,
-                        ],
-                    ],
-                ])
-
+                CatalogueTabsEnum::SHOWCASE->value =>
+                    $this->tab == CatalogueTabsEnum::SHOWCASE->value
+                        ? fn () => GetCatalogueShowcase::run($shop)
+                        : Inertia::lazy(fn () => GetCatalogueShowcase::run($shop)),
+                CatalogueTabsEnum::TOP_LISTED_FAMILIES->value =>
+                    $this->tab == CatalogueTabsEnum::TOP_LISTED_FAMILIES->value
+                        ? fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))
+                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))),
+                CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value =>
+                    $this->tab == CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value
+                        ? fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))
+                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))),
+                CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value =>
+                    $this->tab == CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value
+                        ? fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($shop, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))
+                        : Inertia::lazy(fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($shop, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))),
             ]
+        )->table(
+            IndexTopListedFamilies::make()->tableStructure(
+                prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value,
+            )
+        )->table(
+            IndexTopListedProducts::make()->tableStructure(
+                prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value,
+            )
+        )->table(
+            IndexTopSoldProducts::make()->tableStructure(
+                prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value,
+            )
         );
     }
 
@@ -487,7 +100,6 @@ class ShowCatalogue extends OrgAction
     {
         return new ShopResource($shop);
     }
-
 
     public function getPrevious(Shop $shop, ActionRequest $request): ?array
     {
@@ -518,7 +130,6 @@ class ShowCatalogue extends OrgAction
                         'organisation' => $this->organisation->slug,
                         'shop'         => $shop->slug
                     ]
-
                 ]
             ]
         };
@@ -526,21 +137,20 @@ class ShowCatalogue extends OrgAction
 
     public function getBreadcrumbs(array $routeParameters): array
     {
-        return
-            array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
+        return array_merge(
+            ShowShop::make()->getBreadcrumbs($routeParameters),
+            [
                 [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.catalogue.dashboard',
-                                'parameters' => $routeParameters
-                            ],
-                            'label' => __('Catalogue'),
-                        ]
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.catalogue.dashboard',
+                            'parameters' => $routeParameters
+                        ],
+                        'label' => __('Catalogue'),
                     ]
                 ]
-            );
+            ]
+        );
     }
 }
