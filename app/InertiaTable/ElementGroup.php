@@ -13,17 +13,10 @@ use Illuminate\Contracts\Support\Arrayable;
 
 #[AllowDynamicProperties] class ElementGroup implements Arrayable
 {
-    /**
-     * @param string $key
-     * @param string|array $label
-     * @param array $elements
-     * @param string|null $default
-     */
     public function __construct(
         public string $key,
         public string|array $label,
         public array $elements,
-        public ?string $default = null
     ) {
     }
 
@@ -33,7 +26,6 @@ use Illuminate\Contracts\Support\Arrayable;
             'key'      => $this->key,
             'label'    => $this->label,
             'elements' => $this->elements,
-            'default'  => $this->default
         ];
     }
 }

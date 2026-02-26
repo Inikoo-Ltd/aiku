@@ -136,12 +136,10 @@ class IndexEmployees extends OrgAction
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-                $default = ($key === 'state' && $parent instanceof Organisation) ? EmployeeStateEnum::WORKING->value : null;
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements'],
-                    default: $default
+                    elements: $elementGroup['elements']
                 );
             }
 
