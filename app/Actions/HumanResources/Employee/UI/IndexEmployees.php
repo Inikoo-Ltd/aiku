@@ -41,7 +41,7 @@ class IndexEmployees extends OrgAction
     {
         return [
             'state' => [
-                'label'    => __('State'),
+                'label' => __('State'),
                 'elements' => array_merge_recursive(
                     EmployeeStateEnum::labels(),
                     EmployeeStateEnum::count($parent)
@@ -52,10 +52,10 @@ class IndexEmployees extends OrgAction
                 }
 
             ],
-            'type'  => [
-                'label'    => __('Type'),
+            'type' => [
+                'label' => __('Type'),
                 'elements' => EmployeeTypeEnum::labels(),
-                'engine'   => function ($query, $elements) {
+                'engine' => function ($query, $elements) {
                     $query->whereIn('type', $elements);
                 }
             ],
@@ -87,6 +87,10 @@ class IndexEmployees extends OrgAction
             $queryBuilder->where('employees.group_id', $parent->id);
         }
         $queryBuilder->leftjoin('organisations', 'employees.organisation_id', '=', 'organisations.id');
+
+        if ($parent instanceof Organisation && !$this->hasExplicitStateFilter($prefix)) {
+            $queryBuilder->where('employees.state', EmployeeStateEnum::WORKING->value);
+        }
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -128,14 +132,16 @@ class IndexEmployees extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $default = ($key === 'state' && $parent instanceof Organisation) ? EmployeeStateEnum::WORKING->value : null;
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
+                    elements: $elementGroup['elements'],
+                    default: $default
                 );
             }
 
@@ -147,16 +153,16 @@ class IndexEmployees extends OrgAction
 
                 $table->withEmptyState(
                     [
-                        'title'       => __('no employees'),
+                        'title' => __('no employees'),
                         'description' => $this->canEdit ? __('Get started by creating a new employee.') : null,
-                        'count'       => $parent->humanResourcesStats->number_employees,
-                        'action'      => $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
+                        'count' => $parent->humanResourcesStats->number_employees,
+                        'action' => $this->canEdit ? [
+                            'type' => 'button',
+                            'style' => 'create',
                             'tooltip' => __('New employee'),
-                            'label'   => __('Employee'),
-                            'route'   => [
-                                'name'       => 'grp.org.hr.employees.create',
+                            'label' => __('Employee'),
+                            'route' => [
+                                'name' => 'grp.org.hr.employees.create',
                                 'parameters' => [
                                     'organisation' => $this->parent->slug
                                 ]
@@ -165,7 +171,7 @@ class IndexEmployees extends OrgAction
                     ]
                 );
             }
-            $table->withLabelRecord([__('employee'),__('employees')]);
+            $table->withLabelRecord([__('employee'), __('employees')]);
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
@@ -192,70 +198,69 @@ class IndexEmployees extends OrgAction
             'Org/HumanResources/Employees',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Employees'),
-                'pageHead'    => [
-                    'icon'    => [
+                'title' => __('Employees'),
+                'pageHead' => [
+                    'icon' => [
                         'title' => __('Employee'),
-                        'icon'  => 'fal fa-user-hard-hat'
+                        'icon' => 'fal fa-user-hard-hat'
                     ],
-                    'model'   => __('Human Resources'),
-                    'title'   => __('Employees'),
+                    'model' => __('Human Resources'),
+                    'title' => __('Employees'),
                     'actions' =>
                         $this->canEdit ? [
                             [
-                                'key'   => 'btn_upload',
-                                'type'  => 'button',
+                                'key' => 'btn_upload',
+                                'type' => 'button',
                                 'style' => 'secondary',
                                 'label' => __('Upload'),
-                                'icon'    => ['fal', 'fa-upload'],
+                                'icon' => ['fal', 'fa-upload'],
                             ],
                             [
-                                'type'  => 'button',
+                                'type' => 'button',
                                 'style' => 'create',
                                 'label' => __('Employee'),
                                 'route' => [
-                                    'name'       => 'grp.org.hr.employees.create',
+                                    'name' => 'grp.org.hr.employees.create',
                                     'parameters' => $request->route()->originalParameters()
                                 ]
                             ],
                         ]
-                        : false
+                            : false
                 ],
                 'upload_spreadsheet' => [
-                    'event'             => 'action-progress',
-                    'channel'           => 'grp.personal.' . $request->user()->id,
-                    'required_fields'   => ['worker_number', 'alias', 'job_title', 'positions', 'starting_date', 'state'],
-                    'template'          => [
+                    'event' => 'action-progress',
+                    'channel' => 'grp.personal.' . $request->user()->id,
+                    'required_fields' => ['worker_number', 'alias', 'job_title', 'positions', 'starting_date', 'state'],
+                    'template' => [
                         'label' => 'Download template (.xlsx)',
                     ],
                     'route' => [
-                        'upload'  => [
-                            'name'  => 'grp.models.employees.import',
+                        'upload' => [
+                            'name' => 'grp.models.employees.import',
                             'parameters' => [
                                 'organisation' => $this->parent->id,
                             ],
                             'method' => 'post'
                         ],
-                        'history'  => [
-                            'name'  => 'grp.org.hr.employees.history-uploads',
+                        'history' => [
+                            'name' => 'grp.org.hr.employees.history-uploads',
                             'parameters' => [
                                 'organisation' => $this->parent->slug,
                             ],
                             'method' => 'get'
                         ],
                         'download' => [
-                            'name'  => 'grp.org.hr.employees.uploads.templates',
+                            'name' => 'grp.org.hr.employees.uploads.templates',
                             'parameters' => [
                                 'organisation' => $this->parent->slug
                             ]
                         ]
                     ],
                 ],
-                'data'        => EmployeesResource::collection($employees),
+                'data' => EmployeesResource::collection($employees),
             ]
         )->table($this->tableStructure($this->parent));
     }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -273,27 +278,34 @@ class IndexEmployees extends OrgAction
         return $this->handle(group());
     }
 
+    protected function hasExplicitStateFilter(?string $prefix = null): bool
+    {
+        $argumentName = ($prefix ? $prefix . '_' : '') . 'elements.state';
+
+        return request()->filled($argumentName);
+    }
+
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         $headCrumb = function (string $routeName, array $routeParameters) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => $routeName,
+                            'name' => $routeName,
                             'parameters' => array_merge(
                                 [
                                     '_query' => [
-                                        'elements[state]' => 'working'
+                                        'elements[state]' => EmployeeStateEnum::WORKING->value
                                     ]
                                 ],
                                 $routeParameters
                             )
                         ],
                         'label' => __('Employees'),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
