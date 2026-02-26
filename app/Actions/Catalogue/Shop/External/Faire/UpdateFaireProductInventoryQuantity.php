@@ -10,6 +10,8 @@ use Illuminate\Console\Command;
 
 class UpdateFaireProductInventoryQuantity extends OrgAction
 {
+    public int $jobTries = 1;
+
     public function handle(Product $product): void
     {
         if (!$product->marketplace_id) {
