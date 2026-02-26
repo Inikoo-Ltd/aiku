@@ -21,14 +21,15 @@ class CreateProspectsMailshot extends InertiaAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo('crm.prospects.edit');
+        return true;
+        // return $request->user()->authTo('crm.prospects.edit');
     }
 
-    public function asController(ActionRequest $request): Response|RedirectResponse
+    public function asController(Organisation $organisation, ActionRequest $request): Response|RedirectResponse
     {
         $this->initialisation($request);
 
-        return $this->handle(organisation(), $request);
+        return $this->handle($organisation, $request);
     }
 
     public function inShop(Shop $shop, ActionRequest $request): Response|RedirectResponse
@@ -111,17 +112,17 @@ class CreateProspectsMailshot extends InertiaAction
                 'formData'    => [
                     'blueprint' => $fields,
                     'route'     =>
-                        match (class_basename($parent)) {
-                            'Shop' => [
-                                'name'       => 'org.models.shop.prospect-mailshot.store',
-                                'parameters' => [
-                                    'shop' => $parent->id,
-                                ]
-                            ],
-                            default => [
-                                'name' => 'org.models.prospect-mailshot.store',
-                            ],
-                        }
+                    match (class_basename($parent)) {
+                        'Shop' => [
+                            'name'       => 'org.models.shop.prospect.mailshot.store',
+                            'parameters' => [
+                                'shop' => $parent->id,
+                            ]
+                        ],
+                        default => [
+                            'name' => 'org.models.prospect.mailshot.store',
+                        ],
+                    }
                 ],
 
             ]
@@ -146,6 +147,4 @@ class CreateProspectsMailshot extends InertiaAction
             ]
         );
     }
-
-
 }

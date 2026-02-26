@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\CRM\Prospect\Mailshots\UI\CreateProspectMailshot;
+use App\Actions\CRM\Prospect\Mailshots\UI\CreateProspectsMailshot;
 use App\Actions\CRM\Prospect\Mailshots\UI\IndexProspectMailshots;
 use App\Actions\CRM\Prospect\UI\CreateProspect;
 use App\Actions\CRM\Prospect\UI\EditProspect;
@@ -18,6 +18,6 @@ Route::get('/', IndexProspects::class)->name('index');
 Route::get('export', [ExportProspects::class, 'inShop'])->name('export');
 Route::get('/create', CreateProspect::class)->name('create');
 Route::get('/mailshots', IndexProspectMailshots::class)->name('mailshots.index');
-Route::get('/mailshots/create', CreateProspectMailshot::class)->name('mailshots.create');
+Route::get('/mailshots/create', CreateProspectsMailshot::class)->name('mailshots.create');
 Route::get('/{prospect}', ShowProspect::class)->name('show');
 Route::get('/{prospect}/edit', EditProspect::class)->name('edit');
