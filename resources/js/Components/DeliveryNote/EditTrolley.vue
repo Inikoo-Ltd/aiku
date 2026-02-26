@@ -81,11 +81,12 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
                 isLoadingSubmitTrolley.value = trolleyId
             },
             onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Successfully submit the data"),
-                //     type: "success"
-                // })
+                isOpenModal.value = false
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully changed the trolley"),
+                    type: "success"
+                })
             },
             onError: errors => {
                 notify({
