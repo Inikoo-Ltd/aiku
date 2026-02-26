@@ -53,6 +53,7 @@ use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasEmail;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearchableText;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Builder;
@@ -214,6 +215,7 @@ class Customer extends Model implements HasMedia, Auditable
     use HasEmail;
     use HasApiTokens;
     use Notifiable;
+    use HasSearchableText;
 
     protected $casts = [
         'data'                        => 'array',
@@ -265,6 +267,15 @@ class Customer extends Model implements HasMedia, Auditable
         'contact_website',
         'identity_document_type',
         'identity_document_number',
+    ];
+
+    protected array $searchable_columns = [
+        'reference',
+        'name',
+        'contact_name',
+        'company_name',
+        'email',
+        'phone',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -320,6 +331,11 @@ class Customer extends Model implements HasMedia, Auditable
                     ]
                 );
             }
+        });
+
+        
+        static::saving(function ($model) {
+            $model->syncSearchableText();
         });
     }
 
