@@ -44,6 +44,7 @@ class GetDispatchHubShowcase
             $stats['dropshipping'] = GetDispatchHubDropshippingWidget::run($warehouse);
         }
 
+
         return $stats;
     }
 }

@@ -23,7 +23,7 @@ class CreateRetinaNewBulkPortfoliosToShopify extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        CreateNewBulkPortfoliosToShopify::run($customerSalesChannel, $attributes);
+        CreateNewBulkPortfoliosToShopify::dispatch($customerSalesChannel, $attributes);
     }
 
     public function rules(): array

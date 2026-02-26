@@ -99,6 +99,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_note_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_delivery_notes_state_picked
+ * @property int $number_delivery_notes_state_packing
+ * @property int $number_delivery_notes_cancelled_at_state_picked
+ * @property int $number_orders_state_picked
+ * @property int $number_orders_state_packing
  * @property-read \App\Models\Catalogue\Collection $collection
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionsOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CollectionsOrderingStats newQuery()

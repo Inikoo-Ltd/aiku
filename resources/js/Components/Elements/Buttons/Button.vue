@@ -86,7 +86,7 @@ switch (props.size) {
     sizeClass = "rounded-sm px-1 py-0.5 md:px-2 md:py-1 text-xxs";
     break;
   case "xs":
-    sizeClass = "rounded-sm px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs";
+    sizeClass = "rounded px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs";
     break;
   case "sm":
   case "s":
@@ -165,7 +165,7 @@ const getActionIcon = (icon: any) => {
 </script>
 
 <template>
-  <button type="button"  :style="injectStyle ?? {}"
+  <button :style="injectStyle ?? {}"
           class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
           :class="[
             full ? 'w-full justify-center' : 'xmin-w-max',

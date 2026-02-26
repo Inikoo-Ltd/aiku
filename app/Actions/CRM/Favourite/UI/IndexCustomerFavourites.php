@@ -80,6 +80,8 @@ class IndexCustomerFavourites extends OrgAction
                 'products.web_images',
                 'products.slug',
                 'webpages.canonical_url',
+                'products.offers_data as product_offers_data'
+
         ]);
 
         return $query->defaultSort('products.code')

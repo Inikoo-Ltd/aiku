@@ -45,8 +45,8 @@ const dataSetsSplit = computed(() => {
     const shopsBody = props.tableData.tables.organisations.body.filter(row => row.state === 'active')
 
     const sortedShops = [...shopsBody].sort((a, b) => {
-        const aValue = Number(a.columns.sales_grp_currency[props.intervals.value]?.raw_value) || 0;
-        const bValue = Number(b.columns.sales_grp_currency[props.intervals.value]?.raw_value) || 0;
+        const aValue = Number(a.columns.sales_grp_currency_external[props.intervals.value]?.raw_value) || 0;
+        const bValue = Number(b.columns.sales_grp_currency_external[props.intervals.value]?.raw_value) || 0;
         return bValue - aValue; // Descending (highest first)
     });
 
@@ -58,13 +58,13 @@ const dataSetsSplit = computed(() => {
     const firstFour = sortedShops.slice(0, 4);
 
     const summedValue = sortedShops.slice(4).reduce((sum, item) => {
-      return sum + (Number(item.columns.sales_grp_currency[props.intervals.value]?.raw_value) || 0)
+      return sum + (Number(item.columns.sales_grp_currency_external[props.intervals.value]?.raw_value) || 0)
     }, 0);
 
     // Create the summed object
     const summedEntry = {
         columns: {
-            sales_grp_currency: {
+            sales_grp_currency_external: {
                 [props.intervals.value]: {
                     raw_value: summedValue,
                     formatted_value: trans('Others')
@@ -93,7 +93,7 @@ const isLoadingVisit = ref<number | null>(null)
                 class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
                 <!-- Total Count -->
                 <div class="flex gap-x-2 items-end">
-                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_grp_currency_minified?.[intervals.value]?.formatted_value }}
+                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_grp_currency_external_minified?.[intervals.value]?.formatted_value }}
                 </div>
 
                 <!-- Case Breakdown -->
@@ -122,7 +122,7 @@ const isLoadingVisit = ref<number | null>(null)
                                 aria-hidden="true" />
                             <div class="text-gray-400">
                                 <span class="text-gray-500 font-semibold">{{ row.columns.label_minified.formatted_value }}</span>
-                                ({{ row.columns.sales_grp_currency_minified[intervals.value]?.formatted_value }})
+                                ({{ row.columns.sales_grp_currency_external_minified[intervals.value]?.formatted_value }})
                             </div>
                         </component>
                     </template>
@@ -137,7 +137,7 @@ const isLoadingVisit = ref<number | null>(null)
                     labels: dataSetsSplit.map(bod => bod.columns.label.formatted_value),
                     datasets: [
                         {
-                            data: dataSetsSplit.map(bod => bod.columns.sales_grp_currency[intervals.value].raw_value),
+                            data: dataSetsSplit.map(bod => bod.columns.sales_grp_currency_external[intervals.value].raw_value),
                             backgroundColor: [
                                 ...dataSetsSplit.map((dCase) => useStringToHex(dCase.columns.label.formatted_value)),
                             ],

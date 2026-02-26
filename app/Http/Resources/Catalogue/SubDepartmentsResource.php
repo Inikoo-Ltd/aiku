@@ -46,21 +46,6 @@ use Illuminate\Support\Arr;
  */
 class SubDepartmentsResource extends JsonResource
 {
-    private function calculateDelta($current, $lastYear): ?array
-    {
-        if ($lastYear == 0) {
-            return null;
-        }
-
-        $delta = (($current - $lastYear) / $lastYear) * 100;
-
-        return [
-            'value'       => $delta,
-            'formatted'   => number_format($delta, 1).'%',
-            'is_positive' => $delta > 0,
-            'is_negative' => $delta < 0,
-        ];
-    }
     public function toArray($request): array
     {
         return [
@@ -97,12 +82,30 @@ class SubDepartmentsResource extends JsonResource
             'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
             'image_thumbnail'               => Arr::get($this->web_images, 'main.thumbnail'),
             'currency_code'                 => $this->currency_code ?? null,
-            'sales'                         => $this->sales ?? null,
-            'sales_ly'                      => $this->sales_ly ?? null,
-            'sales_delta'                   => isset($this->sales, $this->sales_ly) ? $this->calculateDelta($this->sales, $this->sales_ly) : null,
+            'sales_grp_currency_external'   => $this->sales_grp_currency_external ?? null,
+            'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? null,
+            'sales_grp_currency_external_delta' => isset($this->sales_grp_currency_external, $this->sales_grp_currency_external_ly)
+                                                    ? $this->calculateDelta($this->sales_grp_currency_external, $this->sales_grp_currency_external_ly)
+                                                    : null,
             'invoices'                      => $this->invoices ?? null,
             'invoices_ly'                   => $this->invoices_ly ?? null,
             'invoices_delta'                => isset($this->invoices, $this->invoices_ly) ? $this->calculateDelta($this->invoices, $this->invoices_ly) : null,
+        ];
+    }
+
+    private function calculateDelta($current, $lastYear): ?array
+    {
+        if ($lastYear == 0) {
+            return null;
+        }
+
+        $delta = (($current - $lastYear) / $lastYear) * 100;
+
+        return [
+            'value'       => $delta,
+            'formatted'   => number_format($delta, 1).'%',
+            'is_positive' => $delta > 0,
+            'is_negative' => $delta < 0,
         ];
     }
 }

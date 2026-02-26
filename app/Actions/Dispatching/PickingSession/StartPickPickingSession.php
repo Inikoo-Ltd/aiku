@@ -9,7 +9,7 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
-use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;

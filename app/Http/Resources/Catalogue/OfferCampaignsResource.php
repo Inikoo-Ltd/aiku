@@ -39,7 +39,7 @@ class OfferCampaignsResource extends JsonResource
             'shop_name'             => $this->shop_name,
             'orders'                => $this->orders ?? 0,
             'invoices'              => $this->invoices ?? 0,
-            'sales'                 => $this->sales ?? 0,
+            'sales_grp_currency_external' => $this->sales_grp_currency_external ?? 0,
         ];
     }
 }

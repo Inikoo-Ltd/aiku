@@ -22,7 +22,6 @@ import {
     faTired,
     faFilePdf,
     faBoxOpen,
-    faExclamation,
     faExclamationTriangle,
 } from "@fal";
 import { faArrowRight, faCheck, faEye, faStar, faTimes } from "@fas";
@@ -34,7 +33,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
-import { computed, provide, ref, watch, onMounted } from "vue";
+import { computed, provide, ref, watch, onMounted, inject } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
@@ -56,6 +55,11 @@ import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
+import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
+import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
+import ButtonSetAsWaiting from "@/Components/DeliveryNote/ButtonSetAsWaiting.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import ButtonSelectBaysAndWaiting from "@/Components/DeliveryNote/ButtonSelectBaysAndWaiting.vue"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes);
@@ -128,9 +132,14 @@ const props = defineProps<{
         slug: string
     }
 	history: {}
+	shop: {
+		type: string   // 'b2b', 'dropshipping'
+	}
 	shop_type : string
 }>();
 
+
+const layout = inject('layout', layoutStructure)
 
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
@@ -352,7 +361,7 @@ onMounted(() => {
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
 				<div class="flex items-center justify-between w-full">
 					<span class="text-sm text-gray-700 font-medium mx-2">
-						{{ trans("Picking View") }}
+						{{ trans("Worker View") }}
 					</span>
 					<ToggleSwitch v-model="pickingView">
 						<template #handle="{ checked }">
@@ -425,7 +434,49 @@ onMounted(() => {
 				</template>
 			</ModalConfirmationDelete>
 		</template>
+
+		<!-- Button: Select trolley (only for Ecom) -->
+		<!-- <template
+			#button-set-for-waiting="{ action }"
+			v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"
+		>
+			<ButtonSelectBaysAndWaiting
+				:warehouse="warehouse"
+				:deliveryNote="delivery_note"
+			/>
+		</template> -->
+
+		<!-- Button: Select trolley (only for Ecom) -->
+		<template v-if="props.shop.type === 'b2b'"  #button-start-picking="{ action }">
+			<ButtonSelectTrolleys
+				:warehouse="warehouse"
+				:deliveryNote="delivery_note"
+			>
+
+			</ButtonSelectTrolleys>
+		</template>
+
+		<!-- Button: Select picked bays (only for Ecom) -->
+		<template v-if="props.shop.type === 'b2b'"  #button-set-as-packed="{ action }">
+			<ButtonSelectBays
+				:warehouse="warehouse"
+				:deliveryNote="delivery_note"
+			>
+
+			</ButtonSelectBays>
+		</template>
+
+		<!-- Button: Set as waiting (only for Ecom) -->
+		<!-- <template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-for-waiting="{ action }">
+			<ButtonSetAsWaiting
+				:warehouse="warehouse"
+				:deliveryNote="delivery_note"
+			>
+
+			</ButtonSetAsWaiting>
+		</template> -->
 	</PageHeading>
+
 	<!-- Section: Pallet Warning -->
 	<div v-if="alert?.status" class="p-2 pb-0">
 		<AlertMessage :alert />
@@ -507,7 +558,9 @@ onMounted(() => {
 		:deliveryNote="delivery_note"
 		:updateRoute="routes.update"
 		:is_external_order
-		:shipments />
+		:shipments
+		:warehouse
+	/>
 
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 

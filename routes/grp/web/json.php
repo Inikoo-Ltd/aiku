@@ -54,12 +54,14 @@ use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
 use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
+use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodeComputers;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
+use App\Actions\Dispatching\Trolley\Json\ListAvailableTrolleys;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
@@ -267,7 +269,9 @@ Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');
 Route::get('product-category/{productCategory:id}/last-ordered-products', GetLastOrderedProducts::class)->name('product_category.last-ordered-products.index');
 
-
 Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
+
+Route::get('{warehouse}/trolleys/list/', ListAvailableTrolleys::class)->name('available_trolleys.list');
+Route::get('{warehouse}/picked-bays/list/', ListAvailablePickedBays::class)->name('picked_bays.list');
 
 Route::get('/layout-template/{webpage}/template-list', FetchWebLayoutTemplateList::class)->name('layout_template.list_template');

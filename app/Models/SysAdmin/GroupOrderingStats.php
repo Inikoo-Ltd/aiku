@@ -130,6 +130,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $lost_revenue_other_amount
  * @property string $lost_revenue_other_amount_org_currency
  * @property string $lost_revenue_other_amount_grp_currency
+ * @property int $number_delivery_notes_state_picked
+ * @property int $number_delivery_notes_state_packing
+ * @property int $number_delivery_notes_cancelled_at_state_picked
+ * @property int $number_orders_state_picked
+ * @property int $number_orders_state_packing
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupOrderingStats newQuery()

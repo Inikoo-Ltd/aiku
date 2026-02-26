@@ -106,7 +106,7 @@ const getCard = (component) => {
     const view = props.view || 'desktop'
     const card = get(component, ['layout', 'card'])
 
-    if (!card) return {}
+    if (!card) return null
 
     if (card.desktop || card.tablet || card.mobile) {
         return card[view] || card.desktop || {}
@@ -202,7 +202,7 @@ onMounted(() => {
                         <SlideCorner v-for="(slideCorner, position) in filteredNulls(component?.layout?.corners)"
                             :position="position" :corner="slideCorner" :commonCorner="data.common.corners" />
                         <!-- CentralStage: slide-centralstage (prioritize) and common-centralStage -->
-                        <template v-if="getCard(component)">
+                        <template v-if="getCard(component) && Object.keys(getCard(component)).length">
                             <template v-for="(card, key) in getCard(component)" :key="key">
                                 <template v-if="card?.enabled">
 
@@ -255,13 +255,14 @@ onMounted(() => {
                                 </template>
                             </template>
                         </template>
-                        <template v-else>
-                            <CentralStage
-                                v-if="component?.layout?.centralStage?.title?.length > 0 || component?.layout?.centralStage?.subtitle?.length > 0"
-                                :data="component?.layout?.centralStage" />
-                            <CentralStage
-                                v-else-if="data.common?.centralStage?.title?.length > 0 || data.common?.centralStage?.subtitle?.length > 0"
-                                :data="data.common?.centralStage" />
+                        <template
+                            v-if="component?.layout?.centralStage?.title || component?.layout?.centralStage?.subtitle">
+                            <CentralStage :data="component.layout.centralStage" />
+                        </template>
+
+                        <template v-else-if="data.common?.centralStage?.title
+                            || data.common?.centralStage?.subtitle">
+                            <CentralStage :data="data.common.centralStage" />
                         </template>
 
                     </SwiperSlide>

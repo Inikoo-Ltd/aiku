@@ -68,9 +68,9 @@ class MasterSubDepartmentsResource extends JsonResource
                     'class'   => 'text-red-400'
                 ],
             'currency_code'    => $this->currency_code,
-            'sales'            => $this->sales ?? 0,
-            'sales_ly'         => $this->sales_ly ?? 0,
-            'sales_delta'      => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
+            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
             'invoices'         => $this->invoices ?? 0,
             'invoices_ly'      => $this->invoices_ly ?? 0,
             'invoices_delta'   => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),

@@ -1527,7 +1527,7 @@ const recalculateVat = async () => {
         <BoxStatPallet class="py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="">
-                    <div class="font-semibold xmb-2 text-base">
+                    <div v-if="is_shop_external" class="font-semibold xmb-2 text-base">
                         {{ trans("Delivery") }}
                         <span v-if="salesChannel" v-tooltip="trans('This order is from :salesChannel', { salesChannel: salesChannel.name})" class="font-normal text-sm opacity-70">({{ salesChannel.name }} <FontAwesomeIcon :icon="salesChannel.icon" class="" fixed-width aria-hidden="true" />)</span>
                     </div>

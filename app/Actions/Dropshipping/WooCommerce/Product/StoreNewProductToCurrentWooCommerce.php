@@ -30,16 +30,18 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): void
+    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): Portfolio
     {
         $result = $wooCommerceUser->checkConnection();
         if ($result) {
-            StoreWooCommerceProduct::run($wooCommerceUser, $portfolio);
+            $portfolio = StoreWooCommerceProduct::run($wooCommerceUser, $portfolio);
         } else {
             $wooCommerceUser->customerSalesChannel->update([
                 'ban_stock_update_util' => now()->addSeconds(10)
             ]);
         }
+
+        return $portfolio;
     }
 
     /**

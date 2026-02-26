@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Tiktok\Order\ShowTiktokOrderApi;
 use App\Actions\Dropshipping\Tiktok\Order\ValidateIncomingTiktokOrder;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -42,8 +43,10 @@ class HandleOrderIncomingTiktok
                     ValidateIncomingTiktokOrder::run($tiktokUser, $order);
                 } elseif (Arr::get($order, 'status') === 'CANCELLED') {
                     $orderToBeCancel = Order::where('customer_id', $tiktokUser->customer_id)
+                        ->whereNot('state', OrderStateEnum::CANCELLED)
                         ->where('platform_order_id', Arr::get($order, 'id'))
                         ->first();
+
                     if ($orderToBeCancel) {
                         CancelOrder::run($orderToBeCancel);
                     }

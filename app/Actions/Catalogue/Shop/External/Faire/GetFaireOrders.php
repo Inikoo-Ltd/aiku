@@ -97,6 +97,7 @@ class GetFaireOrders extends OrgAction
                     'created_at'          => Carbon::parse(Arr::get($faireOrder, 'created_at'))->toDateTimeString(),
                     'billing_address'     => $address,
                     'delivery_address'    => $address,
+                    'is_shipping_by_external'   => true,
                     'commission_amount'   => $orderCommission,
                     'pay_status'          => OrderPayStatusEnum::UNPAID->value,
                     'pay_detailed_status' => OrderPayDetailedStatusEnum::UNPAID->value
@@ -171,6 +172,7 @@ class GetFaireOrders extends OrgAction
                     }
 
                     $order     = SubmitOrder::make()->action($order);
+                    /** @var \App\Models\Inventory\Warehouse $warehouse */
                     $warehouse = $order->shop->organisation->warehouses()->first();
                     SendOrderToWarehouse::make()->action($order, [
                         'warehouse_id' => $warehouse->id

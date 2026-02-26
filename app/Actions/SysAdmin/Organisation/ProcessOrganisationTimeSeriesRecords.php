@@ -78,8 +78,8 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
                 [
                     'from'                         => $periodFrom,
                     'to'                           => $periodTo,
-                    'sales_org_currency'           => $result->sales_org_currency,
-                    'sales_grp_currency'           => $result->sales_grp_currency,
+                    'sales_org_currency_external'  => $result->sales_org_currency_external,
+                    'sales_grp_currency_external'  => $result->sales_grp_currency_external,
                     'lost_revenue_org_currency'    => $result->lost_revenue_org_currency,
                     'lost_revenue_grp_currency'    => $result->lost_revenue_grp_currency,
                     'customers_invoiced'           => $result->customers_invoiced,
@@ -118,8 +118,8 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
                 [
                     'from'                         => $periodData['from'],
                     'to'                           => $periodData['to'],
-                    'sales_org_currency'           => 0,
-                    'sales_grp_currency'           => 0,
+                    'sales_org_currency_external'  => 0,
+                    'sales_grp_currency_external'  => 0,
                     'lost_revenue_org_currency'    => 0,
                     'lost_revenue_grp_currency'    => 0,
                     'customers_invoiced'           => 0,

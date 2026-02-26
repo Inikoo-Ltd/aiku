@@ -47,8 +47,8 @@ const setValue = (fieldData: any, value: any) => {
         const existing = get(cloned, fieldName)
 
         set(cloned, fieldName, {
-        ...(existing && typeof existing === "object" ? existing : {}),
-        [screenView.value]: value
+            ...(existing && typeof existing === "object" ? existing : {}),
+            [screenView.value]: value
         })
 
         console.log('cloned after set:', cloned);
@@ -68,24 +68,30 @@ const setValue = (fieldData: any, value: any) => {
 }
 
 const shouldShowField = (fieldData: any) => {
-    const bgType = get(props.modelValue, ["layout", "backgroundType", screenView.value])
+    const bgType =
+        get(props.modelValue, ["layout", "backgroundType", screenView.value])
         ?? get(props.modelValue, ["layout", "backgroundType", "desktop"])
 
-    if (fieldData.name === "image") {
+    const name = fieldData.name
+
+    if (Array.isArray(name) && name.join('.') === 'layout.backgroundType') {
+        return true
+    }
+
+    if (name === "image") {
         return bgType === "image"
     }
 
-    if (fieldData.name === "video") {
+    if (Array.isArray(name) && name.join('.') === 'layout.video') {
         return bgType === "video"
     }
 
-    if (Array.isArray(fieldData.name) && fieldData.name.includes("background")) {
+    if (Array.isArray(name) && name.join('.') === 'layout.background') {
         return bgType === "color"
     }
 
     return true
 }
-
 
 defineExpose({
     current,

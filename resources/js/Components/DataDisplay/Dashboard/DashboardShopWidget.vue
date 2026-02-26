@@ -13,7 +13,7 @@ const props = defineProps<{
 const locale = inject('locale', aikuLocaleStructure);
 
 const getAverageOrderValue = () => {
-    const sales = props.data.interval_data.sales_org_currency?.[props.interval]?.raw_value;
+    const sales = props.data.interval_data.sales_org_currency_external?.[props.interval]?.raw_value;
     const orders = props.data.interval_data.orders?.[props.interval]?.raw_value;
 
     if (orders === null || typeof orders === 'undefined' || orders === 0) {

@@ -177,7 +177,6 @@ onMounted(() => {
                     :pagination="{ clickable: true }"
                     :modules="[Autoplay]"
                     class="w-full"
-                    xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
                     spaceBetween="12"
                     autoHeight
                 >
@@ -206,4 +205,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
+
+:deep(#LuigiTrends1 .swiper-wrapper) {
+  height: 100% !important;
+}
 </style>
