@@ -22,9 +22,6 @@ class CalculateOrderTotalAmounts extends OrgAction
 
     public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
     {
-
-
-
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
         $tax        = $order->taxCategory->rate;
@@ -37,7 +34,7 @@ class CalculateOrderTotalAmounts extends OrgAction
         if ($order->collection_address_id) {
             $shippingAmount = 0;
         } else {
-            $shippingAmount  = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
+            $shippingAmount = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         }
 
         $netAmount = $itemsNet + $shippingAmount + $chargesAmount;
@@ -58,7 +55,6 @@ class CalculateOrderTotalAmounts extends OrgAction
         data_set($modelData, 'charges_amount', $chargesAmount);
         data_set($modelData, 'estimated_weight', $estimatedWeight);
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);
-
 
 
         $order->update($modelData);
@@ -84,16 +80,11 @@ class CalculateOrderTotalAmounts extends OrgAction
             }
         }
 
-
         if (in_array($order->state, [
             OrderStateEnum::CREATING,
             OrderStateEnum::SUBMITTED,
-            OrderStateEnum::IN_WAREHOUSE,
-            OrderStateEnum::PICKED,
-            OrderStateEnum::PACKING,
-            OrderStateEnum::PACKED,
-        ])) {
 
+        ])) {
             $calculateCharges = false;
             if ((Arr::hasAny($changes, ['goods_amount', 'number_item_transactions']) && $calculateDiscounts) || $forceRecalculate) { //todo remove true when all orders are updated with number_item_transactions
                 CalculateOrderDiscounts::run($order);
@@ -113,7 +104,23 @@ class CalculateOrderTotalAmounts extends OrgAction
             if ($collectionChanged) {
                 CalculateCollectionCharges::run($order);
             }
+        }
 
+
+        if (in_array($order->state, [
+            OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::PICKED,
+            OrderStateEnum::PACKING,
+            OrderStateEnum::PACKED,
+        ])) {
+            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged || $forceRecalculate) {
+                CalculateOrderShipping::run($order);
+            }
+
+
+            if ($collectionChanged) {
+                CalculateCollectionCharges::run($order);
+            }
         }
     }
 
