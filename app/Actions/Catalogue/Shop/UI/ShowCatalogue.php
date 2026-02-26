@@ -143,7 +143,7 @@ class ShowCatalogue extends OrgAction
         };
     }
 
-    public function getBreadcrumbs(string|array $routeName, array $routeParameters=[]): array
+    public function getBreadcrumbs(string|array $routeName, array|string|null $routeParameters=[]): array
     {
       if(is_array($routeName)){
           return [];
