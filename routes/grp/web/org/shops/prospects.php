@@ -8,6 +8,7 @@
 
 use App\Actions\CRM\Prospect\Mailshots\UI\CreateProspectsMailshot;
 use App\Actions\CRM\Prospect\Mailshots\UI\IndexProspectMailshots;
+use App\Actions\CRM\Prospect\Mailshots\UI\ShowProspectMailshot;
 use App\Actions\CRM\Prospect\UI\CreateProspect;
 use App\Actions\CRM\Prospect\UI\EditProspect;
 use App\Actions\CRM\Prospect\UI\ExportProspects;
@@ -19,5 +20,6 @@ Route::get('export', [ExportProspects::class, 'inShop'])->name('export');
 Route::get('/create', CreateProspect::class)->name('create');
 Route::get('/mailshots', IndexProspectMailshots::class)->name('mailshots.index');
 Route::get('/mailshots/create', CreateProspectsMailshot::class)->name('mailshots.create');
+Route::get('/mailshots/{mailshot}', ShowProspectMailshot::class)->name('mailshots.show');
 Route::get('/{prospect}', ShowProspect::class)->name('show');
 Route::get('/{prospect}/edit', EditProspect::class)->name('edit');

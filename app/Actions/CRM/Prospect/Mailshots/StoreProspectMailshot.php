@@ -85,6 +85,7 @@ class StoreProspectMailshot extends OrgAction
 
     public function htmlResponse(Mailshot $mailshot): Response
     {
+        // TODO: Check if the mailshot is a prospect mailshot
         // grp.org.shops.show.crm.prospects.mailshots.create
         return Inertia::location(route('grp.org.shops.show.crm.prospects.mailshots.show', [
             'organisation' => $mailshot->shop->organisation->slug,
