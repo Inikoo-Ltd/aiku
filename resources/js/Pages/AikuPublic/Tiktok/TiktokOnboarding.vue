@@ -15,9 +15,12 @@ const props = defineProps<{
 	website: string
 	is_need_create_customer: string
 }>()
-console.log(props)
 
 const tiktokCode = route().queryParams?.code
+
+const closePage = () => {
+	console.log('aaaaaaa')
+}
 </script>
 
 <template layout="AikuPublic">
@@ -42,7 +45,7 @@ const tiktokCode = route().queryParams?.code
 			</div> -->
 
 			<!-- Sucess and not registered -->
-			<div v-if="is_need_create_customer">
+			<div>
 				<div class="text-center py-8">
 					<div class=" text-7xl mb-5">
 						<FontAwesomeIcon icon="fal fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
@@ -58,71 +61,80 @@ const tiktokCode = route().queryParams?.code
 
 				</div>
 
-				<div class="text-center mb-4">
-					Next step, select one of our warehouse that you preferred to send the products.
-				</div>
-
-				<div class="grid grid-cols-3 gap-x-8 py-4">
-					<!-- Dropship UK -->
-					<div class="bg-gray-100 rounded p-4">
-						<div class="font-bold text-2xl text-center mb-4">
-							AW Dropship UK
-						</div>
-	
-						<div class="aspect-[6/3] mb-4">
-							<img src="/assets/websites_logo/aw-dropship-uk.avif" alt="AW Dropship UK" />
-						</div>
-	
-						<div class="flex gap-x-2">
-							<a :href="'https://www.aw-dropship.com/app/registration-form?code=' + tiktokCode" target="_blank" class="w-full">
-								<Button label="Register" full type="black" key="" />
-							</a>
-							<a :href="'https://www.aw-dropship.com/app/login?code=' + tiktokCode" target="_blank" class="w-full">
-								<Button label="Login" full type="black" key="" />
-							</a>
-						</div>
+				
+				<div v-if="is_need_create_customer">
+					<div class="text-center mb-4">
+						Next step, select one of our warehouse that you preferred to send the products.
 					</div>
-
-					<!-- Dropship EU -->
-					<div class="bg-gray-100 rounded p-4">
-						<div class="font-bold text-2xl text-center mb-4">
-							AW Dropship EU
+					<div class="grid grid-cols-3 gap-x-8 py-4">
+						<!-- Dropship UK -->
+						<div class="bg-gray-100 rounded p-4">
+							<div class="font-bold text-2xl text-center mb-4">
+								AW Dropship UK
+							</div>
+							<div class="aspect-[6/3] mb-4">
+								<img src="/assets/websites_logo/aw-dropship-uk.avif" alt="AW Dropship UK" />
+							</div>
+							<div class="flex gap-x-2">
+								<a :href="'https://www.aw-dropship.com/app/registration-form?code=' + tiktokCode" target="_blank" class="w-full">
+									<Button label="Register" full type="black" key="" />
+								</a>
+								<a :href="'https://www.aw-dropship.com/app/login?code=' + tiktokCode" target="_blank" class="w-full">
+									<Button label="Login" full type="black" key="" />
+								</a>
+							</div>
 						</div>
-	
-						<div class="aspect-[6/3] mb-4">
-							<img src="/assets/websites_logo/aw-dropship-eu.avif" alt="AW Dropship EU" />
+						<!-- Dropship EU -->
+						<div class="bg-gray-100 rounded p-4">
+							<div class="font-bold text-2xl text-center mb-4">
+								AW Dropship EU
+							</div>
+							<div class="aspect-[6/3] mb-4">
+								<img src="/assets/websites_logo/aw-dropship-eu.avif" alt="AW Dropship EU" />
+							</div>
+							<div class="flex gap-x-2">
+								<a :href="'https://www.aw-dropship.eu/app/registration-form?code=' + tiktokCode" target="_blank" class="w-full">
+									<Button label="Register" full type="black" key="" />
+								</a>
+								<a :href="'https://www.aw-dropship.eu/app/login?code=' + tiktokCode" target="_blank" class="w-full">
+									<Button label="Login" full type="black" key="" />
+								</a>
+							</div>
 						</div>
-	
-						<div class="flex gap-x-2">
-							<a :href="'https://www.aw-dropship.eu/app/registration-form?code=' + tiktokCode" target="_blank" class="w-full">
-								<Button label="Register" full type="black" key="" />
-							</a>
-							<a :href="'https://www.aw-dropship.eu/app/login?code=' + tiktokCode" target="_blank" class="w-full">
-								<Button label="Login" full type="black" key="" />
-							</a>
-						</div>
-					</div>
-
-					<!-- Dropship ES -->
-					<div class="bg-gray-100 rounded p-4">
-						<div class="font-bold text-2xl text-center mb-4">
-							AW Dropship ES
-						</div>
-
-						<div class="aspect-[6/3] mb-4">
-							<img src="/assets/websites_logo/aw-dropship-es.avif" alt="AW Dropship ES" />
-						</div>
-	
-						<div class="flex gap-x-2">
-							<a :href="'https://www.aw-dropship.es/app/registration-form?code=' + tiktokCode" target="_blank" class="w-full">
-								<Button label="Register" full type="black" key="" />
-							</a>
-							<a :href="'https://www.aw-dropship.es/app/login?code=' + tiktokCode" target="_blank" class="w-full">
-								<Button label="Login" full type="black" key="" />
-							</a>
+						<!-- Dropship ES -->
+						<div class="bg-gray-100 rounded p-4">
+							<div class="font-bold text-2xl text-center mb-4">
+								AW Dropship ES
+							</div>
+							<div class="aspect-[6/3] mb-4">
+								<img src="/assets/websites_logo/aw-dropship-es.avif" alt="AW Dropship ES" />
+							</div>
+							<div class="flex gap-x-2">
+								<a :href="'https://www.aw-dropship.es/app/registration-form?code=' + tiktokCode" target="_blank" class="w-full">
+									<Button label="Register" full type="black" key="" />
+								</a>
+								<a :href="'https://www.aw-dropship.es/app/login?code=' + tiktokCode" target="_blank" class="w-full">
+									<Button label="Login" full type="black" key="" />
+								</a>
+							</div>
 						</div>
 					</div>
 				</div>
+
+				<div v-else>
+					<div class="text-center">
+						You can close this page and continue your registration.
+					</div>
+
+					<div class="mx-auto w-fit mt-2">
+						<Button
+							label="Close page"
+							type="gray"
+							@click="closePage()"
+						/>
+					</div>
+				</div>
+
 			</div>
 		</div>
 	</div>
