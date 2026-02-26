@@ -47,6 +47,44 @@ trait HasNotificationSettings
         ];
     }
 
+    public function shouldReceiveNotification(string $typeSlug, array $payload = [], ?Model $scope = null): bool
+    {
+        $setting = $this->getNotificationSetting($typeSlug, $scope);
+
+        if (!$setting->is_enabled) {
+            return false;
+        }
+
+        if (empty($setting->filters)) {
+            return true;
+        }
+
+        foreach ($setting->filters as $key => $allowedValues) {
+            // If the payload doesn't have the key, we skip checking this key (optional filter)
+            // OR strict mode: return false if key missing. Let's assume optional for now.
+            if (!array_key_exists($key, $payload)) {
+                continue;
+            }
+
+            $actualValue = $payload[$key];
+
+            // If allowedValues is an array, check if actualValue is in it
+            if (is_array($allowedValues)) {
+                if (!in_array($actualValue, $allowedValues)) {
+                    return false;
+                }
+            }
+            // If allowedValues is a single value, check for equality
+            else {
+                if ($actualValue != $allowedValues) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     public function notificationSettings(): HasMany
     {
         return $this->hasMany(UserNotificationSetting::class);
