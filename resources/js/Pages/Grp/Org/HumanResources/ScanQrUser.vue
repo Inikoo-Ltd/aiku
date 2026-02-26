@@ -96,7 +96,17 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
         scanTimeRaw.value = data.clocking?.clocked_at
         scanTime.value = useFormatTime(data.clocking?.clocked_at, { formatTime: 'hms' })
         clockingId.value = data.clocking?.id
-        workingHours.value = data.working_hours ?? null
+        if (data.working_hours) {
+            const scanDate = new Date(data.clocking?.clocked_at)
+            const dateOnly = scanDate.toISOString().split('T')[0]
+
+            workingHours.value = {
+                start: `${dateOnly}T${data.working_hours.start}`,
+                end: `${dateOnly}T${data.working_hours.end}`
+            }
+        } else {
+            workingHours.value = null
+        }
         showSuccessModal.value = true
 
     } catch (e: any) {
@@ -138,11 +148,10 @@ const attendanceStatus = computed(() => {
     if (!scanTimeRaw.value || !workingHours.value?.start) return null
 
     const scan = new Date(scanTimeRaw.value)
-
-    const dateOnly = scan.toISOString().split('T')[0]
-    const start = new Date(`${dateOnly}T${workingHours.value.start}`)
-
-    if (isNaN(start.getTime())) return null
+    const start = new Date(workingHours.value.start)
+console.log("scan", scan)
+console.log("start", start)
+    if (isNaN(scan.getTime()) || isNaN(start.getTime())) return null
 
     return scan > start ? 'late' : 'ontime'
 })
@@ -150,8 +159,8 @@ const attendanceStatus = computed(() => {
 const workingHoursFormatted = computed(() => {
     if (!workingHours.value) return '-'
 
-    const start = workingHours.value.start?.slice(0, 5)
-    const end = workingHours.value.end?.slice(0, 5)
+    const start = useFormatTime(workingHours.value.start, { formatTime: 'HH:mm' })
+    const end = useFormatTime(workingHours.value.end, { formatTime: 'HH:mm' })
 
     return `${start} - ${end}`
 })
@@ -266,7 +275,7 @@ const submitNotes = async () => {
 
                 <!-- INFO -->
                 <div class="text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
-                    <!-- <div class="flex justify-between">
+                    <div class="flex justify-between">
                         <span class="text-gray-500">{{ trans("Status") }}</span>
                         <span class="font-semibold"
                             :class="attendanceStatus === 'late' ? 'text-red-600' : 'text-green-600'">
@@ -278,7 +287,7 @@ const submitNotes = async () => {
                                         : '-'
                             }}
                         </span>
-                    </div> -->
+                    </div>
 
                     <div class="flex justify-between">
                         <span class="text-gray-500">{{ trans("Schedule ") }}</span>
