@@ -54,21 +54,25 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
 
         /** @var Portfolio $portfolio */
         foreach ($portfoliosIds as $portfoliosId) {
-            $portfolio = Portfolio::find($portfoliosId->id);
-            if ($portfolio) {
-                $portfolio = StoreNewProductToCurrentShopify::run($portfolio, []);
+            try {
+                $portfolio = Portfolio::find($portfoliosId->id);
+                if ($portfolio) {
+                    $portfolio = StoreNewProductToCurrentShopify::run($portfolio, []);
 
-                if ($portfolio->platform_status) {
-                    Cache::increment($cacheKey . '_success');
-                } else {
-                    Cache::increment($cacheKey . '_fail');
+                    if ($portfolio->platform_status) {
+                        Cache::increment($cacheKey . '_success');
+                    } else {
+                        Cache::increment($cacheKey . '_fail');
+                    }
+
+                    UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
+                        'total' => $totalNumber,
+                        'success' => Cache::get($cacheKey . '_success'),
+                        'fail' => Cache::get($cacheKey . '_fail'),
+                    ]);
                 }
-
-                broadcast(new UploadProductToSalesChannelProgressEvent($customerSalesChannel, $portfolio, [
-                    'total'   => $totalNumber,
-                    'success' => Cache::get($cacheKey . '_success'),
-                    'fail'    => Cache::get($cacheKey . '_fail'),
-                ]));
+            } catch (\Exception $e) {
+                Cache::increment($cacheKey . '_fail');
             }
         }
 
@@ -79,7 +83,7 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
     public function rules(): array
     {
         return [
-            'portfolios'   => ['required', 'array'],
+            'portfolios' => ['required', 'array'],
             'portfolios.*' => ['required', 'integer'],
         ];
     }
