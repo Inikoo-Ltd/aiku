@@ -35,10 +35,11 @@ const showSuccessModal = ref(false)
 const notes = ref<string>("")
 const scanTime = ref<string | null>(null)
 const scanTimeRaw = ref<string | null>(null)
-const now = new Date().toLocaleString()
+const now = new Date()
 const clockType = ref<'clock_in' | 'clock_out' | null>(null)
 const clockingId = ref<number | null>(null)
 const workingHours = ref<{ start: string; end: string } | null>(null)
+const isProcessing = ref(false)
 
 const detectMyLocation = () => {
     errorMsg.value = null
@@ -73,10 +74,15 @@ const startCamera = async () => {
 const stopCamera = () => cameraOn.value = false
 
 const onDetect = async (detectedCodes: DetectedCode[]) => {
+     if (isProcessing.value) return
+    isProcessing.value = true
+
     const result = detectedCodes[0]?.rawValue
 
     lastResult.value = result
     loading.value = true
+
+    stopCamera()
 
     try {
         const { data } = await axios.post(route('grp.models.clocking-machine.qr.validate'), {
@@ -92,7 +98,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
         clockingId.value = data.clocking?.id
         workingHours.value = data.working_hours ?? null
         showSuccessModal.value = true
-        stopCamera()
+
     } catch (e: any) {
         notify({
             title: trans('Failed Scan QR'),
@@ -104,6 +110,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
         stopCamera()
     } finally {
         loading.value = false
+        isProcessing.value = false
     }
 }
 
@@ -131,7 +138,11 @@ const attendanceStatus = computed(() => {
     if (!scanTimeRaw.value || !workingHours.value?.start) return null
 
     const scan = new Date(scanTimeRaw.value)
-    const start = new Date(workingHours.value.start)
+
+    const dateOnly = scan.toISOString().split('T')[0]
+    const start = new Date(`${dateOnly}T${workingHours.value.start}`)
+
+    if (isNaN(start.getTime())) return null
 
     return scan > start ? 'late' : 'ontime'
 })
@@ -139,8 +150,8 @@ const attendanceStatus = computed(() => {
 const workingHoursFormatted = computed(() => {
     if (!workingHours.value) return '-'
 
-    const start = useFormatTime(workingHours.value.start, { formatTime: 'HH:mm' })
-    const end = useFormatTime(workingHours.value.end, { formatTime: 'HH:mm' })
+    const start = workingHours.value.start?.slice(0, 5)
+    const end = workingHours.value.end?.slice(0, 5)
 
     return `${start} - ${end}`
 })
@@ -238,7 +249,7 @@ const submitNotes = async () => {
 
         </div>
 
-        <Dialog v-model:visible="showSuccessModal" modal :closable="false" :style="{ width: '420px' }">
+        <Dialog v-model:visible="showSuccessModal" modal :closable="false" :style="{ width: '420px' }"  appendTo="body">
             <div class="text-center space-y-4 py-4">
 
                 <!-- ICON -->
@@ -255,7 +266,7 @@ const submitNotes = async () => {
 
                 <!-- INFO -->
                 <div class="text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
-                    <div class="flex justify-between">
+                    <!-- <div class="flex justify-between">
                         <span class="text-gray-500">{{ trans("Status") }}</span>
                         <span class="font-semibold"
                             :class="attendanceStatus === 'late' ? 'text-red-600' : 'text-green-600'">
@@ -267,7 +278,7 @@ const submitNotes = async () => {
                                         : '-'
                             }}
                         </span>
-                    </div>
+                    </div> -->
 
                     <div class="flex justify-between">
                         <span class="text-gray-500">{{ trans("Schedule ") }}</span>
@@ -305,6 +316,10 @@ const submitNotes = async () => {
     </div>
 </template>
 <style scoped>
+.p-dialog {
+  z-index: 9999 !important;
+}
+
 .scanner-frame {
     position: relative;
     width: 260px;
