@@ -16,6 +16,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class SetTradeUnitsForFaireShops
 {
@@ -60,8 +61,12 @@ class SetTradeUnitsForFaireShops
 
         $count = Product::where('shop_id', $faireShop->id)->where('state', ProductStateEnum::IN_PROCESS)->count();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
         Product::where('shop_id', $faireShop->id)->where('state', ProductStateEnum::IN_PROCESS)->orderBy('id')

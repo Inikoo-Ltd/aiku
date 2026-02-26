@@ -10,11 +10,9 @@
 namespace App\Actions\Maintenance\CRM;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\CRM\Customer\CustomerStatusEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairCustomerSearchableText
 {
@@ -34,7 +32,12 @@ class RepairCustomerSearchableText
         $customers = Customer::query();
         $total = (clone $customers)->count();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($total);
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
         $customers->chunk(200, function ($customers) use ($bar) {

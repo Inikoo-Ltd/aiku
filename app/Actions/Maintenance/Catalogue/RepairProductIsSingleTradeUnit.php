@@ -14,6 +14,7 @@ use App\Models\Catalogue\Product;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairProductIsSingleTradeUnit extends OrgAction
 {
@@ -49,8 +50,12 @@ class RepairProductIsSingleTradeUnit extends OrgAction
 
         $totalCount = Product::count();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($totalCount);
-        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
 
