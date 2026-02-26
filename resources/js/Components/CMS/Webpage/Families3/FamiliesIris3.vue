@@ -243,7 +243,6 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 
 
 .swiper-inner{
-  padding-right:48px;
   box-sizing:border-box;
 }
 
