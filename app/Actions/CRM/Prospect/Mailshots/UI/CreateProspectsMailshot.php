@@ -48,7 +48,7 @@ class CreateProspectsMailshot extends InertiaAction
                 'subject' => [
                     'type'        => 'input',
                     'label'       => __('subject'),
-                    'placeholder' => __('Email subject'),
+                'placeholder' => __('Email subject'),
                     'required'    => true,
                     'value'       => '',
                 ],
@@ -89,6 +89,8 @@ class CreateProspectsMailshot extends InertiaAction
         ];
 
 
+
+        // TODO: Check and make sure the Route is correct
         return Inertia::render(
             'CreateModel',
             [
@@ -114,13 +116,16 @@ class CreateProspectsMailshot extends InertiaAction
                     'route'     =>
                     match (class_basename($parent)) {
                         'Shop' => [
-                            'name'       => 'org.models.shop.prospect.mailshot.store',
+                            'name'       => 'grp.models.shop.prospect.mailshot.store',
                             'parameters' => [
                                 'shop' => $parent->id,
                             ]
                         ],
                         default => [
-                            'name' => 'org.models.prospect.mailshot.store',
+                            'name' => 'grp.models.shop.prospect.mailshot.store',
+                            'parameters' => [
+                                'shop' => $parent->id,
+                            ]
                         ],
                     }
                 ],
