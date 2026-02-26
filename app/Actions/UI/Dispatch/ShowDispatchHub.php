@@ -27,7 +27,6 @@ class ShowDispatchHub extends OrgAction
         return $warehouse;
     }
 
-
     public function asController(Organisation $organisation, Warehouse $warehouse): Warehouse
     {
         $this->initialisationFromWarehouse($warehouse, [])->withTab(DispatchHubTabsEnum::values());
@@ -35,15 +34,12 @@ class ShowDispatchHub extends OrgAction
         return $this->handle($warehouse);
     }
 
-
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/Dispatching/DispatchHub',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => 'dispatch',
                 'pageHead'    => [
                     'icon'  => [
@@ -51,20 +47,17 @@ class ShowDispatchHub extends OrgAction
                     ],
                     'title' => __('Dispatching backlog'),
                 ],
-
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => DispatchHubTabsEnum::navigation()
                 ],
-
-                DispatchHubTabsEnum::DASHBOARD->value => $this->tab == DispatchHubTabsEnum::DASHBOARD->value
-                ? fn () => GetDispatchHubShowcase::make()->handle($warehouse, $request)
-                : Inertia::lazy(fn () => GetDispatchHubShowcase::make()->handle($warehouse, $request)),
-
+                DispatchHubTabsEnum::DASHBOARD->value =>
+                    $this->tab == DispatchHubTabsEnum::DASHBOARD->value
+                        ? fn () => GetDispatchHubShowcase::make()->handle($warehouse, $request)
+                        : Inertia::lazy(fn () => GetDispatchHubShowcase::make()->handle($warehouse, $request)),
             ]
         );
     }
-
 
     public function getBreadcrumbs(array $routeParameters): array
     {

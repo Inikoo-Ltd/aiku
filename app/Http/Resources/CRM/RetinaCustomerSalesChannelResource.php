@@ -11,6 +11,8 @@ namespace App\Http\Resources\CRM;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\EbayUser;
+use App\Models\Dropshipping\TiktokUser;
 use App\Models\Helpers\TaxCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
@@ -81,11 +83,18 @@ class RetinaCustomerSalesChannelResource extends JsonResource
         // For now only used by ebay
         $platformCompletion = false;
         if ($customerSalesChannels->platform->type == PlatformTypeEnum::EBAY) {
-            /** @var \App\Models\Dropshipping\EbayUser $ebayUser */
+            /** @var EbayUser $ebayUser */
             $ebayUser = $customerSalesChannels->user;
 
             if ($ebayUser) {
                 $platformCompletion = $ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key;
+            }
+        } else if ($customerSalesChannels->platform->type == PlatformTypeEnum::TIKTOK) {
+            /** @var TiktokUser $tiktokUser */
+            $tiktokUser = $customerSalesChannels->user;
+
+            if ($tiktokUser) {
+                $platformCompletion = $tiktokUser->tiktok_shop_id && $tiktokUser->tiktok_shop_chiper && $tiktokUser->tiktok_warehouse_id;
             }
         }
 
