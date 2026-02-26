@@ -51,7 +51,7 @@ class ShowCatalogue extends OrgAction
             'Org/Catalogue/Catalogue',
             [
                 'title'       => __('catalogue'),
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters(), $request->route()->getName()),
                 'navigation'  => $parent instanceof Shop ? [
                     'previous' => $this->getPrevious($parent, $request),
                     'next'     => $this->getNext($parent, $request),
