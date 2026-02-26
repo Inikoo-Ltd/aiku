@@ -243,15 +243,11 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 
 
 .swiper-inner{
-  padding-left:48px;
-  padding-right:48px;
   box-sizing:border-box;
 }
 
 /* mobile optimization */
 @media (max-width:768px){
-
-
   .swiper-inner{
     padding-left:0;
     padding-right:0;

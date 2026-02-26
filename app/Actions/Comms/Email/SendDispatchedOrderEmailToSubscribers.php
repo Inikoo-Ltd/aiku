@@ -14,6 +14,7 @@ use App\Actions\Comms\Traits\WithSendSubscribersOutboxEmail;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Ordering\Order;
@@ -27,6 +28,10 @@ class SendDispatchedOrderEmailToSubscribers extends OrgAction
 
     public function handle(Order $order): void
     {
+        if ($order->shop->type === ShopTypeEnum::EXTERNAL) {
+            return;
+        }
+
         /** @var Outbox $outbox */
         $outbox = $order->shop->outboxes()->where('code', OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED->value)->first();
 
