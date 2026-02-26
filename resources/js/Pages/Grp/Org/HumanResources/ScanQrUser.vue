@@ -149,8 +149,6 @@ const attendanceStatus = computed(() => {
 
     const scan = new Date(scanTimeRaw.value)
     const start = new Date(workingHours.value.start)
-console.log("scan", scan)
-console.log("start", start)
     if (isNaN(scan.getTime()) || isNaN(start.getTime())) return null
 
     return scan > start ? 'late' : 'ontime'
@@ -275,7 +273,7 @@ const submitNotes = async () => {
 
                 <!-- INFO -->
                 <div class="text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
-                    <div class="flex justify-between">
+                    <!-- <div class="flex justify-between">
                         <span class="text-gray-500">{{ trans("Status") }}</span>
                         <span class="font-semibold"
                             :class="attendanceStatus === 'late' ? 'text-red-600' : 'text-green-600'">
@@ -287,7 +285,7 @@ const submitNotes = async () => {
                                         : '-'
                             }}
                         </span>
-                    </div>
+                    </div> -->
 
                     <div class="flex justify-between">
                         <span class="text-gray-500">{{ trans("Schedule ") }}</span>
