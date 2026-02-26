@@ -607,6 +607,41 @@ const saveAsTemplate = async (payload) => {
 };
 
 
+const isApplyingLoading = ref(false)
+
+const applyTemplate = (id: number) => {
+  isApplyingLoading.value = true
+
+  router.post(
+    route('grp.models.layout_template.apply_template', {
+      webpage: route().params['webpage'],
+      template: id
+    }),
+    {},
+    {
+      preserveScroll: true,
+      onSuccess: () => {
+        isApplyingLoading.value = false
+        console.log('Template applied success')
+      },
+      onError: (err) => {
+        isApplyingLoading.value = false
+          notify({
+          title: trans("Something went wrong"),
+          text:
+            err?.response?.data?.message ||
+            err?.message ||
+            trans("Unknown error occurred"),
+          type: "error"
+        });
+      },
+      onFinish: () => {
+        isApplyingLoading.value = false
+      }
+    }
+  )
+}
+
 
 watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
 watch(currentView, (newValue) => iframeClass.value = setIframeView(newValue));
@@ -732,7 +767,9 @@ console.log('props_workshop',props)
           @onSaveSiteSettings="onSaveSiteSettings"
           @onDuplicateBlock="duplicateBlock"
           @update:selected-tab="(e) => selectedTab = e"  
-          @save-template="saveAsTemplate"/>
+          @save-template="saveAsTemplate"
+          @select-template="applyTemplate"
+        />
       </div>
 
       <!-- Toggle Button -->
@@ -795,7 +832,7 @@ console.log('props_workshop',props)
       </div>
 
       <div class="relative border-2 h-full w-full bg-white overflow-auto">
-        <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
+        <div v-if="isIframeLoading || isApplyingLoading" class="absolute inset-0 flex items-center justify-center bg-white">
           <LoadingIcon class="w-24 h-24 text-6xl" />
         </div>
         <iframe ref="_iframe" :src="iframeSrc" :title="props.title"

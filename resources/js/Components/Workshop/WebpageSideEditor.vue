@@ -16,6 +16,7 @@ import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import SiteSettings from '@/Components/Workshop/SiteSettings.vue'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useLayoutStore } from '@/Stores/layout'
+import TemplatesWebpage from '@/Components/Workshop/Properties/TemplatesWebpage.vue'
 import {
 	getBlueprint,
 	getEditPermissions,
@@ -65,7 +66,7 @@ const props = defineProps<{
 	webpage: RootWebpage
 	webBlockTypes: Daum
 	selectedTab: Number
-	editable:boolean
+	editable: boolean
 }>()
 
 const emits = defineEmits<{
@@ -79,6 +80,7 @@ const emits = defineEmits<{
 	(e: 'onDuplicateBlock', value: Number): void
 	(e: 'update:selectedTab', value: Number): void
 	(e: 'saveTemplate', value: { label: string; block: Daum }): void
+	(e: 'select-template', value: number ): void
 }>()
 
 const confirm = useConfirm()
@@ -91,6 +93,7 @@ const isLoadingDeleteBlock = inject('isLoadingDeleteBlock', ref(null))
 const isLoadingBlock = inject('isLoadingBlock', ref(null))
 const filterBlock = inject('filterBlock')
 const selectedTemplateBlock = ref<Daum | null>(null)
+const dialogPickTemplate = ref(false)
 
 const changeTab = (index: number) => emits('update:selectedTab', index)
 const sendNewBlock = (block: Daum) => {
@@ -264,29 +267,29 @@ const onRenameBlock = () => {
 }
 
 const saveRename = (index: number) => {
-  const block = props.webpage.layout.web_blocks[index]
-  if (!block) return
+	const block = props.webpage.layout.web_blocks[index]
+	if (!block) return
 
-  const value = renameValue.value.trim()
+	const value = renameValue.value.trim()
 
-  const fieldValue = (block.web_block.layout.data.fieldValue ??= {})
+	const fieldValue = (block.web_block.layout.data.fieldValue ??= {})
 
-  if (
-    !fieldValue.blocks ||
-    Array.isArray(fieldValue.blocks) ||
-    typeof fieldValue.blocks !== 'object'
-  ) {
-    fieldValue.blocks = {}
-  }
+	if (
+		!fieldValue.blocks ||
+		Array.isArray(fieldValue.blocks) ||
+		typeof fieldValue.blocks !== 'object'
+	) {
+		fieldValue.blocks = {}
+	}
 
-  if (!value) {
-    delete fieldValue.blocks.name
-  } else {
-    fieldValue.blocks.name = value
-  }
+	if (!value) {
+		delete fieldValue.blocks.name
+	} else {
+		fieldValue.blocks.name = value
+	}
 
-  sendBlockUpdate(block)
-  editingIndex.value = null
+	sendBlockUpdate(block)
+	editingIndex.value = null
 }
 
 
@@ -296,31 +299,36 @@ const cancelRename = () => {
 }
 
 const openSaveTemplateDialog = () => {
-  if (!contextMenu.value.block) return
+	if (!contextMenu.value.block) return
 
-  selectedTemplateBlock.value = structuredClone(
-    toRaw(contextMenu.value.block)
-  )
+	selectedTemplateBlock.value = structuredClone(
+		toRaw(contextMenu.value.block)
+	)
 
-  nameAsTemplate.value = ""
-  dialogSaveAsTemplateVisible.value = true
-  closeContextMenu()
+	nameAsTemplate.value = ""
+	dialogSaveAsTemplateVisible.value = true
+	closeContextMenu()
 }
 
 const saveAsTemplate = () => {
-  const label = nameAsTemplate.value.trim()
-  if (!label || !selectedTemplateBlock.value) return
+	const label = nameAsTemplate.value.trim()
+	if (!label || !selectedTemplateBlock.value) return
 
-  emits('saveTemplate', {
-    label,
-    block: {
-		web_blocks: [selectedTemplateBlock.value]
-		} 
-  })
+	emits('saveTemplate', {
+		label,
+		block: {
+			web_blocks: [selectedTemplateBlock.value]
+		}
+	})
 
-  dialogSaveAsTemplateVisible.value = false
-  nameAsTemplate.value = ""
-  selectedTemplateBlock.value = null
+	dialogSaveAsTemplateVisible.value = false
+	nameAsTemplate.value = ""
+	selectedTemplateBlock.value = null
+}
+
+const selectTemplate = (id) =>{
+  emits('select-template', id)
+  dialogPickTemplate.value = false
 }
 
 
@@ -330,13 +338,10 @@ const saveAsTemplate = () => {
 	<div>
 		<TabGroup :selectedIndex="selectedTab" @change="changeTab">
 			<TabList class="flex border-b border-gray-300">
-				<Tab
-					v-for="(tab, index) in tabs"
-					:key="index"
+				<Tab v-for="(tab, index) in tabs" :key="index"
 					class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-t-md focus:outline-none"
-					:class="
-						selectedTab === index ? 'bg-white text-theme border-b-2 border-theme' : ''
-					">
+					:class="selectedTab === index ? 'bg-white text-theme border-b-2 border-theme' : ''
+						">
 					<FontAwesomeIcon :icon="tab.icon" fixed-width v-tooltip="tab.tooltip" />
 					{{ tab.label }}
 				</Tab>
@@ -345,67 +350,60 @@ const saveAsTemplate = () => {
 			<TabPanels>
 				<TabPanel class="w-[400px] p-2">
 					<div class="max-h-[calc(100vh-220px)] overflow-y-auto">
-						<SiteSettings
-							:webpage="webpage"
-							:webBlockTypes="webBlockTypes"
+						<SiteSettings :webpage="webpage" :webBlockTypes="webBlockTypes"
 							@onSaveSiteSettings="(v: any) => emits('onSaveSiteSettings', v)" />
 					</div>
 				</TabPanel>
 
 				<!-- Blocks Tab -->
 				<TabPanel class="w-[400px] p-2">
-					<div
-						class="h-[calc(100vh-220px)] overflow-y-auto relative"
+					<div class="h-[calc(100vh-220px)] overflow-y-auto relative"
 						@contextmenu="openContextMenu($event, null)">
 						<!-- Header Controls -->
-						<div class="flex justify-between items-center mb-2">
-							<Button
-								type="dashed"
-								@click="openModalBlockList"
-								:icon="faPlus"
-								class="text-sm text-theme border-theme"
-								:size="'xs'"
-								label="Block" />
-							<select
-								class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none"
-								:value="filterBlock"
-								@change="(event: { target: { value: any } }) => filterBlock = event.target.value">
-								<option disabled value="">Filter</option>
-								<option
-									v-for="option in filterOptions"
-									:key="option.value"
-									:value="option.value">
-									{{ option.label }}
-								</option>
-							</select>
+						<div class="sticky top-0 z-10 bg-gray-200 pb-2 mb-3 border-b border-gray-200">
+							<div class="flex items-center justify-between gap-2">
+
+								<!-- LEFT: action buttons -->
+								<div class="flex items-center gap-2">
+									<Button type="dashed" @click="openModalBlockList" :icon="faPlus" size="xs"
+										label="Block"
+										class="!text-xs !px-3 !py-1.5 border-theme text-theme hover:bg-theme hover:text-white transition" />
+
+									<Button type="dashed" @click="dialogPickTemplate = true" :icon="faLayerGroup"
+										size="xs" label="Templates"
+										class="!text-xs !px-3 !py-1.5 border-gray-300 text-gray-700 hover:bg-gray-100 transition" />
+								</div>
+
+								<!-- RIGHT: filter -->
+								<div class="flex items-center gap-2">
+									<select
+										class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none"
+										:value="filterBlock"
+										@change="(event: { target: { value: any } }) => filterBlock = event.target.value">
+										<option disabled value="">Filter</option>
+										<option v-for="option in filterOptions" :key="option.value"
+											:value="option.value">
+											{{ option.label }}
+										</option>
+									</select>
+								</div>
+
+							</div>
 						</div>
 
 						<!-- Blocks List -->
 						<template v-if="webpage?.layout?.web_blocks.length">
-							<draggable
-								:list="webpage.layout.web_blocks"
-								handle=".handle"
-								@change="onChangeOrderBlock"
-								ghost-class="ghost"
-								group="column"
-								itemKey="id"
-								:disabled="!editable"
-								class="space-y-1">
+							<draggable :list="webpage.layout.web_blocks" handle=".handle" @change="onChangeOrderBlock"
+								ghost-class="ghost" group="column" itemKey="id" :disabled="!editable" class="space-y-1">
 								<template #item="{ element, index }">
-									<div
-										v-if="showWebpage(element)"
-										class="bg-white border border-gray-200 rounded"
+									<div v-if="showWebpage(element)" class="bg-white border border-gray-200 rounded"
 										@contextmenu="(event: any) => openContextMenu(event, element)">
-										<div
-											class="flex justify-between items-center px-3 py-2"
-											v-tooltip="
-												getEditPermissions(element.web_block.layout.data)
-													? ''
-													: trans(
-															'This block is reserved by system. Not editable.'
-													  )
-											"
-											:class="[
+										<div class="flex justify-between items-center px-3 py-2" v-tooltip="getEditPermissions(element.web_block.layout.data)
+											? ''
+											: trans(
+												'This block is reserved by system. Not editable.'
+											)
+											" :class="[
 												openedBlockSideEditor === index
 													? 'bg-theme text-white'
 													: '',
@@ -413,37 +411,30 @@ const saveAsTemplate = () => {
 													? 'cursor-pointer hover:bg-gray-100'
 													: 'cursor-not-allowed',
 											]">
-										
-											<button
-												class="flex items-center gap-2 w-full"
-												@click.stop="onClickBlock(index)"
-												:disabled="
-													!getEditPermissions(
-														element.web_block.layout.data
-													)
-												">
-												<FontAwesomeIcon
-													icon="fal fa-bars"
+
+											<button class="flex items-center gap-2 w-full"
+												@click.stop="onClickBlock(index)" :disabled="!getEditPermissions(
+													element.web_block.layout.data
+												)
+													">
+												<FontAwesomeIcon icon="fal fa-bars"
 													class="handle text-sm text-gray-400 cursor-grab" />
 
 												<!-- block Display Name -->
 												<div
 													class="max-w-[240px] xoverflow-x-auto whitespace-nowrap scrollbar-thin">
-													<input
-														v-if="editingIndex === index"
-														v-model="renameValue"
+													<input v-if="editingIndex === index" v-model="renameValue"
 														:maxlength="MAX_RENAME_LENGTH"
 														class="text-sm font-medium border rounded px-1 py-0.5 w-full text-gray-700"
-														autofocus
-														@keydown.enter.prevent="saveRename(index)"
-														@keydown.esc.prevent="cancelRename"
-														@blur="saveRename(index)" 
-														@click.stop/>
+														autofocus @keydown.enter.prevent="saveRename(index)"
+														@keydown.esc.prevent="cancelRename" @blur="saveRename(index)"
+														@click.stop />
 
-													<span v-else class="text-sm font-medium whitespace-pre-wrap text-left inline-block">
+													<span v-else
+														class="text-sm font-medium whitespace-pre-wrap text-left inline-block">
 														<template
 															v-if="element.web_block.layout.data.fieldValue?.blocks?.name">
-															{{element.web_block.layout.data.fieldValue.blocks.name}}
+															{{ element.web_block.layout.data.fieldValue.blocks.name }}
 														</template>
 														<template v-else>
 															{{ element.name }}
@@ -459,58 +450,41 @@ const saveAsTemplate = () => {
 
 											<div class="flex items-center gap-1">
 												<!-- Duplicate Block Button -->
-												<button
-													v-if="
-														getEditPermissions(
-															element.web_block.layout.data
-														)
-													"
-													v-tooltip="trans('Duplicate this block')"
-													@click.stop.prevent="duplicateBlock(element)"
+												<button v-if="
+													getEditPermissions(
+														element.web_block.layout.data
+													)
+												" v-tooltip="trans('Duplicate this block')" @click.stop.prevent="duplicateBlock(element)"
 													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
 													<FontAwesomeIcon :icon="faCopy" fixed-width />
 												</button>
 
-												<button
-													v-if="
-														getHiddenPermissions(
-															element.web_block.layout.data
-														)
-													"
-													v-tooltip="
-														trans(
-															'Toggle visibility: hide/show the block from the page'
-														)
-													"
-													@click.stop.prevent="
-														setShowBlock($event, element)
-													"
-													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
-													<FontAwesomeIcon
-														:icon="
-															element.show
-																? 'fal fa-eye'
-																: 'fal fa-eye-slash'
-														"
-														fixed-width />
+												<button v-if="
+													getHiddenPermissions(
+														element.web_block.layout.data
+													)
+												" v-tooltip="trans(
+													'Toggle visibility: hide/show the block from the page'
+												)
+													" @click.stop.prevent="
+															setShowBlock($event, element)
+															" class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+													<FontAwesomeIcon :icon="element.show
+														? 'fal fa-eye'
+														: 'fal fa-eye-slash'
+														" fixed-width />
 												</button>
 
-												<button
-													v-if="
-														getDeletePermissions(
-															element.web_block.layout.data
-														)
-													"
-													@click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
+												<button v-if="
+													getDeletePermissions(
+														element.web_block.layout.data
+													)
+												" @click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
 													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
-													<LoadingIcon
-														v-if="
-															isLoadingDeleteBlock === element.id
-														" />
-													<FontAwesomeIcon
-														v-else
-														icon="fal fa-trash-alt"
-														class="text-red-500"
+													<LoadingIcon v-if="
+														isLoadingDeleteBlock === element.id
+													" />
+													<FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-500"
 														fixed-width />
 												</button>
 											</div>
@@ -519,15 +493,11 @@ const saveAsTemplate = () => {
 								</template>
 							</draggable>
 						</template>
-						<div
-							v-else
-							class="flex flex-col items-center text-center py-6 text-gray-500">
+						<div v-else class="flex flex-col items-center text-center py-6 text-gray-500">
 							<FontAwesomeIcon :icon="['fal', 'browser']" class="text-4xl mb-2" />
-							<span class="text-sm font-medium">{{trans("You don't have any blocks")}}</span>
+							<span class="text-sm font-medium">{{ trans("You don't have any blocks") }}</span>
 						</div>
-						<div
-							v-if="isAddBlockLoading"
-							class="mt-2 skeleton min-h-10 w-full rounded bg-red-500" />
+						<div v-if="isAddBlockLoading" class="mt-2 skeleton min-h-10 w-full rounded bg-red-500" />
 					</div>
 				</TabPanel>
 
@@ -537,37 +507,24 @@ const saveAsTemplate = () => {
 						<template v-if="openedBlockSideEditor !== null">
 							<Collapse :when="true">
 								<div class="p-2 space-y-2">
-									<VisibleCheckmark
-										:disabled="!editable"
-										v-model="
-											webpage.layout.web_blocks[openedBlockSideEditor]
-												.visibility
-										"
-										@update:modelValue="
+									<VisibleCheckmark :disabled="!editable" v-model="webpage.layout.web_blocks[openedBlockSideEditor]
+										.visibility
+										" @update:modelValue="
 											sendBlockUpdate(
 												webpage.layout.web_blocks[openedBlockSideEditor]
 											)
-										" />
-									<SideEditor
-										v-model="
-											webpage.layout.web_blocks[openedBlockSideEditor]
-												.web_block.layout.data.fieldValue
-										"
-										:panelOpen="openedChildSideEditor"
-										:editable="editable"
-										:blueprint="
-											getBlueprint(
-												webpage.layout.web_blocks[openedBlockSideEditor].type, webpage , webpage.layout.web_blocks[openedBlockSideEditor].id
-											)
-										"
-										:block="webpage.layout.web_blocks[openedBlockSideEditor]"
-										@update:modelValue="
-											() =>
-												sendBlockUpdate(
-													webpage.layout.web_blocks[openedBlockSideEditor]
-												)
-										"
-										:uploadImageRoute="{
+											" />
+									<SideEditor v-model="webpage.layout.web_blocks[openedBlockSideEditor]
+										.web_block.layout.data.fieldValue
+										" :panelOpen="openedChildSideEditor" :editable="editable" :blueprint="getBlueprint(
+											webpage.layout.web_blocks[openedBlockSideEditor].type, webpage, webpage.layout.web_blocks[openedBlockSideEditor].id
+										)
+											" :block="webpage.layout.web_blocks[openedBlockSideEditor]" @update:modelValue="
+												() =>
+													sendBlockUpdate(
+														webpage.layout.web_blocks[openedBlockSideEditor]
+													)
+											" :uploadImageRoute="{
 											...webpage.images_upload_route,
 											parameters: {
 												modelHasWebBlocks:
@@ -597,19 +554,15 @@ const saveAsTemplate = () => {
 		</ConfirmPopup>
 	</div>
 
-	<div
-		v-if="contextMenu.visible"
-		:style="{ top: `${contextMenu.top}px`, left: `${contextMenu.left}px` }"
+	<div v-if="contextMenu.visible" :style="{ top: `${contextMenu.top}px`, left: `${contextMenu.left}px` }"
 		class="fixed z-50 bg-white border border-gray-200 shadow-md rounded text-sm min-w-[140px] overflow-hidden">
 		<ul>
 			<template v-if="contextMenu.block">
 				<!-- Toggle Visibility -->
-				<li
-					@click="
-						getHiddenPermissions(contextMenu.block.web_block.layout.data) &&
-							setShowBlock($event, contextMenu.block!)
-					"
-					:class="[
+				<li @click="
+					getHiddenPermissions(contextMenu.block.web_block.layout.data) &&
+					setShowBlock($event, contextMenu.block!)
+					" :class="[
 						'flex items-center gap-2 px-3 py-1 cursor-pointer',
 						getHiddenPermissions(contextMenu.block.web_block.layout.data)
 							? 'hover:bg-gray-100 text-gray-800'
@@ -620,12 +573,10 @@ const saveAsTemplate = () => {
 				</li>
 
 				<!-- Delete -->
-				<li
-					@click="
-						getDeletePermissions(contextMenu.block.web_block.layout.data) &&
-							confirmDelete($event, contextMenu.block!)
-					"
-					:class="[
+				<li @click="
+					getDeletePermissions(contextMenu.block.web_block.layout.data) &&
+					confirmDelete($event, contextMenu.block!)
+					" :class="[
 						'flex items-center gap-2 px-3 py-1',
 						getDeletePermissions(contextMenu.block.web_block.layout.data)
 							? 'hover:bg-gray-100 text-red-600 cursor-pointer'
@@ -636,11 +587,9 @@ const saveAsTemplate = () => {
 				</li>
 
 				<!-- Copy (Always enabled) -->
-				<li
-					@click="
-						getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()
-					"
-					:class="[
+				<li @click="
+					getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()
+					" :class="[
 						'flex items-center gap-2 px-3 py-2',
 						getEditPermissions(contextMenu.block.web_block.layout.data)
 							? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
@@ -652,9 +601,7 @@ const saveAsTemplate = () => {
 
 				<li @click="
 					getEditPermissions(contextMenu.block.web_block.layout.data) && openSaveTemplateDialog()
-					"
-
-					:class="[
+					" :class="[
 						'flex items-center gap-2 px-3 py-2',
 						getEditPermissions(contextMenu.block.web_block.layout.data)
 							? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
@@ -665,12 +612,10 @@ const saveAsTemplate = () => {
 				</li>
 
 				<!--Rename) -->
-				<li
-					@click="
-						getRenamePermision(contextMenu.block.web_block.layout.data) &&
-							onRenameBlock()
-					"
-					:class="[
+				<li @click="
+					getRenamePermision(contextMenu.block.web_block.layout.data) &&
+					onRenameBlock()
+					" :class="[
 						'flex items-center gap-2 px-3 py-2',
 						getRenamePermision(contextMenu.block.web_block.layout.data)
 							? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
@@ -681,9 +626,7 @@ const saveAsTemplate = () => {
 				</li>
 			</template>
 			<template v-else>
-				<li
-					@click="pasteBlock"
-					class="flex items-center gap-2 px-3 py-1 hover:bg-gray-100 cursor-pointer"
+				<li @click="pasteBlock" class="flex items-center gap-2 px-3 py-1 hover:bg-gray-100 cursor-pointer"
 					:class="{ 'text-gray-400 pointer-events-none': !copiedBlock }">
 					<font-awesome-icon :icon="faPaste" />
 					Paste
@@ -693,7 +636,7 @@ const saveAsTemplate = () => {
 	</div>
 
 
-	 <Dialog v-model:visible="dialogSaveAsTemplateVisible" modal header="Save as template" :style="{ width: '26rem' }"
+	<Dialog v-model:visible="dialogSaveAsTemplateVisible" modal header="Save as template" :style="{ width: '26rem' }"
 		@hide="dialogSaveAsTemplateVisible = false">
 		<div class="flex flex-col gap-3 border-t py-4">
 			<label class="text-sm font-medium text-gray-700">
@@ -710,6 +653,11 @@ const saveAsTemplate = () => {
 				<Button label="Save" type="save" :disabled="nameAsTemplate.trim() === ''" @click="saveAsTemplate" />
 			</div>
 		</template>
+	</Dialog>
+
+
+	<Dialog v-model:visible="dialogPickTemplate" header="Templates"  modal  @hide="dialogPickTemplate = false" :style="{ width: '80rem' }">
+		<div><TemplatesWebpage @select-template="selectTemplate"/></div>
 	</Dialog>
 </template>
 
