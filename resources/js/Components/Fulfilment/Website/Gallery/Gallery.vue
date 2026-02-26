@@ -39,7 +39,7 @@
             parameters : ""
         },
         cropProps : {
-            ratio :  { w: 1, h: 1 } 
+            ratio :  [1/1]
         }
 })
 

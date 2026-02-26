@@ -13,6 +13,7 @@ import ColorPicker from './ColorPicker.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from 'laravel-vue-i18n'
+import SideEditorInputHTML from '@/Components/CMS/Fields/SideEditorInputHTML.vue'
 
 library.add(faTrashAlt)
 
@@ -35,15 +36,13 @@ const createDefaultCard = () => ({
     hideCard: false,
     titles: [
         {
-            text: 'Example', color: '#000000', align: 'center',
-            vertical: 'middle', fontSize: 32, offsetX: 0,
-            offsetY: 0
+            text: '<h3>NEW IN</h3><p>Nymph gemstone rings</p>'
         }
     ],
     horizontal: 'center',
     vertical: 'middle',
     width: 50,
-    height: 50,
+    height: 160,
     padding: 30,
     radius: 10,
     opacity: 1,
@@ -54,7 +53,20 @@ const createDefaultCard = () => ({
     titleColor: '#000000',
     subtitleColor: '#333333',
     offsetX: 0,
-    offsetY: 0
+    offsetY: 0,
+    button: {
+        show: true,
+        text: 'Shop Now',
+        link: '',
+        width: 'auto', // auto | full | custom
+        customWidth: 200,
+        align: 'center', // left | center | right
+        paddingX: 20,
+        paddingY: 10,
+        bgColor: '#000000',
+        textColor: '#ffffff',
+        radius: 6
+    }
 })
 
 const addTitle = (key: string) => {
@@ -95,6 +107,43 @@ const removeCard = (key: string) => {
     delete newCards[key]
     cards.value = newCards
 }
+
+const defaultButton = () => ({
+    show: true,
+    text: 'Shop Now',
+    link: '',
+    width: 'auto', // auto | full | custom
+    customWidth: 200,
+    align: 'center', // left | center | right
+    paddingX: 20,
+    paddingY: 10,
+    bgColor: '#000000',
+    textColor: '#ffffff',
+    radius: 6
+})
+
+const ensureButton = (card: any) => {
+    if (!card.button || typeof card.button !== 'object') {
+        card.button = defaultButton()
+        return
+    }
+
+    // merge jika sebagian field hilang (data lama)
+    card.button = {
+        ...defaultButton(),
+        ...card.button
+    }
+}
+
+const normalizedCards = computed(() => {
+    const obj = cards.value || {}
+
+    Object.keys(obj).forEach(key => {
+        ensureButton(obj[key])
+    })
+
+    return obj
+})
 </script>
 
 <template>
@@ -110,7 +159,7 @@ const removeCard = (key: string) => {
 
         <!-- CARDS -->
         <div class="shadow-lg">
-            <Card v-for="(card, key) in cards" :key="key" class="shadow-2 border-round-xl">
+           <Card v-for="(card, key) in normalizedCards" :key="key" class="shadow-2 border-round-xl">
                 <template #title>
                     <div class="flex justify-between items-center">
                         <span>{{ key }}</span>
@@ -225,116 +274,129 @@ const removeCard = (key: string) => {
                         </div>
 
                         <Divider />
-
                         <!-- TEXT -->
                         <div class="space-y-3">
                             <div>
                                 <label class="block mb-2 font-medium">Texts</label>
-
                                 <div v-for="(item, index) in (card.titles || [])" :key="index"
                                     class="space-y-2 mb-4 border p-3 rounded">
-                                    <InputText v-model="item.text" class="w-full" placeholder="Enter title" />
+                                    <SideEditorInputHTML v-model="item.text" class="w-full" placeholder="Enter title" />
+                                </div>
+                            </div>
+                        </div>
 
-                                    <ColorPicker v-model="item.color" />
+                        <Divider />
 
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- BUTTON SETTINGS -->
+                        <div class="space-y-3">
+                            <label class="block mb-2 font-medium">Button</label>
+                            <div class="flex items-center gap-3">
+                                <ToggleButton v-model="card.button.show" onLabel="Button Visible"
+                                    offLabel="Button Hidden" />
+                            </div>
 
-                                        <!-- Horizontal -->
-                                        <div>
-                                            <label class="block mb-1 text-sm font-semibold">Horizontal Position</label>
+                            <div v-if="card.button.show" class="space-y-4 border rounded p-3">
 
-                                            <div class="flex gap-4 items-center">
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.align"
-                                                        :inputId="`align-left-${key}-${index}`" value="left" />
-                                                    <label :for="`align-left-${key}-${index}`" class="cursor-pointer">
-                                                        Left
-                                                    </label>
-                                                </div>
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.align"
-                                                        :inputId="`align-center-${key}-${index}`" value="center" />
-                                                    <label :for="`align-center-${key}-${index}`" class="cursor-pointer">
-                                                        Center
-                                                    </label>
-                                                </div>
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.align"
-                                                        :inputId="`align-right-${key}-${index}`" value="right" />
-                                                    <label :for="`align-right-${key}-${index}`" class="cursor-pointer">
-                                                        Right
-                                                    </label>
-                                                </div>
-
-                                            </div>
-                                        </div>
-
-                                        <!-- Vertical -->
-                                        <div>
-                                            <label class="block mb-1 text-sm font-semibold">Vertical Position</label>
-
-                                            <div class="flex gap-4 items-center">
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.vertical"
-                                                        :inputId="`vertical-top-${key}-${index}`" value="top" />
-                                                    <label :for="`vertical-top-${key}-${index}`" class="cursor-pointer">
-                                                        Top
-                                                    </label>
-                                                </div>
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.vertical"
-                                                        :inputId="`vertical-middle-${key}-${index}`" value="middle" />
-                                                    <label :for="`vertical-middle-${key}-${index}`"
-                                                        class="cursor-pointer">
-                                                        Middle
-                                                    </label>
-                                                </div>
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.vertical"
-                                                        :inputId="`vertical-bottom-${key}-${index}`" value="bottom" />
-                                                    <label :for="`vertical-bottom-${key}-${index}`"
-                                                        class="cursor-pointer">
-                                                        Bottom
-                                                    </label>
-                                                </div>
-
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-4">
-                                            <label class="block text-sm mb-1">
-                                                Font Size ({{ item.fontSize }}px)
-                                            </label>
-                                            <Slider v-model="item.fontSize" :min="12" :max="120" :step="1" />
-                                        </div>
-
-                                        <div>
-                                            <label class="block text-sm mb-1">
-                                                Adjust Horizontal Position ({{ item.offsetX }}px)
-                                            </label>
-                                            <Slider v-model="item.offsetX" :min="-500" :max="500" :step="1" />
-                                        </div>
-
-                                        <div>
-                                            <label class="block text-sm mb-1">
-                                                Adjust Vertical Position ({{ item.offsetY }}px)
-                                            </label>
-                                            <Slider v-model="item.offsetY" :min="-500" :max="500" :step="1" />
-                                        </div>
-                                    </div>
-
-                                    <Button label="Remove Text" size="sm" :icon="faTrashAlt" type="red"
-                                        @click="removeTitle(key, index)" v-if="card.titles.length > 1" />
+                                <!-- TEXT -->
+                                <div>
+                                    <label class="block mb-2 font-medium">Button Text</label>
+                                    <InputText v-model="card.button.text" class="w-full" />
                                 </div>
 
-                                <Button label="Add Text" type="primary" full icon="fas fa-plus"
-                                    @click="addTitle(key)" />
+                                <!-- LINK -->
+                                <div>
+                                    <label class="block mb-2 font-medium">Button Link</label>
+                                    <InputText v-model="card.button.link" class="w-full" placeholder="https://..." />
+                                </div>
+
+                                <!-- ALIGN -->
+                                <div>
+                                    <label class="block mb-2 font-medium">Button Align</label>
+                                    <div class="flex gap-4">
+                                        <div class="flex items-center gap-2">
+                                            <RadioButton v-model="card.button.align" value="left" />
+                                            <label>Left</label>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            <RadioButton v-model="card.button.align" value="center" />
+                                            <label>Center</label>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            <RadioButton v-model="card.button.align" value="right" />
+                                            <label>Right</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- WIDTH MODE -->
+                                <div>
+                                    <label class="block mb-2 font-medium">Button Width</label>
+                                    <div class="flex gap-4">
+                                        <div class="flex items-center gap-2">
+                                            <RadioButton v-model="card.button.width" value="auto" />
+                                            <label>Auto</label>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            <RadioButton v-model="card.button.width" value="full" />
+                                            <label>Full</label>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            <RadioButton v-model="card.button.width" value="custom" />
+                                            <label>Custom</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- CUSTOM WIDTH -->
+                                <div v-if="card.button.width === 'custom'">
+                                    <label class="block mb-2">
+                                        Custom Width ({{ card.button.customWidth }}px)
+                                    </label>
+                                    <Slider v-model="card.button.customWidth" :min="50" :max="600" />
+                                </div>
+
+                                <!-- PADDING -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block mb-2">
+                                            Padding X ({{ card.button.paddingX }}px)
+                                        </label>
+                                        <Slider v-model="card.button.paddingX" :min="0" :max="80" />
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2">
+                                            Padding Y ({{ card.button.paddingY }}px)
+                                        </label>
+                                        <Slider v-model="card.button.paddingY" :min="0" :max="60" />
+                                    </div>
+                                </div>
+
+                                <!-- RADIUS -->
+                                <div>
+                                    <label class="block mb-2">
+                                        Border Radius ({{ card.button.radius }}px)
+                                    </label>
+                                    <Slider v-model="card.button.radius" :min="0" :max="40" />
+                                </div>
+
+                                <!-- COLORS -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block mb-2 font-medium">Background</label>
+                                        <ColorPicker v-model="card.button.bgColor" />
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 font-medium">Text Color</label>
+                                        <ColorPicker v-model="card.button.textColor" />
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
