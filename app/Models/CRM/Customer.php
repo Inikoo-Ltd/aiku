@@ -138,6 +138,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_credit_customer Sage credit customer flag
  * @property string|null $accounting_reference Sage customer number
  * @property string|null $external_id
+ * @property string|null $searchable_text Normalized search cache for ILIKE queries
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AmazonUser> $amazonUsers
@@ -333,7 +334,7 @@ class Customer extends Model implements HasMedia, Auditable
             }
         });
 
-        
+
         static::saving(function ($model) {
             $model->syncSearchableText();
         });
