@@ -175,6 +175,10 @@ Route::middleware(["auth", "two_fa"])->group(function () {
         ->name("platforms.")
         ->group(__DIR__."/platforms.php");
 
+    Route::prefix("catalogue")
+        ->name("catalogue.")
+        ->group(__DIR__."/catalogue.php");
+
     Route::fallback(function () {
         $status = 404;
 
