@@ -14,6 +14,7 @@ use App\Actions\Comms\Traits\WithSendSubscribersOutboxEmail;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Helpers\Currency;
@@ -30,6 +31,10 @@ class SendNewOrderEmailToSubscribers extends OrgAction
     {
         $order = Order::find($orderID);
         if (!$order) {
+            return;
+        }
+
+        if ($order->shop->type === ShopTypeEnum::EXTERNAL) {
             return;
         }
 
