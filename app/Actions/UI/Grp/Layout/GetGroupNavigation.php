@@ -31,13 +31,22 @@ class GetGroupNavigation
                     [
                         "tooltip" => __("Catalogue"),
                         "icon"    => ["fal", "fa-books"],
-                        'root'    => '',
+                        'root'    => 'grp.catalogue.show',
                         "route"   => [
-                            "name"       => '',
+                            "name"       => 'grp.catalogue.show',
                             "parameters" => [],
                         ],
                     ],
-                ]
+                    [
+                        "tooltip" => __("Platform"),
+                        'icon'    => ['fal', 'fa-code-branch'],
+                        'root'    => 'grp.platforms.index',
+                        "route"   => [
+                            "name"       => 'grp.platforms.index',
+                            "parameters" => [],
+                        ],
+                    ]
+                ],
             ]
         ];
         $groupNavigation['clocking-machines'] = $this->getClockingMachinesNavs(); //need permission for just employees can access

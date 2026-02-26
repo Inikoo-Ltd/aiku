@@ -23,7 +23,6 @@ class GetWebBlockProduct
 
     public function handle(Webpage $webpage, array $webBlock, bool $isIris = true): array
     {
-
         /** @var Product $product */
         $product = $webpage->model;
 
@@ -39,9 +38,16 @@ class GetWebBlockProduct
                     ->where('model_has_attachments.model_id', $webpage->model_id);
             })
             ->select(['model_has_attachments.caption', 'model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid', 'media.mime_type as mime_type'])
-            ->whereIn('model_has_attachments.scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
+            ->whereIn('model_has_attachments.scope', [
+                TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS,
+                TradeAttachmentScopeEnum::CPSR,
+                TradeAttachmentScopeEnum::DOC,
+                TradeAttachmentScopeEnum::IFRA,
+                TradeAttachmentScopeEnum::SDS,
+                TradeAttachmentScopeEnum::TEST_REPORTS,
+            ])
             ->get();
-        $variant = Variant::where('leader_id', $product->id)->first();
+        $variant     = Variant::where('leader_id', $product->id)->first();
 
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);

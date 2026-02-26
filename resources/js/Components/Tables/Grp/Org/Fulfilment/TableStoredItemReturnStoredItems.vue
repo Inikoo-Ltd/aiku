@@ -282,8 +282,8 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                         },
                                         method: 'patch'
                                     }"
-                                    :title="trans(`Return pallet ${pallet_stored_item.reference} to customer?`)"
-                                    :description="trans(`The pallet ${pallet_stored_item.reference} will be set as returned to the customer, and no longer exist in warehouse. This action cannot be reverse.`)"
+                                    :title="trans(`Return pallet :palletReference to customer?`, { palletReference: pallet_stored_item.reference ?? '' })"
+                                    :description="trans(`The pallet :palletReference will be set as returned to the customer, and no longer exist in warehouse. This action cannot be reverse.`, { palletReference: pallet_stored_item.reference ?? '' })"
                                 >
                                     <template #default="{ changeModel }">
                                         <Button

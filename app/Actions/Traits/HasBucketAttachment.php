@@ -21,6 +21,7 @@ trait HasBucketAttachment
                 ['label' => __('Allergen Declarations'), 'scope' => 'allergen_declarations', 'enum' => TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS],
                 ['label' => __('Declaration of Conformity'), 'scope' => 'doc', 'enum' => TradeAttachmentScopeEnum::DOC],
                 ['label' => 'CPSR', 'scope' => 'cpsr', 'enum' => TradeAttachmentScopeEnum::CPSR],
+                ['label' => __('Test Reports'), 'scope' => 'test_reports', 'enum' => TradeAttachmentScopeEnum::TEST_REPORTS],
             ],
             'private' => [
                 ['label' => 'IFRA '.__('Private'), 'scope' => 'ifra_private', 'enum' => TradeAttachmentScopeEnum::IFRA_PRIVATE],
@@ -28,6 +29,7 @@ trait HasBucketAttachment
                 ['label' => __('Allergen Declarations Private'), 'scope' => 'allergen_declarations_private', 'enum' => TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS_PRIVATE],
                 ['label' => 'DOC '.__('Private'), 'scope' => 'doc_private', 'enum' => TradeAttachmentScopeEnum::DOC_PRIVATE],
                 ['label' => 'CPSR '.__('Private'), 'scope' => 'cpsr_private', 'enum' => TradeAttachmentScopeEnum::CPSR_PRIVATE],
+                ['label' => __('Test Reports Private'), 'scope' => 'test_reports_private', 'enum' => TradeAttachmentScopeEnum::TEST_REPORTS_PRIVATE],
             ],
         ];
 

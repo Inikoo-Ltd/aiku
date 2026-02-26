@@ -16,6 +16,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class CheckProductMasters
 {
@@ -55,8 +56,12 @@ class CheckProductMasters
 
         $count = Product::where('shop_id', $shop->id)->count();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
         Product::where('shop_id', $shop->id)->orderBy('id')

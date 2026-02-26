@@ -25,7 +25,7 @@ enum FulfilmentCustomerStoredItemsTabsEnum: string
     {
         return match ($this) {
             StoredItemsInWarehouseTabsEnum::STORED_ITEMS => [
-                'title' => __("Customer'S SKUs"),
+                'title' => __("Customer's SKUs"),
                 'icon'  => 'fal fa-narwhal',
             ],
 

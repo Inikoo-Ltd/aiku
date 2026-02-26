@@ -13,6 +13,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairInvoiceMissingUlid
 {
@@ -32,8 +33,12 @@ class RepairInvoiceMissingUlid
     {
         $count = Invoice::whereNull('ulid')->count();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
         Invoice::orderBy('id', 'desc')->whereNull('ulid')

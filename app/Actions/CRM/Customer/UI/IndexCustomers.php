@@ -97,7 +97,7 @@ class IndexCustomers extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
             $query->where(function ($query) use ($value, $parent) {
                 $value = escapeSQLSearch($value);
-                
+
                 // Ignore if search token is less than 2 words
                 $searchTokens = array_values(array_filter(
                     explode(' ', trim($value)),

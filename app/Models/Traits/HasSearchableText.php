@@ -19,12 +19,12 @@ trait HasSearchableText
             return '';
         }
 
-        $value = Str::ascii($value); 
+        $value = Str::ascii($value);
         $value = strtolower($value);
         $value = preg_replace('/[^a-z0-9]+/', ' ', $value);
         $value = trim(preg_replace('/\s+/', ' ', $value));
 
-        return " {$value} ";
+        return " $value ";
     }
 
     public function buildSearchableText(array $fields): string
@@ -45,6 +45,8 @@ trait HasSearchableText
             ->map(fn ($attribute) => $this->{$attribute} ?? null)
             ->all();
 
-        $this->searchable_text = $this->buildSearchableText($values);
+        $searchableText = $this->buildSearchableText($values);
+        $searchableText = trim(preg_replace('/\s+/', ' ', $searchableText));
+        $this->searchable_text = $searchableText;
     }
 }

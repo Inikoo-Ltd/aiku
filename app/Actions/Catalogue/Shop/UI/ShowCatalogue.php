@@ -13,11 +13,14 @@ use App\Actions\Catalogue\UI\IndexTopListedProducts;
 use App\Actions\Catalogue\UI\IndexTopSoldProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Catalogue\CatalogueTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\CRM\TopListedProductsResource;
 use App\Http\Resources\CRM\TopSoldProductsResource;
+use App\Http\Resources\SysAdmin\Group\GroupResource;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,31 +30,32 @@ class ShowCatalogue extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-    public function handle(Shop $shop): Shop
-    {
-        return $shop;
-    }
-
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request)->withTab(CatalogueTabsEnum::values());
 
-        return $this->handle($shop);
+        return $shop;
     }
 
-    public function htmlResponse(Shop $shop, ActionRequest $request): Response
+    public function inGroup(ActionRequest $request): Group
+    {
+        $this->asAction = true;
+        $this->initialisationFromGroup(group(), $request)->withTab(CatalogueTabsEnum::valuesExcept([CatalogueTabsEnum::SHOWCASE]));
+
+        return $this->group;
+    }
+
+    public function htmlResponse(Group|Shop $parent, ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/Catalogue/Catalogue',
             [
                 'title'       => __('catalogue'),
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->originalParameters()
-                ),
-                'navigation'  => [
-                    'previous' => $this->getPrevious($shop, $request),
-                    'next'     => $this->getNext($shop, $request),
-                ],
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'navigation'  => $parent instanceof Shop ? [
+                    'previous' => $this->getPrevious($parent, $request),
+                    'next'     => $this->getNext($parent, $request),
+                ] : [],
                 'pageHead'    => [
                     'title' => __('Catalogue'),
                     'model' => '',
@@ -62,24 +66,24 @@ class ShowCatalogue extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => CatalogueTabsEnum::navigation()
+                    'navigation' => $parent instanceof Shop ? CatalogueTabsEnum::navigation() : CatalogueTabsEnum::navigationExcept([CatalogueTabsEnum::SHOWCASE])
                 ],
                 CatalogueTabsEnum::SHOWCASE->value =>
-                    $this->tab == CatalogueTabsEnum::SHOWCASE->value
-                        ? fn () => GetCatalogueShowcase::run($shop)
-                        : Inertia::lazy(fn () => GetCatalogueShowcase::run($shop)),
+                    $this->tab == CatalogueTabsEnum::SHOWCASE->value && $parent instanceof Shop
+                        ? fn () => GetCatalogueShowcase::run($parent)
+                        : Inertia::lazy(fn () => GetCatalogueShowcase::run($parent)),
                 CatalogueTabsEnum::TOP_LISTED_FAMILIES->value =>
                     $this->tab == CatalogueTabsEnum::TOP_LISTED_FAMILIES->value
-                        ? fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))
-                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))),
+                        ? fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($parent, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))
+                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedFamilies::run($parent, prefix: CatalogueTabsEnum::TOP_LISTED_FAMILIES->value))),
                 CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value =>
                     $this->tab == CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value
-                        ? fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))
-                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($shop, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))),
+                        ? fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($parent, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))
+                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedProducts::run($parent, prefix: CatalogueTabsEnum::TOP_LISTED_PRODUCTS->value))),
                 CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value =>
                     $this->tab == CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value
-                        ? fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($shop, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))
-                        : Inertia::lazy(fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($shop, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))),
+                        ? fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($parent, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))
+                        : Inertia::lazy(fn () => TopSoldProductsResource::collection(IndexTopSoldProducts::run($parent, prefix: CatalogueTabsEnum::TOP_SOLD_PRODUCTS->value))),
             ]
         )->table(
             IndexTopListedFamilies::make()->tableStructure(
@@ -96,9 +100,13 @@ class ShowCatalogue extends OrgAction
         );
     }
 
-    public function jsonResponse(Shop $shop): ShopResource
+    public function jsonResponse(Group|Shop $parent): GroupResource|ShopResource
     {
-        return new ShopResource($shop);
+        if ($parent instanceof Shop) {
+            return new ShopResource($parent);
+        }
+
+        return new GroupResource($parent);
     }
 
     public function getPrevious(Shop $shop, ActionRequest $request): ?array
@@ -135,22 +143,40 @@ class ShowCatalogue extends OrgAction
         };
     }
 
-    public function getBreadcrumbs(array $routeParameters): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        return array_merge(
-            ShowShop::make()->getBreadcrumbs($routeParameters),
-            [
+        return match ($routeName) {
+            'grp.org.shops.show.catalogue.dashboard' => array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
                 [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => [
-                            'name'       => 'grp.org.shops.show.catalogue.dashboard',
-                            'parameters' => $routeParameters
-                        ],
-                        'label' => __('Catalogue'),
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.dashboard',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Catalogue'),
+                        ]
                     ]
                 ]
-            ]
-        );
+            ),
+            'grp.catalogue.show' => array_merge(
+                ShowGroupDashboard::make()->getBreadcrumbs(),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.catalogue.show',
+                                'parameters' => []
+                            ],
+                            'label' => __('Catalogue'),
+                        ]
+                    ]
+                ]
+            ),
+            default => []
+        };
     }
 }

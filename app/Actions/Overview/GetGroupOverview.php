@@ -381,7 +381,7 @@ class GetGroupOverview extends OrgAction
                 'count' => $group->fulfilmentStats->number_pallets ?? 0
             ],
             [
-                'name'  => __("Customer'S SKUs"),
+                'name'  => __("Customer's SKUs"),
                 'icon'  => 'fal fa-box-open',
                 'route' => route('grp.overview.fulfilment.stored-items.index'),
                 'count' => $group->fulfilmentStats->number_stored_items ?? 0

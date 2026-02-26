@@ -12,6 +12,7 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairOrgStocksPackedIn
 {
@@ -33,8 +34,12 @@ class RepairOrgStocksPackedIn
         }
 
         // Create a progress bar
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $progressBar = $command->getOutput()->createProgressBar($total);
-        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $progressBar->setFormat('aiku_eta');
         $progressBar->start();
 
         OrgStock::chunk($chunkSize, function ($orgStocks) use (&$count, $progressBar) {

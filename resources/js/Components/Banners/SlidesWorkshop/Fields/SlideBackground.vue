@@ -128,7 +128,7 @@ const onPickImage = (res:any) => {
                     <!-- upload -->
                     <Button style="secondary" size="xs" class="relative">
                         <FontAwesomeIcon icon="fas fa-upload" />
-                        {{ trans(`Upload image ${screenView}`) }}
+                        {{ trans(`Upload image :screenView`, { screenView: screenView ?? '' }) }}
 
                         <label class="absolute inset-0 cursor-pointer" for="input-upload"/>
                         <input
