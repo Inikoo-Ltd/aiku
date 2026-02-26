@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { getStyles } from "@/Composables/styles";
-import { trans } from "laravel-vue-i18n";
 import { ref, onMounted, inject, watch, computed, defineAsyncComponent } from "vue";
 import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
@@ -47,32 +46,31 @@ const activeId = computed(() => {
 });
 
 const getDataBanner = async (): Promise<void> => {
-	if (!activeId.value) {
-		data.value = null;
-		return;
-	}
+  if (typeof window === "undefined") return;
 
-	try {
-        console.log('sdsdsd')
-		isLoading.value = true;
+  if (!activeId.value) {
+    data.value = null;
+    return;
+  }
 
-		const response = await axios.get(
-			route("iris.json.get_banner", { banner: activeId.value })
-		);
+  try {
+    isLoading.value = true;
 
-		data.value = response.data;
-        console.log('data_banner',response.data)
-	} catch (error: any) {
-		console.error(error);
-		notify({
-			title: "Failed to fetch banners data",
-			text: error?.message || "An error occurred",
-			type: "error",
-		});
-		data.value = null;
-	} finally {
-		isLoading.value = false;
-	}
+    const response = await axios.get(
+      `/json/banner/${activeId.value}`
+    );
+
+    data.value = response.data;
+  } catch (error: any) {
+    notify({
+      title: "Failed to fetch banners data",
+      text: error?.message || "An error occurred",
+      type: "error",
+    });
+    data.value = null;
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 
