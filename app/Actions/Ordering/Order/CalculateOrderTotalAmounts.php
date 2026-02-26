@@ -89,6 +89,8 @@ class CalculateOrderTotalAmounts extends OrgAction
             OrderStateEnum::CREATING,
             OrderStateEnum::SUBMITTED,
             OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::PICKED,
+            OrderStateEnum::PACKING,
             OrderStateEnum::PACKED,
         ])) {
 
