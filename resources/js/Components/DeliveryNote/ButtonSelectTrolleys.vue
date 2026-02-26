@@ -77,6 +77,7 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
                 isLoadingSubmitTrolley.value = trolleyId
             },
             onSuccess: () => {
+                isOpenModal.value = false
                 // notify({
                 //     title: trans("Success"),
                 //     text: trans("Successfully submit the data"),
@@ -100,11 +101,13 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
 
 <template>
     <div>
-        <Button
-            :label="trans('Start Picking')"
-            @click="() => isOpenModal = true" 
-            icon="fal fa-dolly-flatbed-alt"
-        />
+        <slot name="default" :setOpenModal="() => isOpenModal = !isOpenModal">
+            <Button
+                :label="trans('Start Picking')"
+                @click="() => isOpenModal = true"
+                icon="fal fa-dolly-flatbed-alt"
+            />
+        </slot>
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="font-bold text-xl text-center mb-8">
