@@ -220,7 +220,7 @@ class IndexMasterCollections extends OrgAction
                 $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'name', label: __(key: 'Name'), canBeHidden: false, sortable: true, searchable: true);
-                $table->column(key: 'master_department', label: __('M. Departement'), canBeHidden: false, sortable: true, searchable: false);
+                $table->column(key: 'master_department', label: __('M. Department'), canBeHidden: false, sortable: true, searchable: false);
                 $table->column(key: 'master_sub_department', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false);
                 $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
                 $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);

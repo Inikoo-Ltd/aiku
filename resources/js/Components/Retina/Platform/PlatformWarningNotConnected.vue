@@ -81,7 +81,7 @@ const ipAddresses = [
 
 <template>
     <Message severity="error" class="mt-8" v-if="customer_sales_channel.user_data?.length > 0">
-        <span>{{ trans('Error meesage from your woocommerce store when we access the API: ') }}</span>
+        <span>{{ trans('Error message from your woocommerce store when we access the API: ') }}</span>
         <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
             <div>
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
