@@ -1267,7 +1267,7 @@ const recalculateVat = async () => {
                 v-if="data?.data?.state === 'submitted'"
                 :description="trans('This will move the order back to basket, allowing customer to edit the order again. Are you sure?')"
                 :title="trans('Undo Order back to basket?')"
-                :noLabel="trans('Yes, undo to basket')"
+                :noLabel="trans('Yes, sned back to basket')"
                 noIcon="fal fa-undo-alt"
                 class="w-full"
                 :routeDelete="{
@@ -1289,7 +1289,7 @@ const recalculateVat = async () => {
                                 <LoadingIcon v-if="isLoadingdelete" />
                                 <FontAwesomeIcon v-else icon="fal fa-undo-alt" class="" fixed-width aria-hidden="true" />
                             </div>
-                            <div class="w-full">{{ trans('Undo to basket') }}</div>
+                            <div class="w-full">{{ trans('Send back to basket') }}</div>
                         </div>
                     </Button>
                 </template>

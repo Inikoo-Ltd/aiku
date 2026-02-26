@@ -40,7 +40,7 @@ class ChangeTrolleyDeliveryNote extends OrgAction
     {
         return [
             'trolley' => [
-                'required',
+                'sometimes',
                 'nullable',
                 'integer',
                 Rule::exists('trolleys', 'id')->where('organisation_id', $this->organisation->id)

@@ -16,6 +16,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class FixAuroraOffersStatus
 {
@@ -40,8 +41,12 @@ class FixAuroraOffersStatus
 
         $offers = Offer::whereNotNull('source_id')->where('shop_id', $shop->id)->get();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($offers->count());
-        $bar->setFormat('debug');
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
         /** @var Offer $offer */

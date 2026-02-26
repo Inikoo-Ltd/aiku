@@ -21,6 +21,9 @@ import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
 import Icon from "@/Components/Icon.vue"
 import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
 import EditTrolley from "@/Components/DeliveryNote/EditTrolley.vue"
+import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -137,8 +140,7 @@ const emit = defineEmits<{
     'replace-all': []
 }>()
 
-console.log('vvvvvvvvvvvvvvvvv', props.boxStats)
-
+const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
 // Section: Replace All functionality
@@ -404,7 +406,7 @@ const updateCollection = async (e: Event) => {
                     </div>
 
                     <!-- Section: Trolleys -->
-                    <div v-if="boxStats?.trolleys?.length" class="!mt-1.5 flex gap-x-2 items-center">
+                    <div class="!mt-1.5 flex gap-x-2 items-center">
                         <dl v-tooltip="trans('Trolleys selected')"
                             class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
@@ -416,16 +418,28 @@ const updateCollection = async (e: Event) => {
                             </dd>
                         </dl>
 
-                        <EditTrolley
-                            v-if="['handling', 'picked'].includes(deliveryNote.state)"
-                            :warehouse="warehouse"
-                            :deliveryNote="deliveryNote"
-                        />
+                        <template v-if="['handling', 'picked'].includes(deliveryNote.state)">
+                            <EditTrolley
+                                v-if="boxStats?.trolleys?.length"
+                                :warehouse="warehouse"
+                                :deliveryNote="deliveryNote"
+                            />
+                            
+                            <ButtonSelectTrolleys
+                                v-if="!boxStats?.trolleys?.length"
+                                :warehouse="warehouse"
+                                :deliveryNote="deliveryNote"
+                            >
+                                <template #default="{ setOpenModal }">
+                                    <Button @click="setOpenModal()" type="dashed" :label="trans('Select trolley')" size="xxs" />
+                                </template>
+                            </ButtonSelectTrolleys>
+                        </template>
                     </div>
 
                     
                     <!-- Section: Picked Bays -->
-                    <div v-if="boxStats?.picked_bays?.length">
+                    <div v-if="boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
                         <dl v-tooltip="trans('Picked bay name')"
                             class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
@@ -442,6 +456,12 @@ const updateCollection = async (e: Event) => {
                                 </span>
                             </dd>
                         </dl>
+
+                        <ChangePickedBays
+                            v-if="['handling', 'picked', 'packing'].includes(deliveryNote.state) && layout.app.environment === 'local'"
+                            :warehouse="warehouse"
+                            :deliveryNote="deliveryNote"
+                        />
                     </div>
                     
                     <div class="!mt-2 border-t border-gray-300 w-full" />

@@ -15,6 +15,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Language;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairProductCategoryDescriptions
 {
@@ -66,15 +67,19 @@ class RepairProductCategoryDescriptions
         } else {
             $count = ProductCategory::count();
 
+            ProgressBar::setFormatDefinition(
+                'aiku_eta',
+                ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+            );
             $bar = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
+            $bar->setFormat('aiku_eta');
             $bar->start();
 
             ProductCategory::orderBy('id')
                 ->chunk(100, function (Collection $models) use ($bar, $command) {
                     foreach ($models as $model) {
                         $this->handle($model, $command);
-                        // $bar->advance();
+                        $bar->advance();
                     }
                 });
         }

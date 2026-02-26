@@ -19,6 +19,7 @@ class TopListedProductsResource extends JsonResource
     {
         return [
             'id'              => $this->id,
+            'slug'            => $this->slug,
             'code'            => $this->code,
             'name'            => $this->name,
             'total_customers' => $this->total_customers,

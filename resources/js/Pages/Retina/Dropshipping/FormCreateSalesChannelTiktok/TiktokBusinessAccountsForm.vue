@@ -52,7 +52,7 @@ const submitForm = async () => {
 
 	if(!tiktokInput.tiktok_shop_id && !tiktokInput.tiktok_shop_chiper) {
 		errors.value = {
-			message: trans('Please select atleast one shop.')
+			message: trans('Please select at least one shop.')
 		}
 
 		isLoadingStep.value = false

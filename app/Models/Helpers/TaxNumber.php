@@ -11,11 +11,14 @@ namespace App\Models\Helpers;
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
+use App\Models\Traits\HasHistory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * App\Models\Helpers\TaxNumber
@@ -51,9 +54,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|TaxNumber withoutTrashed()
  * @mixin Eloquent
  */
-class TaxNumber extends Model
+class TaxNumber extends Model implements Auditable
 {
     use SoftDeletes;
+    use HasHistory;
 
     protected $casts = [
         'data'               => 'array',
@@ -68,6 +72,10 @@ class TaxNumber extends Model
 
     protected $attributes = [
         'data' => '{}',
+    ];
+
+    protected $auditEvents = [
+        'tax_validation',
     ];
 
     protected $guarded = [];
@@ -98,6 +106,10 @@ class TaxNumber extends Model
         return $cc.' '.$number;
     }
 
+    public function owner(): MorphTo
+    {
+        return $this->morphTo();
+    }
 
     public static function getType(?Country $country): TaxNumberTypeEnum
     {

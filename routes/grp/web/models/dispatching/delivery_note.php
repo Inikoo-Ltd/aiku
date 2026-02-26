@@ -11,6 +11,7 @@ use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteDeliveryAddress;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\ChangePickingBaysDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote;
@@ -59,6 +60,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
         Route::patch('packed', UpdateDeliveryNoteStatePacked::class)->name('packed');
         Route::patch('packed-with-picked-bay', SetPackedWithPickingBaysDeliveryNote::class)->name('packed_with_picked_bay');
+        Route::patch('change-picked-bay', ChangePickingBaysDeliveryNote::class)->name('change_picked_bay');
         Route::patch('waiting-for-picking', SetAsWaitingForPickingDeliveryNote::class)->name('waiting_for_picking');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
         Route::patch('dispatched', DispatchDeliveryNote::class)->name('dispatched');
