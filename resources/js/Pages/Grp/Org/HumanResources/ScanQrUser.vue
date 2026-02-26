@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { QrcodeStream } from 'vue-qrcode-reader'
 import { LMap, LTileLayer, LMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
 import axios from 'axios'
@@ -49,29 +49,71 @@ const detectMyLocation = () => {
             lat.value = pos.coords.latitude
             lng.value = pos.coords.longitude
         },
-        () => errorMsg.value = "Location permission denied"
+        (err) => {
+            if (err.code === 1) {
+                if (isIOS()) {
+                    errorMsg.value =
+                        "Location blocked. Go to Settings > Safari > Location > Allow"
+                } else {
+                    errorMsg.value =
+                        "Location blocked. Please enable location permission in browser settings."
+                }
+            } else if (err.code === 2) {
+                errorMsg.value = "Location unavailable"
+            } else if (err.code === 3) {
+                errorMsg.value = "Location timeout"
+            } else {
+                errorMsg.value = "Location error"
+            }
+        },
     )
 }
 
 const startCamera = async () => {
+    errorMsg.value = null
+
     if (!canOpenCamera.value) {
         console.warn("Camera blocked — missing type or location")
         return
     }
 
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-
-        stream.getTracks().forEach(t => t.stop())
-
+       const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: "environment" },
+            }
+        })
+        stream.getTracks().forEach(track => track.stop())
         cameraOn.value = true
-    } catch (err) {
-        console.error("Camera permission error:", err)
-        errorMsg.value = "Camera permission denied or not supported"
+   } catch (err: any) {
+        console.error("Camera error:", err)
+
+        if (err.name === "NotAllowedError") {
+            if (isIOS()) {
+                errorMsg.value =
+                    "Camera blocked. Go to Settings > Safari > Camera > Allow"
+            } else {
+                errorMsg.value =
+                    "Camera blocked. Please enable camera permission in browser settings."
+            }
+        } else if (err.name === "NotFoundError") {
+            errorMsg.value = "No camera found"
+        } else if (err.name === "NotReadableError") {
+            errorMsg.value = "Camera already in use"
+        } else if (err.name === "OverconstrainedError") {
+            errorMsg.value = "Camera constraint not supported"
+        } else {
+            errorMsg.value = "Camera error occurred"
+        }
     }
 }
 
-const stopCamera = () => cameraOn.value = false
+const stopCamera = async () => {
+    cameraOn.value = false
+    loading.value = false
+
+    await nextTick()
+}
 
 const onDetect = async (detectedCodes: DetectedCode[]) => {
      if (isProcessing.value) return
@@ -112,7 +154,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
     } catch (e: any) {
         notify({
             title: trans('Failed Scan QR'),
-            text: trans(`${e.response?.data?.message}`),
+            text: e.response?.data?.message,
             type: 'error',
         })
 
@@ -136,6 +178,10 @@ const onStreamError = (err: Error) => {
     } else {
         errorMsg.value = "Camera error"
     }
+}
+
+const isIOS = () => {
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent)
 }
 
 const modalTitle = computed(() => {
@@ -185,7 +231,7 @@ const submitNotes = async () => {
     } catch (e: any) {
         notify({
             title: trans('Failed submit notes'),
-            text: trans(`${e.response?.data?.message}`),
+            text: e.response?.data?.message,
             type: 'error',
         })
 

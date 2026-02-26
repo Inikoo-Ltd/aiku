@@ -192,7 +192,7 @@ const data = computed<BannerWorkshop>({
             @onPick="onPickImageGalery" 
             @on-upload="uploadImageRespone"
             :use-crop="true" 
-            :crop-props="{ratio: modelValue.type == 'square' ? {w: 1, h: 1} : {w: 4, h: 1}}" 
+            :crop-props="{ratio: modelValue.type == 'square' ? [1/1] : [ 4/1, null]}" 
             :stockImageRoutes="galleryRoute.stock_images"
             :imagesUploadedRoutes="galleryRoute.uploaded_images"
         />
@@ -202,7 +202,7 @@ const data = computed<BannerWorkshop>({
          <Modal :isOpen="isOpenCropModal" @onClose="closeCropModal">
             <div>
                 <CropImage
-                    :ratio="modelValue.type == 'square' ? {w: 1, h: 1} : {w: 4, h: 1}"
+                    :ratio="modelValue.type == 'square' ? [1/1] : [ 4/1, null]"
                     :data="uploadedFilesList"
                     :imagesUploadRoute="route(imagesUploadRoute.name,imagesUploadRoute.parameters)"
                     :response="uploadImageRespone" />

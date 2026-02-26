@@ -10,6 +10,10 @@ import TableTopSoldProducts from '@/Components/Tables/Grp/Org/CRM/TableTopSoldPr
 import { capitalize } from '@/Composables/capitalize'
 import { useTabChange } from '@/Composables/tab-change'
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faTrophy } from '@fal'
+
+library.add(faTrophy);
 
 type TabKey = 'showcase' | 'top_listed_families' | 'top_listed_products' | 'top_sold_products'
 

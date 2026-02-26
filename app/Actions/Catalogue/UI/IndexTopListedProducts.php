@@ -30,6 +30,7 @@ class IndexTopListedProducts extends OrgAction
         $query = QueryBuilder::for(\App\Models\Dropshipping\Portfolio::class)
             ->select(
                 'assets.id',
+                'assets.slug',
                 'assets.code',
                 'assets.name',
                 DB::raw('COUNT(portfolios.id) as total_listed'),
@@ -41,7 +42,7 @@ class IndexTopListedProducts extends OrgAction
             })
             ->where('assets.type', 'product')
             ->whereNull('portfolios.last_removed_at')
-            ->groupBy('assets.id', 'assets.code', 'assets.name')
+            ->groupBy('assets.id', 'assets.slug', 'assets.code', 'assets.name')
             ->orderByDesc('total_listed');
 
         if ($parent instanceof Shop) {
@@ -49,8 +50,9 @@ class IndexTopListedProducts extends OrgAction
         }
 
         return $query
-            ->allowedSorts(['total_listed', 'total_customers', 'assets.name', 'assets.code'])
+            ->allowedSorts(['total_listed', 'total_customers', 'assets.name', 'assets.slug', 'assets.code'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['created_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -69,6 +71,8 @@ class IndexTopListedProducts extends OrgAction
                     'title'       => __('No top listed products found'),
                     'description' => __('There are no products currently listed on this platform.'),
                 ])
+                ->betweenDates(['created_at'])
+                ->column(key: 'slug', label: __('Slug'), sortable: true, searchable: true)
                 ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'total_customers', label: __('Customers'), sortable: true)

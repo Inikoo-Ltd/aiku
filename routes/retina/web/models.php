@@ -21,6 +21,7 @@ use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
+use App\Actions\Dropshipping\Tiktok\Product\MatchRetinaPortfolioToCurrentTiktokProduct;
 use App\Actions\Dropshipping\Tiktok\Product\StoreRetinaNewProductToCurrentTiktok;
 use App\Actions\Dropshipping\Tiktok\User\AuthCheckCreateTiktokChannel;
 use App\Actions\Dropshipping\Tiktok\User\CheckTiktokChannel;
@@ -407,6 +408,7 @@ Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetina
 Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentChannel::class, 'asDraft'])->name('portfolio.update_new_product.draft');
 
 Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreRetinaNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product')->withoutScopedBindings();
+Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchRetinaPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product');
 
 Route::post('portfolios/update-new-product-price/publish', UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class)->name('portfolios.update_new_product_price.publish');
 Route::post('portfolios/update-new-product-price/draft', [UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class, 'asDraft'])->name('portfolios.update_new_product_price.draft');

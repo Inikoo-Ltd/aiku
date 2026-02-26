@@ -13,20 +13,23 @@ use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use App\Models\Helpers\TaxNumber;
 use App\Actions\Helpers\TaxNumber\Concerns\AsTaxNumberCommand;
+use App\Actions\Helpers\TaxNumber\Traits\WithValidateTaxNumberCustomAudit;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ValidateGBTaxNumber
 {
     use AsAction;
     use AsTaxNumberCommand;
+    use WithValidateTaxNumberCustomAudit;
 
-    public function handle(TaxNumber $taxNumber): TaxNumber
+    public function handle(TaxNumber $taxNumber, TaxNumber|null $oldTaxNumberData = null): TaxNumber
     {
         if ($taxNumber->type == TaxNumberTypeEnum::GB_VAT) {
             $number = $this->cleanTaxNumber($taxNumber->number);
-
+            if(!$oldTaxNumberData) $oldTaxNumberData = $taxNumber->replicate();
 
             if (!$number || strlen($number) != 9) {
+
                 $validationData = [
                     'valid'              => false,
                     'status'             => TaxNumberStatusEnum::INVALID,
@@ -36,9 +39,9 @@ class ValidateGBTaxNumber
 
                 ];
 
-
                 $taxNumber->update($validationData);
                 $taxNumber->refresh();
+                $this->deployTaxValidationCustomAudit($oldTaxNumberData, $taxNumber, TaxNumberValidationTypeEnum::BASIC);
 
                 return $taxNumber;
             }
@@ -53,8 +56,10 @@ class ValidateGBTaxNumber
                     'checked_at'      => now(),
 
                 ];
+                
                 $taxNumber->update($validationData);
                 $taxNumber->refresh();
+                $this->deployTaxValidationCustomAudit($oldTaxNumberData, $taxNumber, TaxNumberValidationTypeEnum::BASIC);
 
                 return $taxNumber;
             }

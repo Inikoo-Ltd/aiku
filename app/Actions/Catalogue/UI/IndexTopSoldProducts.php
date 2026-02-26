@@ -30,6 +30,7 @@ class IndexTopSoldProducts extends OrgAction
         $query = QueryBuilder::for(\App\Models\Accounting\InvoiceTransaction::class)
             ->select(
                 'assets.id',
+                'assets.slug',
                 'assets.code',
                 'assets.name',
                 DB::raw('SUM(invoice_transactions.quantity) as total_sold'),
@@ -43,7 +44,7 @@ class IndexTopSoldProducts extends OrgAction
             ->join('invoices', 'invoice_transactions.invoice_id', '=', 'invoices.id')
             ->where('assets.type', 'product')
             ->whereNull('invoice_transactions.deleted_at')
-            ->groupBy('assets.id', 'assets.code', 'assets.name')
+            ->groupBy('assets.id', 'assets.slug', 'assets.code', 'assets.name')
             ->orderByDesc('total_sold');
 
         if ($parent instanceof Shop) {
@@ -51,8 +52,9 @@ class IndexTopSoldProducts extends OrgAction
         }
 
         return $query
-            ->allowedSorts(['total_sold', 'total_amount', 'assets.name', 'assets.code'])
+            ->allowedSorts(['total_sold', 'total_amount', 'assets.name', 'assets.slug', 'assets.code'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -71,6 +73,8 @@ class IndexTopSoldProducts extends OrgAction
                     'title'       => __('No top sold products found'),
                     'description' => __('There are no sales recorded for products on this platform.'),
                 ])
+                ->betweenDates(['date'])
+                ->column(key: 'slug', label: __('Slug'), sortable: true, searchable: true)
                 ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'total_sold', label: __('Total Sold'), sortable: true)
