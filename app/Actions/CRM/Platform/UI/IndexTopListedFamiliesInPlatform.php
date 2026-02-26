@@ -31,6 +31,7 @@ class IndexTopListedFamiliesInPlatform extends OrgAction
         $query = QueryBuilder::for(\App\Models\Dropshipping\Portfolio::class)
             ->select(
                 'families.id',
+                'families.slug',
                 'families.code',
                 'families.name',
                 DB::raw('COUNT(portfolios.id) as total_listed'),
@@ -49,7 +50,7 @@ class IndexTopListedFamiliesInPlatform extends OrgAction
             ->where('assets.type', 'product')
             ->whereNull('portfolios.last_removed_at')
             ->whereNotNull('products.family_id') // pastikan ada family-nya
-            ->groupBy('families.id', 'families.code', 'families.name')
+            ->groupBy('families.id', 'families.slug', 'families.code', 'families.name')
             ->orderByDesc('total_listed');
 
         if ($parent instanceof Shop) {
@@ -57,8 +58,9 @@ class IndexTopListedFamiliesInPlatform extends OrgAction
         }
 
         return $query
-            ->allowedSorts(['total_listed', 'total_customers', 'families.name', 'families.code'])
+            ->allowedSorts(['total_listed', 'total_customers', 'families.name', 'families.slug', 'families.code'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['created_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -77,6 +79,8 @@ class IndexTopListedFamiliesInPlatform extends OrgAction
                     'title'       => __('No top listed families found'),
                     'description' => __('There are no product families currently listed on this platform.'),
                 ])
+                ->betweenDates(['created_at'])
+                ->column(key: 'slug', label: __('Slug'), sortable: true, searchable: true)
                 ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'total_customers', label: __('Customers'), sortable: true)
