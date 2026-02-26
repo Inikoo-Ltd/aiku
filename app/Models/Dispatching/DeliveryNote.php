@@ -21,6 +21,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\HumanResources\Employee;
+use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -142,10 +143,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $tracking_number for search purposes
  * @property array<array-key, mixed> $shipping_data for UI purposes
  * @property bool $is_shipping_by_external
+ * @property \Illuminate\Support\Carbon|null $picked_at
+ * @property \Illuminate\Support\Carbon|null $packing_at
+ * @property int $number_items_state_picked
+ * @property int $number_items_state_packing
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
@@ -158,6 +163,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Employee|null $packer
  * @property-read User|null $packerUser
  * @property-read Collection<int, \App\Models\Dispatching\Packing> $packings
+ * @property-read Collection<int, PickedBay> $pickedBays
  * @property-read Employee|null $picker
  * @property-read User|null $pickerUser
  * @property-read Collection<int, PickingSession> $pickingSessions
@@ -166,6 +172,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
  * @property-read Collection<int, Sowing> $sowings
+ * @property-read Collection<int, \App\Models\Dispatching\Trolley> $trolleys
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Warehouse $warehouse
  * @method static Builder<static>|DeliveryNote newModelQuery()
@@ -342,6 +349,16 @@ class DeliveryNote extends Model implements Auditable
             'delivery_note_id',
             'picking_session_id'
         );
+    }
+
+    public function trolleys(): BelongsToMany
+    {
+        return $this->belongsToMany(Trolley::class, 'delivery_note_has_trolleys');
+    }
+
+    public function pickedBays(): BelongsToMany
+    {
+        return $this->belongsToMany(PickedBay::class, 'picked_bay_has_delivery_notes');
     }
 
 }

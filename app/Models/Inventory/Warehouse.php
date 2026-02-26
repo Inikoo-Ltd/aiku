@@ -12,6 +12,7 @@ use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
 use App\Models\Analytics\AikuSection;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\PickingRoute;
+use App\Models\Dispatching\Trolley;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
@@ -79,10 +80,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Inventory\PickedBay> $pickedBays
  * @property-read Collection<int, PickingRoute> $pickingRoutes
  * @property-read Collection<int, \App\Models\Inventory\PickingSession> $pickingSessions
- * @property-read Collection<int, \App\Models\Inventory\PickingTrolley> $pickingTrolleys
  * @property-read Collection<int, Role> $roles
  * @property-read \App\Models\Inventory\WarehouseStats|null $stats
  * @property-read Collection<int, \App\Models\Inventory\WarehouseTimeSeries> $timeSeries
+ * @property-read Collection<int, Trolley> $trolleys
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Collection<int, UniversalSearch> $universalSearches
  * @property-read Collection<int, \App\Models\Inventory\WarehouseArea> $warehouseAreas
@@ -228,9 +229,9 @@ class Warehouse extends Model implements Auditable
         return $this->hasMany(PickingSession::class);
     }
 
-    public function pickingTrolleys(): HasMany
+    public function trolleys(): HasMany
     {
-        return $this->hasMany(PickingTrolley::class);
+        return $this->hasMany(Trolley::class);
     }
 
     public function pickedBays(): HasMany

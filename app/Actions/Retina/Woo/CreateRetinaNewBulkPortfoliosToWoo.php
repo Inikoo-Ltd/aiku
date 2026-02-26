@@ -27,7 +27,7 @@ class CreateRetinaNewBulkPortfoliosToWoo extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        StoreBulkNewProductToCurrentWooCommerce::run($customerSalesChannel, $attributes);
+        StoreBulkNewProductToCurrentWooCommerce::dispatch($customerSalesChannel, $attributes);
     }
 
     public function rules(): array

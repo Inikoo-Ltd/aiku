@@ -730,8 +730,8 @@ onMounted(async () => {
 
 .offers :deep(.offer-trigger-label) {
   @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
-  border-color:var(--theme-color-4) !important;
-  color: var(--theme-color-4) !important;
+  border-color:var(--theme-color-4);
+  color: var(--theme-color-4);
 }
 
 .offers :deep(.member-badge) {

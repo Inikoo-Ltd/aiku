@@ -87,13 +87,13 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
                     ...$metrics,
                 ]
             );
-            
+
             $processedPeriods[] = $period;
         }
-        
+
         $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
     }
-    
+
     protected function processPeriodsWithoutInvoices(MasterShopTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
     {
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);

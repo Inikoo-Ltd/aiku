@@ -66,6 +66,26 @@ class GetDispatchHubB2CWidget
                         'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2C->value]
                     ],
                 ],
+                'picked'           => [
+                    'label' => __('Picked'),
+                    'key'   => 'picked',
+                    'icon'  => 'fal fa-box',
+                    'value' => $organisation->orderingStats->number_b2c_shop_delivery_notes_state_picked,
+                    'route' => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
+                        'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2C->value]
+                    ],
+                ],
+                'packing'           => [
+                    'label' => __('Packing'),
+                    'key'   => 'packing',
+                    'icon'  => 'fal fa-box',
+                    'value' => $organisation->orderingStats->number_b2c_shop_delivery_notes_state_packing,
+                    'route' => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
+                        'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2C->value]
+                    ],
+                ],
                 'packed'           => [
                     'label' => __('Packed'),
                     'key'   => 'packed',

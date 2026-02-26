@@ -99,6 +99,32 @@ trait WithDeliveryNotesSubNavigation
                         : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_handling_blocked'},
                 ],
                 [
+                    'label'  => __('Picked'),
+                    'route'  => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.picked.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.picked.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll
+                        ? $organisation->orderingStats->number_delivery_notes_state_picked
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_picked'},
+                ],
+                [
+                    'label'  => __('Packing'),
+                    'route'  => $isAll ? [
+                        'name'       => 'grp.org.warehouses.show.dispatching.packing.delivery-notes',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug]
+                    ] : [
+                        'name'       => 'grp.org.warehouses.show.dispatching.packing.delivery-notes.shop',
+                        'parameters' => [$this->organisation->slug, $this->warehouse->slug, $shopType]
+                    ],
+                    'number' => $isAll
+                        ? $organisation->orderingStats->number_delivery_notes_state_packing
+                        : $organisation->orderingStats->{'number_'.$shopType.'_shop_delivery_notes_state_packing'},
+                ],
+                [
                     'label'  => __('Packed'),
                     'route'  => $isAll ? [
                         'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes',

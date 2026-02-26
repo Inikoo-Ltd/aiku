@@ -42,8 +42,41 @@ class UpdateMasterCollection extends GrpAction
         $masterCollection = $this->update($masterCollection, $modelData, ['data']);
         $changed = Arr::except($masterCollection->getChanges(), ['updated_at']);
 
+        if (Arr::has($modelData, 'name_i8n')) {
+            UpdateMasterCollectionTranslationsFromUpdate::make()->action($masterCollection, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
+        }
 
-        if (Arr::hasAny($changed, ['code', 'name', 'description'])) {
+        if (Arr::has($modelData, 'description_title_i8n')) {
+            UpdateMasterCollectionTranslationsFromUpdate::make()->action($masterCollection, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_i8n')) {
+            UpdateMasterCollectionTranslationsFromUpdate::make()->action($masterCollection, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateMasterCollectionTranslationsFromUpdate::make()->action($masterCollection, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
+        }
+
+        // dd($changed);
+
+        if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title', 'description_extra'])) {
             foreach ($masterCollection->childrenCollections as $collections) {
                 $dataToBeUpdated = [];
                 $childShop = $collections->shop;
@@ -59,6 +92,14 @@ class UpdateMasterCollection extends GrpAction
 
                     if (Arr::has($changed, 'description')) {
                         $dataToBeUpdated['description'] = $masterCollection->description;
+                    }
+
+                    if (Arr::has($changed, 'description_title')) {
+                        $dataToBeUpdated['description_title'] = $masterCollection->description_title;
+                    }
+
+                    if (Arr::has($changed, 'description_extra')) {
+                        $dataToBeUpdated['description_extra'] = $masterCollection->description_extra;
                     }
                 }
 
