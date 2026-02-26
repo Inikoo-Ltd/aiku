@@ -38,6 +38,10 @@ class SendNewOrderEmailToCustomer extends OrgAction
             return null;
         }
 
+        if ($order->shop->type === ShopTypeEnum::EXTERNAL) {
+            return null;
+        }
+
         list($emailHtmlBody, $dispatchedEmail) = $this->getEmailBody(
             $order->customer,
             OutboxCodeEnum::ORDER_CONFIRMATION
