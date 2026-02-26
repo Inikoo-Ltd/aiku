@@ -13,14 +13,24 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateNewBulkPortfoliosToShopify extends OrgAction
+class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUnique
 {
     use WithActionUpdate;
+
+
+    public string $jobQueue = 'shopify';
+    public int $jobTries = 1;
+
+    public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): int
+    {
+        return $customerSalesChannel->id;
+    }
 
     /**
      * @throws \Exception
@@ -31,6 +41,7 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction
             ->select('id')
             ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('status', true)
+            ->where('platform_status', false)
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
 
