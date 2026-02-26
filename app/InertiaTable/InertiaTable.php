@@ -273,7 +273,13 @@ class InertiaTable
         $queryElements = $this->query('elements', []);
 
         if (empty($queryElements)) {
-            return $elementGroups;
+            return $elementGroups->map(function (ElementGroup $elementGroup) {
+                if ($elementGroup->default) {
+                    $elementGroup->values = explode(',', $elementGroup->default);
+                }
+
+                return $elementGroup;
+            });
         }
 
         return $elementGroups->map(function (ElementGroup $elementGroup) use ($queryElements) {
@@ -336,7 +342,7 @@ class InertiaTable
         return $this;
     }
 
-    public function elementGroup(string $key, array|string $label, array $elements): self
+    public function elementGroup(string $key, array|string $label, array $elements, ?string $default = null): self
     {
         if (is_string($label)) {
             $label = $label ?: Str::headline($key);
@@ -351,7 +357,8 @@ class InertiaTable
             new ElementGroup(
                 key: $key,
                 label: $label,
-                elements: $elements
+                elements: $elements,
+                default: $default
             )
         );
 
