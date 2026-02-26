@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { QrcodeStream } from 'vue-qrcode-reader'
 import { LMap, LTileLayer, LMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
 import axios from 'axios'
@@ -49,29 +49,71 @@ const detectMyLocation = () => {
             lat.value = pos.coords.latitude
             lng.value = pos.coords.longitude
         },
-        () => errorMsg.value = "Location permission denied"
+        (err) => {
+            if (err.code === 1) {
+                if (isIOS()) {
+                    errorMsg.value =
+                        "Location blocked. Go to Settings > Safari > Location > Allow"
+                } else {
+                    errorMsg.value =
+                        "Location blocked. Please enable location permission in browser settings."
+                }
+            } else if (err.code === 2) {
+                errorMsg.value = "Location unavailable"
+            } else if (err.code === 3) {
+                errorMsg.value = "Location timeout"
+            } else {
+                errorMsg.value = "Location error"
+            }
+        },
     )
 }
 
 const startCamera = async () => {
+    errorMsg.value = null
+
     if (!canOpenCamera.value) {
         console.warn("Camera blocked — missing type or location")
         return
     }
 
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-
-        stream.getTracks().forEach(t => t.stop())
-
+       const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: "environment" },
+            }
+        })
+        stream.getTracks().forEach(track => track.stop())
         cameraOn.value = true
-    } catch (err) {
-        console.error("Camera permission error:", err)
-        errorMsg.value = "Camera permission denied or not supported"
+   } catch (err: any) {
+        console.error("Camera error:", err)
+
+        if (err.name === "NotAllowedError") {
+            if (isIOS()) {
+                errorMsg.value =
+                    "Camera blocked. Go to Settings > Safari > Camera > Allow"
+            } else {
+                errorMsg.value =
+                    "Camera blocked. Please enable camera permission in browser settings."
+            }
+        } else if (err.name === "NotFoundError") {
+            errorMsg.value = "No camera found"
+        } else if (err.name === "NotReadableError") {
+            errorMsg.value = "Camera already in use"
+        } else if (err.name === "OverconstrainedError") {
+            errorMsg.value = "Camera constraint not supported"
+        } else {
+            errorMsg.value = "Camera error occurred"
+        }
     }
 }
 
-const stopCamera = () => cameraOn.value = false
+const stopCamera = async () => {
+    cameraOn.value = false
+    loading.value = false
+
+    await nextTick()
+}
 
 const onDetect = async (detectedCodes: DetectedCode[]) => {
      if (isProcessing.value) return
@@ -96,7 +138,17 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
         scanTimeRaw.value = data.clocking?.clocked_at
         scanTime.value = useFormatTime(data.clocking?.clocked_at, { formatTime: 'hms' })
         clockingId.value = data.clocking?.id
-        workingHours.value = data.working_hours ?? null
+        if (data.working_hours) {
+            const scanDate = new Date(data.clocking?.clocked_at)
+            const dateOnly = scanDate.toISOString().split('T')[0]
+
+            workingHours.value = {
+                start: `${dateOnly}T${data.working_hours.start}`,
+                end: `${dateOnly}T${data.working_hours.end}`
+            }
+        } else {
+            workingHours.value = null
+        }
         showSuccessModal.value = true
 
     } catch (e: any) {
@@ -128,6 +180,10 @@ const onStreamError = (err: Error) => {
     }
 }
 
+const isIOS = () => {
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
 const modalTitle = computed(() => {
     if (clockType.value === 'clock_in') return trans('Clock-in successful')
     if (clockType.value === 'clock_out') return trans('Clock-out successful')
@@ -138,11 +194,8 @@ const attendanceStatus = computed(() => {
     if (!scanTimeRaw.value || !workingHours.value?.start) return null
 
     const scan = new Date(scanTimeRaw.value)
-
-    const dateOnly = scan.toISOString().split('T')[0]
-    const start = new Date(`${dateOnly}T${workingHours.value.start}`)
-
-    if (isNaN(start.getTime())) return null
+    const start = new Date(workingHours.value.start)
+    if (isNaN(scan.getTime()) || isNaN(start.getTime())) return null
 
     return scan > start ? 'late' : 'ontime'
 })
@@ -150,8 +203,8 @@ const attendanceStatus = computed(() => {
 const workingHoursFormatted = computed(() => {
     if (!workingHours.value) return '-'
 
-    const start = workingHours.value.start?.slice(0, 5)
-    const end = workingHours.value.end?.slice(0, 5)
+    const start = useFormatTime(workingHours.value.start, { formatTime: 'HH:mm' })
+    const end = useFormatTime(workingHours.value.end, { formatTime: 'HH:mm' })
 
     return `${start} - ${end}`
 })
