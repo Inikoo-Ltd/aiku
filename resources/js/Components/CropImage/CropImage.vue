@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 import "swiper/css"
 import "swiper/css/navigation"
 import axios from 'axios'
@@ -23,20 +23,23 @@ import { routeType } from '@/types/route'
 
 
 const props = withDefaults(defineProps<{
-    data: File[]|File;
+    data: File[] | File;
     imagesUploadRoute: string
     response?: any
-    ratio?:  {
-        w: number
-        h: number
-    },
+    ratio?: Array<any>,
 }>(), {
-    ratio: { w : 4, h : 1 }
+    ratio: [4 / 1]
 })
 
 const emits = defineEmits<{
     (e: 'onFinishCropped', image: any): void
 }>()
+
+const aspectRatios = computed(() => {
+    const ratio = props.ratio
+    return Array.isArray(ratio) ? ratio : [ratio]
+})
+const selectedRatio = ref(aspectRatios.value[0])
 
 const setData2 = () => {
     const data = []
@@ -50,7 +53,7 @@ const setData2 = () => {
 
 const setData = ref(setData2())
 
-const generateThumbnail = (file: {originalFile: File, imagePosition: any}) => {
+const generateThumbnail = (file: { originalFile: File, imagePosition: any }) => {
     if (
         file.originalFile &&
         file.originalFile instanceof File &&
@@ -94,7 +97,7 @@ const addComponent = async () => {
     };
 
     await Promise.all(setData.value.map(processItem))
-    
+
     for (const [key, value] of form.value.entries()) {
         SendData.push(value)
         // console.log((value.size / (1024 * 1024)).toFixed(2))
@@ -131,32 +134,68 @@ const generateGif = (file: File) => {
     return fileSrc
 }
 
+const knownRatios: Record<number, string> = {
+    1: "1:1",
+    [4 / 3]: "4:3",
+    [3 / 4]: "3:4",
+    [16 / 9]: "16:9",
+    [9 / 16]: "9:16",
+    [5 / 4]: "5:4",
+    [4 / 5]: "4:5",
+}
+
+const formatRatioLabel = (ratio: number | null) => {
+    if (ratio === null) return "Custom"
+    const closest = Object.keys(knownRatios)
+        .map(Number)
+        .reduce((prev, curr) =>
+            Math.abs(curr - ratio) < Math.abs(prev - ratio) ? curr : prev
+        )
+    if (Math.abs(closest - ratio) < 0.01) {
+        return knownRatios[closest]
+    }
+    return `${Math.round(ratio * 100) / 100}:1`
+}
+
+watch(aspectRatios, (newRatios) => {
+    if (!newRatios.includes(selectedRatio.value)) {
+        selectedRatio.value = newRatios[0]
+    }
+})
+
+
 </script>
 
 <template>
     <!-- Preview cropped image -->
     <div class="mb-6 relative w-full flex justify-center">
-        <div class="flex items-center border-2 border-gray-500 shadow-md"
-            :class="[
-                ratio ? `aspect-[${ratio.w}/${ratio.h}]` : 'aspect-[2/1] md:aspect-[3/1] lg:aspect-[4/1]',
-                ratio.w == 4 ? 'w-full' : `w-${ratio.w}/4`
-            ]"
-        >
+        <div class="flex items-center border-2 border-gray-500 shadow-md" :class="[
+            ratio ? `aspect-[4/1]` : 'aspect-[2/1] md:aspect-[3/1] lg:aspect-[4/1]'
+        ]">
             <img :src="generateThumbnail(setData[current])" alt="" class="w-full h-full object-fit" />
         </div>
     </div>
 
-    <!-- List: the uploaded images -->
     <div class="mb-6 space-y-3">
+        <div v-if="aspectRatios.length > 1" class="flex gap-2 justify-center mb-2">
+            <Button v-for="ratio in aspectRatios" :key="ratio + selectedRatio" :label="formatRatioLabel(ratio)"
+                :type="selectedRatio === ratio ? 'primary' : 'tertiary'" size="xs" @click="selectedRatio = ratio" />
+        </div>
+
         <div class="max-w-full py-5 px-6 h-96 overflow-y-auto border border-solid border-gray-300 rounded-lg">
             <ul role="list"
-                class="mx-auto grid max-w-full grid-cols-1 gap-x-8 gap-y-16 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3"
-            >
+                class="mx-auto grid max-w-full grid-cols-1 gap-x-8 gap-y-16 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3">
                 <li v-for="(item, index) in setData" :key="index">
-                    <div @click="current = index" :class="['p-2.5 border border-solid rounded-lg cursor-pointer ', setData[current] == item ?  'border-gray-400 bg-gray-200'  : 'border-gray-300']">
-                        <CropComponents v-if="item.originalFile.type !== 'image/gif'" :data="item"  :ratio="ratio"/>
+                    <div @click="current = index"
+                        :class="['p-2.5 border border-solid rounded-lg cursor-pointer ', setData[current] == item ? 'border-gray-400 bg-gray-200' : 'border-gray-300']">
+                        <CropComponents 
+                            v-if="item.originalFile.type !== 'image/gif'" 
+                            :data="item" 
+                            :ratio="selectedRatio" 
+                        />
                         <div v-else> <img :src="generateGif(item.originalFile)" :alt="item.originalFile.name"></div>
-                        <h3 class="flex justify-start align-middle leading-5 tracking-tight truncate w-full" :class="[setData[current] == item ? 'text-amber-500 font-semibold' : 'text-gray-500']">
+                        <h3 class="flex justify-start align-middle leading-5 tracking-tight truncate w-full"
+                            :class="[setData[current] == item ? 'text-amber-500 font-semibold' : 'text-gray-500']">
                             {{ item.originalFile.name }}
                         </h3>
                     </div>
@@ -165,41 +204,13 @@ const generateGif = (file: File) => {
         </div>
         <div v-if="catchError" class="text-red-500">
             <FontAwesomeIcon icon='fas fa-exclamation' class='' aria-hidden='true' />
-            {{ catchError}}
+            {{ catchError }}
         </div>
     </div>
     <div class="">
-        <Button
-            :style="`primary`"
-            icon="fas fa-upload"
-            class="relative"
-            :disabled="loadingState"
-            size="xs"
-            @click="addComponent"
-        >
-            {{ trans("Save Image") }}
-        </Button>
-        <FontAwesomeIcon v-if="loadingState" icon='fad fa-spinner-third' class='animate-spin ml-2' aria-hidden='true' />
+        <Button :style="`primary`" icon="fas fa-upload" class="relative" :disabled="loadingState" size="xs"
+            @click="addComponent" label="Save Image" :loading="loadingState" />
     </div>
 </template>
 
-<style lang="scss" scoped>
-.swiper {
-    @apply w-full h-full;
-}
-
-.swiper-slide {
-    @apply bg-gray-200;
-    text-align: center;
-    font-size: 18px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.swiper-slide img {
-    @apply w-full h-auto;
-    display: block;
-    object-fit: cover;
-}
-</style>
+<style lang="scss" scoped></style>

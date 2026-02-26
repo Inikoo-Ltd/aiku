@@ -22,6 +22,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faEyeSlash } from '@fas'
 import { faExternalLink, faExclamationTriangle } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import "@/../css/Iris/editor.css"
 library.add(faExternalLink, faEyeSlash, faExclamationTriangle)
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -273,14 +274,31 @@ onMounted(() => {
                                 }"
                                 :class="card.shadow && !card.hideCard ? 'shadow-2xl' : ''"
                                 >
+                                    <div v-html="card.titles[0].text"></div>
 
-                                <CentralStage
-                                    :data="{
-                                    titles: card.titles,
-                                    textAlign: card.textAlign,
-                                    }"
-                                />
+                                     <div v-if="card.button?.show" class="mt-4 flex" :class="{
+                                                'justify-start': card.button?.align === 'left',
+                                                'justify-center': !card.button?.align || card.button?.align === 'center',
+                                                'justify-end': card.button?.align === 'right'
+                                            }">
+                                                <a :href="card.button?.link || '#'"
+                                                    class="transition-all duration-200 inline-flex items-center justify-center"
+                                                    :style="{
+                                                        padding: `${card.button?.paddingY ?? 10}px ${card.button?.paddingX ?? 20}px`,
+                                                        background: card.button?.bgColor ?? '#000000',
+                                                        color: card.button?.textColor ?? '#ffffff',
+                                                        borderRadius: (card.button?.radius ?? 6) + 'px',
 
+                                                        width:
+                                                            card.button?.width === 'full'
+                                                                ? '100%'
+                                                                : card.button?.width === 'custom'
+                                                                    ? (card.button?.customWidth ?? 200) + 'px'
+                                                                    : 'auto'
+                                                    }">
+                                                    {{ card.button?.text || 'Button' }}
+                                                </a>
+                                            </div>
                                 </div>
                             </div>
 

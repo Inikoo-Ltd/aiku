@@ -36,7 +36,7 @@ const isOpenCropModal = ref(false)
 const fileInput = ref<any>(null)
 const addFiles = ref<any[]>([])
 
-const ratio = ref(props.bannerType === 'square' ? { w:1, h:1 } : { w:4, h:1 })
+const ratio = ref(props.bannerType === 'square' ? [1/1] : [ 4/1, null])
 const backgroundColorList = useBannerBackgroundColor()
 
 const closeModal = () => isOpen.value = false
