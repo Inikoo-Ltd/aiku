@@ -7,6 +7,8 @@
 import { defineStore } from 'pinia'
 import { notify } from '@kyvg/vue3-notification'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { usePage } from '@inertiajs/vue3'
+import axios from 'axios'
 
 interface NotificationData {
     title: string
@@ -41,18 +43,19 @@ export const useEchoGrpGeneral = defineStore(
                             type: 'info',
                         })
 
-                        // Add to notification list in layout structure
-                        if (layout && layout.notifications) {
-                            layout.notifications.unshift({
-                                id: data.id,
-                                title: data.title,
-                                body: data.body,
-                                read_at: null,
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString(),
-                                read: false
+                        // Fetch unread notifications from API and update layout structure
+                        axios.get(route('grp.models.notifications.unread'))
+                            .then((response) => {
+                                if (layout && layout.notifications) {
+                                    layout.notifications = response.data.notifications.map((n: any) => ({
+                                        ...n,
+                                        read: !!n.read_at
+                                    }))
+                                }
                             })
-                        }
+                            .catch((error) => {
+                                console.error('Failed to fetch unread notifications:', error)
+                            })
                     })
             },
         },
