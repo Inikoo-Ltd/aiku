@@ -2,7 +2,7 @@
 
 return [
     'enabled' =>
-        env('EMPLOYEE_ANALYTICS_ENABLED', false),
+        env('EMPLOYEE_ANALYTICS_ENABLED', true),
 
     'thresholds' => [
         'late_grace_minutes'       => (int) env('ANALYTICS_LATE_GRACE_MINUTES', 15),
