@@ -243,7 +243,7 @@ trait IsOrder
 
         return [
             'customer_client'  => $customerClientData,
-            'customer'         => array_merge(
+            'customer'         => $order->customer ? array_merge(
                 CustomerResource::make($order->customer)->getArray(),
                 [
                     'addresses' => [
@@ -259,7 +259,7 @@ trait IsOrder
                         ]
                     ]
                 ]
-            ),
+            ) : [],
             'customer_channel' => $customerChannel,
             'invoices'         => $invoicesData,
 
