@@ -109,10 +109,12 @@ class Banner extends Model implements HasMedia, Auditable
     {
         static::saving(
             function (Banner $banner) {
-                $banner->ratio = match($banner->type) {
-                    BannerTypeEnum::SQUARE->value => '1/1',
-                    default => '4/1' // Landscape
-                };
+                if(blank($banner->ratio)){ // Only runs when it's null / 0 / ' ' | Change of logic according to what Arya said.
+                    $banner->ratio = match($banner->type) {
+                        BannerTypeEnum::SQUARE->value => '1/1',
+                        default => '4/1' // Landscape
+                    };
+                }
             }
         );
     }
