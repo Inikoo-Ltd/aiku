@@ -21,13 +21,15 @@ class OrderStateUpdated extends BaseSmartNotification
     public function toArray($notifiable): array
     {
         $stateLabel = OrderStateEnum::labels()[$this->order->state->value] ?? $this->order->state->value;
+        $title = "Order {$this->order->reference} Updated";
         $body = "Order #{$this->order->reference} status updated to {$stateLabel}.";
 
         if ($this->order->is_premium_dispatch) {
-            $body = "Order #{$this->order->reference} status updated to {$stateLabel} with priority dispatch.";
+            $title = "Order Priority {$this->order->reference} Updated";
+            $body = "Order priority #{$this->order->reference} status updated to {$stateLabel}";
         }
         return [
-            'title' => "Order {$this->order->reference} Updated",
+            'title' => $title,
             'body'  => $body,
             'type'  => class_basename($this->order),
             'slug'  => $this->order->slug,

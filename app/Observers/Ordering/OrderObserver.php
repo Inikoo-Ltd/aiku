@@ -34,15 +34,17 @@ class OrderObserver
 
             // Broadcast event for realtime toast
             $stateLabel = OrderStateEnum::labels()[$order->state->value] ?? $order->state->value;
+            $title = "Order {$order->reference} Updated";
             $body = "Order #{$order->reference} status updated to {$stateLabel}.";
 
             if ($order->is_premium_dispatch) {
-                $body = "Order #{$order->reference} status updated to {$stateLabel} with priority dispatch.";
+                $title = "Order Priority {$order->reference} Updated";
+                $body = "Order priority #{$order->reference} status updated to {$stateLabel}";
             }
             BroadcastUserNotification::dispatch(
                 $order->group,
                 $order,
-                "Order {$order->reference} Updated",
+                $title,
                 $body
             );
         }
