@@ -44,7 +44,7 @@ class BannerResourceForWorkshop extends JsonResource
         // dd($banner->unpublishedSnapshot->compiledLayout());
         return [
             'id'                 => $banner->id,
-            'type'               => $banner->type,
+            'type'               => $banner->type?->value,
             'ulid'               => $banner->ulid,
             'slug'               => $banner->slug,
             'name'               => $banner->name,
