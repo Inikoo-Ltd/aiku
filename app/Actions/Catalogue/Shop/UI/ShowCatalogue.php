@@ -146,21 +146,6 @@ class ShowCatalogue extends OrgAction
     public function getBreadcrumbs(array $routeParameters, ?string $routeName = null): array
     {
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.dashboard' => array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.catalogue.dashboard',
-                                'parameters' => $routeParameters
-                            ],
-                            'label' => __('Catalogue'),
-                        ]
-                    ]
-                ]
-            ),
             'grp.catalogue.show' => array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
@@ -176,7 +161,21 @@ class ShowCatalogue extends OrgAction
                     ]
                 ]
             ),
-            default => []
+            default => array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.dashboard',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Catalogue'),
+                        ]
+                    ]
+                ]
+            ),
         };
     }
 }
