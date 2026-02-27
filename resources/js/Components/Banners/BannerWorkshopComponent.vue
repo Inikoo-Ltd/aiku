@@ -74,7 +74,7 @@ const hasSlides = computed(() => {
     </div>
 
     <!-- Editor -->
-    <SlidesWorkshop
+    <SlidesWorkshop 
       :bannerType="props.modelValue.type"
       class="clear-both mt-2 p-2.5"
       v-model="data"
