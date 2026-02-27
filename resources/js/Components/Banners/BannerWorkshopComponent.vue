@@ -12,6 +12,7 @@ const props = defineProps<{
   modelValue: BannerWorkshop
   imagesUploadRoute: any
   banner: any
+  ratio : string
   galleryRoute: {
     stock_images: routeType
     uploaded_images: routeType
@@ -62,6 +63,7 @@ const hasSlides = computed(() => {
           :data="props.modelValue"
           :jumpToIndex="jumpToIndex"
           :view="screenView"
+          :ratio
         />
       </div>
 
@@ -70,6 +72,7 @@ const hasSlides = computed(() => {
         :data="props.modelValue"
         :jumpToIndex="jumpToIndex"
         :view="screenView"
+        :ratio
       />
     </div>
 
@@ -82,6 +85,7 @@ const hasSlides = computed(() => {
       :imagesUploadRoute="imagesUploadRoute"
       :screenView="screenView"
       :galleryRoute="galleryRoute"
+      :ratio
     />
   </div>
 
@@ -91,6 +95,7 @@ const hasSlides = computed(() => {
       :data="props.modelValue"
       :imagesUploadRoute="imagesUploadRoute"
       :galleryRoute="galleryRoute"
+      :ratio
     />
   </div>
 </template>

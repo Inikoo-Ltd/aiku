@@ -37,6 +37,7 @@ const props = defineProps<{
     jumpToIndex?: string  // ulid
     data: BannerWorkshop
     view?: string
+    ratio? : string
 }>()
 
 const swiperRef = ref(null)
@@ -122,15 +123,68 @@ const isYoutube = (url: string) =>
 const isDirectVideo = (url: string) =>
     url?.match(/\.(mp4|webm|ogg)$/i)
 
-const bannerHeight = computed(() => {
+/* const bannerHeight = computed(() => {
     return get(props.data, ['common', 'height', props.view],
         get(props.data, ['common', 'height', 'desktop'], 400))
 })
-
+ */
 const getCardScale = computed(() => {
     if (props.view === 'mobile') return 0.6
     if (props.view === 'tablet') return 0.8
     return 1
+})
+
+const aspectClass = computed(() => {
+    // MOBILE selalu 1:1
+    if (props.view === 'mobile') {
+        return 'aspect-square max-w-[375px] w-full'
+    }
+
+    const getRatio = () => {
+        if (!props.ratio) return null
+        const r = Array.isArray(props.ratio)
+            ? props.ratio[0]
+            : props.ratio
+
+        if (typeof r === 'string' && r.includes('/')) {
+            const [w, h] = r.split('/').map(Number)
+            if (!isNaN(w) && !isNaN(h) && h !== 0) {
+                return w / h
+            }
+        }
+
+        if (typeof r === 'number') return r
+
+        return null
+    }
+
+    const ratio = getRatio()
+
+    if (props.view === 'tablet') {
+        if (ratio) {
+            const adjusted = ratio > 1
+                ? 1 + (ratio - 1) * 0.6   // compress landscape
+                : 1 - (1 - ratio) * 0.6   // compress portrait
+
+            const width = 100
+            const height = Math.round(width / adjusted)
+            return `aspect-[${width}/${height}] max-w-[768px] w-full`
+        }
+
+        return 'aspect-[3/1] max-w-[768px] w-full'
+    }
+
+    if (props.view === 'desktop') {
+        if (ratio) {
+            const width = 100
+            const height = Math.round(width / ratio)
+            return `aspect-[${width}/${height}] w-full`
+        }
+
+        return 'aspect-[4/1] w-full'
+    }
+
+    return 'aspect-square md:aspect-[3/1] lg:aspect-[4/1] w-full'
 })
 
 const isMounted = ref(false)
@@ -141,17 +195,7 @@ onMounted(() => {
 
 <template>
     <div class="relative w-full">
-        <div class="relative mx-auto transition-all duration-300 ease-in-out" :class="[
-            $props.view
-                ? {
-                    'aspect-[2/1] max-w-[375px] w-full': $props.view == 'mobile',
-
-                    'aspect-[3/1] max-w-[768px] w-full': $props.view == 'tablet',
-
-                    'aspect-[4/1] w-full': $props.view == 'desktop'
-                }
-                : 'aspect-[2/1] md:aspect-[3/1] lg:aspect-[4/1] w-full'
-        ]" :style="{ height: bannerHeight + 'px' }">
+        <div class="relative mx-auto transition-all duration-300 ease-in-out" :class="aspectClass">
 
             <!-- Add v-if to avoid error in SSR -->
             <template v-if="isMounted">

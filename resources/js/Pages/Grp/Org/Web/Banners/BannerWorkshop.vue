@@ -211,11 +211,12 @@ onBeforeUnmount(() => {
 
     <div v-else>
         <BannerWorkshopComponent
-    v-model="data"
-    :imagesUploadRoute="imagesUploadRoute"
-    :banner="banner"
-    :galleryRoute="galleryRoute"
-/>
+            v-model="data"
+            :imagesUploadRoute="imagesUploadRoute"
+            :banner="banner"
+            :galleryRoute="galleryRoute"
+            :ratio="banner.ratio"
+        />
     </div>
 </section>
 </template>

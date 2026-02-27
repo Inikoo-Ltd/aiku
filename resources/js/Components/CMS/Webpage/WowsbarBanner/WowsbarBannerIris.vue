@@ -107,6 +107,7 @@ onMounted(() => {
                 :data="data.compiled_layout"
                 :production="true"
                 :view="screenType"
+                :ratio="data.ratio"
             />
 
             <SliderSquare
@@ -114,6 +115,7 @@ onMounted(() => {
                 :data="data.compiled_layout"
                 :production="true"
                 :view="screenType"
+                :ratio="data.ratio"
             />
         </div>
     </div>

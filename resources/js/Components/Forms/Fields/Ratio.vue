@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
 import { trans } from "laravel-vue-i18n"
+import { get } from 'lodash-es'
 
 const props = defineProps<{
     form: Record<string, any>
@@ -12,18 +13,19 @@ const isSquareType = computed(() => props.form?.type === "square")
 
 const value = computed<string | null>({
     get() {
-        if (isSquareType.value) return "1/1"
+        if (isSquareType.value) {
+            if (props.form[props.fieldName] !== "1/1") {
+                props.form[props.fieldName] = "1/1"
+            }
+            return "1/1"
+        }
+
         return props.form?.[props.fieldName] ?? null
     },
     set(val) {
-        if (isSquareType.value) {
-            props.form[props.fieldName] = "1/1"
-            return
-        }
-        props.form[props.fieldName] = val
+        props.form[props.fieldName] = isSquareType.value ? "1/1" : val
     }
 })
-
 const mode = ref<"4/1" | "1/1" | "custom">("4/1")
 
 const customWidth = ref<number | null>(4)
@@ -89,11 +91,8 @@ const customRatio = computed(() => {
         <div class="grid gap-4 grid-cols-1 md:grid-cols-2">
 
             <!-- 4/1 -->
-            <div
-                v-if="!isSquareType"
-                @click="selectRatio('4/1')"
-                class="border rounded-lg p-4 w-full flex flex-col min-h-[240px] transition cursor-pointer"
-                :class="isSelected('4/1')
+            <div v-if="!isSquareType" @click="selectRatio('4/1')"
+                class="border rounded-lg p-4 w-full flex flex-col min-h-[240px] transition cursor-pointer" :class="isSelected('4/1')
                     ? 'shadow-md scale-[1.02] border-blue-500'
                     : 'border-gray-300 hover:shadow-sm hover:scale-[1.01]'">
 
@@ -108,10 +107,8 @@ const customRatio = computed(() => {
             </div>
 
             <!-- 1/1 -->
-            <div
-                @click="selectRatio('1/1')"
-                class="border rounded-lg p-4 w-full flex flex-col min-h-[240px] transition cursor-pointer"
-                :class="isSelected('1/1')
+            <div @click="selectRatio('1/1')"
+                class="border rounded-lg p-4 w-full flex flex-col min-h-[240px] transition cursor-pointer" :class="isSelected('1/1')
                     ? 'border-blue-600 ring-2 ring-blue-200'
                     : 'border-gray-300'">
 
@@ -126,17 +123,12 @@ const customRatio = computed(() => {
             </div>
 
             <!-- Custom -->
-            <div
-                v-if="!isSquareType"
-                @click="selectRatio('custom')"
-                class="border rounded-lg p-4 w-full flex flex-col min-h-[240px] transition cursor-pointer"
-                :class="isSelected('custom')
+            <div v-if="!isSquareType" @click="selectRatio('custom')"
+                class="border rounded-lg p-4 w-full flex flex-col min-h-[240px] transition cursor-pointer" :class="isSelected('custom')
                     ? 'border-blue-600 ring-2 ring-blue-200'
                     : 'border-gray-300'">
 
-                <div
-                    class="bg-gray-200 rounded w-full"
-                    :style="{ aspectRatio: customRatio }">
+                <div class="bg-gray-200 rounded w-full" :style="{ aspectRatio: customRatio }">
                 </div>
 
                 <div class="mt-3 flex-1 text-left">
@@ -152,28 +144,21 @@ const customRatio = computed(() => {
         </div>
 
         <!-- Custom inputs -->
-        <div
-            v-if="mode === 'custom' && !isSquareType"
-            class="flex items-center gap-2">
+        <div v-if="mode === 'custom' && !isSquareType" class="flex items-center gap-2">
 
-            <input
-                type="number"
-                v-model.number="customWidth"
-                @input="updateCustomRatio"
-                :placeholder="trans('Width')"
-                class="border rounded px-2 py-1 w-24 text-sm"
-            />
+            <input type="number" v-model.number="customHeight" @input="updateCustomRatio" :placeholder="trans('Height')"
+                class="border rounded px-2 py-1 w-24 text-sm" />
+
 
             <span>/</span>
 
-            <input
-                type="number"
-                v-model.number="customHeight"
-                @input="updateCustomRatio"
-                :placeholder="trans('Height')"
-                class="border rounded px-2 py-1 w-24 text-sm"
-            />
+            <input type="number" v-model.number="customWidth" @input="updateCustomRatio" :placeholder="trans('Width')"
+                class="border rounded px-2 py-1 w-24 text-sm" />
         </div>
 
     </div>
+
+    <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+        {{ form.errors[fieldName] }}
+    </p>
 </template>

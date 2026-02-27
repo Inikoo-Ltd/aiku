@@ -27,6 +27,7 @@ class GetBanner extends IrisAction
             'slug' => $banner->slug,
             'type' => $banner->type?->value,
             'state' => $banner->state,
+            'ratio' => $banner->ratio,
             'compiled_layout' => $banner->compiled_layout,
         ];
     }
