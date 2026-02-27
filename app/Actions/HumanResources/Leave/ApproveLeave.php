@@ -31,9 +31,12 @@ class ApproveLeave extends OrgAction
                 'year'        => $balanceYear,
             ],
             [
-                'annual_days'  => 14,
-                'medical_days' => 14,
+                'annual_days'   => 10,
+                'annual_used'   => 0,
+                'medical_days'  => 365,
+                'medical_used'  => 0,
                 'unpaid_days'  => 0,
+                'unpaid_used'  => 0,
             ]
         );
 
@@ -45,7 +48,8 @@ class ApproveLeave extends OrgAction
         };
 
         if ($field) {
-            $balance->increment($field, $leave->duration_days);
+            $deduction = $leave->is_half_day ? 0.5 : $leave->duration_days;
+            $balance->increment($field, $deduction);
         }
 
         return $leave;
