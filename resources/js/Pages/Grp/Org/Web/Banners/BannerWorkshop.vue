@@ -23,16 +23,21 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 library.add(faAsterisk, faRocketLaunch, faUser, faUserFriends, faSpinnerThird)
 
 const props = defineProps<{
+    modelValue: any
     title: string
     pageHead: any
     banner: any
     imagesUploadRoute: any
     autoSaveRoute: any
     publishRoute: any
-    galleryRoute:{
-        stock_images : any,
-        uploaded_images : any
+    galleryRoute: {
+        stock_images: any,
+        uploaded_images: any
     }
+}>()
+
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: any): void
 }>()
 
 inject('layout', layoutStructure)
@@ -44,23 +49,25 @@ const isInitial = ref(true)
 
 const routeExit = props.pageHead.actions.find((i:any) => i.style === "exit")
 
-/*
-IMPORTANT:
-use shallowRef to avoid Vue deep proxy recursion
-DO NOT deep clone compiled_layout
-*/
-const data = shallowRef<any>({})
+const internalData = shallowRef<any>({})
+
+const data = computed({
+    get: () => internalData.value,
+    set: (val) => {
+        internalData.value = val
+        emits('update:modelValue', val)
+    }
+})
 
 onBeforeMount(() => {
     loadingState.value = true
-    data.value = props.banner?.compiled_layout || {}
+    internalData.value = props.banner?.compiled_layout || {}
 
     setTimeout(() => {
         isInitial.value = false
         loadingState.value = false
     }, 50)
 })
-
 
 const compCurrentHash = computed(() => {
     try {
@@ -69,7 +76,6 @@ const compCurrentHash = computed(() => {
         return ""
     }
 })
-
 
 const status = ref<null | 'loading' | 'success' | 'error'>(null)
 let statusTimeout:any = null
@@ -82,7 +88,6 @@ const setStatus = (s:any) => {
         statusTimeout = setTimeout(() => status.value = null, 2500)
     }
 }
-
 
 const patchAutoSave = () => {
     setStatus("loading")
@@ -117,11 +122,9 @@ watch(
     { deep: true }
 )
 
-
 const saveBanner = () => {
     patchAutoSave()
 }
-
 
 const sendDataToServer = () => {
     isLoading.value = true
@@ -156,7 +159,6 @@ const sendDataToServer = () => {
     )
 }
 
-
 const compIsHashSameWithPrevious = computed(() => {
     return compCurrentHash.value === data.value?.published_hash
 })
@@ -168,8 +170,6 @@ const compIsDataFirstTimeCreated = computed(() => {
 onBeforeUnmount(() => {
     autoSave.cancel()
 })
-
-console.log(props.banner?.compiled_layout)
 </script>
 
 <template>
@@ -211,11 +211,11 @@ console.log(props.banner?.compiled_layout)
 
     <div v-else>
         <BannerWorkshopComponent
-            v-model="data"
-            :imagesUploadRoute="imagesUploadRoute"
-            :banner="banner"
-            :galleryRoute="galleryRoute"
-        />
+    v-model="data"
+    :imagesUploadRoute="imagesUploadRoute"
+    :banner="banner"
+    :galleryRoute="galleryRoute"
+/>
     </div>
 </section>
 </template>

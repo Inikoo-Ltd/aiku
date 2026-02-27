@@ -395,7 +395,7 @@ class IndexDepartments extends OrgAction
         return match ($routeName) {
             'grp.org.shops.show.catalogue.departments.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,

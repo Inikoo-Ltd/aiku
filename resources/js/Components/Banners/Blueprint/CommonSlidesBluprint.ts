@@ -18,7 +18,7 @@ export default {
                         range: ["2.5", "5", "7.5", "10", "12.5", "15"],
                     },
                 },
-                {
+              /*   {
                     name: ["common", "height"],
                     type: "rangeSlider",
                     label: trans("Banner Height"),
@@ -32,7 +32,7 @@ export default {
                         max: 800,
                         step: 10
                     }
-                },
+                }, */
                 {
                     name: "navigation",
                     type: "bannerNavigation",

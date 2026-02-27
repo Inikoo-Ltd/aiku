@@ -357,10 +357,10 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ],
             DeliveryNoteStateEnum::PACKED => [
-                count($deliveryNote->parcels ?? []) ? [
+                (count($deliveryNote->parcels ?? []) && !$deliveryNote->is_shipping_by_external) ? [
                     'type'    => 'button',
                     'style'   => 'save',
-                    'tooltip' => __('Finalised'),
+                    'tooltip' => __('Finalise'),
                     'label'   => match (true) {
                         $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Dispatch'),
                         $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => __('set as collected'),

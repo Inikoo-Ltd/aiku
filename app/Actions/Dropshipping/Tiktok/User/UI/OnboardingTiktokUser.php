@@ -77,7 +77,7 @@ class OnboardingTiktokUser extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $decodedData = json_decode(base64_decode($request->get('code')), true);
+        $decodedData = json_decode(base64_decode($request->get('tiktok_code')), true);
 
         $this->set('tiktok_user_id', Arr::get($decodedData, 'tiktok_user_id'));
         $this->set('status', Arr::get($decodedData, 'status'));

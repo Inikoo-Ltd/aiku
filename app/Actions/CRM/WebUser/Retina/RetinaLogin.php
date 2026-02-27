@@ -10,6 +10,7 @@ namespace App\Actions\CRM\WebUser\Retina;
 
 use App\Actions\CRM\WebUser\AuthoriseWebUserWithLegacyPassword;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
+use App\Actions\Dropshipping\Tiktok\User\ProcessUnregisterCustomerTiktokUser;
 use App\Actions\SysAdmin\User\LogUserFailLogin;
 use App\Actions\Traits\WithLogin;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
@@ -122,6 +123,11 @@ class RetinaLogin
             datetime: now()
         );
 
+        if ($tiktokCode = $request->input('tiktok_code')) {
+            ProcessUnregisterCustomerTiktokUser::run($webUser->customer, [
+                'tiktok_code' => $tiktokCode
+            ]);
+        }
 
         $request->session()->regenerate();
         Session::put('reloadLayout', '1');

@@ -92,7 +92,7 @@ class AuthenticateTiktokAccount extends OrgAction
             }
 
             return redirect()->route('aiku-public.tiktok.onboarding', [
-                'code' => base64_encode(json_encode([
+                'tiktok_code' => base64_encode(json_encode([
                     'tiktok_user_id' => $model instanceof TiktokUser ? $model->id : null,
                     'message' => $model instanceof TiktokUser ? null : $model
                 ]))

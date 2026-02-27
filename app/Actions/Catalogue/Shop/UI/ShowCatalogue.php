@@ -51,7 +51,7 @@ class ShowCatalogue extends OrgAction
             'Org/Catalogue/Catalogue',
             [
                 'title'       => __('catalogue'),
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters(), $request->route()->getName()),
                 'navigation'  => $parent instanceof Shop ? [
                     'previous' => $this->getPrevious($parent, $request),
                     'next'     => $this->getNext($parent, $request),
@@ -143,24 +143,9 @@ class ShowCatalogue extends OrgAction
         };
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(array $routeParameters, ?string $routeName = null): array
     {
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.dashboard' => array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.catalogue.dashboard',
-                                'parameters' => $routeParameters
-                            ],
-                            'label' => __('Catalogue'),
-                        ]
-                    ]
-                ]
-            ),
             'grp.catalogue.show' => array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
                 [
@@ -176,7 +161,21 @@ class ShowCatalogue extends OrgAction
                     ]
                 ]
             ),
-            default => []
+            default => array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.dashboard',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Catalogue'),
+                        ]
+                    ]
+                ]
+            ),
         };
     }
 }
