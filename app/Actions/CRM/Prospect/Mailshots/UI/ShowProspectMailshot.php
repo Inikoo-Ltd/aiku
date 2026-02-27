@@ -12,9 +12,10 @@ use App\Actions\Comms\Mailshot\UI\GetMailshotShowcase;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
+use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Actions\UI\Marketing\MarketingHub;
+use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\UI\Mail\MailshotTabsEnum;
@@ -38,6 +39,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowProspectMailshot extends OrgAction
 {
     use WithCatalogueAuthorisation;
+    use WithProspectsSubNavigation;
 
     public function handle(Mailshot $mailshot): Mailshot
     {
@@ -83,7 +85,7 @@ class ShowProspectMailshot extends OrgAction
          * is_second_wave  is perspective from child mailshot
          */
         return Inertia::render(
-            'CRM/Prospect/Mailshot',
+            'Org/Shop/CRM/ProspectMailshot',
             [
                 'title'                           => $mailshot->id,
                 'breadcrumbs'                     => $this->getBreadcrumbs(
@@ -94,6 +96,7 @@ class ShowProspectMailshot extends OrgAction
                 'pageHead'                        => [
                     'icon'    => 'fal fa-coins',
                     'title'   => $mailshot->type->value . ' ' . $mailshot->id,
+                    'subNavigation' => $this->getSubNavigation($this->shop, $request),
                     'edit'    => $this->canEdit ? [
                         'route' => [
                             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
@@ -101,7 +104,7 @@ class ShowProspectMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
-                        $isShowActions & $mailshot->type === MailshotTypeEnum::MARKETING ? [
+                        $isShowActions ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Set Up Recipients'),
@@ -111,7 +114,6 @@ class ShowProspectMailshot extends OrgAction
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
-                                    $request->route('prospect')->slug,
                                     $mailshot->slug
                                 ]
                             ]
@@ -122,11 +124,10 @@ class ShowProspectMailshot extends OrgAction
                             'label' => __('Workshop'),
                             'icon'  => ["fal", "fa-drafting-compass"],
                             'route' => [
-                                'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.crm.prospects.mailshots.workshop" : "grp.org.shops.show.crm.prospects.mailshots.workshop",
+                                'name'       => "grp.org.shops.show.crm.prospects.mailshots.workshop",
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
-                                    $request->route('prospect')->slug,
                                     $mailshot->slug
                                 ]
                             ]
@@ -137,11 +138,10 @@ class ShowProspectMailshot extends OrgAction
                             'label' => __('Edit'),
                             'icon'  => ["fal", "fa-sliders-h"],
                             'route' => [
-                                'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.crm.prospects.mailshots.edit" : "grp.org.shops.show.crm.prospects.mailshots.edit",
+                                'name'       => "grp.org.shops.show.crm.prospects.mailshots.edit",
                                 'parameters' => [
                                     $this->organisation->slug,
                                     $this->shop->slug,
-                                    $request->route('prospect')->slug,
                                     $mailshot->slug
                                 ]
                             ]
@@ -205,10 +205,7 @@ class ShowProspectMailshot extends OrgAction
                         )
                     )),
                 'sendMailshotRoute' => [
-                    'name' => match ($mailshot->type) {
-                        MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.send',
-                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.send',
-                    },
+                    'name' => 'grp.models.shop.outboxes.newsletter.send',
                     'parameters' => [
                         'shop' => $this->shop->id,
                         'outbox' => $mailshot->outbox->id,
@@ -216,10 +213,7 @@ class ShowProspectMailshot extends OrgAction
                     ],
                 ],
                 'scheduleMailshotRoute' => [
-                    'name' => match ($mailshot->type) {
-                        MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.schedule',
-                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.schedule',
-                    },
+                    'name' => 'grp.models.shop.outboxes.newsletter.schedule',
                     'parameters' => [
                         'shop' => $this->shop->id,
                         'outbox' => $mailshot->outbox->id,
@@ -237,15 +231,11 @@ class ShowProspectMailshot extends OrgAction
                     'name' => 'grp.org.shops.show.crm.prospects.mailshots.index',
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
-                        'shop' => $this->shop->slug,
-                        'prospect' => $request->route('prospect')->slug
+                        'shop' => $this->shop->slug
                     ],
                 ],
                 'cancelScheduleMailshotRoute' => [
-                    'name' => match ($mailshot->type) {
-                        MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.cancel-schedule',
-                        MailshotTypeEnum::MARKETING => 'grp.models.shop.outboxes.mailshot.cancel-schedule',
-                    },
+                    'name' => 'grp.models.shop.outboxes.newsletter.cancel-schedule',
                     'parameters' => [
                         'shop' => $this->shop->id,
                         'outbox' => $mailshot->outbox->id,
@@ -267,14 +257,10 @@ class ShowProspectMailshot extends OrgAction
                     ],
                 ],
                 'showLinkedMailShotRoute' => [
-                    'name' => match ($mailshot->type) {
-                        MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.crm.prospects.mailshots.show',
-                        MailshotTypeEnum::MARKETING => 'grp.org.shops.show.crm.prospects.mailshots.show',
-                    },
+                    'name' => 'grp.org.shops.show.crm.prospects.mailshots.show',
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
                         'shop' => $this->shop->slug,
-                        'prospect' => $request->route('prospect')->slug,
                         'mailshot' => $isSecondWaveActive ? $mailshotSecondWave?->slug : $mailshot->parentMailshot?->slug,
                     ],
                 ],
@@ -303,6 +289,8 @@ class ShowProspectMailshot extends OrgAction
         );
     }
 
+
+    //  TODO: Fix the breadcrumbs
     public function getBreadcrumbs(Mailshot $mailshot, string $routeName, array $routeParameters, string $suffix = ''): array
     {
         $headCrumb = function (Mailshot $mailshot, array $routeParameters, string $suffix) {
@@ -329,8 +317,8 @@ class ShowProspectMailshot extends OrgAction
 
         return match ($routeName) {
             'grp.org.shops.show.crm.prospects.mailshots.show' => array_merge(
-                MarketingHub::make()->getBreadcrumbs(
-                    'grp.marketing.shops.show.hub',
+                (new IndexProspects())->getBreadcrumbs(
+                    'grp.org.shops.show.crm.prospects.index',
                     Arr::only($routeParameters, ['organisation', 'shop']),
                 ),
                 $headCrumb(

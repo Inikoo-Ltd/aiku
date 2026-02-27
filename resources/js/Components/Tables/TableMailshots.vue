@@ -22,7 +22,6 @@ defineProps<{
 
 
 function mailshotRoute(mailshot: Mailshot) {
-    // console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.marketing.mailshots.index":
             return route(
@@ -47,6 +46,13 @@ function mailshotRoute(mailshot: Mailshot) {
                     (route().params as RouteParams).website,
                     (route().params as RouteParams).outbox,
                     mailshot.slug]);
+        case "grp.org.shops.show.crm.prospects.mailshots.index":
+            return route(
+                "grp.org.shops.show.crm.prospects.mailshots.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    mailshot.slug]);
         default:
             return '';
     }
@@ -68,5 +74,3 @@ function mailshotRoute(mailshot: Mailshot) {
         </template>
     </Table>
 </template>
-
-
