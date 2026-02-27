@@ -179,7 +179,7 @@ class IndexOutOfStockProducts extends OrgAction
         return match ($routeName) {
             'grp.org.shops.show.catalogue.products.out_of_stock_products.index', =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
