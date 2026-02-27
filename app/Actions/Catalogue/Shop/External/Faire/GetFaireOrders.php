@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
@@ -20,6 +21,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -46,7 +48,6 @@ class GetFaireOrders extends OrgAction
             $externalId = Arr::get($faireOrder, 'id');
             $retailerId = Arr::get($faireOrder, 'retailer_id');
             $retailer   = GetFaireRetailers::run($shop, $retailerId);
-
             $transactionCommissions = Arr::get($faireOrder, 'payout_costs.commission_bps', 0) / 10000;
             $orderCommission        = Arr::get($faireOrder, 'payout_costs.commission.amount_minor', 0) / 100;
 
@@ -98,6 +99,18 @@ class GetFaireOrders extends OrgAction
                     'pay_status'              => OrderPayStatusEnum::UNPAID->value,
                     'pay_detailed_status'     => OrderPayDetailedStatusEnum::UNPAID->value
                 ];
+
+
+                $tax=Arr::get($faireOrder, 'payout_costs.net_tax.amount_minor', 0);
+
+                if($tax==0){
+                    if(IsEuropeanUnion::run($shop->organisation->country->code)){
+                        $taxCategory=TaxCategory::where('status', true)->where('type','eu_vtc')->first();
+                    }else{
+                        $taxCategory=TaxCategory::where('status', true)->where('type','outside')->first();
+                    }
+                    $orderData['tax_category_id']=$taxCategory->id;
+                }
 
                 $transactionsData = [];
                 $errors           = [];
