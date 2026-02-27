@@ -170,7 +170,7 @@ class GetFaireOrders extends OrgAction
                     /** @var \App\Models\Inventory\Warehouse $warehouse */
                     $warehouse = $order->shop->organisation->warehouses()->first();
 
-                    if(Arr::get($shop->settings, 'faire.faire_send_orders_automatically_to_warehouse', true)) {
+                    if(Arr::get($shop->settings, 'faire.send_orders_automatically_to_warehouse', true)) {
                         SendOrderToWarehouse::make()->action($order, [
                             'warehouse_id' => $warehouse->id
                         ]);
