@@ -14,6 +14,7 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -75,7 +76,7 @@ class GetFaireOrders extends OrgAction
                     $customerData['contact_name'] = $contactName;
                 }
                 if ($phone != '') {
-                    $customerData['phone'] = $contactName;
+                    $customerData['phone'] = $phone;
                 }
 
                 if ($customer) {
@@ -86,7 +87,7 @@ class GetFaireOrders extends OrgAction
 
 
                 $orderData = [
-                    'is_shipping_by_external' => Arr::get($shop->settings, 'is_shipping_by_external'),
+                    'is_shipping_by_external' => Arr::get($shop->settings, 'faire.is_shipping_by_external') ?? false,
                     'external_id'             => $externalId,
                     'marketplace_id'          => $externalId,
                     'reference'               => $faireOrder['display_id'],
@@ -170,7 +171,17 @@ class GetFaireOrders extends OrgAction
                     /** @var \App\Models\Inventory\Warehouse $warehouse */
                     $warehouse = $order->shop->organisation->warehouses()->first();
 
-                    if(Arr::get($shop->settings, 'faire.send_orders_automatically_to_warehouse', true)) {
+
+                    $sendOrderToWarehouse = true;
+
+                    if (Arr::get($shop->settings, 'faire.dont_send_first_orders_automatically_to_warehouse', false)) {
+                        $numberOrders = Order::where('customer_id', $customer->id)->where('state', '!=', OrderStateEnum::CANCELLED)->count();
+                        if ($numberOrders == 0) {
+                            $sendOrderToWarehouse = false;
+                        }
+                    }
+
+                    if ($sendOrderToWarehouse) {
                         SendOrderToWarehouse::make()->action($order, [
                             'warehouse_id' => $warehouse->id
                         ]);

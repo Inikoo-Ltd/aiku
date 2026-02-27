@@ -10,6 +10,7 @@ use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreShipmentFromFaire extends OrgAction
@@ -24,6 +25,15 @@ class StoreShipmentFromFaire extends OrgAction
         $faireOrder = GetSpecificFaireOrder::run($order);
 
         $faireShipment = Arr::get($faireOrder, 'shipments.0');
+
+        if (app()->environment('local')) {
+            $faireShipment = [
+                'id'                 => 'FAIRE-'.Str::random(10),
+                'carrier'            => 'ups-faire',
+                'tracking_code'      => Str::random(10),
+                'shipping_label_url' => 'https://www.google.com'
+            ];
+        }
 
         if (!$faireShipment) {
             return null;
@@ -41,13 +51,11 @@ class StoreShipmentFromFaire extends OrgAction
             ]);
         }
 
-
         return StoreShipment::make()->action($deliveryNote, $shipper, [
-             'reference'          => Arr::get($faireShipment, 'id'),
-             'tracking'           => Arr::get($faireShipment, 'tracking_code'),
-             'combined_label_url' => Arr::get($faireShipment, 'shipping_label_url')
-         ]);
-
+            'reference'          => Arr::get($faireShipment, 'id'),
+            'tracking'           => Arr::get($faireShipment, 'tracking_code'),
+            'combined_label_url' => Arr::get($faireShipment, 'shipping_label_url')
+        ]);
     }
 
     public string $commandSignature = 'delivery_note:faire_shipment {delivery_note}';

@@ -27,7 +27,7 @@ class FinaliseDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(DeliveryNote $deliveryNote): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, bool $fromOrder = false): DeliveryNote
     {
         $oldState = $deliveryNote->state;
         if ($deliveryNote->shipments->isEmpty() && !$deliveryNote->collection_address_id) {
@@ -38,13 +38,13 @@ class FinaliseDeliveryNote extends OrgAction
             ]);
         }
 
-        $deliveryNote = DB::transaction(function () use ($deliveryNote) {
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $fromOrder) {
             data_set($modelData, 'finalised_at', now());
             data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
 
 
             $deliveryNote->refresh();
-            if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+            if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT && !$fromOrder) {
                 foreach ($deliveryNote->orders as $order) {
                     InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
                 }
@@ -72,10 +72,10 @@ class FinaliseDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(DeliveryNote $deliveryNote): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, bool $fromOrder = false): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $fromOrder);
     }
 }

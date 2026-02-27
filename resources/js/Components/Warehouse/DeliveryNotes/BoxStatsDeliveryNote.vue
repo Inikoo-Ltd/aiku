@@ -504,7 +504,7 @@ const updateCollection = async (e: Event) => {
                     </dl>
 
                     <!-- Section: Parcels -->
-                    <div v-if="['packing', 'packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
+                    <div v-if="['packing', 'packed', 'dispatched', 'finalised','handling'].includes(deliveryNote?.state)"
                         class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
                         <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
                             fixed-width aria-hidden='true' />
@@ -513,7 +513,7 @@ const updateCollection = async (e: Event) => {
                                 <div class="text-gray-500">{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
                                 <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
-                                <template v-if="!(boxStats?.shipments?.length >= 1) && (deliveryNote?.state === 'packed' || deliveryNote?.state === 'packing')">
+                                <template v-if="!(boxStats?.shipments?.length >= 1) && (deliveryNote?.state === 'packed' || deliveryNote?.state === 'packing'  || deliveryNote?.state === 'handling')">
                                     <div v-if="boxStats?.parcels?.length"
                                         @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
                                         class="cursor-pointer text-gray-400 hover:text-gray-600">
