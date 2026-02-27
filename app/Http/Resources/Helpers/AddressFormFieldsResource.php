@@ -22,6 +22,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $locality
  * @property string $dependent_locality
  * @property string $administrative_area
+ * @property string $religion
 
  * @property mixed $country
  *
@@ -42,6 +43,7 @@ class AddressFormFieldsResource extends JsonResource
             'administrative_area' => $this->administrative_area ?? null,
             'country_code'        => $this->country_code        ?? null,
             'country_id'          => $this->country_id          ?? null,
+            'religion'            => $this->religion              ?? null,
         ];
     }
 
