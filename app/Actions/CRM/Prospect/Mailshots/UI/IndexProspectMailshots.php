@@ -144,6 +144,7 @@ class IndexProspectMailshots extends InertiaAction
                     'subNavigation'    => $subNavigation,
                     'actions'          =>
                     [
+                        // TODO: Check later
                         // ($shop->prospects_sender_email_id && $shop->prospectsSenderEmail->state == SenderEmailStateEnum::VERIFIED) ?
                         [
                             'type'  => 'button',
@@ -160,6 +161,7 @@ class IndexProspectMailshots extends InertiaAction
 
                 ],
 
+                // TODO: check later
                 'senderEmail' => null,
                 // $shop->prospects_sender_email_id ?
                 //     SenderEmailResource::make($shop->prospectsSenderEmail)->getArray() : null,
@@ -170,9 +172,9 @@ class IndexProspectMailshots extends InertiaAction
                     'navigation' => ProspectsMailshotsTabsEnum::navigation(),
                 ],
 
-                ProspectsMailshotsTabsEnum::SETTINGS->value => $this->tab == ProspectsMailshotsTabsEnum::SETTINGS->value ?
-                    fn () => ProspectMailshotSettings::run($shop)
-                    : Inertia::lazy(fn () => ProspectMailshotSettings::run($shop)),
+                // ProspectsMailshotsTabsEnum::SETTINGS->value => $this->tab == ProspectsMailshotsTabsEnum::SETTINGS->value ?
+                //     fn () => ProspectMailshotSettings::run($shop)
+                //     : Inertia::lazy(fn () => ProspectMailshotSettings::run($shop)),
 
                 ProspectsMailshotsTabsEnum::MAILSHOTS->value => $this->tab == ProspectsMailshotsTabsEnum::MAILSHOTS->value ?
                     fn () => MailshotsResource::collection($mailshots)

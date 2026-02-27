@@ -104,20 +104,20 @@ class ShowProspectMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
-                        $isShowActions ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Set Up Recipients'),
-                            'icon'  => ["fal", "fa-sliders-h"],
-                            'route' => [
-                                'name'       => "grp.org.shops.show.crm.prospects.mailshots.recipients",
-                                'parameters' => [
-                                    $this->organisation->slug,
-                                    $this->shop->slug,
-                                    $mailshot->slug
-                                ]
-                            ]
-                        ] : [],
+                        // $isShowActions ? [
+                        //     'type'  => 'button',
+                        //     'style' => 'edit',
+                        //     'label' => __('Set Up Recipients'),
+                        //     'icon'  => ["fal", "fa-sliders-h"],
+                        //     'route' => [
+                        //         'name'       => "grp.org.shops.show.crm.prospects.mailshots.recipients",
+                        //         'parameters' => [
+                        //             $this->organisation->slug,
+                        //             $this->shop->slug,
+                        //             $mailshot->slug
+                        //         ]
+                        //     ]
+                        // ] : [],
                         $isShowActions ? [
                             'type'  => 'button',
                             'style' => 'edit',

@@ -26,11 +26,13 @@ use App\Http\Resources\Comms\MailshotTemplatesResource;
 use App\Http\Resources\Mail\EmailTemplateResource;
 use App\Actions\Comms\Mailshot\UI\IndexPreviousMailshotTemplates;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotFromOtherStoreTemplates;
+use App\Actions\Traits\WithProspectsSubNavigation;
 
 class ShowProspectMailshotWorkshop extends OrgAction
 {
     use WithActionButtons;
     use WithOutboxBuilder;
+    use WithProspectsSubNavigation;
 
     public function handle(Mailshot $mailshot): Mailshot
     {
@@ -55,7 +57,7 @@ class ShowProspectMailshotWorkshop extends OrgAction
     {
         $email = $mailshot->email;
         return Inertia::render(
-            'Grp/Org/Web/Workshop/Mailshot/ProspectMailshotWorkshop',
+            'Org/Web/Workshop/Mailshot/ProspectMailshotWorkshop',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $mailshot,
@@ -65,6 +67,7 @@ class ShowProspectMailshotWorkshop extends OrgAction
                 'title'       => $mailshot->subject,
                 'pageHead'    => [
                     'title'     => $mailshot->subject,
+                    'subNavigation' => $this->getSubNavigation($this->shop, $request),
                     'icon'      => [
                         'tooltip' => __('snapshot'),
                         'icon'    => 'fal fa-mail-bulk'

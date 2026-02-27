@@ -16,16 +16,16 @@ enum ProspectsMailshotsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SETTINGS  = 'settings';
+    // case SETTINGS  = 'settings';
     case MAILSHOTS = 'mailshots';
 
     public function blueprint(): array
     {
         return match ($this) {
-            ProspectsMailshotsTabsEnum::SETTINGS => [
-                'title' => __('Settings'),
-                'icon'  => 'fal fa-cog',
-            ],
+            // ProspectsMailshotsTabsEnum::SETTINGS => [
+            //     'title' => __('Settings'),
+            //     'icon'  => 'fal fa-cog',
+            // ],
             ProspectsMailshotsTabsEnum::MAILSHOTS => [
                 'title' => __('Mailshots'),
                 'icon'  => 'fal fa-paper-plane',
