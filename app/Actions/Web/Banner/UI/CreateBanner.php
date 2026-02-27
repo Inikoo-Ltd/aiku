@@ -62,6 +62,12 @@ class CreateBanner extends OrgAction
                     'required'    => true,
                     'value'       => '',
                 ],
+                    'ratio' => [
+                    'type'        => 'ratio',
+                    'label'       => __('Ratio'),
+                    'required'    => true,
+                    'value'       => null,
+                ],
             ]
         ];
 
