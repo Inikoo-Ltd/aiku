@@ -8,8 +8,8 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
-use App\Actions\InertiaAction;
 use App\Actions\CRM\Prospect\Queries\UI\IndexProspectQueries;
+use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateProspectsMailshot extends InertiaAction
+class CreateProspectsMailshot extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
@@ -27,14 +27,15 @@ class CreateProspectsMailshot extends InertiaAction
 
     public function asController(Organisation $organisation, ActionRequest $request): Response|RedirectResponse
     {
-        $this->initialisation($request);
+        $this->initialisation($organisation, $request);
 
         return $this->handle($organisation, $request);
     }
 
-    public function inShop(Shop $shop, ActionRequest $request): Response|RedirectResponse
+    // Note: organisation is not used here, but it's required for the route
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Response|RedirectResponse
     {
-        $this->initialisation($request);
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $request);
     }
@@ -48,7 +49,7 @@ class CreateProspectsMailshot extends InertiaAction
                 'subject' => [
                     'type'        => 'input',
                     'label'       => __('subject'),
-                'placeholder' => __('Email subject'),
+                    'placeholder' => __('Email subject'),
                     'required'    => true,
                     'value'       => '',
                 ],
@@ -122,6 +123,7 @@ class CreateProspectsMailshot extends InertiaAction
                             ]
                         ],
                         default => [
+                            // TODO: fix the route later
                             'name' => 'grp.models.shop.prospect.mailshot.store',
                             'parameters' => [
                                 'shop' => $parent->id,
