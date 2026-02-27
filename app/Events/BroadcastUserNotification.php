@@ -18,6 +18,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 
 class BroadcastUserNotification implements ShouldBroadcast
 {
@@ -36,18 +37,30 @@ class BroadcastUserNotification implements ShouldBroadcast
             'body'  => $text,
             'text'  => $text,
             'type'  => class_basename($parent),
-            'id'    => $parent->id
+            'id'    => $parent->id,
+            'slug'  => $parent->slug
         ];
 
         if ($parent instanceof Order) {
-            $this->data['slug'] = $parent->slug;
             $this->data['route'] = route('grp.org.shops.show.ordering.orders.show', [
                 'organisation' => $parent->organisation->slug,
                 'shop'         => $parent->shop->slug,
                 'order'        => $parent->slug
             ]);
-        } else {
-            $this->data['slug'] = $parent->slug;
+        } elseif ($parent instanceof PalletDelivery) {
+            $this->data['route'] = route('retina.fulfilment.storage.pallet_deliveries.show', [
+                'palletDelivery' => $parent->slug
+            ]);
+        } elseif ($parent instanceof PalletReturn) {
+            if ($parent->type == PalletReturnTypeEnum::PALLET) {
+                $this->data['route'] = route('retina.fulfilment.storage.pallet_returns.show', [
+                    'palletReturn' => $parent->slug
+                ]);
+            } elseif ($parent->type == PalletReturnTypeEnum::STORED_ITEM) {
+                $this->data['route'] = route('retina.fulfilment.storage.pallet_returns.with-stored-items.show', [
+                    'palletReturn' => $parent->slug
+                ]);
+            }
         }
     }
 
