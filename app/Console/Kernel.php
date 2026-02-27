@@ -489,6 +489,24 @@ class Kernel extends ConsoleKernel
         //     scheduledAt: now()->format('H:i')
         // );
 
+        $this->logSchedule(
+            $schedule->job(\App\Actions\HumanResources\Announcement\SendBirthdayAnnouncements::makeJob())->dailyAt('08:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'SendBirthdayAnnouncements'
+            ),
+            name: 'SendBirthdayAnnouncements',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(\App\Actions\HumanResources\Announcement\SendProbationCompletionAnnouncements::makeJob())->dailyAt('08:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'SendProbationCompletionAnnouncements'
+            ),
+            name: 'SendProbationCompletionAnnouncements',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
     }
 
     protected function commands(): void
