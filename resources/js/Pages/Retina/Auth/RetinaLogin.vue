@@ -46,6 +46,7 @@ const submit = async () => {
                 username: form.username,
                 password: form.password,
                 remember: form.remember,
+			    tiktok_code: route().queryParams?.tiktok_code
             }
         )
 
