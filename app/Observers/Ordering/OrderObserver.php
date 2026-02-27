@@ -16,17 +16,19 @@ class OrderObserver
     {
         if ($order->isDirty('state')) {
             // Notify active staff users who are working employees
-            $users = User::where('status', true)
+            $employeeUsers = User::where('status', true)
                 ->whereHas('employees', function ($query) {
                     $query->where('state', EmployeeStateEnum::WORKING);
                 })
                 ->get();
 
-            $users = User::where('status', true)
+            $guestUsers = User::where('status', true)
                 ->whereHas('guests', function ($query) {
                     $query->where('status', true);
                 })
                 ->get();
+
+            $users = $employeeUsers->merge($guestUsers)->unique('id');
 
             Notification::send($users, new OrderStateUpdated($order));
 
