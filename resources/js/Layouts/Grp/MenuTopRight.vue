@@ -8,8 +8,7 @@ import NotificationList from '@/Components/NotificationList/NotificationList.vue
 import Profile from "@/Pages/Grp/Profile.vue"
 
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
-
+import { useLayoutStore } from "@/Stores/layout"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle } from '@fas'
 import { faSparkles } from '@fas'
@@ -20,12 +19,11 @@ library.add(faCircle, faLampDesk, faSparkles)
 
 /* const Profile = defineAsyncComponent(() => import("@/Pages/Grp/Profile.vue")) */
 
-
 const props = defineProps<{
     urlPrefix: string
 }>()
 
-const layout = inject('layout', layoutStructure)
+const layout = useLayoutStore()
 const isAskBotEnabled =  import.meta.env.VITE_ASK_BOT_UI;
 // const layoutStore = useLayoutStore()
 const showSearchDialog = ref(false)
@@ -52,7 +50,6 @@ onUnmounted(() => {
 })
 
 const isUserMac = navigator.platform.includes('Mac')  // To check the user's Operating System
-
 </script>
 
 <template>

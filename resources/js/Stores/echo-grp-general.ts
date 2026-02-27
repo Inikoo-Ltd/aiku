@@ -6,9 +6,9 @@
 
 import { defineStore } from 'pinia'
 import { notify } from '@kyvg/vue3-notification'
-import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { usePage } from '@inertiajs/vue3'
 import axios from 'axios'
+import { useLayoutStore } from "@/Stores/layout"
 
 interface NotificationData {
     title: string
@@ -30,8 +30,8 @@ export const useEchoGrpGeneral = defineStore(
                     return
                 }
 
-                const layout = layoutStructure
-
+                const layout = useLayoutStore()
+                
                 window.Echo.private(`grp.${groupId}.general`).
                     listen('.notification', (e: any) => {
                         const data = e.data || e;
@@ -46,12 +46,18 @@ export const useEchoGrpGeneral = defineStore(
                         // Fetch unread notifications from API and update layout structure
                         axios.get(route('grp.models.notifications.unread'))
                             .then((response) => {
-                                if (layout && layout.notifications) {
-                                    layout.notifications = response.data.notifications.map((n: any) => ({
-                                        ...n,
-                                        read: !!n.read_at
-                                    }))
-                                }
+                                
+                            const unreadData = response.data.   notifications.map((n: any) => ({
+                                    ...n,
+                                    read: false
+                                }))
+
+                                const existingRead = layout.notifications.filter(n => n.read)
+
+                                layout.notifications = [
+                                    ...unreadData,
+                                    ...existingRead
+                                ]
                             })
                             .catch((error) => {
                                 console.error('Failed to fetch unread notifications:', error)
