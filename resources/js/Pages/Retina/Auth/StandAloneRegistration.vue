@@ -95,7 +95,8 @@ const submit = () => {
 		form
 		.transform((data) => ({
 			...data,
-			...xxx
+			...xxx,
+			tiktok_code: route().queryParams?.tiktok_code
 		}))
 		.post(route(props.registerRoute.name, props.registerRoute.parameters), {
 			preserveScroll: true,
@@ -205,6 +206,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 
 										<InputText
 											v-model="form.email"
+											@change="() => form.clearErrors('email')"
 											type="email"
 											id="email"
 											name="email"

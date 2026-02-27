@@ -76,10 +76,10 @@ const closePage = () => {
 								<img src="/assets/websites_logo/aw-dropship-uk.avif" alt="AW Dropship UK" />
 							</div>
 							<div class="flex gap-x-2">
-								<a :href="'https://www.aw-dropship.com/app/registration-form?code=' + tiktokCode" target="_blank" class="w-full">
+								<a :href="'https://www.aw-dropship.com/app/registration-form?tiktok_code=' + tiktokCode" target="_blank" class="w-full">
 									<Button label="Register" full type="black" key="" />
 								</a>
-								<a :href="'https://www.aw-dropship.com/app/login?code=' + tiktokCode" target="_blank" class="w-full">
+								<a :href="'https://www.aw-dropship.com/app/login?tiktok_code=' + tiktokCode" target="_blank" class="w-full">
 									<Button label="Login" full type="black" key="" />
 								</a>
 							</div>
@@ -93,10 +93,10 @@ const closePage = () => {
 								<img src="/assets/websites_logo/aw-dropship-eu.avif" alt="AW Dropship EU" />
 							</div>
 							<div class="flex gap-x-2">
-								<a :href="'https://www.aw-dropship.eu/app/registration-form?code=' + tiktokCode" target="_blank" class="w-full">
+								<a :href="'https://www.aw-dropship.eu/app/registration-form?tiktok_code=' + tiktokCode" target="_blank" class="w-full">
 									<Button label="Register" full type="black" key="" />
 								</a>
-								<a :href="'https://www.aw-dropship.eu/app/login?code=' + tiktokCode" target="_blank" class="w-full">
+								<a :href="'https://www.aw-dropship.eu/app/login?tiktok_code=' + tiktokCode" target="_blank" class="w-full">
 									<Button label="Login" full type="black" key="" />
 								</a>
 							</div>
@@ -110,10 +110,10 @@ const closePage = () => {
 								<img src="/assets/websites_logo/aw-dropship-es.avif" alt="AW Dropship ES" />
 							</div>
 							<div class="flex gap-x-2">
-								<a :href="'https://www.aw-dropship.es/app/registration-form?code=' + tiktokCode" target="_blank" class="w-full">
+								<a :href="'https://www.aw-dropship.es/app/registration-form?tiktok_code=' + tiktokCode" target="_blank" class="w-full">
 									<Button label="Register" full type="black" key="" />
 								</a>
-								<a :href="'https://www.aw-dropship.es/app/login?code=' + tiktokCode" target="_blank" class="w-full">
+								<a :href="'https://www.aw-dropship.es/app/login?tiktok_code=' + tiktokCode" target="_blank" class="w-full">
 									<Button label="Login" full type="black" key="" />
 								</a>
 							</div>
@@ -123,16 +123,16 @@ const closePage = () => {
 
 				<div v-else>
 					<div class="text-center">
-						You can close this page and continue your registration.
+						You can close this page and go back to your previous page.
 					</div>
 
-					<div class="mx-auto w-fit mt-2">
+					<!-- <div class="mx-auto w-fit mt-2">
 						<Button
 							label="Close page"
 							type="gray"
 							@click="closePage()"
 						/>
-					</div>
+					</div> -->
 				</div>
 
 			</div>
