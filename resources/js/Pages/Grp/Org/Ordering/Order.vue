@@ -1707,6 +1707,32 @@ const recalculateVat = async () => {
                                 </ul>
                             </div>
 
+                            <!-- Section: Parcels -->
+                            <div class="flex gap-x-1 py-0.5">
+                                <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400 mr-1.5' fixed-width aria-hidden='true' />
+                                <div class=" group w-full pl-px">
+                                    <div class="leading-4 xtext-base flex justify-between w-full py-1">
+                                        <div class="text-gray-500">{{ trans("Parcels") }} ({{ note?.parcels?.length ?? 0 }})</div>
+                                    </div>
+
+                                    <ul v-if="note?.parcels?.length" class="list-disc pl-4 ">
+                                        <li v-for="(parcel, parcelIdx) in note?.parcels" :key="parcelIdx"
+                                            class="tabular-nums">
+                                            <span class="truncate">
+                                                {{ parcel.weight }} kg
+                                            </span>
+
+                                            <span class="text-gray-500 truncate">
+                                                ({{ parcel.dimensions?.[0] }}x{{
+                                                parcel.dimensions?.[1]
+                                                }}x{{ parcel.dimensions?.[2] }}
+                                                cm)
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
                             <!--                            <div v-else class="mt-1 text-xs italic text-gray-400">
                                 {{ trans('No shipments') }}
                             </div>-->
