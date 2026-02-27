@@ -22,6 +22,10 @@ use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\IndexUserActions;
 use App\Actions\SysAdmin\User\UI\IndexUsers;
 use App\Actions\SysAdmin\User\UI\ShowUser;
+use App\Actions\UI\Notification\GetNotificationStateOptions;
+use App\Actions\UI\Notification\GetUsersNotificationSettingOptions;
+use App\Actions\UI\Notification\IndexUsersNotificationSettings;
+use App\Actions\UI\Notification\StoreUsersNotificationSettings;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowSysAdminDashboard::class)->name('dashboard');
@@ -58,3 +62,10 @@ Route::prefix('guests')->as('guests.')->group(function () {
 });
 
 Route::get('/scheduled-tasks', IndexSysAdminScheduledTasks::class)->name('scheduled-tasks.index');
+
+Route::prefix('notification-settings')->as('notification-settings.')->group(function () {
+    Route::get('users', IndexUsersNotificationSettings::class)->name('users');
+    Route::get('users/options', GetUsersNotificationSettingOptions::class)->name('users.options');
+    Route::post('users/store', StoreUsersNotificationSettings::class)->name('users.store');
+    Route::get('state-options', GetNotificationStateOptions::class)->name('state-options');
+});
