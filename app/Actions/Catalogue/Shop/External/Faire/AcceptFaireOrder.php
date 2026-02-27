@@ -18,18 +18,18 @@ class AcceptFaireOrder extends OrgAction
 {
     public $commandSignature = 'faire:order_accepted {order}';
 
-    public function handle(Order $order): array
+    public function handle(Order $order): void
     {
         $shop = $order->shop;
-        $acceptedOrder = $shop->acceptFaireOrder(
-            $order->external_id,
-            [
-                'expected_ship_date' => Carbon::now()->addDays(Arr::get($shop->settings, 'faire.order_from_days', 6))->toIso8601String()
-            ]
-        );
-        DownloadFairePackingPdfSlip::dispatch($order);
-
-        return $acceptedOrder;
+        if (app()->isProduction()) {
+            $shop->acceptFaireOrder(
+                $order->external_id,
+                [
+                    'expected_ship_date' => Carbon::now()->addDays(Arr::get($shop->settings, 'faire.order_from_days', 6))->toIso8601String()
+                ]
+            );
+            DownloadFairePackingPdfSlip::dispatch($order);
+        }
     }
 
     public function asCommand(Command $command): void

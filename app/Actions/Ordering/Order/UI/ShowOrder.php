@@ -377,7 +377,6 @@ class ShowOrder extends OrgAction
                 'shop_type'                   => $order->shop->type,
                 'is_shop_external'            => $this->shop->type == ShopTypeEnum::EXTERNAL,
                 'external_shop'               => $this->shop->type == ShopTypeEnum::EXTERNAL ? [
-                    'xx' => 'xx',
                     'engine_value'            => $this->shop->engine->value,
                     'engine_label'            => ShopEngineEnum::from($this->shop->engine->value)->label(),
                     'external_shipping_label' => $this->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
