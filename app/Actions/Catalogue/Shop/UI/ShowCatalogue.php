@@ -143,11 +143,8 @@ class ShowCatalogue extends OrgAction
         };
     }
 
-    public function getBreadcrumbs(string|array $routeName, array|string|null $routeParameters=[]): array
+    public function getBreadcrumbs(array $routeParameters, ?string $routeName = null): array
     {
-      if(is_array($routeName)){
-          return [];
-      }
         return match ($routeName) {
             'grp.org.shops.show.catalogue.dashboard' => array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
