@@ -8,6 +8,7 @@
 
 namespace App\Console;
 
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrders;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
@@ -306,14 +307,6 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        //        $this->logSchedule(
-        //            $schedule->command('faire:orders')->hourly()->sentryMonitor(
-        //                monitorSlug: 'GetFaireOrders',
-        //            ),
-        //            name: 'GetFaireOrders',
-        //            type: 'command',
-        //            scheduledAt: now()->format('H:i')
-        //        );
 
         $this->logSchedule(
             $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
@@ -438,6 +431,15 @@ class Kernel extends ConsoleKernel
             ),
             name: 'ProcessYearlyTimeSeries',
             type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(GetFaireOrders::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'GetFaireOrders',
+            ),
+            name: 'GetFaireOrders',
+            type: 'job',
             scheduledAt: now()->format('H:i')
         );
 
