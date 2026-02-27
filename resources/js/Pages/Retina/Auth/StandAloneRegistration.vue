@@ -198,23 +198,19 @@ const isUserInputPassed = (dataToCheck: {}) => {
 								</label>
 
 								<div class="mt-2">
-									<!-- make IconField full-width -->
-									<IconField class="w-full">
+									<IconField class="w-full" :class="form.errors.email ? 'errorShake rounded-lg' : ''">
 										<InputIcon>
 											<FontAwesomeIcon :icon="faEnvelope" />
 										</InputIcon>
 
-										<!-- and make the input itself full-width -->
-										<div :class="form.errors.email ? 'errorShake' : ''">
-											<InputText
-												v-model="form.email"
-												type="email"
-												id="email"
-												name="email"
-												class="w-full"
-												xdisabled
-												required />
-										</div>
+										<InputText
+											v-model="form.email"
+											type="email"
+											id="email"
+											name="email"
+											class="w-full"
+											xdisabled
+											required />
 									</IconField>
 
 									<p v-if="form.errors.email" class="text-sm text-red-600 mt-1">
