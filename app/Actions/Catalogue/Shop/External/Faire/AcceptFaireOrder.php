@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Models\Ordering\Order;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 class AcceptFaireOrder extends OrgAction
 {
@@ -23,7 +24,7 @@ class AcceptFaireOrder extends OrgAction
         $acceptedOrder = $shop->acceptFaireOrder(
             $order->external_id,
             [
-                'expected_ship_date' => Carbon::now()->addDays(6)->toIso8601String()
+                'expected_ship_date' => Carbon::now()->addDays(Arr::get($shop->settings, 'faire.order_from_days', 6))->toIso8601String()
             ]
         );
         DownloadFairePackingPdfSlip::dispatch($order);
