@@ -458,7 +458,7 @@ class ShowProduct extends OrgAction
         return match ($routeName) {
             'grp.org.shops.show.catalogue.products.current_products.show' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     $product,
                     [
@@ -477,7 +477,7 @@ class ShowProduct extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.in_process_products.show' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     $product,
                     [
@@ -496,7 +496,7 @@ class ShowProduct extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.orphan_products.show' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     $product,
                     [
@@ -515,7 +515,7 @@ class ShowProduct extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     $product,
                     [
@@ -534,7 +534,7 @@ class ShowProduct extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.out_of_stock_products.show' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     $product,
                     [
@@ -553,7 +553,7 @@ class ShowProduct extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.discontinued_products.show' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     $product,
                     [
@@ -573,7 +573,7 @@ class ShowProduct extends OrgAction
             'grp.org.shops.show.catalogue.products.all_products.show',
             'grp.org.shops.show.catalogue.products.all_products.webpage.create' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     $product,
                     [
