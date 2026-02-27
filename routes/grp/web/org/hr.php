@@ -22,6 +22,9 @@ use App\Actions\HumanResources\Employee\DownloadEmployeesTemplate;
 use App\Actions\HumanResources\Employee\ExportEmployees;
 use App\Actions\HumanResources\Employee\ExportEmployeeTimesheets;
 use App\Actions\HumanResources\Employee\GeneratePinEmployee;
+use App\Actions\HumanResources\Employee\GetEmployeesByBirthMonth;
+use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
+use App\Actions\HumanResources\Employee\GetEmployeeContract;
 use App\Actions\HumanResources\Employee\UI\CreateEmployee;
 use App\Actions\HumanResources\Employee\UI\EditEmployee;
 use App\Actions\HumanResources\Employee\UI\IndexEmployees;
@@ -185,4 +188,10 @@ Route::prefix('adjustments')->as('adjustments.')->group(function () {
 Route::prefix('analytics')->as('analytics.')->group(function () {
     Route::get('', \App\Actions\HumanResources\EmployeeAnalytics\UI\IndexEmployeeAnalytics::class)->name('index');
     Route::get('employees/{employee}', \App\Actions\HumanResources\EmployeeAnalytics\UI\ShowEmployeeAnalytics::class)->name('show');
+});
+
+Route::prefix('employees')->as('employees.')->group(function () {
+    Route::get('birthdays', GetEmployeesByBirthMonth::class)->name('birthdays');
+    Route::patch('{employee}/adjust-leave', AdjustEmployeeLeaveBalance::class)->name('adjust-leave');
+    Route::get('{employee}/contract', GetEmployeeContract::class)->name('contract');
 });
