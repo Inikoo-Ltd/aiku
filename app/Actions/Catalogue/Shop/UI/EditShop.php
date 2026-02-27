@@ -99,8 +99,7 @@ class EditShop extends OrgAction
         $isExternal =  $shop->type === ShopTypeEnum::EXTERNAL;
 
         $allowedBlueprintLabels = [
-            __('Properties'),
-            __('Settings'),
+            __('Faire Settings'),
             __('Shopify Keys'),
             __('Wix Keys'),
         ];
@@ -482,7 +481,7 @@ class EditShop extends OrgAction
                                     'warningBody'    => __('Error Message') . ": " . $shop->external_shop_connection_error
                                 ],
                                 'faire_order_from_days' => [
-                                    'type'  => 'date',
+                                    'type'  => 'input',
                                     'label' => __('Faire Order From Days'),
                                     'value' => Arr::get($shop->settings, 'faire.order_from_days', '6')
                                 ],
