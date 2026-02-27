@@ -35,39 +35,16 @@ class ApplyWebLayoutTemplate extends OrgAction
 
     public function handle(Webpage|WebBlock $parent, WebLayoutTemplate $template, array $modelData): Webpage|WebBlock
     {
-        // TODO MOVE INTO TRAIT (?) OR JUST TIDY THIS UP
+        // TODO 1. MOVE INTO TRAIT (?) OR JUST TIDY THIS UP
+        // TODO 2. NEED TO ADD TEMPLATE FOR WEBBLOCK NEXT (?)
         if ($parent instanceof Webpage) {
-            $this->labeledSaveCurrentLiveSnapshot($parent, $template);
-            $this->reHydrateMissingWebBlock($parent, $template);
+            $this->applyWebpageLayoutTemplate($parent, $template);
         }
 
         return $parent;
     }
 
-    public function reHydrateMissingWebBlock(Webpage $webpage, WebLayoutTemplate $template): void
-    {
-        $webBlockTypes = WebBlockType::whereIn('slug', data_get($template->data, 'web_blocks.*.type', []))->get()->keyBy('slug')->toArray();
-        $listSystemWebBlock = WebBlockSystemEnum::listSystemWebBlock();
-        // dd(data_get($template->data, 'web_blocks', []));
-
-        foreach (data_get($template->data, 'web_blocks', []) as $index => $webBlockFromLayout) {
-            if (!in_array(data_get($webBlockFromLayout, 'type'), $listSystemWebBlock)) {
-                $this->createWebBlock($webpage, data_get($webBlockFromLayout, 'type'));
-            } else {
-                StoreModelHasWebBlock::make()->action($webpage, [
-                    'web_block_type_id' => data_get($webBlockTypes, "{$webBlockFromLayout['type']}.id"),
-                    'layout' => Arr::get($webBlockFromLayout, 'layout', []),
-                    'position' => $index
-                ]);
-            }
-        }
-
-        PublishWebpage::make()->action($webpage, [
-            'comment' => 'Snapshot published'
-        ]);
-    }
-
-    public function labeledSaveCurrentLiveSnapshot(Webpage $webpage, WebLayoutTemplate $template): void
+    public function applyWebpageLayoutTemplate(Webpage $webpage, WebLayoutTemplate $template): void
     {
         UpdateSnapshot::run($webpage->liveSnapshot, [
             'label'           => "Before template update | {$template->label}",
@@ -78,6 +55,32 @@ class ApplyWebLayoutTemplate extends OrgAction
         foreach ($webpage->modelHasWebBlocks as $webBlock) {
             $webBlock->delete();
         }
+
+        // To help understand 
+        // 1. Fetch all webBlockType since it will be used for looping
+        // 2. Fetch all webBlockType that is marked as system type (generated using template) chosen on Website
+        $webBlockTypes = WebBlockType::whereIn('slug', data_get($template->data, 'web_blocks.*.type', []))->get()->keyBy('slug')->toArray();
+        $listSystemWebBlock = WebBlockSystemEnum::listSystemWebBlock();
+
+        foreach (data_get($template->data, 'web_blocks', []) as $index => $webBlockFromLayout) {
+            // 3. Check if its a system-type webBlock, createWebBlock using WithStoreWebpage trait
+            if (!in_array(data_get($webBlockFromLayout, 'type'), $listSystemWebBlock)) {
+                $this->createWebBlock($webpage, data_get($webBlockFromLayout, 'type'));
+            // 4. If it isn't, well, use same logic as we have on SetSnapshotAsLive
+            } else {
+                StoreModelHasWebBlock::make()->action($webpage, [
+                    'web_block_type_id' => data_get($webBlockTypes, "{$webBlockFromLayout['type']}.id"),
+                    'layout' => Arr::get($webBlockFromLayout, 'layout', []),
+                    'position' => $index
+                ]);
+            }
+        }
+
+        // TODO consider publishing after apply template or just make new snapshot w/o publish. Idk. This is honestly the dangerous part
+        // But without PublishWebpage, current webpage would probably crash since we deleted their webblock previously
+        PublishWebpage::make()->action($webpage, [
+            'comment' => "Made snapshot after applying template {$template->label}"
+        ]);
     }
 
     public function asController(Webpage $webpage, WebLayoutTemplate $template, ActionRequest $request): Webpage|WebBlock
