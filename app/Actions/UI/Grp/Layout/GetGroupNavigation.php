@@ -325,6 +325,15 @@ class GetGroupNavigation
                         ]
                     ],
                     [
+                        'tooltip' => __('Notification Setting'),
+                        'icon'    => ['fal', 'fa-bell'],
+                        'label'   => __('Notification Setting'),
+                        'root'    => 'grp.sysadmin.notification-settings.',
+                        'route' => [
+                            'name' => 'grp.sysadmin.notification-settings.users',
+                        ]
+                    ],
+                    [
                         'label' => __('System Settings'),
                         'icon'  => ['fal', 'fa-cog'],
                         'root'  => 'grp.sysadmin.settings.',
