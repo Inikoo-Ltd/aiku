@@ -45,15 +45,15 @@ class StoreWebLayoutTemplate extends OrgAction
 
     public function handleWebpageLayout(Webpage $webpage, array $modelData): array
     {
-        $orders = [];
+        // $orders = [];
         $webBlocks = Arr::pull($modelData, 'block.web_blocks');
 
         data_forget($modelData, 'block');
-        foreach ($webBlocks as $index => $item) {
-            data_set($orders, $item['type'], ['position' => $index]);
-        }
+        // foreach ($webBlocks as $index => $item) {
+        //     data_set($orders, $item['type'], ['position' => $index]);
+        // }
         $data = [];
-        data_set($data, 'orders', $orders);
+        // data_set($data, 'orders', $orders);
         data_set($data, 'web_blocks', $this->parseWebBlockListToLayout($webBlocks));
 
         // Handles layout for Webpage/WebBlock in future
@@ -78,7 +78,7 @@ class StoreWebLayoutTemplate extends OrgAction
             if (!in_array(data_get($item, 'type'), $listSystemWebBlock)) {
                 data_set($keepData, 'layout', data_get($item, 'web_block.layout'));
             }
-            data_set($listWebBlocks, $item['type'], $keepData);
+            data_set($listWebBlocks, $index, $keepData);
         }
 
         return $listWebBlocks;

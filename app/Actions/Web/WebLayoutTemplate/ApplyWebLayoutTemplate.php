@@ -9,16 +9,23 @@
 
 namespace App\Actions\Web\WebLayoutTemplate;
 
+use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
+use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
+use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Actions\Web\Webpage\WithStoreWebpage;
+use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\WebBlockType\WebBlockSystemEnum;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlock;
+use App\Models\Web\WebBlockType;
 use App\Models\Web\WebLayoutTemplate;
 use App\Models\Web\Webpage;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class ApplyWebLayoutTemplate extends OrgAction
@@ -30,52 +37,46 @@ class ApplyWebLayoutTemplate extends OrgAction
     {
         // TODO MOVE INTO TRAIT (?) OR JUST TIDY THIS UP
         if ($parent instanceof Webpage) {
-            $this->hydrateMissingWebBlockFromTemplate($parent, $template);
-            $this->updateWebBlockFromTemplate($parent, $template);
-            $this->normalizeAndReorderWebBlock($parent, $template);
+            $this->labeledSaveCurrentLiveSnapshot($parent, $template);
+            $this->reHydrateMissingWebBlock($parent, $template);
         }
 
         return $parent;
     }
 
-    public function normalizeAndReorderWebBlock(Webpage $webpage, WebLayoutTemplate $template)
+    public function reHydrateMissingWebBlock(Webpage $webpage, WebLayoutTemplate $template): void
     {
-        $positions = $webpage->webBlocks()->with('webBlockType:id,slug')->get()->mapWithKeys(function ($item) use ($template) {
-            return [ $item->id => [
-                'position' => data_get($template->data, "orders.{$item->webBlockType->slug}.position")
-                ]
-            ];
-        })->toArray();
-        ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
-    }
+        $webBlockTypes = WebBlockType::whereIn('slug', data_get($template->data, 'web_blocks.*.type', []))->get()->keyBy('slug')->toArray();
+        $listSystemWebBlock = WebBlockSystemEnum::listSystemWebBlock();
+        // dd(data_get($template->data, 'web_blocks', []));
 
-    public function updateWebBlockFromTemplate(Webpage $webpage, WebLayoutTemplate $template)
-    {
-        $currentWebBlockList = $webpage->webBlocks()->with('webBlockType:id,slug')->get()->keyBy('webBlockType.slug');
-
-        foreach ($currentWebBlockList as $key => $webBlock) {
-            if (in_array($key, WebBlockSystemEnum::listSystemWebBlock())) {
-                continue;
+        foreach (data_get($template->data, 'web_blocks', []) as $index => $webBlockFromLayout) {
+            if (!in_array(data_get($webBlockFromLayout, 'type'), $listSystemWebBlock)) {
+                $this->createWebBlock($webpage, data_get($webBlockFromLayout, 'type'));
+            } else {
+                StoreModelHasWebBlock::make()->action($webpage, [
+                    'web_block_type_id' => data_get($webBlockTypes, "{$webBlockFromLayout['type']}.id"),
+                    'layout' => Arr::get($webBlockFromLayout, 'layout', []),
+                    'position' => $index
+                ]);
             }
-            $templateLayout = data_get($template->data, "web_blocks.{$key}.layout");
-            if ($key == 'luigi-item-alternatives-1' || $key == 'luigi-last-seen-1') {
-                // Handles luigi identity which differents on each webpages
-                $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
-                data_set($templateLayout, 'data.fieldValue.product.luigi_identity', $identity);
-            }
-            UpdateModelHasWebBlocks::make()->action(ModelHasWebBlocks::find($webBlock->pivot->id), ['layout' => $templateLayout]);
         }
 
+        PublishWebpage::make()->action($webpage, [
+            'comment' => 'Snapshot published'
+        ]);
     }
 
-    public function hydrateMissingWebBlockFromTemplate(Webpage $webpage, WebLayoutTemplate $template): void
+    public function labeledSaveCurrentLiveSnapshot(Webpage $webpage, WebLayoutTemplate $template): void
     {
-        $currentWebBlockList = $webpage->webBlocks()->with('webBlockType:id,slug')->get()->keyBy('webBlockType.slug');
+        UpdateSnapshot::run($webpage->liveSnapshot, [
+            'label'           => "Before template update | {$template->label}",
+            'state'           => SnapshotStateEnum::HISTORIC,
+            'published_until' => now()
+        ]);
 
-        // Check & hydrate missing web blocks
-        $missingWebBlock = array_diff(array_keys(data_get($template->data, 'web_blocks', [])), array_keys($currentWebBlockList->toArray()));
-        foreach ($missingWebBlock as $code) {
-            $this->createWebBlock($webpage, $code);
+        foreach ($webpage->modelHasWebBlocks as $webBlock) {
+            $webBlock->delete();
         }
     }
 
