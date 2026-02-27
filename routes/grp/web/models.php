@@ -101,7 +101,6 @@ use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\Prospect\Mailshots\StoreProspectMailshot;
-use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshot;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -749,6 +748,7 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
+    Route::post('prospect/mailshot/{mailshot:id}/send', SendProspectMailShotNow::class)->name('prospect.mailshot.send')->withoutScopedBindings();
     Route::post('website', StoreWebsite::class)->name('website.store');
 
     Route::name('sender_email.')->prefix('sender-email')->group(function () {
@@ -785,7 +785,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
 
     Route::name('outboxes.')->prefix('outboxes/{outbox:id}')->group(function () {
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
-        Route::patch('update', [UpdateOutbox::class,'inShop'])->name('update')->withoutScopedBindings();
+        Route::patch('update', [UpdateOutbox::class, 'inShop'])->name('update')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
@@ -796,7 +796,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('mailshot/{mailshot:id}/send', SendMailShotNow::class)->name('mailshot.send')->withoutScopedBindings();
         Route::post('mailshot/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('mailshot.schedule')->withoutScopedBindings();
         Route::post('mailshot/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('mailshot.cancel-schedule')->withoutScopedBindings();
-
     });
 
     Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
@@ -1154,27 +1153,27 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
 Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
 
 
-require __DIR__.'/models/inventory/warehouse.php';
-require __DIR__.'/models/goods_in/return.php';
-require __DIR__.'/models/inventory/location_org_stock.php';
-require __DIR__.'/models/inventory/warehouse_area.php';
-require __DIR__.'/models/inventory/location.php';
-require __DIR__.'/models/ordering/order.php';
-require __DIR__.'/models/dispatching/delivery_note.php';
-require __DIR__.'/models/dispatching/delivery_note_item.php';
-require __DIR__.'/models/dispatching/sowing.php';
-require __DIR__.'/models/stock/stock.php';
-require __DIR__.'/models/accounting/invoice.php';
-require __DIR__.'/models/accounting/refund.php';
-require __DIR__.'/models/accounting/payment.php';
+require __DIR__ . '/models/inventory/warehouse.php';
+require __DIR__ . '/models/goods_in/return.php';
+require __DIR__ . '/models/inventory/location_org_stock.php';
+require __DIR__ . '/models/inventory/warehouse_area.php';
+require __DIR__ . '/models/inventory/location.php';
+require __DIR__ . '/models/ordering/order.php';
+require __DIR__ . '/models/dispatching/delivery_note.php';
+require __DIR__ . '/models/dispatching/delivery_note_item.php';
+require __DIR__ . '/models/dispatching/sowing.php';
+require __DIR__ . '/models/stock/stock.php';
+require __DIR__ . '/models/accounting/invoice.php';
+require __DIR__ . '/models/accounting/refund.php';
+require __DIR__ . '/models/accounting/payment.php';
 
-require __DIR__.'/models/billables/billables.php';
-require __DIR__.'/models/billables/services.php';
+require __DIR__ . '/models/billables/billables.php';
+require __DIR__ . '/models/billables/services.php';
 
-require __DIR__.'/models/hr/hr.php';
-require __DIR__.'/models/website/webpages.php';
-require __DIR__.'/models/supply_chain/agent.php';
-require __DIR__.'/models/sys_admin/user.php';
-require __DIR__.'/models/fulfilment/fulfilment_customer.php';
-require __DIR__.'/models/fulfilment/stored_item_audit.php';
-require __DIR__.'/models/fulfilment/stored_item_audit_delta.php';
+require __DIR__ . '/models/hr/hr.php';
+require __DIR__ . '/models/website/webpages.php';
+require __DIR__ . '/models/supply_chain/agent.php';
+require __DIR__ . '/models/sys_admin/user.php';
+require __DIR__ . '/models/fulfilment/fulfilment_customer.php';
+require __DIR__ . '/models/fulfilment/stored_item_audit.php';
+require __DIR__ . '/models/fulfilment/stored_item_audit_delta.php';
