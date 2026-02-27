@@ -21,6 +21,8 @@ class RedirectMailshotWorkshopLink extends OrgAction
     {
         if ($mailshot->type == MailshotTypeEnum::NEWSLETTER) {
             return $this->redirectToNewsletter($mailshot);
+        } elseif ($mailshot->type == MailshotTypeEnum::INVITE) {
+            return $this->redirectToProspects($mailshot);
         } else {
             return $this->redirectToMarketing($mailshot);
         }
@@ -48,6 +50,22 @@ class RedirectMailshotWorkshopLink extends OrgAction
         $shop         = $mailshot->shop;
         $route        = [
             'name'       => 'grp.org.shops.show.marketing.mailshots.workshop',
+            'parameters' => [
+                'organisation'      => $organisation->slug,
+                'shop'              => $shop->slug,
+                'mailshot'          => $mailshot->slug
+            ]
+        ];
+
+        return Redirect::route($route['name'], $route['parameters']);
+    }
+
+    protected function redirectToProspects(Mailshot $mailshot): RedirectResponse
+    {
+        $organisation = $mailshot->organisation;
+        $shop         = $mailshot->shop;
+        $route        = [
+            'name'       => 'grp.org.shops.show.crm.prospects.mailshots.workshop',
             'parameters' => [
                 'organisation'      => $organisation->slug,
                 'shop'              => $shop->slug,
