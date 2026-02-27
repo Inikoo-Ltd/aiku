@@ -55,6 +55,13 @@ class UpdateEmployee extends OrgAction
             $contactAddressData = Arr::get($modelData, 'contact_address');
             Arr::forget($modelData, 'contact_address');
 
+            // Extract religion if it's nested inside contact_address
+            if (Arr::has($contactAddressData, 'religion')) {
+                $religion = Arr::pull($contactAddressData, 'religion');
+                if ($religion) {
+                    Arr::set($modelData, 'religion', $religion);
+                }
+            }
 
             if (!blank($contactAddressData)) {
                 if ($employee->address) {
@@ -73,6 +80,14 @@ class UpdateEmployee extends OrgAction
                     'location' => $employee->address->getLocation()
                 ]
             );
+        }
+
+        // Handle religion if it's nested in personal section
+        if (Arr::has($modelData, 'personal.religion')) {
+            $religion = Arr::pull($modelData, 'personal.religion');
+            if ($religion) {
+                Arr::set($modelData, 'religion', $religion);
+            }
         }
 
         if (Arr::has($modelData, 'job_positions')) {
@@ -186,7 +201,10 @@ class UpdateEmployee extends OrgAction
             'notes'                                     => ['sometimes', 'nullable', 'string', 'max:4000'],
             'identity_document_type'                    => ['sometimes', 'nullable', 'string', 'max:256'],
             'identity_document_number'                  => ['sometimes', 'nullable', 'string', 'max:256'],
-
+            'religion'                                  => ['sometimes', 'nullable', 'string', 'max:50'],
+            'bank_account_number'                       => ['sometimes', 'nullable', 'string', 'max:50'],
+            'bank_account_name'                         => ['sometimes', 'nullable', 'string', 'max:100'],
+            'insurance_number'                          => ['sometimes', 'nullable', 'string', 'max:50'],
 
         ];
 
