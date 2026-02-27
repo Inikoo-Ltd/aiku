@@ -22,6 +22,12 @@ class OrderObserver
                 })
                 ->get();
 
+            $users = User::where('status', true)
+                ->whereHas('guests', function ($query) {
+                    $query->where('status', true);
+                })
+                ->get();
+
             Notification::send($users, new OrderStateUpdated($order));
 
             // Broadcast event for realtime toast
