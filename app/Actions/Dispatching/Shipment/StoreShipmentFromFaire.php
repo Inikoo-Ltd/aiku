@@ -11,6 +11,7 @@ use App\Models\Dispatching\Shipper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreShipmentFromFaire extends OrgAction
@@ -36,9 +37,8 @@ class StoreShipmentFromFaire extends OrgAction
         }
 
         if (!$faireShipment) {
-            return null;
+            throw ValidationException::withMessages(['message' => __('No shipment found for this order')]);
         }
-
 
         $shipperCode = Arr::get($faireShipment, 'carrier').'-faire';
         $shipper     = Shipper::where('code', $shipperCode)->where('organisation_id', $deliveryNote->organisation_id)->first();
