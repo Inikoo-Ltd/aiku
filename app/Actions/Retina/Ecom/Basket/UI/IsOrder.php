@@ -128,7 +128,8 @@ trait IsOrder
                     'reference' => $deliveryNote->reference,
                     'type'      => $deliveryNote->type,
                     'parcels'   => $deliveryNote->parcels,
-                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'state'     => $deliveryNote->state,
+                    'state_icon'=> $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
                     'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
             }
