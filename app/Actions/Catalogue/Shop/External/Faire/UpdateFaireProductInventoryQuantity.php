@@ -36,7 +36,7 @@ class UpdateFaireProductInventoryQuantity extends OrgAction
         $shop->updateInventoryQuantity($inventories);
     }
 
-    public string $commandSignature = 'faire:inventory{model}';
+    public string $commandSignature = 'faire:inventory {model}';
 
     public function asCommand(Command $command): int
     {
