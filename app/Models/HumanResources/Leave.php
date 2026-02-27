@@ -22,6 +22,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property \Illuminate\Support\Carbon $start_date
  * @property \Illuminate\Support\Carbon $end_date
  * @property int $duration_days
+ * @property bool $is_half_day
+ * @property string $session
  * @property string|null $reason
  * @property LeaveStatusEnum $status
  * @property int|null $approved_by
@@ -57,6 +59,7 @@ class Leave extends Model implements HasMedia
         'type'         => LeaveTypeEnum::class,
         'status'       => LeaveStatusEnum::class,
         'data'         => 'array',
+        'is_half_day'  => 'boolean',
     ];
 
     protected $guarded = [];
