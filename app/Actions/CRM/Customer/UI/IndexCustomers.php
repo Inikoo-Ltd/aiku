@@ -26,6 +26,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasSearchableText;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -39,6 +40,7 @@ class IndexCustomers extends OrgAction
 {
     use WithCustomersSubNavigation;
     use WithCRMAuthorisation;
+    use HasSearchableText;
 
     private Group|Shop|Organisation $parent;
 
@@ -96,7 +98,7 @@ class IndexCustomers extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
             $query->where(function ($query) use ($value, $parent) {
-                $value = escapeSQLSearch($value);
+                $value = $this->normalizeSearchableText($value);
 
                 // Ignore if search token is less than 2 words
                 $searchTokens = array_values(array_filter(

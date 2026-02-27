@@ -31,7 +31,6 @@ class GetFaireOrders extends OrgAction
      */
     public function handle(Shop $shop): void
     {
-
         $filters = [
             'created_at_min' => Carbon::parse('2026-02-01')->toIsoString(),
         ];
@@ -43,9 +42,6 @@ class GetFaireOrders extends OrgAction
 
 
         foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
-
-
-
             $externalId = Arr::get($faireOrder, 'id');
             $retailerId = Arr::get($faireOrder, 'retailer_id');
             $retailer   = GetFaireRetailers::run($shop, $retailerId);
@@ -91,16 +87,15 @@ class GetFaireOrders extends OrgAction
 
                 $orderData = [
                     'is_shipping_by_external' => Arr::get($shop->settings, 'is_shipping_by_external'),
-                    'external_id'         => $externalId,
-                    'marketplace_id'      => $externalId,
-                    'reference'           => $faireOrder['display_id'],
-                    'created_at'          => Carbon::parse(Arr::get($faireOrder, 'created_at'))->toDateTimeString(),
-                    'billing_address'     => $address,
-                    'delivery_address'    => $address,
-                    'is_shipping_by_external'   => true,
-                    'commission_amount'   => $orderCommission,
-                    'pay_status'          => OrderPayStatusEnum::UNPAID->value,
-                    'pay_detailed_status' => OrderPayDetailedStatusEnum::UNPAID->value
+                    'external_id'             => $externalId,
+                    'marketplace_id'          => $externalId,
+                    'reference'               => $faireOrder['display_id'],
+                    'created_at'              => Carbon::parse(Arr::get($faireOrder, 'created_at'))->toDateTimeString(),
+                    'billing_address'         => $address,
+                    'delivery_address'        => $address,
+                    'commission_amount'       => $orderCommission,
+                    'pay_status'              => OrderPayStatusEnum::UNPAID->value,
+                    'pay_detailed_status'     => OrderPayDetailedStatusEnum::UNPAID->value
                 ];
 
                 $transactionsData = [];
@@ -171,7 +166,7 @@ class GetFaireOrders extends OrgAction
                         );
                     }
 
-                    $order     = SubmitOrder::make()->action($order);
+                    $order = SubmitOrder::make()->action($order);
                     /** @var \App\Models\Inventory\Warehouse $warehouse */
                     $warehouse = $order->shop->organisation->warehouses()->first();
                     SendOrderToWarehouse::make()->action($order, [
@@ -179,8 +174,6 @@ class GetFaireOrders extends OrgAction
                     ]);
 
                     AcceptFaireOrder::run($order);
-
-
                 }
             }
         }
@@ -221,6 +214,7 @@ class GetFaireOrders extends OrgAction
             ->where('engine', ShopEngineEnum::FAIRE)
             ->get();
 
+        /** @var Shop $shop */
         foreach ($shops as $shop) {
             if (Arr::has($shop->settings, 'faire.access_token')) {
                 $this->handle($shop);

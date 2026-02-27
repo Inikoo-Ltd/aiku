@@ -13,37 +13,48 @@ import ColorPicker from './ColorPicker.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from 'laravel-vue-i18n'
+import SideEditorInputHTML from '@/Components/CMS/Fields/SideEditorInputHTML.vue'
 
 library.add(faTrashAlt)
 
 const props = defineProps({
-    modelValue: {
-        type: Object,
-        default: () => ({})
-    }
+    modelValue: { type: Object, default: () => ({}) }
 })
-
+console.log('model', props.modelValue)
 const emit = defineEmits(['update:modelValue'])
+
 
 const cards = computed({
     get: () => props.modelValue ?? {},
-    set: (val) => emit('update:modelValue', val)
+    set: (val) => {
+        console.log('changed -> emit', val)
+        emit('update:modelValue', val)
+    }
+})
+
+
+const defaultButton = () => ({
+    show: true,
+    text: 'Shop Now',
+    link: '',
+    width: 'auto',
+    customWidth: 200,
+    align: 'center',
+    paddingX: 20,
+    paddingY: 10,
+    bgColor: '#000000',
+    textColor: '#ffffff',
+    radius: 6
 })
 
 const createDefaultCard = () => ({
     enabled: true,
     hideCard: false,
-    titles: [
-        {
-            text: 'Example', color: '#000000', align: 'center',
-            vertical: 'middle', fontSize: 32, offsetX: 0,
-            offsetY: 0
-        }
-    ],
+    titles: [{ text: '<h3>NEW IN</h3><p>Nymph gemstone rings</p>' }],
     horizontal: 'center',
     vertical: 'middle',
     width: 50,
-    height: 50,
+    height: 160,
     padding: 30,
     radius: 10,
     opacity: 1,
@@ -54,40 +65,60 @@ const createDefaultCard = () => ({
     titleColor: '#000000',
     subtitleColor: '#333333',
     offsetX: 0,
-    offsetY: 0
+    offsetY: 0,
+    button: defaultButton()
 })
 
-const addTitle = (key: string) => {
-    if (!cards.value[key].titles) {
-        cards.value[key].titles = []
+
+const updateCards = (newCards: any) => {
+    cards.value = { ...newCards }
+}
+
+const updateCard = (key: string, patch: any) => {
+    const newCards = { ...cards.value }
+
+    newCards[key] = {
+        ...newCards[key],
+        ...patch
     }
 
-    cards.value[key].titles.push({
-        text: '',
-        color: '#000000',
-        align: 'center',
-        vertical: 'middle',
-        fontSize: 32,
-        offsetX: 0,
-        offsetY: 0
+    cards.value = newCards
+}
+
+const updateButton = (key: string, patch: any) => {
+    const card = cards.value[key]
+
+    updateCard(key, {
+        button: {
+            ...defaultButton(),
+            ...(card.button || {}),
+            ...patch
+        }
     })
 }
 
-const removeTitle = (cardKey: string, index: number) => {
-    cards.value[cardKey].titles.splice(index, 1)
-}
+const updateTitle = (key: string, index: number, val: any) => {
+    const newCards = { ...cards.value }
+    const titles = [...(newCards[key].titles || [])]
 
-const addCard = () => {
-    const safeCards = { ...(cards.value || {}) }
-
-    let index = 1
-    while (safeCards[`card${index}`]) {
-        index++
+    titles[index] = {
+        ...titles[index],
+        ...val
     }
 
-    safeCards[`card${index}`] = createDefaultCard()
+    newCards[key].titles = titles
+    cards.value = newCards
+}
 
-    cards.value = safeCards
+
+const addCard = () => {
+    const newCards = { ...cards.value }
+
+    let i = 1
+    while (newCards[`card${i}`]) i++
+
+    newCards[`card${i}`] = createDefaultCard()
+    cards.value = newCards
 }
 
 const removeCard = (key: string) => {
@@ -95,22 +126,64 @@ const removeCard = (key: string) => {
     delete newCards[key]
     cards.value = newCards
 }
+
+const addTitle = (key: string) => {
+    const newCards = { ...cards.value }
+    const titles = [...(newCards[key].titles || [])]
+
+    titles.push({ text: '' })
+    newCards[key].titles = titles
+    cards.value = newCards
+}
+
+const removeTitle = (key: string, index: number) => {
+    const newCards = { ...cards.value }
+    const titles = [...(newCards[key].titles || [])]
+
+    titles.splice(index, 1)
+    newCards[key].titles = titles
+    cards.value = newCards
+}
+
+const ensureButton = (card: any) => {
+    if (!card.button || typeof card.button !== 'object') {
+        card.button = defaultButton()
+        return
+    }
+
+    // merge jika sebagian field hilang (data lama)
+    card.button = {
+        ...defaultButton(),
+        ...card.button
+    }
+}
+
+const normalizedCards = computed(() => {
+    const obj = cards.value || {}
+
+    Object.keys(obj).forEach(key => {
+        ensureButton(obj[key])
+    })
+
+    return obj
+})
 </script>
 
 <template>
     <div class="space-y-4">
 
-        <!-- ADD BUTTON -->
+        <!-- ADD -->
         <Button label="Add Card" type="primary" full icon="fas fa-plus" @click="addCard" class="w-full" />
 
-        <!-- EMPTY STATE -->
+        <!-- EMPTY -->
         <div v-if="Object.keys(cards ?? {}).length === 0" class="text-center text-gray-400">
             {{ trans("No cards added yet") }}
         </div>
 
-        <!-- CARDS -->
         <div class="shadow-lg">
-            <Card v-for="(card, key) in cards" :key="key" class="shadow-2 border-round-xl">
+
+            <Card v-for="(card, key) in normalizedCards" :key="key" class="shadow-2 border-round-xl">
+
                 <template #title>
                     <div class="flex justify-between items-center">
                         <span>{{ key }}</span>
@@ -123,40 +196,50 @@ const removeCard = (key: string) => {
 
                         <!-- ENABLE -->
                         <div class="flex gap-3">
-                            <ToggleButton v-model="card.enabled" onLabel="Enabled Card" offLabel="Disabled Card" />
-                            <ToggleButton v-model="card.hideCard" onLabel="Hide Background"
+                            <ToggleButton :modelValue="card.enabled" @update:modelValue="v => updateCard(key, { enabled: v })"
+                                onLabel="Enabled Card" offLabel="Disabled Card" />
+
+                            <ToggleButton :modelValue="card.hideCard"
+                                @update:modelValue="v => updateCard(key, { hideCard: v })" onLabel="Hide Background"
                                 offLabel="Show Background" />
-                            <ToggleButton v-model="card.shadow" onLabel="Shadow On" offLabel="Shadow Off" />
+
+                            <ToggleButton :modelValue="card.shadow" @update:modelValue="v => updateCard(key, { shadow: v })"
+                                onLabel="Shadow On" offLabel="Shadow Off" />
                         </div>
 
                         <Divider />
 
-                        <!-- SIZE CONTROLS -->
+                        <!-- SIZE -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                             <div>
                                 <label class="block mb-2">Width ({{ card.width }}%)</label>
-                                <Slider v-model="card.width" :min="10" :max="100" :step="10" />
+                                <Slider :modelValue="card.width" @update:modelValue="v => updateCard(key, { width: v })"
+                                    :min="10" :max="100" :step="10" />
                             </div>
 
                             <div>
                                 <label class="block mb-2">Height ({{ card.height }}px)</label>
-                                <Slider v-model="card.height" :min="10" :max="800" :step="10" />
+                                <Slider :modelValue="card.height" @update:modelValue="v => updateCard(key, { height: v })"
+                                    :min="10" :max="800" :step="10" />
                             </div>
 
                             <div>
                                 <label class="block mb-2">Padding ({{ card.padding }}px)</label>
-                                <Slider v-model="card.padding" :min="10" :max="100" :step="5" />
+                                <Slider :modelValue="card.padding" @update:modelValue="v => updateCard(key, { padding: v })"
+                                    :min="10" :max="100" :step="5" />
                             </div>
 
                             <div>
                                 <label class="block mb-2">Border Radius ({{ card.radius }}px)</label>
-                                <Slider v-model="card.radius" :min="0" :max="50" :step="1" />
+                                <Slider :modelValue="card.radius" @update:modelValue="v => updateCard(key, { radius: v })"
+                                    :min="0" :max="50" />
                             </div>
 
                             <div>
-                                <label class="block mb-2">Opacity/Transparency ({{ card.opacity }})</label>
-                                <Slider v-model="card.opacity" :min="0" :max="1" :step="0.1" />
+                                <label class="block mb-2">Opacity ({{ card.opacity }})</label>
+                                <Slider :modelValue="card.opacity" @update:modelValue="v => updateCard(key, { opacity: v })"
+                                    :min="0" :max="1" :step="0.1" />
                             </div>
 
                         </div>
@@ -166,7 +249,8 @@ const removeCard = (key: string) => {
                         <!-- COLOR -->
                         <div>
                             <label class="block mb-2 font-medium">Background</label>
-                            <ColorPicker v-model="card.background" />
+                            <ColorPicker :modelValue="card.background"
+                                @update:modelValue="v => updateCard(key, { background: v })" />
                         </div>
 
                         <Divider />
@@ -177,170 +261,148 @@ const removeCard = (key: string) => {
                             <div>
                                 <label class="block mb-2 font-medium">Horizontal</label>
                                 <div class="flex gap-3">
-                                    <RadioButton v-model="card.horizontal" value="left" />
-                                    <label>Left</label>
-
-                                    <RadioButton v-model="card.horizontal" value="center" />
-                                    <label>Center</label>
-
-                                    <RadioButton v-model="card.horizontal" value="right" />
-                                    <label>Right</label>
+                                    <RadioButton :modelValue="card.horizontal" value="left"
+                                        @update:modelValue="v => updateCard(key, { horizontal: v })" /><label>Left</label>
+                                    <RadioButton :modelValue="card.horizontal" value="center"
+                                        @update:modelValue="v => updateCard(key, { horizontal: v })" /><label>Center</label>
+                                    <RadioButton :modelValue="card.horizontal" value="right"
+                                        @update:modelValue="v => updateCard(key, { horizontal: v })" /><label>Right</label>
                                 </div>
                             </div>
 
                             <div>
                                 <label class="block mb-2 font-medium">Vertical</label>
                                 <div class="flex gap-3">
-                                    <RadioButton v-model="card.vertical" value="top" />
-                                    <label>Top</label>
-
-                                    <RadioButton v-model="card.vertical" value="middle" />
-                                    <label>Middle</label>
-
-                                    <RadioButton v-model="card.vertical" value="bottom" />
-                                    <label>Bottom</label>
+                                    <RadioButton :modelValue="card.vertical" value="top"
+                                        @update:modelValue="v => updateCard(key, { vertical: v })" /><label>Top</label>
+                                    <RadioButton :modelValue="card.vertical" value="middle"
+                                        @update:modelValue="v => updateCard(key, { vertical: v })" /><label>Middle</label>
+                                    <RadioButton :modelValue="card.vertical" value="bottom"
+                                        @update:modelValue="v => updateCard(key, { vertical: v })" /><label>Bottom</label>
                                 </div>
                             </div>
-
                         </div>
 
                         <Divider />
 
+                        <!-- OFFSET -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                             <div>
-                                <label class="block mb-2">
-                                    Adjust Horizontal Position Card ({{ card.offsetX }}px)
-                                </label>
-                                <Slider v-model="card.offsetX" :min="-800" :max="800" :step="1" />
+                                <label class="block mb-2">Adjust Horizontal ({{ card.offsetX }}px)</label>
+                                <Slider :modelValue="card.offsetX" @update:modelValue="v => updateCard(key, { offsetX: v })"
+                                    :min="-800" :max="800" />
                             </div>
-
                             <div>
-                                <label class="block mb-2">
-                                    Adjust Vertical Position Card ({{ card.offsetY }}px)
-                                </label>
-                                <Slider v-model="card.offsetY" :min="-800" :max="800" :step="1" />
+                                <label class="block mb-2">Adjust Vertical ({{ card.offsetY }}px)</label>
+                                <Slider :modelValue="card.offsetY" @update:modelValue="v => updateCard(key, { offsetY: v })"  :min="-800" :max="800" />
                             </div>
-
                         </div>
 
                         <Divider />
 
                         <!-- TEXT -->
                         <div class="space-y-3">
-                            <div>
-                                <label class="block mb-2 font-medium">Texts</label>
+                            <label class="block mb-2 font-medium">Texts</label>
+                            <div v-for="(item, index) in (card.titles || [])" :key="index"
+                                class="space-y-2 mb-4 border p-3 rounded">
 
-                                <div v-for="(item, index) in (card.titles || [])" :key="index"
-                                    class="space-y-2 mb-4 border p-3 rounded">
-                                    <InputText v-model="item.text" class="w-full" placeholder="Enter title" />
+                                <SideEditorInputHTML :modelValue="item.text"
+                                    @update:modelValue="v => updateTitle(key, index, { text: v })" class="w-full" />
+                            </div>
+                        </div>
 
-                                    <ColorPicker v-model="item.color" />
+                        <Divider />
 
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- BUTTON -->
+                        <div class="space-y-3">
+                            <label class="block mb-2 font-medium">Button</label>
 
-                                        <!-- Horizontal -->
-                                        <div>
-                                            <label class="block mb-1 text-sm font-semibold">Horizontal Position</label>
+                            <ToggleButton :modelValue="card.button.show"
+                                @update:modelValue="v => updateButton(key, { show: v })" onLabel="Button Visible"
+                                offLabel="Button Hidden" />
 
-                                            <div class="flex gap-4 items-center">
+                            <div v-if="card.button.show" class="space-y-4 border rounded p-3">
 
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.align"
-                                                        :inputId="`align-left-${key}-${index}`" value="left" />
-                                                    <label :for="`align-left-${key}-${index}`" class="cursor-pointer">
-                                                        Left
-                                                    </label>
-                                                </div>
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.align"
-                                                        :inputId="`align-center-${key}-${index}`" value="center" />
-                                                    <label :for="`align-center-${key}-${index}`" class="cursor-pointer">
-                                                        Center
-                                                    </label>
-                                                </div>
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.align"
-                                                        :inputId="`align-right-${key}-${index}`" value="right" />
-                                                    <label :for="`align-right-${key}-${index}`" class="cursor-pointer">
-                                                        Right
-                                                    </label>
-                                                </div>
-
-                                            </div>
-                                        </div>
-
-                                        <!-- Vertical -->
-                                        <div>
-                                            <label class="block mb-1 text-sm font-semibold">Vertical Position</label>
-
-                                            <div class="flex gap-4 items-center">
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.vertical"
-                                                        :inputId="`vertical-top-${key}-${index}`" value="top" />
-                                                    <label :for="`vertical-top-${key}-${index}`" class="cursor-pointer">
-                                                        Top
-                                                    </label>
-                                                </div>
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.vertical"
-                                                        :inputId="`vertical-middle-${key}-${index}`" value="middle" />
-                                                    <label :for="`vertical-middle-${key}-${index}`"
-                                                        class="cursor-pointer">
-                                                        Middle
-                                                    </label>
-                                                </div>
-
-                                                <div class="flex items-center gap-1">
-                                                    <RadioButton v-model="item.vertical"
-                                                        :inputId="`vertical-bottom-${key}-${index}`" value="bottom" />
-                                                    <label :for="`vertical-bottom-${key}-${index}`"
-                                                        class="cursor-pointer">
-                                                        Bottom
-                                                    </label>
-                                                </div>
-
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-4">
-                                            <label class="block text-sm mb-1">
-                                                Font Size ({{ item.fontSize }}px)
-                                            </label>
-                                            <Slider v-model="item.fontSize" :min="12" :max="120" :step="1" />
-                                        </div>
-
-                                        <div>
-                                            <label class="block text-sm mb-1">
-                                                Adjust Horizontal Position ({{ item.offsetX }}px)
-                                            </label>
-                                            <Slider v-model="item.offsetX" :min="-500" :max="500" :step="1" />
-                                        </div>
-
-                                        <div>
-                                            <label class="block text-sm mb-1">
-                                                Adjust Vertical Position ({{ item.offsetY }}px)
-                                            </label>
-                                            <Slider v-model="item.offsetY" :min="-500" :max="500" :step="1" />
-                                        </div>
-                                    </div>
-
-                                    <Button label="Remove Text" size="sm" :icon="faTrashAlt" type="red"
-                                        @click="removeTitle(key, index)" v-if="card.titles.length > 1" />
+                                <div>
+                                    <label class="block mb-2 font-medium">Button Text</label>
+                                    <InputText :modelValue="card.button.text"
+                                        @update:modelValue="v => updateButton(key, { text: v })" class="w-full" />
                                 </div>
 
-                                <Button label="Add Text" type="primary" full icon="fas fa-plus"
-                                    @click="addTitle(key)" />
+                                <div>
+                                    <label class="block mb-2 font-medium">Button Link</label>
+                                    <InputText :modelValue="card.button.link"
+                                        @update:modelValue="v => updateButton(key, { link: v })" class="w-full" />
+                                </div>
+
+                                <div>
+                                    <label class="block mb-2 font-medium">Align</label>
+                                    <div class="flex gap-4">
+                                        <RadioButton :modelValue="card.button.align" value="left"
+                                            @update:modelValue="v => updateButton(key, { align: v })" /><label>Left</label>
+                                        <RadioButton :modelValue="card.button.align" value="center"
+                                            @update:modelValue="v => updateButton(key, { align: v })" /><label>Center</label>
+                                        <RadioButton :modelValue="card.button.align" value="right"
+                                            @update:modelValue="v => updateButton(key, { align: v })" /><label>Right</label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block mb-2 font-medium">Width</label>
+                                    <div class="flex gap-4">
+                                        <RadioButton :modelValue="card.button.width" value="auto"
+                                            @update:modelValue="v => updateButton(key, { width: v })" /><label>Auto</label>
+                                        <RadioButton :modelValue="card.button.width" value="full"
+                                            @update:modelValue="v => updateButton(key, { width: v })" /><label>Full</label>
+                                        <RadioButton :modelValue="card.button.width" value="custom"
+                                            @update:modelValue="v => updateButton(key, { width: v })" /><label>Custom</label>
+                                    </div>
+                                </div>
+
+                                <div v-if="card.button.width === 'custom'">
+                                    <label class="block mb-2">Custom Width ({{ card.button.customWidth }}px)</label>
+                                    <Slider :modelValue="card.button.customWidth"
+                                        @update:modelValue="v => updateButton(key, { customWidth: v })" :min="50"
+                                        :max="600" />
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block mb-2">Padding X</label>
+                                        <Slider :modelValue="card.button.paddingX"
+                                            @update:modelValue="v => updateButton(key, { paddingX: v })" :min="0" :max="80" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-2">Padding Y</label>
+                                        <Slider :modelValue="card.button.paddingY"
+                                            @update:modelValue="v => updateButton(key, { paddingY: v })" :min="0" :max="60" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block mb-2">Radius</label>
+                                    <Slider :modelValue="card.button.radius"
+                                        @update:modelValue="v => updateButton(key, { radius: v })" :min="0" :max="40" />
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block mb-2">Background</label>
+                                        <ColorPicker :modelValue="card.button.bgColor"
+                                            @update:modelValue="v => updateButton(key, { bgColor: v })" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-2">Text Color</label>
+                                        <ColorPicker :modelValue="card.button.textColor"
+                                            @update:modelValue="v => updateButton(key, { textColor: v })" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </template>
             </Card>
-        </div>
 
+        </div>
     </div>
 </template>

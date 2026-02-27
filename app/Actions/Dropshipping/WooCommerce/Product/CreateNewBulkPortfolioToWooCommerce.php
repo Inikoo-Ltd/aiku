@@ -22,6 +22,8 @@ class CreateNewBulkPortfolioToWooCommerce extends RetinaAction
     use AsAction;
     use WithAttributes;
 
+    public string $jobQueue = 'woo';
+
     /**
      * @throws \Exception
      */
@@ -45,7 +47,7 @@ class CreateNewBulkPortfolioToWooCommerce extends RetinaAction
 
 
         foreach ($portfolios as $portfolio) {
-            $portfolio = StoreWooCommerceProduct::run($wooCommerceUser, $portfolio);
+            $portfolio = StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio);
 
             if ($portfolio->platform_status) {
                 Cache::increment($cacheKey . '_success');

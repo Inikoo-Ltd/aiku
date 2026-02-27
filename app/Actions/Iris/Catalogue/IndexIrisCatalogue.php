@@ -274,7 +274,7 @@ class IndexIrisCatalogue extends IrisAction
 
 
             foreach ($columns as $column) {
-                $table->column(key: $column['key'], label: $column['label'], tooltip: __('current ' . strtolower($column['label'])), sortable: $column['sortable']);
+                $table->column(key: $column['key'], label: $column['label'], tooltip: __('current :colLabel', ['colLabel' => strtolower($column['label'])]), sortable: $column['sortable']);
             }
 
             $table->column(key: 'url', label: __('Go To Url'), align: 'right');

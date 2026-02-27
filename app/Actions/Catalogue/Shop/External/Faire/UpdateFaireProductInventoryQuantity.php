@@ -10,6 +10,8 @@ use Illuminate\Console\Command;
 
 class UpdateFaireProductInventoryQuantity extends OrgAction
 {
+    public int $jobTries = 1;
+
     public function handle(Product $product): void
     {
         if (!$product->marketplace_id) {
@@ -34,7 +36,7 @@ class UpdateFaireProductInventoryQuantity extends OrgAction
         $shop->updateInventoryQuantity($inventories);
     }
 
-    public string $commandSignature = 'faire:inventory{model}';
+    public string $commandSignature = 'faire:inventory {model}';
 
     public function asCommand(Command $command): int
     {
