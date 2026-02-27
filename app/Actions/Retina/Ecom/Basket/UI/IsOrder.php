@@ -128,7 +128,8 @@ trait IsOrder
                     'reference' => $deliveryNote->reference,
                     'type'      => $deliveryNote->type,
                     'parcels'   => $deliveryNote->parcels,
-                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'state'     => $deliveryNote->state,
+                    'state_icon'=> $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
                     'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
             }
@@ -243,7 +244,7 @@ trait IsOrder
 
         return [
             'customer_client'  => $customerClientData,
-            'customer'         => array_merge(
+            'customer'         => $order->customer ? array_merge(
                 CustomerResource::make($order->customer)->getArray(),
                 [
                     'addresses' => [
@@ -259,7 +260,7 @@ trait IsOrder
                         ]
                     ]
                 ]
-            ),
+            ) : [],
             'customer_channel' => $customerChannel,
             'invoices'         => $invoicesData,
 

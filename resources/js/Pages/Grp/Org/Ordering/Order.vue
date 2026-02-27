@@ -93,6 +93,7 @@ import error from "@/Components/Utils/Error.vue"
 import order from "@/Pages/Grp/Org/Ordering/Order.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
+import { Icon as IconTS } from "@/types/Utils/Icon"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -208,7 +209,14 @@ const props = defineProps<{
         order_summary: {}
         payments: {}[]
         delivery_notes?: {
-            data: Array<any>
+            id: number
+            slug: string
+            reference: string
+            type: string
+            parcels: string
+            state: string
+            state_icon: IconTS
+            shipments: {}
         },
         shipping_notes: string
     }
@@ -1094,6 +1102,38 @@ const recalculateVat = async () => {
         })
 }
 
+
+// Section: Get shipment from Faire/Tiktok
+const getShipmentFromPlatform = (deliveryNote: {}) => {
+    
+    const faire = {
+        label: trans('Get shipment from Faire'),
+        routeShipment: {
+            name: 'grp.models.delivery_note.shipment.store_faire',
+            parameters: {
+                deliveryNote: deliveryNote.id
+            }
+        }
+    }
+
+    const tiktok = {
+        label: trans('Get shipment from Tiktok'),
+        routeShipment: {
+            name: 'grp.models.delivery_note.shipment.store_tiktok',
+            parameters: {
+                deliveryNote: deliveryNote.id
+            }
+        }
+    }
+    
+    if (props.external_shop?.engine_value === 'faire') {
+        return faire
+    } else if (props.external_shop?.engine_value === 'tiktok') {
+        return tiktok
+    } else {
+        return null
+    }
+}
 </script>
 
 <template>
@@ -1648,8 +1688,6 @@ const recalculateVat = async () => {
                                 </div>
                             </div>
                         </div>
-
-
                     </dl>
 
 
@@ -1676,8 +1714,8 @@ const recalculateVat = async () => {
                                 }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                    {{ trans(note?.state?.tooltip) }}
-                                    <Icon :data="note?.state" />
+                                    {{ trans(note?.state_icon?.tooltip) }}
+                                    <Icon :data="note?.state_icon" />
                                 </span>
                             </div>
 
@@ -1705,6 +1743,24 @@ const recalculateVat = async () => {
                                         </span>
                                     </li>
                                 </ul>
+                            </div>
+
+                            <!-- Button: Get shipment from Faire/Tiktok -->
+                            <div
+                                v-if="getShipmentFromPlatform(note) && ['packed', 'finalised', 'dispatched'].includes(note.state) && props.delivery_address_management.addresses.is_shipping_by_external && !note?.shipments?.length"
+                                class="flex items-center gap-2 text-sm mb-1"
+                            >
+                                <ButtonWithLink
+                                    :label="getShipmentFromPlatform(note)?.label"
+                                    method="post"
+                                    :url="(route(getShipmentFromPlatform(note)?.name, getShipmentFromPlatform(note)?.parameters) as string)"
+                                    icon="fas fa-plus"
+                                    size="xs"
+                                    type="dashed"
+                                    :bindToLink="{
+                                        only: ['pageHead']
+                                    }"
+                                />
                             </div>
 
                             <!-- Section: Parcels -->
