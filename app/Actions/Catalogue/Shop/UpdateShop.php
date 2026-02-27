@@ -116,8 +116,9 @@ class UpdateShop extends OrgAction
                     'ebay_warehouse_state' => 'settings.ebay.warehouse_state',
                     'ebay_warehouse_country' => 'settings.ebay.warehouse_country',
                     'faire_access_token'    => 'settings.faire.access_token',
-                    'faire_order_from_date'    => 'settings.faire.order_from_date',
-                    'is_shipping_by_external'  => 'settings.is_shipping_by_external',
+                    'faire_order_from_days'    => 'settings.faire.order_from_days',
+                    'faire_is_shipping_by_external'    => 'settings.faire.is_shipping_by_external',
+                    'faire_send_orders_automatically_to_warehouse'    => 'settings.faire.send_orders_automatically_to_warehouse',
                     'wix_access_token'    => 'settings.wix.access_token',
                     'enable_chat'  => 'settings.chat.enable_chat',
                     'portal_link'   => 'settings.portal.link',
@@ -139,7 +140,9 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'ebay_warehouse_city');
         data_forget($modelData, 'ebay_warehouse_state');
         data_forget($modelData, 'faire_access_token');
-        data_forget($modelData, 'faire_order_from_date');
+        data_forget($modelData, 'faire_order_from_days');
+        data_forget($modelData, 'faire_is_shipping_by_external');
+        data_forget($modelData, 'faire_send_orders_automatically_to_warehouse');
         data_forget($modelData, 'is_shipping_by_external');
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
@@ -344,6 +347,9 @@ class UpdateShop extends OrgAction
             'ebay_warehouse_state'         => ['sometimes', 'string'],
             'ebay_warehouse_country'       => ['sometimes', 'string'],
             'faire_access_token'           => ['sometimes', 'string'],
+            'faire_order_from_days'        => ['sometimes', 'string'],
+            'faire_is_shipping_by_external'=> ['sometimes', 'boolean'],
+            'faire_send_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
             'wix_access_token'             => ['sometimes', 'string'],
             'enable_chat'                  => ['sometimes', 'boolean'],
             'is_shipping_by_external'      => ['sometimes', 'boolean'],

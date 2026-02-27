@@ -99,12 +99,8 @@ class EditShop extends OrgAction
         $isExternal =  $shop->type === ShopTypeEnum::EXTERNAL;
 
         $allowedBlueprintLabels = [
-            __('Shop details'),
-            __('Properties'),
-            __('Languages'),
             __('Faire Settings'),
             __('Shopify Keys'),
-            __('Shipping'),
             __('Wix Keys'),
         ];
         $salesChannels = SalesChannel::orderBy('id', 'asc')->get();
@@ -435,11 +431,6 @@ class EditShop extends OrgAction
                             'labelProp'   => 'label',
                             'valueProp'   => 'id'
                         ],
-                        'is_shipping_by_external' => [
-                            'type'          => 'toggle',
-                            'label'         => __('Shipping by external service'),
-                            'value' => Arr::get($shop->settings, 'is_shipping_by_external', false)
-                        ]
                     ],
                 ],
                 $shop->type === ShopTypeEnum::DROPSHIPPING ? [
@@ -489,10 +480,20 @@ class EditShop extends OrgAction
                                     'warningTitle'   => __('We are having troubles connecting to the platform'),
                                     'warningBody'    => __('Error Message') . ": " . $shop->external_shop_connection_error
                                 ],
-                                'faire_order_from_date' => [
-                                    'type'  => 'date',
-                                    'label' => __('Faire Order From Date'),
-                                    'value' => Arr::get($shop->settings, 'faire.order_from_date', '')
+                                'faire_order_from_days' => [
+                                    'type'  => 'input',
+                                    'label' => __('Faire Order From Days'),
+                                    'value' => Arr::get($shop->settings, 'faire.order_from_days', '6')
+                                ],
+                                'faire_is_shipping_by_external' => [
+                                    'type'          => 'toggle',
+                                    'label'         => __('Shipping by external service'),
+                                    'value' => Arr::get($shop->settings, 'faire.is_shipping_by_external', false)
+                                ],
+                                'faire_send_orders_automatically_to_warehouse' => [
+                                    'type'          => 'toggle',
+                                    'label'         => __('Send order automatically to warehouse '),
+                                    'value' => Arr::get($shop->settings, 'faire.send_orders_automatically_to_warehouse', true)
                                 ]
                             ],
                         ],
