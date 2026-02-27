@@ -410,7 +410,7 @@ class IndexCollections extends OrgAction
             'grp.org.shops.show.catalogue.collections.index',
             'grp.org.shops.show.catalogue.collections.create' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -421,7 +421,7 @@ class IndexCollections extends OrgAction
             ),
             'grp.org.shops.show.catalogue.collections.active.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -432,7 +432,7 @@ class IndexCollections extends OrgAction
             ),
             'grp.org.shops.show.catalogue.collections.inactive.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -443,7 +443,7 @@ class IndexCollections extends OrgAction
             ),
             'grp.org.shops.show.catalogue.collections.in_process.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
