@@ -38,6 +38,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -82,6 +83,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $address_id
  * @property string|null $location
  * @property string|null $notes
+ * @property int|null $probation_period_days
+ * @property string|null $bank_account_number
+ * @property string|null $bank_account_name
+ * @property string|null $insurance_number
+ * @property string|null $religion
+ * @property \Illuminate\Support\Carbon|null $contract_start_date
+ * @property \Illuminate\Support\Carbon|null $contract_end_date
+ * @property string|null $identity_document_issued_by
  * @property-read \App\Models\Helpers\Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Address> $addresses
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
@@ -125,6 +134,7 @@ class Employee extends Model implements HasMedia, Auditable
     use HasFactory;
     use HasHistory;
     use InOrganisation;
+    use InteractsWithMedia;
 
     protected $casts = [
         'week_working_hours' => 'decimal:2',
@@ -139,6 +149,9 @@ class Employee extends Model implements HasMedia, Auditable
         'type'               => EmployeeTypeEnum::class,
         'fetched_at'         => 'datetime',
         'last_fetched_at'    => 'datetime',
+        'contract_start_date' => 'date',
+        'contract_end_date'   => 'date',
+        'religion'            => 'string',
 
     ];
     //ss
@@ -175,7 +188,11 @@ class Employee extends Model implements HasMedia, Auditable
         'employment_start_at',
         'employment_end_at',
         'emergency_contact',
-        'pin'
+        'pin',
+        'bank_account_number',
+        'bank_account_name',
+        'insurance_number',
+        'religion',
     ];
 
     protected array $attributeModifiers = [
@@ -243,6 +260,11 @@ class Employee extends Model implements HasMedia, Auditable
         return $this->hasOne(EmployeeStats::class);
     }
 
+    public function leaveBalance()
+    {
+        return $this->hasOne(EmployeeLeaveBalance::class)->where('year', now()->year);
+    }
+
     public function latestAnalytics(): HasOne
     {
         return $this->hasOne(EmployeeAnalytics::class)->latestOfMany();
@@ -266,6 +288,18 @@ class Employee extends Model implements HasMedia, Auditable
     public function tasks(): MorphMany
     {
         return $this->morphMany(Task::class, 'assigner');
+    }
+
+    public function hrAnnouncements(): MorphMany
+    {
+        return $this->morphMany(HRAnnouncement::class, 'employee');
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('contracts')
+            ->acceptsMimeTypes(['application/pdf'])
+            ->singleFile();
     }
 
 }
