@@ -13,6 +13,7 @@ use App\Actions\Utils\Abbreviate;
 ;
 
 use App\Enums\Web\Banner\BannerStateEnum;
+use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Snapshot;
@@ -93,7 +94,8 @@ class Banner extends Model implements HasMedia, Auditable
     protected $casts = [
         'compiled_layout' => 'array',
         'data'            => 'array',
-        'state'           => BannerStateEnum::class
+        'state'           => BannerStateEnum::class,
+        'type'            => BannerTypeEnum::class
     ];
 
     protected $attributes = [
@@ -102,6 +104,18 @@ class Banner extends Model implements HasMedia, Auditable
     ];
 
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        static::saving(
+            function (Banner $banner) {
+                $banner->ratio = match($banner->type) {
+                    BannerTypeEnum::SQUARE->value => '1/1',
+                    default => '4/1' // Landscape
+                };
+            }
+        );
+    }
 
     public function generateTags(): array
     {
