@@ -27,14 +27,14 @@ class StoreShipmentFromFaire extends OrgAction
 
         $faireShipment = Arr::get($faireOrder, 'shipments.0');
 
-        if (app()->environment('local')) {
+        /*if (app()->environment('local')) {
             $faireShipment = [
                 'id'                 => 'FAIRE-'.Str::random(10),
                 'carrier'            => 'ups-faire',
                 'tracking_code'      => Str::random(10),
                 'shipping_label_url' => 'https://www.google.com'
             ];
-        }
+        }*/
 
         if (!$faireShipment) {
             throw ValidationException::withMessages(['message' => __('No shipment found for this order')]);
