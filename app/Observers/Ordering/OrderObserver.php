@@ -18,13 +18,13 @@ class OrderObserver
             // Notify active staff users who are working employees
             $employeeUsers = User::where('status', true)
                 ->whereHas('employees', function ($query) {
-                    $query->where('state', EmployeeStateEnum::WORKING);
+                    $query->where('employees.state', EmployeeStateEnum::WORKING);
                 })
                 ->get();
 
             $guestUsers = User::where('status', true)
                 ->whereHas('guests', function ($query) {
-                    $query->where('status', true);
+                    $query->where('guests.status', true);
                 })
                 ->get();
 
