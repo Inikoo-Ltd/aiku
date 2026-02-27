@@ -15,6 +15,10 @@ class OrderObserver
     public function updated(Order $order): void
     {
         if ($order->isDirty('state')) {
+            if (! $order->is_premium_dispatch) {
+                return;
+            }
+
             // Notify active staff users who are working employees
             $employeeUsers = User::where('status', true)
                 ->whereHas('employees', function ($query) {
