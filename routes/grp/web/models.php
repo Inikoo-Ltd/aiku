@@ -101,6 +101,7 @@ use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\Prospect\Mailshots\StoreProspectMailshot;
+use App\Actions\CRM\Prospect\Mailshots\UpdateProspectMailshot;
 use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -1131,6 +1132,8 @@ Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->gro
 Route::prefix('prospect/{prospect:id}')->name('prospect.')->group(function () {
     Route::patch('update', UpdateProspect::class)->name('update');
 });
+
+Route::patch('prospect-mailshot/{mailshot:id}', UpdateProspectMailshot::class)->name('shop.prospect.mailshot.update');
 
 Route::post('/shop/{shop:id}/shipping-country/', StoreShippingCountry::class)->name('shipping_country.store');
 Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.')->group(function () {

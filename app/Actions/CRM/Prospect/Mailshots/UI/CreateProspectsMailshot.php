@@ -10,7 +10,6 @@ namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
 use App\Actions\CRM\Prospect\Queries\UI\IndexProspectQueries;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
@@ -20,8 +19,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateProspectsMailshot extends OrgAction
 {
-    use WithProspectsSubNavigation;
-
     public function authorize(ActionRequest $request): bool
     {
         return true;
@@ -93,9 +90,6 @@ class CreateProspectsMailshot extends OrgAction
         ];
 
 
-        // TODO: Make sure parent later
-        $subNavigation = $this->getSubNavigation($parent, $request);
-
         // TODO: Check and make sure the Route is correct
         return Inertia::render(
             'CreateModel',
@@ -106,7 +100,6 @@ class CreateProspectsMailshot extends OrgAction
                 'title'       => __('New mailshot'),
                 'pageHead'    => [
                     'title'   => __('Prospect mailshot'),
-                    'subNavigation' => $subNavigation,
                     'actions' => [
                         [
                             'type'  => 'button',
