@@ -7,7 +7,6 @@
 
 namespace App\Actions\Discounts\OfferCampaign;
 
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Discounts\OfferCampaign;
 use Illuminate\Console\Command;
@@ -31,7 +30,7 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
 
     public function handle(OfferCampaign $offerCampaign, bool $async = false): void
     {
-        if ($offerCampaign->state == OfferCampaignStateEnum::IN_PROCESS) {
+        if (!$offerCampaign->status) {
             return;
         }
 

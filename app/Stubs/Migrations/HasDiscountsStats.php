@@ -9,7 +9,7 @@
 namespace App\Stubs\Migrations;
 
 use App\Enums\Discounts\Offer\OfferStateEnum;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignOffersStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use Illuminate\Database\Schema\Blueprint;
 
@@ -20,7 +20,7 @@ trait HasDiscountsStats
 
         $table->unsignedInteger('number_offer_campaigns')->default(0);
         $table->unsignedInteger('number_current_offer_campaigns')->default(0);
-        foreach (OfferCampaignStateEnum::cases() as $case) {
+        foreach (OfferCampaignOffersStateEnum::cases() as $case) {
             $table->unsignedInteger('number_offer_campaigns_state_'.$case->snake())->default(0);
         }
 

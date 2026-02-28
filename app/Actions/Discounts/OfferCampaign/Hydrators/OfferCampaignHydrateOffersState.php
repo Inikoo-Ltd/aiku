@@ -11,13 +11,13 @@ namespace App\Actions\Discounts\OfferCampaign\Hydrators;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Discounts\Offer\OfferStateEnum;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignOffersStateEnum;
 use App\Models\Discounts\OfferCampaign;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OfferCampaignHydrateStateFromOffers implements ShouldBeUnique
+class OfferCampaignHydrateOffersState implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -29,9 +29,8 @@ class OfferCampaignHydrateStateFromOffers implements ShouldBeUnique
 
     public function handle(OfferCampaign $offerCampaign): void
     {
-
-        $hasActive = false;
-        $hasFinished = false;
+        $hasActive    = false;
+        $hasFinished  = false;
         $hasSuspended = false;
 
         foreach ($offerCampaign->offers as $offer) {
@@ -44,36 +43,32 @@ class OfferCampaignHydrateStateFromOffers implements ShouldBeUnique
             if ($offer->state == OfferStateEnum::SUSPENDED) {
                 $hasSuspended = true;
             }
-
         }
 
-        $state = OfferCampaignStateEnum::IN_PROCESS;
-        $status = false;
+        $state = OfferCampaignOffersStateEnum::IN_PROCESS;
         if ($hasActive) {
-            $state = OfferCampaignStateEnum::ACTIVE;
-            $status = true;
+            $state = OfferCampaignOffersStateEnum::ACTIVE;
         } elseif ($hasFinished) {
-            $state = OfferCampaignStateEnum::FINISHED;
+            $state = OfferCampaignOffersStateEnum::FINISHED;
         } elseif ($hasSuspended) {
-            $state = OfferCampaignStateEnum::SUSPENDED;
+            $state = OfferCampaignOffersStateEnum::SUSPENDED;
         }
+
 
         $modelData = [
-            'state' => $state,
-            'status' => $status
+            'offers_state' => $state,
         ];
 
-        if (!$offerCampaign->start_at &&  $state == OfferCampaignStateEnum::ACTIVE) {
+        if (!$offerCampaign->start_at && $state == OfferCampaignOffersStateEnum::ACTIVE) {
             $modelData['start_at'] = $offerCampaign->offers()->min('start_at') ?? now();
         }
 
-        if (!$offerCampaign->finish_at && $state == OfferCampaignStateEnum::FINISHED) {
+        if (!$offerCampaign->finish_at && $state == OfferCampaignOffersStateEnum::FINISHED) {
             $modelData['finish_at'] = $offerCampaign->offers()->max('end_at') ?? now();
         }
 
         $offerCampaign->update($modelData);
         ShopHydrateOffersData::run($offerCampaign->shop_id);
-
     }
 
     public function getCommandSignature(): string
@@ -93,10 +88,10 @@ class OfferCampaignHydrateStateFromOffers implements ShouldBeUnique
 
         foreach (OfferCampaign::all() as $offerCampaign) {
             $this->handle($offerCampaign);
-            $command->info("Hydrated offer campaign $offerCampaign->code");
+            $command->info("Hydrated offer campaign $offerCampaign->slug");
         }
-        return 0;
 
+        return 0;
     }
 
 
