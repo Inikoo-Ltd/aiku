@@ -28,9 +28,9 @@ class FetchAuroraInvoice extends FetchAurora
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Invoice Store Key'});
 
 
-        $forceFetch=false;
-        if($this->auroraModelData->{'force_fetch'}=='Yes'){
-            $forceFetch=true;
+        $forceFetch = false;
+        if ($this->auroraModelData->{'force_fetch'} == 'Yes') {
+            $forceFetch = true;
         }
 
         if ($shop->is_aiku && !$forceFetch) {

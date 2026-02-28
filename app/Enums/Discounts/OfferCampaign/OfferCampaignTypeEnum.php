@@ -105,4 +105,13 @@ enum OfferCampaignTypeEnum: string
             ]
         ];
     }
+
+    public function defaultStatus(): bool
+    {
+        return match ($this) {
+            OfferCampaignTypeEnum::ORDER_RECURSION,
+            => false,
+            default => true
+        };
+    }
 }

@@ -21,7 +21,7 @@ trait HasDiscountsStats
         $table->unsignedInteger('number_offer_campaigns')->default(0);
         $table->unsignedInteger('number_current_offer_campaigns')->default(0);
         foreach (OfferCampaignOffersStateEnum::cases() as $case) {
-            $table->unsignedInteger('number_offer_campaigns_state_'.$case->snake())->default(0);
+            $table->unsignedInteger('number_offer_campaigns_offers_state_'.$case->snake())->default(0);
         }
 
         return $table;

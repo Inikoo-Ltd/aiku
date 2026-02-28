@@ -24,7 +24,7 @@ class UpdateTaxNumber
     public function handle(TaxNumber $taxNumber, array $modelData, bool $strict = true): TaxNumber
     {
         $oldTaxNumber = $taxNumber->replicate();
-        
+
         $oldChecksumData = array($taxNumber->number, $taxNumber->country_id);
         if (Arr::has($modelData, 'number')) {
             $oldChecksumData[0] = $modelData['number'];

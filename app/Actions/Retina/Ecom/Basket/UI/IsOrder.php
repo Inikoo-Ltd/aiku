@@ -129,7 +129,7 @@ trait IsOrder
                     'type'      => $deliveryNote->type,
                     'parcels'   => $deliveryNote->parcels,
                     'state'     => $deliveryNote->state,
-                    'state_icon'=> $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'state_icon' => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
                     'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
             }

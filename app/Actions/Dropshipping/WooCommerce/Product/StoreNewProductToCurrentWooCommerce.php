@@ -33,7 +33,7 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, bool $checkConnection = true): Portfolio
     {
         $result = true;
-        if($checkConnection) {
+        if ($checkConnection) {
             $result = $wooCommerceUser->checkConnection();
         }
 
