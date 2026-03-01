@@ -17,7 +17,7 @@ class PurgeDownloadPortfolioCustomerSalesChannel
 {
     use AsAction;
 
-    public function handle()
+    public function handle(): void
     {
         try {
             $days = env('PURGE_DOWNLOAD_PORTFOLIO_CUSTOMER_SALES_CHANNEL_DAYS', 1);

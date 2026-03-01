@@ -363,14 +363,7 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $this->logSchedule(
-            $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
-            ),
-            name: 'PurgeDownloadPortfolioCustomerSalesChannel',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
+
 
         $this->logSchedule(
             $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
@@ -500,6 +493,15 @@ class Kernel extends ConsoleKernel
         //     type: 'job',
         //     scheduledAt: now()->format('H:i')
         // );
+
+        $this->logSchedule(
+            $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
+            ),
+            name: 'PurgeDownloadPortfolioCustomerSalesChannel',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
 
     }
 
