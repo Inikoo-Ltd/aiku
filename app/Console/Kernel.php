@@ -138,14 +138,14 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $this->logSchedule(
-            $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                monitorSlug: 'FetchOrdersInBasket',
-            ),
-            name: 'FetchOrdersInBasket',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
+//        $this->logSchedule(
+//            $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+//                monitorSlug: 'FetchOrdersInBasket',
+//            ),
+//            name: 'FetchOrdersInBasket',
+//            type: 'job',
+//            scheduledAt: now()->format('H:i')
+//        );
 
         $this->logSchedule(
             $schedule->command('fetch:credits -N')->everyTenMinutes()->timezone('UTC')->withoutOverlapping(),
