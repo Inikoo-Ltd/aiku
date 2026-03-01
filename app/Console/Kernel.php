@@ -327,14 +327,14 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $this->logSchedule(
-            $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ConsolidateRecurringBills',
-            ),
-            name: 'ConsolidateRecurringBills',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
+//        $this->logSchedule(
+//            $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
+//                monitorSlug: 'ConsolidateRecurringBills',
+//            ),
+//            name: 'ConsolidateRecurringBills',
+//            type: 'job',
+//            scheduledAt: now()->format('H:i')
+//        );
 
         $this->logSchedule(
             $schedule->command('hydrate:customers-clv')->dailyAt('01:00')->timezone('UTC')->sentryMonitor(
