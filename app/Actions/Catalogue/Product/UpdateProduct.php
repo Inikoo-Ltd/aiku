@@ -282,9 +282,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                    $changed,
-                    $fieldsUsedInLuigi
-                )
+                $changed,
+                $fieldsUsedInLuigi
+            )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60 * 15);
@@ -298,9 +298,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                    $changed,
-                    $fieldsUsedInWebpages
-                )
+                $changed,
+                $fieldsUsedInWebpages
+            )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
@@ -348,22 +348,26 @@ class UpdateProduct extends OrgAction
 
     public function rules(): array
     {
+        $codeRule = [
+            'sometimes',
+            'required',
+            'max:64',
+            $this->shop->type == ShopTypeEnum::EXTERNAL ? 'string' : new AlphaDashDot(),
+            Rule::notIn(['export', 'create', 'upload']),
+        ];
+        if ($this->shop->type != ShopTypeEnum::EXTERNAL) {
+            $codeRule[] = new IUnique(
+                table: 'products',
+                extraConditions: [
+                    ['column' => 'shop_id', 'value' => $this->shop->id],
+                    ['column' => 'deleted_at', 'operator' => 'null'],
+                    ['column' => 'id', 'value' => $this->product->id, 'operator' => '!=']
+                ]
+            );
+        }
+
         $rules = [
-            'code'                      => [
-                'sometimes',
-                'required',
-                'max:64',
-                $this->shop->type == ShopTypeEnum::EXTERNAL ? 'string' : new AlphaDashDot(),
-                Rule::notIn(['export', 'create', 'upload']),
-                new IUnique(
-                    table: 'products',
-                    extraConditions: [
-                        ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'null'],
-                        ['column' => 'id', 'value' => $this->product->id, 'operator' => '!=']
-                    ]
-                ),
-            ],
+            'code'                      => $codeRule,
             'name'                      => ['sometimes', 'required', 'max:250', 'string'],
             'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
             'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0'],

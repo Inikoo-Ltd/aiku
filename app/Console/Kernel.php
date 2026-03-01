@@ -8,7 +8,8 @@
 
 namespace App\Console;
 
-use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrders;
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
@@ -138,14 +139,14 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-//        $this->logSchedule(
-//            $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-//                monitorSlug: 'FetchOrdersInBasket',
-//            ),
-//            name: 'FetchOrdersInBasket',
-//            type: 'job',
-//            scheduledAt: now()->format('H:i')
-//        );
+        //        $this->logSchedule(
+        //            $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+        //                monitorSlug: 'FetchOrdersInBasket',
+        //            ),
+        //            name: 'FetchOrdersInBasket',
+        //            type: 'job',
+        //            scheduledAt: now()->format('H:i')
+        //        );
 
         $this->logSchedule(
             $schedule->command('fetch:credits -N')->everyTenMinutes()->timezone('UTC')->withoutOverlapping(),
@@ -435,10 +436,19 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(GetFaireOrders::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'GetFaireOrders',
+            $schedule->job(GetFaireOrdersAllShops::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'GetFaireOrdersAllShops',
             ),
-            name: 'GetFaireOrders',
+            name: 'GetFaireOrdersAllShops',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(GetFaireProductsAllShops::makeJob())->twiceDailyAt(12, 17)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'GetFaireProductsAllShops',
+            ),
+            name: 'GetFaireProductsAllShops',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );

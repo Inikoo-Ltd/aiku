@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 01 Mar 2026 22:05:48 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\OrgAction;
@@ -9,11 +15,12 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
-class GetFaireOrders extends OrgAction
+class GetFaireProductsAllShops extends OrgAction
 {
-    /**
-     * @throws \Throwable
-     */
+    public string $commandSignature = 'faire:products_all_shops';
+
+    public $jobQueue = 'default-long';
+
     public function handle(Command|null $command = null): void
     {
         $shops = Shop::where('type', ShopTypeEnum::EXTERNAL)
@@ -23,22 +30,15 @@ class GetFaireOrders extends OrgAction
         /** @var Shop $shop */
         foreach ($shops as $shop) {
             if (Arr::has($shop->settings, 'faire.access_token')) {
-                GetFaireOrdersInShop::run($shop, $command);
+                GetFaireProducts::run($shop, [], $command);
             }
         }
-
     }
 
-    public string $commandSignature = 'faire:orders';
-
-
-    /**
-     * @throws \Throwable
-     */
-    public function asCommand(Command $command): int
+    public function asCommand(Command $command): void
     {
         $this->handle($command);
-
-        return 0;
     }
+
+
 }
