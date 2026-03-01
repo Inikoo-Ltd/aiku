@@ -294,6 +294,7 @@ class StoreProduct extends OrgAction
             $rules['trade_config']              = ['required', Rule::enum(ProductTradeConfigEnum::class)];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['description']               = ['sometimes', 'nullable', 'max:65500'];
         } else {
             $rules['trade_units'] = ['nullable', 'array'];
         }

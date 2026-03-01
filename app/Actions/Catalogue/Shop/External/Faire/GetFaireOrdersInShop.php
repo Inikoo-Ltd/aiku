@@ -121,9 +121,9 @@ class GetFaireOrdersInShop extends OrgAction
 
                     if (!$product) {
                         $errors[] = [
-                            'product_code'           => Arr::get($item,'sku', 'NO SKU'),
-                            'product_name'           => Arr::get($item,'name', 'NO NAME'),
-                            'product_marketplace_id' => Arr::get($item,'variant_id', 'NO VARIANT ID'),
+                            'product_code'           => Arr::get($item, 'sku', 'NO SKU'),
+                            'product_name'           => Arr::get($item, 'product_name', 'NO NAME').' '.Arr::get($item, 'variant_name', 'NO VARIANT NAME'),
+                            'product_marketplace_id' => Arr::get($item, 'variant_id', 'NO VARIANT ID'),
                             'message'                => "Product not found in catalogue"
                         ];
                         continue;
