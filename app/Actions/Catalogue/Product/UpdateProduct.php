@@ -167,8 +167,6 @@ class UpdateProduct extends OrgAction
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
-
-
         if ($product->webpage && !empty($webpageData)) {
             UpdateWebpage::make()->action($product->webpage, $webpageData);
         }
@@ -181,9 +179,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  && $product->webpage) {
-
-
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale && $product->webpage) {
             if ($product->master_product_id) {
                 MasterAssetHydrateAssets::run($product->master_product_id);
             }
@@ -204,7 +200,7 @@ class UpdateProduct extends OrgAction
         }
 
 
-        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  || $newData) {
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $newData) {
             $product->auditEvent    = 'update';
             $product->isCustomEvent = true;
 
@@ -286,9 +282,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInLuigi
-            )
+                    $changed,
+                    $fieldsUsedInLuigi
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60 * 15);
@@ -302,9 +298,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInWebpages
-            )
+                    $changed,
+                    $fieldsUsedInWebpages
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
@@ -320,7 +316,6 @@ class UpdateProduct extends OrgAction
             if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE) {
                 UpdateFaireProductInventoryQuantity::dispatch($product);
             }
-
         }
 
         if (Arr::has($changed, 'master_product_id')) {
@@ -344,7 +339,7 @@ class UpdateProduct extends OrgAction
             UpdateHistoricProductInBasketTransactions::dispatch($product);
         }
 
-        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  || $oldState != $product->state) {
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $oldState != $product->state) {
             $product = ProductHydrateAvailableQuantity::run($product);
         }
 
@@ -465,6 +460,7 @@ class UpdateProduct extends OrgAction
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
+            $rules['description']               = ['sometimes', 'required', 'max:15000'];
 
 
             $rules = $this->noStrictUpdateRules($rules);
