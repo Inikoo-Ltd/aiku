@@ -460,7 +460,7 @@ class UpdateProduct extends OrgAction
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
-            $rules['description']               = ['sometimes', 'required', 'max:15000'];
+            $rules['description']               = ['sometimes', 'nullable', 'max:15000'];
 
 
             $rules = $this->noStrictUpdateRules($rules);
