@@ -13,7 +13,7 @@ class OrderObserver
 {
     public function updated(Order $order): void
     {
-        if ($order->isDirty('state')) {
+        if ($order->wasChanged('state')) {
             // if (! $order->is_premium_dispatch) {
             //     return;
             // }
