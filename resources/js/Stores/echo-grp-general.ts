@@ -31,23 +31,14 @@ export const useEchoGrpGeneral = defineStore(
                 }
 
                 const layout = useLayoutStore()
-                
+
                 window.Echo.private(`grp.${groupId}.general`).
                     listen('.notification', (e: any) => {
                         const data = e.data || e;
-
-                        // Show toast notification
-                        notify({
-                            title: data.title || 'General',
-                            text: data.text || 'Notification received',
-                            type: 'info',
-                        })
-
                         // Fetch unread notifications from API and update layout structure
                         axios.get(route('grp.models.notifications.unread'))
                             .then((response) => {
-                                
-                            const unreadData = response.data.   notifications.map((n: any) => ({
+                            const unreadData = (response.data?.notifications ?? []).map((n: any) => ({
                                     ...n,
                                     read: false
                                 }))
@@ -58,6 +49,13 @@ export const useEchoGrpGeneral = defineStore(
                                     ...unreadData,
                                     ...existingRead
                                 ]
+                                if (unreadData.length > 0) {
+                                    notify({
+                                        title: data.title || "General",
+                                        text: data.text || "Notification received",
+                                        type: "info",
+                                    })
+                                }
                             })
                             .catch((error) => {
                                 console.error('Failed to fetch unread notifications:', error)
