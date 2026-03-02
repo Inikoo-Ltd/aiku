@@ -32,6 +32,7 @@ class EmployeesResource extends JsonResource
             'contact_name'  => $employee->contact_name,
             'job_title'     => $employee->job_title,
             'state'         => $employee->state,
+            'date_of_birth' => $employee->date_of_birth?->format('F j, Y'),
             'positions'     => $this->job_positions ? JobPositionLightResource::collection(json_decode($this->job_positions)) : null,
             'state_icon'    => $employee->state->stateIcon()[$employee->state->value],
             'organisation_name' => $this->organisation_name,

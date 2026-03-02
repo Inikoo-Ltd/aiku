@@ -59,6 +59,27 @@ class IndexEmployees extends OrgAction
                     $query->whereIn('type', $elements);
                 }
             ],
+            'birthday_month' => [
+                'label' => __('Birthday Month'),
+                'elements' => [
+                    1 => __('January'),
+                    2 => __('February'),
+                    3 => __('March'),
+                    4 => __('April'),
+                    5 => __('May'),
+                    6 => __('June'),
+                    7 => __('July'),
+                    8 => __('August'),
+                    9 => __('September'),
+                    10 => __('October'),
+                    11 => __('November'),
+                    12 => __('December'),
+                ],
+                'engine' => function ($query, $elements) {
+                    $query->whereNotNull('date_of_birth')
+                        ->whereRaw('EXTRACT(MONTH FROM date_of_birth) IN (?)', [$elements]);
+                }
+            ],
         ];
     }
 
@@ -101,7 +122,7 @@ class IndexEmployees extends OrgAction
             );
         }
 
-        $queryBuilder->select(['employees.slug', 'employees.job_title', 'employees.contact_name', 'employees.state', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug',]);
+        $queryBuilder->select(['employees.slug', 'employees.job_title', 'employees.contact_name', 'employees.state', 'employees.date_of_birth', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug',]);
 
         if (class_basename($parent) == 'Organisation') {
             $jobPositions = DB::table('employee_has_job_positions')
@@ -120,8 +141,8 @@ class IndexEmployees extends OrgAction
 
         return $queryBuilder
             ->defaultSort('slug')
-            ->allowedSorts(['slug', 'state', 'contact_name', 'job_title', 'worker_number'])
-            ->allowedFilters([$globalSearch, 'slug', 'contact_name', 'state'])
+            ->allowedSorts(['slug', 'state', 'contact_name', 'job_title', 'worker_number', 'date_of_birth'])
+            ->allowedFilters([$globalSearch, 'slug', 'contact_name', 'state', 'birthday_month'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -173,7 +194,8 @@ class IndexEmployees extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'job_title', label: __('Job Title'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'job_title', label: __('Job Title'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'date_of_birth', label: __('Birthday'), canBeHidden: true, sortable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
             }
