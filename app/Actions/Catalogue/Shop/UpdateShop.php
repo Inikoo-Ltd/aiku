@@ -115,13 +115,13 @@ class UpdateShop extends OrgAction
                     'ebay_warehouse_city' => 'settings.ebay.warehouse_city',
                     'ebay_warehouse_state' => 'settings.ebay.warehouse_state',
                     'ebay_warehouse_country' => 'settings.ebay.warehouse_country',
-                    'faire_access_token'    => 'settings.faire.access_token',
-                    'faire_order_from_days'    => 'settings.faire.order_from_days',
-                    'faire_is_shipping_by_external'    => 'settings.faire.is_shipping_by_external',
-                    'faire_send_orders_automatically_to_warehouse'    => 'settings.faire.send_orders_automatically_to_warehouse',
-                    'wix_access_token'    => 'settings.wix.access_token',
-                    'enable_chat'  => 'settings.chat.enable_chat',
-                    'portal_link'   => 'settings.portal.link',
+                    'faire_access_token' => 'settings.faire.access_token',
+                    'faire_order_from_days' => 'settings.faire.order_from_days',
+                    'faire_is_shipping_by_external' => 'settings.faire.is_shipping_by_external',
+                    'faire_dont_send_first_orders_automatically_to_warehouse' => 'settings.faire.dont_send_first_orders_automatically_to_warehouse',
+                    'wix_access_token' => 'settings.wix.access_token',
+                    'enable_chat' => 'settings.chat.enable_chat',
+                    'portal_link' => 'settings.portal.link',
                     default => $key
                 },
                 $value
@@ -142,7 +142,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'faire_access_token');
         data_forget($modelData, 'faire_order_from_days');
         data_forget($modelData, 'faire_is_shipping_by_external');
-        data_forget($modelData, 'faire_send_orders_automatically_to_warehouse');
+        data_forget($modelData, 'faire_dont_send_first_orders_automatically_to_warehouse');
         data_forget($modelData, 'is_shipping_by_external');
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'portal_link');
@@ -171,12 +171,12 @@ class UpdateShop extends OrgAction
 
         $currentChannelIds = $shop->salesChannels()->allRelatedIds()->toArray();
         $hasChannelUpdates = false;
-        $keys = array_keys($modelData);
+        $keys              = array_keys($modelData);
         foreach ($keys as $key) {
             if (str_starts_with($key, 'sales_channel_')) {
                 $hasChannelUpdates = true;
-                $channelId = (int) str_replace('sales_channel_', '', $key);
-                $isActive = $modelData[$key];
+                $channelId         = (int)str_replace('sales_channel_', '', $key);
+                $isActive          = $modelData[$key];
                 if ($isActive === true) {
                     if (!in_array($channelId, $currentChannelIds)) {
                         $currentChannelIds[] = $channelId;
@@ -301,8 +301,8 @@ class UpdateShop extends OrgAction
 
             ],
 
-            'name'                         => ['sometimes', 'required', 'string', 'max:255'],
-            'code'                         => [
+            'name'                                                    => ['sometimes', 'required', 'string', 'max:255'],
+            'code'                                                    => [
                 'sometimes',
                 'required',
                 'max:8',
@@ -321,67 +321,67 @@ class UpdateShop extends OrgAction
                 ),
 
             ],
-            'contact_name'                 => ['sometimes', 'nullable', 'string', 'max:255'],
-            'company_name'                 => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'                        => ['sometimes', 'nullable', 'email'],
-            'phone'                        => ['sometimes', 'nullable'],
-            'identity_document_number'     => ['sometimes', 'nullable', 'string'],
-            'identity_document_type'       => ['sometimes', 'nullable', 'string'],
-            'type'                         => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
-            'currency_id'                  => ['sometimes', 'required', 'exists:currencies,id'],
-            'country_id'                   => ['sometimes', 'required', 'exists:countries,id'],
-            'language_id'                  => ['sometimes', 'required', 'exists:languages,id'],
-            'timezone_id'                  => ['sometimes', 'required', 'exists:timezones,id'],
-            'address'                      => ['sometimes', 'required', new ValidAddress()],
-            'collection_address'           => ['sometimes', 'required', new ValidAddress()],
-            'state'                        => ['sometimes', Rule::enum(ShopStateEnum::class)],
-            'shopify_shop_name'            => ['sometimes', 'string'],
-            'shopify_api_key'              => ['sometimes', 'string'],
-            'shopify_api_secret'           => ['sometimes', 'string'],
-            'shopify_access_token'         => ['sometimes', 'string'],
-            'registration_number'          => ['sometimes', 'string'],
-            'vat_number'                   => ['sometimes', 'string'],
-            'ebay_redirect_key'            => ['sometimes', 'string'],
-            'ebay_marketplace_id'          => ['sometimes', 'string'],
-            'ebay_warehouse_city'          => ['sometimes', 'string'],
-            'ebay_warehouse_state'         => ['sometimes', 'string'],
-            'ebay_warehouse_country'       => ['sometimes', 'string'],
-            'faire_access_token'           => ['sometimes', 'string'],
-            'faire_order_from_days'        => ['sometimes', 'string'],
-            'faire_is_shipping_by_external'=> ['sometimes', 'boolean'],
-            'faire_send_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
-            'wix_access_token'             => ['sometimes', 'string'],
-            'enable_chat'                  => ['sometimes', 'boolean'],
-            'is_shipping_by_external'      => ['sometimes', 'boolean'],
-            'portal_link'                  => ['sometimes', 'string'],
-            'widget_key'                   => ['sometimes', 'string'],
-            'required_approval'            => ['sometimes', 'boolean'],
-            'required_phone_number'        => ['sometimes', 'boolean'],
-            'marketing_opt_in_default'     => ['sometimes', 'boolean'],
-            'marketing_opt_in_label'       => ['sometimes', 'string'],
-            'invoice_footer'               => ['sometimes', 'string', 'max:10000'],
-            'cost_price_ratio'             => ['sometimes', 'numeric', 'min:0'],
-            'price_rrp_ratio'              => ['sometimes', 'numeric', 'min:0'],
-            'extra_languages'              => ['sometimes', 'array', 'nullable'],
-            'forbidden_dispatch_countries' => ['sometimes', 'array', 'nullable'],
-            'image'                        => [
+            'contact_name'                                            => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_name'                                            => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email'                                                   => ['sometimes', 'nullable', 'email'],
+            'phone'                                                   => ['sometimes', 'nullable'],
+            'identity_document_number'                                => ['sometimes', 'nullable', 'string'],
+            'identity_document_type'                                  => ['sometimes', 'nullable', 'string'],
+            'type'                                                    => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
+            'currency_id'                                             => ['sometimes', 'required', 'exists:currencies,id'],
+            'country_id'                                              => ['sometimes', 'required', 'exists:countries,id'],
+            'language_id'                                             => ['sometimes', 'required', 'exists:languages,id'],
+            'timezone_id'                                             => ['sometimes', 'required', 'exists:timezones,id'],
+            'address'                                                 => ['sometimes', 'required', new ValidAddress()],
+            'collection_address'                                      => ['sometimes', 'required', new ValidAddress()],
+            'state'                                                   => ['sometimes', Rule::enum(ShopStateEnum::class)],
+            'shopify_shop_name'                                       => ['sometimes', 'string'],
+            'shopify_api_key'                                         => ['sometimes', 'string'],
+            'shopify_api_secret'                                      => ['sometimes', 'string'],
+            'shopify_access_token'                                    => ['sometimes', 'string'],
+            'registration_number'                                     => ['sometimes', 'string'],
+            'vat_number'                                              => ['sometimes', 'string'],
+            'ebay_redirect_key'                                       => ['sometimes', 'string'],
+            'ebay_marketplace_id'                                     => ['sometimes', 'string'],
+            'ebay_warehouse_city'                                     => ['sometimes', 'string'],
+            'ebay_warehouse_state'                                    => ['sometimes', 'string'],
+            'ebay_warehouse_country'                                  => ['sometimes', 'string'],
+            'faire_access_token'                                      => ['sometimes', 'string'],
+            'faire_order_from_days'                                   => ['sometimes', 'string'],
+            'faire_is_shipping_by_external'                           => ['sometimes', 'boolean'],
+            'faire_dont_send_first_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
+            'wix_access_token'                                        => ['sometimes', 'string'],
+            'enable_chat'                                             => ['sometimes', 'boolean'],
+            'is_shipping_by_external'                                 => ['sometimes', 'boolean'],
+            'portal_link'                                             => ['sometimes', 'string'],
+            'widget_key'                                              => ['sometimes', 'string'],
+            'required_approval'                                       => ['sometimes', 'boolean'],
+            'required_phone_number'                                   => ['sometimes', 'boolean'],
+            'marketing_opt_in_default'                                => ['sometimes', 'boolean'],
+            'marketing_opt_in_label'                                  => ['sometimes', 'string'],
+            'invoice_footer'                                          => ['sometimes', 'string', 'max:10000'],
+            'cost_price_ratio'                                        => ['sometimes', 'numeric', 'min:0'],
+            'price_rrp_ratio'                                         => ['sometimes', 'numeric', 'min:0'],
+            'extra_languages'                                         => ['sometimes', 'array', 'nullable'],
+            'forbidden_dispatch_countries'                            => ['sometimes', 'array', 'nullable'],
+            'image'                                                   => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'colour'                        => ['sometimes', 'string'],
-            'collection_follow_master'      => ['sometimes', 'boolean'],
-            'department_follow_master'      => ['sometimes', 'boolean'],
-            'sub_department_follow_master'  => ['sometimes', 'boolean'],
-            'family_follow_master'          => ['sometimes', 'boolean'],
-            'product_follow_master'         => ['sometimes', 'boolean'],
-            'product_price_currency_exchange'         => ['sometimes', 'numeric', 'min:0'],
+            'colour'                                                  => ['sometimes', 'string'],
+            'collection_follow_master'                                => ['sometimes', 'boolean'],
+            'department_follow_master'                                => ['sometimes', 'boolean'],
+            'sub_department_follow_master'                            => ['sometimes', 'boolean'],
+            'family_follow_master'                                    => ['sometimes', 'boolean'],
+            'product_follow_master'                                   => ['sometimes', 'boolean'],
+            'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
         ];
 
         $channelIds = SalesChannel::pluck('id');
         foreach ($channelIds as $id) {
-            $rules['sales_channel_' . $id] = ['sometimes', 'boolean'];
+            $rules['sales_channel_'.$id] = ['sometimes', 'boolean'];
         }
 
         if (!$this->strict) {

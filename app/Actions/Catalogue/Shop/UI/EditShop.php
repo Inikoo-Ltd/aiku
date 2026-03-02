@@ -490,10 +490,10 @@ class EditShop extends OrgAction
                                     'label'         => __('Shipping by external service'),
                                     'value' => Arr::get($shop->settings, 'faire.is_shipping_by_external', false)
                                 ],
-                                'faire_send_orders_automatically_to_warehouse' => [
+                                'faire_dont_send_first_orders_automatically_to_warehouse' => [
                                     'type'          => 'toggle',
-                                    'label'         => __('Send order automatically to warehouse '),
-                                    'value' => Arr::get($shop->settings, 'faire.send_orders_automatically_to_warehouse', true)
+                                    'label'         => __('Do not send first orders to warehouse'),
+                                    'value' => Arr::get($shop->settings, 'faire.dont_send_first_orders_automatically_to_warehouse', false)
                                 ]
                             ],
                         ],

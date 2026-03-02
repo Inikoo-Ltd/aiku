@@ -10,149 +10,77 @@ namespace App\Actions\Traits\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 trait WithRedoProductCategoryTimeSeries
 {
-    public function handle(ProductCategory $productCategory, array $frequencies, ?Command $command = null, bool $async = true): void
+    public function getJobUniqueId(string $from, string $to): string
     {
-        $type = ProductCategoryTypeEnum::from($this->restriction);
+        return "{$from}_{$to}";
+    }
 
-        if ($productCategory->type !== $type) {
-            $command?->error("Can only process {$type->value}s, $productCategory->name is a $productCategory->type");
-
-            return;
-        }
-
-        $from = null;
-
-        $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->restriction}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
-
-        if ($firstInvoicedDate && ($firstInvoicedDate < $productCategory->created_at)) {
-            $productCategory->update(['created_at' => $firstInvoicedDate]);
-        }
-
-        if ($productCategory->created_at) {
-            $from = $productCategory->created_at->toDateString();
-        }
-
+    public function handle(ProductCategory $productCategory, bool $async = true): void
+    {
         if ($productCategory->state == ProductCategoryStateEnum::IN_PROCESS) {
             return;
         }
 
-        if ($productCategory->state == ProductCategoryStateEnum::ACTIVE || $productCategory->state == ProductCategoryStateEnum::DISCONTINUING) {
-            $to = now()->toDateString();
-        } elseif ($productCategory->state == ProductCategoryStateEnum::DISCONTINUED) {
-            $to = $productCategory->discontinued_at;
+        $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->restriction->value}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
+        $lastInvoicedDate  = DB::table('invoice_transactions')->where("{$this->restriction->value}_id", $productCategory->id)->whereNull('deleted_at')->max('date');
 
-            $lastInvoicedDate = DB::table('invoice_transactions')
-                ->where("{$this->restriction}_id", $productCategory->id)
-                ->whereNull('deleted_at')
-                ->max('date');
-
-            if (!$to && !$lastInvoicedDate) {
-                return;
-            }
-
-            if ($lastInvoicedDate) {
-                $lastInvoicedDate = Carbon::parse($lastInvoicedDate);
-            }
-
-            if ($lastInvoicedDate && (!$to || $lastInvoicedDate->greaterThan($to))) {
-                $to = $lastInvoicedDate;
-                $productCategory->update(['discontinued_at' => $to]);
-            }
-
-            if (!$to) {
-                return;
-            }
-
-            $to = $to->toDateString();
-        } else {
-            $to = DB::table('invoice_transactions')
-                ->where("{$this->restriction}_id", $productCategory->id)
-                ->whereNull('deleted_at')
-                ->max('date');
-
-            if (!$to) {
-                return;
-            }
-
-            $to = Carbon::parse($to);
-            $to = $to->toDateString();
+        if (!$firstInvoicedDate) {
+            return;
         }
 
-        if ($from != null && $to != null) {
-            foreach ($frequencies as $frequency) {
-                if ($async) {
-                    ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to)->onQueue('low-priority');
-                } else {
-                    ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
-                }
+        $from = Carbon::parse($firstInvoicedDate)->toDateString();
+        $to   = Carbon::parse($lastInvoicedDate ?? now())->toDateString();
+
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            if ($async) {
+                ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to)->onQueue('low-priority');
+            } else {
+                ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
             }
         }
+    }
+
+    public function asJob(string $from, string $to): void
+    {
+        ProductCategory::where('type', $this->restriction)->get()->each(function (ProductCategory $productCategory) use ($from, $to) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
+            }
+        });
     }
 
     public function asCommand(Command $command): int
     {
         $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
+
+        $async = (bool) $command->option('async');
+
+        $productCategories = ProductCategory::where('type', $this->restriction)->get();
+
+        $bar = $command->getOutput()->createProgressBar($productCategories->count());
         $bar->setFormat('debug');
         $bar->start();
 
-        try {
-            $frequencyOption = $command->option('frequency');
-
-            if ($frequencyOption === 'all') {
-                $frequencies = TimeSeriesFrequencyEnum::cases();
-            } else {
-                $frequencies = [
-                    TimeSeriesFrequencyEnum::from($frequencyOption)
-                ];
+        foreach ($productCategories as $productCategory) {
+            try {
+                $this->handle($productCategory, $async);
+            } catch (Throwable $e) {
+                $command->error($e->getMessage());
             }
-        } catch (Throwable $e) {
-            $command->error($e->getMessage());
-
-            return 1;
+            $bar->advance();
         }
 
-        $query->chunk(
-            1000,
-            function (Collection $modelsData) use ($bar, $command, $frequencies) {
-                foreach ($modelsData as $modelId) {
-                    if ($this->modelAsHandleArg) {
-                        $model = (new $this->model());
-                        if ($this->hasSoftDeletes($model)) {
-                            $instance = $model->withTrashed()->find($modelId->id);
-                        } else {
-                            $instance = $model->find($modelId->id);
-                        }
-                    } else {
-                        $instance = $modelId->id;
-                    }
-
-                    try {
-                        $this->handle($instance, $frequencies, $command, $command->option('async'));
-                    } catch (Throwable $e) {
-                        $command->error($e->getMessage());
-                    }
-                    $bar->advance();
-                }
-            }
-        );
-
         $bar->finish();
-        $command->info("");
+        $command->info('');
 
         return 0;
     }

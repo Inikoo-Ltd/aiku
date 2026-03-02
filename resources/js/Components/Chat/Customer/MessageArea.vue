@@ -436,10 +436,16 @@ defineExpose({
 </script>
 
 <template>
-    <div class="flex flex-col bg-white">
+    <div class="flex flex-col flex-1 min-h-0 bg-white">
         <!-- Messages -->
-        <div v-if="messages.length" ref="messagesContainer" @scroll="onScroll"
-            class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">
+        <div v-if="messages.length" ref="messagesContainer" @scroll="onScroll" class="
+    bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto scroll-smooth
+
+    flex-1 min-h-0
+    sm:flex-none
+    sm:min-h-[350px]
+    sm:max-h-[calc(100vh-420px)]
+  ">
             <template v-for="(group, date) in groupedMessages" :key="date">
                 <div class="mx-auto text-xs text-gray-400 flex justify-center">
                     {{ date }}
@@ -462,8 +468,15 @@ defineExpose({
         </div>
 
         <!-- Empty -->
-        <div v-if="!messages.length && isLoggedIn"
-            class="flex-1 grid place-content-center text-gray-400 text-sm min-h-[350px] max-h-[calc(100vh-400px)]">
+        <div v-if="!messages.length && isLoggedIn" class="
+        flex-1 flex items-center justify-center text-gray-400 text-sm
+
+        sm:flex-none
+        sm:min-h-[350px]
+        sm:max-h-[calc(100vh-400px)]
+        sm:grid
+        sm:place-content-center
+    ">
             {{ trans("Start the conversation") }}
         </div>
 
@@ -517,7 +530,7 @@ defineExpose({
         </div>
 
         <!-- Input -->
-        <div v-if="!isRating" class="border-t p-2 flex gap-2 items-end">
+        <div v-if="!isRating" class="border-t p-2 flex gap-2 items-end shrink-0">
             <GuestProfileForm v-if="!isLoggedIn && !guestProfileSubmitted && !isUser" :sessionUlid="session?.ulid"
                 @submitted="onGuestProfileSubmitted" />
 

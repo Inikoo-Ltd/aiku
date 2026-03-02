@@ -60,7 +60,15 @@ const getDataBanner = async (): Promise<void> => {
       `/json/banner/${activeId.value}`
     );
 
-    data.value = response.data;
+    const components = response.data.compiled_layout.components.filter((item: any) => item?.visibility == true)
+
+    data.value = {
+      ...response.data,
+      compiled_layout : {
+        ...response.data.compiled_layout,
+        components : components
+      }
+    }
   } catch (error: any) {
     notify({
       title: "Failed to fetch banners data",

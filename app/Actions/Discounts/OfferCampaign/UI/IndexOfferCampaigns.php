@@ -52,7 +52,7 @@ class IndexOfferCampaigns extends OrgAction
         } else {
             $query->where('offer_campaigns.shop_id', $parent->id);
         }
-
+        $query->where('offer_campaigns.status', true);
         $query->leftjoin('shops', 'offer_campaigns.shop_id', '=', 'shops.id');
         $query->leftJoin('offer_campaign_stats', 'offer_campaigns.id', 'offer_campaign_stats.offer_campaign_id');
 
@@ -114,24 +114,19 @@ class IndexOfferCampaigns extends OrgAction
             $emptyStateData['description'] = __("There are no offer campaigns in this shop");
 
             $table->withGlobalSearch();
-            $table->betweenDates(['date']);
             $table->withEmptyState($emptyStateData);
             $table->withModelOperations($modelOperations);
 
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'type', label: '', type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'number_current_offers', label: __('Number Offers'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_current_offers', label: __('Current Offers'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('id');
         };
     }
@@ -160,7 +155,7 @@ class IndexOfferCampaigns extends OrgAction
         $iconRight  = null;
 
         return Inertia::render(
-            'Org/Discounts/Campaigns',
+            'Org/Discounts/OfferCampaigns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -200,7 +195,7 @@ class IndexOfferCampaigns extends OrgAction
         return match ($routeName) {
             'grp.overview.offer.campaigns.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',

@@ -35,13 +35,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('order')->as('order.')->group(function () {
     Route::get('', GetOrders::class)->name('index');
-    Route::post('/client/{customerClient:id}/store', StoreApiOrder::class)->name('store');
-    Route::get('{order:id}', GetOrder::class)->name('show');
-    Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update');
-    Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit');
-    Route::delete('{order:id}/delete', DeleteApiOrder::class)->name('delete');
-    Route::get('{order:id}/transactions', GetTransactions::class)->name('transaction.index');
-    Route::post('/{order:id}/portfolio/{portfolio:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
+    Route::post('/client/{customerClient:id}/store', StoreApiOrder::class)->name('store')->whereNumber('customerClient');
+    Route::get('{order:id}', GetOrder::class)->name('show')->whereNumber('order');
+    Route::patch('{order:id}/update', UpdateApiOrder::class)->name('update')->whereNumber('order');
+    Route::patch('{order:id}/submit', SubmitApiOrder::class)->name('submit')->whereNumber('order');
+    Route::delete('{order:id}/delete', DeleteApiOrder::class)->name('delete')->whereNumber('order');
+    Route::get('{order:id}/transactions', GetTransactions::class)->name('transaction.index')->whereNumber('order');
+    Route::post('/{order:id}/portfolio/{portfolio:id}/store', StoreApiOrderTransaction::class)->name('transaction.store')
+        ->whereNumber('order')->whereNumber('portfolio')
+        ->withoutScopedBindings();
 });
 
 Route::prefix('transaction')->as('transaction.')->group(function () {
@@ -53,10 +55,10 @@ Route::prefix('transaction')->as('transaction.')->group(function () {
 Route::prefix('products')->as('products.')->group(function () {
     Route::get('', GetProducts::class)->name('index');
     Route::get('my-products', GetPortfolios::class)->name('my_product.index');
-    Route::post('my-products/{product:id}/store', StoreApiPortfolio::class)->name('my_product.store')->withoutScopedBindings();
-    Route::get('my-products/{portfolio:id}', ShowApiPortfolio::class)->name('my_product.show');
-    Route::patch('my-products/{portfolio:id}/update', UpdateApiPortfolio::class)->name('my_product.update');
-    Route::delete('my-products/{portfolio:id}/delete', DeleteApiPortfolio::class)->name('my_product.delete');
+    Route::post('my-products/{product:id}/store', StoreApiPortfolio::class)->name('my_product.store')->whereNumber('product')->withoutScopedBindings();
+    Route::get('my-products/{portfolio:id}', ShowApiPortfolio::class)->name('my_product.show')->whereNumber('portfolio');
+    Route::patch('my-products/{portfolio:id}/update', UpdateApiPortfolio::class)->name('my_product.update')->whereNumber('portfolio');
+    Route::delete('my-products/{portfolio:id}/delete', DeleteApiPortfolio::class)->name('my_product.delete')->whereNumber('portfolio');
 });
 
 Route::prefix('images')->as('images.')->group(function () {
@@ -68,9 +70,9 @@ Route::prefix('images')->as('images.')->group(function () {
 Route::prefix('clients')->as('clients.')->group(function () {
     Route::get('', GetClients::class)->name('index');
     Route::post('', StoreApiCustomerClient::class)->name('create');
-    Route::get('{customerClient:id}', GetClient::class)->name('show');
-    Route::patch('{customerClient:id}', UpdateApiCustomerClient::class)->name('update');
-    Route::delete('{customerClient:id}', DisableApiCustomerClient::class)->name('delete');
+    Route::get('{customerClient:id}', GetClient::class)->name('show')->whereNumber('customerClient');
+    Route::patch('{customerClient:id}', UpdateApiCustomerClient::class)->name('update')->whereNumber('customerClient');
+    Route::delete('{customerClient:id}', DisableApiCustomerClient::class)->name('delete')->whereNumber('customerClient');
 });
 
 Route::get('/my-products-data-feed-csv', GetDataFeedsCsv::class)->name('data_feed.csv');

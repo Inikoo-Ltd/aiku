@@ -7,113 +7,80 @@
 
 namespace App\Actions\Ordering\SalesChannel;
 
-use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Ordering\SalesChannel;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class RedoSalesChannelTimeSeries
+class RedoSalesChannelTimeSeries implements ShouldBeUnique
 {
-    use WithHydrateCommand;
+    use AsAction;
 
-    public string $commandSignature = 'sales-channels:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    public string $jobQueue = 'default-long';
+    public string $commandSignature = 'sales-channels:redo_time_series {--a|async : Run asynchronously}';
 
-    public function __construct()
+    public function getJobUniqueId(string $from, string $to): string
     {
-        $this->model = SalesChannel::class;
+        return "{$from}_{$to}";
     }
 
-    public function handle(SalesChannel $salesChannel, array $frequencies, bool $async = true): void
+    public function handle(SalesChannel $salesChannel, bool $async = false): void
     {
-        $firstInvoicedDate = DB::table('invoices')
-            ->where('sales_channel_id', $salesChannel->id)
-            ->whereNull('deleted_at')
-            ->min('date');
+        $firstInvoicedDate = DB::table('invoices')->where('sales_channel_id', $salesChannel->id)->whereNull('deleted_at')->min('date');
+        $lastInvoicedDate  = DB::table('invoices')->where('sales_channel_id', $salesChannel->id)->whereNull('deleted_at')->max('date');
 
-        if ($firstInvoicedDate && ($firstInvoicedDate < $salesChannel->created_at)) {
-            $salesChannel->update(['created_at' => $firstInvoicedDate]);
+        if (!$firstInvoicedDate) {
+            return;
         }
 
-        $from = $salesChannel->created_at->toDateString();
+        $from = Carbon::parse($firstInvoicedDate)->toDateString();
+        $to   = Carbon::parse($lastInvoicedDate ?? now())->toDateString();
 
-        $to = DB::table('invoices')
-            ->where('sales_channel_id', $salesChannel->id)
-            ->whereNull('deleted_at')
-            ->max('date');
-
-        if (!$to) {
-            $to = now();
-        }
-
-        $to = Carbon::parse($to)->toDateString();
-
-        if ($from != null && $to != null) {
-            foreach ($frequencies as $frequency) {
-                if ($async) {
-                    ProcessSalesChannelTimeSeriesRecords::dispatch($salesChannel->id, $frequency, $from, $to)->onQueue('low-priority');
-                } else {
-                    ProcessSalesChannelTimeSeriesRecords::run($salesChannel->id, $frequency, $from, $to);
-                }
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            if ($async) {
+                ProcessSalesChannelTimeSeriesRecords::dispatch($salesChannel->id, $frequency, $from, $to)->onQueue('low-priority');
+            } else {
+                ProcessSalesChannelTimeSeriesRecords::run($salesChannel->id, $frequency, $from, $to);
             }
         }
+    }
+
+    public function asJob(string $from, string $to): void
+    {
+        SalesChannel::all()->each(function (SalesChannel $salesChannel) use ($from, $to) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                ProcessSalesChannelTimeSeriesRecords::run($salesChannel->id, $frequency, $from, $to);
+            }
+        });
     }
 
     public function asCommand(Command $command): int
     {
         $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
+
+        $async = (bool) $command->option('async');
+
+        $salesChannels = SalesChannel::all();
+
+        $bar = $command->getOutput()->createProgressBar($salesChannels->count());
         $bar->setFormat('debug');
         $bar->start();
 
-        try {
-            $frequencyOption = $command->option('frequency');
-
-            if ($frequencyOption === 'all') {
-                $frequencies = TimeSeriesFrequencyEnum::cases();
-            } else {
-                $frequencies = [
-                    TimeSeriesFrequencyEnum::from($frequencyOption)
-                ];
+        foreach ($salesChannels as $salesChannel) {
+            try {
+                $this->handle($salesChannel, $async);
+            } catch (Throwable $e) {
+                $command->error($e->getMessage());
             }
-        } catch (Throwable $e) {
-            $command->error($e->getMessage());
-
-            return 1;
+            $bar->advance();
         }
 
-        $query->chunk(
-            1000,
-            function (\Illuminate\Support\Collection $modelsData) use ($bar, $command, $frequencies) {
-                foreach ($modelsData as $modelId) {
-                    if ($this->modelAsHandleArg) {
-                        $model = (new $this->model());
-                        if ($this->hasSoftDeletes($model)) {
-                            $instance = $model->withTrashed()->find($modelId->id);
-                        } else {
-                            $instance = $model->find($modelId->id);
-                        }
-                    } else {
-                        $instance = $modelId->id;
-                    }
-
-                    try {
-                        $this->handle($instance, $frequencies, $command->option('async'));
-                    } catch (Throwable $e) {
-                        $command->error($e->getMessage());
-                    }
-                    $bar->advance();
-                }
-            }
-        );
-
         $bar->finish();
-        $command->info("");
+        $command->info('');
 
         return 0;
     }
