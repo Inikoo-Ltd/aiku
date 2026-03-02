@@ -14,7 +14,7 @@ class UpdateShippingFaireOrder extends OrgAction
     public function handle(DeliveryNote $deliveryNote, Command|null $command = null): array
     {
 
-        if(!app()->isProduction()){
+        if (!app()->isProduction()) {
             return [
                 'status' => 'success',
                 'msg'    => __('Order not updated in local environment')
