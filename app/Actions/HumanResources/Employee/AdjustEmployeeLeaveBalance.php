@@ -27,10 +27,8 @@ class AdjustEmployeeLeaveBalance extends OrgAction
                 'year'        => $data['year'],
             ],
             [
-                'annual_days'   => 10,
+                'annual_days'   => $employee->organisation->getDefaultAnnualLeaveDays(),
                 'annual_used'   => 0,
-                'medical_days'  => 365,
-                'medical_used'  => 0,
                 'unpaid_days'  => 0,
                 'unpaid_used'  => 0,
             ]
