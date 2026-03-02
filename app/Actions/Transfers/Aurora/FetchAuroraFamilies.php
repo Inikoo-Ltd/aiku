@@ -11,6 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Media\SaveModelImages;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -27,10 +28,24 @@ class FetchAuroraFamilies extends FetchAuroraAction
     {
         $this->organisationSource = $organisationSource;
         if ($familyData = $organisationSource->fetchFamily($organisationSourceId)) {
-            if ($family = ProductCategory::where('source_family_id', $familyData['family']['source_family_id'])
-                ->first()) {
-                try {
+            $family = ProductCategory::where('source_family_id', $familyData['family']['source_family_id'])->first();
 
+
+            if (!$family) {
+                $family = ProductCategory::whereNull('source_family_id')
+                    ->where('shop_id', $familyData['shop']->id)
+                    ->where('type', ProductCategoryTypeEnum::FAMILY)
+                    ->whereRaw("lower(code) = lower(?)", [$familyData['family']['code']])
+                    ->first();
+
+                if ($family) {
+                    return $family;
+                }
+            }
+
+
+            if ($family) {
+                try {
                     $modelData = Arr::only($familyData['family'], ['image', 'fetched_at', 'last_fetched_at']);
 
 
@@ -45,7 +60,7 @@ class FetchAuroraFamilies extends FetchAuroraAction
                     );
 
 
-                    if (!$family->image_id  && isset($imageData['image_path']) and isset($imageData['filename'])) {
+                    if (!$family->image_id && isset($imageData['image_path']) and isset($imageData['filename'])) {
                         SaveModelImages::run(
                             model: $family,
                             mediaData: [
@@ -53,7 +68,7 @@ class FetchAuroraFamilies extends FetchAuroraAction
                                 'originalName' => $imageData['filename'],
 
                             ],
-                            mediaScope:'product_images',
+                            mediaScope: 'product_images',
                             modelHasMediaData: [
                                 'scope' => 'photo'
                             ]
@@ -96,20 +111,18 @@ class FetchAuroraFamilies extends FetchAuroraAction
 
                     if (isset($imageData['image_path']) and isset($imageData['filename'])) {
                         SaveModelImages::run(
-                            model:$family,
-                            mediaData:[
+                            model: $family,
+                            mediaData: [
                                 'path'         => $imageData['image_path'],
                                 'originalName' => $imageData['filename'],
 
                             ],
-                            mediaScope:'product_images',
+                            mediaScope: 'product_images',
                             modelHasMediaData: [
                                 'scope' => 'photo'
                             ]
                         );
                     }
-
-
                 } catch (Exception|Throwable $e) {
                     $this->recordError($organisationSource, $e, $familyData['family'], 'Family', 'store');
 

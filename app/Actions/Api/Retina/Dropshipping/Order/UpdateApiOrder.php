@@ -26,11 +26,18 @@ class UpdateApiOrder extends RetinaApiAction
 
     public function handle(Order $order, array $modelData): Order|JsonResponse
     {
+        if ($order->customer_id != $this->customer->id || $order->shop_id != $this->shop->id) {
+            return response()->json([
+                'message' => "Unable to make modifications for this order"
+            ], 403);
+        }
+
         if ($order->state != OrderStateEnum::CREATING) {
             return response()->json([
-                'message' => 'This order is already in the "' . $order->state->value . '" state and cannot be updated.',
-            ]);
+                'message' => "This order is already in the '{$order->state->value}' state and cannot be updated."
+            ], 409);
         }
+
         $order = UpdateOrder::make()->action($order, $modelData);
 
         return $order;
@@ -43,9 +50,11 @@ class UpdateApiOrder extends RetinaApiAction
         ];
     }
 
-    public function jsonResponse(Order $order)
+    public function jsonResponse(Order|JsonResponse $result)
     {
-        return OrderApiResource::make($order)
+        if($result instanceof JsonResponse) return $result;
+        
+        return OrderApiResource::make($result)
             ->additional([
                 'message' => __('Order updated successfully'),
             ]);

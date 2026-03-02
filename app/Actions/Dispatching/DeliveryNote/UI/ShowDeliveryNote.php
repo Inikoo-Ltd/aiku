@@ -22,6 +22,7 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -357,10 +358,10 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ],
             DeliveryNoteStateEnum::PACKED => [
-                count($deliveryNote->parcels ?? []) ? [
+                (count($deliveryNote->parcels ?? []) && !$deliveryNote->is_shipping_by_external) ? [
                     'type'    => 'button',
                     'style'   => 'save',
-                    'tooltip' => __('Finalised'),
+                    'tooltip' => __('Finalise'),
                     'label'   => match (true) {
                         $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Dispatch'),
                         $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => __('set as collected'),
@@ -524,6 +525,12 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ),
             'customer_client'              => $deliveryNote->customerClient,
+            'currency_code'                => $deliveryNote->shop->currency->code,
+            'external_shop'               => $deliveryNote->shop->type == ShopTypeEnum::EXTERNAL ? [  // TODO: Artha
+                'engine_value'            => $deliveryNote->shop->engine->value,
+                'engine_label'            => ShopEngineEnum::from($deliveryNote->shop->engine->value)->label(),
+                'external_shipping_label' => $deliveryNote->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
+            ] : null,
             'platform'                     => [
                 'name' => $deliveryNote->platform?->name,
                 'logo' => $deliveryNote->customerSalesChannel?->platform?->code ? $this->getPlatformLogo($deliveryNote->customerSalesChannel->platform->code) : null,

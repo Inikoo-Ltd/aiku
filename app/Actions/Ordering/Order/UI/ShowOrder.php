@@ -377,13 +377,12 @@ class ShowOrder extends OrgAction
                 'shop_type'                   => $order->shop->type,
                 'is_shop_external'            => $this->shop->type == ShopTypeEnum::EXTERNAL,
                 'external_shop'               => $this->shop->type == ShopTypeEnum::EXTERNAL ? [
-                    'xx' => 'xx',
                     'engine_value'            => $this->shop->engine->value,
                     'engine_label'            => ShopEngineEnum::from($this->shop->engine->value)->label(),
                     'external_shipping_label' => $this->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
                 ] : null,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
-                'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
+                'contact_address'             => $order->customer ? AddressResource::make($order->customer->address)->getArray() : null,
                 'box_stats'                   => $this->getOrderBoxStats($order),
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'                        => OrderResource::make($order),
@@ -394,8 +393,11 @@ class ShowOrder extends OrgAction
                 'payments_accounts'     => $paymentAccountData,
                 'state'                 => $order->state->value,
                 'route_recalculate_vat' => [
-                    // Show button if order is creating (not submitted) and deliveryNote has is_cash_on_delivery true and it's not in those condition. Based on Dimitar requests.
-                    'showButton' => in_array($order->state, [OrderStateEnum::CREATING])
+                    'showButton' => !in_array($order->state, [
+                        OrderStateEnum::DISPATCHED,
+                        OrderStateEnum::FINALISED,
+                        OrderStateEnum::CANCELLED
+                        ])
                         || $order->deliveryNotes()
                             ->where('is_cash_on_delivery', true)
                             ->whereNotIn('state', [

@@ -8,132 +8,80 @@
 
 namespace App\Actions\Masters\MasterAssetTimeSeries;
 
-use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class RedoMasterAssetTimeSeries
+class RedoMasterAssetTimeSeries implements ShouldBeUnique
 {
-    use WithHydrateCommand;
+    use AsAction;
 
-    public string $commandSignature = 'master_assets:redo_time_series {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    public string $jobQueue = 'default-long';
+    public string $commandSignature = 'master-assets:redo_time_series {--a|async : Run asynchronously}';
 
-    public function __construct()
+    public function getJobUniqueId(string $from, string $to): string
     {
-        $this->model = MasterAsset::class;
+        return "{$from}_{$to}";
     }
 
-    public function handle(MasterAsset $masterAsset, array $frequencies, bool $async = true): void
+    public function handle(MasterAsset $masterAsset, bool $async = false): void
     {
-        $from = null;
         $firstInvoicedDate = DB::table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->whereNull('deleted_at')->min('date');
+        $lastInvoicedDate  = DB::table('invoice_transactions')->where('master_asset_id', $masterAsset->id)->whereNull('deleted_at')->max('date');
 
-        if ($firstInvoicedDate && ($firstInvoicedDate < $masterAsset->created_at)) {
-            $masterAsset->update(['created_at' => $firstInvoicedDate]);
+        if (!$firstInvoicedDate) {
+            return;
         }
 
-        if ($masterAsset->created_at) {
-            $from = $masterAsset->created_at->toDateString();
-        }
+        $from = Carbon::parse($firstInvoicedDate)->toDateString();
+        $to   = Carbon::parse($lastInvoicedDate ?? now())->toDateString();
 
-        if ($masterAsset->status) {
-            $to = now()->toDateString();
-        } else {
-            $to = $masterAsset->discontinued_at;
-
-            $lastInvoicedDate = DB::table('invoice_transactions')
-                ->where('master_asset_id', $masterAsset->id)
-                ->whereNull('deleted_at')
-                ->max('date');
-
-            if (!$to && !$lastInvoicedDate) {
-                return;
-            }
-
-            if ($lastInvoicedDate) {
-                $lastInvoicedDate = Carbon::parse($lastInvoicedDate);
-            }
-
-            if ($lastInvoicedDate && (!$to || $lastInvoicedDate->greaterThan($to))) {
-                $to = $lastInvoicedDate;
-                $masterAsset->update(['discontinued_at' => $to]);
-            }
-
-            if (!$to) {
-                return;
-            }
-
-            $to = $to->toDateString();
-        }
-
-        if ($from != null && $to != null) {
-            foreach ($frequencies as $frequency) {
-                if ($async) {
-                    ProcessMasterAssetTimeSeriesRecords::dispatch($masterAsset->id, $frequency, $from, $to)->onQueue('low-priority');
-                } else {
-                    ProcessMasterAssetTimeSeriesRecords::run($masterAsset->id, $frequency, $from, $to);
-                }
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            if ($async) {
+                ProcessMasterAssetTimeSeriesRecords::dispatch($masterAsset->id, $frequency, $from, $to)->onQueue('low-priority');
+            } else {
+                ProcessMasterAssetTimeSeriesRecords::run($masterAsset->id, $frequency, $from, $to);
             }
         }
+    }
+
+    public function asJob(string $from, string $to): void
+    {
+        MasterAsset::all()->each(function (MasterAsset $masterAsset) use ($from, $to) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                ProcessMasterAssetTimeSeriesRecords::run($masterAsset->id, $frequency, $from, $to);
+            }
+        });
     }
 
     public function asCommand(Command $command): int
     {
         $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
+
+        $async = (bool) $command->option('async');
+
+        $masterAssets = MasterAsset::all();
+
+        $bar = $command->getOutput()->createProgressBar($masterAssets->count());
         $bar->setFormat('debug');
         $bar->start();
 
-        try {
-            $frequencyOption = $command->option('frequency');
-
-            if ($frequencyOption === 'all') {
-                $frequencies = TimeSeriesFrequencyEnum::cases();
-            } else {
-                $frequencies = [
-                    TimeSeriesFrequencyEnum::from($frequencyOption)
-                ];
+        foreach ($masterAssets as $masterAsset) {
+            try {
+                $this->handle($masterAsset, $async);
+            } catch (Throwable $e) {
+                $command->error($e->getMessage());
             }
-        } catch (Throwable $e) {
-            $command->error($e->getMessage());
-
-            return 1;
+            $bar->advance();
         }
 
-        $query->chunk(
-            1000,
-            function (\Illuminate\Support\Collection $modelsData) use ($bar, $command, $frequencies) {
-                foreach ($modelsData as $modelId) {
-                    if ($this->modelAsHandleArg) {
-                        $model = (new $this->model());
-                        if ($this->hasSoftDeletes($model)) {
-                            $instance = $model->withTrashed()->find($modelId->id);
-                        } else {
-                            $instance = $model->find($modelId->id);
-                        }
-                    } else {
-                        $instance = $modelId->id;
-                    }
-
-                    try {
-                        $this->handle($instance, $frequencies, $command->option('async'));
-                    } catch (Throwable $e) {
-                        $command->error($e->getMessage());
-                    }
-                    $bar->advance();
-                }
-            }
-        );
-
         $bar->finish();
-        $command->info("");
+        $command->info('');
 
         return 0;
     }

@@ -19,14 +19,16 @@ class DashboardSalesChannelSalesResource extends JsonResource
     {
         $data = (array) $this->resource;
 
+        $name = $data['name'] = preg_replace('/\s*\(.*?\)/', '', $data['name']);
+
         $columns = [
             'label' => [
-                'formatted_value' => $data['name'] ?? 'Unknown',
+                'formatted_value' => $name ?? 'Unknown',
                 'align'           => 'left'
             ],
             'label_minified' => [
-                'formatted_value' => Abbreviate::run($data['name'] ?? 'Unknown'),
-                'tooltip'         => $data['name'] ?? 'Unknown',
+                'formatted_value' => Abbreviate::run($name ?? 'Unknown'),
+                'tooltip'         => $name ?? 'Unknown',
                 'align'           => 'left'
             ]
         ];

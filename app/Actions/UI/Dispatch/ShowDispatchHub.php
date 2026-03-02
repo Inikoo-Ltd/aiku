@@ -8,10 +8,19 @@
 
 namespace App\Actions\UI\Dispatch;
 
+use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithDispatchingAuthorisation;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
+use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
+use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
+use App\Http\Resources\Dispatching\DashboardDispatchHubResource;
+use App\Http\Resources\Dispatching\DashboardHeaderDispatchHubResource;
+use App\Http\Resources\Dispatching\DashboardTotalDispatchHubResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -20,13 +29,16 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowDispatchHub extends OrgAction
 {
+    use WithDashboard;
+    use WithDashboardSettings;
+    use WithDashboardIntervalOption;
     use WithDispatchingAuthorisation;
+    use WithDashboardCurrencyTypeSettings;
 
     public function handle(Warehouse $warehouse): Warehouse
     {
         return $warehouse;
     }
-
 
     public function asController(Organisation $organisation, Warehouse $warehouse): Warehouse
     {
@@ -35,36 +47,56 @@ class ShowDispatchHub extends OrgAction
         return $this->handle($warehouse);
     }
 
-
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
+        $userSettings = $request->user()->settings;
+
         return Inertia::render(
             'Org/Dispatching/DispatchHub',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => 'dispatch',
                 'pageHead'    => [
+                    'title' => __('Dispatching backlog'),
                     'icon'  => [
                         'icon' => ['fal', 'fa-conveyor-belt-alt'],
                     ],
-                    'title' => __('Dispatching backlog'),
                 ],
-
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => DispatchHubTabsEnum::navigation()
                 ],
-
-                DispatchHubTabsEnum::DASHBOARD->value => $this->tab == DispatchHubTabsEnum::DASHBOARD->value
-                ? fn () => GetDispatchHubShowcase::make()->handle($warehouse, $request)
-                : Inertia::lazy(fn () => GetDispatchHubShowcase::make()->handle($warehouse, $request)),
-
+                'intervals'   => [
+                    'options'        => $this->dashboardIntervalOption(),
+                    'value'          => DateIntervalEnum::ALL,
+                    'range_interval' => DashboardIntervalFilters::run(DateIntervalEnum::ALL, $userSettings),
+                ],
+                'settings'    => [
+                    'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                    'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
+                    'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
+                ],
+                'blocks'      => [
+                    'id'          => 'dispatch_hub_tab',
+                    'type'        => 'table',
+                    'current_tab' => 'dispatch_hub',
+                    'tabs'        => [
+                        'dispatch_hub' => [
+                            'title' => __('Delivery Notes'),
+                            'icon'  => ['fal', 'fa-truck']
+                        ],
+                    ],
+                    'tables'      => [
+                        'dispatch_hub' => [
+                            'header' => json_decode(DashboardHeaderDispatchHubResource::make($warehouse)->toJson(), true),
+                            'body'   => json_decode(DashboardDispatchHubResource::collection(GetDispatchHubShowcase::make()->handle($warehouse))->toJson(), true),
+                            'totals' => json_decode(DashboardTotalDispatchHubResource::make(GetDispatchHubShowcase::make()->handle($warehouse))->toJson(), true),
+                        ],
+                    ],
+                ],
             ]
         );
     }
-
 
     public function getBreadcrumbs(array $routeParameters): array
     {
@@ -84,5 +116,4 @@ class ShowDispatchHub extends OrgAction
             ]
         );
     }
-
 }

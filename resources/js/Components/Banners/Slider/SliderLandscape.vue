@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, watch, toRef, computed, nextTick, onMounted } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { get } from 'lodash-es'
 
 
@@ -20,6 +20,7 @@ import { Autoplay, Pagination, Navigation } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
+import "@/../css/Iris/editor.css"
 
 import SlideControls from '@/Components/Banners/Slider/Corners/SlideControls.vue'
 import CentralStage from "@/Components/Banners/Slider/CentralStage.vue"
@@ -219,7 +220,7 @@ onMounted(() => {
                                         }
                                     ]">
 
-                                        <div class="relative" :style="{
+                                        <div class="relative  editor-class" :style="{
                                             width: (card.width || 60) + '%',
                                             height: (card.height || 300) + 'px',
                                             background: card.hideCard ? 'transparent' : (card.background || '#ffffff'),
@@ -229,25 +230,32 @@ onMounted(() => {
                                             transform: `translate(${card.offsetX || 0}px, ${card.offsetY || 0}px) scale(${getCardScale})`,
                                             transformOrigin: 'center'
                                         }" :class="card.shadow && !card.hideCard ? 'shadow-2xl' : ''">
-                                            <CentralStage :data="{
-                                                titles: card.titles,
-                                                textAlign: card.textAlign,
-                                            }" :class="[
-                                                card.textAlign === 'center'
-                                                    ? 'left-0 right-0 text-center'
-                                                    : '',
+                                            <div v-html="card.titles[0].text"></div>
 
-                                                card.textVertical === 'top'
-                                                    ? 'top-0'
-                                                    : '',
-                                                card.textVertical === 'middle'
-                                                    ? 'top-1/2 -translate-y-1/2'
-                                                    : '',
-                                                card.textVertical === 'bottom'
-                                                    ? 'bottom-0'
-                                                    : ''
-                                            ]" />
+                                           <!-- BUTTON -->
+                                            <div v-if="card.button?.show" class="mt-4 flex" :class="{
+                                                'justify-start': card.button?.align === 'left',
+                                                'justify-center': !card.button?.align || card.button?.align === 'center',
+                                                'justify-end': card.button?.align === 'right'
+                                            }">
+                                                <a :href="card.button?.link || '#'"
+                                                    class="transition-all duration-200 inline-flex items-center justify-center"
+                                                    :style="{
+                                                        padding: `${card.button?.paddingY ?? 10}px ${card.button?.paddingX ?? 20}px`,
+                                                        background: card.button?.bgColor ?? '#000000',
+                                                        color: card.button?.textColor ?? '#ffffff',
+                                                        borderRadius: (card.button?.radius ?? 6) + 'px',
 
+                                                        width:
+                                                            card.button?.width === 'full'
+                                                                ? '100%'
+                                                                : card.button?.width === 'custom'
+                                                                    ? (card.button?.customWidth ?? 200) + 'px'
+                                                                    : 'auto'
+                                                    }">
+                                                    {{ card.button?.text || 'Button' }}
+                                                </a>
+                                            </div>
                                         </div>
 
                                     </div>

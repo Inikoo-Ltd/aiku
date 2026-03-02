@@ -12,6 +12,8 @@ use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Models\Helpers\TaxNumber;
 use App\Actions\Helpers\TaxNumber\Concerns\AsTaxNumberCommand;
+use App\Actions\Helpers\TaxNumber\Traits\WithValidateTaxNumberCustomAudit;
+use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use SoapClient;
@@ -21,6 +23,7 @@ class ValidateEuropeanTaxNumber
 {
     use AsAction;
     use AsTaxNumberCommand;
+    use WithValidateTaxNumberCustomAudit;
 
     public function __construct(int $timeout = 10)
     {
@@ -48,8 +51,12 @@ class ValidateEuropeanTaxNumber
     /**
      * @throws \phpDocumentor\Reflection\Exception
      */
-    public function handle(TaxNumber $taxNumber): TaxNumber
+    public function handle(TaxNumber $taxNumber, TaxNumber|null $oldTaxNumberData = null): TaxNumber
     {
+        if (!$oldTaxNumberData) {
+            $oldTaxNumberData = $taxNumber->replicate();
+        }
+
         if ($taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
             if (!$taxNumber->number || strlen($taxNumber->number) < 7) {
                 $validationData = [
@@ -62,9 +69,10 @@ class ValidateEuropeanTaxNumber
                 $taxNumber->update($validationData);
                 $taxNumber->refresh();
 
+                $this->deployTaxValidationCustomAudit($oldTaxNumberData, $taxNumber, TaxNumberValidationTypeEnum::BASIC);
+
                 return $taxNumber;
             }
-
 
             try {
                 $number      = preg_replace('/\s+/', '', $taxNumber->number);
@@ -106,6 +114,9 @@ class ValidateEuropeanTaxNumber
 
 
                 $taxNumber->update($validationData);
+                $taxNumber->refresh();
+
+                $this->deployTaxValidationCustomAudit($oldTaxNumberData, $taxNumber, TaxNumberValidationTypeEnum::ONLINE, "Checked through VIES");
             } catch (SoapFault $e) {
                 if (!preg_match('/INVALID_INPUT/i', $e->getMessage())) {
                     $validationData = [
@@ -129,6 +140,10 @@ class ValidateEuropeanTaxNumber
 
                 $taxNumber->update($validationData);
                 $taxNumber->refresh();
+
+                $thirdPartyStatus = isset($validationData['external_service_failed_at']) ? 'Checked through VIES. VIES is down' : 'Checked through VIES';
+
+                $this->deployTaxValidationCustomAudit($oldTaxNumberData, $taxNumber, TaxNumberValidationTypeEnum::ONLINE, $thirdPartyStatus);
             }
         }
 

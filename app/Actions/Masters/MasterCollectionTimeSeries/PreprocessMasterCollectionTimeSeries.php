@@ -30,12 +30,10 @@ class PreprocessMasterCollectionTimeSeries implements ShouldBeUnique
             return;
         }
 
-
         $masterCollectionsIds = DB::table('master_collection_has_models')
             ->where('model_type', 'MasterAsset')
             ->where('model_id', $masterAssetID)
             ->pluck('master_collection_id')->unique()->toArray();
-
 
         foreach ($masterCollectionsIds as $masterCollectionsId) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
@@ -54,6 +52,4 @@ class PreprocessMasterCollectionTimeSeries implements ShouldBeUnique
             }
         }
     }
-
-
 }

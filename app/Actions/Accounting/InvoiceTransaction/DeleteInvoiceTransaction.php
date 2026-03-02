@@ -13,16 +13,22 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesCustomersStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
-use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
-use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
-use App\Actions\Discounts\Offer\ProcessOfferTimeSeriesRecords;
-use App\Actions\Discounts\OfferCampaign\ProcessOfferCampaignTimeSeriesRecords;
-use App\Actions\Masters\MasterAssetTimeSeries\ProcessMasterAssetTimeSeriesRecords;
-use App\Actions\Masters\MasterProductCategoryTimeSeries\ProcessMasterProductCategoryTimeSeriesRecords;
+use App\Actions\Catalogue\CollectionTimeSeries\RedoCollectionTimeSeries;
+use App\Actions\Catalogue\Product\RedoProductTimeSeries;
+use App\Actions\Catalogue\ProductCategory\RedoDepartmentsTimeSeries;
+use App\Actions\Catalogue\ProductCategory\RedoFamiliesTimeSeries;
+use App\Actions\Catalogue\ProductCategory\RedoSubDepartmentsTimeSeries;
+use App\Actions\Discounts\Offer\RedoOfferTimeSeries;
+use App\Actions\Discounts\OfferCampaign\RedoOfferCampaignTimeSeries;
+use App\Actions\Masters\MasterAssetTimeSeries\RedoMasterAssetTimeSeries;
+use App\Actions\Masters\MasterCollectionTimeSeries\RedoMasterCollectionTimeSeries;
+use App\Actions\Masters\MasterProductCategoryTimeSeries\RedoMasterDepartmentsTimeSeries;
+use App\Actions\Masters\MasterProductCategoryTimeSeries\RedoMasterFamiliesTimeSeries;
+use App\Actions\Masters\MasterProductCategoryTimeSeries\RedoMasterSubDepartmentsTimeSeries;
 use App\Actions\OrgAction;
 use App\Enums\DateIntervals\DateIntervalEnum;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Accounting\InvoiceTransactionHasTradeUnit;
 
 class DeleteInvoiceTransaction extends OrgAction
 {
@@ -30,6 +36,8 @@ class DeleteInvoiceTransaction extends OrgAction
     {
         $invoiceDate = \Carbon\Carbon::parse($invoiceTransaction->date);
         $intervals = DateIntervalEnum::allExceptHistorical();
+
+        InvoiceTransactionHasTradeUnit::where('invoice_transaction_id', $invoiceTransaction->id)->delete();
 
         $invoiceTransaction->delete();
 
@@ -40,170 +48,43 @@ class DeleteInvoiceTransaction extends OrgAction
             AssetHydrateInvoicesCustomersStats::dispatch($invoiceTransaction->asset_id)->delay($this->hydratorsDelay);
             AssetHydrateInvoicesStats::dispatch($invoiceTransaction->asset_id)->delay($this->hydratorsDelay);
 
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessAssetTimeSeriesRecords::dispatch(
-                    $invoiceTransaction->asset_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString()
-                )->delay($this->hydratorsDelay);
-            }
+            RedoProductTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            RedoCollectionTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
         }
 
         if ($invoiceTransaction->family_id) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessProductCategoryTimeSeriesRecords::dispatch(
-                    $invoiceTransaction->family_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString()
-                )->delay($this->hydratorsDelay);
-            }
+            RedoFamiliesTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
         }
 
         if ($invoiceTransaction->department_id) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessProductCategoryTimeSeriesRecords::dispatch(
-                    $invoiceTransaction->department_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString()
-                )->delay($this->hydratorsDelay);
-            }
+            RedoDepartmentsTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
         }
 
         if ($invoiceTransaction->sub_department_id) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessProductCategoryTimeSeriesRecords::dispatch(
-                    $invoiceTransaction->sub_department_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString()
-                )->delay($this->hydratorsDelay);
-            }
+            RedoSubDepartmentsTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
         }
 
         if ($invoiceTransaction->master_asset_id) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessMasterAssetTimeSeriesRecords::dispatch(
-                    $invoiceTransaction->master_asset_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString()
-                )->delay($this->hydratorsDelay);
-            }
+            RedoMasterAssetTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            RedoMasterCollectionTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
         }
 
         if ($invoiceTransaction->master_family_id) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessMasterProductCategoryTimeSeriesRecords::dispatch(
-                    $invoiceTransaction->master_family_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString()
-                )->delay($this->hydratorsDelay);
-            }
+            RedoMasterFamiliesTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
         }
 
         if ($invoiceTransaction->master_department_id) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessMasterProductCategoryTimeSeriesRecords::dispatch(
-                    $invoiceTransaction->master_department_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString()
-                )->delay($this->hydratorsDelay);
-            }
+            RedoMasterDepartmentsTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
         }
 
         if ($invoiceTransaction->master_sub_department_id) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessMasterProductCategoryTimeSeriesRecords::dispatch(
-                    $invoiceTransaction->master_sub_department_id,
-                    $frequency,
-                    match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                    },
-                    $invoiceDate->toDateString()
-                )->delay($this->hydratorsDelay);
-            }
+            RedoMasterSubDepartmentsTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
         }
 
         if ($invoiceTransaction->transaction) {
-            foreach ($invoiceTransaction->transaction->offerAllowances as $offerAllowance) {
-                foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                    ProcessOfferTimeSeriesRecords::dispatch(
-                        $offerAllowance->offer_id,
-                        $frequency,
-                        match ($frequency) {
-                            TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->startOfYear()->toDateString(),
-                            TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->startOfQuarter()->toDateString(),
-                            TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->startOfMonth()->toDateString(),
-                            TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->startOfWeek()->toDateString(),
-                            TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                        },
-                        $invoiceDate->toDateString()
-                    )->delay($this->hydratorsDelay);
-
-                    ProcessOfferCampaignTimeSeriesRecords::dispatch(
-                        $offerAllowance->offer_campaign_id,
-                        $frequency,
-                        match ($frequency) {
-                            TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->startOfYear()->toDateString(),
-                            TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->startOfQuarter()->toDateString(),
-                            TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->startOfMonth()->toDateString(),
-                            TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->startOfWeek()->toDateString(),
-                            TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                        },
-                        $invoiceDate->toDateString()
-                    )->delay($this->hydratorsDelay);
-                }
+            if ($invoiceTransaction->offerAllowances->isNotEmpty()) {
+                RedoOfferTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+                RedoOfferCampaignTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
             }
         }
 

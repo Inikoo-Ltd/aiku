@@ -23,6 +23,8 @@ class UpdateTaxNumber
 
     public function handle(TaxNumber $taxNumber, array $modelData, bool $strict = true): TaxNumber
     {
+        $oldTaxNumber = $taxNumber->replicate();
+
         $oldChecksumData = array($taxNumber->number, $taxNumber->country_id);
         if (Arr::has($modelData, 'number')) {
             $oldChecksumData[0] = $modelData['number'];
@@ -56,9 +58,9 @@ class UpdateTaxNumber
             }
 
             if ($taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
-                $taxNumber = ValidateEuropeanTaxNumber::run($taxNumber);
+                $taxNumber = ValidateEuropeanTaxNumber::run($taxNumber, $oldTaxNumber);
             } elseif ($taxNumber->type == TaxNumberTypeEnum::GB_VAT) {
-                $taxNumber = ValidateGBTaxNumber::run($taxNumber);
+                $taxNumber = ValidateGBTaxNumber::run($taxNumber, $oldTaxNumber);
             }
         }
 

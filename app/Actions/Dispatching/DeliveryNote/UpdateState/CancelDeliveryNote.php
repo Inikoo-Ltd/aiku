@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\Ordering\Order\UpdateState\RollbackOrderAfterDeliveryNoteCancellation;
@@ -104,6 +105,18 @@ class CancelDeliveryNote extends OrgAction
             if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER && $modifyOrder) {
                 $order = $deliveryNote->orders->first();
                 RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
+            }
+
+            foreach ($deliveryNote->trolleys as $trolley) {
+                DB::table('delivery_note_has_trolleys')
+                    ->where('delivery_note_id', $deliveryNote->id)->where('trolley_id', $trolley->id)->delete();
+                $trolley->update(['current_delivery_note_id' => null]);
+            }
+
+            foreach ($deliveryNote->pickedBays as $pickedBay) {
+                DB::table('picked_bay_has_delivery_notes')
+                    ->where('delivery_note_id', $deliveryNote->id)->where('picked_bay_id', $pickedBay->id)->delete();
+                PickedBayHydrateNumberDeliveryNotes::run($pickedBay->id);
             }
 
             return $deliveryNote;

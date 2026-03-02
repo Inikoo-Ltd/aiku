@@ -8,12 +8,9 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '../Elements/Buttons/Button.vue'
 import { router } from '@inertiajs/vue3'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTrashUndoAlt } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faTrashUndoAlt)
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     warehouse: {
         slug: string
     }
@@ -22,27 +19,31 @@ const props = defineProps<{
         slug: string
         refrence: string
     }
-}>()
+    pickedBays: {}[]
+}>(), {
+    pickedBays: () => []
+})
 const layout = inject('layout', layoutStructure)
 
 const isOpenModal = ref(false)
 
-const listTrolleys = ref([])
+const listBays = ref([])
 const isLoadingFetch = ref(false)
-const fetchTrolleysList = async () => {
+const fetchBaysList = async () => {
     try {
         isLoadingFetch.value = true
         const response = await axios.get(
             route(
-                'grp.json.available_trolleys.list',
+                'grp.json.picked_bays.list',
                 {
+                    organisation: layout.currentParams.organisation,
                     warehouse: props.warehouse.slug,
                 }
             )
         )
         
         console.log('Response axios:', response.data)
-        listTrolleys.value = response.data.data
+        listBays.value = response.data.data
     } catch (error: any) {
         notify({
             title: trans("Something went wrong"),
@@ -56,31 +57,35 @@ const fetchTrolleysList = async () => {
 
 watch(isOpenModal, (newVal) => {
     if (newVal) {
-        fetchTrolleysList()
+        fetchBaysList()
     }
 })
 
-const selectedTrolley = ref<number | null>(null)
-const isLoadingSubmitTrolley = ref<number|null|undefined>(undefined)
-const submitSelectTrolley = (trolleyId?: number|null) => {
+const isLoadingSubmitBay = ref<number|null|undefined>(undefined)
+const submitSelectBay = (bayId?: number|null) => {
+    if (props.pickedBays.map(pBay => pBay.id).includes(bayId)){
+        return
+    }
+    
     // Section: Submit
     router.patch(
         route(
-            'grp.models.delivery_note.state.change_trolley',
+            'grp.models.delivery_note.state.change_picked_bay',
             {
                 deliveryNote: props.deliveryNote.id
             }
         ),
         {
-            trolley: trolleyId
+            picked_bay: bayId
         },
         {
             preserveScroll: true,
             preserveState: true,
             onStart: () => { 
-                isLoadingSubmitTrolley.value = trolleyId
+                isLoadingSubmitBay.value = bayId
             },
             onSuccess: () => {
+                isOpenModal.value = false
                 // notify({
                 //     title: trans("Success"),
                 //     text: trans("Successfully submit the data"),
@@ -90,12 +95,12 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to select trolley"),
+                    text: trans("Failed to submit picked bay"),
                     type: "error"
                 })
             },
             onFinish: () => {
-                isLoadingSubmitTrolley.value = undefined
+                isLoadingSubmitBay.value = undefined
             },
         }
     )
@@ -110,62 +115,64 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="font-bold text-xl text-center mb-8">
-                {{ trans("Select trolley to change") }}
+                {{ trans("Select picked bay to start packing") }}
             </div>
 
             <div class="mb-1">
-                {{ trans("Available trolleys") }} ({{ isLoadingFetch ? '-' : listTrolleys.length }}):
+                {{ trans("Available picked bays") }} ({{ isLoadingFetch ? '-' : listBays.length }}):
             </div>
-            <div class="h-64">
+            
+            <div class="h-64 overflow-y-auto">
                 <div class="grid grid-cols-3 gap-2">
                     <div
                         v-if="isLoadingFetch"
-                        v-for="trolley in 6"
+                        v-for="bay in 6"
                         class="h-10 cursor-pointer py-2 px-3 border border-gray-300 text-sm rounded skeleton"
                         
                     />
 
-                    <template v-else-if="listTrolleys.length">
+                    <template v-else-if="listBays.length">
                         <div
-                            v-for="trolley in listTrolleys"
-                            :key="trolley.id"
-                            @click="() => submitSelectTrolley(trolley.id)"
+                            v-for="bay in listBays"
+                            :key="bay.id"
+                            @click="() => submitSelectBay(bay.id)"
                             class="cursor-pointer flex justify-between items-center py-2 px-3 border border-gray-300 text-sm rounded"
-                            :class="isLoadingSubmitTrolley == trolley.id ? 'bg-[var(--theme-color-0)] opacity-70 text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
+                            :class="pickedBays.map(pBay => pBay.id).includes(bay.id) ? 'bg-gray-400' : isLoadingSubmitBay == bay.id ? 'bg-[var(--theme-color-0)] opacity-70 text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
                         >
-                            {{ trolley.name }}
-                            <LoadingIcon v-if="isLoadingSubmitTrolley == trolley.id" />
+                            {{ bay.name ?? bay.code ?? bay.slug }}
+                            <LoadingIcon v-if="isLoadingSubmitBay == bay.id" />
                         </div>
                     </template>
                     
-                    <!-- Section: no trolleys found -->
+                    <!-- Section: no bays found -->
                     <div v-else class="flex items-center justify-center w-full col-span-3 pt-3">
                         <div class="text-center border-gray-200 p-14">
-                            <h3 class="text-lg font-semibold tracking-wide pb-2">{{ trans("No trolleys found") }}</h3>
-                            <a :href="route('grp.org.warehouses.show.dispatching.trolleys.create', {
+                            <h3 class="text-lg font-semibold tracking-wide pb-2">{{ trans("No picked bays found") }}</h3>
+                            <a :href="route('grp.org.warehouses.show.dispatching.picked_bays.create', {
                                     organisation: layout.currentParams.organisation,
                                     warehouse: props.warehouse.slug
                                 })"
                                 target="_blank"
                             >
-                                <Button label="Create Trolley" icon="fas fa-plus" size="xs" type="secondary" key="4">
+                                <Button label="Create picked bay" icon="fas fa-plus" size="xs" type="secondary" key="4">
 
                                 </Button>
                             </a>
+
                         </div>
                     </div>
                 </div>
             </div>
 
             <Button
-                @click="() => submitSelectTrolley(null)"
-                :label="trans('Unassign Trolley')"
+                @click="() => submitSelectBay(null)"
+                :label="trans('Unassign picked bay')"
                 full
                 iconRight="fal fa-trash-undo-alt"
                 class="mt-4"
                 type="negative"
-                :disabled="isLoadingSubmitTrolley !== undefined"
-                :loading="isLoadingSubmitTrolley === null"
+                :disabled="isLoadingSubmitBay !== undefined"
+                :loading="isLoadingSubmitBay === null"
             />
         </Modal>
     </div>

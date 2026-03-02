@@ -93,6 +93,7 @@ import error from "@/Components/Utils/Error.vue"
 import order from "@/Pages/Grp/Org/Ordering/Order.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
+import { Icon as IconTS } from "@/types/Utils/Icon"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -208,7 +209,14 @@ const props = defineProps<{
         order_summary: {}
         payments: {}[]
         delivery_notes?: {
-            data: Array<any>
+            id: number
+            slug: string
+            reference: string
+            type: string
+            parcels: string
+            state: string
+            state_icon: IconTS
+            shipments: {}
         },
         shipping_notes: string
     }
@@ -1094,6 +1102,38 @@ const recalculateVat = async () => {
         })
 }
 
+
+// Section: Get shipment from Faire/Tiktok
+const getShipmentFromPlatform = (deliveryNote: {}) => {
+    
+    const faire = {
+        label: trans('Get shipment from Faire'),
+        routeShipment: {
+            name: 'grp.models.delivery_note.shipment.store_faire',
+            parameters: {
+                deliveryNote: deliveryNote.id
+            }
+        }
+    }
+
+    const tiktok = {
+        label: trans('Get shipment from Tiktok'),
+        routeShipment: {
+            name: 'grp.models.delivery_note.shipment.store_tiktok',
+            parameters: {
+                deliveryNote: deliveryNote.id
+            }
+        }
+    }
+    
+    if (props.external_shop?.engine_value === 'faire') {
+        return faire
+    } else if (props.external_shop?.engine_value === 'tiktok') {
+        return tiktok
+    } else {
+        return null
+    }
+}
 </script>
 
 <template>
@@ -1267,7 +1307,7 @@ const recalculateVat = async () => {
                 v-if="data?.data?.state === 'submitted'"
                 :description="trans('This will move the order back to basket, allowing customer to edit the order again. Are you sure?')"
                 :title="trans('Undo Order back to basket?')"
-                :noLabel="trans('Yes, undo to basket')"
+                :noLabel="trans('Yes, sned back to basket')"
                 noIcon="fal fa-undo-alt"
                 class="w-full"
                 :routeDelete="{
@@ -1289,7 +1329,7 @@ const recalculateVat = async () => {
                                 <LoadingIcon v-if="isLoadingdelete" />
                                 <FontAwesomeIcon v-else icon="fal fa-undo-alt" class="" fixed-width aria-hidden="true" />
                             </div>
-                            <div class="w-full">{{ trans('Undo to basket') }}</div>
+                            <div class="w-full">{{ trans('Send back to basket') }}</div>
                         </div>
                     </Button>
                 </template>
@@ -1648,8 +1688,6 @@ const recalculateVat = async () => {
                                 </div>
                             </div>
                         </div>
-
-
                     </dl>
 
 
@@ -1676,8 +1714,8 @@ const recalculateVat = async () => {
                                 }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                    {{ trans(note?.state?.tooltip) }}
-                                    <Icon :data="note?.state" />
+                                    {{ trans(note?.state_icon?.tooltip) }}
+                                    <Icon :data="note?.state_icon" />
                                 </span>
                             </div>
 
@@ -1705,6 +1743,50 @@ const recalculateVat = async () => {
                                         </span>
                                     </li>
                                 </ul>
+                            </div>
+
+                            <!-- Button: Get shipment from Faire/Tiktok -->
+                            <div
+                                v-if="getShipmentFromPlatform(note) && ['packed', 'finalised', 'dispatched'].includes(note.state) && props.delivery_address_management.addresses.is_shipping_by_external && !note?.shipments?.length"
+                                class="flex items-center gap-2 text-sm mb-1"
+                            >
+                                <ButtonWithLink
+                                    :label="getShipmentFromPlatform(note)?.label"
+                                    method="post"
+                                    :url="(route(getShipmentFromPlatform(note)?.name, getShipmentFromPlatform(note)?.parameters) as string)"
+                                    icon="fas fa-plus"
+                                    size="xs"
+                                    type="dashed"
+                                    :bindToLink="{
+                                        only: ['pageHead']
+                                    }"
+                                />
+                            </div>
+
+                            <!-- Section: Parcels -->
+                            <div class="flex gap-x-1 py-0.5">
+                                <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400 mr-1.5' fixed-width aria-hidden='true' />
+                                <div class=" group w-full pl-px">
+                                    <div class="leading-4 xtext-base flex justify-between w-full py-1">
+                                        <div class="text-gray-500">{{ trans("Parcels") }} ({{ note?.parcels?.length ?? 0 }})</div>
+                                    </div>
+
+                                    <ul v-if="note?.parcels?.length" class="list-disc pl-4 ">
+                                        <li v-for="(parcel, parcelIdx) in note?.parcels" :key="parcelIdx"
+                                            class="tabular-nums">
+                                            <span class="truncate">
+                                                {{ parcel.weight }} kg
+                                            </span>
+
+                                            <span class="text-gray-500 truncate">
+                                                ({{ parcel.dimensions?.[0] }}x{{
+                                                parcel.dimensions?.[1]
+                                                }}x{{ parcel.dimensions?.[2] }}
+                                                cm)
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
 
                             <!--                            <div v-else class="mt-1 text-xs italic text-gray-400">

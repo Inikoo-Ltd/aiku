@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, onBeforeUnmount, watch } from "vue"
+import { ref, inject, onMounted, onBeforeUnmount, watch, computed } from "vue"
 import MessageArea from "@/Components/Chat/Customer/MessageArea.vue"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faMessage } from "@fortawesome/free-solid-svg-icons"
+import { faMessage, faXmark } from "@fortawesome/free-solid-svg-icons"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
@@ -11,6 +11,7 @@ import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
 import OfflineChatForm from "../OfflineChatForm.vue"
 import { router } from "@inertiajs/vue3"
 import { faSpinner } from "@fal"
+import { useWindowSize } from "@vueuse/core"
 
 interface ChatMessage {
     id: number
@@ -75,6 +76,15 @@ const unreadCount = ref(0)
 const unreadMessageIds = new Set<number>()
 
 const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
+
+const { width } = useWindowSize()
+const isMobile = computed(() => width.value < 640)
+
+watch(open, (val) => {
+    if (isMobile.value) {
+        document.body.style.overflow = val ? "hidden" : ""
+    }
+})
 
 const syncLoginState = () => {
     const iris = JSON.parse(localStorage.getItem("iris") || "{}")
@@ -512,48 +522,69 @@ defineExpose({
         <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95"
             enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150"
             leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" id="chat">
-            <div v-if="open" ref="panelRef"
-                class="fixed right-3 bottom-[180px] z-[70] w-[calc(100vw-1.5rem)] sm:w-[350px] bg-[#f6f6f7] rounded-md overflow-hidden border shadow-xl  max-h-[calc(100dvh-7rem)] sm:max-h-[calc(100dvh-12rem)] flex flex-col ">
-                <div class="flex justify-between items-center px-3 py-2 border-b text-sm font-semibold">
-                    <span>{{ trans("Chat Support") }}</span>
+            <div v-if="open" ref="panelRef" class="fixed z-[70] bg-[#f6f6f7] border shadow-xl flex flex-col" :class="isMobile
+                ? 'inset-0 rounded-none h-[100dvh] flex flex-col'
+                : 'right-3 bottom-[180px] w-[350px] rounded-md max-h-[calc(100dvh-12rem)] flex flex-col'">
+                <!-- header -->
+                <div class="flex items-center px-4 border-b bg-white" :class="isMobile
+                    ? 'pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3'
+                    : 'py-3'">
+                    <span class="text-sm font-semibold">
+                        {{ trans("Chat Support") }}
+                    </span>
 
-                    <div v-if="isLoggedIn" class="flex gap-1 capitalize">
-                        <button v-for="m in ['chat', 'history']" :key="m" @click="activeMenu = m"
-                            class="px-2 py-1 rounded text-xs transition"
-                            :class="activeMenu === m ? 'text-white' : 'bg-gray-100 text-gray-600'" :style="activeMenu === m
-                                ? {
-                                    backgroundColor: layout.app.theme[4],
-                                    color: layout.app.theme[5],
-                                }
-                                : {}
-                                ">
-                            {{ m }}
+                    <div class="flex-1"></div>
+
+                    <div class="flex items-center gap-3">
+
+                        <template v-if="isLoggedIn">
+                            <button v-for="m in ['chat', 'history']" :key="m" @click="activeMenu = m"
+                                class="px-3 py-1.5 rounded-md text-xs transition" :class="activeMenu === m
+                                    ? 'text-white shadow-sm'
+                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'" :style="activeMenu === m
+                                        ? {
+                                            backgroundColor: layout.app.theme[4],
+                                            color: layout.app.theme[5],
+                                        }
+                                        : {}">
+                                {{ m }}
+                            </button>
+                        </template>
+
+                        <button v-if="isMobile" @click="open = false"
+                            class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
+                            <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" />
                         </button>
+
                     </div>
                 </div>
 
-                <div v-if="isCheckingStatus" class="flex flex-col items-center bg-white">
-                    <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-2xl" />
-                    <span class="text-sm">{{ trans("Connecting...") }}</span>
-                </div>
+                <div class="flex-1 min-h-0 flex flex-col">
+                    <div v-if="isCheckingStatus" class="flex flex-col items-center bg-white">
+                        <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-2xl" />
+                        <span class="text-sm">{{ trans("Connecting...") }}</span>
+                    </div>
 
-                <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat" :messages="messagesLocal"
-                    :session="chatSession" :loading="loading" :isRating="isRating" :rating="rating" :isUser="isUser"
-                    :isLoggedIn="isLoggedIn" @send-message="sendMessage"
-                    @reload="(loadMore: any) => getMessages(loadMore)" @mounted="forceScrollBottom"
-                    @new-session="startNewSession" :assignedAgent="assignedAgent" />
+                    <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat"
+                        :messages="messagesLocal" :session="chatSession" :loading="loading" :isRating="isRating"
+                        :rating="rating" :isUser="isUser" :isLoggedIn="isLoggedIn" @send-message="sendMessage"
+                        @reload="(loadMore: any) => getMessages(loadMore)" @mounted="forceScrollBottom"
+                        @new-session="startNewSession" :assignedAgent="assignedAgent" />
 
-                <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat" :hours="chatHours"
-                    :session="chatSession" :isLoggedIn="isLoggedIn" @session-created="handleOfflineSession" />
+                    <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat"
+                        :hours="chatHours" :session="chatSession" :isLoggedIn="isLoggedIn"
+                        @session-created="handleOfflineSession" />
 
-                <div v-if="activeMenu === 'history'"
-                    class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto min-h-[350px] max-h-[calc(100vh-400px)] scroll-smooth">
-                    <MessageHistory v-if="selectedHistory" :sessionUlid="selectedHistory.ulid"
-                        :session="selectedHistory" @back="selectedHistory = null" viewerType="user" />
+                    <div v-if="activeMenu === 'history'" :class="isMobile
+                        ? 'flex-1 min-h-0 bg-gray-50 scroll-smooth flex flex-col'
+                        : 'bg-gray-50 scroll-smooth min-h-[350px] max-h-[calc(100vh-400px)] flex flex-col'">
+                        <MessageHistory v-if="selectedHistory" :sessionUlid="selectedHistory.ulid"
+                            :session="selectedHistory" @back="selectedHistory = null" viewerType="user" />
 
-                    <div v-else>
-                        <HistoryChatList :data="userSessions" :loading="isLoadingHistory"
-                            @click-session="selectedHistory = $event" />
+                        <div v-else>
+                            <HistoryChatList :data="userSessions" :loading="isLoadingHistory"
+                                @click-session="selectedHistory = $event" />
+                        </div>
                     </div>
                 </div>
             </div>

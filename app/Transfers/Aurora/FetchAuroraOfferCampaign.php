@@ -8,7 +8,6 @@
 
 namespace App\Transfers\Aurora;
 
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use Illuminate\Support\Facades\DB;
 
@@ -21,24 +20,11 @@ class FetchAuroraOfferCampaign extends FetchAurora
         }
 
 
-
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Deal Campaign Store Key'});
         if ($shop->is_aiku) {
             return;
         }
 
-        $status = false;
-        //enum('Suspended','Active','Finish','Waiting')
-        $state = match ($this->auroraModelData->{'Deal Campaign Status'}) {
-            'Waiting' => OfferCampaignStateEnum::IN_PROCESS,
-            'Finish' => OfferCampaignStateEnum::FINISHED,
-            'Suspended' => OfferCampaignStateEnum::SUSPENDED,
-            default => OfferCampaignStateEnum::ACTIVE
-        };
-
-        if ($this->auroraModelData->{'Deal Campaign Status'} == 'Active') {
-            $status = true;
-        }
 
         $type = match ($this->auroraModelData->{'Deal Campaign Code'}) {
             'CA' => OfferCampaignTypeEnum::CATEGORY_OFFERS,
@@ -50,13 +36,17 @@ class FetchAuroraOfferCampaign extends FetchAurora
             'VL' => OfferCampaignTypeEnum::VOLUME_DISCOUNT,
         };
 
+        $status = true;
+        if ($type == OfferCampaignTypeEnum::ORDER_RECURSION) {
+            $status = false;
+        }
+
 
         $this->parsedData['shop']           = $shop;
         $this->parsedData['type']           = $type;
         $this->parsedData['offer-campaign'] = [
             'name'            => $this->auroraModelData->{'Deal Campaign Name'},
             'status'          => $status,
-            'state'           => $state,
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Deal Campaign Key'},
             'fetched_at'      => now(),
             'last_fetched_at' => now()

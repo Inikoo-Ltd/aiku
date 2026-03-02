@@ -20,7 +20,6 @@ class AttachDeliveryNoteToPickedBay extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    use WithWarehouseEditAuthorisation;
 
 
     public function handle(PickedBay $pickedBay, DeliveryNote $deliveryNote): void

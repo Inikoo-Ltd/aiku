@@ -69,7 +69,7 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
         if (!options?.currency_code) return label
         return currencyFormat(options?.currency_code, Number(label))
     } else {
-        return label || '-'
+        return label || '0'
     }
 }
 

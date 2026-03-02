@@ -274,4 +274,13 @@ trait WithTiktokApiServices
             'content-type' => 'application/json'
         ]);
     }
+
+    public function updateProductInventory(string $productId, array $attributes): array
+    {
+        $path = "/product/$this->version/products/$productId/inventory/update";
+
+        return $this->makeApiRequest('POST', $path, $attributes, true, [
+            'content-type' => 'application/json'
+        ]);
+    }
 }

@@ -134,7 +134,7 @@
            bgcolor="#fff">
               <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-wrap" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 20px;" valign="top">
-                      
+
                       <!-- Product Line Items -->
                       <table width="100%" cellpadding="8" cellspacing="0" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0; border-collapse: collapse;">
                           <!-- Header Row (Optional) -->
@@ -145,46 +145,46 @@
                           </tr>
 
                           [Blade New Order Transactions]
-                      </table> 
+                      </table>
 
                       <!-- Totals Section -->
                       <table width="100%" cellpadding="4" cellspacing="0" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 20px 0 0 0;">
                           <tr>
                               <td style="width: 70%;"></td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">Items</td>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Currency][Goods Amount]</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Blade Goods Amount]</td>
                           </tr>
                           <tr>
                               <td style="width: 70%;"></td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">Charges</td>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Currency][Charges Amount]</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Blade Charges Amount]</td>
                           </tr>
                           <tr>
                               <td style="width: 70%;"></td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">Shipping</td>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Currency][Shipping Amount]</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Blade Shipping Amount]</td>
                           </tr>
                           <tr>
                               <td style="width: 70%;"></td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">Total net</td>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Currency][Net Amount]</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Blade Net Amount]</td>
                           </tr>
                           <tr>
                               <td style="width: 70%;"></td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">Tax</td>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Currency][Tax Amount]</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 4px 0; text-align: right; border-bottom: 1px solid #e9e9e9;">[Blade Tax Amount]</td>
                           </tr>
                           <tr style="background-color: #f9f9f9;">
                               <td style="width: 70%;"></td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 8px 0; text-align: right; border-bottom: 2px solid #333;">Total</td>
-                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 8px 0; text-align: right; border-bottom: 2px solid #333;">[Currency][Order Total]</td>
+                              <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; padding: 8px 0; text-align: right; border-bottom: 2px solid #333;">[Blade Order Total]</td>
                           </tr>
                       </table>
 
                   </td>
               </tr>
         </table>
-        
+
         <div class="footer" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; width: 100%; clear: both; color: #999; margin: 0; padding: 20px;">
           <table width="100%" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
             <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">

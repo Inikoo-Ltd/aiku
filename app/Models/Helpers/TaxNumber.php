@@ -11,11 +11,14 @@ namespace App\Models\Helpers;
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
+use App\Models\Traits\HasHistory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * App\Models\Helpers\TaxNumber
@@ -42,7 +45,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property TaxNumberValidationTypeEnum|null $validation_type
  * @property int|null $manual_validation_user_id
  * @property string|null $manual_validation_notes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Helpers\Country|null $country
+ * @property-read Model|\Eloquent $owner
  * @method static Builder<static>|TaxNumber newModelQuery()
  * @method static Builder<static>|TaxNumber newQuery()
  * @method static Builder<static>|TaxNumber onlyTrashed()
@@ -51,9 +56,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|TaxNumber withoutTrashed()
  * @mixin Eloquent
  */
-class TaxNumber extends Model
+class TaxNumber extends Model implements Auditable
 {
     use SoftDeletes;
+    use HasHistory;
 
     protected $casts = [
         'data'               => 'array',
@@ -68,6 +74,10 @@ class TaxNumber extends Model
 
     protected $attributes = [
         'data' => '{}',
+    ];
+
+    protected $auditEvents = [
+        'tax_validation',
     ];
 
     protected $guarded = [];
@@ -98,6 +108,10 @@ class TaxNumber extends Model
         return $cc.' '.$number;
     }
 
+    public function owner(): MorphTo
+    {
+        return $this->morphTo();
+    }
 
     public static function getType(?Country $country): TaxNumberTypeEnum
     {

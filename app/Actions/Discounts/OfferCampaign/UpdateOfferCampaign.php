@@ -15,7 +15,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOfferCampaigns;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOfferCampaigns;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignOffersStateEnum;
 use App\Models\Discounts\OfferCampaign;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -54,7 +54,7 @@ class UpdateOfferCampaign extends OrgAction
         $rules = [
             'name'   => ['sometimes', 'required', 'max:250', 'string'],
             'status' => ['sometimes', 'required', 'boolean'],
-            'state'  => ['sometimes', 'required', Rule::enum(OfferCampaignStateEnum::class)],
+            'offers_state'  => ['sometimes', 'required', Rule::enum(OfferCampaignOffersStateEnum::class)],
         ];
 
         if (!$this->strict) {

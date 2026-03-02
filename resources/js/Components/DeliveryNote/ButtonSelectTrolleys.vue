@@ -6,8 +6,9 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '../Elements/Buttons/Button.vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const props = defineProps<{
     warehouse: {
@@ -16,7 +17,7 @@ const props = defineProps<{
     deliveryNote: {
         id: number
         slug: string
-        refrence: string
+        reference: string
     }
 }>()
 const layout = inject('layout', layoutStructure)
@@ -50,9 +51,37 @@ const fetchTrolleysList = async () => {
     }
 }
 
+const listUnavailableTrolleys = ref([])
+const isLoadingFetchUnavailableTrolleys = ref(false)
+const fetchUnavailableTrolleysList = async () => {
+    try {
+        isLoadingFetchUnavailableTrolleys.value = true
+        const response = await axios.get(
+            route(
+                'grp.json.unavailable_trolleys.list',
+                {
+                    warehouse: props.warehouse.slug,
+                }
+            )
+        )
+        
+        console.log('Response unavailable_trolleys:', response.data)
+        listUnavailableTrolleys.value = response.data.data
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    } finally {
+        isLoadingFetchUnavailableTrolleys.value = false
+    }
+}
+
 watch(isOpenModal, (newVal) => {
     if (newVal) {
         fetchTrolleysList()
+        fetchUnavailableTrolleysList()
     }
 })
 
@@ -77,6 +106,7 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
                 isLoadingSubmitTrolley.value = trolleyId
             },
             onSuccess: () => {
+                isOpenModal.value = false
                 // notify({
                 //     title: trans("Success"),
                 //     text: trans("Successfully submit the data"),
@@ -96,15 +126,29 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
         }
     )
 }
+
+const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
+    if (!deliveryNoteSlug) {
+        return '#'
+    }
+
+    return route('grp.org.warehouses.show.dispatching.delivery_notes.show', {
+        organisation: layout.currentParams.organisation,
+        warehouse: props.warehouse.slug,
+        deliveryNote: deliveryNoteSlug
+    })
+}
 </script>
 
 <template>
     <div>
-        <Button
-            :label="trans('Start Picking')"
-            @click="() => isOpenModal = true" 
-            icon="fal fa-dolly-flatbed-alt"
-        />
+        <slot name="default" :setOpenModal="() => isOpenModal = !isOpenModal">
+            <Button
+                :label="trans('Start Picking')"
+                @click="() => isOpenModal = true"
+                icon="fal fa-dolly-flatbed-alt"
+            />
+        </slot>
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="font-bold text-xl text-center mb-8">
@@ -114,7 +158,7 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
             <div class="mb-1">
                 {{ trans("Available trolleys") }} ({{ isLoadingFetch ? '-' : listTrolleys.length }}):
             </div>
-            <div class="h-64">
+            <div class="h-64 overflow-y-auto border-b border-dashed border-gray-300 pb-4">
                 <div class="grid grid-cols-3 gap-2">
                     <div
                         v-if="isLoadingFetch"
@@ -153,6 +197,33 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
 
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Section: unavailable trolleys -->
+            <div class="my-1 mb-1 text-red-500 text-sm">
+                {{ trans("Unavailable trolleys") }} ({{ isLoadingFetchUnavailableTrolleys ? '-' : listUnavailableTrolleys.length }}):
+            </div>
+            <div class="xh-64">
+                <div class="grid grid-cols-4 gap-2">
+                    <div
+                        v-if="isLoadingFetchUnavailableTrolleys"
+                        v-for="trolley in 6"
+                        class="h-10 py-0.5 px-1 border border-gray-300 rounded-sm skeleton"
+                        
+                    />
+
+                    <template v-else-if="listUnavailableTrolleys.length">
+                        <div
+                            v-for="trolley in listUnavailableTrolleys"
+                            :key="trolley.id"
+                            class="py-0.5 px-1 bg-gray-300 border border-gray-400 text-xs rounded-sm whitespace-nowrap truncate"
+                        >
+                            {{ trolley.name }}
+                            <span class="whitespace-nowrap">(<FontAwesomeIcon icon="fal fa-truck" class="opacity-70 mr-0.5" fixed-width aria-hidden="true" /><Link :href="getUrlDeliveryNote(trolley.current_delivery_note?.slug)" class="font-bold opacity-60 hover:opacity-100 cursor-pointer">{{ trolley.current_delivery_note?.reference }}</Link>)</span>
+                            <LoadingIcon v-if="isLoadingSubmitTrolley == trolley.id" />
+                        </div>
+                    </template>
                 </div>
             </div>
 

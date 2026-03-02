@@ -14,15 +14,22 @@ enum DeliveryNoteStateEnum: string
 {
     use EnumHelperTrait;
 
-
+    //Block to do
     case UNASSIGNED = 'unassigned';
-    case QUEUED = 'queued'; // picker assigned
+    case QUEUED = 'queued'; // DN inside a picking session before the picking session is start picking (only available for DS)
+
+    // Block Picking
     case HANDLING = 'handling'; // picking and packing
     case HANDLING_BLOCKED = 'handling_blocked';
     case PICKED = 'picked';
+
+    // Block Packing
     case PACKING = 'packing';
     case PACKED = 'packed';
     case FINALISED = 'finalised';
+
+
+    // Block Dispatched
     case DISPATCHED = 'dispatched';
     case CANCELLED = 'cancelled';
 
@@ -30,10 +37,10 @@ enum DeliveryNoteStateEnum: string
     public static function labels(): array
     {
         return [
-            'unassigned'       => __('Unassigned'),
-            'queued'           => __('In Queue'),
-            'handling'         => __('Handling'),
-            'handling_blocked' => __('Handling Blocked'),
+            'unassigned'       => __('To do'),
+            'queued'           => __('In picking session (Waiting to start)'),
+            'handling'         => __('Picking'),
+            'handling_blocked' => __('Picking Blocked'),
             'picked'           => __('Picked'),
             'packing'          => __('Packing'),
             'packed'           => __('Packed'),

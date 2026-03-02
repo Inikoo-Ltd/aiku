@@ -27,9 +27,12 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHa
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicking;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
+use App\Actions\Dispatching\PickedBay\ChangePickingBaysDeliveryNote;
 use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
+use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
 use App\Actions\Dispatching\Trolley\ChangeTrolleyDeliveryNote;
+use App\Actions\Dispatching\Trolley\DetachTrolleyFromDeliveryNote;
 use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +49,10 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::patch('trolleys', SyncDeliveryNoteTrolleys::class)->name('trolleys.sync');
 
+    Route::patch('attach-trolley/{trolley:id}', AttachTrolleyToDeliveryNote::class)->name('trolleys.attach')->withoutScopedBindings();
+    Route::patch('detach-trolley/{trolley:id}', DetachTrolleyFromDeliveryNote::class)->name('trolleys.detach');
+
+
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in_queue')->withoutScopedBindings();
         Route::patch('remove-picker', UpdateDeliveryNoteStateToUnassigned::class)->name('remove-picker');
@@ -59,6 +66,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('unpacked', UnpackDeliveryNote::class)->name('unpacked');
         Route::patch('packed', UpdateDeliveryNoteStatePacked::class)->name('packed');
         Route::patch('packed-with-picked-bay', SetPackedWithPickingBaysDeliveryNote::class)->name('packed_with_picked_bay');
+        Route::patch('change-picked-bay', ChangePickingBaysDeliveryNote::class)->name('change_picked_bay');
         Route::patch('waiting-for-picking', SetAsWaitingForPickingDeliveryNote::class)->name('waiting_for_picking');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
         Route::patch('dispatched', DispatchDeliveryNote::class)->name('dispatched');
