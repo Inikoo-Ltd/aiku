@@ -5,7 +5,7 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\Catalogue\Shop\UI\ShowCatalogueInGroup;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [ShowCatalogue::class, 'inGroup'])->name('show');
+Route::get('/', ShowCatalogueInGroup::class)->name('show');
