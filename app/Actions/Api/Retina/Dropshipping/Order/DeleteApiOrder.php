@@ -31,28 +31,34 @@ class DeleteApiOrder extends RetinaApiAction
 
     public function handle(Order $order): JsonResponse
     {
+        if ($order->customer_id != $this->customer->id || $order->shop_id != $this->shop->id) {
+            return response()->json([
+                'message' => "Unable to delete this order"
+            ], 403);
+        }
+
         if ($order->state != OrderStateEnum::CREATING) {
             return response()->json([
-                'message' => 'You can not delete this order',
-            ]);
-        } else {
-            $client = $order->customerClient;
-            $order->transactions()->delete();
-            $order->delete();
+                'message' => "Order is in '{$order->state->value}' state and cannot be deleted.",
+            ], 409);
+        } 
 
-            MasterShopHydrateOrders::dispatch($order->master_shop_id);
-            ShopHydrateOrders::dispatch($this->shop);
-            OrganisationHydrateOrders::dispatch($this->organisation);
-            GroupHydrateOrders::dispatch($this->group);
-            CustomerHydrateOrders::dispatch($this->customer->id);
-            CustomerClientHydrateOrders::dispatch($client);
-            CustomerSalesChannelsHydrateOrders::dispatch($this->customerSalesChannel);
+        $client = $order->customerClient;
+        $order->transactions()->delete();
+        $order->delete();
 
-            return response()->json([
-                'message' => 'Order deleted successfully',
-                'order_id' => $order->id
-            ]);
-        }
+        MasterShopHydrateOrders::dispatch($order->master_shop_id);
+        ShopHydrateOrders::dispatch($this->shop);
+        OrganisationHydrateOrders::dispatch($this->organisation);
+        GroupHydrateOrders::dispatch($this->group);
+        CustomerHydrateOrders::dispatch($this->customer->id);
+        CustomerClientHydrateOrders::dispatch($client);
+        CustomerSalesChannelsHydrateOrders::dispatch($this->customerSalesChannel);
+
+        return response()->json([
+            'message' => 'Order deleted successfully',
+            'order_id' => $order->id
+        ]);
     }
 
     public function asController(Order $order, ActionRequest $request): JsonResponse
