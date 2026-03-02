@@ -12,6 +12,7 @@ use App\Actions\CRM\Prospect\Mailshots\ProspectMailshotSettings;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\InertiaAction;
 use App\Actions\Traits\WithProspectsSubNavigation;
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\SenderEmail\SenderEmailStateEnum;
 use App\Enums\UI\CRM\ProspectsMailshotsTabsEnum;
@@ -54,6 +55,11 @@ class IndexProspectMailshots extends InertiaAction
         $queryBuilder = QueryBuilder::for(Mailshot::class)
             ->leftJoin('mailshot_stats', 'mailshot_stats.mailshot_id', 'mailshots.id')
             ->where('type', MailshotTypeEnum::INVITE);
+
+        $queryBuilder->where(function ($query) {
+            $query->where('mailshots.is_second_wave', false)
+                ->orWhereNotIn('mailshots.state', [MailshotStateEnum::READY->value, MailshotStateEnum::IN_PROCESS->value, MailshotStateEnum::SCHEDULED->value]);
+        });
 
         $queryBuilder->where('shop_id', $shop->id);
 
