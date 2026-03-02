@@ -7,8 +7,10 @@ use App\Models\Notifications\UserNotificationSetting;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreUsersNotificationSettings
@@ -24,6 +26,7 @@ class StoreUsersNotificationSettings
             'scopes' => ['array'],
             'scopes.*' => ['integer'],
             'filters' => ['array'],
+            'is_enabled' => ['boolean'],
         ];
     }
 
@@ -69,7 +72,7 @@ class StoreUsersNotificationSettings
                     'scope_id' => $scopeId,
                 ],
                 [
-                    'is_enabled' => true,
+                    'is_enabled' => Arr::get($data, 'is_enabled', true),
                     'channels' => ['database'],
                     'filters' => $filters,
                 ]
@@ -80,10 +83,20 @@ class StoreUsersNotificationSettings
         return $count;
     }
 
-    public function asController(): JsonResponse
+    public function asController(ActionRequest $request)
     {
-        $payload = request()->validate($this->rules());
-        $count = $this->handle(request()->user(), $payload);
-        return response()->json(['saved' => $count]);
+        $payload = $request->validated();
+        $this->handle($request->user(), $payload);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Notification settings successfully saved.'),
+        ]);
+
+        return Redirect::back();
     }
 }

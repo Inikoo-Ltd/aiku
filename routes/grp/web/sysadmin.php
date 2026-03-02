@@ -22,6 +22,7 @@ use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\IndexUserActions;
 use App\Actions\SysAdmin\User\UI\IndexUsers;
 use App\Actions\SysAdmin\User\UI\ShowUser;
+use App\Actions\UI\Notification\DeleteUsersNotificationSetting;
 use App\Actions\UI\Notification\GetNotificationStateOptions;
 use App\Actions\UI\Notification\GetUsersNotificationSettingOptions;
 use App\Actions\UI\Notification\IndexUsersNotificationSettings;
@@ -67,5 +68,6 @@ Route::prefix('notification-settings')->as('notification-settings.')->group(func
     Route::get('users', IndexUsersNotificationSettings::class)->name('users');
     Route::get('users/options', GetUsersNotificationSettingOptions::class)->name('users.options');
     Route::post('users/store', StoreUsersNotificationSettings::class)->name('users.store');
+    Route::delete('users/{userNotificationSetting}', DeleteUsersNotificationSetting::class)->name('users.delete');
     Route::get('state-options', GetNotificationStateOptions::class)->name('state-options');
 });

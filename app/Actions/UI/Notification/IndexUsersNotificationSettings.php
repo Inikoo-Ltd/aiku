@@ -31,6 +31,13 @@ class IndexUsersNotificationSettings
                 'notificationSettings.notificationType',
                 'notificationSettings.scope',
             ])
+            ->when(request('userNotificationSettings_filter.global'), function ($q, $search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('contact_name', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
             ->when(isset($filters['user_id']), fn ($q) => $q->where('id', $filters['user_id']))
             ->latest();
 
@@ -59,15 +66,21 @@ class IndexUsersNotificationSettings
                             if ($value === null || $value === '' || (is_array($value) && count($value) === 0)) {
                                 continue;
                             }
-                            // Just return the raw values for the frontend to format
                             $filters[$key] = $value;
                         }
                     }
 
                     return [
+                        'id' => $setting->id,
+                        'user_id' => $setting->user_id,
+                        'notification_type_id' => $setting->notification_type_id,
+                        'scope_type' => $setting->scope_type,
+                        'scope_id' => $setting->scope_id,
+                        'scope_kind' => $setting->scope_type ? strtolower(class_basename($setting->scope_type)) : null,
                         'type' => $setting->notificationType?->name ?? __('Unknown Type'),
                         'scope' => $scopeName,
                         'filters' => $filters,
+                        'is_enabled' => $setting->is_enabled,
                     ];
                 })->sortBy(['type', 'scope'])->values();
 
@@ -112,6 +125,16 @@ class IndexUsersNotificationSettings
                 ->column(
                     key: 'filters',
                     label: __('Filters'),
+                    sortable: false
+                )
+                ->column(
+                    key: 'is_enabled',
+                    label: __('Enabled'),
+                    sortable: false
+                )
+                ->column(
+                    key: 'actions',
+                    label: __('Actions'),
                     sortable: false
                 );
         };
