@@ -9,14 +9,11 @@
 namespace App\Actions\Maintenance\Ordering;
 
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
-use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
-use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 class RepairOrderAmountsAfterMigration
 {
@@ -40,7 +37,7 @@ class RepairOrderAmountsAfterMigration
                 ]);
             }
         }
-        $invoice=$order->invoices()->first();
+        $invoice = $order->invoices()->first();
         CalculateInvoiceTotals::run($invoice);
     }
 

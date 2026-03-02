@@ -171,6 +171,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Address> $fixedAddresses
  * @property-read Group $group
  * @property-read Collection<int, Invoice> $invoices
+ * @property-read Collection<int, \App\Models\Ordering\Transaction> $itemTransactions
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Collection<int, OrderPaymentApiPoint> $orderPaymentApiPoint
  * @property-read Organisation $organisation

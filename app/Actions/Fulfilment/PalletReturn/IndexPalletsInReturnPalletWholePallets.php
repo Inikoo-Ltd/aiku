@@ -191,7 +191,7 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
             $table->column(key: 'type_icon', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'reference', label: __('Pallet ID'), canBeHidden: false, sortable: true, searchable: true);
             $customersReferenceLabel = __("Pallet reference (customer's), notes");
-            
+
             $table->column(key: 'customer_reference', label: $customersReferenceLabel, canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'stored_items', label: __("Customer's SKUs"), canBeHidden: false);
