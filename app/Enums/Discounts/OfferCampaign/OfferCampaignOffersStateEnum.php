@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 16 Apr 2024 12:45:19 Malaysia Time, Kuala Lumpur , Malaysia
+ * Created: Tue, 16 Apr 2024 12:45:19 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -10,7 +10,7 @@ namespace App\Enums\Discounts\OfferCampaign;
 
 use App\Enums\EnumHelperTrait;
 
-enum OfferCampaignStateEnum: string
+enum OfferCampaignOffersStateEnum: string
 {
     use EnumHelperTrait;
 
@@ -44,28 +44,28 @@ enum OfferCampaignStateEnum: string
             ],
             'active'     => [
                 'tooltip' => __('Active'),
-                'icon'    => 'fal fa-share',
-                'class'   => 'text-indigo-400',
-                'color'   => 'indigo',
+                'icon'    => 'fas fa-play',
+                'class'   => 'text-green-600',
+                'color'   => 'green',
                 'app'     => [
-                    'name' => 'share',
+                    'name' => 'play',
                     'type' => 'font-awesome-5'
                 ]
             ],
             'finished'   => [
                 'tooltip' => __('Finished'),
-                'icon'    => 'fal fa-spell-check',
-                'class'   => 'text-emerald-500',
-                'color'   => 'emerald',
+                'icon'    => 'fas fa-stop',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
                 'app'     => [
-                    'name' => 'spell-check',
+                    'name' => 'stop',
                     'type' => 'font-awesome-5'
                 ]
             ],
             'suspended'  => [
                 'tooltip' => __('Suspended'),
-                'icon'    => 'fal fa-pause',
-                'class'   => 'text-red-500',
+                'icon'    => 'fas fa-pause',
+                'class'   => 'text-grey-500',
                 'color'   => 'red',
                 'app'     => [
                     'name' => 'pause',

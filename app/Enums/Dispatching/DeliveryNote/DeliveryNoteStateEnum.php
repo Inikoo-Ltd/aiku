@@ -29,7 +29,7 @@ enum DeliveryNoteStateEnum: string
     case FINALISED = 'finalised';
 
 
-   // Block Dispatched
+    // Block Dispatched
     case DISPATCHED = 'dispatched';
     case CANCELLED = 'cancelled';
 

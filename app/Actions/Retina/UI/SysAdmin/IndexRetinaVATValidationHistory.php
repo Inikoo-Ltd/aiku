@@ -11,18 +11,12 @@ namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\RetinaAction;
-use App\Http\Resources\CRM\WebUsersRetinaResource;
 use App\Http\Resources\History\HistoryResource;
-use App\InertiaTable\InertiaTable;
-use App\Models\CRM\WebUser;
-use App\Services\QueryBuilder;
-use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaVATValidationHistory extends RetinaAction
 {

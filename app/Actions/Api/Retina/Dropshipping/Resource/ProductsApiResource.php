@@ -38,11 +38,17 @@ class ProductsApiResource extends JsonResource
             'name'  => $this->name,
             'description' => $this->description,
         ];
-        
-        if (isset($this->department_name)) data_set($product_details, 'department_name', $this->department_name);
-        if (isset($this->sub_department_name)) data_set($product_details, 'sub_department_name', $this->sub_department_name);
-        if (isset($this->family_name)) data_set($product_details, 'family_name', $this->family_name);
-        
+
+        if (isset($this->department_name)) {
+            data_set($product_details, 'department_name', $this->department_name);
+        }
+        if (isset($this->sub_department_name)) {
+            data_set($product_details, 'sub_department_name', $this->sub_department_name);
+        }
+        if (isset($this->family_name)) {
+            data_set($product_details, 'family_name', $this->family_name);
+        }
+
         return [
             ...$product_details,
             'gross_weight' => $this->gross_weight,

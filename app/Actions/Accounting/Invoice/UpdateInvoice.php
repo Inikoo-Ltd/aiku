@@ -24,7 +24,8 @@ use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
-use App\Actions\Masters\MasterShop\ProcessMasterShopTimeSeriesRecords;
+use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
+use App\Actions\Ordering\SalesChannel\RedoSalesChannelTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
@@ -36,7 +37,6 @@ use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
@@ -105,51 +105,45 @@ class UpdateInvoice extends OrgAction
         if (Arr::has($modelData, 'date')) {
             $invoice->invoiceTransactions()->update(['date' => $invoice->date]);
             UpdateCustomerLastInvoicedDate::run($invoice->customer);
-
         }
-
 
         if (count($changes) > 0) {
             $invoiceDate = \Carbon\Carbon::parse($invoice->date);
 
-            RedoOrganisationTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
-            RedoShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
-            RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
-            RedoPlatformTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString());
+            if ($invoice->platform_id) {
+                RedoPlatformTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            }
 
             if ($invoice->invoiceCategory) {
                 InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
                 InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
                 InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+
+                RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            }
+
+            if ($invoice->sales_channel_id) {
+                RedoSalesChannelTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
             }
 
             ShopHydrateSalesIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
             ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
 
+            RedoShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+
             if ($invoice->master_shop_id) {
                 MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
                 MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
 
-                foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                    ProcessMasterShopTimeSeriesRecords::dispatch(
-                        $invoice->master_shop_id,
-                        $frequency,
-                        match ($frequency) {
-                            TimeSeriesFrequencyEnum::YEARLY => $invoiceDate->copy()->startOfYear()->toDateString(),
-                            TimeSeriesFrequencyEnum::QUARTERLY => $invoiceDate->copy()->startOfQuarter()->toDateString(),
-                            TimeSeriesFrequencyEnum::MONTHLY => $invoiceDate->copy()->startOfMonth()->toDateString(),
-                            TimeSeriesFrequencyEnum::WEEKLY => $invoiceDate->copy()->startOfWeek()->toDateString(),
-                            TimeSeriesFrequencyEnum::DAILY => $invoiceDate->toDateString()
-                        },
-                        $invoiceDate->toDateString(),
-                    )->delay($this->hydratorsDelay);
-                }
+                RedoMasterShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
             }
 
             OrganisationHydrateSalesIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
+
+            RedoOrganisationTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
 
             GroupHydrateSalesIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
             GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);

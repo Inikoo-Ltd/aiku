@@ -16,7 +16,7 @@ const props = defineProps<{
 	is_need_create_customer: string
 }>()
 
-const tiktokCode = route().queryParams?.code
+const tiktokCode = route().queryParams?.tiktok_code
 
 const closePage = () => {
 	console.log('aaaaaaa')
@@ -50,7 +50,7 @@ const closePage = () => {
 					<div class=" text-7xl mb-5">
 						<FontAwesomeIcon icon="fal fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
 					</div>
-					
+
 					<div class="text-green-600 text-2xl font-bold">
 						Congrats!
 					</div>
@@ -61,7 +61,7 @@ const closePage = () => {
 
 				</div>
 
-				
+
 				<div v-if="is_need_create_customer">
 					<div class="text-center mb-4">
 						Next step, select one of our warehouse that you preferred to send the products.

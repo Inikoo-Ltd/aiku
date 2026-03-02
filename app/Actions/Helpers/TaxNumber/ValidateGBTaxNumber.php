@@ -26,7 +26,9 @@ class ValidateGBTaxNumber
     {
         if ($taxNumber->type == TaxNumberTypeEnum::GB_VAT) {
             $number = $this->cleanTaxNumber($taxNumber->number);
-            if(!$oldTaxNumberData) $oldTaxNumberData = $taxNumber->replicate();
+            if (!$oldTaxNumberData) {
+                $oldTaxNumberData = $taxNumber->replicate();
+            }
 
             if (!$number || strlen($number) != 9) {
 
@@ -56,7 +58,7 @@ class ValidateGBTaxNumber
                     'checked_at'      => now(),
 
                 ];
-                
+
                 $taxNumber->update($validationData);
                 $taxNumber->refresh();
                 $this->deployTaxValidationCustomAudit($oldTaxNumberData, $taxNumber, TaxNumberValidationTypeEnum::BASIC);

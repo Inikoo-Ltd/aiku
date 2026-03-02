@@ -53,7 +53,9 @@ class ValidateEuropeanTaxNumber
      */
     public function handle(TaxNumber $taxNumber, TaxNumber|null $oldTaxNumberData = null): TaxNumber
     {
-        if(!$oldTaxNumberData) $oldTaxNumberData = $taxNumber->replicate();
+        if (!$oldTaxNumberData) {
+            $oldTaxNumberData = $taxNumber->replicate();
+        }
 
         if ($taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
             if (!$taxNumber->number || strlen($taxNumber->number) < 7) {

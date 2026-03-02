@@ -22,10 +22,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $grp_amount
  * @property int $number_offer_campaigns
  * @property int $number_current_offer_campaigns
- * @property int $number_offer_campaigns_state_in_process
- * @property int $number_offer_campaigns_state_active
- * @property int $number_offer_campaigns_state_finished
- * @property int $number_offer_campaigns_state_suspended
+ * @property int $number_offer_campaigns_offers_state_in_process
+ * @property int $number_offer_campaigns_offers_state_active
+ * @property int $number_offer_campaigns_offers_state_finished
+ * @property int $number_offer_campaigns_offers_state_suspended
  * @property int $number_offers
  * @property int $number_current_offers
  * @property int $number_offers_state_in_process

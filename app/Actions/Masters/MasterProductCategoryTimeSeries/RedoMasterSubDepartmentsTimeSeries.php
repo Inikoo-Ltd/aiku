@@ -8,21 +8,21 @@
 
 namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 
-use App\Actions\Traits\Hydrators\WithHydrateCommand;
-use App\Models\Masters\MasterProductCategory;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class RedoMasterSubDepartmentsTimeSeries
 {
-    use WithHydrateCommand;
-    use WithRedoMasterProductCategoryTimeSeries {
-        WithRedoMasterProductCategoryTimeSeries::asCommand insteadof WithHydrateCommand;
-    }
+    use AsAction;
+    use WithRedoMasterProductCategoryTimeSeries;
 
-    public string $commandSignature = 'master_sub_departments:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    protected ?MasterProductCategoryTypeEnum $restriction;
+
+    public string $jobQueue = 'default-long';
+    public string $commandSignature = 'master-sub-departments:redo_time_series {--a|async : Run synchronously}';
 
     public function __construct()
     {
-        $this->model       = MasterProductCategory::class;
-        $this->restriction = 'sub_department';
+        $this->restriction = MasterProductCategoryTypeEnum::SUB_DEPARTMENT;
     }
 }
