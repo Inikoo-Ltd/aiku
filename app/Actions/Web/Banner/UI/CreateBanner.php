@@ -64,9 +64,10 @@ class CreateBanner extends OrgAction
                 ],
                     'ratio' => [
                     'type'        => 'ratio',
-                    'label'       => __('Ratio'),
+                    'label'       => __('Ratio/dimension'),
                     'required'    => true,
                     'value'       => null,
+                    'information' => __('Defines the aspect ratio used to crop and control the size of each slide image.'),
                 ],
             ]
         ];

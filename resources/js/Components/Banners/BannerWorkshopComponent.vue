@@ -56,7 +56,7 @@ const hasSlides = computed(() => {
         <SliderSquare :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio />
       </div>
 
-      <div v-else class="w-full max-w-[1200px] mx-auto">
+      <div class="w-full max-w-[1200px] mx-auto overflow-hidden" :class="(ratio && ratio != '1/4') && 'h-[500px]'">
         <SliderLandscape :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio />
       </div>
     </div>

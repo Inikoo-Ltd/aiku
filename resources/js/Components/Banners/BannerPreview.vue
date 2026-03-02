@@ -30,7 +30,7 @@ const props = defineProps<{
 const ratioStyle = computed(() => {
   if (!props.ratio) {
     return props.data.type === 'landscape'
-      ? { paddingTop: '25%' }     // 4/1
+      ? { paddingTop: '20%' }     // 4/1
       : { paddingTop: '100%' }    // 1/1
   }
 
@@ -60,8 +60,6 @@ const publishedAgo = computed(() => {
 
 <template>
   <div class="w-full bg-white border border-gray-300 rounded-md overflow-hidden">
-
-    <!-- Header -->
     <div
       v-if="data.published_snapshot"
       class="w-full flex items-center justify-between py-3 px-4 border-b"
@@ -100,25 +98,38 @@ const publishedAgo = computed(() => {
         {{ publishedAgo }}
       </div>
     </div>
+    
 
-    <!-- Ratio Container -->
     <div class="relative w-full overflow-hidden">
-
-      <!-- Creates height based on width -->
-      <div :style="ratioStyle" />
-
-      <!-- Absolute content -->
+      <div :style="ratioStyle"></div>
       <div class="absolute inset-0">
-        <component
-          :is="data.type === 'landscape' ? SliderLandscape : SliderSquare"
-          :data="data.compiled_layout"
-          :production="true"
-          :ratio="ratio"
-          class="w-full h-full"
-          view="desktop"
-        />
-      </div>
+        <div class="w-full h-full flex justify-center">
+          <div
+            v-if="data.type === 'square'"
+            class="w-full h-full flex justify-center"
+          >
+            <SliderSquare
+              :data="data.compiled_layout"
+              view="desktop"
+              :ratio="ratio"
+            />
+          </div>
 
+          <div
+            v-else
+            class="w-full max-w-[1200px] mx-auto" 
+            :class="(ratio && ratio != '1/4') && 'h-[500px]'"
+          >
+            <SliderLandscape
+              :data="data.compiled_layout"
+              view="desktop"
+              :ratio="ratio"
+            />
+          </div>
+
+        </div>
+
+      </div>
     </div>
 
   </div>

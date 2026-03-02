@@ -166,25 +166,22 @@ const wrapperStyle = computed(() => {
     const currentView = props.view || 'desktop'
 
     const style: any = {
-        aspectRatio: `${computedRatio.value}`,
         margin: '0 auto'
     }
+
+    // Jika ratio dipakai dan parent TIDAK punya height
+    if (!props.production) {
+        style.aspectRatio = `${computedRatio.value}`
+    }
+
+    // Jangan pakai maxHeight lagi
+    // Parent akan handle height
 
     if (currentView === 'mobile') {
         style.width = '375px'
         style.maxWidth = '100%'
     } else {
         style.width = '100%'
-    }
-
-    if (!props.production) {
-        if (currentView === 'mobile') {
-            style.maxHeight = '500px'
-        } else if (currentView === 'tablet') {
-            style.maxHeight = '450px'
-        } else {
-            style.maxHeight = '100%'
-        }
     }
 
     return style
