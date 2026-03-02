@@ -24,13 +24,13 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div class="!mt-1.5 flex gap-x-2 items-center">
+    <div class="!mt-1.5 flex gap-x-2 items-center flex-wrap">
         <dl class="border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-1 py-0.5 flex-none gap-x-1.5">
-            <dt class="flex-none">
+            <dt class="flex-none tabular-nums">
                 {{ trans("Trolleys") }} ({{ trolleys?.length }}):
             </dt>
-            <dd class="flex flex-wrap gap-x-2 text-gray-500 align-middle">
-                <div v-for="trolley in trolleys" class="bg-black/10 rounded-sm px-0.5 flex items-center">
+            <dd class="flex flex-wrap gap-y-0.5 gap-x-2 text-gray-500 align-middle">
+                <div v-for="trolley in trolleys" class="bg-pink-400/30 rounded-sm pl-1 text-pink-800 flex items-center">
                     {{ trolley.name }}
 
                     <!-- Section: detach Trolley -->
@@ -56,14 +56,16 @@ const props = defineProps<{
                     </ModalConfirmationDelete>
                 </div>
                 <!-- <Button type="dashed" :label="trans('Select new trolley')" icon="far fa-plus" size="xxs" /> -->
+                
+                <AttachTrolleyToDeliverynote
+                    v-if="['handling', 'picked'].includes(deliveryNote.state)"
+                    :warehouse="warehouse"
+                    :deliveryNote="deliveryNote"
+                />
             </dd>
         </dl>
 
-        <template v-if="['handling', 'picked'].includes(deliveryNote.state)">
-            <AttachTrolleyToDeliverynote
-                :warehouse="warehouse"
-                :deliveryNote="deliveryNote"
-            />
+        <template>
             
             <!-- <ButtonSelectTrolleys
                 :warehouse="warehouse"

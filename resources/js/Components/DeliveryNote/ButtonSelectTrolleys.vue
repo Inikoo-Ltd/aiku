@@ -158,7 +158,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
             <div class="mb-1">
                 {{ trans("Available trolleys") }} ({{ isLoadingFetch ? '-' : listTrolleys.length }}):
             </div>
-            <div class="h-64">
+            <div class="h-64 overflow-y-auto border-b border-dashed border-gray-300 pb-4">
                 <div class="grid grid-cols-3 gap-2">
                     <div
                         v-if="isLoadingFetch"
@@ -201,7 +201,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
             </div>
 
             <!-- Section: unavailable trolleys -->
-            <div class="mb-1 text-red-500 text-sm">
+            <div class="mt-1 mb-1 text-red-500 text-sm">
                 {{ trans("Unavailable trolleys") }} ({{ isLoadingFetchUnavailableTrolleys ? '-' : listUnavailableTrolleys.length }}):
             </div>
             <div class="xh-64">

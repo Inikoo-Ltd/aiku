@@ -10,6 +10,15 @@ import { Link, router } from '@inertiajs/vue3'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
+interface Trolley {
+    id: number
+    name: string
+    current_delivery_note: {
+        slug: string
+        reference: string
+    }
+}
+
 const props = defineProps<{
     warehouse: {
         slug: string
@@ -24,7 +33,7 @@ const layout = inject('layout', layoutStructure)
 
 const isOpenModal = ref(false)
 
-const listTrolleys = ref([])
+const listTrolleys = ref<Trolley[]>([])
 const isLoadingFetch = ref(false)
 const fetchTrolleysList = async () => {
     try {
@@ -51,7 +60,7 @@ const fetchTrolleysList = async () => {
     }
 }
 
-const listUnavailableTrolleys = ref([])
+const listUnavailableTrolleys = ref<Trolley[]>([])
 const isLoadingFetchUnavailableTrolleys = ref(false)
 const fetchUnavailableTrolleysList = async () => {
     try {
@@ -164,7 +173,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
             <div class="mb-1">
                 {{ trans("Available trolleys") }} ({{ isLoadingFetch ? '-' : listTrolleys.length }}):
             </div>
-            <div class="h-64">
+            <div class="h-64 overflow-y-auto border-b border-dashed border-gray-300 pb-4">
                 <div class="grid grid-cols-3 gap-2">
                     <div
                         v-if="isLoadingFetch"
