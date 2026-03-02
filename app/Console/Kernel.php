@@ -18,6 +18,7 @@ use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationE
 use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
 use App\Actions\Comms\Outbox\RunBasketLowStockEmailBulkRuns;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
+use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
@@ -484,6 +485,15 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->job(RunProspectMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunProspectMailshotSecondWave',
+                ),
+                name: 'RunProspectMailshotSecondWave',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
         }
 
         // $this->logSchedule(
@@ -512,12 +522,11 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
-
     }
 
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
