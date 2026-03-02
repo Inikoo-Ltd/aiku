@@ -41,6 +41,8 @@ class UpdateInvoiceTransaction extends OrgAction
     {
         $invoiceTransaction = $this->update($invoiceTransaction, $modelData, ['data']);
 
+        $this->updateTradeUnitBridges($invoiceTransaction);
+
         $invoiceDate = \Carbon\Carbon::parse($invoiceTransaction->date);
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
@@ -92,6 +94,19 @@ class UpdateInvoiceTransaction extends OrgAction
         }
 
         return $invoiceTransaction;
+    }
+
+    protected function updateTradeUnitBridges(InvoiceTransaction $invoiceTransaction): void
+    {
+        $invoiceTransaction->tradeUnitBridges()->update([
+            'net_amount'      => $invoiceTransaction->net_amount,
+            'org_net_amount'  => $invoiceTransaction->org_net_amount,
+            'grp_net_amount'  => $invoiceTransaction->grp_net_amount,
+            'in_process'      => $invoiceTransaction->in_process ?? false,
+            'date'            => $invoiceTransaction->date,
+            'order_id'        => $invoiceTransaction->order_id,
+            'customer_id'     => $invoiceTransaction->customer_id,
+        ]);
     }
 
     public function rules(): array
