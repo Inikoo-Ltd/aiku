@@ -11,7 +11,6 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
@@ -33,7 +32,11 @@ class SetTradeUnitsForFaireShops
 
         $seederProduct = Product::whereRaw("lower(code) = lower(?)", [$code])->where('shop_id', $seederShop->id)->first();
 
+
         if ($seederProduct && $seederProduct->units == $product->units) {
+
+
+
             $tradeUnitsData = [];
             foreach ($seederProduct->tradeUnits as $tradeUnit) {
                 $tradeUnitsData[] = [
@@ -41,6 +44,9 @@ class SetTradeUnitsForFaireShops
                     'quantity' => $tradeUnit->pivot->quantity
                 ];
             }
+
+
+
             if (!empty($tradeUnitsData)) {
                 UpdateTradeUnitsForExternalProduct::make()->action($product, [
                     'trade_units' => $tradeUnitsData
@@ -66,7 +72,7 @@ class SetTradeUnitsForFaireShops
             return 1;
         }
 
-        $count = Product::where('shop_id', $faireShop->id)->where('state', ProductStateEnum::IN_PROCESS)->count();
+        $count = Product::where('shop_id', $faireShop->id)->count();
 
         ProgressBar::setFormatDefinition(
             'aiku_eta',
@@ -76,7 +82,8 @@ class SetTradeUnitsForFaireShops
         $bar->setFormat('aiku_eta');
         $bar->start();
 
-        Product::where('shop_id', $faireShop->id)->orderBy('id')
+        Product::where('shop_id', $faireShop->id)
+            ->orderBy('id')
             ->chunk(100, function (Collection $products) use ($bar, $command) {
                 foreach ($products as $product) {
                     $this->handle($product, $command);
