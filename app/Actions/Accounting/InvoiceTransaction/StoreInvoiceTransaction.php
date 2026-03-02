@@ -30,6 +30,7 @@ use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Accounting\InvoiceTransactionHasTradeUnit;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
@@ -103,6 +104,8 @@ class StoreInvoiceTransaction extends OrgAction
 
         /** @var InvoiceTransaction $invoiceTransaction */
         $invoiceTransaction = $invoice->invoiceTransactions()->create($modelData);
+
+        $this->storeTradeUnitBridges($invoiceTransaction);
 
         if ($invoiceTransaction->order_id && $invoiceTransaction->transaction_id) {
             $invoiceTransaction->transaction->update([
@@ -294,6 +297,38 @@ class StoreInvoiceTransaction extends OrgAction
         }
 
         return $invoiceTransaction;
+    }
+
+    protected function storeTradeUnitBridges(InvoiceTransaction $invoiceTransaction): void
+    {
+        if ($invoiceTransaction->model_type !== 'Product' || !$invoiceTransaction->model_id) {
+            return;
+        }
+
+        /** @var Product $product */
+        $product = Product::find($invoiceTransaction->model_id);
+
+        if (!$product) {
+            return;
+        }
+
+        foreach ($product->tradeUnits as $tradeUnit) {
+            InvoiceTransactionHasTradeUnit::create([
+                'group_id'               => $invoiceTransaction->group_id,
+                'organisation_id'        => $invoiceTransaction->organisation_id,
+                'invoice_transaction_id' => $invoiceTransaction->id,
+                'trade_unit_id'          => $tradeUnit->id,
+                'trade_unit_family_id'   => $tradeUnit->trade_unit_family_id,
+                'customer_id'            => $invoiceTransaction->customer_id,
+                'order_id'               => $invoiceTransaction->order_id,
+                'net_amount'             => $invoiceTransaction->net_amount,
+                'org_net_amount'         => $invoiceTransaction->org_net_amount,
+                'grp_net_amount'         => $invoiceTransaction->grp_net_amount,
+                'type'                   => $invoiceTransaction->model_type,
+                'date'                   => $invoiceTransaction->date,
+                'in_process'             => $invoiceTransaction->in_process ?? false,
+            ]);
+        }
     }
 
     protected function processFulfilmentService(Service $service, array $modelData): array
