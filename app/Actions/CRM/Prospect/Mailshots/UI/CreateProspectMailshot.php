@@ -17,7 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateProspectsMailshot extends OrgAction
+class CreateProspectMailshot extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
@@ -56,38 +56,38 @@ class CreateProspectsMailshot extends OrgAction
             ]
         ];
 
-        $tags = explode(',', $request->input('tags'));
+        // $tags = explode(',', $request->input('tags'));
 
 
 
-        $fields[] = [
-            'title'  => '',
-            'fields' => [
-                'recipients_recipe' => [
-                    'type'        => 'prospectRecipients',
-                    'label'       => __('recipients'),
-                    'required'    => true,
-                    'options'     => [
-                        'query'                  => IndexProspectQueries::run(),
-                        'custom_prospects_query' => '',
-                    ],
-                    'full'      => true,
-                    'value'     => [
-                        'recipient_builder_type' => 'query',
-                        'recipient_builder_data' => [
-                            'query'                     => null,
-                            'custom_prospects_query'    => $tags[0] != '' ? [
-                                'tags'   => [
-                                    'logic'    => 'all',
-                                    'tag_ids'  => $tags
-                                ],
-                            ] : null,
-                            'prospects' => null,
-                        ]
-                    ]
-                ],
-            ]
-        ];
+        // $fields[] = [
+        //     'title'  => '',
+        //     'fields' => [
+        //         'recipients_recipe' => [
+        //             'type'        => 'prospectRecipients',
+        //             'label'       => __('recipients'),
+        //             'required'    => true,
+        //             'options'     => [
+        //                 'query'                  => IndexProspectQueries::run(),
+        //                 'custom_prospects_query' => '',
+        //             ],
+        //             'full'      => true,
+        //             'value'     => [
+        //                 'recipient_builder_type' => 'query',
+        //                 'recipient_builder_data' => [
+        //                     'query'                     => null,
+        //                     'custom_prospects_query'    => $tags[0] != '' ? [
+        //                         'tags'   => [
+        //                             'logic'    => 'all',
+        //                             'tag_ids'  => $tags
+        //                         ],
+        //                     ] : null,
+        //                     'prospects' => null,
+        //                 ]
+        //             ]
+        //         ],
+        //     ]
+        // ];
 
 
         // TODO: Check and make sure the Route is correct
@@ -112,6 +112,8 @@ class CreateProspectsMailshot extends OrgAction
                     ]
                 ],
                 'formData'    => [
+                    'fullLayout' => true,
+                    'submitLabel' => __('Continue'),
                     'blueprint' => $fields,
                     'route'     =>
                     match (class_basename($parent)) {
