@@ -3,11 +3,10 @@
 namespace App\Observers\Ordering;
 
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\User;
-use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Events\BroadcastUserNotification;
 use App\Notifications\Ordering\OrderStateUpdated;
+use App\Services\Notification\NotificationRecipientResolver;
 use Illuminate\Support\Facades\Notification;
 
 class OrderObserver
@@ -15,24 +14,11 @@ class OrderObserver
     public function updated(Order $order): void
     {
         if ($order->isDirty('state')) {
-            if (! $order->is_premium_dispatch) {
-                return;
-            }
-
-            // Notify active staff users who are working employees
-            $employeeUsers = User::where('status', true)
-                ->whereHas('employees', function ($query) {
-                    $query->where('employees.state', EmployeeStateEnum::WORKING);
-                })
-                ->get();
-
-            $guestUsers = User::where('status', true)
-                ->whereHas('guests', function ($query) {
-                    $query->where('guests.status', true);
-                })
-                ->get();
-
-            $users = $employeeUsers->merge($guestUsers)->unique('id');
+            // if (! $order->is_premium_dispatch) {
+            //     return;
+            // }
+            $resolver = app(NotificationRecipientResolver::class);
+            $users = $resolver->resolveForOrder($order, 'order.state_update');
 
             Notification::send($users, new OrderStateUpdated($order));
 
