@@ -80,10 +80,6 @@ class UpdateFaireOrder extends OrgAction
             $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)->first();
             if($invoiceTransaction) {
 
-
-
-
-
                 $invoiceTransaction->update([
                     'historic_asset_id' => $product->current_historic_asset_id,
                     'gross_amount'      => $netAmount,
@@ -91,9 +87,6 @@ class UpdateFaireOrder extends OrgAction
                     'grp_net_amount'    => $netAmount * $grpExchange,
                     'org_net_amount'    => $netAmount * $orgExchange,
                 ]);
-
-
-
 
             }
 
