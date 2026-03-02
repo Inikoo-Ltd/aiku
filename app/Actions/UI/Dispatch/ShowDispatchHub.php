@@ -82,8 +82,8 @@ class ShowDispatchHub extends OrgAction
                     'current_tab' => 'dispatch_hub',
                     'tabs'        => [
                         'dispatch_hub' => [
-                            'title' => 'Dispatch Hub',
-                            'icon'  => ['fal', 'fa-conveyor-belt-alt']
+                            'title' => __('Delivery Notes'),
+                            'icon'  => ['fal', 'fa-truck']
                         ],
                     ],
                     'tables'      => [

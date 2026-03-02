@@ -20,6 +20,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
 use App\Models\Billables\ShippingZone;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Dispatching\DeliveryNote;
@@ -305,6 +306,10 @@ class Order extends Model implements HasMedia, Auditable
         return $this->hasMany(Transaction::class);
     }
 
+    public function itemTransactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class)->where('transactions.model_type', class_basename(Product::class));
+    }
 
     public function deliveryNotes(): BelongsToMany
     {
