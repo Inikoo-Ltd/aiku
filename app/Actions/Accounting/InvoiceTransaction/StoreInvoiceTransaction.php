@@ -327,6 +327,7 @@ class StoreInvoiceTransaction extends OrgAction
                 'type'                   => $invoiceTransaction->model_type,
                 'date'                   => $invoiceTransaction->date,
                 'in_process'             => $invoiceTransaction->in_process ?? false,
+                'is_refund'              => $invoiceTransaction->is_refund ?? false,
             ]);
         }
     }

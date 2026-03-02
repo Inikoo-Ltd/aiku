@@ -103,6 +103,7 @@ class UpdateInvoiceTransaction extends OrgAction
             'org_net_amount'  => $invoiceTransaction->org_net_amount,
             'grp_net_amount'  => $invoiceTransaction->grp_net_amount,
             'in_process'      => $invoiceTransaction->in_process ?? false,
+            'is_refund'       => $invoiceTransaction->is_refund ?? false,
             'date'            => $invoiceTransaction->date,
             'order_id'        => $invoiceTransaction->order_id,
             'customer_id'     => $invoiceTransaction->customer_id,

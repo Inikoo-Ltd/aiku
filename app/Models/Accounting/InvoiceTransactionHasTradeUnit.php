@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $type
  * @property \Illuminate\Support\Carbon $date
  * @property bool $in_process
+ * @property bool $is_refund
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group $group
@@ -59,6 +60,7 @@ class InvoiceTransactionHasTradeUnit extends Model
         return [
             'date'           => 'datetime',
             'in_process'     => 'boolean',
+            'is_refund'      => 'boolean',
             'net_amount'     => 'decimal:2',
             'org_net_amount' => 'decimal:2',
             'grp_net_amount' => 'decimal:2',

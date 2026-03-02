@@ -41,6 +41,7 @@ return new class () extends Migration {
             $table->string('type')->nullable()->index();
             $table->dateTimeTz('date')->index();
             $table->boolean('in_process')->default(false)->index();
+            $table->boolean('is_refund')->default(false)->index();
 
             $table->unique(['invoice_transaction_id', 'trade_unit_id'], 'invoice_transaction_trade_unit_unique');
 
