@@ -82,6 +82,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Currency|null $currency
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransactionHasFeedback> $feedbackBridges
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransactionHasTradeUnit> $tradeUnitBridges
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset
  * @property-read \App\Models\Accounting\Invoice|null $invoice
@@ -197,6 +198,11 @@ class InvoiceTransaction extends Model
     public function transactionRefunds(): HasMany
     {
         return $this->hasMany(InvoiceTransaction::class, 'original_invoice_transaction_id');
+    }
+
+    public function tradeUnitBridges(): HasMany
+    {
+        return $this->hasMany(InvoiceTransactionHasTradeUnit::class);
     }
 
     public function taxCategory(): BelongsTo
