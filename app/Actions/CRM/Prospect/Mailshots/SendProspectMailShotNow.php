@@ -16,7 +16,6 @@ use Lorisleiva\Actions\Concerns\AsCommand;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Comms\Outbox;
 
 class SendProspectMailShotNow extends OrgAction
 {
@@ -62,9 +61,8 @@ class SendProspectMailShotNow extends OrgAction
     }
 
 
-    public function asController(Shop $shop, Outbox $outbox, Mailshot $mailshot, ActionRequest $request): Mailshot
+    public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
-        // outbox is not used in this action, but it's required by the route
         $this->initialisationFromShop($shop, $request);
         return $this->handle($mailshot, $this->validatedData);
     }

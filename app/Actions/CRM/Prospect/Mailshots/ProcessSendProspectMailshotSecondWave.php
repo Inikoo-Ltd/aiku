@@ -63,6 +63,8 @@ class ProcessSendProspectMailshotSecondWave
             ->where('prospects.is_valid_email', true)
             ->whereNotNull('prospects.email');
 
+        $queryBuilder->select('prospects.id', 'prospects.shop_id', 'prospects.name', 'prospects.email', 'prospects.slug');
+
         // Process recipients in chunks of 250
         $queryBuilder->chunk(250, function ($recipients) use ($mailshot) {
 
@@ -119,6 +121,7 @@ class ProcessSendProspectMailshotSecondWave
             ]
         );
 
+        // TODO: need make sure any hydrator here
         MailshotHydrateDispatchedEmails::run($mailshot);
     }
 

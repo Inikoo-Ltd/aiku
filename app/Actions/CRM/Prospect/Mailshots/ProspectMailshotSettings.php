@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 26 Feb 2025 13:30:00 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2025, Raul A Perusquia Flores
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: Monday, 2 Mar 2026 14:25:47 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
  */
 
 namespace App\Actions\CRM\Prospect\Mailshots;
@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
+//  TODO: Need make sure this setting needed or not
 class ProspectMailshotSettings extends OrgAction
 {
     use WithCRMAuthorisation;

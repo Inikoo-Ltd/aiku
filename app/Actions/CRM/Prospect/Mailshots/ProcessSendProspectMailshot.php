@@ -32,17 +32,18 @@ class ProcessSendProspectMailshot
 
     public function tags(): array
     {
-        return ['send_mailshot'];
+        return ['send_prospect_mailshot'];
     }
 
     public function handle(Mailshot $mailshot): void
     {
 
         // NOTE: Ensure no second wave exists when the parent mailshot has second wave disabled
-        // if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
-        //     DeleteMailshotSecondWave::run($mailshot->secondWave);
-        // }
+        if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
+            DeleteMailshotSecondWave::run($mailshot->secondWave);
+        }
 
+        // TODO: Need more confirmation about this conditions
         $queryBuilder = Prospect::where('shop_id', $mailshot->shop_id)
             ->whereNull('customer_id')
             ->where('can_contact_by_email', true)

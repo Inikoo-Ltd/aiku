@@ -20,30 +20,24 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
+use Sentry;
 
 class StoreProspectMailshot extends OrgAction
 {
     /**
      * @throws \Throwable
      */
-    public function handle(Shop $shop, array $modelData): Mailshot
+    public function handle(Shop $shop, array $modelData): ?Mailshot
     {
         // Get or create the invite outbox for this shop
         $outbox = Outbox::where('shop_id', $shop->id)
             ->where('code', OutboxCodeEnum::INVITE)
             ->first();
 
+        // if outbox Not found Log the sentry
         if (!$outbox) {
-            // Create outbox if it doesn't exist
-            $outbox = Outbox::create([
-                'group_id'       => $shop->group_id,
-                'organisation_id' => $shop->organisation_id,
-                'shop_id'        => $shop->id,
-                'code'           => OutboxCodeEnum::INVITE,
-                'name'           => 'Invite',
-                'state'          => OutboxCodeEnum::INVITE->defaultState(),
-                'type'           => OutboxCodeEnum::INVITE->type(),
-            ]);
+            Sentry::captureMessage('Outbox INVITE not found for shop: ' . $shop->id);
+            return null;
         }
 
         // Set default type as INVITE for prospect mailshots
@@ -83,10 +77,16 @@ class StoreProspectMailshot extends OrgAction
         return $this->handle($shop, $this->validatedData);
     }
 
-    public function htmlResponse(Mailshot $mailshot): Response
+    public function htmlResponse(?Mailshot $mailshot): Response
     {
-        // TODO: Check if the mailshot is a prospect mailshot
-        // grp.org.shops.show.crm.prospects.mailshots.create
+        //  Note if $mailshot null return index page
+        if (!$mailshot) {
+            return Inertia::location(route('grp.org.shops.show.crm.prospects.mailshots.index', [
+                'organisation' => $this->shop->organisation->slug,
+                'shop'         => $this->shop->slug,
+            ]));
+        }
+
         return Inertia::location(route('grp.org.shops.show.crm.prospects.mailshots.show', [
             'organisation' => $mailshot->shop->organisation->slug,
             'shop'         => $mailshot->shop->slug,
