@@ -127,9 +127,12 @@ class IndexClockingEmployees extends OrgAction
                     'year'        => now()->year,
                 ],
                 [
-                    'annual_days'  => 14,
-                    'medical_days' => 14,
-                    'unpaid_days'  => 0,
+                    'annual_days'   => 10,
+                    'annual_used'   => 0,
+                    'medical_days'  => 365,
+                    'medical_used'  => 0,
+                    'unpaid_days'   => 0,
+                    'unpaid_used'   => 0,
                 ]
             );
         }

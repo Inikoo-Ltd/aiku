@@ -324,40 +324,45 @@ class EditEmployee extends OrgAction
         ];
 
         $sections['Leave Balance'] = [
-            'label' => __('Leave Balance'),
-            'icon' => 'fal fa-clock',
-            'fields' => [
-                'annual_days' => [
-                    'type' => 'input',
-                    'label' => __('Annual Leave Balance'),
-                    'value' => $employee->leaveBalance?->annual_days ?? 10,
-                ],
-                'annual_used' => [
-                    'type' => 'input',
-                    'label' => __('Annual Leave Used'),
-                    'value' => $employee->leaveBalance?->annual_used ?? 0,
-                    'disabled' => true,
-                ],
-                'annual_remaining' => [
-                    'type' => 'input',
-                    'label' => __('Annual Leave Remaining'),
-                    'value' => $employee->leaveBalance?->annual_remaining ?? 10,
-                    'disabled' => true,
-                ],
-                'medical_used' => [
-                    'type' => 'input',
-                    'label' => __('Medical Leave Used'),
-                    'value' => $employee->leaveBalance?->medical_used ?? 10,
-                    'disabled' => true,
-                ],
-                'unpaid_used' => [
-                    'type' => 'input',
-                    'label' => __('Unpaid Leave Used'),
-                    'value' => $employee->leaveBalance?->unpaid_used ?? 0,
-                    'disabled' => true,
-                ],
-            ]
-        ];
+                    'label' => __('Leave Balance'),
+                    'icon' => 'fal fa-clock',
+                    'fields' => [
+                        'annual_days' => [
+                            'type' => 'input',
+                            'label' => __('Annual Leave Balance'),
+                            'value' => $employee->leaveBalance?->annual_days ?? 10,
+                        ],
+                        'annual_used' => [
+                            'type' => 'input',
+                            'label' => __('Annual Leave Used'),
+                            'value' => $employee->leaveBalance?->annual_used ?? 0,
+                            'disabled' => true,
+                        ],
+                        'annual_remaining' => [
+                            'type' => 'input',
+                            'label' => __('Annual Leave Remaining'),
+                            'value' => $employee->leaveBalance?->annual_remaining ?? 10,
+                            'disabled' => true,
+                        ],
+                        'medical_days' => [
+                            'type' => 'input',
+                            'label' => __('Medical Leave Days'),
+                            'value' => $employee->leaveBalance?->medical_days ?? 365,
+                        ],
+                        'medical_used' => [
+                            'type' => 'input',
+                            'label' => __('Medical Leave Used'),
+                            'value' => $employee->leaveBalance?->medical_used ?? 0,
+                            'disabled' => true,
+                        ],
+                        'unpaid_used' => [
+                            'type' => 'input',
+                            'label' => __('Unpaid Leave Used'),
+                            'value' => $employee->leaveBalance?->unpaid_used ?? 0,
+                            'disabled' => true,
+                        ],
+                    ]
+                ];
 
         $currentSection = 'properties';
         if ($request->has('section') && Arr::has($sections, $request->input('section'))) {
