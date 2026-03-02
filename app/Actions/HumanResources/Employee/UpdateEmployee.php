@@ -107,9 +107,9 @@ class UpdateEmployee extends OrgAction
                     'year'        => now()->year,
                 ],
                 [
-                    'annual_days'   => 10,
+                    'annual_days'   => 14,
                     'annual_used'   => 0,
-                    'medical_days'  => 365,
+                    'medical_days'  => 0,
                     'medical_used'  => 0,
                     'unpaid_days'   => 0,
                     'unpaid_used'   => 0,
@@ -239,6 +239,7 @@ class UpdateEmployee extends OrgAction
             'insurance_number'                          => ['sometimes', 'nullable', 'string', 'max:50'],
             'annual_days'                               => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
             'medical_days'                              => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
+            'gender'                                    => ['sometimes', 'nullable', 'string', 'max:20'],
 
         ];
 
