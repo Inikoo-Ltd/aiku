@@ -50,34 +50,34 @@ class ShowEmployee extends OrgAction
         return Inertia::render(
             'Org/HumanResources/Employee',
             [
-                'title'       => __('Employee'),
+                'title' => __('Employee'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     employee: $employee,
                     routeParameters: $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation' => [
                     'previous' => $this->getPrevious($employee, $request),
-                    'next'     => $this->getNext($employee, $request),
+                    'next' => $this->getNext($employee, $request),
                 ],
-                'pageHead'    => [
-                    'icon'          => [
+                'pageHead' => [
+                    'icon' => [
                         'title' => __('Employee'),
-                        'icon'  => 'fal fa-user-hard-hat'
+                        'icon' => 'fal fa-user-hard-hat'
                     ],
-                    'model'     => __('Employee'),
-                    'title'         => $employee->contact_name,
+                    'model' => __('Employee'),
+                    'title' => $employee->contact_name,
                     'subNavigation' => $this->getEmployeeSubNavigation($employee, $request),
-                    'meta'          => [
+                    'meta' => [
                         [
-                            'label'    => $employee->worker_number,
-                            'key'      => 'worker_number',
+                            'label' => $employee->worker_number,
+                            'key' => 'worker_number',
                             'leftIcon' => [
-                                'icon'    => 'fal fa-id-card',
+                                'icon' => 'fal fa-id-card',
                                 'tooltip' => __('Worker number')
                             ]
                         ],
                     ],
-                    'actions'       => [
+                    'actions' => [
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
                     ],
                 ],
@@ -97,21 +97,20 @@ class ShowEmployee extends OrgAction
                         'method' => 'delete'
                     ]
                 ],
-                'tabs'        => [
-                    'current'    => $this->tab,
+                'tabs' => [
+                    'current' => $this->tab,
                     'navigation' => EmployeeTabsEnum::navigation()
                 ],
 
                 EmployeeTabsEnum::SHOWCASE->value => $this->tab == EmployeeTabsEnum::SHOWCASE->value ?
-                    fn () => GetEmployeeShowcase::run($employee)
-                    : Inertia::lazy(fn () => GetEmployeeShowcase::run($employee)),
+                    fn() => GetEmployeeShowcase::run($employee)
+                    : Inertia::lazy(fn() => GetEmployeeShowcase::run($employee)),
                 EmployeeTabsEnum::HISTORY->value => $this->tab == EmployeeTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($employee))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($employee))),
+                    fn() => HistoryResource::collection(IndexHistory::run($employee))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($employee))),
                 EmployeeTabsEnum::ATTACHMENTS->value => $this->tab == EmployeeTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($employee))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($employee))),
-
+                    fn() => AttachmentsResource::collection(IndexAttachments::run($employee))
+                    : Inertia::lazy(fn() => AttachmentsResource::collection(IndexAttachments::run($employee))),
 
             ]
         )->table(
@@ -126,11 +125,11 @@ class ShowEmployee extends OrgAction
             (new ShowHumanResourcesDashboard())->getBreadcrumbs($routeParameters),
             [
                 [
-                    'type'           => 'modelWithIndex',
+                    'type' => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
                             'route' => [
-                                'name'       => 'grp.org.hr.employees.index',
+                                'name' => 'grp.org.hr.employees.index',
                                 'parameters' => array_merge(
                                     [
                                         '_query' => [
@@ -144,13 +143,13 @@ class ShowEmployee extends OrgAction
                         ],
                         'model' => [
                             'route' => [
-                                'name'       => 'grp.org.hr.employees.show',
+                                'name' => 'grp.org.hr.employees.show',
                                 'parameters' => $routeParameters
                             ],
                             'label' => $employee->slug,
                         ],
                     ],
-                    'suffix'         => $suffix,
+                    'suffix' => $suffix,
 
                 ],
             ]
@@ -185,10 +184,10 @@ class ShowEmployee extends OrgAction
             'grp.org.hr.employees.show' => [
                 'label' => $employee->contact_name,
                 'route' => [
-                    'name'       => $routeName,
+                    'name' => $routeName,
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
-                        'employee'     => $employee->slug
+                        'employee' => $employee->slug
                     ]
                 ]
             ]
