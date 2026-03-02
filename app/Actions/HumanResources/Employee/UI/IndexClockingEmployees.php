@@ -121,15 +121,15 @@ class IndexClockingEmployees extends OrgAction
             $leavesData = $leavesQuery->paginate(request()->input('per_page', 10))
                 ->withQueryString();
 
+            $organisation = $this->employee->organisation;
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $this->employee->id,
                     'year'        => now()->year,
                 ],
                 [
-                    'annual_days'   => 10,
+                    'annual_days'   => $organisation->getDefaultAnnualLeaveDays(),
                     'annual_used'   => 0,
-                    'medical_days'  => 365,
                     'medical_used'  => 0,
                     'unpaid_days'   => 0,
                     'unpaid_used'   => 0,
