@@ -17,7 +17,7 @@ const props = defineProps<{
     deliveryNote: {
         id: number
         slug: string
-        refrence: string
+        reference: string
     }
 }>()
 const layout = inject('layout', layoutStructure)
