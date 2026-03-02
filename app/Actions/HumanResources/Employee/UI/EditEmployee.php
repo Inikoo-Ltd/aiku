@@ -225,8 +225,8 @@ class EditEmployee extends OrgAction
                 ],
                 'insurance_number' => [
                     'type' => 'input',
-                    'placeholder' => __('BPJS / Your Insurance Number'),
-                    'label' => __('BPJS / Insurance Number'),
+                    'placeholder' => __('Your Insurance Number'),
+                    'label' => __('Insurance Number'),
                     'value' => $employee->insurance_number,
                 ],
                 'bank_account_name' => [
