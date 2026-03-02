@@ -10,32 +10,23 @@ namespace App\Actions\Dispatching\Trolley;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
-use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Trolley;
 use Lorisleiva\Actions\ActionRequest;
 
-class AttachTrolleyToDeliveryNote extends OrgAction
+class DetachTrolleyFromDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
-    use WithNoStrictRules;
     use WithWarehouseEditAuthorisation;
 
 
     public function handle(Trolley $trolley, DeliveryNote $deliveryNote): void
     {
-        $trolley->deliveryNotes()->attach([
-            $deliveryNote->id => [
-                'group_id'        => $deliveryNote->group_id,
-                'organisation_id' => $deliveryNote->organisation_id
-            ]
-        ]);
+        $trolley->deliveryNotes()->detach($deliveryNote->id);
         UpdateTrolley::run($trolley, [
-            'current_delivery_note_id' => $deliveryNote->id
+            'current_delivery_note_id' => null
         ]);
-
-
     }
 
     public function asController(DeliveryNote $deliveryNote, Trolley $trolley, ActionRequest $request): void

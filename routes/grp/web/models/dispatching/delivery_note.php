@@ -30,6 +30,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPi
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
 use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
+use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
 use App\Actions\Dispatching\Trolley\ChangeTrolleyDeliveryNote;
 use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
@@ -46,6 +47,10 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::post('shipment-from-faire', StoreShipmentFromFaire::class)->name('shipment.store_faire');
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::patch('trolleys', SyncDeliveryNoteTrolleys::class)->name('trolleys.sync');
+
+    Route::patch('attach-trolley/{trolley:id}', AttachTrolleyToDeliveryNote::class)->name('trolleys.attach');
+    Route::patch('detach-trolley/{trolley:id}', AttachTrolleyToDeliveryNote::class)->name('trolleys.detach');
+
 
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in_queue')->withoutScopedBindings();
