@@ -31,6 +31,17 @@ trait WithNotificationSubNavigation
                     'tooltip' => __('Guest settings'),
                 ],
             ],
+            [
+                'label'    => __('Notification types'),
+                'route'    => [
+                    'name'       => 'grp.sysadmin.notification-settings.types',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'layer-group'],
+                    'tooltip' => __('Notification types'),
+                ],
+            ],
         ];
     }
 }
