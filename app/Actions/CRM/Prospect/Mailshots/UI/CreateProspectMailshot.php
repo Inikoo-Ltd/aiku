@@ -25,15 +25,7 @@ class CreateProspectMailshot extends OrgAction
         // return $request->user()->authTo('crm.prospects.edit');
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): Response|RedirectResponse
-    {
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($organisation, $request);
-    }
-
-    // Note: organisation is not used here, but it's required for the route
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Response|RedirectResponse
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Response|RedirectResponse
     {
         $this->initialisationFromShop($shop, $request);
 
@@ -41,7 +33,7 @@ class CreateProspectMailshot extends OrgAction
     }
 
 
-    public function handle(Organisation|Shop $parent, ActionRequest $request): Response
+    public function handle(Shop $parent, ActionRequest $request): Response
     {
         $fields[] = [
             'title'  => '',
@@ -115,22 +107,12 @@ class CreateProspectMailshot extends OrgAction
                     'fullLayout' => true,
                     'submitLabel' => __('Continue'),
                     'blueprint' => $fields,
-                    'route'     =>
-                    match (class_basename($parent)) {
-                        'Shop' => [
-                            'name'       => 'grp.models.shop.prospect.mailshot.store',
-                            'parameters' => [
-                                'shop' => $parent->id,
-                            ]
-                        ],
-                        default => [
-                            // TODO: fix the route later
-                            'name' => 'grp.models.shop.prospect.mailshot.store',
-                            'parameters' => [
-                                'shop' => $parent->id,
-                            ]
-                        ],
-                    }
+                    'route'     => [
+                        'name'       => 'grp.models.shop.prospect.mailshot.store',
+                        'parameters' => [
+                            'shop' => $parent->id,
+                        ]
+                    ]
                 ],
 
             ]
