@@ -82,6 +82,11 @@ Route::get('shippers/{shipper}/edit', EditShipper::class)->name('shippers.edit')
 Route::get('boxes', IndexBoxes::class)->name('boxes.index');
 Route::get('boxes/create', CreateBox::class)->name('boxes.create');
 Route::get('picking-sessions', IndexPickingSessions::class)->name('picking_sessions.index');
+Route::get('picking-sessions/in-process', [IndexPickingSessions::class, 'InProcess'])->name('picking_sessions.in_process');
+Route::get('picking-sessions/picking', [IndexPickingSessions::class, 'Picking'])->name('picking_sessions.picking');
+Route::get('picking-sessions/waiting', [IndexPickingSessions::class, 'Waiting'])->name('picking_sessions.waiting');
+Route::get('picking-sessions/picked', [IndexPickingSessions::class, 'Picked'])->name('picking_sessions.picked');
+Route::get('picking-sessions/packed', [IndexPickingSessions::class, 'Packed'])->name('picking_sessions.packed');
 Route::get('picking-sessions/{pickingSession}', ShowPickingSession::class)->name('picking_sessions.show');
 
 Route::prefix('trolleys')->as('trolleys.')->group(function () {

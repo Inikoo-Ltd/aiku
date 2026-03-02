@@ -11,7 +11,6 @@ use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteDeliveryAddress;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UpdateState\ChangePickingBaysDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote;
@@ -28,6 +27,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHa
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicking;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
+use App\Actions\Dispatching\PickedBay\ChangePickingBaysDeliveryNote;
 use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
 use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
