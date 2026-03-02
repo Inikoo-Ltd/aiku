@@ -23,14 +23,18 @@ use App\Actions\SysAdmin\User\UI\IndexUserActions;
 use App\Actions\SysAdmin\User\UI\IndexUsers;
 use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\Notification\DeleteGuestsNotificationSetting;
+use App\Actions\UI\Notification\DeleteNotificationType;
 use App\Actions\UI\Notification\DeleteUsersNotificationSetting;
 use App\Actions\UI\Notification\GetGuestsNotificationSettingOptions;
 use App\Actions\UI\Notification\GetNotificationStateOptions;
 use App\Actions\UI\Notification\GetUsersNotificationSettingOptions;
 use App\Actions\UI\Notification\IndexGuestsNotificationSettings;
+use App\Actions\UI\Notification\IndexNotificationTypes;
 use App\Actions\UI\Notification\IndexUsersNotificationSettings;
 use App\Actions\UI\Notification\StoreGuestsNotificationSettings;
+use App\Actions\UI\Notification\StoreNotificationType;
 use App\Actions\UI\Notification\StoreUsersNotificationSettings;
+use App\Actions\UI\Notification\UpdateNotificationType;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowSysAdminDashboard::class)->name('dashboard');
@@ -78,6 +82,11 @@ Route::prefix('notification-settings')->as('notification-settings.')->group(func
     Route::get('guests/options', GetGuestsNotificationSettingOptions::class)->name('guests.options');
     Route::post('guests/store', StoreGuestsNotificationSettings::class)->name('guests.store');
     Route::delete('guests/{userNotificationSetting}', DeleteGuestsNotificationSetting::class)->name('guests.delete');
+
+    Route::get('types', IndexNotificationTypes::class)->name('types');
+    Route::post('types/store', StoreNotificationType::class)->name('types.store');
+    Route::put('types/{notificationType}', UpdateNotificationType::class)->name('types.update');
+    Route::delete('types/{notificationType}', DeleteNotificationType::class)->name('types.delete');
 
     Route::get('state-options', GetNotificationStateOptions::class)->name('state-options');
 });
