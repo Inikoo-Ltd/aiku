@@ -174,6 +174,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
+                PlatformTypeEnum::TIKTOK => [
+                    'name'       => 'retina.models.dropshipping.tiktok.batch_upload',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
                 PlatformTypeEnum::EBAY => [
                     'name'       => 'retina.models.dropshipping.ebay.batch_upload',
                     'parameters' => [
@@ -210,6 +216,12 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 PlatformTypeEnum::EBAY => [
                     'name'       => 'retina.models.dropshipping.ebay.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+                PlatformTypeEnum::TIKTOK => [
+                    'name'       => 'retina.models.dropshipping.tiktok.batch_all',
                     'parameters' => [
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
@@ -319,6 +331,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::EBAY => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.ebay_products'
                         ],
+                        PlatformTypeEnum::TIKTOK => [
+                            'name' => 'retina.json.dropshipping.customer_sales_channel.tiktok_products'
+                        ],
                         default => false
                     },
                     'single_create_new' => match ($this->customerSalesChannel->platform->type) {
@@ -345,6 +360,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         ],
                         PlatformTypeEnum::EBAY => [
                             'name' => 'retina.models.portfolio.match_to_existing_ebay_product'
+                        ],
+                        PlatformTypeEnum::TIKTOK => [
+                            'name' => 'retina.models.portfolio.match_to_existing_tiktok_product'
                         ],
                         default => false
                     },

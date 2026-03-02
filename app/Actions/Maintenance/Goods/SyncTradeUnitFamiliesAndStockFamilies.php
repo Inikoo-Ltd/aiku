@@ -14,6 +14,7 @@ use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class SyncTradeUnitFamiliesAndStockFamilies
 {
@@ -52,8 +53,12 @@ class SyncTradeUnitFamiliesAndStockFamilies
     {
         $count = Stock::whereNotNull('stock_family_id')->count();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
         Stock::orderBy('id')->whereNotNull('stock_family_id')

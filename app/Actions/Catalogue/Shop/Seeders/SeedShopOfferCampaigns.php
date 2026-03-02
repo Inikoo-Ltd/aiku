@@ -47,9 +47,10 @@ class SeedShopOfferCampaigns extends GrpAction
             $offerCampaign = StoreOfferCampaign::make()->action(
                 $shop,
                 [
-                    'code' => $code,
-                    'name' => $case->labels()[$case->value],
-                    'type' => $case
+                    'code'   => $code,
+                    'name'   => $case->labels()[$case->value],
+                    'type'   => $case,
+                    'status' => $case->defaultStatus(),
                 ]
             );
 

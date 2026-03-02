@@ -3,7 +3,6 @@
 namespace App\Actions\Discounts\OfferCampaign\UI;
 
 use App\Actions\Helpers\Dashboard\CalculateTimeSeriesStats;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\OfferCampaign;
@@ -17,7 +16,7 @@ class GetOfferCampaignsTimeSeriesStats
     {
         // Get all active offer campaigns for the shop
         $offerCampaigns = OfferCampaign::where('shop_id', $shop->id)
-            ->where('state', OfferCampaignStateEnum::ACTIVE)
+            ->where('status', true)
             ->get();
 
         // Load only the timeSeries relationship (we don't need records hydrated anymore)
@@ -46,7 +45,7 @@ class GetOfferCampaignsTimeSeriesStats
                     'customers' => 'customers_invoiced',
                     'orders'    => 'orders',
                     'invoices'  => 'invoices',
-                    'sales'     => 'sales_grp_currency',
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
                 ],
                 'offer_campaign_time_series_records',
                 'offer_campaign_time_series_id',

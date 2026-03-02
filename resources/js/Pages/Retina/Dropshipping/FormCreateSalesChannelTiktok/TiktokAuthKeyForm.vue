@@ -57,10 +57,10 @@ const submitForm = async () => {
 			trans("This is where you need to auth your TikTok store to our system.")
 		}}</span>
 	</div>
-	<form @submit.prevent="submitForm" class="flex flex-col gap-6">
+	<form class="flex flex-col gap-6">
 		<div class="flex items-center gap-2 w-full md:w-80">
-			<a target="_blank" :href="props?.props?.tiktokAuth?.url">
-				<Button size="sm" :loading="isLoadingStep" @click="errors = {}">{{ trans("Auth Store") }}</Button>
+			<a target="_blank" :href="props?.props?.tiktokAuth?.url" class="p-4 rounded bg-black text-white">
+				{{ trans("Auth Store") }}
 			</a>
 			<FontAwesomeIcon
 				v-tooltip="

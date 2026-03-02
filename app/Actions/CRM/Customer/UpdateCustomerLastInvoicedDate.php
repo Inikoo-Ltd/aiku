@@ -10,6 +10,7 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
@@ -40,11 +41,10 @@ class UpdateCustomerLastInvoicedDate
         Cache::forget("customer_days_since_last_invoiced_at_$customer->id");
 
 
-        if ($customer->wasChanged('last_invoiced_at')) {
+        if ($customer->wasChanged('last_invoiced_at') && $customer->shop->type == ShopTypeEnum::B2B) {
             foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
                 CalculateOrderTotalAmounts::dispatch($order, true, true, false, true);
             }
-
         }
     }
 
@@ -55,7 +55,7 @@ class UpdateCustomerLastInvoicedDate
 
     public function asCommand(Command $command): void
     {
-        $customer   = Customer::where('slug', $command->argument('customer'))->firstOrFail();
+        $customer = Customer::where('slug', $command->argument('customer'))->firstOrFail();
 
         $this->handle($customer, Carbon::parse($command->argument('date')));
 

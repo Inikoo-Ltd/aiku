@@ -46,8 +46,8 @@ function offerRoute(offer: Order) {
             </Link>
         </template>
 
-        <template #cell(sales)="{ item: collection }">
-            <span class="tabular-nums">{{ locale.currencyFormat('GBP', collection.sales) }}</span>
+        <template #cell(sales_grp_currency_external)="{ item: collection }">
+            <span class="tabular-nums">{{ locale.currencyFormat('GBP', collection.sales_grp_currency_external) }}</span>
         </template>
     </Table>
 </template>

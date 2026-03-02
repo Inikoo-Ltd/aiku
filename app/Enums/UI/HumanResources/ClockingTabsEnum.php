@@ -21,6 +21,7 @@ enum ClockingTabsEnum: string
 
     case HISTORY            = 'history';
     case DATA               = 'data';
+    case SCAN_QR_CODE       = 'scan_qr_code';
 
 
 
@@ -42,6 +43,10 @@ enum ClockingTabsEnum: string
             ClockingTabsEnum::SHOWCASE => [
                 'title' => __('Clocking'),
                 'icon'  => 'fas fa-info-circle',
+            ],
+            ClockingTabsEnum::SCAN_QR_CODE => [
+                'title' => __('Scan QR Code'),
+                'icon'  => 'fas fa-qrcode',
             ],
         };
     }

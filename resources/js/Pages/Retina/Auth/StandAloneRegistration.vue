@@ -18,6 +18,7 @@ import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { get } from "lodash-es"
 
 library.add(faEnvelope, faUser, faAsterisk, faExclamationTriangle, faInfoCircle, faPhone, faBuilding, faGlobe)
 
@@ -72,16 +73,30 @@ const form = useForm({
 const isLoading = ref(false)
 
 const submit = () => {
+    const fieldsOfSelectedCountry = get(props.countriesAddressData, [get(form, ['contact_address', 'country_id'], []), 'fields'], {});
+
+    let isAddressFieldFailedPass = false
+    for (const [fieldName, fieldData] of Object.entries(fieldsOfSelectedCountry)) {
+        if (fieldData.required && !get(form, ['contact_address', fieldName])) {
+            form.setError(fieldName, `${fieldName} is required`);
+            isAddressFieldFailedPass = true;
+        } else {
+            form.clearErrors(fieldName);
+        }
+    }
+    if (isAddressFieldFailedPass) {
+        return;
+    }
 
 	const { isDirty, errors, __rememberable, hasErrors, progress, wasSuccessful, ...xxx } = form
-
 	if (form.password == form.password_confirmation) {
-		if (isUserInputPassed(xxx)) return
+		if (isUserInputPassed(xxx)) return  // Check <script> and HTML tag in user input
 		
 		form
 		.transform((data) => ({
 			...data,
-			...xxx
+			...xxx,
+			tiktok_code: route().queryParams?.tiktok_code
 		}))
 		.post(route(props.registerRoute.name, props.registerRoute.parameters), {
 			preserveScroll: true,
@@ -99,12 +114,12 @@ const submit = () => {
 				window.dataLayer.push({
 					event: 'registrationSuccess'
 				})
-				// router.get(route('retina.dashboard.show'))
 				window.location.href = await getRefRedirect()
 			}
 		})
 	} else {
 		form.setError("password", "password not match")
+		form.setError("password_confirmation", "Password does not match")
 	}
 }
 
@@ -184,15 +199,14 @@ const isUserInputPassed = (dataToCheck: {}) => {
 								</label>
 
 								<div class="mt-2">
-									<!-- make IconField full-width -->
-									<IconField class="w-full">
+									<IconField class="w-full" :class="form.errors.email ? 'errorShake rounded-lg' : ''">
 										<InputIcon>
 											<FontAwesomeIcon :icon="faEnvelope" />
 										</InputIcon>
 
-										<!-- and make the input itself full-width -->
 										<InputText
 											v-model="form.email"
+											@change="() => form.clearErrors('email')"
 											type="email"
 											id="email"
 											name="email"
@@ -221,6 +235,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 										v-model="form.password"
 										@update:modelValue="(e) => form.clearErrors('password')"
 										:type="'password'"
+										:class="form.errors.password ? 'errorShake' : ''"
 										required />
 									<p v-if="form.errors.password" class="text-sm text-red-600 mt-1">
 										{{ form.errors.password }}
@@ -241,6 +256,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 									<PureInput
 										v-model="form.password_confirmation"
 										:type="'password'"
+										:class="form.errors.password_confirmation ? 'errorShake' : ''"
 										required />
 									<p
 										v-if="form.errors.password_confirmation"

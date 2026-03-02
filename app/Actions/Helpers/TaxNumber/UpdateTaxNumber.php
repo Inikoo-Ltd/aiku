@@ -23,13 +23,15 @@ class UpdateTaxNumber
 
     public function handle(TaxNumber $taxNumber, array $modelData, bool $strict = true): TaxNumber
     {
-        $oldChecksumData = array($taxNumber->number,$taxNumber->country_id);
+        $oldTaxNumber = $taxNumber->replicate();
+
+        $oldChecksumData = array($taxNumber->number, $taxNumber->country_id);
         if (Arr::has($modelData, 'number')) {
             $oldChecksumData[0] = $modelData['number'];
         }
         if (Arr::has($modelData, 'country_id')) {
             $oldChecksumData[1] = $modelData['country_id'];
-            $country = Country::find($modelData['country_id']);
+            $country            = Country::find($modelData['country_id']);
             if ($country) {
                 data_set($modelData, 'country_code', $country->code);
                 data_set($modelData, 'type', $this->getTaxNumberType($country));
@@ -38,24 +40,27 @@ class UpdateTaxNumber
         data_set($modelData, 'checksum', hash('sha512', implode('', $oldChecksumData)));
 
 
+        if (Arr::get($modelData, 'country_id', 39)) {
+            data_set($modelData, 'number', preg_replace('/^GR/', 'EL', Arr::get($modelData, 'number')));
+        }
+
         $taxNumber = $this->update($taxNumber, $modelData, ['data']);
-        $changes = Arr::except($taxNumber->getChanges(), ['updated_at', 'last_fetched_at']);
+        $changes   = Arr::except($taxNumber->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
         if (Arr::hasAny($changes, ['number', 'country_id',])) {
-
             if ($strict) {
                 $taxNumber = $this->update($taxNumber, [
                     'status' => TaxNumberStatusEnum::UNKNOWN,
-                    'valid' => false,
+                    'valid'  => false,
                 ]);
                 $taxNumber->refresh();
             }
 
             if ($taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
-                $taxNumber = ValidateEuropeanTaxNumber::run($taxNumber);
+                $taxNumber = ValidateEuropeanTaxNumber::run($taxNumber, $oldTaxNumber);
             } elseif ($taxNumber->type == TaxNumberTypeEnum::GB_VAT) {
-                $taxNumber = ValidateGBTaxNumber::run($taxNumber);
+                $taxNumber = ValidateGBTaxNumber::run($taxNumber, $oldTaxNumber);
             }
         }
 

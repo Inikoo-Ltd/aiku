@@ -9,7 +9,6 @@
 namespace App\Actions\Traits;
 
 use App\Enums\Discounts\Offer\OfferStateEnum;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use Illuminate\Support\Arr;
@@ -27,7 +26,7 @@ trait WithStoreOffer
             if (Arr::get($modelData, 'state') == OfferStateEnum::ACTIVE) {
                 $status = true;
             }
-        } elseif (Arr::get($modelData, 'state') == OfferCampaignStateEnum::ACTIVE) {
+        } else {
             $status = true;
         }
 

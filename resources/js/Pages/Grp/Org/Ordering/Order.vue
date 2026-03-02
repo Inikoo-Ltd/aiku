@@ -63,8 +63,8 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy, 
-    faParachuteBox, 
+    faCopy,
+    faParachuteBox,
     faSortNumericDown,
     faMoneyCheckEditAlt,
     faReceipt
@@ -92,6 +92,8 @@ import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import error from "@/Components/Utils/Error.vue"
 import order from "@/Pages/Grp/Org/Ordering/Order.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import Toggle from "@/Components/Pure/Toggle.vue"
+import { Icon as IconTS } from "@/types/Utils/Icon"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -207,7 +209,14 @@ const props = defineProps<{
         order_summary: {}
         payments: {}[]
         delivery_notes?: {
-            data: Array<any>
+            id: number
+            slug: string
+            reference: string
+            type: string
+            parcels: string
+            state: string
+            state_icon: IconTS
+            shipments: {}
         },
         shipping_notes: string
     }
@@ -241,6 +250,10 @@ const props = defineProps<{
     payments: {}
     readonly?: boolean
     is_shop_external?: boolean
+    external_shop?: {
+        engine_value: string
+        engine_label: string
+    }
     attachments?: {}
     invoices?: {}
     attachmentRoutes?: {}
@@ -490,7 +503,8 @@ const confirm2 = (action) => {
 };
 
 //start: collection feature
-const isCollection = ref<boolean>(props.delivery_address_management.addresses.collection_address_id ? true : false)
+const isCollection = ref<boolean>(!!props.delivery_address_management.addresses.collection_address_id)
+const isShippingExternal = ref<boolean>(!!props.delivery_address_management.addresses.is_shipping_by_external)
 const collectionBy = ref<string>(props.box_stats?.shipping_notes ? 'thirdParty' : 'myself')
 const textValue = ref<string | null>(props.box_stats?.shipping_notes)
 const labelPercentage = ref("")
@@ -508,6 +522,26 @@ const updateCollection = async (e: Event) => {
         notify({
             title: trans("Something went wrong."),
             text: trans("Failed to update to collection"),
+            type: "error",
+        })
+    }
+}
+
+const updateShippingExternal = async (e: boolean) => {
+    // console.log('eee', e)
+    // const target = e.target as HTMLInputElement
+    // const payload = {
+	// 	is_shipping_by_external: e
+    // }
+    try {
+        router.patch(route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters), {
+            is_shipping_by_external: e
+        })
+    } catch (error) {
+        console.error(error)
+        notify({
+            title: trans("Something went wrong."),
+            text: trans("Failed to update shipping method"),
             type: "error",
         })
     }
@@ -1068,6 +1102,38 @@ const recalculateVat = async () => {
         })
 }
 
+
+// Section: Get shipment from Faire/Tiktok
+const getShipmentFromPlatform = (deliveryNote: {}) => {
+    
+    const faire = {
+        label: trans('Get shipment from Faire'),
+        routeShipment: {
+            name: 'grp.models.delivery_note.shipment.store_faire',
+            parameters: {
+                deliveryNote: deliveryNote.id
+            }
+        }
+    }
+
+    const tiktok = {
+        label: trans('Get shipment from Tiktok'),
+        routeShipment: {
+            name: 'grp.models.delivery_note.shipment.store_tiktok',
+            parameters: {
+                deliveryNote: deliveryNote.id
+            }
+        }
+    }
+    
+    if (props.external_shop?.engine_value === 'faire') {
+        return faire
+    } else if (props.external_shop?.engine_value === 'tiktok') {
+        return tiktok
+    } else {
+        return null
+    }
+}
 </script>
 
 <template>
@@ -1113,6 +1179,14 @@ const recalculateVat = async () => {
             <div v-if="(!props.readonly || isShowProforma) && !is_shop_external" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
+            </div>
+            <div v-if="is_shop_external && external_shop" class="absolute -top-1 md:top-auto md:bottom-0.5 left-0 md:left-12 text-xxs">
+                <div v-if="external_shop?.engine_value === 'faire'" class="pb-px px-1 bg-black text-white">
+                    {{ external_shop?.engine_label }}
+                </div>
+                <div v-else class="pb-px px-1 bg-yellow-400">
+                    {{ external_shop?.engine_label }}
+                </div>
             </div>
         </template>
 
@@ -1227,13 +1301,13 @@ const recalculateVat = async () => {
                 </Button>
 
             </div>
-            
+
             <!-- Button: Undo to basket -->
             <ModalConfirmationDelete
                 v-if="data?.data?.state === 'submitted'"
                 :description="trans('This will move the order back to basket, allowing customer to edit the order again. Are you sure?')"
                 :title="trans('Undo Order back to basket?')"
-                :noLabel="trans('Yes, undo to basket')"
+                :noLabel="trans('Yes, sned back to basket')"
                 noIcon="fal fa-undo-alt"
                 class="w-full"
                 :routeDelete="{
@@ -1255,7 +1329,7 @@ const recalculateVat = async () => {
                                 <LoadingIcon v-if="isLoadingdelete" />
                                 <FontAwesomeIcon v-else icon="fal fa-undo-alt" class="" fixed-width aria-hidden="true" />
                             </div>
-                            <div class="w-full">{{ trans('Undo to basket') }}</div>
+                            <div class="w-full">{{ trans('Send back to basket') }}</div>
                         </div>
                     </Button>
                 </template>
@@ -1306,7 +1380,7 @@ const recalculateVat = async () => {
                 </div>
 
                 <div class="space-y-0.5 pl-1">
-                    
+
                     <!-- Field: Client -->
                     <div v-if="box_stats?.customer_client" class="pl-1 pb-2 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer client')" class="flex-none">
@@ -1490,12 +1564,27 @@ const recalculateVat = async () => {
         <!-- end: Order Section -->
 
         <!-- Box: Payment/Invoices/Delivery Notes  -->
-        <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
+        <BoxStatPallet class="py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="">
+                    <div v-if="is_shop_external" class="font-semibold xmb-2 text-base">
+                        {{ trans("Delivery") }}
+                        <span v-if="salesChannel" v-tooltip="trans('This order is from :salesChannel', { salesChannel: salesChannel.name})" class="font-normal text-sm opacity-70">({{ salesChannel.name }} <FontAwesomeIcon :icon="salesChannel.icon" class="" fixed-width aria-hidden="true" />)</span>
+                    </div>
+
+                    <!-- Toggle: Shipping External -->
+                    <div v-if="props.data?.data?.state !== 'dispatched' && !isCollection && is_shop_external"
+                        class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
+                        <FontAwesomeIcon icon='fal fa-truck' class='text-gray-400' fixed-width aria-hidden='true' />
+                        <Toggle
+                            v-model="isShippingExternal"
+                            @update:modelValue="updateShippingExternal"
+                        />
+                        <span class="text-sm text-gray-500">{{ external_shop?.external_shipping_label }}</span>
+                    </div>
 
                     <!-- Field: Billing -->
-                    <dl class="xmt-3 relative flex items-start w-full flex-none gap-x-1 py-1">
+                    <dl v-if="!is_shop_external" class="mt-2 relative flex items-start w-full flex-none gap-x-1 py-1">
                         <!-- <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
@@ -1599,8 +1688,6 @@ const recalculateVat = async () => {
                                 </div>
                             </div>
                         </div>
-
-
                     </dl>
 
 
@@ -1627,8 +1714,8 @@ const recalculateVat = async () => {
                                 }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                    {{ trans(note?.state?.tooltip) }}
-                                    <Icon :data="note?.state" />
+                                    {{ trans(note?.state_icon?.tooltip) }}
+                                    <Icon :data="note?.state_icon" />
                                 </span>
                             </div>
 
@@ -1656,6 +1743,50 @@ const recalculateVat = async () => {
                                         </span>
                                     </li>
                                 </ul>
+                            </div>
+
+                            <!-- Button: Get shipment from Faire/Tiktok -->
+                            <div
+                                v-if="getShipmentFromPlatform(note) && ['packed', 'finalised', 'dispatched'].includes(note.state) && props.delivery_address_management.addresses.is_shipping_by_external && !note?.shipments?.length"
+                                class="flex items-center gap-2 text-sm mb-1"
+                            >
+                                <ButtonWithLink
+                                    :label="getShipmentFromPlatform(note)?.label"
+                                    method="post"
+                                    :url="(route(getShipmentFromPlatform(note)?.name, getShipmentFromPlatform(note)?.parameters) as string)"
+                                    icon="fas fa-plus"
+                                    size="xs"
+                                    type="dashed"
+                                    :bindToLink="{
+                                        only: ['pageHead']
+                                    }"
+                                />
+                            </div>
+
+                            <!-- Section: Parcels -->
+                            <div class="flex gap-x-1 py-0.5">
+                                <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400 mr-1.5' fixed-width aria-hidden='true' />
+                                <div class=" group w-full pl-px">
+                                    <div class="leading-4 xtext-base flex justify-between w-full py-1">
+                                        <div class="text-gray-500">{{ trans("Parcels") }} ({{ note?.parcels?.length ?? 0 }})</div>
+                                    </div>
+
+                                    <ul v-if="note?.parcels?.length" class="list-disc pl-4 ">
+                                        <li v-for="(parcel, parcelIdx) in note?.parcels" :key="parcelIdx"
+                                            class="tabular-nums">
+                                            <span class="truncate">
+                                                {{ parcel.weight }} kg
+                                            </span>
+
+                                            <span class="text-gray-500 truncate">
+                                                ({{ parcel.dimensions?.[0] }}x{{
+                                                parcel.dimensions?.[1]
+                                                }}x{{ parcel.dimensions?.[2] }}
+                                                cm)
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
 
                             <!--                            <div v-else class="mt-1 text-xs italic text-gray-400">

@@ -22,6 +22,7 @@ enum OfferCampaignTypeEnum: string
     case CATEGORY_OFFERS = 'category-offers';
     case PRODUCT_OFFERS = 'product-offers';
     case DISCRETIONARY = 'discretionary';
+    case SHIPPING = 'shipping';
 
 
     public function labels(): array
@@ -34,7 +35,8 @@ enum OfferCampaignTypeEnum: string
             'shop-offers'     => __('Shop offers'),
             'category-offers' => __('Category offers'),
             'product-offers'  => __('Product offers'),
-            'discretionary'   => __('Discretionary discounts')
+            'discretionary'   => __('Discretionary discounts'),
+            'shipping'        => __('Shipping discount'),
         ];
     }
 
@@ -48,7 +50,8 @@ enum OfferCampaignTypeEnum: string
             'shop-offers'     => 'SO',
             'category-offers' => 'CO',
             'product-offers'  => 'PO',
-            'discretionary'   => 'DI'
+            'discretionary'   => 'DI',
+            'shipping'        => 'SH',
         ];
     }
 
@@ -56,45 +59,59 @@ enum OfferCampaignTypeEnum: string
     {
         return [
             'order-recursion' => [
-                'icon'          => 'fal fa-repeat',
-                'tooltip'       => self::from('order-recursion')->labels()['order-recursion'] ?? 'Unknown',
-                'class'         => '',
+                'icon'    => 'fal fa-repeat',
+                'tooltip' => self::from('order-recursion')->labels()['order-recursion'] ?? 'Unknown',
+                'class'   => '',
             ],
             'volume-discount' => [
-                'icon'          => 'fal fa-percentage',
-                'tooltip'       => self::from('volume-discount')->labels()['volume-discount'] ?? 'Unknown',
-                'class'         => '',
+                'icon'    => 'fal fa-percentage',
+                'tooltip' => self::from('volume-discount')->labels()['volume-discount'] ?? 'Unknown',
+                'class'   => '',
             ],
-            'first-order' => [
-                'icon'          => 'fal fa-flag',
-                'tooltip'       => self::from('first-order')->labels()['first-order'] ?? 'Unknown',
-                'class'         => '',
+            'first-order'     => [
+                'icon'    => 'fal fa-flag',
+                'tooltip' => self::from('first-order')->labels()['first-order'] ?? 'Unknown',
+                'class'   => '',
             ],
             'customer-offers' => [
-                'icon'          => 'fal fa-users',
-                'tooltip'       => self::from('customer-offers')->labels()['customer-offers'] ?? 'Unknown',
-                'class'         => '',
+                'icon'    => 'fal fa-users',
+                'tooltip' => self::from('customer-offers')->labels()['customer-offers'] ?? 'Unknown',
+                'class'   => '',
             ],
-            'shop-offers' => [
-                'icon'          => 'fal fa-store',
-                'tooltip'       => self::from('shop-offers')->labels()['shop-offers'] ?? 'Unknown',
-                'class'         => '',
+            'shop-offers'     => [
+                'icon'    => 'fal fa-store',
+                'tooltip' => self::from('shop-offers')->labels()['shop-offers'] ?? 'Unknown',
+                'class'   => '',
             ],
             'category-offers' => [
-                'icon'          => 'fal fa-tags',
-                'tooltip'       => self::from('category-offers')->labels()['category-offers'] ?? 'Unknown',
-                'class'         => '',
+                'icon'    => 'fal fa-tags',
+                'tooltip' => self::from('category-offers')->labels()['category-offers'] ?? 'Unknown',
+                'class'   => '',
             ],
-            'product-offers' => [
-                'icon'          => 'fal fa-box',
-                'tooltip'       => self::from('product-offers')->labels()['product-offers'] ?? 'Unknown',
-                'class'         => '',
+            'product-offers'  => [
+                'icon'    => 'fal fa-box',
+                'tooltip' => self::from('product-offers')->labels()['product-offers'] ?? 'Unknown',
+                'class'   => '',
             ],
-            'discretionary' => [
-                'icon'          => 'fal fa-hand-holding-usd',
-                'tooltip'       => self::from('discretionary')->labels()['discretionary'] ?? 'Unknown',
-                'class'         => '',
+            'discretionary'   => [
+                'icon'    => 'fal fa-hand-holding-usd',
+                'tooltip' => self::from('discretionary')->labels()['discretionary'] ?? 'Unknown',
+                'class'   => '',
             ],
+            'shipping'        => [
+                'icon'    => 'fal fa-truck',
+                'tooltip' => self::from('shipping')->labels()['shipping'] ?? 'Unknown',
+                'class'   => '',
+            ]
         ];
+    }
+
+    public function defaultStatus(): bool
+    {
+        return match ($this) {
+            OfferCampaignTypeEnum::ORDER_RECURSION,
+            => false,
+            default => true
+        };
     }
 }

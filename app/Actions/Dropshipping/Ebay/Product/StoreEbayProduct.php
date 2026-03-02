@@ -16,7 +16,6 @@ use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
-use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
@@ -33,7 +32,7 @@ class StoreEbayProduct extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(EbayUser $ebayUser, Portfolio $portfolio)
+    public function handle(EbayUser $ebayUser, Portfolio $portfolio): Portfolio
     {
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type'   => PlatformPortfolioLogsTypeEnum::UPLOAD
@@ -129,7 +128,7 @@ class StoreEbayProduct extends RetinaAction
                 $categories = $ebayUser->searchAvailableProducts($product->department->name);
 
                 if ($handleError($categories)) {
-                    return;
+                    return $portfolio;
                 }
 
                 $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
@@ -142,7 +141,7 @@ class StoreEbayProduct extends RetinaAction
             }
 
             if ($handleError($categories)) {
-                return;
+                return $portfolio;
             }
 
             $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
@@ -248,13 +247,13 @@ class StoreEbayProduct extends RetinaAction
             }
 
             if ($handleError($offer)) {
-                return;
+                return $portfolio;
             }
 
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
 
             if ($handleError($publishedOffer)) {
-                return;
+                return $portfolio;
             }
 
             $portfolio = UpdatePortfolio::run($portfolio, [
@@ -274,10 +273,11 @@ class StoreEbayProduct extends RetinaAction
                 ]);
             }
 
-            UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
+            return $portfolio;
         } catch (\Exception $e) {
-            UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
-            throw $e;
+            return $portfolio;
+
+            // throw $e;
         }
     }
 }

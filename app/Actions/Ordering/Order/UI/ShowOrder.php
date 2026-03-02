@@ -23,6 +23,7 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -375,12 +376,18 @@ class ShowOrder extends OrgAction
                 'readonly'                    => false,
                 'shop_type'                   => $order->shop->type,
                 'is_shop_external'            => $this->shop->type == ShopTypeEnum::EXTERNAL,
+                'external_shop'               => $this->shop->type == ShopTypeEnum::EXTERNAL ? [
+                    'engine_value'            => $this->shop->engine->value,
+                    'engine_label'            => ShopEngineEnum::from($this->shop->engine->value)->label(),
+                    'external_shipping_label' => $this->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
+                ] : null,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
-                'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
+                'contact_address'             => $order->customer ? AddressResource::make($order->customer->address)->getArray() : null,
                 'box_stats'                   => $this->getOrderBoxStats($order),
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'                        => OrderResource::make($order),
                 'delivery_note'               => $deliveryNoteResource,
+
 
                 'payments_data'         => $paymentsData,
                 'payments_accounts'     => $paymentAccountData,

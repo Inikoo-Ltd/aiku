@@ -19,7 +19,7 @@ class StoreRetinaNewProductToCurrentTiktok extends RetinaAction
 
     public function handle(Portfolio $portfolio): void
     {
-        StoreProductToTiktok::run($portfolio->customerSalesChannel->user, $portfolio);
+        StoreProductToTiktok::run($portfolio);
     }
 
     public function asController(Portfolio $portfolio, ActionRequest $request): void

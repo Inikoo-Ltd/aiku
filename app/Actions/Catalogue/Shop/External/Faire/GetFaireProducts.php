@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 01 Mar 2026 22:05:48 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\Catalogue\Product\StoreProduct;
@@ -30,7 +36,7 @@ class GetFaireProducts extends OrgAction
 
     public function handle(Shop $shop, array $modelData, ?Command $command = null): void
     {
-        if($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::FAIRE) {
+        if ($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::FAIRE) {
             return;
         }
 

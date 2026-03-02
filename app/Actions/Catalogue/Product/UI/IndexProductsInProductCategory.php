@@ -22,7 +22,9 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
+use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -86,12 +88,10 @@ class IndexProductsInProductCategory extends OrgAction
         $queryBuilder->orderBy('products.state');
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', 'shops.currency_id');
-
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->leftJoin('variants as variant', 'variant.id', '=', 'products.variant_id');
-
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
@@ -114,36 +114,67 @@ class IndexProductsInProductCategory extends OrgAction
             );
         }
 
+        $selects = [
+            'products.id',
+            'products.code',
+            'products.name',
+            'products.state',
+            'products.price',
+            'products.rrp',
+            'products.unit',
+            'products.is_for_sale',
+            'products.created_at',
+            'products.updated_at',
+            'products.slug',
+            'products.asset_id',
+            'products.available_quantity',
+            'products.units',
+            'currencies.code as currency_code',
+            'variant.slug as variant_slug',
+            'variant.code as variant_code',
+            'products.is_variant_leader as is_variant_leader',
+            'products.master_product_id',
+        ];
+
+        if ($prefix === 'sales') {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'asset_time_series',
+                timeSeriesRecordsTable: 'asset_time_series_records',
+                foreignKey: 'asset_id',
+                aggregateColumns: [
+                    'customers_invoiced'          => 'customers_invoiced',
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices'
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true,
+                localKey: 'asset_id'
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['customers_invoiced'];
+            $selects[] = $timeSeriesData['selectRaw']['customers_invoiced_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
 
         $queryBuilder
             ->defaultSort('products.code')
-            ->select([
-                'products.id',
-                'products.code',
-                'products.name',
-                'products.state',
-                'products.price',
-                'products.rrp',
-                'products.unit',
-                'products.is_for_sale',
-                'products.created_at',
-                'products.updated_at',
-                'products.slug',
-                'products.asset_id',
-                'products.available_quantity',
-                'invoices_all',
-                'sales_all',
-                'products.units',
-                'customers_invoiced_all',
-                'currencies.code as currency_code',
-                'variant.slug as variant_slug',
-                'variant.code as variant_code',
-                'products.is_variant_leader as is_variant_leader',
-                'products.master_product_id',
-            ])
+            ->select($selects)
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
+        return $queryBuilder->allowedSorts([
+                'code',
+                'name',
+                'shop_slug',
+                'department_slug',
+                'family_slug',
+                'customers_invoiced',
+                'sales_grp_currency_external',
+                'invoices',
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -157,13 +188,16 @@ class IndexProductsInProductCategory extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
-
             foreach ($this->getElementGroups($productCategory) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
                     elements: $elementGroup['elements']
                 );
+            }
+
+            if ($prefix === 'sales') {
+                $table->betweenDates(['date']);
             }
 
             $table
@@ -175,17 +209,27 @@ class IndexProductsInProductCategory extends OrgAction
                         'count' => $productCategory->stats->number_products
                     ]
                 );
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
-                $table->column(key: 'variant_slug', label: __('Variant'), canBeHidden: false, searchable: true);
+            if ($prefix === 'sales') {
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'customers_invoiced', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'customers_invoiced_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+            } else {
+                $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+                if ($productCategory->type === ProductCategoryTypeEnum::FAMILY) {
+                    $table->column(key: 'variant_slug', label: __('Variant'), canBeHidden: false, searchable: true);
+                }
+                $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 
@@ -308,8 +352,8 @@ class IndexProductsInProductCategory extends OrgAction
                     : Inertia::lazy(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
-                    fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
 
 
             ]
@@ -404,7 +448,7 @@ class IndexProductsInProductCategory extends OrgAction
         return match ($routeName) {
             'grp.org.shops.show.catalogue.products.current_products.index', =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -415,7 +459,7 @@ class IndexProductsInProductCategory extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.in_process_products.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -426,7 +470,7 @@ class IndexProductsInProductCategory extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.discontinued_products.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -437,7 +481,7 @@ class IndexProductsInProductCategory extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.all_products.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,

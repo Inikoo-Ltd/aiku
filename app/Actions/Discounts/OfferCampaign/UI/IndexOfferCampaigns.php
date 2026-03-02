@@ -52,7 +52,7 @@ class IndexOfferCampaigns extends OrgAction
         } else {
             $query->where('offer_campaigns.shop_id', $parent->id);
         }
-
+        $query->where('offer_campaigns.status', true);
         $query->leftjoin('shops', 'offer_campaigns.shop_id', '=', 'shops.id');
         $query->leftJoin('offer_campaign_stats', 'offer_campaigns.id', 'offer_campaign_stats.offer_campaign_id');
 
@@ -62,7 +62,7 @@ class IndexOfferCampaigns extends OrgAction
             'offer_campaigns.code',
             'offer_campaigns.name',
             'offer_campaigns.type',
-            'offer_campaigns.state',
+            'offer_campaigns.offers_state',
             'offer_campaigns.status',
             'shops.slug as shop_slug',
             'shops.name as shop_name',
@@ -76,9 +76,9 @@ class IndexOfferCampaigns extends OrgAction
             timeSeriesRecordsTable: 'offer_campaign_time_series_records',
             foreignKey: 'offer_campaign_id',
             aggregateColumns: [
-                'orders'             => 'orders',
-                'invoices'           => 'invoices',
-                'sales_grp_currency' => 'sales',
+                'orders'                      => 'orders',
+                'invoices'                    => 'invoices',
+                'sales_grp_currency_external' => 'sales_grp_currency_external',
             ],
             frequency: TimeSeriesFrequencyEnum::DAILY->value,
             prefix: $prefix,
@@ -87,11 +87,11 @@ class IndexOfferCampaigns extends OrgAction
 
         $selects[] = $timeSeriesData['selectRaw']['orders'];
         $selects[] = $timeSeriesData['selectRaw']['invoices'];
-        $selects[] = $timeSeriesData['selectRaw']['sales'];
+        $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
 
         return $query->defaultSort('offer_campaigns.id')
             ->select($selects)
-            ->allowedSorts(['code', 'name', 'state', 'number_current_offers', 'orders', 'invoices', 'sales'])
+            ->allowedSorts(['code', 'name', 'state', 'number_current_offers', 'orders', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -118,20 +118,16 @@ class IndexOfferCampaigns extends OrgAction
             $table->withEmptyState($emptyStateData);
             $table->withModelOperations($modelOperations);
 
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'type', label: '', type: 'icon');
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'number_current_offers', label: __('Number Offers'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_current_offers', label: __('Current Offers'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('id');
         };
     }
@@ -160,7 +156,7 @@ class IndexOfferCampaigns extends OrgAction
         $iconRight  = null;
 
         return Inertia::render(
-            'Org/Discounts/Campaigns',
+            'Org/Discounts/OfferCampaigns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -200,7 +196,7 @@ class IndexOfferCampaigns extends OrgAction
         return match ($routeName) {
             'grp.overview.offer.campaigns.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 [
                     [
                         'type'   => 'simple',

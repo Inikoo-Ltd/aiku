@@ -21,6 +21,7 @@ use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
+use App\Actions\Dropshipping\Tiktok\Product\MatchRetinaPortfolioToCurrentTiktokProduct;
 use App\Actions\Dropshipping\Tiktok\Product\StoreRetinaNewProductToCurrentTiktok;
 use App\Actions\Dropshipping\Tiktok\User\AuthCheckCreateTiktokChannel;
 use App\Actions\Dropshipping\Tiktok\User\CheckTiktokChannel;
@@ -151,6 +152,8 @@ use App\Actions\Retina\SysAdmin\DeleteRetinaWebUser;
 use App\Actions\Retina\SysAdmin\StoreRetinaWebUser;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Retina\SysAdmin\UpdateRetinaWebUser;
+use App\Actions\Retina\TikTok\CreateRetinaNewAllPortfoliosToTiktok;
+use App\Actions\Retina\TikTok\CreateRetinaNewBulkPortfoliosToTiktok;
 use App\Actions\Retina\UI\Profile\UpdateRetinaProfile;
 use App\Actions\Retina\Woo\CreateRetinaNewAllPortfoliosToWoo;
 use App\Actions\Retina\Woo\CreateRetinaNewBulkPortfoliosToWoo;
@@ -347,6 +350,9 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', StoreNewProductToCurrentEbay::class)->name('woo.single_upload')->withoutScopedBindings();
 
+    Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/tiktok-batch-all', CreateRetinaNewAllPortfoliosToTiktok::class)->name('tiktok.batch_all')->withoutScopedBindings();
+
     Route::post('{amazonUser:id}/amazon-batch-upload', SyncronisePortfoliosToAmazon::class)->name('amazon.batch_upload')->withoutScopedBindings();
     Route::post('{amazonUser:id}/amazon-single-upload/{portfolio:id}', SyncronisePortfolioToAmazon::class)->name('amazon.single_upload')->withoutScopedBindings();
 
@@ -402,6 +408,7 @@ Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetina
 Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentChannel::class, 'asDraft'])->name('portfolio.update_new_product.draft');
 
 Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreRetinaNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product')->withoutScopedBindings();
+Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchRetinaPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product');
 
 Route::post('portfolios/update-new-product-price/publish', UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class)->name('portfolios.update_new_product_price.publish');
 Route::post('portfolios/update-new-product-price/draft', [UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class, 'asDraft'])->name('portfolios.update_new_product_price.draft');

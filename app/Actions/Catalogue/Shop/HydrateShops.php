@@ -25,6 +25,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandling;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandlingBlocked;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateInWarehouse;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePacked;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePacking;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePicked;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateSubmitted;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
@@ -107,6 +109,8 @@ class HydrateShops
         ShopHydrateOrderStateInWarehouse::run($shop->id);
         ShopHydrateOrderStateHandling::run($shop->id);
         ShopHydrateOrderStateHandlingBlocked::run($shop->id);
+        ShopHydrateOrderStatePicked::run($shop->id);
+        ShopHydrateOrderStatePacking::run($shop->id);
         ShopHydrateOrderStatePacked::run($shop->id);
         ShopHydrateOrderStateFinalised::run($shop->id);
         ShopHydrateOrdersDispatchedToday::run($shop->id);

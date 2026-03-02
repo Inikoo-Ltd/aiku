@@ -30,7 +30,9 @@ class PreprocessCollectionTimeSeries implements ShouldBeUnique
         if (!$assetID) {
             return;
         }
+
         $asset = Asset::find($assetID);
+
         if (!$asset || !$asset->product) {
             return;
         }
@@ -39,7 +41,6 @@ class PreprocessCollectionTimeSeries implements ShouldBeUnique
             ->where('model_type', 'Product')
             ->where('model_id', $asset->product->id)
             ->pluck('collection_id')->unique()->toArray();
-
 
         foreach ($collectionsIds as $collectionsId) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
@@ -58,6 +59,4 @@ class PreprocessCollectionTimeSeries implements ShouldBeUnique
             }
         }
     }
-
-
 }

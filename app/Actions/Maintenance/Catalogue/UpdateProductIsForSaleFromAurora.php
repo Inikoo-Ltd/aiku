@@ -20,6 +20,7 @@ use App\Transfers\Aurora\WithAuroraParsers;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class UpdateProductIsForSaleFromAurora
 {
@@ -47,8 +48,12 @@ class UpdateProductIsForSaleFromAurora
         $auroraProducts = DB::connection('aurora')->table('Product Dimension')->select(['Product ID', 'Product Code', 'Product Web Configuration'])
             ->get();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $progressBar = $command->getOutput()->createProgressBar(count($auroraProducts));
-        $progressBar->setFormat('debug');
+        $progressBar->setFormat('aiku_eta');
         $progressBar->start();
 
         foreach ($auroraProducts as $auroraProduct) {

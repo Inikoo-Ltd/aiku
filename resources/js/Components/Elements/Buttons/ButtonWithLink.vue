@@ -32,6 +32,7 @@ const props = defineProps<{
     bindToLink?: {
         preserveScroll?: boolean
         preserveState?: boolean
+        only?: string[]  // 'pageHead', 'transaction'
     }
     url?: string
     method?: string

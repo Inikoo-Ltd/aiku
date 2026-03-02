@@ -54,7 +54,8 @@ class OrderResource extends JsonResource
             'has_extra_packing'   => $order->has_extra_packing,
             'has_insurance'       => $order->has_insurance,
             'cancelled_at'        => $order->cancelled_at,
-            'is_collection'       => (bool) $order->collection_address_id
+            'is_collection'       => (bool) $order->collection_address_id,
+            'is_shipping_by_external'       => $order->is_shipping_by_external
 
         ];
     }

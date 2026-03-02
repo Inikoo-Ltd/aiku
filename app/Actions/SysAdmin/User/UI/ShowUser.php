@@ -86,7 +86,7 @@ class ShowUser extends OrgAction
                         'next'     => $this->getNext($user, $request),
                     ] : null,
                 'pageHead'                    => [
-                    'model'         => __('user'),
+                    'model'         => __('User').': ',
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-user-circle'],

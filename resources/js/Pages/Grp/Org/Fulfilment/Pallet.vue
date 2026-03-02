@@ -64,8 +64,8 @@ const component = computed(() => {
             <!-- {{ action }} -->
             <ModalConfirmation
                 :routeYes="action.route"
-                :title="trans(`Return pallet ${pallet.data?.reference} to customer?`)"
-                :description="trans(`The pallet ${pallet.data?.reference} will be set as returned to the customer, and no longer exist in warehouse. This action cannot be reverse.`)"
+                :title="trans(`Return pallet :palletReference to customer?`, { palletReference: pallet.data?.reference ?? '' })"
+                :description="trans(`The pallet :palletReference will be set as returned to the customer, and no longer exist in warehouse. This action cannot be reverse.`, { palletReference: pallet.data?.reference ?? '' })"
             >
                 <template #default="{ changeModel }">
                     <Button

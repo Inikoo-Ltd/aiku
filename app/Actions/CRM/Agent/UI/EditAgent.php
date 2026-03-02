@@ -28,7 +28,7 @@ class EditAgent extends OrgAction
                 'title' => __('Edit CRM Agent'),
 
                 'pageHead' => [
-                    'title' => __('Edit ') . $agent->user->contact_name ?? __('Agent'),
+                    'title' => __('Edit') .' '. $agent->user->contact_name ?? __('Agent'),
                     'icon'  => [
                         'title' => __('CRM Agent'),
                         'icon'  => 'fal fa-headset',

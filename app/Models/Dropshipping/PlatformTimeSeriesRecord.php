@@ -15,9 +15,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $organisation_id
  * @property int $shop_id
  * @property string $frequency
- * @property string|null $sales
- * @property string|null $sales_org_currency
- * @property string|null $sales_grp_currency
+ * @property string|null $sales_external
+ * @property string|null $sales_org_currency_external
+ * @property string|null $sales_grp_currency_external
  * @property int|null $invoices
  * @property int|null $channels
  * @property int|null $customers
@@ -28,6 +28,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $sales_internal
+ * @property string|null $sales_org_currency_internal
+ * @property string|null $sales_grp_currency_internal
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformTimeSeriesRecord query()

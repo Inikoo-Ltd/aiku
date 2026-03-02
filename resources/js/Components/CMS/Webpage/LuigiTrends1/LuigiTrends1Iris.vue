@@ -14,8 +14,6 @@ import Cookies from 'js-cookie';
 
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import RecommendationSlideLastSeen from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
-import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { trans } from "laravel-vue-i18n"
@@ -173,14 +171,13 @@ onMounted(() => {
             </div>
             
             <div class="py-4 px-3 md:px-12" id="LuigiTrends1">
-                <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
+              <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"
                     :pagination="{ clickable: true }"
                     :modules="[Autoplay]"
                     class="w-full"
-                    xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
-                    spaceBetween="20"
+                    spaceBetween="12"
                     autoHeight
                 >
                     <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
@@ -191,25 +188,14 @@ onMounted(() => {
                     <template v-else>
                         <SwiperSlide
                             v-for="(product, index) in listProductsFromLuigi"
-                            :key="product.attributes.product_code[0]"
-                            class="w-full cursor-grab relative !grid h-full min-h-full py-0.5"
+                             :key="product.attributes.product_code[0]"
+                             class="w-full cursor-grab relative !grid h-full min-h-full"
                         >
-                            <!-- <RecommendationSlideLastSeen
-                                :product
-                                :isProductLoading
-                            /> -->
-
                             <RecommendationSlideIrisWithRealData
                                 :product
                                 :isProductLoading
                                 :isLoadingProductRealData
                             />
-
-                           <!--  <RecommendationSlideIris
-                                :product
-                                :isProductLoading
-                            /> -->
-
                         </SwiperSlide>
                     </template>
                 </Swiper>
@@ -219,4 +205,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
+
+:deep(#LuigiTrends1 .swiper-wrapper) {
+  height: 100% !important;
+}
 </style>
