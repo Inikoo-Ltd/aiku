@@ -32,6 +32,7 @@ use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
 use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
 use App\Actions\Dispatching\Trolley\ChangeTrolleyDeliveryNote;
+use App\Actions\Dispatching\Trolley\DetachTrolleyFromDeliveryNote;
 use App\Actions\Dispatching\Trolley\SyncDeliveryNoteTrolleys;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use Illuminate\Support\Facades\Route;
@@ -49,7 +50,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::patch('trolleys', SyncDeliveryNoteTrolleys::class)->name('trolleys.sync');
 
     Route::patch('attach-trolley/{trolley:id}', AttachTrolleyToDeliveryNote::class)->name('trolleys.attach');
-    Route::patch('detach-trolley/{trolley:id}', AttachTrolleyToDeliveryNote::class)->name('trolleys.detach');
+    Route::patch('detach-trolley/{trolley:id}', DetachTrolleyFromDeliveryNote::class)->name('trolleys.detach');
 
 
     Route::name('state.')->prefix('state')->group(function () {

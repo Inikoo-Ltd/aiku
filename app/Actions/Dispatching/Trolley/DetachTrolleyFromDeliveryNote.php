@@ -31,7 +31,7 @@ class DetachTrolleyFromDeliveryNote extends OrgAction
 
     public function asController(DeliveryNote $deliveryNote, Trolley $trolley, ActionRequest $request): void
     {
-        $this->initialisationFromShop($deliveryNote->shop, $request);
+        $this->initialisationFromWarehouse($deliveryNote->warehouse, $request);
         $this->handle($trolley, $deliveryNote);
     }
 

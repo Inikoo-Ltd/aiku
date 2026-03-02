@@ -34,13 +34,11 @@ class AttachTrolleyToDeliveryNote extends OrgAction
         UpdateTrolley::run($trolley, [
             'current_delivery_note_id' => $deliveryNote->id
         ]);
-
-
     }
 
     public function asController(DeliveryNote $deliveryNote, Trolley $trolley, ActionRequest $request): void
     {
-        $this->initialisationFromShop($deliveryNote->shop, $request);
+        $this->initialisationFromWarehouse($deliveryNote->warehouse, $request);
         $this->handle($trolley, $deliveryNote);
     }
 
