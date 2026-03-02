@@ -13,8 +13,6 @@ namespace App\Actions\Maintenance\Inventory\OrgStock;
 
 use App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits;
 use App\Actions\Traits\WithOrganisationSource;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
-use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Organisation;
 use DB;
@@ -46,7 +44,7 @@ class UpdateOrgStocksDataFromAurora
             $tradeUnitsData[$tradeUnit->id] = [
                 'quantity' => $units,
             ];
-        };
+        }
 
         if (count($tradeUnitsData) == 0) {
             $command->error('No trade units found for ('.$orgStock->source_id.') '.$orgStock->state->value.' '.$orgStock->slug);

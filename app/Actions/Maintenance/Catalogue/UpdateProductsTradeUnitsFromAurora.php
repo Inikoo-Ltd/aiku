@@ -13,15 +13,12 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
-use App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
-use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Organisation;
 use DB;
@@ -59,7 +56,7 @@ class UpdateProductsTradeUnitsFromAurora
                 return;
             } else {
                 OrgStockHydratePackedIn::run($orgStock);
-                if(!$orgStock->is_single_trade_unit){
+                if (!$orgStock->is_single_trade_unit) {
                     $command->error('No org stock no single trade unit ('.$product->source_id.') '.$product->state->value.' '.$product->slug);
                 }
                 $orgStock->refresh();
@@ -84,11 +81,11 @@ class UpdateProductsTradeUnitsFromAurora
 
         foreach ($orgStocksData as $orgStockData) {
             $numberTradeUnits = $orgStockData['quantity'] * $orgStockData['packed_in'];
-            $tradeUnitsId     =$orgStockData['trade_unit_id'];
+            $tradeUnitsId     = $orgStockData['trade_unit_id'];
         }
 
 
-        if($numberTradeUnits!=$product->units || $product->units!=$auData->{'Product Units Per Case'}){
+        if ($numberTradeUnits != $product->units || $product->units != $auData->{'Product Units Per Case'}) {
             $command->error('Units diff ('.$product->source_id.') '.$product->state->value.' '.$product->slug.' '.$numberTradeUnits.':'.$product->units.':'.$auData->{'Product Units Per Case'});
             return;
         }
