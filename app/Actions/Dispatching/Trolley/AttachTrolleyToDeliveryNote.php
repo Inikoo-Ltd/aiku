@@ -20,7 +20,6 @@ class AttachTrolleyToDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    use WithWarehouseEditAuthorisation;
 
 
     public function handle(Trolley $trolley, DeliveryNote $deliveryNote): void

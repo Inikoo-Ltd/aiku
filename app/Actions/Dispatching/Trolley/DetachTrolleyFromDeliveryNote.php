@@ -18,7 +18,6 @@ use Lorisleiva\Actions\ActionRequest;
 class DetachTrolleyFromDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
-    use WithWarehouseEditAuthorisation;
 
 
     public function handle(Trolley $trolley, DeliveryNote $deliveryNote): void
