@@ -2,7 +2,6 @@
 
 namespace App\Actions\UI\Notification\Seed;
 
-use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\Notifications\NotificationType;
 use App\Models\Notifications\UserNotificationSetting;
 use App\Models\SysAdmin\User;
@@ -10,16 +9,16 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SeedDefaultUserNotifications
+class SeedDefaultGuestNotifications
 {
     use AsAction;
 
-    public $commandSignature = 'notification:seed-default-user-notifications {--force : Force overwrite existing settings} {--reset : Truncate table and reset ID}';
-    public $commandDescription = 'Seed default user notification settings for users with employees';
+    public $commandSignature = 'notification:seed-default-guest-notifications {--force : Force overwrite existing settings} {--reset : Truncate table and reset ID}';
+    public $commandDescription = 'Seed default user notification settings for active guests';
 
     public function handle(Command $command): void
     {
-        $command->info('Seeding default user notification settings...');
+        $command->info('Seeding default guest notification settings...');
         $force = $command->option('force');
         $reset = $command->option('reset');
 
@@ -46,12 +45,13 @@ class SeedDefaultUserNotifications
 
             $command->warn('Table truncated and ID reset.');
         } elseif ($force) {
-            $command->warn('Force mode enabled. Existing global settings will be reset to default.');
+            $command->warn('Force mode enabled. Existing global settings for guests will be reset to default.');
         }
 
-        $users = User::query()
-            ->whereHas('employees', function ($query) {
-                $query->where('state', EmployeeStateEnum::WORKING);
+
+        $guests = User::query()
+            ->whereHas('guests', function ($query) {
+                $query->where('guests.status', true);
             })
             ->with(['notificationSettings'])
             ->get();
@@ -63,12 +63,12 @@ class SeedDefaultUserNotifications
             return;
         }
 
-        $bar = $command->getOutput()->createProgressBar($users->count());
+        $bar = $command->getOutput()->createProgressBar($guests->count());
         $bar->start();
 
-        foreach ($users as $user) {
+        foreach ($guests as $guest) {
             foreach ($notificationTypes as $type) {
-                $query = $user->notificationSettings()
+                $query = $guest->notificationSettings()
                     ->where('notification_type_id', $type->id)
                     ->whereNull('scope_type')
                     ->whereNull('scope_id');
@@ -81,7 +81,7 @@ class SeedDefaultUserNotifications
 
                 if (!$exists) {
                     UserNotificationSetting::create([
-                        'user_id' => $user->id,
+                        'user_id' => $guest->id,
                         'notification_type_id' => $type->id,
                         'scope_type' => null,
                         'scope_id' => null,
@@ -97,20 +97,24 @@ class SeedDefaultUserNotifications
         $bar->finish();
         $command->newLine();
 
-        if ($users->isNotEmpty()) {
-            $validUserIds = $users->pluck('id')->toArray();
+
+        if ($guests->isNotEmpty()) {
+            $validGuestIds = $guests->pluck('id')->toArray();
+
+            $allGuestUserIds = User::whereHas('guests')->pluck('id')->toArray();
 
             $deletedCount = UserNotificationSetting::query()
                 ->whereNull('scope_type')
                 ->whereNull('scope_id')
-                ->whereNotIn('user_id', $validUserIds)
+                ->whereIn('user_id', $allGuestUserIds)
+                ->whereNotIn('user_id', $validGuestIds)
                 ->delete();
 
             if ($deletedCount > 0) {
-                $command->info("Cleaned up {$deletedCount} stale notification settings for invalid users.");
+                $command->info("Cleaned up {$deletedCount} stale notification settings for inactive guests.");
             }
         }
 
-        $command->info('Default user notification settings seeded and synchronized successfully.');
+        $command->info('Default guest notification settings seeded and synchronized successfully.');
     }
 }
