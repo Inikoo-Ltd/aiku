@@ -79,6 +79,7 @@ class RepairInvoiceTransactionHasTradeUnits
                             'grp_net_amount'       => $invoiceTransaction->grp_net_amount,
                             'type'                 => $invoiceTransaction->model_type,
                             'in_process'           => $invoiceTransaction->in_process ?? false,
+                            'is_refund'            => $invoiceTransaction->is_refund ?? false,
                             'date'                 => $invoiceTransaction->date,
                         ]
                     );
