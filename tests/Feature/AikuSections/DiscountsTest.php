@@ -92,14 +92,14 @@ test('seed offer campaigns', function () {
     $this->organisation->refresh();
 
     expect($this->group->discountsStats->number_offer_campaigns)->toBe(9)
-        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(1)
-        ->and($this->group->discountsStats->number_offer_campaigns_state_in_process)->toBe(8)
+        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(8)
+        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(8)
         ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(9)
-        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(1)
-        ->and($this->organisation->discountsStats->number_offer_campaigns_state_in_process)->toBe(8)
+        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(8)
+        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(8)
         ->and($shop->discountsStats->number_offer_campaigns)->toBe(9)
-        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(1)
-        ->and($shop->discountsStats->number_offer_campaigns_state_in_process)->toBe(8);
+        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(8)
+        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(8);
 });
 
 test('update offer campaign', function () {
@@ -195,7 +195,7 @@ test('UI Index offer campaigns', function () {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Discounts/Campaigns')
+            ->component('Org/Discounts/OfferCampaigns')
             ->has('title')
             ->has('pageHead')
             ->has('data')

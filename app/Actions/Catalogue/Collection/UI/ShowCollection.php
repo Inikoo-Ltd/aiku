@@ -402,7 +402,7 @@ class ShowCollection extends OrgAction
             ),
             'grp.org.shops.show.catalogue.collections.show' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
                 $headCrumb(
                     $collection,
                     [

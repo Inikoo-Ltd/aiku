@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\OfferCampaign;
@@ -44,7 +43,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
 
 
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)
-            ->where('state', OfferCampaignStateEnum::ACTIVE)
+            ->where('status')
             ->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->first();
         if ($offerCampaign) {
             data_set($offersData, 'gr.active', true);

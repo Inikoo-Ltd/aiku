@@ -8,21 +8,22 @@
 
 namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 
-use App\Actions\Traits\Hydrators\WithHydrateCommand;
-use App\Models\Masters\MasterProductCategory;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class RedoMasterDepartmentsTimeSeries
+class RedoMasterDepartmentsTimeSeries implements ShouldBeUnique
 {
-    use WithHydrateCommand;
-    use WithRedoMasterProductCategoryTimeSeries {
-        WithRedoMasterProductCategoryTimeSeries::asCommand insteadof WithHydrateCommand;
-    }
+    use AsAction;
+    use WithRedoMasterProductCategoryTimeSeries;
 
-    public string $commandSignature = 'master_departments:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    protected ?MasterProductCategoryTypeEnum $restriction;
+
+    public string $jobQueue = 'default-long';
+    public string $commandSignature = 'master-departments:redo_time_series {--a|async : Run asynchronously}';
 
     public function __construct()
     {
-        $this->model       = MasterProductCategory::class;
-        $this->restriction = 'department';
+        $this->restriction = MasterProductCategoryTypeEnum::DEPARTMENT;
     }
 }

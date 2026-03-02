@@ -24,6 +24,10 @@ class FetchAuroraFamily extends FetchAurora
             return;
         }
 
+        if ($shop->is_aiku) {
+            return;
+        }
+
 
         $familiesRootAuroraIDs = DB::connection('aurora')->table('Category Dimension')
             ->select('Category Key', 'Category Code', 'Category Subject')
@@ -55,6 +59,7 @@ class FetchAuroraFamily extends FetchAurora
         }
 
         $this->parsedData['parent'] = $parent;
+        $this->parsedData['shop']   = $shop;
 
 
         $this->parsedData['family'] = [
@@ -85,8 +90,6 @@ class FetchAuroraFamily extends FetchAurora
         } else {
             return [];
         }
-
-
     }
 
 

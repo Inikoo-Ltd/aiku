@@ -25,15 +25,18 @@ class UploadProductImageToTiktok extends RetinaAction
     public function handle(TiktokUser $tiktokUser, Media $media, $useCase = 'MAIN_IMAGE')
     {
         try {
-            $path = GetImgProxyUrl::run($media->getImage()
+            $imageUrl = GetImgProxyUrl::run($media->getImage()
                 ->resize(480, 480));
+
+            $tempPath = tempnam(sys_get_temp_dir(), 'tiktok_') . '.png';
+            file_put_contents($tempPath, file_get_contents($imageUrl));
 
             $productData = [
                 [
                     'name'     => 'data',
-                    'contents' => fopen($path, 'r'),
-                    'filename' => basename($path),
-                    'headers'  => ['Content-Type' => mime_content_type($path)],
+                    'contents' => fopen($tempPath, 'r'),
+                    'filename' => basename($tempPath),
+                    'headers'  => ['Content-Type' => mime_content_type($tempPath)],
                 ],
                 [
                     'name'     => 'use_case',

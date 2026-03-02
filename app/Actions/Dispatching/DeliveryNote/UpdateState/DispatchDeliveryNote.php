@@ -45,8 +45,6 @@ class DispatchDeliveryNote extends OrgAction
 
             $deliveryNote = $this->update($deliveryNote, $modelData);
 
-
-
             $deliveryNote->refresh();
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 foreach ($deliveryNote->orders as $order) {
@@ -56,15 +54,11 @@ class DispatchDeliveryNote extends OrgAction
                 SendDispatchedReplacementOrderEmailToCustomer::dispatch($deliveryNote);
             }
 
-
-
-
-
-
             return $deliveryNote;
         });
 
-
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::DISPATCHED);
 
         return $deliveryNote;
     }

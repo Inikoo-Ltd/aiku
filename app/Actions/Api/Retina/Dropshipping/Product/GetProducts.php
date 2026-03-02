@@ -101,17 +101,17 @@ class GetProducts extends RetinaApiAction
             'currencies.code as currency_code',
             'currencies.id as currency_id',
         ];
-        
+
         $include = explode(',', Arr::get($modelData, 'include', ''));
 
-        
+
         $isAll = in_array('all', $include);
         $allowedIncludes = [
-                'department'        => 'department.name as department_name', 
-                'sub_department'    => 'sub_department.name as sub_department_name', 
+                'department'        => 'department.name as department_name',
+                'sub_department'    => 'sub_department.name as sub_department_name',
                 'family'            => 'family.name as family_name'
             ];
-        
+
         foreach ($allowedIncludes as $key => $includeField) {
             if ($isAll || in_array($key, $include)) {
                 $selects[] = $includeField;

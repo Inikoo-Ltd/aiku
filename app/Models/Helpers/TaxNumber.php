@@ -45,7 +45,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property TaxNumberValidationTypeEnum|null $validation_type
  * @property int|null $manual_validation_user_id
  * @property string|null $manual_validation_notes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Helpers\Country|null $country
+ * @property-read Model|\Eloquent $owner
  * @method static Builder<static>|TaxNumber newModelQuery()
  * @method static Builder<static>|TaxNumber newQuery()
  * @method static Builder<static>|TaxNumber onlyTrashed()

@@ -30,6 +30,7 @@ use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsManual;
 use App\Actions\Ordering\Order\UpdateOrderShippingTBCAmount;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
+use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
@@ -93,6 +94,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
         Route::patch('handling', UpdateOrderStateToHandling::class)->name('handling');
         Route::patch('packed', UpdateOrderStateToPacked::class)->name('packed');
+        Route::patch('finalise', FinaliseOrder::class)->name('finalise');
         Route::patch('dispatched', DispatchOrder::class)->name('dispatched');
     });
 
