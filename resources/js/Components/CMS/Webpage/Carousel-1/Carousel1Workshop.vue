@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay } from 'swiper/modules'
-
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 import Image from '@/Components/Image.vue'
 import { ulid } from 'ulid'
 import { inject, ref, watch, computed, nextTick } from 'vue'
@@ -13,21 +13,37 @@ import CardBlueprint from './CardBlueprint'
 import { sendMessageToParent } from "@/Composables/Workshop"
 import EditorV2 from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { faChevronRight, faChevronLeft } from '@fas'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 const props = defineProps<{
-  modelValue: any
+  modelValue: {
+    container?: { properties?: any }
+    carousel_data: {
+      carousel_setting: {
+        slidesPerView: { mobile: number; tablet: number; desktop: number }
+        loop?: boolean
+        autoplay?: any
+        spaceBetween?: number
+        use_text?: boolean
+      }
+      cards: Array<any>
+      card_container: {
+        properties?: any
+        container_image?: any
+        image_properties?: any
+      }
+    }
+  }
   webpageData?: any
-  blockData?: Object
-  screenType: 'mobile' | 'tablet' | 'desktop',
-  indexBlock?: number
+  blockData?: Record<string, any>
+  screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
-
 const emits = defineEmits<{ (e: 'autoSave'): void }>()
+const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
+const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 const keySwiper = ref(ulid())
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
-const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 const refreshTrigger = ref(0)
 const swiperInstance = ref<any>(null)
 const imageSettings = {
@@ -83,15 +99,6 @@ watch(
   { deep: true }
 )
 
-
-watch(
-  () => props.screenType,
-  async () => {
-    await refreshCarousel()
-  },
-  { deep: true }
-)
-
 watch(
   () => props.modelValue?.carousel_data?.carousel_setting?.spaceBetween,
   (newVal) => {
@@ -132,6 +139,8 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') scrollRight()
 }
 
+const idxSlideLoading = ref<number | null>(null)
+
 const activeEditorIndex = ref<number | null>(null)
 
 const onEditorFocus = (key: string, index: number) => {
@@ -147,24 +156,27 @@ const onEditorBlur = () => {
 </script>
 
 <template>
-  {{ keySwiper }}
-  {{ screenType }}
-  <div id="carousel" class="relative">
+  <div :id="modelValue?.id ? modelValue?.id : 'carousel'" component="carousel" class="relative overflow-hidden">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
     }">
-      <button v-if="swiperInstance?.allowSlidePrev" ref="prevEl"
+      <button v-if="swiperInstance?.allowSlidePrev && isLooping" ref="prevEl"
         class="absolute left-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
         <FontAwesomeIcon :icon="faChevronLeft" />
       </button>
-
-      <div class="mx-24">
+      <div class="mx-10 overflow-hidden">
         <Swiper v-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
-          :space-between="spaceBetween" :breakpoints="breakpoints" :autoplay="false" @swiper="onSwiper" class="w-full">
+          :space-between="spaceBetween" :breakpoints="breakpoints" :autoplay="modelValue.carousel_data.carousel_setting?.interval && modelValue.carousel_data.carousel_setting?.autoplay
+            ? {
+              delay: modelValue.carousel_data.carousel_setting.interval,
+              disableOnInteraction: false,
+              pauseOnMouseEnter: true
+            }
+            : false" @swiper="onSwiper" class="w-full">
 
-          <SwiperSlide v-for="(data, index) in modelValue.carousel_data.cards" :key="index"
+        <SwiperSlide v-for="(data, index) in modelValue.carousel_data.cards" :key="index"
             class="!flex !justify-center !items-center" :style="{ zIndex: activeEditorIndex === index ? 99 : 1 }">
             <div class="space-card flex justify-center items-center w-full h-full">
               <div class="card flex flex-col h-full">
@@ -214,23 +226,25 @@ const onEditorBlur = () => {
         </Swiper>
 
       </div>
-
-      <button v-if="swiperInstance?.allowSlideNext" ref="nextEl"
+      <button v-if="swiperInstance?.allowSlideNext && isLooping" ref="nextEl"
         class="absolute right-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
         <FontAwesomeIcon :icon="faChevronRight" />
       </button>
     </div>
   </div>
-
 </template>
-
 
 <style scoped>
 /* hide indicator if you later enable pagination */
 :deep(.swiper-pagination) {
   display: none;
 }
+
+
+/* :deep(.p-carousel-indicator-list) {
+  display: none;
+} */
 
 /* spacing between cards (same behavior as previous carousel gap logic) */
 .space-card {
@@ -302,10 +316,5 @@ const onEditorBlur = () => {
 
 :deep(.swiper-wrapper) {
   align-items: stretch;
-}
-
-
-:deep(.p-carousel-indicator-list) {
-  display: none;
 }
 </style>
