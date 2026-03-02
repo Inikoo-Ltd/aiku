@@ -10,6 +10,15 @@ import { Link, router } from '@inertiajs/vue3'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
+interface Trolley {
+    id: number
+    name: string
+    current_delivery_note: {
+        slug: string
+        reference: string
+    }
+}
+
 const props = defineProps<{
     warehouse: {
         slug: string
@@ -24,7 +33,7 @@ const layout = inject('layout', layoutStructure)
 
 const isOpenModal = ref(false)
 
-const listTrolleys = ref([])
+const listTrolleys = ref<Trolley[]>([])
 const isLoadingFetch = ref(false)
 const fetchTrolleysList = async () => {
     try {
@@ -51,7 +60,7 @@ const fetchTrolleysList = async () => {
     }
 }
 
-const listUnavailableTrolleys = ref([])
+const listUnavailableTrolleys = ref<Trolley[]>([])
 const isLoadingFetchUnavailableTrolleys = ref(false)
 const fetchUnavailableTrolleysList = async () => {
     try {
@@ -91,13 +100,13 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
     // Section: Submit
     router.patch(
         route(
-            'grp.models.delivery_note.state.handling_with_trolley',
+            'grp.models.delivery_note.trolleys.attach',
             {
-                deliveryNote: props.deliveryNote.id
+                deliveryNote: props.deliveryNote.id,
+                trolley: trolleyId
             }
         ),
         {
-            trolley: trolleyId
         },
         {
             preserveScroll: true,
@@ -116,7 +125,7 @@ const submitSelectTrolley = (trolleyId?: number|null) => {
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to select trolley"),
+                    text: trans("Failed to attach trolley"),
                     type: "error"
                 })
             },
@@ -144,26 +153,32 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
     <div>
         <slot name="default" :setOpenModal="() => isOpenModal = !isOpenModal">
             <Button
-                :label="trans('Start Picking')"
+                :label="trans('Attach trolley')"
                 @click="() => isOpenModal = true"
-                icon="fal fa-dolly-flatbed-alt"
+                icon="far fa-plus"
+                type="dashed"
+                size="xxs"
             />
         </slot>
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
-            <div class="font-bold text-xl text-center mb-8">
-                {{ trans("Select trolley to start picking") }}
+            <div class="font-bold text-xl text-center">
+                {{ trans("Select trolley to attach") }}
+            </div>
+
+            <div class="italic opacity-50 text-xs text-center mb-8">
+                {{ trans("Delivery Note") }} {{ deliveryNote.reference }}
             </div>
 
             <div class="mb-1">
                 {{ trans("Available trolleys") }} ({{ isLoadingFetch ? '-' : listTrolleys.length }}):
             </div>
             <div class="h-64 overflow-y-auto border-b border-dashed border-gray-300 pb-4">
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-6 gap-2">
                     <div
                         v-if="isLoadingFetch"
                         v-for="trolley in 6"
-                        class="h-10 cursor-pointer py-2 px-3 border border-gray-300 text-sm rounded skeleton"
+                        class="h-10 cursor-pointer py-0.5 px-2 border border-gray-300 text-sm rounded skeleton"
                         
                     />
 
@@ -172,7 +187,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                             v-for="trolley in listTrolleys"
                             :key="trolley.id"
                             @click="() => submitSelectTrolley(trolley.id)"
-                            class="cursor-pointer flex justify-between items-center py-2 px-3 border border-gray-300 text-sm rounded"
+                            class="cursor-pointer flex justify-between items-center py-0.5 px-2 border border-gray-300 text-sm rounded"
                             :class="isLoadingSubmitTrolley == trolley.id ? 'bg-[var(--theme-color-0)] opacity-70 text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
                         >
                             {{ trolley.name }}
@@ -201,7 +216,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
             </div>
 
             <!-- Section: unavailable trolleys -->
-            <div class="my-1 mb-1 text-red-500 text-sm">
+            <div class="my-1 text-red-500 text-sm">
                 {{ trans("Unavailable trolleys") }} ({{ isLoadingFetchUnavailableTrolleys ? '-' : listUnavailableTrolleys.length }}):
             </div>
             <div class="xh-64">
@@ -210,7 +225,6 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                         v-if="isLoadingFetchUnavailableTrolleys"
                         v-for="trolley in 6"
                         class="h-10 py-0.5 px-1 border border-gray-300 rounded-sm skeleton"
-                        
                     />
 
                     <template v-else-if="listUnavailableTrolleys.length">
@@ -226,17 +240,6 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                     </template>
                 </div>
             </div>
-
-            <Button
-                @click="() => submitSelectTrolley(null)"
-                :label="trans('Skip')"
-                full
-                iconRight="far fa-arrow-right"
-                class="mt-4"
-                type="dashed"
-                :disabled="isLoadingSubmitTrolley !== undefined"
-                :loading="isLoadingSubmitTrolley === null"
-            />
         </Modal>
     </div>
 </template>
