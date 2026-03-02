@@ -23,7 +23,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class ListAvailableTrolleys extends OrgAction
 {
-    use WithWarehouseEditAuthorisation;
 
     public function handle(Warehouse $warehouse, $prefix = null): LengthAwarePaginator
     {

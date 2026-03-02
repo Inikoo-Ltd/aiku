@@ -23,7 +23,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class ListAvailablePickedBays extends OrgAction
 {
-    use WithWarehouseEditAuthorisation;
 
     public function handle(Warehouse $warehouse, $prefix = null): LengthAwarePaginator
     {
