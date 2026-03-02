@@ -39,9 +39,9 @@ class ProcessSendProspectMailshot
     {
 
         // NOTE: Ensure no second wave exists when the parent mailshot has second wave disabled
-        if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
-            DeleteMailshotSecondWave::run($mailshot->secondWave);
-        }
+        // if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
+        //     DeleteMailshotSecondWave::run($mailshot->secondWave);
+        // }
 
         $queryBuilder = Prospect::where('shop_id', $mailshot->shop_id)
             ->whereNull('customer_id')
@@ -63,7 +63,7 @@ class ProcessSendProspectMailshot
 
                 if (!$recipientExists && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
 
-                    $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->first();
+                    $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::INVITE)->first();
 
                     $dispatchedEmail = StoreDispatchedEmail::run(
                         $mailshot,

@@ -14,7 +14,6 @@ use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsCommand;
 use App\Actions\OrgAction;
-use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Comms\Outbox;
@@ -28,13 +27,13 @@ class SendProspectMailShotNow extends OrgAction
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
         // NOTE: For testing purposes, only available for Ukraine
-        if ($mailshot->shop_id !== 44) {
-            throw new \Exception('Action only available for Ukraine');
-        }
+        // if ($mailshot->shop_id !== 44) {
+        //     throw new \Exception('Action only available for Ukraine');
+        // }
 
-        if ($mailshot->is_second_wave) {
-            throw new \Exception('Action not available for second wave mailshot');
-        }
+        // if ($mailshot->is_second_wave) {
+        //     throw new \Exception('Action not available for second wave mailshot');
+        // }
 
         if (!$mailshot->start_sending_at) {
             data_set($modelData, 'start_sending_at', now());
@@ -49,10 +48,9 @@ class SendProspectMailShotNow extends OrgAction
 
         $mailshot->update($modelData);
 
-        // NOTE: dispatch process based on mailshot type
-        if ($mailshot->type === MailshotTypeEnum::MARKETING) {
-            ProcessSendProspectMailshot::dispatch($mailshot);
-        }
+        // NOTE: dispatch process
+        ProcessSendProspectMailshot::dispatch($mailshot);
+
 
         return $mailshot;
     }
