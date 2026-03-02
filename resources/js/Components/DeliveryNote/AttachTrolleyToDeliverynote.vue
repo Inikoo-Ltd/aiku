@@ -178,7 +178,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                     <div
                         v-if="isLoadingFetch"
                         v-for="trolley in 6"
-                        class="h-10 cursor-pointer py-2 px-3 border border-gray-300 text-sm rounded skeleton"
+                        class="h-10 cursor-pointer py-0.5 px-2 border border-gray-300 text-sm rounded skeleton"
                         
                     />
 

@@ -416,13 +416,13 @@ const updateCollection = async (e: Event) => {
                     />
                     
                     <!-- Section: Picked Bays -->
-                    <div v-if="boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
+                    <div v-if="['handling', 'picked', 'packing'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
                         <dl v-tooltip="trans('Picked bay name')"
                             class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
-                                {{ trans("Picked bays") }} ({{ boxStats?.picked_bays?.length }}):
+                                {{ trans("Picked bays") }}:
                             </dt>
-                            <dd class="text-gray-500">
+                            <dd v-if="boxStats?.picked_bays?.length" class="text-gray-500">
                                 <span
                                     v-for="bay in boxStats?.picked_bays"
                                     :key="bay.id"
@@ -432,12 +432,16 @@ const updateCollection = async (e: Event) => {
                                     {{ bay?.name ?? '-' }}
                                 </span>
                             </dd>
+                            <dd v-else class="text-gray-500">
+                                -
+                            </dd>
                         </dl>
 
                         <ChangePickedBays
-                            v-if="['handling', 'picked', 'packing'].includes(deliveryNote.state) && layout.app.environment === 'local'"
+                            v-if="['handling', 'picked', 'packing'].includes(deliveryNote.state)"
                             :warehouse="warehouse"
                             :deliveryNote="deliveryNote"
+                            :pickedBays="boxStats?.picked_bays"
                         />
                     </div>
                     
@@ -476,7 +480,7 @@ const updateCollection = async (e: Event) => {
                     </dl>
 
                     <!-- Section: Parcels -->
-                    <div v-if="['packing', 'packed', 'dispatched', 'finalised','handling'].includes(deliveryNote?.state)"
+                    <div v-if="['packing', 'packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
                         class="flex gap-x-1 pb-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
                         <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
                             fixed-width aria-hidden='true' />
