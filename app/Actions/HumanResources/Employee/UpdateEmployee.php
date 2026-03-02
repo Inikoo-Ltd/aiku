@@ -97,9 +97,8 @@ class UpdateEmployee extends OrgAction
             SyncEmployeeJobPositions::run($employee, $jobPositions);
         }
 
-        if (Arr::has($modelData, 'annual_days') || Arr::has($modelData, 'medical_days')) {
+        if (Arr::has($modelData, 'annual_days')) {
             $annualDays = Arr::pull($modelData, 'annual_days');
-            $medicalDays = Arr::pull($modelData, 'medical_days');
 
             $leaveBalance = EmployeeLeaveBalance::firstOrCreate(
                 [
@@ -109,8 +108,6 @@ class UpdateEmployee extends OrgAction
                 [
                     'annual_days'   => 14,
                     'annual_used'   => 0,
-                    'medical_days'  => 0,
-                    'medical_used'  => 0,
                     'unpaid_days'   => 0,
                     'unpaid_used'   => 0,
                 ]
@@ -119,9 +116,6 @@ class UpdateEmployee extends OrgAction
             $updateData = [];
             if ($annualDays !== null) {
                 $updateData['annual_days'] = $annualDays;
-            }
-            if ($medicalDays !== null) {
-                $updateData['medical_days'] = $medicalDays;
             }
             if (!empty($updateData)) {
                 $leaveBalance->update($updateData);
@@ -238,8 +232,8 @@ class UpdateEmployee extends OrgAction
             'bank_account_name'                         => ['sometimes', 'nullable', 'string', 'max:100'],
             'insurance_number'                          => ['sometimes', 'nullable', 'string', 'max:50'],
             'annual_days'                               => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
-            'medical_days'                              => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
             'gender'                                    => ['sometimes', 'nullable', 'string', 'max:20'],
+            'probation_period_days'                     => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
 
         ];
 
