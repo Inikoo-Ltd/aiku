@@ -112,7 +112,7 @@ const onSubmitAttach = async ({
             closeModal()
             notify({
                 title: trans('Success'),
-                text: trans(`Successfully attach ${scope}.`),
+                text: trans(`Successfully attach :tscope.`, { tscope: scope }),
                 type: 'success',
             })
             resetSelection()
@@ -121,7 +121,7 @@ const onSubmitAttach = async ({
             errorMessage.value = errors
             notify({
                 title: trans('Something went wrong.'),
-                text: trans(`Failed to attach ${scope}, please try again.`),
+                text: trans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
                 type: 'error',
             })
         },

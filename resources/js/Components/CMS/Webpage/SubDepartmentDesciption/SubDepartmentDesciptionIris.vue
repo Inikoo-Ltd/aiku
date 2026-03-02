@@ -77,8 +77,8 @@ const cleanedDescription = computed(() => {
        
 
         <!-- Description Title (SEO: Heading) -->
-        <h1 v-if="fieldValue.sub_department.name" class="text-[1.5rem] leading-[2rem] font-semibold">
-            {{ fieldValue.sub_department.name }}
+        <h1 v-if="fieldValue.sub_department.description_title || fieldValue.sub_department.name " class="text-[1.5rem] leading-[2rem] font-semibold">
+            {{ fieldValue.sub_department.description_title ?? fieldValue.sub_department.name }}
         </h1>
 
         <!-- Main Description -->

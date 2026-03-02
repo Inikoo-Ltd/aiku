@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
-use App\Actions\Catalogue\Product\UI\GetProductShowcase;
+use App\Actions\Catalogue\Product\UI\GetProductShowcaseInPortfolio;
 use App\Actions\RetinaAction;
 use App\Enums\UI\Catalogue\RetinaProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
@@ -41,7 +41,6 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
         /** @var Product $product */
         $product = $portfolio->item;
 
-
         $title = $product->code;
         if ($portfolio->reference && $portfolio->reference != $product->code) {
             $title .= ' ('.$portfolio->reference.')';
@@ -70,8 +69,8 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
 
 
                 RetinaProductTabsEnum::SHOWCASE->value => $this->tab == RetinaProductTabsEnum::SHOWCASE->value ?
-                    fn () => GetProductShowcase::run($product)
-                    : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+                    fn () => GetProductShowcaseInPortfolio::run($product)
+                    : Inertia::lazy(fn () => GetProductShowcaseInPortfolio::run($product)),
 
             ]
         );

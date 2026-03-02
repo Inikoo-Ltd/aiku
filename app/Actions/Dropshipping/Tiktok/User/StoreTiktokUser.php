@@ -55,7 +55,10 @@ class StoreTiktokUser extends RetinaAction
             'access_token'            => ['required', 'string'],
             'access_token_expire_in'  => ['required'],
             'refresh_token'           => ['required', 'string'],
-            'refresh_token_expire_in' => ['required']
+            'refresh_token_expire_in' => ['required'],
+            'tiktok_warehouse_id'     => ['nullable', 'string'],
+            'tiktok_shop_id'          => ['nullable', 'string'],
+            'tiktok_shop_chiper'      => ['nullable', 'string']
         ];
     }
 

@@ -72,7 +72,7 @@ const isLoadingVisit = ref(false)
 
   <!-- PRICES (KEEP COMPONENTS) -->
   <div v-if="layout?.iris?.is_logged_in">
-    <Prices2 v-if="layout.retina?.type === 'b2b'" :product="product" :currency="currency" :basketButton="false" />
-    <Prices v-else :product="product" :currency="currency" :basketButton="false" />
+    <Prices2 v-if="layout.retina?.type === 'b2b'" :product="product" :currency="currency" :basketButton="true" />
+    <Prices v-else :product="product" :currency="currency" :basketButton="true" />
   </div>
 </template>

@@ -84,7 +84,7 @@ class DispatchOrder extends OrgAction
                         PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
                         PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
                         PlatformTypeEnum::MAGENTO => FulfillOrderToMagento::run($order),
-                        PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($order),
+                        // PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($order),
                         //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
                         PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order, $deliveryNote),
                         default => null,
@@ -96,8 +96,8 @@ class DispatchOrder extends OrgAction
                 }
             }
 
-            if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && app()->isProduction()) {
-                UpdateShippingFaireOrder::run($order->shop, $order);
+            if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external && app()->isProduction()) {
+                //UpdateShippingFaireOrder::run($order->shop, $order);
             }
 
             return $order;

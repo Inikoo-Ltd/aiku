@@ -67,7 +67,8 @@ class GetProducts extends RetinaApiAction
 
         $query->where('products.is_for_sale', true);
         $query->where('products.status', ProductStatusEnum::FOR_SALE);
-        $query->where('products.state', ProductStateEnum::ACTIVE);
+        // Include Discontinuing, as it is basically still for sale
+        $query->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
 
         $query->where('products.shop_id', $this->shop->id)
             ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {
@@ -78,24 +79,58 @@ class GetProducts extends RetinaApiAction
                     ->where('platform_id', $customerSalesChannel->platform->id)
                     ->where('customer_sales_channel_id', $customerSalesChannel->id);
             });
-
+        $query->leftJoin('product_categories as department', 'products.department_id', 'department.id');
+        $query->leftJoin('product_categories as sub_department', 'products.sub_department_id', 'sub_department.id');
+        $query->leftJoin('product_categories as family', 'products.family_id', 'family.id');
         $query->leftJoin('currencies', 'currencies.id', 'products.currency_id');
         $query->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
         $query->leftJoin('media', 'products.image_id', '=', 'media.id');
 
-        $query->select([
+        $selects = [
             'products.id',
             'products.code',
             'products.name',
             'products.price',
             'products.state',
+            'products.available_quantity as current_stock',
+            'products.description',
             'products.created_at',
             'products.updated_at',
             'products.gross_weight',
             'products.slug',
             'currencies.code as currency_code',
             'currencies.id as currency_id',
-        ]);
+        ];
+
+        $include = explode(',', Arr::get($modelData, 'include', ''));
+
+
+        $isAll = in_array('all', $include);
+        $allowedIncludes = [
+                'department'        => 'department.name as department_name',
+                'sub_department'    => 'sub_department.name as sub_department_name',
+                'family'            => 'family.name as family_name'
+            ];
+
+        foreach ($allowedIncludes as $key => $includeField) {
+            if ($isAll || in_array($key, $include)) {
+                $selects[] = $includeField;
+            }
+        }
+
+        // if(in_array('department', $include)) {
+        //     $selects[] = 'department.name as department_name';
+        // }
+
+        // if(in_array('sub_department', $include)) {
+        //     $selects[] = 'sub_department.name as sub_department_name';
+        // }
+
+        // if(in_array('family', $include)) {
+        //     $selects[] = 'family.name as family_name';
+        // }
+
+        $query->addSelect($selects);
 
         return $query->defaultSort('products.code')
             ->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
@@ -113,6 +148,7 @@ class GetProducts extends RetinaApiAction
         return [
             'type' => ['nullable', 'string'],
             'search' => ['nullable', 'string'],
+            'include' => ['nullable', 'string'],
             'page' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer'],
             'sort' => ['nullable', 'string'],
@@ -124,6 +160,7 @@ class GetProducts extends RetinaApiAction
         $request->merge([
             'type' => $request->query('type', 'all'),
             'search' => $request->query('search', null),
+            'include' => $request->query('include', ''),
             'page' => $request->query('page', 1),
             'per_page' => $request->query('per_page', 50),
             'sort' => $request->query('sort', 'products.code'),

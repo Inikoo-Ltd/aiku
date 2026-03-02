@@ -40,7 +40,7 @@ const optionType = [
       { name: ["data", "width"], type: "number", label: trans("Width"), placeholder: "100", suffix: "%" },
       { name: ["data", "color"], type: "colorpicker", label: trans("Text color") },
       {
-        name: "FontSize",
+        name: ["data", "fontSize"],
         type: "radio",
         label: trans("Font Size"),
         defaultValue: { fontTitle: "text-[25px] lg:text-[44px]", fontSubtitle: "text-[12px] lg:text-[20px]" },
@@ -145,6 +145,7 @@ const getValue = (fieldData: any) => {
 }
 
 const setValue = (fieldData: any, value: any) => {
+  console.log(fieldData, value)
   const cloned = cloneDeep(props.modelValue || {})
   const fieldName = fieldData.name
 

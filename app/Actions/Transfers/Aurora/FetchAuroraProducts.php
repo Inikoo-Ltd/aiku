@@ -32,7 +32,18 @@ class FetchAuroraProducts extends FetchAuroraAction
             return null;
         }
 
+        $product = Product::withTrashed()->where('source_id', $productData['product']['source_id'])->first();
 
+        if (!$product) {
+            $product = Product::whereNull('source_id')
+                ->where('shop_id', $productData['shop']->id)
+                ->whereRaw("lower(code) = lower(?)", [$productData['product']['code']])
+                ->first();
+
+            if ($product) {
+                return $product;
+            }
+        }
 
         /** @var Product $product */
         if ($product = Product::withTrashed()->where('source_id', $productData['product']['source_id'])->first()) {
@@ -44,7 +55,6 @@ class FetchAuroraProducts extends FetchAuroraAction
                         $productData['product']['family_id'] = $productData['family']->id;
                     }
                 }
-
 
 
                 $product = UpdateProduct::make()->action(
@@ -61,7 +71,6 @@ class FetchAuroraProducts extends FetchAuroraAction
             }
         } else {
             try {
-
                 $sourceData = explode(':', $productData['product']['source_id']);
                 $orgStocks  = $organisationSource->fetchProductHasOrgStock($sourceData[1])['org_stocks'];
 

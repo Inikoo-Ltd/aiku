@@ -17,12 +17,14 @@ import { ulid } from "ulid"
 import Image from "@/Components/Image.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBadgePercent } from "@fas"
+import { faBadgePercent, faFragile } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import { InputNumber, InputText } from "primevue"
+import axios from "axios"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faBadgePercent, faMoneyCheckEditAlt)
+library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt)
 
 type ProductRow = {
     id: number
@@ -44,6 +46,7 @@ const props = defineProps<{
     modifyRoute?: routeType
     fetchRoute?: routeType
     routesProductsListModification?: routeType
+    is_shop_external: boolean
 }>()
 
 const layout = inject("layout", {})
@@ -310,6 +313,36 @@ const onSubmitEditNetAmount = () => {
         }
     )
 }
+
+// Section: Cut View
+const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boolean) => {
+    router.patch(
+        route(
+            routeUpdate.name,
+            routeUpdate.parameters
+        ),
+        {
+            is_cut_view: newVal
+        },
+        {
+            onStart: () => {
+                set(proxyItem, 'is_transaction_loading', true)
+
+            },
+            onError: () => {
+                console.log('eeerr', error)
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message || trans("Please try again or contact administrator"),
+                    type: 'error'
+                })
+            },
+            onFinish: () => {
+                set(proxyItem, 'is_transaction_loading', false)
+            }
+        }
+    )
+}
 </script>
 
 <template>
@@ -354,18 +387,37 @@ const onSubmitEditNetAmount = () => {
             </template>
 
             <!-- Column: Quantity Ordered -->
-            <template #cell(quantity_ordered)="{ item }">
+            <template #cell(quantity_ordered)="{ item, proxyItem }">
 
                 <div class="flex items-center justify-end gap-2">
                     <!-- Editable when creating and not in edit mode -->
-                    <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id)"
-                         class="w-fit">
-                        <NumberWithButtonSave :modelValue="Number(item.quantity_ordered)" :routeSubmit="item.updateRoute"
-                                              :bindToTarget="{ min: 0, max: item.available_quantity }" isWithRefreshModel
-                                              keySubmit="quantity_ordered" :isLoading="isLoading === 'quantity' + item.id"
-                                              :readonly="readonly"
-                                              @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
-                                              noUndoButton noSaveButton />
+                    <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id) && !is_shop_external"
+                        class="w-fit flex gap-x-2">
+                        <NumberWithButtonSave
+                            :modelValue="Number(item.quantity_ordered)"
+                            :routeSubmit="item.updateRoute"
+                            isWithRefreshModel
+                            keySubmit="quantity_ordered" :isLoading="isLoading === 'quantity' + item.id"
+                            :readonly="readonly"
+                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+                            noUndoButton noSaveButton
+                            :bindToTarget="{
+                                min: 0,
+                                max: item.available_quantity,
+                            }"
+                            :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
+                        />
+
+                        <span
+                            v-if="layout.app.environment == 'local'"
+                            @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
+                            v-tooltip="trans('Cut view')"
+                            class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
+                            :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
+                        >
+                            <LoadingIcon v-if="proxyItem.is_transaction_loading" class="text-gray-700" />
+                            <FontAwesomeIcon v-else icon="fas fa-fragile" class="" fixed-width aria-hidden="true" />
+                        </span>
                     </div>
 
                     <!-- Read-only display -->
@@ -409,7 +461,7 @@ const onSubmitEditNetAmount = () => {
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
                             <Button
-                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))"
+                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external"
                                 @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
                                 v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
                                 :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400" />
@@ -452,7 +504,7 @@ const onSubmitEditNetAmount = () => {
         </Table>
 
         <!-- Section: Modal edit discretionary discount -->
-        <Modal v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state))" :isOpen="isOpenModalEditNetAmount" @onClose="() => onCloseModalNetAmount()" width="w-full max-w-lg">
+        <Modal v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external" :isOpen="isOpenModalEditNetAmount" @onClose="() => onCloseModalNetAmount()" width="w-full max-w-lg">
             <div class="text-center mb-4">
                 <div class="font-semibold text-2xl">Update for {{ selectedItemToEditNetAmount?.asset_code }}:</div>
                 <div class="opacity-80 italic text-sm">

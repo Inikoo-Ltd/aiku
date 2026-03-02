@@ -230,7 +230,7 @@ class FetchIrisEcomBasket extends IrisAction
         ];
 
         $orderArr['eligible_gifts'] = [  // TODO: Raul INI-887
-            'is_customer_eligible' => true,
+            'is_customer_eligible_for_gift' => true,
             'selected_gift' => [
                 'id'    => 123,
                 'label' => 'Rainbow bath bomb',

@@ -46,6 +46,7 @@ const submit = async () => {
                 username: form.username,
                 password: form.password,
                 remember: form.remember,
+			    tiktok_code: route().queryParams?.tiktok_code
             }
         )
 
@@ -104,6 +105,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
     isLoadingGoogle.value = true
     const data = await  axios.post(route('retina.login_google', {}), {
         google_access_token: e.access_token,
+        tiktok_code: route().queryParams?.tiktok_code
     })
 
     console.log('Google login response:', data.data)
@@ -182,7 +184,9 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                                 <label for="remember-me" class="ml-2 block text-sm select-none cursor-pointer"> {{ trans('Remember me') }} </label>
                             </div>
 
-                            <Link :href="route('retina.reset-password.edit')"
+                            <Link :href="route('retina.reset-password.edit', {
+                                tiktok_code: route().queryParams?.tiktok_code
+                            })"
                                 class="text-sm   font-medium hover:underline transition duration-150 ease-in-out">
                                 {{ trans("Forgot password?") }}
                             </Link>
@@ -233,7 +237,9 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                 <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
                         {{ trans("Don't have an account") }}?
-                        <Link :href="route('retina.register')"
+                        <Link :href="route('retina.register', {
+                            tiktok_code: route().queryParams?.tiktok_code
+                        })"
                             class="  font-medium hover:underline transition duration-150 ease-in-out ml-1">
                             {{ trans("Register here") }}
                         </Link>

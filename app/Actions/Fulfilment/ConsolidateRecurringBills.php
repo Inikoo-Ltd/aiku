@@ -11,19 +11,21 @@ namespace App\Actions\Fulfilment;
 use App\Actions\Fulfilment\RecurringBill\ConsolidateRecurringBill;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\RecurringBill;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ConsolidateRecurringBills
 {
     use AsAction;
 
-    public string $commandSignature = 'current_recurring_bills:consolidate';
+    public string $jobQueue = 'default-long';
 
+    public string $commandSignature = 'current_recurring_bills:consolidate';
 
     /**
      * @throws \Throwable
      */
-    public function asCommand($command): void
+    public function handle(Command|null $command = null): void
     {
         /** @var RecurringBill $recurringBill */
         foreach (RecurringBill::where('status', RecurringBillStatusEnum::CURRENT)->get() as $recurringBill) {
@@ -31,13 +33,21 @@ class ConsolidateRecurringBills
             $endDate = $recurringBill->end_date->startOfDay();
 
             if ($endDate->lte($today)) {
-
-                $command->info('Consolidating recurring bill '.$recurringBill->id.' '.$recurringBill->reference);
+                $command?->info('Consolidating recurring bill '.$recurringBill->id.' '.$recurringBill->reference);
                 $invoice = ConsolidateRecurringBill::make()->action($recurringBill);
-                $command->info('Recurring bill Consolidated invoice:'.$invoice->reference);
-                $command->info('');
+                $command?->info('Recurring bill Consolidated invoice:'.$invoice->reference);
+                $command?->info('');
             }
         }
+    }
+
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand($command): void
+    {
+        $this->handle($command);
     }
 
 

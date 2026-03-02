@@ -179,7 +179,7 @@ onMounted(async () => {
 
 
 <template>
-	<div class="flex flex-col h-full bg-white">
+	<div class="flex flex-col flex-1 min-h-0 bg-white">
 		<!-- Header -->
 		<div class="flex items-center justify-between px-4 py-1 bg-gray-50">
 			<button class="p-1" @click="emit('back')">

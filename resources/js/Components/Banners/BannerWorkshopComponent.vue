@@ -49,7 +49,7 @@ const hasSlides = computed(() => {
 
     <!-- Banner preview -->
     <div
-      class="flex pr-0.5"
+      class="flex pr-0.5  editor-class"
       :class="[props.modelValue.type === 'square'
         ? 'justify-start 2xl:justify-center'
         : 'justify-center']"

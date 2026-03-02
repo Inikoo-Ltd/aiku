@@ -272,10 +272,6 @@ class InertiaTable
         $elementGroups = $this->elementGroups;
         $queryElements = $this->query('elements', []);
 
-        if (empty($queryElements)) {
-            return $elementGroups;
-        }
-
         return $elementGroups->map(function (ElementGroup $elementGroup) use ($queryElements) {
             if (array_key_exists($elementGroup->key, $queryElements)) {
                 $elementGroup->values = explode(',', $queryElements[$elementGroup->key]);

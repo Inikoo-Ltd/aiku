@@ -5,5 +5,6 @@
  */
 
 export interface Timesheet {
+    organisation_slug?: any;
     id: string,
 }

@@ -54,6 +54,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $grp_cashback_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_item_transactions_state_handling_blocked
+ * @property int $number_item_transactions_state_picked
+ * @property int $number_item_transactions_state_packing
  * @property-read \App\Models\Ordering\Order $order
  * @method static Builder<static>|OrderStats newModelQuery()
  * @method static Builder<static>|OrderStats newQuery()

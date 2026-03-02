@@ -13,7 +13,6 @@ import { notify } from "@kyvg/vue3-notification"
 import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { routeType } from "@/types/route"
 import axios from "axios"
 import PureAddress from "@/Components/Pure/PureAddress.vue"
@@ -45,6 +44,7 @@ const props = defineProps<{
 		}[]
 	}[]
 	shipments_routes: {
+		get_external_shipment_route: routeType
 		submit_route: routeType
 		fetch_route: routeType
 		delete_route: routeType
@@ -522,31 +522,30 @@ const onCopyDataCustomer = (field: string) => {
 
 			<div class="gap-2 mb-2 flex">
 				<!-- Button: Shipment -->
+				<ButtonWithLink
+					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
+					v-if="!shipments.length && props.shipments_routes?.get_external_shipment_route?.name"
+					:disabled="!props.shipments_routes?.get_external_shipment_route?.name"
+					xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
+					:label="props.shipments_routes?.get_external_shipment_route?.label"
+					method="post"
+					:url="route(props.shipments_routes?.get_external_shipment_route?.name, props.shipments_routes?.get_external_shipment_route?.parameters)"
+					icon="fas fa-plus"
+					type="dashed"
+					:size="twBreakPoint().includes('lg') ? 'xs' : undefined" />
 				<Button
 					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
 					v-if="!shipments.length && props.shipments_routes?.submit_route?.name"
-					:disabled="props.shipments_routes?.submit_route?.name ? false : true"
+					:disabled="!props.shipments_routes?.submit_route?.name"
 					@click="() => ((isModalShipment = true), onOpenModalTrackingNumber())"
 					xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
 					:label="trans('Shipment')"
 					icon="fas fa-plus"
 					type="dashed"
 					:size="twBreakPoint().includes('lg') ? 'xs' : undefined" />
-				<div v-else-if="!shipments.length" class="italic text-gray-400 text-xs">
-					{{ trans("No shipment yet. Waiting for warehouse team to add shipment..") }}
-				</div>
+
 			</div>
-			<div>
-				<a target="_blank" :href="route(external_order?.route_view_packing_slip?.name, external_order?.route_view_packing_slip?.parameters)">
-				<Button
-					xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
-					v-if="external_order?.status"
-					:label="trans('Faire Packing Slip')"
-					icon="fas fa-eye"
-					type="dashed"
-					:size="twBreakPoint().includes('lg') ? 'xs' : undefined" />
-				</a>
-			</div>
+
 		</div>
 
 		<!-- Modal: Shipment -->

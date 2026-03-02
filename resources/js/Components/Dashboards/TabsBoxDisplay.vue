@@ -8,12 +8,13 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream } from '@fal'
+import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen } from '@fal'
 
 library.add(
     faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle,
     faNetworkWired, faSpinnerThird, faEye, faThLarge, faTachometerAltFast,
-    faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream,faAppleCrate
+    faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faAppleCrate,
+    faBoxOpen
 )
 
 const layoutStore = inject('layout', layoutStructure)
@@ -68,7 +69,7 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
         if (!options?.currency_code) return label
         return currencyFormat(options?.currency_code, Number(label))
     } else {
-        return label || '-'
+        return label || '0'
     }
 }
 

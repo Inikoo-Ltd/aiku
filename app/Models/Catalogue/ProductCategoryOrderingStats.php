@@ -98,6 +98,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_delivery_note_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_delivery_notes_state_picked
+ * @property int $number_delivery_notes_state_packing
+ * @property int $number_delivery_notes_cancelled_at_state_picked
+ * @property int $number_orders_state_picked
+ * @property int $number_orders_state_packing
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductCategoryOrderingStats query()

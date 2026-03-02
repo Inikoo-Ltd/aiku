@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 01 Mar 2026 22:05:48 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\Catalogue\Product\StoreProduct;
@@ -30,6 +36,10 @@ class GetFaireProducts extends OrgAction
 
     public function handle(Shop $shop, array $modelData, ?Command $command = null): void
     {
+        if ($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::FAIRE) {
+            return;
+        }
+
         $faireProducts = [];
         $limit         = 200;
         $page          = 1;
@@ -93,7 +103,7 @@ class GetFaireProducts extends OrgAction
                                 'name'           => $faireProduct['name'].' - '.$variant['name'],
                                 'description'    => $faireProduct['description'],
                                 'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
-                                'price'          => $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                                'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
                                 'units'          => $faireProduct['unit_multiplier'],
                                 'marketplace_id' => $variant['id'],
                                 'data'           => [
@@ -113,7 +123,7 @@ class GetFaireProducts extends OrgAction
                             'name'           => $faireProduct['name'].' - '.$variant['name'],
                             'description'    => $faireProduct['description'],
                             'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
-                            'price'          => $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                            'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
                             'unit'           => 'Piece',
                             'units'          => $faireProduct['unit_multiplier'],
                             'is_main'        => true,

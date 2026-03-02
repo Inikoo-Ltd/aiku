@@ -12,6 +12,7 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -73,6 +74,8 @@ class ShowProcurementDashboard extends OrgAction
                     ],
                     'title' => __('Procurement'),
                 ],
+
+                'shippers' => Shipper::query()->get(),
                 'flatTreeMaps' => [
 
                     array_filter([

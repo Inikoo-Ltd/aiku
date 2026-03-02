@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use Illuminate\Console\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairProductsHasLiveWebpage
 {
@@ -33,7 +34,12 @@ class RepairProductsHasLiveWebpage
 
         $total = (clone $query)->count();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($total);
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
         $query->chunk(200, function ($products) use ($bar) {

@@ -454,7 +454,7 @@ provide("goNext", goNext)
                 </div>
 
                 <div class="w-full flex justify-end">
-                        <Button v-if="layout?.app?.environment === 'local'"
+                        <Button v-if="layout?.app?.environment !== 'production'"
 								@click="() => (isModalTiktok = true)"
 								:label="trans('Connect')"
                             type="primary"

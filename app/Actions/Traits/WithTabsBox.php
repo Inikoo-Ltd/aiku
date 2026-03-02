@@ -36,7 +36,7 @@ trait WithTabsBox
                     [
                         'tab_slug'    => 'in_basket',
                         'label'       => __('In basket'),
-                        'value'       => $parent->orderHandlingStats?->number_orders_state_creating,
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_creating ?? 0,
                         'type'        => 'number',
                         'icon_data'        => [
                             'icon'    => 'fal fa-shopping-basket',
@@ -44,7 +44,7 @@ trait WithTabsBox
                         ],
                         'information' => [
                             'type'  => 'currency',
-                            'label' => $parent->orderHandlingStats?->{"orders_state_creating_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_creating_amount$currency"} ?? 0,
                         ]
                     ]
                 ]
@@ -53,11 +53,10 @@ trait WithTabsBox
                 'label'         => __('Submitted'),
                 'currency_code' => $currencyCode,
                 'tabs'          => [
-
                     [
                         'tab_slug'    => 'submitted_unpaid',
                         'label'       => __('Submitted Unpaid'),
-                        'value'       => $parent->orderHandlingStats?->number_orders_state_submitted_not_paid,
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_submitted_not_paid ?? 0,
                         'type'        => 'number',
                         'icon_data'   =>
                             [
@@ -71,14 +70,14 @@ trait WithTabsBox
                                 ]
                             ],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_submitted_not_paid_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_submitted_not_paid_amount$currency"} ?? 0,
                             'type'  => 'currency'
                         ]
                     ],
                     [
                         'tab_slug'    => 'submitted_paid',
                         'label'       => __('Submitted Paid'),
-                        'value'       => $parent->orderHandlingStats?->number_orders_state_submitted_paid,
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_submitted_paid ?? 0,
                         'type'        => 'number',
                         'icon_data'   => [
                             'tooltip' => __('Submitted Paid'),
@@ -91,7 +90,7 @@ trait WithTabsBox
                             ]
                         ],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_submitted_paid_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_submitted_paid_amount$currency"} ?? 0,
                             'type'  => 'currency'
                         ]
                     ],
@@ -103,47 +102,67 @@ trait WithTabsBox
                 'tabs'          => [
                     [
                         'tab_slug'    => 'in_warehouse',
-                        'label'       => __('Waiting to be picked'),
-                        'value'       => $parent->orderHandlingStats?->number_orders_state_in_warehouse,
+                        'label'       => __('Ready to be picked'),
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_in_warehouse ?? 0,
                         'type'        => 'number',
                         'icon_data'   => [
-                            'tooltip' => __('Waiting'),
-                            'icon'    => 'fal fa-snooze',
+                            'tooltip' => __('To do'),
+                            'icon'    => 'fal fa-clock',
                         ],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_in_warehouse_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_in_warehouse_amount$currency"} ?? 0,
                             'type'  => 'currency'
                         ]
                     ],
                     [
                         'tab_slug'    => 'handling',
                         'label'       => __('Picking'),
-                        'value'       => $parent->orderHandlingStats?->number_orders_state_handling,
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_handling ?? 0,
                         'type'        => 'number',
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING->value],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_handling_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_handling_amount$currency"} ?? 0,
                             'type'  => 'currency',
                         ]
                     ],
                     [
                         'tab_slug'    => 'handling_blocked',
-                        'label'       => __('Picking Blocked'),
-                        'value'       => $parent->orderHandlingStats?->number_orders_state_handling_blocked,
+                        'label'       => __('Waiting'),
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_handling_blocked ?? 0,
                         'type'        => 'number',
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_handling_blocked_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_handling_blocked_amount$currency"} ?? 0,
                             'type'  => 'currency',
+                        ]
+                    ],
+                    [
+                        'tab_slug'    => 'picked',
+                        'label'       => __('Picked'),
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_picked ?? 0,
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PICKED->value],
+                        'information' => [
+                            'label' => $parent->orderHandlingStats?->{"orders_state_picked_amount$currency"} ?? 0,
+                            'type'  => 'currency'
+                        ]
+                    ],
+                    [
+                        'tab_slug'    => 'packing',
+                        'label'       => __('Packing'),
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_packing ?? 0,
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PACKING->value],
+                        'information' => [
+                            'label' => $parent->orderHandlingStats?->{"orders_state_packing_amount$currency"} ?? 0,
+                            'type'  => 'currency'
                         ]
                     ],
                     [
                         'tab_slug'    => 'packed',
                         'label'       => __('Packed'),
-                        'value'       => $parent->orderHandlingStats?->number_orders_state_packed,
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_packed ?? 0,
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PACKED->value],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_packed_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_packed_amount$currency"} ?? 0,
                             'type'  => 'currency'
                         ]
                     ],
@@ -156,13 +175,13 @@ trait WithTabsBox
                     [
                         'tab_slug'    => 'finalised',
                         'label'       => __('Invoiced'),
-                        'value'       => $parent->orderHandlingStats?->number_orders_state_finalised,
+                        'value'       => $parent->orderHandlingStats?->number_orders_state_finalised ?? 0,
                         'icon_data'   => [
                             'icon'    => 'fal fa-box-check',
                             'tooltip' => __('Finalised'),
                         ],
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_state_finalised_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_state_finalised_amount$currency"} ?? 0,
                             'type'  => 'currency'
                         ]
                     ],
@@ -175,11 +194,11 @@ trait WithTabsBox
                     [
                         'tab_slug'    => 'dispatched_today',
                         'label'       => __('Dispatched Today'),
-                        'value'       => $parent->orderHandlingStats?->number_orders_dispatched_today,
+                        'value'       => $parent->orderHandlingStats?->number_orders_dispatched_today ?? 0,
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::DISPATCHED->value],
                         'type'        => 'number',
                         'information' => [
-                            'label' => $parent->orderHandlingStats?->{"orders_dispatched_today_amount$currency"},
+                            'label' => $parent->orderHandlingStats?->{"orders_dispatched_today_amount$currency"} ?? 0,
                             'type'  => 'currency'
                         ]
                     ],

@@ -331,7 +331,7 @@ iframe#launcher {
 }
 
 .text-primary {
-    color: var(--theme-color-4);
+    color: var(--theme-color-4) !important;
 }
 
 </style>

@@ -194,6 +194,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_orders_sales_channel_type_other
  * @property int $number_orders_sales_channel_type_website
  * @property int $number_orders_with_collection_address
+ * @property int $number_delivery_notes_state_picked
+ * @property int $number_delivery_notes_state_packing
+ * @property int $number_delivery_notes_cancelled_at_state_picked
+ * @property int $number_orders_state_picked
+ * @property int $number_orders_state_packing
  * @property-read \App\Models\CRM\Customer $customer
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()

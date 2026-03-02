@@ -12,7 +12,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-	<div>
+	<div class="flex-1 min-h-0 overflow-y-auto">
 		<div v-if="loading" class="p-3 text-sm text-gray-400">
 			Loading...
 		</div>

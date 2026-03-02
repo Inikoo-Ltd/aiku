@@ -30,7 +30,7 @@ class DashboardTotalSalesChannelsSalesResource extends JsonResource
         $fields = [
             'refunds',
             'invoices',
-            'sales_grp_currency',
+            'sales_grp_currency_external',
         ];
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
@@ -60,9 +60,9 @@ class DashboardTotalSalesChannelsSalesResource extends JsonResource
                 'invoices_minified',
                 'invoices_delta',
 
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
+                'sales_grp_currency_external',
+                'sales_grp_currency_external_minified',
+                'sales_grp_currency_external_delta',
             ])
         );
 

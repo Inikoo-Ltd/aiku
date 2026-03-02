@@ -16,9 +16,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $frequency
  * @property string $period
  * @property int $master_product_category_time_series_id
- * @property string|null $sales
- * @property string|null $sales_org_currency
- * @property string|null $sales_grp_currency
+ * @property string|null $sales_external
+ * @property string|null $sales_org_currency_external
+ * @property string|null $sales_grp_currency_external
  * @property int|null $invoices
  * @property int|null $refunds
  * @property int|null $orders
@@ -27,6 +27,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $to
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $sales_internal
+ * @property string|null $sales_org_currency_internal
+ * @property string|null $sales_grp_currency_internal
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryTimeSeriesRecord query()

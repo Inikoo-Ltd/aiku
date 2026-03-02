@@ -14,6 +14,7 @@ use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -27,6 +28,7 @@ use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -166,8 +168,6 @@ class UpdateProduct extends OrgAction
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
-
-
         if ($product->webpage && !empty($webpageData)) {
             UpdateWebpage::make()->action($product->webpage, $webpageData);
         }
@@ -180,9 +180,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  && $product->webpage) {
-
-
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale && $product->webpage) {
             if ($product->master_product_id) {
                 MasterAssetHydrateAssets::run($product->master_product_id);
             }
@@ -203,7 +201,7 @@ class UpdateProduct extends OrgAction
         }
 
 
-        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  || $newData) {
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $newData) {
             $product->auditEvent    = 'update';
             $product->isCustomEvent = true;
 
@@ -316,6 +314,9 @@ class UpdateProduct extends OrgAction
             if ($product->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 UpdateProductCustomerSalesChannelThresholdQuantity::dispatch($product->id)->delay(now()->addSeconds(180));
             }
+            if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::FAIRE) {
+                UpdateFaireProductInventoryQuantity::dispatch($product);
+            }
         }
 
         if (Arr::has($changed, 'master_product_id')) {
@@ -346,7 +347,7 @@ class UpdateProduct extends OrgAction
             UpdateHistoricProductInBasketTransactions::dispatch($product);
         }
 
-        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale  || $oldState != $product->state) {
+        if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $oldState != $product->state) {
             $product = ProductHydrateAvailableQuantity::run($product);
         }
 
@@ -355,22 +356,26 @@ class UpdateProduct extends OrgAction
 
     public function rules(): array
     {
+        $codeRule = [
+            'sometimes',
+            'required',
+            'max:64',
+            $this->shop->type == ShopTypeEnum::EXTERNAL ? 'string' : new AlphaDashDot(),
+            Rule::notIn(['export', 'create', 'upload']),
+        ];
+        if ($this->shop->type != ShopTypeEnum::EXTERNAL) {
+            $codeRule[] = new IUnique(
+                table: 'products',
+                extraConditions: [
+                    ['column' => 'shop_id', 'value' => $this->shop->id],
+                    ['column' => 'deleted_at', 'operator' => 'null'],
+                    ['column' => 'id', 'value' => $this->product->id, 'operator' => '!=']
+                ]
+            );
+        }
+
         $rules = [
-            'code'                      => [
-                'sometimes',
-                'required',
-                'max:64',
-                $this->shop->type == ShopTypeEnum::EXTERNAL ? 'string' : new AlphaDashDot(),
-                Rule::notIn(['export', 'create', 'upload']),
-                new IUnique(
-                    table: 'products',
-                    extraConditions: [
-                        ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'null'],
-                        ['column' => 'id', 'value' => $this->product->id, 'operator' => '!=']
-                    ]
-                ),
-            ],
+            'code'                      => $codeRule,
             'name'                      => ['sometimes', 'required', 'max:250', 'string'],
             'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
             'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0'],
@@ -467,6 +472,7 @@ class UpdateProduct extends OrgAction
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
+            $rules['description']               = ['sometimes', 'nullable', 'max:15000'];
 
 
             $rules = $this->noStrictUpdateRules($rules);

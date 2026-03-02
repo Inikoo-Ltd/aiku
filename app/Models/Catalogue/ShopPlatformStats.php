@@ -53,6 +53,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sales
  * @property string $sales_org_currency
  * @property string $sales_grp_currency
+ * @property int $number_orders_state_picked
+ * @property int $number_orders_state_packing
  * @property-read Platform $platform
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopPlatformStats newModelQuery()

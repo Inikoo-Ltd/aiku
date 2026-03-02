@@ -63,8 +63,12 @@ trait IsDeliveryNotesIndex
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING);
         } elseif ($bucket == 'handling_blocked') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED);
+        } elseif ($bucket == 'picked') {
+            $query->where('delivery_notes.state', DeliveryNoteStateEnum::PICKED);
         } elseif ($bucket == 'packed') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::PACKED);
+        } elseif ($bucket == 'packing') {
+            $query->where('delivery_notes.state', DeliveryNoteStateEnum::PACKING);
         } elseif ($bucket == 'finalised') {
             $query->where('delivery_notes.state', DeliveryNoteStateEnum::FINALISED);
         } elseif ($bucket == 'dispatched') {
@@ -196,6 +200,10 @@ trait IsDeliveryNotesIndex
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_handling;
                     } elseif ($bucket == 'handling_blocked') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_handling_blocked;
+                    } elseif ($bucket == 'picked') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_packed;
+                    } elseif ($bucket == 'packing') {
+                        $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_packed;
                     } elseif ($bucket == 'packed') {
                         $count = $parent->organisation->orderingStats->number_dropshipping_shop_delivery_notes_state_packed;
                     } elseif ($bucket == 'finalised') {

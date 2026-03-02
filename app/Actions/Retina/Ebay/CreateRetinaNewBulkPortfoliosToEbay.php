@@ -27,7 +27,7 @@ class CreateRetinaNewBulkPortfoliosToEbay extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        StoreBulkNewProductToCurrentEbay::run($customerSalesChannel->user, $attributes);
+        StoreBulkNewProductToCurrentEbay::dispatch($customerSalesChannel->user, $attributes);
     }
 
     public function rules(): array

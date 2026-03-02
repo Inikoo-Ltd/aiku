@@ -17,6 +17,13 @@ trait EnumHelperTrait
         return array_column(self::cases(), 'value');
     }
 
+    public static function valuesExcept(array $exclude): array
+    {
+        return array_values(
+            array_filter(self::values(), fn ($value) => !in_array($value, array_column($exclude, 'value')))
+        );
+    }
+
     public function snake(): string
     {
         return str_replace('-', '_', $this->value);
