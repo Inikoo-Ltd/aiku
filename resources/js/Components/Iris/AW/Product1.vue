@@ -8,7 +8,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 library.add(faLongArrowAltDown, faStar, faCircle, faHandPointer)
 
-const props = defineProps<{
+defineProps<{
     product: {
         image: string
         title: string
