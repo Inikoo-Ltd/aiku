@@ -37,7 +37,7 @@ const props = defineProps<{
     jumpToIndex?: string  // ulid
     data: BannerWorkshop
     view?: string
-    ratio? : string
+    ratio?: string
 }>()
 
 const swiperRef = ref(null)
@@ -134,57 +134,60 @@ const getCardScale = computed(() => {
     return 1
 })
 
-const aspectClass = computed(() => {
-    // MOBILE selalu 1:1
-    if (props.view === 'mobile') {
-        return 'aspect-square max-w-[375px] w-full'
+
+const computedRatio = computed(() => {
+    const currentView = props.view || 'desktop'
+
+    // Force mobile selalu 1:1
+    if (currentView === 'mobile') {
+        return 1
     }
 
-    const getRatio = () => {
-        if (!props.ratio) return null
-        const r = Array.isArray(props.ratio)
-            ? props.ratio[0]
-            : props.ratio
+    const raw = props.ratio ?? '4/1'
+    const r = Array.isArray(raw) ? raw[0] : raw
 
-        if (typeof r === 'string' && r.includes('/')) {
-            const [w, h] = r.split('/').map(Number)
-            if (!isNaN(w) && !isNaN(h) && h !== 0) {
-                return w / h
-            }
+    if (typeof r === 'string' && r.includes('/')) {
+        const [w, h] = r.split('/').map(Number)
+        if (w > 0 && h > 0) {
+            return w / h
         }
-
-        if (typeof r === 'number') return r
-
-        return null
     }
 
-    const ratio = getRatio()
+    if (typeof r === 'number' && r > 0) {
+        return r
+    }
 
-    if (props.view === 'tablet') {
-        if (ratio) {
-            const adjusted = ratio > 1
-                ? 1 + (ratio - 1) * 0.6   // compress landscape
-                : 1 - (1 - ratio) * 0.6   // compress portrait
+    return 4 / 1
+})
 
-            const width = 100
-            const height = Math.round(width / adjusted)
-            return `aspect-[${width}/${height}] max-w-[768px] w-full`
+const isEditor = computed(() => !props.production)
+
+const wrapperStyle = computed(() => {
+    const currentView = props.view || 'desktop'
+
+    const style: any = {
+        aspectRatio: `${computedRatio.value}`,
+        margin: '0 auto'
+    }
+
+    if (currentView === 'mobile') {
+        style.width = '375px'
+        style.maxWidth = '100%'
+    } else {
+        style.width = '100%'
+    }
+
+    if (!props.production) {
+        if (currentView === 'mobile') {
+            style.maxHeight = '500px'
+        } else if (currentView === 'tablet') {
+            style.maxHeight = '450px'
+        } else {
+            style.maxHeight = '100%'
         }
-
-        return 'aspect-[3/1] max-w-[768px] w-full'
     }
 
-    if (props.view === 'desktop') {
-        if (ratio) {
-            const width = 100
-            const height = Math.round(width / ratio)
-            return `aspect-[${width}/${height}] w-full`
-        }
-
-        return 'aspect-[4/1] w-full'
-    }
-
-    return 'aspect-square md:aspect-[3/1] lg:aspect-[4/1] w-full'
+    return style
 })
 
 const isMounted = ref(false)
@@ -194,12 +197,12 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="relative w-full">
-        <div class="relative mx-auto transition-all duration-300 ease-in-out" :class="aspectClass">
+    <div class="relative w-full h-full">
+        <div class="relative mx-auto w-full h-full overflow-hidden" :style="wrapperStyle">
 
             <!-- Add v-if to avoid error in SSR -->
             <template v-if="isMounted">
-                <Swiper ref="swiperRef" :key="'banner' + intSwiperKey" :slideToClickedSlide="true"
+                <Swiper class="w-full h-full" ref="swiperRef" :key="'banner' + intSwiperKey" :slideToClickedSlide="true"
                     :spaceBetween="get(data, ['common', 'spaceBetween']) ? data.common.spaceBetween : 0"
                     :slidesPerView="1" :centeredSlides="true"
                     :loop="data.components.filter((item) => item.ulid).length > 1" :autoplay="false" :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
@@ -208,8 +211,9 @@ onMounted(() => {
                             return `<span class='${className}'></span>`
                         },
                     } : false" :navigation="!data.navigation || data.navigation?.sideNav?.value"
-                    :modules="[Autoplay, Pagination, Navigation]" class="mySwiper">
-                    <SwiperSlide v-for="component in data.components.filter((item) => item.ulid)" :key="component.id">
+                    :modules="[Autoplay, Pagination, Navigation]">
+                    <SwiperSlide v-for="component in data.components.filter((item) => item.ulid)" :key="component.id"
+                        class="w-full h-full">
                         <!-- Slide: Image -->
                         <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"
                             class="relative w-full h-full">
@@ -276,7 +280,7 @@ onMounted(() => {
                                         }" :class="card.shadow && !card.hideCard ? 'shadow-2xl' : ''">
                                             <div v-html="card.titles[0].text"></div>
 
-                                           <!-- BUTTON -->
+                                            <!-- BUTTON -->
                                             <div v-if="card.button?.show" class="mt-4 flex" :class="{
                                                 'justify-start': card.button?.align === 'left',
                                                 'justify-center': !card.button?.align || card.button?.align === 'center',

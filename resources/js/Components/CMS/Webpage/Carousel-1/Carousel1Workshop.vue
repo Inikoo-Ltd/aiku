@@ -83,6 +83,15 @@ watch(
   { deep: true }
 )
 
+
+watch(
+  () => props.screenType,
+  async () => {
+    await refreshCarousel()
+  },
+  { deep: true }
+)
+
 watch(
   () => props.modelValue?.carousel_data?.carousel_setting?.spaceBetween,
   (newVal) => {
@@ -138,6 +147,8 @@ const onEditorBlur = () => {
 </script>
 
 <template>
+  {{ keySwiper }}
+  {{ screenType }}
   <div id="carousel" class="relative">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),

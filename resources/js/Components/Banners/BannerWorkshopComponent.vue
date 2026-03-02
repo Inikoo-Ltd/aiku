@@ -49,31 +49,16 @@ const hasSlides = computed(() => {
     </div>
 
     <!-- Banner preview -->
-    <div
-      class="flex pr-0.5  editor-class"
-      :class="[props.modelValue.type === 'square'
-        ? 'justify-start 2xl:justify-center'
-        : 'justify-center']"
-    >
-      <div
-        v-if="props.modelValue.type === 'square'"
-        class="w-full min-h-[250px] max-h-[400px]"
-      >
-        <SliderSquare
-          :data="props.modelValue"
-          :jumpToIndex="jumpToIndex"
-          :view="screenView"
-          :ratio
-        />
+    <div class="flex pr-0.5  editor-class" :class="[props.modelValue.type === 'square'
+      ? 'justify-start 2xl:justify-center'
+      : 'justify-center']">
+      <div v-if="props.modelValue.type === 'square'" class="w-full min-h-[250px] max-h-[400px]">
+        <SliderSquare :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio />
       </div>
 
-      <SliderLandscape
-        v-else
-        :data="props.modelValue"
-        :jumpToIndex="jumpToIndex"
-        :view="screenView"
-        :ratio
-      />
+      <div v-else class="w-full max-w-[1200px] mx-auto">
+        <SliderLandscape :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio />
+      </div>
     </div>
 
     <!-- Editor -->

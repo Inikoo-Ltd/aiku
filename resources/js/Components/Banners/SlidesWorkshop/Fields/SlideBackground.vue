@@ -85,7 +85,7 @@ const onPickImage = (res:any) => {
                 :data="addFiles"
                 :imagesUploadRoute="route(uploadRoutes.name, uploadRoutes.parameters)"
                 :response="uploadImageRespone"
-                :ratio="ratio"
+                :ratio="screenView == 'mobile' ? 1 : ratio"
             />
         </Modal>
 

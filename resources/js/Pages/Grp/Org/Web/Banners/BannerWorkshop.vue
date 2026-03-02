@@ -180,7 +180,6 @@ onBeforeUnmount(() => {
         <!-- <ConditionIcon v-if="status" :state="status" class="text-xl" /> -->
 
         <Button
-            vxlse
             v-tooltip="useFormatTime(banner.updated_at, {formatTime: 'hms'})"
             @click="saveBanner"
             type="tertiary"
