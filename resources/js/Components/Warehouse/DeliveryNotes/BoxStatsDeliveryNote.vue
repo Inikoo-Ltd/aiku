@@ -20,7 +20,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
 import Icon from "@/Components/Icon.vue"
 import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
-import EditTrolley from "@/Components/DeliveryNote/EditTrolley.vue"
+// import EditTrolley from "@/Components/DeliveryNote/EditTrolley.vue"
 import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
@@ -63,6 +63,7 @@ const props = defineProps<{
         picker: {
             id: number
             username: string
+            contact_name: string
         }
         order?: {
             reference: string
@@ -382,8 +383,7 @@ const updateCollection = async (e: Event) => {
                     <div class="flex gap-x-4 items-center">
                         <!-- Section: Picker name -->
                         <div v-if="boxStats?.picker?.contact_name">
-                            <dl v-tooltip="trans('Picker name')"
-                                class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                            <dl class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                                 <dt class="flex-none">
                                     {{ trans("Picker") }}:
                                 </dt>
