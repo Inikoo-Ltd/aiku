@@ -27,7 +27,7 @@ const props = defineProps<{
     <div class="!mt-1.5 flex gap-x-2 items-center flex-wrap">
         <dl class="border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-1 py-0.5 flex-none gap-x-1.5">
             <dt class="flex-none tabular-nums">
-                {{ trans("Trolleys") }} ({{ trolleys?.length }}):
+                {{ trans("Trolleys") }}:
             </dt>
             <dd class="flex flex-wrap gap-y-0.5 gap-x-2 text-gray-500 align-middle">
                 <div v-for="trolley in trolleys" class="bg-pink-400/30 rounded-sm pl-1 text-pink-800 flex items-center">
