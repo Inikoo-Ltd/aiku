@@ -12,7 +12,7 @@ abstract class BaseSmartNotification extends Notification implements ShouldQueue
     use Queueable;
 
     protected string $typeSlug; // required in child class (e.g. 'order.created')
-    protected ?Model $scope = null; // notification scope (Shop/Organisation)
+    protected ?Model $scope = null; // notification scope (Global/Group/Shop/Organisation)
 
 
     public function via($notifiable): array
