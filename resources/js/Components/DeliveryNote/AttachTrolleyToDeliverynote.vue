@@ -174,7 +174,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                 {{ trans("Available trolleys") }} ({{ isLoadingFetch ? '-' : listTrolleys.length }}):
             </div>
             <div class="h-64 overflow-y-auto border-b border-dashed border-gray-300 pb-4">
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-6 gap-2">
                     <div
                         v-if="isLoadingFetch"
                         v-for="trolley in 6"
@@ -187,7 +187,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                             v-for="trolley in listTrolleys"
                             :key="trolley.id"
                             @click="() => submitSelectTrolley(trolley.id)"
-                            class="cursor-pointer flex justify-between items-center py-2 px-3 border border-gray-300 text-sm rounded"
+                            class="cursor-pointer flex justify-between items-center py-0.5 px-2 border border-gray-300 text-sm rounded"
                             :class="isLoadingSubmitTrolley == trolley.id ? 'bg-[var(--theme-color-0)] opacity-70 text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
                         >
                             {{ trolley.name }}
