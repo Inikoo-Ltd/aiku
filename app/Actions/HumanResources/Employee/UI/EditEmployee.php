@@ -120,6 +120,12 @@ class EditEmployee extends OrgAction
                     'value' => $employee->job_title,
                     'required' => true
                 ],
+                'probation_period_days' => [
+                    'type' => 'input',
+                    'label' => __('Probation Period (Days)'),
+                    'placeholder' => __('90'),
+                    'value' => $employee->probation_period_days ?? 90,
+                ],
 
 
             ]
@@ -343,7 +349,7 @@ class EditEmployee extends OrgAction
                 'annual_days' => [
                     'type' => 'input',
                     'label' => __('Annual Leave Balance'),
-                    'value' => $employee->leaveBalance?->annual_days ?? 10,
+                    'value' => $employee->leaveBalance?->annual_days ?? $employee->organisation->getDefaultAnnualLeaveDays(),
                 ],
                 'annual_used' => [
                     'type' => 'input',
@@ -354,18 +360,7 @@ class EditEmployee extends OrgAction
                 'annual_remaining' => [
                     'type' => 'input',
                     'label' => __('Annual Leave Remaining'),
-                    'value' => $employee->leaveBalance?->annual_remaining ?? 10,
-                    'disabled' => true,
-                ],
-                'medical_days' => [
-                    'type' => 'input',
-                    'label' => __('Medical Leave Days'),
-                    'value' => $employee->leaveBalance?->medical_days ?? 365,
-                ],
-                'medical_used' => [
-                    'type' => 'input',
-                    'label' => __('Medical Leave Used'),
-                    'value' => $employee->leaveBalance?->medical_used ?? 0,
+                    'value' => $employee->leaveBalance?->annual_remaining ?? $employee->organisation->getDefaultAnnualLeaveDays(),
                     'disabled' => true,
                 ],
                 'unpaid_used' => [
