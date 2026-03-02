@@ -16,7 +16,6 @@ import PureInput from "@/Components/Pure/PureInput.vue";
 import { faSearch } from "@fal";
 import { trans } from "laravel-vue-i18n"
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
-import { getProductsRenderDropshippingComponent } from "@/Composables/getIrisComponents";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
