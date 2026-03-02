@@ -122,7 +122,7 @@ class IndexEmployees extends OrgAction
             );
         }
 
-        $queryBuilder->select(['employees.slug', 'employees.job_title', 'employees.contact_name', 'employees.state', 'employees.date_of_birth', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug',]);
+        $queryBuilder->select(['employees.slug', 'employees.job_title', 'employees.contact_name', 'employees.state', 'employees.date_of_birth', 'organisations.name as organisation_name', 'organisations.slug as organisation_slug', 'employees.probation_period_days', 'employees.employment_start_at',]);
 
         if (class_basename($parent) == 'Organisation') {
             $jobPositions = DB::table('employee_has_job_positions')
@@ -137,7 +137,6 @@ class IndexEmployees extends OrgAction
             });
             $queryBuilder->addSelect('job_positions');
         }
-
 
         return $queryBuilder
             ->defaultSort('slug')
@@ -195,7 +194,9 @@ class IndexEmployees extends OrgAction
                 ->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'job_title', label: __('Job Title'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'date_of_birth', label: __('Birthday'), canBeHidden: true, sortable: true);
+                ->column(key: 'date_of_birth', label: __('Birthday'), canBeHidden: true, sortable: true)
+                ->column(key: 'is_on_probation', label: __('Probation'), canBeHidden: false)
+                ->column(key: 'length_of_service', label: __('Length of Service'), canBeHidden: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
             }
