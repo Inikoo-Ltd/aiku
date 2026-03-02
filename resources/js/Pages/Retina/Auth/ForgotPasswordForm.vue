@@ -132,7 +132,7 @@ const submit = () => {
       <div class="flex justify-center items-center mt-6">
         <p class="text-sm text-gray-500">
           {{ ctrans("Remembered your password") }}?
-          <Link :href="route('retina.login.show')" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition duration-150 ease-in-out ml-1">{{ ctrans("Login here") }}</Link>
+          <Link :href="route('retina.login.show', { tiktok_code: route().queryParams?.tiktok_code })" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition duration-150 ease-in-out ml-1">{{ ctrans("Login here") }}</Link>
         </p>
       </div>
     </div>

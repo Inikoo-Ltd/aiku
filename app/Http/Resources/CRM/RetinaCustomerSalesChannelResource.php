@@ -89,7 +89,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             if ($ebayUser) {
                 $platformCompletion = $ebayUser->fulfillment_policy_id && $ebayUser->return_policy_id && $ebayUser->payment_policy_id && $ebayUser->location_key;
             }
-        } else if ($customerSalesChannels->platform->type == PlatformTypeEnum::TIKTOK) {
+        } elseif ($customerSalesChannels->platform->type == PlatformTypeEnum::TIKTOK) {
             /** @var TiktokUser $tiktokUser */
             $tiktokUser = $customerSalesChannels->user;
 
@@ -117,6 +117,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'platform_code'           => $this->platform_code,
             'platform_name'           => $this->platform_name,
             'user_data'               => $this->user?->data,
+            'user'                    => $this->user,
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
 
             'ban_stock_update_until' => $this->ban_stock_update_util,

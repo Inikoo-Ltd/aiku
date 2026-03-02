@@ -9,7 +9,7 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Discounts\OfferAllowance\SuspendOfferAllowance;
-use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateStateFromOffers;
+use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersState;
 use App\Actions\Ordering\Order\RecalculateShopTotalsOrdersInBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -40,7 +40,7 @@ class SuspendOffer extends OrgAction
 
 
         $offer->update($modelData);
-        OfferCampaignHydrateStateFromOffers::run($offer->offerCampaign);
+        OfferCampaignHydrateOffersState::run($offer->offerCampaign);
 
         RecalculateShopTotalsOrdersInBasket::dispatch($offer->shop_id);
 

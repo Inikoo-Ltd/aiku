@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
@@ -14,22 +15,24 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 
-class GetFaireOrders extends OrgAction
+class GetFaireOrdersInShop extends OrgAction
 {
     /**
      * @throws \Throwable
      */
-    public function handle(Shop $shop): void
+    public function handle(Shop $shop, Command|null $command = null): void
     {
         $filters = [
             'created_at_min' => Carbon::parse('2026-02-01')->toIsoString(),
@@ -42,10 +45,9 @@ class GetFaireOrders extends OrgAction
 
 
         foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
-            $externalId = Arr::get($faireOrder, 'id');
-            $retailerId = Arr::get($faireOrder, 'retailer_id');
-            $retailer   = GetFaireRetailers::run($shop, $retailerId);
-
+            $externalId             = Arr::get($faireOrder, 'id');
+            $retailerId             = Arr::get($faireOrder, 'retailer_id');
+            $retailer               = GetFaireRetailers::run($shop, $retailerId);
             $transactionCommissions = Arr::get($faireOrder, 'payout_costs.commission_bps', 0) / 10000;
             $orderCommission        = Arr::get($faireOrder, 'payout_costs.commission.amount_minor', 0) / 100;
 
@@ -75,7 +77,7 @@ class GetFaireOrders extends OrgAction
                     $customerData['contact_name'] = $contactName;
                 }
                 if ($phone != '') {
-                    $customerData['phone'] = $contactName;
+                    $customerData['phone'] = $phone;
                 }
 
                 if ($customer) {
@@ -86,7 +88,7 @@ class GetFaireOrders extends OrgAction
 
 
                 $orderData = [
-                    'is_shipping_by_external' => Arr::get($shop->settings, 'is_shipping_by_external'),
+                    'is_shipping_by_external' => Arr::get($shop->settings, 'faire.is_shipping_by_external') ?? false,
                     'external_id'             => $externalId,
                     'marketplace_id'          => $externalId,
                     'reference'               => $faireOrder['display_id'],
@@ -98,6 +100,18 @@ class GetFaireOrders extends OrgAction
                     'pay_detailed_status'     => OrderPayDetailedStatusEnum::UNPAID->value
                 ];
 
+
+                $tax = Arr::get($faireOrder, 'payout_costs.net_tax.amount_minor', 0);
+
+                if ($tax == 0) {
+                    if (IsEuropeanUnion::run($shop->organisation->country->code)) {
+                        $taxCategory = TaxCategory::where('status', true)->where('type', 'eu_vtc')->first();
+                    } else {
+                        $taxCategory = TaxCategory::where('status', true)->where('type', 'outside')->first();
+                    }
+                    $orderData['tax_category_id'] = $taxCategory->id;
+                }
+
                 $transactionsData = [];
                 $errors           = [];
                 foreach (Arr::get($faireOrder, 'items', []) as $item) {
@@ -107,9 +121,9 @@ class GetFaireOrders extends OrgAction
 
                     if (!$product) {
                         $errors[] = [
-                            'product_code'           => $item['sku'],
-                            'product_name'           => $item['name'],
-                            'product_marketplace_id' => $item['variant_id'],
+                            'product_code'           => Arr::get($item, 'sku', 'NO SKU'),
+                            'product_name'           => Arr::get($item, 'product_name', 'NO NAME').' '.Arr::get($item, 'variant_name', 'NO VARIANT NAME'),
+                            'product_marketplace_id' => Arr::get($item, 'variant_id', 'NO VARIANT ID'),
                             'message'                => "Product not found in catalogue"
                         ];
                         continue;
@@ -169,15 +183,32 @@ class GetFaireOrders extends OrgAction
                     $order = SubmitOrder::make()->action($order);
                     /** @var \App\Models\Inventory\Warehouse $warehouse */
                     $warehouse = $order->shop->organisation->warehouses()->first();
-                    SendOrderToWarehouse::make()->action($order, [
-                        'warehouse_id' => $warehouse->id
-                    ]);
+
+
+                    $sendOrderToWarehouse = true;
+
+                    if (Arr::get($shop->settings, 'faire.dont_send_first_orders_automatically_to_warehouse', false)) {
+                        $numberOrders = Order::where('customer_id', $customer->id)->where('state', '!=', OrderStateEnum::CANCELLED)->count();
+                        if ($numberOrders == 0) {
+                            $sendOrderToWarehouse = false;
+                        }
+                    }
+
+                    if ($sendOrderToWarehouse) {
+                        SendOrderToWarehouse::make()->action($order, [
+                            'warehouse_id' => $warehouse->id
+                        ]);
+                    }
 
                     AcceptFaireOrder::run($order);
+
+                    $command?->info('Order '.$externalId.' created');
+                } elseif ($command) {
+                    print_r($orderData);
+                    print_r($errors);
                 }
             }
         }
-        //  });
     }
 
     public function getFormattedAddress(array $address): array
@@ -196,7 +227,7 @@ class GetFaireOrders extends OrgAction
         ];
     }
 
-    public string $commandSignature = 'faire:orders {shop?}';
+    public string $commandSignature = 'faire:shop_orders {shop?}';
 
     /**
      * @throws \Throwable
@@ -205,7 +236,7 @@ class GetFaireOrders extends OrgAction
     {
         if ($command->argument('shop')) {
             $shop = Shop::where('slug', $command->argument('shop'))->first();
-            $this->handle($shop);
+            $this->handle($shop, $command);
 
             return 0;
         }
@@ -217,7 +248,7 @@ class GetFaireOrders extends OrgAction
         /** @var Shop $shop */
         foreach ($shops as $shop) {
             if (Arr::has($shop->settings, 'faire.access_token')) {
-                $this->handle($shop);
+                $this->handle($shop, $command);
             }
         }
 

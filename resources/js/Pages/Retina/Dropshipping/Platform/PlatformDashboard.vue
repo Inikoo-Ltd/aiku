@@ -15,6 +15,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformEbayWarningNotComplete from "@/Components/Retina/Platform/PlatformEbayWarningNotComplete.vue"
+import PlatformTiktokWarningNotComplete from "@/Components/Retina/Platform/PlatformTiktokWarningNotComplete.vue"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
@@ -217,11 +218,17 @@ const layout = inject('layout', layoutStructure)
             </div>
 
             <!-- Section: Alert if platform not connected yet -->
-            <template v-if="!can_connect_to_platform">
+            <template v-if="!can_connect_to_platform || !platform_status">
                 <PlatformWarningNotConnectedShopify
                     v-if="platform.type === 'shopify'"
                     :customer_sales_channel="customer_sales_channel"
                 />
+
+				<PlatformTiktokWarningNotComplete
+					v-else-if="platform.type === 'tiktok' && can_connect_to_platform"
+					:customer_sales_channel="customer_sales_channel"
+					:tiktok_user="platformData"
+				/>
 
                 <PlatformWarningNotConnected
                     v-else-if="platform.type !== 'ebay'"
@@ -230,7 +237,7 @@ const layout = inject('layout', layoutStructure)
                 />
 
                 <PlatformEbayWarningNotComplete
-                    v-else
+					v-else-if="platform.type === 'ebay'"
                     :customer_sales_channel="customer_sales_channel"
                     :error_captcha="error_captcha"
                 />

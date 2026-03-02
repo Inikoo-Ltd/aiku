@@ -38,8 +38,8 @@ class GetOrderDeliveryAddressManagement
                 ->setAttribute('can_edit', true);
         });
 
-        $customerAddressId         = $order->customer->address->id;
-        $customerDeliveryAddressId = $order->customer->deliveryAddress->id;
+        $customerAddressId         = $order->customer?->address->id;
+        $customerDeliveryAddressId = $order->customer?->deliveryAddress->id;
         $orderDeliveryAddressIds   = Order::where('customer_id', $order->customer_id)
             ->pluck('delivery_address_id')
             ->unique()
@@ -74,8 +74,8 @@ class GetOrderDeliveryAddressManagement
                 'options'                        => [
                     'countriesAddressData' => GetAddressData::run($order->shop)
                 ],
-                'pinned_address_id'              => $order->customer->delivery_address_id,
-                'home_address_id'                => $order->customer->address_id,
+                'pinned_address_id'              => $order->customer?->delivery_address_id,
+                'home_address_id'                => $order->customer?->address_id,
                 'current_selected_address_id'    => $order->delivery_address_id,
                 'collection_address_id'          => $order->collection_address_id,
                 'is_shipping_by_external'        => $order->is_shipping_by_external,
