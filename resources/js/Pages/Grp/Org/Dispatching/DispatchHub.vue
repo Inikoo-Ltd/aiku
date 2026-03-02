@@ -15,7 +15,6 @@ import { useTabChange } from "@/Composables/tab-change";
 import { faHandsHelping, faBan, faCheckCircle, faList, faCheck } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue";
-import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue"
 import { PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck);
@@ -49,24 +48,26 @@ const props = defineProps<{
     blocks: any
 }>();
 
-// let currentTab = ref(props.tabs.current);
-// const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+let currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
-// const component: Component = computed(() => {
-//     const components = {
-//         ["dashboard" as string]: DispatchDashboard
-//     };
+const component = computed(() => {
+    const components: Component = {
+        dashboard: DispatchDashboard
+    };
 
-//     return components[currentTab.value];
-// });
+    return components[currentTab.value];
+});
+console.log("props dispatch", props)
 </script>
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <!-- <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" /> -->
-    <!-- <component :is="component" :tab="currentTab" :data="props[currentTab]"></component> -->
-    <DashboardTable
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <component :is="component" :tab="currentTab" :data="blocks"></component>
+    <!-- <DashboardTable
         v-if="blocks"
     	class="border-t border-gray-200"
     	:idTable="blocks.id"
@@ -74,5 +75,5 @@ const props = defineProps<{
         :intervals="intervals"
         :settings="settings"
         :currentTab="blocks.current_tab"
-    />
+    /> -->
 </template>

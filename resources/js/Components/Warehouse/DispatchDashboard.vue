@@ -1,146 +1,271 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import {  computed } from 'vue'
-import Icon from '../Icon.vue'
-import { router } from '@inertiajs/vue3'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import { Icon as IconTS } from '@/types/Utils/Icon'
+import { ref, computed } from "vue"
+import { Link } from "@inertiajs/vue3"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import {
+    faClock,
+    faList,
+    faCheck,
+    faBox,
+    faCheckCircle
+} from "@fal"
+
+library.add(faClock, faList, faCheck, faBox, faCheckCircle)
 
 const props = defineProps<{
-    data: {
-        [key: string]: {
-            label: string
-            sublabel: string
-            count: number
-            cases: {
-                key: string
-                label: string
-                value?: number
-                icon: string | string[]
-                icon_state: IconTS
-                class?: string
-                route?: {
-                    name: string
-                    parameters?: object
-                }
-            }[]
-        }
-    }
+    data: any
 }>()
 
-const states = computed(() => {
-    const firstGroup = Object.values(props.data)[1] as any
-    if (!firstGroup?.cases) return []
-    return Object.values(firstGroup.cases).map((item: any) => ({
-        key: item.key,
-        label: item.label
-    }))
+const dashboard = ref({
+    dimension: {
+        key: "channel",
+        label: "Channel",
+        items: [
+            { key: "fulfilment", label: "Fulfilment" },
+            { key: "wholesale", label: "Wholesale" },
+        ]
+    },
+
+    metrics: [
+        {
+            key: "todo",
+            label: "To do",
+            type: "stat",
+            icon: ["fal", "fa-clock"]
+        },
+        {
+            key: "warehouse",
+            label: "Warehouse",
+            type: "group",
+            items: [
+                { key: "picking", label: "Picking", icon: ["fal", "fa-list"] },
+                { key: "packed", label: "Packed", icon: ["fal", "fa-box"] },
+                { key: "packing", label: "Packing", icon: ["fal", "fa-check"] }
+            ]
+        },
+        {
+            key: "finalised",
+            label: "Finalised",
+            type: "stat",
+            icon: ["fal", "fa-check-circle"]
+        }
+    ],
+
+    data: {
+        fulfilment: {
+            todo: {
+                value: 2,
+                route_target: {
+                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
+                    "parameters": {
+                        "organisation": "sk",
+                        "warehouse": "cpt"
+                    }
+                }
+            },
+            picking: {
+                value: 5, route_target: {
+                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
+                    "parameters": {
+                        "organisation": "sk",
+                        "warehouse": "cpt"
+                    }
+                }
+            },
+            packed: {
+                value: 3, route_target: {
+                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
+                    "parameters": {
+                        "organisation": "sk",
+                        "warehouse": "cpt"
+                    }
+                }
+            },
+            packing: {
+                value: 1, route_target: {
+                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
+                    "parameters": {
+                        "organisation": "sk",
+                        "warehouse": "cpt"
+                    }
+                }
+            },
+            finalised: {
+                value: 8, route_target: {
+                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
+                    "parameters": {
+                        "organisation": "sk",
+                        "warehouse": "cpt"
+                    }
+                }
+            }
+        },
+        wholesale: {
+            todo: {
+                value: 1, route_target: {
+                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
+                    "parameters": {
+                        "organisation": "sk",
+                        "warehouse": "cpt"
+                    }
+                }
+            },
+            packing: {
+                value: 0, route_target: {
+                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
+                    "parameters": {
+                        "organisation": "sk",
+                        "warehouse": "cpt"
+                    }
+                }
+            },
+            finalised: {
+                value: 4, route_target: {
+                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
+                    "parameters": {
+                        "organisation": "sk",
+                        "warehouse": "cpt"
+                    }
+                }
+            }
+        },
+    },
+
+    row_totals: {
+        fulfilment: { value: 19 },
+        wholesale: { value: 8 }
+    },
+
+    totals: {
+        todo: { value: 3 },
+        picking: { value: 7 },
+        packed: { value: 4 },
+        packing: { value: 1 },
+        finalised: { value: 12 }
+    },
+
+    grand_total: { value: 27, icon: ["fal", "fa-chart-line"] }
 })
+
+const activeData = computed(() => dashboard.value)
 
 const rows = computed(() => {
-    return Object.values(props.data).map((group: any) => ({
-        label: group.label,
-        total: group.count,
-        ...group.cases
-    }))
+    if (!activeData.value.dimension) {
+        return [{ key: "_global", label: null }]
+    }
+    return activeData.value.dimension.items
 })
 
-const goToRoute = (item: any) => {
-    if (!item?.route?.name) return
-    router.visit(route(item.route.name, item.route.parameters))
+const getSafeRoute = (routeTarget: any) => {
+    if (!routeTarget) return null
+    try {
+        if (route().has(routeTarget.name)) {
+            return route(routeTarget.name, routeTarget.parameters ?? {})
+        }
+    } catch {
+        return null
+    }
+
+    return null
 }
 </script>
 
 <template>
-<div class="p-4">
+    <div class="overflow-x-auto">
+        <div class="flex gap-4 min-w-max m-2">
 
-    <DataTable
-        :value="rows"
-        responsiveLayout="stack"
-        breakpoint="768px"
-        stripedRows
-        class="p-datatable-sm text-sm"
-    >
-        <!-- CHANNEL -->
-        <Column>
-            <template #header>
-                <div class="w-full flex justify-start font-semibold">
-                    Channel
+            <!-- ================= DIMENSION COLUMN ================= -->
+            <div v-if="activeData.dimension"
+                class="min-w-[200px] bg-white border rounded-xl flex flex-col text-center border-gray-300">
+                <div class="h-16 flex items-center justify-center text-xs font-semibold">
+                    {{ activeData.dimension.label }}
                 </div>
-            </template>
 
-            <template #body="{ data }">
-                <div
-                    class="flex justify-between md:justify-start"
-                    data-label="Channel"
-                >
-                    <span class="font-semibold text-gray-700">
-                        {{ data.label }}
-                    </span>
+                <div v-for="row in rows" :key="row.key" class="h-12 flex items-center justify-center text-sm">
+                    {{ row.label }}
                 </div>
-            </template>
-        </Column>
 
-        <!-- TOTAL -->
-        <Column>
-            <template #header>
-                <div class="w-full flex justify-center font-semibold">
+                <div class="h-14 flex items-center justify-center font-semibold">
                     Total
                 </div>
-            </template>
+            </div>
 
-            <template #body="{ data }">
-                <div
-                    class="flex justify-between md:justify-center"
-                    data-label="Total"
-                >
-                    <span class="font-bold text-indigo-600">
-                        {{ data.total ?? 0 }}
-                    </span>
+            <!-- ================= METRICS ================= -->
+            <template v-for="metric in activeData.metrics" :key="metric.key">
+
+                <!-- SINGLE METRIC -->
+                <div v-if="metric.type !== 'group'"
+                    class="min-w-[200px] bg-white border border-gray-300 rounded-xl flex flex-col text-center">
+                    <div class="h-16 flex flex-col items-center justify-center text-xs font-semibold gap-1">
+                        <span>{{ metric.label }}</span>
+                        <FontAwesomeIcon v-if="metric.icon" :icon="metric.icon" class="text-lg" />
+                    </div>
+
+                    <template v-for="row in rows" :key="row.key">
+                        <component
+                            :is="getSafeRoute(activeData.data[row.key]?.[metric.key]?.route_target) ? Link : 'div'"
+                            :href="getSafeRoute(activeData.data[row.key]?.[metric.key]?.route_target)" :class="[
+                                'h-12 flex items-center justify-center text-lg font-medium',
+                                getSafeRoute(activeData.data[row.key]?.[metric.key]?.route_target)
+                                    ? 'hover:underline cursor-pointer'
+                                    : ''
+                            ]">
+                            {{ activeData.data[row.key]?.[metric.key]?.value ?? '-' }}
+                        </component>
+                    </template>
+
+                    <div class="h-14 flex items-center justify-center font-semibold">
+                        {{ activeData.totals[metric.key]?.value ?? '-' }}
+                    </div>
                 </div>
-            </template>
-        </Column>
 
-        <!-- DYNAMIC STATES -->
-        <Column
-            v-for="state in states"
-            :key="state.key"
-        >
+                <!-- GROUP METRIC -->
+                <div v-else class="bg-white border border-gray-300 rounded-xl flex">
+                    <div v-for="item in metric.items" :key="item.key" class="min-w-[180px] flex flex-col text-center">
+                        <div class="h-16 flex flex-col items-center justify-center text-xs font-semibold gap-1">
+                            <span>{{ item.label }}</span>
+                            <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="text-lg" />
+                        </div>
 
-            <template #header>
-                <div class="w-full flex justify-center font-semibold">
-                    {{ state.label }}
-                </div>
-            </template>
+                        <template v-for="row in rows" :key="row.key + '-' + item.key">
+                            <component
+                                :is="getSafeRoute(activeData.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
+                                :href="getSafeRoute(activeData.data[row.key]?.[item.key]?.route_target)" :class="[
+                                    'h-12 flex items-center justify-center text-lg font-medium',
+                                    getSafeRoute(activeData.data[row.key]?.[item.key]?.route_target)
+                                        ? 'hover:underline cursor-pointer'
+                                        : ''
+                                ]">
+                                {{ activeData.data[row.key]?.[item.key]?.value ?? '-' }}
+                            </component>
+                        </template>
 
-            <template #body="{ data }">
-                <div
-                    class="flex justify-between md:justify-center items-center gap-2
-                           cursor-pointer hover:bg-gray-100 rounded-md py-1 transition"
-                    :data-label="state.label"
-                    @click="goToRoute(data[state.key])"
-                >
-                    <div class="flex items-center gap-2">
-                        <Icon
-                            v-if="data[state.key]?.icon_state"
-                            :data="data[state.key].icon_state"
-                        />
-
-                        <FontAwesomeIcon
-                            v-else-if="data[state.key]?.icon"
-                            :icon="data[state.key].icon"
-                            class="text-gray-400"
-                        />
-
-                        <span class="font-medium">
-                            {{ data[state.key]?.value ?? 0 }}
-                        </span>
+                        <div class="h-14 flex items-center justify-center font-semibold">
+                            {{ activeData.totals[item.key]?.value ?? '-' }}
+                        </div>
                     </div>
                 </div>
             </template>
-        </Column>
 
-    </DataTable>
-</div>
+            <!-- ================= ROW TOTAL BOX (FROM JSON) ================= -->
+            <div class="min-w-[200px] bg-white border border-gray-300 rounded-xl flex flex-col text-center">
+                <div class="h-16 flex flex-col items-center justify-center text-xs font-semibold gap-1">
+                    <span>Total</span>
+                    <FontAwesomeIcon v-if="activeData.grand_total?.icon" :icon="activeData.grand_total?.icon"
+                        class="text-lg" />
+                </div>
+
+                <div v-for="row in rows" :key="row.key"
+                    class="h-12 flex items-center justify-center text-lg font-semibold">
+                    {{ activeData.row_totals[row.key]?.value ?? '-' }}
+                </div>
+
+                <div class="h-14 flex items-center justify-center font-bold">
+                    {{ activeData.grand_total?.value ?? '-' }}
+                </div>
+            </div>
+
+        </div>
+    </div>
 </template>
