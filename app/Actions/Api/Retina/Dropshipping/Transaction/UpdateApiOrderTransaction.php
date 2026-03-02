@@ -13,6 +13,7 @@ use App\Actions\Api\Retina\Dropshipping\Resource\TransactionApiResource;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\RetinaApiAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,11 +27,26 @@ class UpdateApiOrderTransaction extends RetinaApiAction
 
     public function handle(Transaction $transaction, array $modelData): Transaction|JsonResponse
     {
+        $order = $transaction->order;
+        
+        if ($transaction->customer_id != $this->customer->id || $order->shop_id != $this->shop->id) {
+            return response()->json([
+                'message' => "Unable to make modifications for this order",
+            ], 403);
+        }
+
         if ($transaction->order->state != OrderStateEnum::CREATING) {
             return response()->json([
-                'message' => 'This order is already in the "' . $transaction->order->state->value . '" state and cannot be updated.',
-            ]);
+                'message' => "This order is already in the '{$order->state->value}' state and cannot be updated.",
+            ], 409);
         }
+        
+        if($transaction->model_type != class_basename(Product::class)){
+            return response()->json([
+                'message' => 'Unable to modify this transaction data. Only able to modify product transaction data.',
+            ], 422);
+        }
+        
         return UpdateTransaction::make()->action($transaction, $modelData);
     }
 
@@ -43,9 +59,11 @@ class UpdateApiOrderTransaction extends RetinaApiAction
         return $rules;
     }
 
-    public function jsonResponse(Transaction $transaction)
+    public function jsonResponse(Transaction|JsonResponse $result)
     {
-        return TransactionApiResource::make($transaction)
+        if($result instanceof JsonResponse) return $result;
+
+        return TransactionApiResource::make($result)
             ->additional([
                 'message' => __('Transaction updated successfully'),
             ]);
