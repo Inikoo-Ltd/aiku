@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
+use App\Models\Traits\HasSearchableText;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -20,12 +21,23 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexProductsInOrgStock extends OrgAction
 {
+    use HasSearchableText;
+
     public function handle(OrgStock $orgStock, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value);
+                $normalizedValue = $this->normalizeSearchableText($value);
+
+                // Ignore if search token is less than 2 words
+                $searchTokens = array_values(array_filter(
+                    explode(' ', trim($normalizedValue)),
+                    fn ($t) => strlen($t) >= 2
+                ));
+
+                foreach ($searchTokens as $searchToken) {
+                    $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+                }
             });
         });
 

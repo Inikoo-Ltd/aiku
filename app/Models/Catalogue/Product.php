@@ -28,6 +28,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearchableText;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
@@ -176,6 +177,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $has_live_webpage
  * @property string|null $marketplace_id
  * @property string|null $margin
+ * @property string|null $searchable_text Normalized search cache for ILIKE queries
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -251,6 +253,7 @@ class Product extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasAttachments;
+    use HasSearchableText;
 
     protected $guarded = [];
 
@@ -319,6 +322,19 @@ class Product extends Model implements Auditable, HasMedia
         'auto_assign_status',
         'is_main',
     ];
+
+    // Needs to be present. This is to know which column the search blob would be taken it's value from
+    protected array $searchable_columns = [
+        'code',
+        'name',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function ($model) {
+            $model->syncSearchableText();
+        });
+    }
 
     public function getRouteKeyName(): string
     {

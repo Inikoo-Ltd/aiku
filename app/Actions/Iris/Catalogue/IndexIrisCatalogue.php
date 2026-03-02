@@ -17,6 +17,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Traits\HasSearchableText;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -26,6 +27,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexIrisCatalogue extends IrisAction
 {
+    use HasSearchableText;
+
     private function queryForCollection()
     {
         $queryBuilder = QueryBuilder::for(Collection::class)
@@ -184,8 +187,22 @@ class IndexIrisCatalogue extends IrisAction
             };
 
             $query->where(function ($query) use ($value, $tableName) {
-                $query->whereAnyWordStartWith("{$tableName}.name", $value)
-                    ->orWhereStartWith("{$tableName}.slug", $value);
+                if ($tableName == 'products') {
+                    $normalizedValue = $this->normalizeSearchableText($value);
+
+                    // Ignore if search token is less than 2 words
+                    $searchTokens = array_values(array_filter(
+                        explode(' ', trim($normalizedValue)),
+                        fn ($t) => strlen($t) >= 2
+                    ));
+
+                    foreach ($searchTokens as $searchToken) {
+                        $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+                    }
+                } else {
+                    $query->whereAnyWordStartWith("{$tableName}.name", $value)
+                        ->orWhereStartWith("{$tableName}.slug", $value);
+                }
             });
         });
 

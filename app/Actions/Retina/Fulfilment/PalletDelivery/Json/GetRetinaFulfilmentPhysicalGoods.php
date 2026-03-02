@@ -14,6 +14,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
+use App\Models\Traits\HasSearchableText;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -22,16 +23,25 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetRetinaFulfilmentPhysicalGoods extends RetinaAction
 {
+    use HasSearchableText;
+
     public function handle(Fulfilment $parent, PalletDelivery|PalletReturn $scope): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value);
+                $normalizedValue = $this->normalizeSearchableText($value);
+
+                // Ignore if search token is less than 2 words
+                $searchTokens = array_values(array_filter(
+                    explode(' ', trim($normalizedValue)),
+                    fn ($t) => strlen($t) >= 2
+                ));
+
+                foreach ($searchTokens as $searchToken) {
+                    $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+                }
             });
         });
-
-
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.shop_id', $parent->shop_id);
