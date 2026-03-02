@@ -49,7 +49,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::patch('trolleys', SyncDeliveryNoteTrolleys::class)->name('trolleys.sync');
 
-    Route::patch('attach-trolley/{trolley:id}', AttachTrolleyToDeliveryNote::class)->name('trolleys.attach');
+    Route::patch('attach-trolley/{trolley:id}', AttachTrolleyToDeliveryNote::class)->name('trolleys.attach')->withoutScopedBindings();
     Route::patch('detach-trolley/{trolley:id}', DetachTrolleyFromDeliveryNote::class)->name('trolleys.detach');
 
 
