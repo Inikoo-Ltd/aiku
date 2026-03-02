@@ -197,7 +197,6 @@ class StoreLeave extends OrgAction
             ],
             [
                 'annual_days'  => 14,
-                'medical_days' => 14,
                 'unpaid_days'  => 0,
             ]
         );
