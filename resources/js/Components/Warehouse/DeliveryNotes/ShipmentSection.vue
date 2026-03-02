@@ -149,7 +149,7 @@ const onPrintShipment = async (ship) => {
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false)
 const isLoadingData = ref<string | boolean>(false)
-const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "", shipment_cost: null, })
+const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "", cost: null, })
 const isModalShipment = ref(false)
 const optionShippingList = ref([])
 const optionsCreateLabel = ref([])
@@ -184,7 +184,7 @@ const onSubmitShipment = () => {
 		.transform((data) => ({
 			shipper_id: data.shipping_id?.id,
 			tracking: data.shipping_id?.api_shipper ? undefined : data.tracking_number,
-			shipment_cost: data.shipment_cost
+			cost: data.cost
 		}))
 		.post(
 			route(props.shipments_routes.submit_route.name, {
@@ -720,8 +720,8 @@ const onCopyDataCustomer = (field: string) => {
 					<div v-if="formTrackingNumber.shipping_id && external_shop?.engine_value === 'faire'" class="mt-3">
 						<span class="text-xs px-1 my-2">{{ trans("Shipment cost") }}: </span>
 						<InputNumber
-							v-model="formTrackingNumber.shipment_cost"
-							@input="(e) => formTrackingNumber.shipment_cost = e?.value || 0"
+							v-model="formTrackingNumber.cost"
+							@input="(e) => formTrackingNumber.cost = e?.value || 0"
 							inputId="currency-input"
 							mode="currency"
 							:currency="currencyCode"
@@ -731,9 +731,9 @@ const onCopyDataCustomer = (field: string) => {
 							fluid
 						/>
 						<p
-							v-if="get(formTrackingNumber, ['errors', 'shipment_cost'])"
+							v-if="get(formTrackingNumber, ['errors', 'cost'])"
 							class="mt-2 text-sm text-red-600">
-							{{ formTrackingNumber.errors.shipment_cost }}
+							{{ formTrackingNumber.errors.cost }}
 						</p>
 					</div>
 
