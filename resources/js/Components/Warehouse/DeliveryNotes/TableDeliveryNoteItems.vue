@@ -30,7 +30,6 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
-
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic);
 
 
@@ -730,6 +729,20 @@ const submitTransactionAsWaiting = () => {
                 </div>
             </div>
 
+        </template>
+
+         <template #cell(action)="{ item: item }">
+                <template class="" v-if="state === 'packing' && layout.app.environment === 'local' && props.shop_type === 'b2b'">
+                    <ButtonWithLink
+                        type="secondary"
+                        tooltip="pack order"
+                        icon="fal fa-hand-holding-box"
+                        label="Packing order"
+                        :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                        :bindToLink="{preserveScroll: true}"
+                        :routeTarget="item.packing_route"
+                    />
+                </template>
         </template>
     </Table>
 
