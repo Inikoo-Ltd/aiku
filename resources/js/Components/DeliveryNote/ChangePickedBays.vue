@@ -158,7 +158,7 @@ const submitSelectBay = (bayId?: number|null) => {
 
             <Button
                 @click="() => submitSelectBay(null)"
-                :label="trans('Unassign Trolley')"
+                :label="trans('Unassign picked bay')"
                 full
                 iconRight="fal fa-trash-undo-alt"
                 class="mt-4"
