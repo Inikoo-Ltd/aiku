@@ -7,9 +7,8 @@
  * Copyright: 2026
 */
 
-namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
+namespace App\Actions\Dispatching\PickedBay;
 
-use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
