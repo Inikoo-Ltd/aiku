@@ -18,9 +18,7 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
-use App\Http\Resources\Dispatching\DashboardDispatchHubResource;
-use App\Http\Resources\Dispatching\DashboardHeaderDispatchHubResource;
-use App\Http\Resources\Dispatching\DashboardTotalDispatchHubResource;
+use App\Http\Resources\Dispatching\DashboardDispatchHubDashboardResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -76,24 +74,7 @@ class ShowDispatchHub extends OrgAction
                     'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                     'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                 ],
-                'blocks'      => [
-                    'id'          => 'dispatch_hub_tab',
-                    'type'        => 'table',
-                    'current_tab' => 'dispatch_hub',
-                    'tabs'        => [
-                        'dispatch_hub' => [
-                            'title' => __('Delivery Notes'),
-                            'icon'  => ['fal', 'fa-truck']
-                        ],
-                    ],
-                    'tables'      => [
-                        'dispatch_hub' => [
-                            'header' => json_decode(DashboardHeaderDispatchHubResource::make($warehouse)->toJson(), true),
-                            'body'   => json_decode(DashboardDispatchHubResource::collection(GetDispatchHubShowcase::make()->handle($warehouse))->toJson(), true),
-                            'totals' => json_decode(DashboardTotalDispatchHubResource::make(GetDispatchHubShowcase::make()->handle($warehouse))->toJson(), true),
-                        ],
-                    ],
-                ],
+                'dashboard'   => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
             ]
         );
     }

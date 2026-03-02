@@ -1,5 +1,11 @@
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Thu, 23 Feb 2023 14:32:57 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2023, Raul A Perusquia Flores
+  -->
+
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import { computed } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -8,261 +14,206 @@ import {
     faList,
     faCheck,
     faBox,
-    faCheckCircle
+    faCheckCircle,
+    faBoxOpen,
+    faHourglassStart,
+    faAllergies,
+    faChartLine,
 } from "@fal"
 
-library.add(faClock, faList, faCheck, faBox, faCheckCircle)
+library.add(faClock, faList, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
+
+interface RouteTarget {
+    name: string
+    parameters?: object
+}
+
+interface MetricData {
+    value: number | null
+    route_target?: RouteTarget
+}
+
+interface MetricItem {
+    key: string
+    label: string
+    icon?: string[]
+}
+
+interface Metric {
+    key: string
+    label: string
+    type: string
+    icon?: string[]
+    items?: MetricItem[]
+}
+
+interface DashboardData {
+    dimension: {
+        key: string
+        label: string
+        items: { key: string; label: string }[]
+    }
+    metrics: Metric[]
+    data: {
+        [rowKey: string]: {
+            [metricKey: string]: MetricData
+        }
+    }
+    row_totals: {
+        [rowKey: string]: { value: number }
+    }
+    totals: {
+        [metricKey: string]: { value: number }
+    }
+    grand_total: {
+        value: number
+        icon?: string[]
+    }
+}
 
 const props = defineProps<{
-    data: any
+    tab: string
+    data: DashboardData
 }>()
 
-const dashboard = ref({
-    dimension: {
-        key: "channel",
-        label: "Channel",
-        items: [
-            { key: "fulfilment", label: "Fulfilment" },
-            { key: "wholesale", label: "Wholesale" },
-        ]
-    },
-
-    metrics: [
-        {
-            key: "todo",
-            label: "To do",
-            type: "stat",
-            icon: ["fal", "fa-clock"]
-        },
-        {
-            key: "warehouse",
-            label: "Warehouse",
-            type: "group",
-            items: [
-                { key: "picking", label: "Picking", icon: ["fal", "fa-list"] },
-                { key: "packed", label: "Packed", icon: ["fal", "fa-box"] },
-                { key: "packing", label: "Packing", icon: ["fal", "fa-check"] }
-            ]
-        },
-        {
-            key: "finalised",
-            label: "Finalised",
-            type: "stat",
-            icon: ["fal", "fa-check-circle"]
-        }
-    ],
-
-    data: {
-        fulfilment: {
-            todo: {
-                value: 2,
-                route_target: {
-                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
-                    "parameters": {
-                        "organisation": "sk",
-                        "warehouse": "cpt"
-                    }
-                }
-            },
-            picking: {
-                value: 5, route_target: {
-                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
-                    "parameters": {
-                        "organisation": "sk",
-                        "warehouse": "cpt"
-                    }
-                }
-            },
-            packed: {
-                value: 3, route_target: {
-                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
-                    "parameters": {
-                        "organisation": "sk",
-                        "warehouse": "cpt"
-                    }
-                }
-            },
-            packing: {
-                value: 1, route_target: {
-                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
-                    "parameters": {
-                        "organisation": "sk",
-                        "warehouse": "cpt"
-                    }
-                }
-            },
-            finalised: {
-                value: 8, route_target: {
-                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
-                    "parameters": {
-                        "organisation": "sk",
-                        "warehouse": "cpt"
-                    }
-                }
-            }
-        },
-        wholesale: {
-            todo: {
-                value: 1, route_target: {
-                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
-                    "parameters": {
-                        "organisation": "sk",
-                        "warehouse": "cpt"
-                    }
-                }
-            },
-            packing: {
-                value: 0, route_target: {
-                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
-                    "parameters": {
-                        "organisation": "sk",
-                        "warehouse": "cpt"
-                    }
-                }
-            },
-            finalised: {
-                value: 4, route_target: {
-                    "name": "grp.org.warehouses.show.dispatching.pallet-returns.picking.index",
-                    "parameters": {
-                        "organisation": "sk",
-                        "warehouse": "cpt"
-                    }
-                }
-            }
-        },
-    },
-
-    row_totals: {
-        fulfilment: { value: 19 },
-        wholesale: { value: 8 }
-    },
-
-    totals: {
-        todo: { value: 3 },
-        picking: { value: 7 },
-        packed: { value: 4 },
-        packing: { value: 1 },
-        finalised: { value: 12 }
-    },
-
-    grand_total: { value: 27, icon: ["fal", "fa-chart-line"] }
-})
-
-const activeData = computed(() => dashboard.value)
-
 const rows = computed(() => {
-    if (!activeData.value.dimension) {
+    if (!props.data?.dimension) {
         return [{ key: "_global", label: null }]
     }
-    return activeData.value.dimension.items
+    return props.data.dimension.items
 })
 
-const getSafeRoute = (routeTarget: any) => {
+const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
     if (!routeTarget) return null
     try {
         if (route().has(routeTarget.name)) {
-            return route(routeTarget.name, routeTarget.parameters ?? {})
+            return route(routeTarget.name, (routeTarget.parameters ?? {}) as Record<string, string>)
         }
     } catch {
         return null
     }
-
     return null
 }
 </script>
 
 <template>
-    <div class="overflow-x-auto">
-        <div class="flex gap-4 min-w-max m-2">
+    <div class="overflow-x-auto bg-white px-4 pb-4">
+        <div class="flex gap-3 min-w-max pt-3">
 
             <!-- ================= DIMENSION COLUMN ================= -->
-            <div v-if="activeData.dimension"
-                class="min-w-[200px] bg-white border rounded-xl flex flex-col text-center border-gray-300">
-                <div class="h-16 flex items-center justify-center text-xs font-semibold">
-                    {{ activeData.dimension.label }}
+            <div
+                v-if="data?.dimension"
+                class="min-w-[160px] flex flex-col rounded-xl border border-gray-200"
+            >
+                <div class="h-14 flex items-center justify-center text-xs font-semibold text-gray-600 border-b border-gray-200 px-4">
+                    {{ data.dimension.label }}
                 </div>
 
-                <div v-for="row in rows" :key="row.key" class="h-12 flex items-center justify-center text-sm">
+                <div
+                    v-for="row in rows"
+                    :key="row.key"
+                    class="h-11 flex items-center justify-center text-sm text-gray-500 border-b border-gray-100 last:border-b-0"
+                >
                     {{ row.label }}
                 </div>
 
-                <div class="h-14 flex items-center justify-center font-semibold">
+                <div class="h-12 flex items-center justify-center text-sm font-semibold text-gray-700 border-t border-gray-200">
                     Total
                 </div>
             </div>
 
             <!-- ================= METRICS ================= -->
-            <template v-for="metric in activeData.metrics" :key="metric.key">
+            <template v-for="metric in data?.metrics" :key="metric.key">
 
                 <!-- SINGLE METRIC -->
-                <div v-if="metric.type !== 'group'"
-                    class="min-w-[200px] bg-white border border-gray-300 rounded-xl flex flex-col text-center">
-                    <div class="h-16 flex flex-col items-center justify-center text-xs font-semibold gap-1">
-                        <span>{{ metric.label }}</span>
-                        <FontAwesomeIcon v-if="metric.icon" :icon="metric.icon" class="text-lg" />
+                <div
+                    v-if="metric.type !== 'group'"
+                    class="min-w-[140px] flex flex-col rounded-xl border border-gray-200"
+                >
+                    <div class="h-14 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
+                        <span class="text-xs font-semibold text-gray-600">{{ metric.label }}</span>
+                        <FontAwesomeIcon v-if="metric.icon" :icon="metric.icon" class="text-base text-gray-400" />
                     </div>
 
                     <template v-for="row in rows" :key="row.key">
                         <component
-                            :is="getSafeRoute(activeData.data[row.key]?.[metric.key]?.route_target) ? Link : 'div'"
-                            :href="getSafeRoute(activeData.data[row.key]?.[metric.key]?.route_target)" :class="[
-                                'h-12 flex items-center justify-center text-lg font-medium',
-                                getSafeRoute(activeData.data[row.key]?.[metric.key]?.route_target)
-                                    ? 'hover:underline cursor-pointer'
+                            :is="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? Link : 'div'"
+                            :href="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ?? undefined"
+                            :class="[
+                                'h-11 flex items-center justify-center text-base text-gray-500 border-b border-gray-100 last:border-b-0',
+                                getSafeRoute(data.data[row.key]?.[metric.key]?.route_target)
+                                    ? 'hover:text-indigo-600 hover:underline cursor-pointer'
                                     : ''
-                            ]">
-                            {{ activeData.data[row.key]?.[metric.key]?.value ?? '-' }}
+                            ]"
+                        >
+                            {{ data.data[row.key]?.[metric.key]?.value ?? '-' }}
                         </component>
                     </template>
 
-                    <div class="h-14 flex items-center justify-center font-semibold">
-                        {{ activeData.totals[metric.key]?.value ?? '-' }}
+                    <div class="h-12 flex items-center justify-center text-sm font-semibold text-gray-700 border-t border-gray-200">
+                        {{ data.totals[metric.key]?.value ?? '-' }}
                     </div>
                 </div>
 
                 <!-- GROUP METRIC -->
-                <div v-else class="bg-white border border-gray-300 rounded-xl flex">
-                    <div v-for="item in metric.items" :key="item.key" class="min-w-[180px] flex flex-col text-center">
-                        <div class="h-16 flex flex-col items-center justify-center text-xs font-semibold gap-1">
-                            <span>{{ item.label }}</span>
-                            <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="text-lg" />
+                <div
+                    v-else
+                    class="flex rounded-xl border border-gray-200 overflow-hidden"
+                >
+                    <div
+                        v-for="(item, itemIndex) in metric.items"
+                        :key="item.key"
+                        class="min-w-[140px] flex flex-col"
+                        :class="itemIndex < (metric.items?.length ?? 0) - 1 ? 'border-r border-gray-200' : ''"
+                    >
+                        <div class="h-14 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
+                            <span class="text-xs font-semibold text-gray-600">{{ item.label }}</span>
+                            <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="text-base text-gray-400" />
                         </div>
 
                         <template v-for="row in rows" :key="row.key + '-' + item.key">
                             <component
-                                :is="getSafeRoute(activeData.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
-                                :href="getSafeRoute(activeData.data[row.key]?.[item.key]?.route_target)" :class="[
-                                    'h-12 flex items-center justify-center text-lg font-medium',
-                                    getSafeRoute(activeData.data[row.key]?.[item.key]?.route_target)
-                                        ? 'hover:underline cursor-pointer'
+                                :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
+                                :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined"
+                                :class="[
+                                    'h-11 flex items-center justify-center text-base text-gray-500 border-b border-gray-100 last:border-b-0',
+                                    getSafeRoute(data.data[row.key]?.[item.key]?.route_target)
+                                        ? 'hover:text-indigo-600 hover:underline cursor-pointer'
                                         : ''
-                                ]">
-                                {{ activeData.data[row.key]?.[item.key]?.value ?? '-' }}
+                                ]"
+                            >
+                                {{ data.data[row.key]?.[item.key]?.value ?? '-' }}
                             </component>
                         </template>
 
-                        <div class="h-14 flex items-center justify-center font-semibold">
-                            {{ activeData.totals[item.key]?.value ?? '-' }}
+                        <div class="h-12 flex items-center justify-center text-sm font-semibold text-gray-700 border-t border-gray-200">
+                            {{ data.totals[item.key]?.value ?? '-' }}
                         </div>
                     </div>
                 </div>
             </template>
 
-            <!-- ================= ROW TOTAL BOX (FROM JSON) ================= -->
-            <div class="min-w-[200px] bg-white border border-gray-300 rounded-xl flex flex-col text-center">
-                <div class="h-16 flex flex-col items-center justify-center text-xs font-semibold gap-1">
-                    <span>Total</span>
-                    <FontAwesomeIcon v-if="activeData.grand_total?.icon" :icon="activeData.grand_total?.icon"
-                        class="text-lg" />
+            <!-- ================= ROW TOTAL BOX ================= -->
+            <div class="min-w-[140px] flex flex-col rounded-xl border border-gray-200">
+                <div class="h-14 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
+                    <span class="text-xs font-semibold text-gray-600">Total</span>
+                    <FontAwesomeIcon
+                        v-if="data?.grand_total?.icon"
+                        :icon="data.grand_total.icon"
+                        class="text-base text-gray-400"
+                    />
                 </div>
 
-                <div v-for="row in rows" :key="row.key"
-                    class="h-12 flex items-center justify-center text-lg font-semibold">
-                    {{ activeData.row_totals[row.key]?.value ?? '-' }}
+                <div
+                    v-for="row in rows"
+                    :key="row.key"
+                    class="h-11 flex items-center justify-center text-base font-semibold text-gray-600 border-b border-gray-100 last:border-b-0"
+                >
+                    {{ data.row_totals[row.key]?.value ?? '-' }}
                 </div>
 
-                <div class="h-14 flex items-center justify-center font-bold">
-                    {{ activeData.grand_total?.value ?? '-' }}
+                <div class="h-12 flex items-center justify-center text-sm font-bold text-gray-700 border-t border-gray-200">
+                    {{ data.grand_total?.value ?? '-' }}
                 </div>
             </div>
 

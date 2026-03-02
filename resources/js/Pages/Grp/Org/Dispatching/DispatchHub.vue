@@ -27,25 +27,42 @@ const props = defineProps<{
         navigation: {}
     }
     dashboard: {
-        [key: string]: {
+        dimension: {
+            key: string
             label: string
-            count: number
-            cases: {
-                key: string
-                label: string
-                value?: number
-                icon: string | string[]
-                class?: string
-                route?: {
-                    name: string
-                    parameters?: object
+            items: { key: string; label: string }[]
+        }
+        metrics: {
+            key: string
+            label: string
+            type: string
+            icon?: string[]
+            items?: { key: string; label: string; icon?: string[] }[]
+        }[]
+        data: {
+            [rowKey: string]: {
+                [metricKey: string]: {
+                    value: number | null
+                    route_target?: {
+                        name: string
+                        parameters?: object
+                    }
                 }
-            }[]
+            }
+        }
+        row_totals: {
+            [rowKey: string]: { value: number }
+        }
+        totals: {
+            [metricKey: string]: { value: number }
+        }
+        grand_total: {
+            value: number
+            icon?: string[]
         }
     }
     intervals: any
     settings: any
-    blocks: any
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -58,22 +75,11 @@ const component = computed(() => {
 
     return components[currentTab.value];
 });
-console.log("props dispatch", props)
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :tab="currentTab" :data="blocks"></component>
-    <!-- <DashboardTable
-        v-if="blocks"
-    	class="border-t border-gray-200"
-    	:idTable="blocks.id"
-    	:tableData="blocks"
-        :intervals="intervals"
-        :settings="settings"
-        :currentTab="blocks.current_tab"
-    /> -->
+    <component :is="component" :tab="currentTab" :data="dashboard"></component>
 </template>
