@@ -24,7 +24,7 @@ import ConfirmDialog from "primevue/confirmdialog"
 import { faExclamationCircle } from "@fal"
 import { useConfirm } from "primevue/useconfirm"
 import { twBreakPoint } from "@/Composables/useWindowSize"
-import { RadioButton } from "primevue"
+import { InputNumber, RadioButton } from "primevue"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -75,6 +75,10 @@ const props = defineProps<{
 		status: boolean
 		route_view_packing_slip: routeType
 	}
+	currencyCode?: string
+	external_shop?: {
+		engine_value: string
+	} | null
 }>()
 
 const emits = defineEmits<{
@@ -145,7 +149,7 @@ const onPrintShipment = async (ship) => {
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false)
 const isLoadingData = ref<string | boolean>(false)
-const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
+const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "", shipment_cost: null, })
 const isModalShipment = ref(false)
 const optionShippingList = ref([])
 const optionsCreateLabel = ref([])
@@ -180,6 +184,7 @@ const onSubmitShipment = () => {
 		.transform((data) => ({
 			shipper_id: data.shipping_id?.id,
 			tracking: data.shipping_id?.api_shipper ? undefined : data.tracking_number,
+			shipment_cost: data.shipment_cost
 		}))
 		.post(
 			route(props.shipments_routes.submit_route.name, {
@@ -708,6 +713,27 @@ const onCopyDataCustomer = (field: string) => {
 							v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
 							class="mt-2 text-sm text-red-600">
 							{{ formTrackingNumber.errors.tracking_number }}
+						</p>
+					</div>
+
+					<!-- Shipment Cost -->
+					<div v-if="formTrackingNumber.shipping_id && external_shop?.engine_value === 'faire'" class="mt-3">
+						<span class="text-xs px-1 my-2">{{ trans("Shipment cost") }}: </span>
+						<InputNumber
+							v-model="formTrackingNumber.shipment_cost"
+							@input="(e) => formTrackingNumber.shipment_cost = e?.value || 0"
+							inputId="currency-input"
+							mode="currency"
+							:currency="currencyCode"
+							:maxFractionDigits="2"
+							locale="en-US"
+							:min="0"
+							fluid
+						/>
+						<p
+							v-if="get(formTrackingNumber, ['errors', 'shipment_cost'])"
+							class="mt-2 text-sm text-red-600">
+							{{ formTrackingNumber.errors.shipment_cost }}
 						</p>
 					</div>
 

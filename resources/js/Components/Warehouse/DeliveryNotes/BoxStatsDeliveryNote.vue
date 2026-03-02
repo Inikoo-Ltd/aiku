@@ -42,6 +42,10 @@ const props = defineProps<{
         is_collection?: boolean
         is_replacement?: boolean
         is_create_replacement?: boolean
+        currency_code: string
+        external_shop: {
+
+        } | null
         delivery_note: {
             reference?: string
             route: routeType
@@ -548,6 +552,8 @@ const updateCollection = async (e: Event) => {
                                 :shipments_routes="boxStats.shipments_routes"
                                 :address="boxStats.address"
                                 :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
+                                :currencyCode="boxStats?.currency_code"
+                                :external_shop="boxStats?.external_shop"
                             />
                         </dd>
                     </dl>
