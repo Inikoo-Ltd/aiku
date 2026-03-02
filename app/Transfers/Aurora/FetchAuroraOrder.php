@@ -33,9 +33,9 @@ class FetchAuroraOrder extends FetchAurora
         }
 
 
-        $forceFetch=false;
-        if($this->auroraModelData->{'force_fetch'}=='Yes'){
-            $forceFetch=true;
+        $forceFetch = false;
+        if ($this->auroraModelData->{'force_fetch'} == 'Yes') {
+            $forceFetch = true;
         }
 
         if ($shop->is_aiku && !$forceFetch) {

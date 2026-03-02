@@ -1,7 +1,7 @@
 name: Backend Tests With Coverage
 on:
   push:
-    branches: [ "production" ]
+    branches: [ "production_stop" ]
 
 env:
   HOME: /home/aiku_test

@@ -45,7 +45,7 @@ class StoreBulkNewProductToCurrentWooCommerce extends OrgAction
 
         $needCheckConnection = false;
         $result = $wooCommerceUser->checkConnection();
-        if(!$result) {
+        if (!$result) {
             $needCheckConnection = true;
         }
 

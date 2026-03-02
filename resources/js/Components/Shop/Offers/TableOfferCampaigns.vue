@@ -34,8 +34,8 @@ function campaignRoute(campaign: {}) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(state)="{ item: campaign }">
-            <Icon :data="campaign.state_icon" />
+        <template #cell(status)="{ item: campaign }">
+            <Icon :data="campaign.status_icon" />
         </template>
 
         <template #cell(code)="{ item: campaign }">

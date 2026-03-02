@@ -27,12 +27,12 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 
-class GetFaireOrders extends OrgAction
+class GetFaireOrdersInShop extends OrgAction
 {
     /**
      * @throws \Throwable
      */
-    public function handle(Shop $shop): void
+    public function handle(Shop $shop, Command|null $command = null): void
     {
         $filters = [
             'created_at_min' => Carbon::parse('2026-02-01')->toIsoString(),
@@ -45,9 +45,9 @@ class GetFaireOrders extends OrgAction
 
 
         foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
-            $externalId = Arr::get($faireOrder, 'id');
-            $retailerId = Arr::get($faireOrder, 'retailer_id');
-            $retailer   = GetFaireRetailers::run($shop, $retailerId);
+            $externalId             = Arr::get($faireOrder, 'id');
+            $retailerId             = Arr::get($faireOrder, 'retailer_id');
+            $retailer               = GetFaireRetailers::run($shop, $retailerId);
             $transactionCommissions = Arr::get($faireOrder, 'payout_costs.commission_bps', 0) / 10000;
             $orderCommission        = Arr::get($faireOrder, 'payout_costs.commission.amount_minor', 0) / 100;
 
@@ -101,15 +101,15 @@ class GetFaireOrders extends OrgAction
                 ];
 
 
-                $tax=Arr::get($faireOrder, 'payout_costs.net_tax.amount_minor', 0);
+                $tax = Arr::get($faireOrder, 'payout_costs.net_tax.amount_minor', 0);
 
-                if($tax==0){
-                    if(IsEuropeanUnion::run($shop->organisation->country->code)){
-                        $taxCategory=TaxCategory::where('status', true)->where('type','eu_vtc')->first();
-                    }else{
-                        $taxCategory=TaxCategory::where('status', true)->where('type','outside')->first();
+                if ($tax == 0) {
+                    if (IsEuropeanUnion::run($shop->organisation->country->code)) {
+                        $taxCategory = TaxCategory::where('status', true)->where('type', 'eu_vtc')->first();
+                    } else {
+                        $taxCategory = TaxCategory::where('status', true)->where('type', 'outside')->first();
                     }
-                    $orderData['tax_category_id']=$taxCategory->id;
+                    $orderData['tax_category_id'] = $taxCategory->id;
                 }
 
                 $transactionsData = [];
@@ -121,9 +121,9 @@ class GetFaireOrders extends OrgAction
 
                     if (!$product) {
                         $errors[] = [
-                            'product_code'           => $item['sku'],
-                            'product_name'           => $item['name'],
-                            'product_marketplace_id' => $item['variant_id'],
+                            'product_code'           => Arr::get($item, 'sku', 'NO SKU'),
+                            'product_name'           => Arr::get($item, 'product_name', 'NO NAME').' '.Arr::get($item, 'variant_name', 'NO VARIANT NAME'),
+                            'product_marketplace_id' => Arr::get($item, 'variant_id', 'NO VARIANT ID'),
                             'message'                => "Product not found in catalogue"
                         ];
                         continue;
@@ -201,10 +201,14 @@ class GetFaireOrders extends OrgAction
                     }
 
                     AcceptFaireOrder::run($order);
+
+                    $command?->info('Order '.$externalId.' created');
+                } elseif ($command) {
+                    print_r($orderData);
+                    print_r($errors);
                 }
             }
         }
-        //  });
     }
 
     public function getFormattedAddress(array $address): array
@@ -223,7 +227,7 @@ class GetFaireOrders extends OrgAction
         ];
     }
 
-    public string $commandSignature = 'faire:orders {shop?}';
+    public string $commandSignature = 'faire:shop_orders {shop?}';
 
     /**
      * @throws \Throwable
@@ -232,7 +236,7 @@ class GetFaireOrders extends OrgAction
     {
         if ($command->argument('shop')) {
             $shop = Shop::where('slug', $command->argument('shop'))->first();
-            $this->handle($shop);
+            $this->handle($shop, $command);
 
             return 0;
         }
@@ -244,7 +248,7 @@ class GetFaireOrders extends OrgAction
         /** @var Shop $shop */
         foreach ($shops as $shop) {
             if (Arr::has($shop->settings, 'faire.access_token')) {
-                $this->handle($shop);
+                $this->handle($shop, $command);
             }
         }
 

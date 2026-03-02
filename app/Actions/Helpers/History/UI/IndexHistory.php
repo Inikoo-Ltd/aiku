@@ -49,7 +49,7 @@ class IndexHistory
         $queryBuilder->where('auditable_type', $this->model);
         $queryBuilder->where('event', '!=', AuditEventEnum::CUSTOMER_NOTE->value);
 
-        if($eventScopeFilter) {
+        if ($eventScopeFilter) {
             $queryBuilder->where('event', $eventScopeFilter);
         }
 
