@@ -60,7 +60,6 @@ class IndexLeaves extends OrgAction
             [
                 'group_id'     => $employee->group_id,
                 'annual_days'  => 14,
-                'medical_days' => 14,
                 'unpaid_days'  => 0,
             ]
         );
