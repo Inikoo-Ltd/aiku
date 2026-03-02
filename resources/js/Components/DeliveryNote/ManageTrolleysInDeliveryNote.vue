@@ -4,6 +4,7 @@ import ButtonSelectTrolleys from './ButtonSelectTrolleys.vue'
 import Button from '../Elements/Buttons/Button.vue'
 import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import AttachTrolleyToDeliverynote from './AttachTrolleyToDeliverynote.vue'
 
 const props = defineProps<{
     trolleys: {
@@ -33,6 +34,7 @@ const props = defineProps<{
                 <div v-for="trolley in trolleys" class="bg-black/10 rounded-sm px-0.5 flex items-center">
                     {{ trolley.name }}
 
+                    <!-- Section: detach Trolley -->
                     <ModalConfirmationDelete
                         :title="trans('Are you sure you want to unselect Trolley :trolleyName ?', { trolleyName: trolley.name})"
                         :description="trans('The trolley will unselected from this Delivery. You can add it again if you want.')"
@@ -59,21 +61,19 @@ const props = defineProps<{
         </dl>
 
         <template v-if="['handling', 'picked'].includes(deliveryNote.state)">
-            <!-- <EditTrolley
-                v-if="trolleys?.length"
+            <AttachTrolleyToDeliverynote
                 :warehouse="warehouse"
                 :deliveryNote="deliveryNote"
-            /> -->
+            />
             
-            <ButtonSelectTrolleys
-                v-if="!trolleys?.length"
+            <!-- <ButtonSelectTrolleys
                 :warehouse="warehouse"
                 :deliveryNote="deliveryNote"
             >
                 <template #default="{ setOpenModal }">
-                    <Button @click="setOpenModal()" type="dashed" :label="trans('Select trolley')" size="xxs" />
+                    <Button @click="setOpenModal()" type="dashed" :label="trans('Attach trolley')" size="xxs" />
                 </template>
-            </ButtonSelectTrolleys>
+            </ButtonSelectTrolleys> -->
         </template>
     </div>
 </template>
