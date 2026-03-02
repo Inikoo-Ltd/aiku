@@ -20,6 +20,17 @@ trait WithNotificationSubNavigation
                     'tooltip' => __('User settings'),
                 ],
             ],
+            [
+                'label'    => __('Guest settings'),
+                'route'    => [
+                    'name'       => 'grp.sysadmin.notification-settings.guests',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-user-alien'],
+                    'tooltip' => __('Guest settings'),
+                ],
+            ],
         ];
     }
 }
