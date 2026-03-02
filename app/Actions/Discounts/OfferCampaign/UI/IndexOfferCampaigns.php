@@ -62,7 +62,7 @@ class IndexOfferCampaigns extends OrgAction
             'offer_campaigns.code',
             'offer_campaigns.name',
             'offer_campaigns.type',
-            'offer_campaigns.offers_state',
+            'offer_campaigns.state',
             'offer_campaigns.status',
             'shops.slug as shop_slug',
             'shops.name as shop_name',
@@ -114,7 +114,6 @@ class IndexOfferCampaigns extends OrgAction
             $emptyStateData['description'] = __("There are no offer campaigns in this shop");
 
             $table->withGlobalSearch();
-            $table->betweenDates(['date']);
             $table->withEmptyState($emptyStateData);
             $table->withModelOperations($modelOperations);
 
