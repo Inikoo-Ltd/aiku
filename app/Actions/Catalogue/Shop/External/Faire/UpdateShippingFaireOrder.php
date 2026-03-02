@@ -3,44 +3,53 @@
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
-use App\Models\Catalogue\Shop;
-use App\Models\Ordering\Order;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Console\Command;
 use Sentry;
 
 class UpdateShippingFaireOrder extends OrgAction
 {
-    public function handle(Shop $shop, Order $order): array
+    public function handle(DeliveryNote $deliveryNote, Command|null $command = null): void
     {
-        try {
-            $shipments = [];
+        $order = $deliveryNote->orders()->first();
+        if ($order && $order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external
+            && app()->isProduction()
+        ) {
+            try {
+                $shipments = [];
 
-            $deliveryNote = $order->deliveryNotes->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
 
+                foreach ($deliveryNote->shipments as $shipment) {
+                    $shipments[] = [
+                        'carrier'          => $shipment->shipper->trade_as,
+                        'tracking_code'    => $shipment->tracking,
+                        'maker_cost_cents' => $shipment->cost ? (int)$shipment->cost * 100 : 0
+                    ];
+                }
 
-            foreach ($deliveryNote->shipments as $shipment) {
-                $shipments[] = [
-                    'shipping_type' => 'SHIP_ON_YOUR_OWN',
-                    'order_id'      => $order->external_id,
-                    'carrier'       => $shipment->shipper?->name,
-                    'tracking_code' => $shipment->tracking
-                ];
+                $result = $order->shop->updateShippingFaireOrder($order->external_id, [
+                    'shipments' => $shipments
+                ]);
+                if ($command) {
+                    $command->info('Order '.$order->external_id.' updated');
+                    print_r($result);
+                }
+            } catch (\Exception $e) {
+                $command?->error('Order '.$order->external_id.' not updated '.$e->getMessage());
+                Sentry::captureException($e);
             }
-
-
-            return $shop->updateShippingFaireOrder($order->external_id, [
-                'shipments' => $shipments
-            ]);
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-
-            return [];
         }
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'shop:update_shipping_faire_order {delivery_note}';
     }
 
     public function asCommand(Command $command): void
     {
-        $this->handle(Shop::where('slug', $command->argument('shop'))->first(), Order::where('slug', $command->argument('order'))->first());
+        $deliveryNote = DeliveryNote::where('slug', $command->argument('delivery_note'))->firstOrFail();
+        $this->handle($deliveryNote);
     }
 }
