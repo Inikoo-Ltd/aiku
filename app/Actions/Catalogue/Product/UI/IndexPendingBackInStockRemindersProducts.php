@@ -175,7 +175,7 @@ class IndexPendingBackInStockRemindersProducts extends OrgAction
         return match ($routeName) {
             'grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.index', =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,

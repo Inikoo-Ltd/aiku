@@ -45,8 +45,10 @@ trait HasSearchableText
             ->map(fn ($attribute) => $this->{$attribute} ?? null)
             ->all();
 
-        $searchableText = $this->buildSearchableText($values);
-        $searchableText = trim(preg_replace('/\s+/', ' ', $searchableText));
-        $this->searchable_text = $searchableText;
+        // I add the empty space ' ' at start, do not remove it please
+        // Since we search the query like so
+        // $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+        // Otherwise, if searchable_text looking like "ob 195a floralna maslena gorelka zielta", the ob won't be trackable.
+        $this->searchable_text = ' '.trim(preg_replace('/\s+/', ' ', $this->buildSearchableText($values)));;
     }
 }
