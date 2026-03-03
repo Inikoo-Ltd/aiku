@@ -9,20 +9,20 @@ const SliderSquare = defineAsyncComponent(() => import("@/Components/Banners/Sli
 const SliderLandscape = defineAsyncComponent(() => import("@/Components/Banners/Slider/SliderLandscape.vue"));
 
 const props = defineProps<{
-    fieldValue: {
-        id?: string
-        compiled_layout?: any
-        banner_id : number
-        banner_responsive : {
-            id : number,
-            slug : string,
-            name : string
-        }
-        container: {
-            properties: any
-        }
+  fieldValue: {
+    id?: string
+    compiled_layout?: any
+    banner_id: number
+    banner_responsive: {
+      id: number,
+      slug: string,
+      name: string
     }
-    screenType: "mobile" | "tablet" | "desktop"
+    container: {
+      properties: any
+    }
+  }
+  screenType: "mobile" | "tablet" | "desktop"
 }>();
 
 const layout = inject("layout");
@@ -30,20 +30,24 @@ const data = ref<any>(null);
 const isLoading = ref(false);
 
 const activeId = computed(() => {
-	const responsive = props.fieldValue?.banner_responsive;
+  const responsive = props.fieldValue?.banner_responsive;
 
-	if (!responsive) {
-		return props.fieldValue?.banner_id ?? null;
-	}
+  if (!responsive) {
+    return props.fieldValue?.banner_id ?? null;
+  }
 
-	const current = responsive?.[props.screenType]?.id;
+  const current = responsive?.[props.screenType]?.id;
 
-	if (!current && props.screenType !== "desktop") {
-		return responsive?.desktop?.id ?? null;
-	}
+  if (!current && props.screenType !== "desktop") {
+    return responsive?.desktop?.id ?? null;
+  }
 
-	return current ?? null;
+  return current ?? null;
 });
+
+const bannerRatio = computed(() => {
+  return data.value?.ratio ?? '4/1'
+})
 
 const getDataBanner = async (): Promise<void> => {
   if (typeof window === "undefined") return;
@@ -64,9 +68,9 @@ const getDataBanner = async (): Promise<void> => {
 
     data.value = {
       ...response.data,
-      compiled_layout : {
+      compiled_layout: {
         ...response.data.compiled_layout,
-        components : components
+        components: components
       }
     }
   } catch (error: any) {
@@ -83,46 +87,65 @@ const getDataBanner = async (): Promise<void> => {
 
 
 watch(
-	activeId,
-	(newId, oldId) => {
-		if (newId !== oldId) {
-			getDataBanner();
-		}
-	},
-	{ immediate: true }
+  activeId,
+  (newId, oldId) => {
+    if (newId !== oldId) {
+      getDataBanner();
+    }
+  },
+  { immediate: true }
 );
 
+const bannerDimensionStyle = computed(() => {
+  const styles = getStyles(
+    props.fieldValue?.banner_dimension?.properties,
+    props.screenType,
+    false
+  ) || {}
+
+  return {
+    width: styles.width ?? '100%',
+    height: styles.height ?? '100%'
+  }
+})
+
 onMounted(() => {
-	if (activeId.value) {
-		getDataBanner();
-	}
+  if (activeId.value) {
+    getDataBanner();
+  }
 });
+
+
 </script>
 
 <template>
-    <div :id="fieldValue?.id ? fieldValue?.id : 'banner'" component="banner">
-        <div v-if="isLoading" class="flex justify-center h-36 items-center">
-			<LoadingIcon class="text-4xl" />
-		</div>
-        <div
-            :style="{
-                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-                ...getStyles(fieldValue.container?.properties, screenType)
-            }"
-        >
-            <SliderLandscape
-                v-if="data?.compiled_layout?.type === 'landscape'"
-                :data="data.compiled_layout"
-                :production="true"
-                :view="screenType"
-            />
 
-            <SliderSquare
-                v-else-if="data?.compiled_layout?.type === 'square'"
-                :data="data.compiled_layout"
-                :production="true"
-                :view="screenType"
-            />
-        </div>
+  <div :id="fieldValue?.id ? fieldValue?.id : 'banner'" component="banner">
+    <div v-if="isLoading" class="flex justify-center h-36 items-center">
+      <LoadingIcon class="text-4xl" />
     </div>
+
+    <section v-else-if="data" class="relative mx-auto" :style="bannerDimensionStyle">
+      <div :style="{
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        ...getStyles(fieldValue.container?.properties, screenType)
+      }">
+
+        <div v-if="data?.compiled_layout?.type === 'landscape'" :class="[
+					'mx-auto',
+					bannerRatio !== '4/1' && 'max-w-full sm:max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-[1600px]'
+				]" :style="bannerDimensionStyle">
+          <SliderLandscape :data="data.compiled_layout" :production="true" :view="screenType" :ratio="bannerRatio" />
+        </div>
+
+        <SliderSquare v-else-if="data?.compiled_layout?.type === 'square'" :data="data.compiled_layout"
+          :production="true" :view="screenType" :ratio="bannerRatio" />
+
+        <SliderSquare v-else-if="data?.compiled_layout?.type === 'square'" :data="data.compiled_layout"
+          :production="true" :view="screenType" :ratio="bannerRatio" />
+      </div>
+
+    </section>
+
+  </div>
 </template>

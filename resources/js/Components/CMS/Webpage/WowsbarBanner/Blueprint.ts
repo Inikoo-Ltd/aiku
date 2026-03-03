@@ -34,6 +34,12 @@ export const blueprint = (data?: {}, id: number) => {
 				},
 			},
 			{
+				key: ["banner_dimension",'properties','dimension'],
+				label: "Banner dimension",
+				type: "dimension",
+				useIn: ["desktop", "tablet", "mobile"],
+			},
+			{
 				name: "Layout",
 				key: ["container", "properties"],
 				replaceForm: [
