@@ -418,7 +418,16 @@ const onCopyDataCustomer = (field: string) => {
 								:title="shipment.name"
 								v-tooltip="shipment.name"
 							/>
-							<span>{{ shipment.name }}</span>
+							<span v-tooltip="shipment.name" class="max-w-52 truncate">{{ shipment.name }}</span>
+							
+							<template v-if="external_shop?.engine_value === 'faire'">
+								<div v-if="shipment?.data?.faire_feedback?.status === 'success'" v-tooltip="shipment.data.faire_feedback.msg" class="text-green-500">
+									<FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
+								</div>
+								<div v-else-if="shipment.data.faire_feedback" v-tooltip="shipment.data.faire_feedback.msg" class="text-red-500">
+									<FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+								</div>
+							</template>
 						</div>
 						<!-- <div class="font-semibold text-sm">{{ shipment.name }}</div> -->
 						<div
@@ -507,7 +516,7 @@ const onCopyDataCustomer = (field: string) => {
 							v-tooltip="trans('Remove shipment')"
 							@click="(e) => confirmdelete(e, shipment)">
 							<FontAwesomeIcon
-								icon="fal fa-times"
+								icon="fal fa-trash-alt"
 								class=" "
 								fixed-width
 								aria-hidden="true" />
@@ -521,7 +530,8 @@ const onCopyDataCustomer = (field: string) => {
 						icon="fal fa-print"
 						:label="trans('Print label')"
 						type="tertiary"
-						:loading="isLoadingPrint" />
+						:loading="isLoadingPrint"
+					/>
 				</li>
 			</ul>
 
