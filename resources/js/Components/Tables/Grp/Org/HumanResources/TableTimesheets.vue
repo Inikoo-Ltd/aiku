@@ -18,7 +18,6 @@ defineProps<{
 const locale = useLocaleStore()
 
 const timesheetRoute = (timesheet: Timesheet) => {
-    console.log("Data timesheet", timesheet)
     const params = route().params as Record<string, string | undefined>
 
     switch (route().current()) {
