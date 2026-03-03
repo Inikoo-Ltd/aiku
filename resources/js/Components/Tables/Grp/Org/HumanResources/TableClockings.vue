@@ -52,7 +52,7 @@ const openEditModal = (clocking: any) => {
     selectedClocking.value = clocking;
     console.log(clocking);
     notes.value = typeof clocking.notes === "string" ? clocking.notes : "";
-    clockedAt.value = useFormatTime(clocking.clocked_at, { formatTime: "yyyy-MM-dd'T'HH:mm:ss" });
+    clockedAt.value = useFormatTime(clocking.clocked_at, { formatTime: "yyyy-MM-dd'T'HH:mm" });
     isEditModalOpen.value = true;
     errorMsg.value = null;
 };
