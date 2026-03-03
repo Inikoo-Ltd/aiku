@@ -95,6 +95,7 @@ class StoreBanner extends OrgAction
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'ratio' => ['required', 'string', 'regex:/\d+\/\d+/'],
             'type' => ['required', new Enum(BannerTypeEnum::class)],
         ];
     }

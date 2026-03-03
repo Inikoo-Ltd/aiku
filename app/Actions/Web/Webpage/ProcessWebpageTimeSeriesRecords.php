@@ -7,21 +7,22 @@
 
 namespace App\Actions\Web\Webpage;
 
-use App\Actions\Traits\WithTimeSeriesRecordsGeneration;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateTimeSeriesNumberRecords;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageTimeSeries;
-use Carbon\Carbon;
+use App\Traits\BuildsAggregatedTimeSeriesQuery;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
-    use WithTimeSeriesRecordsGeneration;
+    use BuildsAggregatedTimeSeriesQuery;
 
     public function getJobUniqueId(int $webpageId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -34,30 +35,70 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
         $to   .= ' 23:59:59';
 
         $webpage = Webpage::find($webpageId);
+
         if (!$webpage) {
             return;
         }
 
-        $timeSeries = WebpageTimeSeries::where('webpage_id', $webpage->id)
-            ->where('frequency', $frequency->value)->first();
+        $timeSeries = WebpageTimeSeries::where('webpage_id', $webpage->id)->where('frequency', $frequency->value)->first();
+
         if (!$timeSeries) {
-            $timeSeries = $webpage->timeSeries()->create([
-                'frequency' => $frequency,
-            ]);
+            $timeSeries = $webpage->timeSeries()->create(['frequency' => $frequency]);
         }
 
-        if ($frequency === TimeSeriesFrequencyEnum::DAILY) {
-            $this->processDailyTimeSeries($timeSeries, $from, $to);
-        } else {
-            $this->processAggregatedTimeSeries($timeSeries, $from, $to);
-        }
+        $this->processTimeSeries($timeSeries, $from, $to);
 
         WebpageHydrateTimeSeriesNumberRecords::run($timeSeries->id);
     }
 
-    protected function processDailyTimeSeries(WebpageTimeSeries $timeSeries, string $from, string $to): void
+    protected function processTimeSeries(WebpageTimeSeries $timeSeries, string $from, string $to): void
     {
-        // 1. Get Page View Stats
+        $processedPeriods = [];
+
+        $results = $timeSeries->frequency === TimeSeriesFrequencyEnum::DAILY
+            ? $this->fetchDailyResults($timeSeries, $from, $to)
+            : $this->fetchAggregatedResults($timeSeries, $from, $to);
+
+        foreach ($results as $result) {
+            ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
+
+            if ($timeSeries->frequency === TimeSeriesFrequencyEnum::DAILY) {
+                $avgTimeOnPage  = round($result->avg_time_on_page);
+                $conversionRate = $result->page_views > 0 ? ($result->add_to_baskets / $result->page_views) * 100 : 0;
+            } else {
+                $avgTimeOnPage  = $result->page_views > 0 ? round($result->total_duration / $result->page_views) : 0;
+                $conversionRate = $result->visitors > 0 ? ($result->add_to_baskets / $result->visitors) * 100 : 0;
+            }
+
+            if ($conversionRate > 999.99) {
+                $conversionRate = 999.99;
+            }
+
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'webpage_time_series_id' => $timeSeries->id,
+                    'period'                 => $period,
+                    'frequency'              => $timeSeries->frequency->singleLetter(),
+                ],
+                [
+                    'from'             => $periodFrom,
+                    'to'               => $periodTo,
+                    'visitors'         => $result->visitors,
+                    'page_views'       => $result->page_views,
+                    'avg_time_on_page' => $avgTimeOnPage,
+                    'add_to_baskets'   => $result->add_to_baskets,
+                    'conversion_rate'  => round($conversionRate, 2),
+                ]
+            );
+
+            $processedPeriods[] = $period;
+        }
+
+        $this->processPeriodsWithoutData($timeSeries, $from, $to, $processedPeriods);
+    }
+
+    protected function fetchDailyResults(WebpageTimeSeries $timeSeries, string $from, string $to): Collection
+    {
         $pageViewStats = DB::table('website_page_views')
             ->where('view_date', '>=', $from)
             ->where('view_date', '<=', $to)
@@ -72,7 +113,6 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             ->get()
             ->keyBy('date');
 
-        // 2. Get Conversion Stats (Add To Basket)
         $conversionStats = DB::table('website_conversion_events')
             ->where('event_date', '>=', $from)
             ->where('event_date', '<=', $to)
@@ -86,145 +126,57 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             ->get()
             ->keyBy('date');
 
-        // 3. Merge and Process
-        $dates = $pageViewStats->keys()->merge($conversionStats->keys())->unique();
-
-        foreach ($dates as $date) {
-            $periodFrom = Carbon::parse($date)->startOfDay();
-            $periodTo   = Carbon::parse($date)->endOfDay();
-            $period     = Carbon::parse($date)->format('Y-m-d');
-
-            $views = $pageViewStats->get($date);
-            $conversions = $conversionStats->get($date);
-
-            $visitors = $views->visitors ?? 0;
-            $pageViews = $views->page_views ?? 0;
-            $avgTimeOnPage = $views->avg_time_on_page ?? 0;
-            $addToBaskets = $conversions->add_to_baskets ?? 0;
-
-            // Calculate Conversion Rate (based on visitors)
-            $conversionRate = $pageViews > 0 ? ($addToBaskets / $pageViews) * 100 : 0;
-
-            if ($conversionRate > 999.99) {
-                $conversionRate = 999.99;
-            }
-
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'webpage_time_series_id' => $timeSeries->id,
-                    'period'                 => $period,
-                    'frequency'              => $timeSeries->frequency->singleLetter()
-                ],
-                [
-                    'from'             => $periodFrom,
-                    'to'               => $periodTo,
-                    'visitors'         => $visitors,
-                    'page_views'       => $pageViews,
-                    'avg_time_on_page' => round($avgTimeOnPage),
-                    'add_to_baskets'   => $addToBaskets,
-                    'conversion_rate'  => round($conversionRate, 2),
-                ]
-            );
-        }
+        return $pageViewStats->keys()->merge($conversionStats->keys())->unique()->map(fn ($date) => (object) [
+            'date'             => $date,
+            'visitors'         => $pageViewStats->get($date)?->visitors ?? 0,
+            'page_views'       => $pageViewStats->get($date)?->page_views ?? 0,
+            'avg_time_on_page' => $pageViewStats->get($date)?->avg_time_on_page ?? 0,
+            'add_to_baskets'   => $conversionStats->get($date)?->add_to_baskets ?? 0,
+        ]);
     }
 
-    protected function processAggregatedTimeSeries(WebpageTimeSeries $timeSeries, string $from, string $to): void
+    protected function fetchAggregatedResults(WebpageTimeSeries $timeSeries, string $from, string $to): Collection
     {
-        // Find the Daily Time Series for this webpage
-        $dailyTimeSeries = WebpageTimeSeries::where('webpage_id', $timeSeries->webpage_id)
-            ->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)
-            ->first();
+        $dailyTimeSeries = WebpageTimeSeries::where('webpage_id', $timeSeries->webpage_id)->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->first();
 
         if (!$dailyTimeSeries) {
-            return;
+            return collect();
         }
-
-        // Aggregate from Daily Records
-        $query = DB::table('webpage_time_series_records')
-            ->where('webpage_time_series_id', $dailyTimeSeries->id)
-            ->where('from', '>=', $from)
-            ->where('to', '<=', $to);
 
         $selects = [
             DB::raw('SUM(visitors) as visitors'),
             DB::raw('SUM(page_views) as page_views'),
             DB::raw('SUM(add_to_baskets) as add_to_baskets'),
-            // Weighted Average for duration: Sum(avg_time * page_views) / Sum(page_views)
-            // Assuming avg_time_on_page is per page view? Or per visitor?
-            // "avg_time_on_page" usually means per page view (or session).
-            // In daily calc: AVG(duration_seconds) from page_views table.
-            // So to aggregate: SUM(avg_time_on_page * page_views) / SUM(page_views)
             DB::raw('SUM(avg_time_on_page * page_views) as total_duration'),
         ];
 
-        if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
-            $query->select(array_merge([
-                DB::raw('EXTRACT(YEAR FROM "from") as year'),
-            ], $selects))->groupBy(DB::raw('EXTRACT(YEAR FROM "from")'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-            $query->select(array_merge([
-                DB::raw('EXTRACT(YEAR FROM "from") as year'),
-                DB::raw('EXTRACT(QUARTER FROM "from") as quarter'),
-            ], $selects))->groupBy(DB::raw('EXTRACT(YEAR FROM "from")'), DB::raw('EXTRACT(QUARTER FROM "from")'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-            $query->select(array_merge([
-                DB::raw('EXTRACT(YEAR FROM "from") as year'),
-                DB::raw('EXTRACT(MONTH FROM "from") as month'),
-            ], $selects))->groupBy(DB::raw('EXTRACT(YEAR FROM "from")'), DB::raw('EXTRACT(MONTH FROM "from")'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-            $query->select(array_merge([
-                DB::raw('EXTRACT(YEAR FROM "from") as year'),
-                DB::raw('EXTRACT(WEEK FROM "from") as week'),
-            ], $selects))->groupBy(DB::raw('EXTRACT(YEAR FROM "from")'), DB::raw('EXTRACT(WEEK FROM "from")'));
-        }
+        $query = DB::table('webpage_time_series_records')
+            ->where('webpage_time_series_id', $dailyTimeSeries->id)
+            ->where('from', '>=', $from)
+            ->where('to', '<=', $to);
 
-        $results = $query->get();
+        return $this->applyAggregatedFrequencyGrouping($query, $timeSeries->frequency, $selects)->get();
+    }
 
-        foreach ($results as $result) {
-            if ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-                $periodFrom = Carbon::create((int)$result->year, ((int)$result->quarter - 1) * 3 + 1)->startOfQuarter();
-                $periodTo   = Carbon::create((int)$result->year, ((int)$result->quarter - 1) * 3 + 1)->endOfQuarter();
-                $period     = $result->year.' Q'.$result->quarter;
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-                $periodFrom = Carbon::create((int)$result->year, (int)$result->month)->startOfMonth();
-                $periodTo   = Carbon::create((int)$result->year, (int)$result->month)->endOfMonth();
-                $period     = $result->year.'-'.str_pad($result->month, 2, '0', STR_PAD_LEFT);
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-                $periodFrom = Carbon::create((int)$result->year)->week((int)$result->week)->startOfWeek();
-                $periodTo   = Carbon::create((int)$result->year)->week((int)$result->week)->endOfWeek();
-                $period     = $result->year.' W'.str_pad($result->week, 2, '0', STR_PAD_LEFT);
-            } else {
-                $periodFrom = Carbon::parse((int)$result->year.'-01-01');
-                $periodTo   = Carbon::parse((int)$result->year.'-12-31');
-                $period     = $result->year;
-            }
+    protected function processPeriodsWithoutData(WebpageTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    {
+        $emptyPeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
-            $avgTimeOnPage = $result->page_views > 0 ? $result->total_duration / $result->page_views : 0;
-            // Recalculate conversion rate for the aggregated period
-            // Sum of visitors vs sum of add to baskets?
-            // Sum(visitors) is not Unique Visitors for the month, but it is the sum of Daily Unique Visitors.
-            // Sum(add_to_baskets) is correct total.
-            // So Conversion Rate = (Total Add / Total Daily Visitors) * 100. This is an approximation of "Average Daily Conversion Rate" or just "Conversion Rate based on Visits".
-            $conversionRate = $result->page_views > 0 ? ($result->add_to_baskets / $result->visitors) * 100 : 0;
-
-            if ($conversionRate > 999.99) {
-                $conversionRate = 999.99;
-            }
-
+        foreach ($emptyPeriods as $periodData) {
             $timeSeries->records()->updateOrCreate(
                 [
                     'webpage_time_series_id' => $timeSeries->id,
-                    'period'                 => $period,
-                    'frequency'              => $timeSeries->frequency->singleLetter()
+                    'period'                 => $periodData['period'],
+                    'frequency'              => $timeSeries->frequency->singleLetter(),
                 ],
                 [
-                    'from'             => $periodFrom,
-                    'to'               => $periodTo,
-                    'visitors'         => $result->visitors,
-                    'page_views'       => $result->page_views,
-                    'avg_time_on_page' => round($avgTimeOnPage),
-                    'add_to_baskets'   => $result->add_to_baskets,
-                    'conversion_rate'  => round($conversionRate, 2),
+                    'from'             => $periodData['from'],
+                    'to'               => $periodData['to'],
+                    'visitors'         => 0,
+                    'page_views'       => 0,
+                    'avg_time_on_page' => 0,
+                    'add_to_baskets'   => 0,
+                    'conversion_rate'  => 0,
                 ]
             );
         }

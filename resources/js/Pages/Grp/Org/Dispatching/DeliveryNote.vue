@@ -447,7 +447,7 @@ onMounted(() => {
 		</template> -->
 
 		<!-- Button: Select trolley (only for Ecom) -->
-		<template v-if="props.shop.type === 'b2b'"  #button-start-picking="{ action }">
+		<template v-if="props.shop.type !== 'dropshipping'"  #button-start-picking="{ action }">
 			<ButtonSelectTrolleys
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
@@ -457,7 +457,7 @@ onMounted(() => {
 		</template>
 
 		<!-- Button: Select picked bays (only for Ecom) -->
-		<template v-if="props.shop.type === 'b2b'"  #button-set-as-packed="{ action }">
+		<template v-if="props.shop.type !== 'dropshipping'"  #button-set-as-packed="{ action }">
 			<ButtonSelectBays
 				:warehouse="warehouse"
 				:deliveryNote="delivery_note"
@@ -551,6 +551,7 @@ onMounted(() => {
 			:format-time="'MMMM d yyyy, HH:mm'" />
 	</div>
 
+	<!-- Section: Box Stats -->
 	<BoxStatsDeliveryNote
 		v-if="box_stats && pickingView"
 		:boxStats="box_stats"

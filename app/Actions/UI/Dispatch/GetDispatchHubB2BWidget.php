@@ -21,6 +21,7 @@ class GetDispatchHubB2BWidget
         $organisation = $warehouse->organisation;
 
         return [
+            'slug'             => 'wholesale',
             'label'            => __('Wholesale'),
             'tooltip'          => __('Wholesale Delivery Notes'),
             'cases'            => [

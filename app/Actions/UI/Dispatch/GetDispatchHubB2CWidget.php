@@ -21,6 +21,7 @@ class GetDispatchHubB2CWidget
         $organisation = $warehouse->organisation;
 
         return [
+            'slug'             => 'b2c',
             'label'            => __('B2C'),
             'tooltip'          => __('B2C Delivery Notes'),
             'cases'            => [

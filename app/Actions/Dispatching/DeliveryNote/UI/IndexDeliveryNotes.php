@@ -53,7 +53,6 @@ class IndexDeliveryNotes extends OrgAction
         $iconRight  = null;
         $actions    = null;
 
-
         if ($this->parent instanceof Warehouse) {
             $icon      = ['fal', 'fa-arrow-from-left'];
             $iconRight = [
@@ -99,6 +98,7 @@ class IndexDeliveryNotes extends OrgAction
                 ],
                 'data'        => DeliveryNotesResource::collection($deliveryNotes),
                 "todo"        => $todo,
+                'shopType'      => $this->shopType,
                 'picking_session_route' => $pickingSessionRoute
             ]
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket, shopType: $this->shopType));

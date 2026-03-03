@@ -27,6 +27,7 @@ class AutoFinishPackingPickingSession extends OrgAction
                 'state' => PickingSessionStateEnum::PACKING_FINISHED,
                 'end_at' => now()
             ]);
+            WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }
         return $pickingSession;
     }
