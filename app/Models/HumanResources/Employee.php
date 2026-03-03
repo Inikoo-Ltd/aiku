@@ -298,8 +298,7 @@ class Employee extends Model implements HasMedia, Auditable
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('contracts')
-            ->acceptsMimeTypes(['application/pdf'])
-            ->singleFile();
+            ->acceptsMimeTypes(['application/pdf']);
     }
 
     public function isOnProbation(): bool
