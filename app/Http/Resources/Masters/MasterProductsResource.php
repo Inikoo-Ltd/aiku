@@ -62,7 +62,6 @@ class MasterProductsResource extends JsonResource
             data_set($extraField, 'allChildHasWebpage', $hasValidProduct && $allChildHasWeb);
         }
 
-        $dataTradeUnits = [];
         /** @var MasterAsset $masterAsset */
         $masterAsset = $this->resource;
 

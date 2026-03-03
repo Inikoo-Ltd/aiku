@@ -21,6 +21,7 @@ class GetDispatchHubExternalWidget
         $organisation = $warehouse->organisation;
 
         return [
+            'slug'             => 'marketplaces',
             'label'            => __('Marketplaces'),
             'tooltip'          => __('Marketplaces Delivery Notes'),
             'cases'            => [
