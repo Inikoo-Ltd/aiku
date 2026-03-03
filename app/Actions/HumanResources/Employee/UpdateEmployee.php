@@ -227,6 +227,8 @@ class UpdateEmployee extends OrgAction
             'notes'                                     => ['sometimes', 'nullable', 'string', 'max:4000'],
             'identity_document_type'                    => ['sometimes', 'nullable', 'string', 'max:256'],
             'identity_document_number'                  => ['sometimes', 'nullable', 'string', 'max:256'],
+            'contract_start_date'                       => ['sometimes', 'nullable', 'date'],
+            'contract_end_date'                         => ['sometimes', 'nullable', 'date', 'after_or_equal:contract_start_date'],
             'religion'                                  => ['sometimes', 'nullable', 'string', 'max:50'],
             'bank_account_number'                       => ['sometimes', 'nullable', 'string', 'max:50'],
             'bank_account_name'                         => ['sometimes', 'nullable', 'string', 'max:100'],
@@ -305,6 +307,10 @@ class UpdateEmployee extends OrgAction
             {
                 $this->set('employment_start_at', $this->get('cluster.employment_start_at'));
             }
+        }
+
+        if ($this->has('contract_start_date')) {
+            $this->set('employment_start_at', $this->get('contract_start_date'));
         }
 
         if ($this->has('cluster.employment_end_at')) {
