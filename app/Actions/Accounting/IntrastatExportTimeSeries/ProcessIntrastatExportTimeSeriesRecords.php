@@ -15,6 +15,7 @@ use App\Enums\Accounting\Intrastat\IntrastatTransportModeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Accounting\IntrastatExportTimeSeries;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
@@ -44,10 +45,7 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
         }
 
         $euCountryCodes = Country::getCountryCodesInEU();
-        $euCountryIds = Country::whereIn('code', $euCountryCodes)
-            ->where('id', '!=', $organisation->country_id)
-            ->pluck('id')
-            ->toArray();
+        $euCountryIds   = Country::whereIn('code', $euCountryCodes)->where('id', '!=', $organisation->country_id)->pluck('id')->toArray();
 
         if (empty($euCountryIds)) {
             return;
@@ -58,7 +56,6 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(Organisation $organisation, array $euCountryIds, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        // First, get raw metrics with all metadata needed for aggregation
         $rawMetrics = DB::table('delivery_note_items as dni')
             ->join('delivery_notes as dn', 'dn.id', '=', 'dni.delivery_note_id')
             ->joinSub(
@@ -100,95 +97,57 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
             )
             ->get();
 
-        // Aggregate by time period, tariff code, country, tax category, and delivery note type
         $aggregated = [];
 
         foreach ($rawMetrics as $item) {
             $tariffCodes = array_map('trim', explode(',', $item->tariff_code));
 
             foreach ($tariffCodes as $tariffCode) {
-                if (empty($tariffCode)) {
-                    continue;
-                }
-
-                $tariffCode = str_replace(' ', '', $tariffCode);
+                $tariffCode = str_replace(' ', '', trim($tariffCode));
 
                 if (empty($tariffCode)) {
                     continue;
                 }
 
-                // Determine period based on frequency
-                $dispatchedAt = Carbon::parse($item->dispatched_at);
+                ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriodFromDate(Carbon::parse($item->dispatched_at), $frequency);
 
-                if ($frequency == TimeSeriesFrequencyEnum::YEARLY) {
-                    $periodKey = $dispatchedAt->year;
-                    $periodFrom = Carbon::create($dispatchedAt->year, 1, 1)->startOfDay();
-                    $periodTo = Carbon::create($dispatchedAt->year, 12, 31)->endOfDay();
-                    $period = (string) $dispatchedAt->year;
-                } elseif ($frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-                    $quarter = $dispatchedAt->quarter;
-                    $periodKey = $dispatchedAt->year . '-Q' . $quarter;
-                    $periodFrom = Carbon::create($dispatchedAt->year, ($quarter - 1) * 3 + 1, 1)->startOfQuarter();
-                    $periodTo = Carbon::create($dispatchedAt->year, ($quarter - 1) * 3 + 1, 1)->endOfQuarter();
-                    $period = $dispatchedAt->year . ' Q' . $quarter;
-                } elseif ($frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-                    $periodKey = $dispatchedAt->format('Y-m');
-                    $periodFrom = Carbon::create($dispatchedAt->year, $dispatchedAt->month, 1)->startOfMonth();
-                    $periodTo = Carbon::create($dispatchedAt->year, $dispatchedAt->month, 1)->endOfMonth();
-                    $period = $dispatchedAt->format('Y-m');
-                } elseif ($frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-                    $week = $dispatchedAt->week;
-                    $periodKey = $dispatchedAt->year . '-W' . $week;
-                    $periodFrom = Carbon::create($dispatchedAt->year)->week($week)->startOfWeek();
-                    $periodTo = Carbon::create($dispatchedAt->year)->week($week)->endOfWeek();
-                    $period = $dispatchedAt->year . ' W' . str_pad($week, 2, '0', STR_PAD_LEFT);
-                } else { // DAILY
-                    $periodKey = $dispatchedAt->format('Y-m-d');
-                    $periodFrom = $dispatchedAt->copy()->startOfDay();
-                    $periodTo = $dispatchedAt->copy()->endOfDay();
-                    $period = $dispatchedAt->format('Y-m-d');
-                }
-
-                $key = $periodKey . '|' .
-                       $tariffCode . '|' .
-                       $item->country_id . '|' .
-                       ($item->tax_category_id ?? 'null') . '|' .
-                       ($item->delivery_note_type ?? 'null');
+                $key = $period . '|' . $tariffCode . '|' . $item->country_id . '|' . ($item->tax_category_id ?? 'null') . '|' . ($item->delivery_note_type ?? 'null');
 
                 if (!isset($aggregated[$key])) {
                     $aggregated[$key] = [
-                        'period' => $period,
-                        'period_from' => $periodFrom,
-                        'period_to' => $periodTo,
-                        'tariff_code' => $tariffCode,
-                        'country_id' => $item->country_id,
-                        'tax_category_id' => $item->tax_category_id,
+                        'period'             => $period,
+                        'period_from'        => $periodFrom,
+                        'period_to'          => $periodTo,
+                        'tariff_code'        => $tariffCode,
+                        'country_id'         => $item->country_id,
+                        'tax_category_id'    => $item->tax_category_id,
                         'delivery_note_type' => $item->delivery_note_type,
-                        'quantity' => 0,
-                        'value' => 0,
-                        'weight' => 0,
-                        'delivery_notes' => [],
-                        'products' => [],
-                        'invoices' => [],
-                        'tax_numbers' => [],
+                        'quantity'           => 0,
+                        'value'              => 0,
+                        'weight'             => 0,
+                        'delivery_notes'     => [],
+                        'products'           => [],
+                        'invoices'           => [],
+                        'tax_numbers'        => [],
                     ];
                 }
 
-                $aggregated[$key]['quantity'] += $item->quantity_dispatched ?? 0;
-                $aggregated[$key]['value'] += $item->org_revenue_amount ?? 0;
-                $aggregated[$key]['weight'] += $item->item_weight ?? 0;
+                $aggregated[$key]['quantity']                               += $item->quantity_dispatched ?? 0;
+                $aggregated[$key]['value']                                  += $item->org_revenue_amount ?? 0;
+                $aggregated[$key]['weight']                                 += $item->item_weight ?? 0;
                 $aggregated[$key]['delivery_notes'][$item->delivery_note_id] = true;
-                $aggregated[$key]['products'][$item->product_id] = true;
+                $aggregated[$key]['products'][$item->product_id]            = true;
 
                 if ($item->invoice_id) {
                     $aggregated[$key]['invoices'][$item->invoice_id] = true;
 
                     if ($item->tax_number) {
                         $taxNumberKey = $item->tax_number . '_' . ($item->tax_number_valid ? 'valid' : 'invalid');
+
                         if (!isset($aggregated[$key]['tax_numbers'][$taxNumberKey])) {
                             $aggregated[$key]['tax_numbers'][$taxNumberKey] = [
                                 'number' => $item->tax_number,
-                                'valid' => (bool) $item->tax_number_valid,
+                                'valid'  => (bool) $item->tax_number_valid,
                             ];
                         }
                     }
@@ -196,11 +155,10 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
             }
         }
 
-        // Now save aggregated records
         foreach ($aggregated as $data) {
             $partnerTaxNumbers = array_values($data['tax_numbers']);
-            $validCount = 0;
-            $invalidCount = 0;
+            $validCount        = 0;
+            $invalidCount      = 0;
 
             foreach ($partnerTaxNumbers as $taxNumber) {
                 if ($taxNumber['valid']) {
@@ -210,22 +168,22 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
                 }
             }
 
-            $natureOfTransaction = match($data['delivery_note_type']) {
+            $natureOfTransaction = match ($data['delivery_note_type']) {
                 DeliveryNoteTypeEnum::REPLACEMENT->value => IntrastatNatureOfTransactionEnum::RETURN_REPLACEMENT,
-                default => IntrastatNatureOfTransactionEnum::OUTRIGHT_PURCHASE,
+                default                                  => IntrastatNatureOfTransactionEnum::OUTRIGHT_PURCHASE,
             };
 
             $timeSeries = IntrastatExportTimeSeries::firstOrCreate(
                 [
                     'organisation_id' => $organisation->id,
-                    'tariff_code' => $data['tariff_code'],
-                    'country_id' => $data['country_id'],
+                    'tariff_code'     => $data['tariff_code'],
+                    'country_id'      => $data['country_id'],
                     'tax_category_id' => $data['tax_category_id'],
-                    'frequency' => $frequency,
+                    'frequency'       => $frequency,
                 ],
                 [
                     'from' => null,
-                    'to' => null,
+                    'to'   => null,
                 ]
             );
 
