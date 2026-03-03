@@ -196,15 +196,15 @@ const onSubmitShipment = () => {
 					isLoadingButton.value = "addTrackingNumber"
 				},
 				onSuccess: (q) => {
-					// Section: Notify if Faire Shipment is have error
-					const getNewShipmentData = get(q, 'props.box_stats.shipments', [])[q.props?.box_stats?.shipments?.length - 1]
-					if (getNewShipmentData?.data.faire_feedback.status !== 'success') {
-						notify({
-							title: trans("Something went wrong"),
-							text: getNewShipmentData?.data.faire_feedback.msg,
-							type: "error",
-						})
-					}
+					// // Section: Notify if Faire Shipment is have error
+					// const getNewShipmentData = get(q, 'props.box_stats.shipments', [])[q.props?.box_stats?.shipments?.length - 1]
+					// if (getNewShipmentData?.data.faire_feedback.status !== 'success') {
+					// 	notify({
+					// 		title: trans("Something went wrong"),
+					// 		text: getNewShipmentData?.data.faire_feedback.msg,
+					// 		type: "error",
+					// 	})
+					// }
 
 					emits("addSuccsess", null)
 					isModalShipment.value = false
