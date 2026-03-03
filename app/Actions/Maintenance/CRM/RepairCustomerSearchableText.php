@@ -21,8 +21,7 @@ class RepairCustomerSearchableText
 
     protected function handle(Customer $customer): void
     {
-        $customer->syncSearchableText();
-        $customer->save();
+        $customer->touch();
     }
 
     public string $commandSignature = 'customers:repair_searchable_text';

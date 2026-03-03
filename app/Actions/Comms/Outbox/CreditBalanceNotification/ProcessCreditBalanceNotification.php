@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Outbox\CreditBalanceNotification;
 use App\Actions\OrgAction;
 use App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer;
 use App\Actions\Comms\Email\SendCreditBalanceEmailToUser;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\CRM\Customer;
 
 class ProcessCreditBalanceNotification extends OrgAction
@@ -27,6 +28,16 @@ class ProcessCreditBalanceNotification extends OrgAction
         } else {
             $previousCreditBalance = $creditBalances->last();
             $currentCreditBalance = $creditBalances->first();
+        }
+
+        // Don't send if current credit balance type is Top up
+        if ($currentCreditBalance?->type === CreditTransactionTypeEnum::TOP_UP) {
+            return;
+        }
+
+        // Don't send if current credit balance is go down
+        if ($currentCreditBalance?->amount < 0) {
+            return;
         }
 
         // Extract currency information

@@ -28,6 +28,7 @@ use App\Actions\Masters\MasterProductCategoryTimeSeries\RedoMasterSubDepartments
 use App\Actions\OrgAction;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Accounting\InvoiceTransactionHasTradeUnit;
 
 class DeleteInvoiceTransaction extends OrgAction
 {
@@ -35,6 +36,8 @@ class DeleteInvoiceTransaction extends OrgAction
     {
         $invoiceDate = \Carbon\Carbon::parse($invoiceTransaction->date);
         $intervals = DateIntervalEnum::allExceptHistorical();
+
+        InvoiceTransactionHasTradeUnit::where('invoice_transaction_id', $invoiceTransaction->id)->delete();
 
         $invoiceTransaction->delete();
 

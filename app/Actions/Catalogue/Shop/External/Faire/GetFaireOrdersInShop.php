@@ -2,6 +2,7 @@
 
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
@@ -119,6 +120,14 @@ class GetFaireOrdersInShop extends OrgAction
                         ->where('marketplace_id', $item['variant_id'])
                         ->first();
 
+                    $product = UpdateProduct::run(
+                        $product,
+                        [
+                            'price' => $product->units * Arr::get($item, 'price.amount_minor') / 100,
+                        ]
+                    );
+
+
                     if (!$product) {
                         $errors[] = [
                             'product_code'           => Arr::get($item, 'sku', 'NO SKU'),
@@ -130,7 +139,7 @@ class GetFaireOrdersInShop extends OrgAction
                     }
 
 
-                    $historicAsset = $product->asset->historicAsset;
+                    $historicAsset = $product->currentHistoricProduct;
 
                     if (!$historicAsset) {
                         $errors[] = [
@@ -201,6 +210,8 @@ class GetFaireOrdersInShop extends OrgAction
                     }
 
                     AcceptFaireOrder::run($order);
+
+                    UpdateFaireOrder::run($order);
 
                     $command?->info('Order '.$externalId.' created');
                 } elseif ($command) {

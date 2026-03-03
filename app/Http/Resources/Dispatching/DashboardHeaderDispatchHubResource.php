@@ -12,7 +12,7 @@ class DashboardHeaderDispatchHubResource extends JsonResource
             'slug'    => 'dispatch',
             'columns' => [
                 'label'     => [
-                    'formatted_value'   => __('Channel'),
+                    'formatted_value'   => '',
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
                     'align'             => 'left',
@@ -25,16 +25,16 @@ class DashboardHeaderDispatchHubResource extends JsonResource
                     'scope'             => 'todo',
                     'icon'              => ['fal', 'fa-chair']
                 ],
-                'queued'    => [
-                    'formatted_value'   => __('Queued'),
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'full',
-                    'align'             => 'right',
-                    'scope'             => 'queued',
-                    'icon'              => ['fal', 'fa-hourglass-start']
-                ],
+//                'queued'    => [
+//                    'formatted_value'   => __('Queued'),
+//                    'currency_type'     => 'always',
+//                    'data_display_type' => 'full',
+//                    'align'             => 'right',
+//                    'scope'             => 'queued',
+//                    'icon'              => ['fal', 'fa-hourglass-start']
+//                ],
                 'handling' => [
-                    'formatted_value'   => __('Handling'),
+                    'formatted_value'   => __('Picking'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
                     'align'             => 'right',
@@ -42,7 +42,7 @@ class DashboardHeaderDispatchHubResource extends JsonResource
                     'icon'              => ['fal', 'fa-hand-paper']
                 ],
                 'handling_blocked' => [
-                    'formatted_value'   => __('Handling Blocked'),
+                    'formatted_value'   => __('Waiting'),
                     'currency_type'     => 'always',
                     'data_display_type' => 'full',
                     'align'             => 'right',
