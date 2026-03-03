@@ -74,6 +74,10 @@ class IndexClockingEmployees extends OrgAction
         $statistics = [];
         $leavesData = collect();
         $balance = null;
+        $annualSubmittedDays = null;
+        $annualRemainingAfterSubmission = null;
+        $medicalRequestCount = null;
+        $unpaidRequestCount = null;
         $adjustmentsData = collect();
         $overtimeData = collect();
 
@@ -122,6 +126,14 @@ class IndexClockingEmployees extends OrgAction
                 ->withQueryString();
 
             $organisation = $this->employee->organisation;
+            $medicalRequestCount = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->where('type', 'medical')
+                ->count();
+            $unpaidRequestCount = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->where('type', 'unpaid')
+                ->count();
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $this->employee->id,
@@ -130,11 +142,30 @@ class IndexClockingEmployees extends OrgAction
                 [
                     'annual_days'   => $organisation->getDefaultAnnualLeaveDays(),
                     'annual_used'   => 0,
+                    'medical_days'  => 0,
                     'medical_used'  => 0,
                     'unpaid_days'   => 0,
                     'unpaid_used'   => 0,
                 ]
             );
+
+            $defaultAnnualDays = $organisation->getDefaultAnnualLeaveDays();
+            if ((int) $balance->annual_days !== $defaultAnnualDays) {
+                $balance->updateQuietly([
+                    'annual_days' => $defaultAnnualDays,
+                ]);
+                $balance->refresh();
+            }
+
+            $annualSubmittedDays = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->where('type', 'annual')
+                ->whereYear('start_date', now()->year)
+                ->where('status', '!=', 'rejected')
+                ->get()
+                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
+
+            $annualRemainingAfterSubmission = max(0, (float) $balance->annual_days - (float) $annualSubmittedDays);
         }
 
         if ($this->tab == ClockingEmployeesTabsEnum::ADJUSTMENTS->value && $this->employee) {
@@ -218,6 +249,10 @@ class IndexClockingEmployees extends OrgAction
             'statistics' => $statistics,
             'leaves' => $leavesData,
             'balance' => $balance,
+            'annual_submitted_days' => $annualSubmittedDays,
+            'annual_remaining_after_submission' => $annualRemainingAfterSubmission,
+            'medical_request_count' => $medicalRequestCount,
+            'unpaid_request_count' => $unpaidRequestCount,
             'adjustments' => $adjustmentsData,
             'overtime' => $overtimeData,
             'organisation' => $this->employee?->organisation?->slug,
@@ -411,11 +446,19 @@ class IndexClockingEmployees extends OrgAction
                     ? fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
+                        'annual_submitted_days' => $data['annual_submitted_days'],
+                        'annual_remaining_after_submission' => $data['annual_remaining_after_submission'],
+                        'medical_request_count' => $data['medical_request_count'],
+                        'unpaid_request_count' => $data['unpaid_request_count'],
                         'organisation' => $data['organisation'],
                     ]
                     : Inertia::lazy(fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
+                        'annual_submitted_days' => $data['annual_submitted_days'],
+                        'annual_remaining_after_submission' => $data['annual_remaining_after_submission'],
+                        'medical_request_count' => $data['medical_request_count'],
+                        'unpaid_request_count' => $data['unpaid_request_count'],
                         'organisation' => $data['organisation'],
                     ]),
 
