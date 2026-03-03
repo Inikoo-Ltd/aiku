@@ -15,6 +15,8 @@ use JsonSerializable;
  * @property \Illuminate\Support\Carbon $start_date
  * @property \Illuminate\Support\Carbon $end_date
  * @property int $duration_days
+ * @property bool $is_half_day
+ * @property string $session
  * @property string|null $reason
  * @property LeaveStatusEnum $status
  */
@@ -44,6 +46,8 @@ class LeaveResource extends JsonResource
             'start_date'        => $this->start_date?->format('Y-m-d'),
             'end_date'          => $this->end_date?->format('Y-m-d'),
             'duration_days'     => $this->duration_days,
+            'is_half_day'       => $this->is_half_day,
+            'session'           => $this->session,
             'reason'            => $this->reason,
             'status'            => $this->status?->value,
             'status_label'      => LeaveStatusEnum::labels()[$this->status?->value] ?? $this->status?->value,

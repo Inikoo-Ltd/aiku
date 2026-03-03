@@ -8,11 +8,11 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { faEdit, faCalendarCheck, faMedkit, faCalendarTimes } from "@fal"
+import { faEdit, faCalendarCheck, faMedkit, faCalendarTimes, faClock } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faEdit, faCalendarCheck, faMedkit, faCalendarTimes)
+library.add(faEdit, faCalendarCheck, faMedkit, faCalendarTimes, faClock)
 
 type LeaveBalanceSummary = {
 	annual_days: number
@@ -403,6 +403,16 @@ const submitEdit = () => {
 				<template #cell(type_label)="{ item: leave }">
 					<span class="whitespace-nowrap">
 						{{ leave.type_label }}
+					</span>
+				</template>
+
+				<template #cell(duration)="{ item: leave }">
+					<span class="whitespace-nowrap block sm:inline">
+						<FontAwesomeIcon
+							v-if="leave.is_half_day"
+							icon="fal fa-clock"
+							class="mr-1 text-blue-500" />
+						{{ leave.is_half_day ? `Half Day (${leave.session})` : "Full Day" }}
 					</span>
 				</template>
 
