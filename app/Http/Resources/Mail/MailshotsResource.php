@@ -68,6 +68,7 @@ class MailshotsResource extends JsonResource
             'percentage_spam'        => $mailshot->start_sending_at ?
                 percentage($this->number_spam_emails, $this->number_delivered_emails)
                 : null,
+            'date'                   => $mailshot->date,
 
         ];
     }
