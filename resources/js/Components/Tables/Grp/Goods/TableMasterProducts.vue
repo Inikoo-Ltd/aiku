@@ -22,6 +22,7 @@ import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { faShapes, faStar, faTriangle, faEquals } from "@fas"
 import { routeType } from "@/types/route"
+import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 
 const props = defineProps<{
     data: {}
@@ -360,13 +361,18 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <template #cell(name)="{ item: masterProduct }">
             <div>
-                <ProductUnitLabel
+                <div v-if="masterProduct.trade_units" class="w-24 min-w-fit">
+                    <LabelSKU
+                        :product="masterProduct"
+                        :trade_units="masterProduct.trade_units"
+                    />
+                </div>
+                <!-- <ProductUnitLabel
                     v-if="masterProduct?.units"
                     :units="masterProduct?.units"
                     :unit="masterProduct?.unit"
                     class="!py-0 !px-1 !rounded-sm !text-sm mr-1"
-                />
-
+                /> -->
                 {{ masterProduct["name"] }}
 
             </div>
