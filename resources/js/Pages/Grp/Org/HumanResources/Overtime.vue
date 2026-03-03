@@ -40,25 +40,6 @@ const minuteOptions = Array.from({ length: 60 }, (_, index) =>
     index < 10 ? `0${index}` : `${index}`
 )
 
-const extractTimeParts = (value: string): { hour: string; minute: string } => {
-    const date = new Date(value)
-
-    if (!Number.isNaN(date.getTime())) {
-        const hour = String(date.getHours()).padStart(2, '0')
-        const minute = String(date.getMinutes()).padStart(2, '0')
-
-        return { hour, minute }
-    }
-
-    const timePart = value.substring(11, 16)
-    const [rawHour, rawMinute] = timePart.split(':')
-
-    const hour = (rawHour ?? '00').padStart(2, '0')
-    const minute = (rawMinute ?? '00').padStart(2, '0')
-
-    return { hour, minute }
-}
-
 const form = useForm<{
     employee_id: number | null
     overtime_type_id: number | null
@@ -177,6 +158,27 @@ const submitExport = () => {
     }, 1500)
 }
 
+const getFullDate = (dateStr: string, hour: string, minute: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d, Number(hour), Number(minute));
+}
+
+const toLocalISOString = (date: Date) => {
+    const tzo = -date.getTimezoneOffset(),
+        dif = tzo >= 0 ? '+' : '-',
+        pad = (num: number) => {
+            const norm = Math.floor(Math.abs(num));
+            return (norm < 10 ? '0' : '') + norm;
+        };
+    return date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds()) +
+        dif + pad(tzo / 60) + ':' + pad(tzo % 60);
+}
+
 const openEditModal = (item: any) => {
     isEditMode.value = true
     editingOvertimeId.value = item.id ?? null
@@ -185,16 +187,15 @@ const openEditModal = (item: any) => {
 
     form.employee_id = item.employee_id ?? null
     form.overtime_type_id = item.overtime_type_id ?? null
-    form.requested_date = item.requested_date?.slice(0, 10) ?? ''
+    form.requested_date = item.requested_date ? useFormatTime(item.requested_date, { formatTime: 'yyyy-MM-dd' }) : ''
     form.status = item.status ?? 'pending'
     form.reason = item.reason ?? ''
 
     const startAt: string | null = item.requested_start_at ?? null
 
     if (startAt) {
-        const { hour, minute } = extractTimeParts(startAt)
-        form.start_hour = hour
-        form.start_minute = minute
+        form.start_hour = useFormatTime(startAt, { formatTime: 'HH' })
+        form.start_minute = useFormatTime(startAt, { formatTime: 'mm' })
     } else {
         form.start_hour = '00'
         form.start_minute = '00'
@@ -217,9 +218,8 @@ const openEditModal = (item: any) => {
         const recordedStart: string | null = item.recorded_start_at ?? null
 
         if (recordedStart) {
-            const { hour, minute } = extractTimeParts(recordedStart)
-            form.recorded_start_hour = hour
-            form.recorded_start_minute = minute
+            form.recorded_start_hour = useFormatTime(recordedStart, { formatTime: 'HH' })
+            form.recorded_start_minute = useFormatTime(recordedStart, { formatTime: 'mm' })
         } else {
             form.recorded_start_hour = '00'
             form.recorded_start_minute = '00'
@@ -250,6 +250,36 @@ const closeRequestModal = () => {
 }
 
 const submitRequest = () => {
+    form.transform((data) => {
+        const requestedStartAt = getFullDate(data.requested_date, data.start_hour, data.start_minute)
+        const requestedDurationMinutes = (Number(data.duration_hours) * 60) + Number(data.duration_minutes)
+        const requestedEndAt = new Date(requestedStartAt.getTime() + requestedDurationMinutes * 60000)
+
+        let recordedStartAt = null
+        let recordedEndAt = null
+        let recordedDurationMinutes = 0
+
+        if (data.recorded_same_as_requested) {
+            recordedStartAt = requestedStartAt
+            recordedEndAt = requestedEndAt
+            recordedDurationMinutes = requestedDurationMinutes
+        } else {
+            recordedStartAt = getFullDate(data.requested_date, data.recorded_start_hour, data.recorded_start_minute)
+            recordedDurationMinutes = (Number(data.recorded_duration_hours) * 60) + Number(data.recorded_duration_minutes)
+            recordedEndAt = new Date(recordedStartAt.getTime() + recordedDurationMinutes * 60000)
+        }
+
+        return {
+            ...data,
+            requested_start_at: toLocalISOString(requestedStartAt),
+            requested_end_at: toLocalISOString(requestedEndAt),
+            requested_duration_minutes: requestedDurationMinutes,
+            recorded_start_at: recordedStartAt ? toLocalISOString(recordedStartAt) : null,
+            recorded_end_at: recordedEndAt ? toLocalISOString(recordedEndAt) : null,
+            recorded_duration_minutes: recordedDurationMinutes,
+        }
+    })
+
     if (isEditMode.value && editingOvertimeId.value) {
         form.patch(
             route('grp.org.hr.overtime_requests.update', {
@@ -683,12 +713,11 @@ const submitRequest = () => {
             </div>
 
             <div class="mt-6 flex justify-end gap-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="closeRequestModal" />
+                <Button type="tertiary" :label="trans('Cancel')" @click.prevent="closeRequestModal" />
                 <Button
                     type="save"
                     :label="trans('Submit')"
                     :loading="form.processing"
-                    @click="submitRequest"
                 />
             </div>
         </form>
