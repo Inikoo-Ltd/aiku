@@ -16,7 +16,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
     {
         $widgets = collect($this->resource);
 
-        $dimensionItems = $widgets->map(fn ($widget) => [
+        $dimensionItems = $widgets->map(fn($widget) => [
             'key'   => $widget['slug'] ?? str($widget['label'])->slug()->toString(),
             'label' => $widget['label'],
         ])->values()->toArray();
@@ -27,6 +27,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 'label' => __('To do'),
                 'type'  => 'stat',
                 'icon'  => ['fal', 'fa-clock'],
+                'tooltip' => 'To do'
             ],
             [
                 'key'   => 'warehouse',
@@ -37,16 +38,19 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                         'key'   => 'handling',
                         'label' => __('Picking'),
                         'icon'  => ['fal', 'fa-list'],
+                        'tooltip' => 'Picking'
                     ],
                     [
                         'key'   => 'packed',
                         'label' => __('Packed'),
                         'icon'  => ['fal', 'fa-box'],
+                        'tooltip' => 'Packed'
                     ],
                     [
                         'key'   => 'packing',
                         'label' => __('Packing'),
                         'icon'  => ['fal', 'fa-box-open'],
+                        'tooltip' => 'Packing'
                     ],
                 ],
             ],
@@ -55,6 +59,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 'label' => __('Finalised'),
                 'type'  => 'stat',
                 'icon'  => ['fal', 'fa-check-circle'],
+                'tooltip' => 'Finalised'
             ],
         ];
 
@@ -108,6 +113,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             'grand_total' => [
                 'value' => $grandTotal,
                 'icon'  => ['fal', 'fa-chart-line'],
+                'tooltip' => 'Total'
             ],
         ];
     }
