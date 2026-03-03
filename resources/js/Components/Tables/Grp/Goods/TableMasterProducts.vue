@@ -352,28 +352,29 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </span>
                 </span>
             </Link>
-            <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
+<!--             <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
                border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
                 -
-            </span>
+            </span> -->
         </template>
 
         <template #cell(name)="{ item: masterProduct }">
-            <div>
-                <div v-if="masterProduct.trade_units" class="w-24 min-w-fit">
-                    <LabelSKU
-                        :product="masterProduct"
-                        :trade_units="masterProduct.trade_units"
-                    />
+            <div class="flex items-center">
+
+                <div v-if="masterProduct.trade_units" class=" text-xxs">
+                    <LabelSKU :product="masterProduct" :trade_units="masterProduct.trade_units" />
                 </div>
+
+                <div>
                 <!-- <ProductUnitLabel
                     v-if="masterProduct?.units"
                     :units="masterProduct?.units"
                     :unit="masterProduct?.unit"
                     class="!py-0 !px-1 !rounded-sm !text-sm mr-1"
                 /> -->
-                {{ masterProduct["name"] }}
+                    {{ masterProduct.name }}
+                </div>
 
             </div>
         </template>
