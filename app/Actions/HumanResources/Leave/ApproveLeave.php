@@ -33,6 +33,7 @@ class ApproveLeave extends OrgAction
             [
                 'annual_days'   => $leave->employee->organisation->getDefaultAnnualLeaveDays(),
                 'annual_used'   => 0,
+                'medical_days'  => 0,
                 'medical_used'  => 0,
                 'unpaid_days'   => 0,
                 'unpaid_used'   => 0,
