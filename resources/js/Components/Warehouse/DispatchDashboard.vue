@@ -94,6 +94,9 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
     }
     return null
 }
+// const isWeakValue = (value: unknown): boolean => {
+//     return value === 0 || value === null || value === undefined
+// }
 </script>
 
 <template>
@@ -104,17 +107,17 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
             <div v-if="data?.dimension"
                 class="flex-1 basis-0 min-w-[120px] flex flex-col rounded-xl border border-gray-200">
                 <div
-                    class="h-14 flex items-center justify-center text-xs font-semibold text-gray-600 border-b border-gray-200 px-4">
+                    class="h-14 flex items-center justify-center text-lg font-semibold text-gray-600 border-b border-gray-200 px-4">
                     {{ data.dimension.label }}
                 </div>
 
                 <div v-for="row in rows" :key="row.key"
-                    class="h-11 flex items-center justify-center text-sm text-gray-500 border-b border-gray-100 last:border-b-0">
+                    class="h-11 flex items-center justify-center text-lg text-gray-500 border-b border-gray-100 last:border-b-0">
                     {{ row.label }}
                 </div>
 
                 <div
-                    class="h-12 flex items-center justify-center text-sm font-semibold text-gray-700 border-t border-gray-200">
+                    class="h-12 flex items-center justify-center text-lg text-gray-700 border-t border-gray-200">
                     Total
                 </div>
             </div>
@@ -126,14 +129,15 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                 <div v-if="metric.type !== 'group'"
                     class="flex-1 basis-0 min-w-[140px] flex flex-col rounded-xl border border-gray-200">
                     <div class="h-14 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
-                        <span class="text-xs font-semibold text-gray-600">{{ metric.label }}</span>
+                        <span class="text-lg font-semibold text-gray-600">{{ metric.label }}</span>
                         <Icon v-if="metric.icon" :data="metric" class='text-xl' />
                     </div>
 
                     <template v-for="row in rows" :key="row.key">
                         <component :is="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? Link : 'div'"
                             :href="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ?? undefined" :class="[
-                                'h-11 flex items-center justify-center text-base text-gray-500 border-b border-gray-100 last:border-b-0',
+                                'h-11 flex items-center justify-center text-lg text-gray-500 border-b border-gray-100 last:border-b-0',
+                                
                                 getSafeRoute(data.data[row.key]?.[metric.key]?.route_target)
                                     ? 'hover:text-indigo-600 hover:underline cursor-pointer'
                                     : ''
@@ -143,7 +147,7 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                     </template>
 
                     <div v-if="data?.dimension"
-                        class="h-12 flex items-center justify-center text-sm font-semibold text-gray-700 border-t border-gray-200">
+                        class="h-12 flex items-center justify-center text-lg font-semibold text-gray-700 border-t border-gray-200">
                         {{ data.totals[metric.key]?.value ?? '-' }}
                     </div>
                 </div>
@@ -153,14 +157,15 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                     <div v-for="(item, itemIndex) in metric.items" :key="item.key" class="min-w-[140px] flex flex-col"
                         :class="itemIndex < (metric.items?.length ?? 0) - 1 ? 'border-r border-gray-200' : ''">
                         <div class="h-14 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
-                            <span class="text-xs font-semibold text-gray-600">{{ item.label }}</span>
+                            <span class="text-lg font-semibold text-gray-600">{{ item.label }}</span>
                             <Icon v-if="item.icon" :data="item" class='text-xl' />
                         </div>
 
                         <template v-for="row in rows" :key="row.key + '-' + item.key">
                             <component :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
                                 :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined" :class="[
-                                    'h-11 flex items-center justify-center text-base text-gray-500 border-b border-gray-100 last:border-b-0',
+                                    'h-11 flex items-center justify-center text-lg text-gray-500 border-b border-gray-100 last:border-b-0',
+                                    
                                     getSafeRoute(data.data[row.key]?.[item.key]?.route_target)
                                         ? 'hover:text-indigo-600 hover:underline cursor-pointer'
                                         : ''
@@ -170,7 +175,7 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                         </template>
 
                         <div v-if="data?.dimension"
-                            class="h-12 flex items-center justify-center text-sm font-semibold text-gray-700 border-t border-gray-200">
+                            class="h-12 flex items-center justify-center text-lg  text-gray-700 border-t border-gray-200">
                             {{ data.totals[item.key]?.value ?? '-' }}
                         </div>
                     </div>
@@ -180,17 +185,17 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
             <!-- ================= ROW TOTAL BOX ================= -->
             <div class="flex-1 basis-0 min-w-[140px] flex flex-col rounded-xl border border-gray-200">
                 <div class="h-14 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
-                    <span class="text-xs font-semibold text-gray-600">Total</span>
+                    <span class="text-lg font-semibold text-gray-600">Total</span>
                     <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xl' />
                 </div>
 
                 <div v-for="row in rows" :key="row.key"
-                    class="h-11 flex items-center justify-center text-base font-semibold text-gray-600 border-b border-gray-100 last:border-b-0">
+                    class="h-11 flex items-center justify-center text-lg font-semibold text-gray-600 border-b border-gray-100 last:border-b-0">
                     {{ data.row_totals[row.key]?.value ?? '-' }}
                 </div>
 
                 <div v-if="data?.dimension"
-                    class="h-12 flex items-center justify-center text-sm font-bold text-gray-700 border-t border-gray-200">
+                    class="h-12 flex items-center justify-center text-lg text-gray-700 border-t border-gray-200">
                     {{ data.grand_total?.value ?? '-' }}
                 </div>
             </div>
