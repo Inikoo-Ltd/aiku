@@ -1,4 +1,5 @@
-<script setup lang='ts'>
+<script setup lang="ts">
+import { computed } from 'vue'
 import { useRangeFromNow } from '@/Composables/useFormatTime'
 import SliderLandscape from "@/Components/Banners/Slider/SliderLandscape.vue"
 import SliderSquare from "@/Components/Banners/Slider/SliderSquare.vue"
@@ -6,90 +7,130 @@ import Image from '@/Components/Image.vue'
 import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
-    data: {
-        type: string
-        compiled_layout: {}
-        published_snapshot: {
-            publisher: string
-            publisher_avatar: string
-            comment: string
-            published_at: string
-        }
+  data: {
+    type: string
+    compiled_layout: any
+    published_snapshot?: {
+      publisher?: string
+      publisher_avatar?: string
+      comment?: string
+      published_at?: string
     }
+  }
+  ratio?: string
 }>()
+
+/*
+  Ratio logic:
+  - "4/1"
+  - "1/1"
+  - "1.77"
+  - undefined → fallback based on type
+*/
+const ratioStyle = computed(() => {
+  if (!props.ratio) {
+    return props.data.type === 'landscape'
+      ? { paddingTop: '20%' }     // 4/1
+      : { paddingTop: '100%' }    // 1/1
+  }
+
+  if (props.ratio.includes('/')) {
+    const [w, h] = props.ratio.split('/').map(Number)
+    if (w > 0 && h > 0) {
+      return { paddingTop: `${(h / w) * 100}%` }
+    }
+  }
+
+  const numeric = Number(props.ratio)
+  if (!isNaN(numeric) && numeric > 0) {
+    return { paddingTop: `${(1 / numeric) * 100}%` }
+  }
+
+  return props.data.type === 'landscape'
+    ? { paddingTop: '25%' }
+    : { paddingTop: '100%' }
+})
+
+const publishedAgo = computed(() => {
+  const publishedAt = props.data?.published_snapshot?.published_at
+  if (!publishedAt) return null
+  return `${useRangeFromNow(publishedAt)} ago`
+})
 </script>
 
 <template>
-<div class="w-full max-w-full overflow-hidden">
-
-    <!-- header -->
+  <div class="w-full bg-white border border-gray-300 rounded-md overflow-hidden">
     <div
-        v-if="data.published_snapshot"
-        class="w-full bg-white flex items-center justify-between py-3 px-4 border-b"
+      v-if="data.published_snapshot"
+      class="w-full flex items-center justify-between py-3 px-4 border-b"
     >
-        <div class="flex gap-2 items-center min-w-0">
-            <div
-                v-if="data?.published_snapshot?.publisher_avatar"
-                class="h-6 w-6 rounded-full overflow-hidden ring-1 ring-gray-300 shrink-0"
-            >
-                <Image :src="data.published_snapshot.publisher_avatar" />
-            </div>
-
-            <div v-if="data.published_snapshot?.publisher" class="font-semibold text-sm truncate">
-                {{ data.published_snapshot.publisher }}
-            </div>
-
-            <div v-else class="text-gray-400 italic text-sm">
-                {{ trans("Not published yet") }}
-            </div>
-
-            <div
-                v-if="data.published_snapshot?.comment"
-                class="text-xs text-gray-500 italic truncate"
-            >
-                ({{ data.published_snapshot.comment }})
-            </div>
+      <div class="flex gap-2 items-center min-w-0">
+        <div
+          v-if="data?.published_snapshot?.publisher_avatar"
+          class="h-6 w-6 rounded-full overflow-hidden ring-1 ring-gray-300 shrink-0"
+        >
+          <Image :src="data.published_snapshot.publisher_avatar" />
         </div>
 
         <div
-            v-if="data.published_snapshot?.published_at"
-            class="text-xs text-gray-600 shrink-0"
+          v-if="data.published_snapshot?.publisher"
+          class="font-semibold text-sm truncate"
         >
-            {{ useRangeFromNow(data.published_snapshot.published_at) }} ago
+          {{ data.published_snapshot.publisher }}
         </div>
+
+        <div v-else class="text-gray-400 italic text-sm">
+          {{ trans("Not published yet") }}
+        </div>
+
+        <div
+          v-if="data.published_snapshot?.comment"
+          class="text-xs text-gray-500 italic truncate"
+        >
+          ({{ data.published_snapshot.comment }})
+        </div>
+      </div>
+
+      <div
+        v-if="data.published_snapshot?.published_at"
+        class="text-xs text-gray-600 shrink-0"
+      >
+        {{ publishedAgo }}
+      </div>
     </div>
+    
 
-    <!-- banner wrapper -->
-    <div class="w-full flex justify-center bg-gray-50 overflow-hidden">
+    <div class="relative w-full overflow-hidden">
+      <div :style="ratioStyle"></div>
+      <div class="absolute inset-0">
+        <div class="w-full h-full flex justify-center">
+          <div
+            v-if="data.type === 'square'"
+            class="w-full h-full flex justify-center"
+          >
+            <SliderSquare
+              :data="data.compiled_layout"
+              view="desktop"
+              :ratio="ratio"
+            />
+          </div>
 
-        <!-- landscape -->
-        <div
-            v-if="data.type === 'landscape'"
-            class="w-full max-w-6xl"
-        >
-            <div class="relative w-full h-[180px] md:h-[260px] lg:h-[320px] overflow-hidden">
-                <SliderLandscape
-                    :data="data.compiled_layout"
-                    :production="true"
-                    class="w-full h-full"
-                />
-            </div>
-        </div>
-
-        <!-- square -->
-        <div
+          <div
             v-else
-            class="w-full max-w-md"
-        >
-            <div class="relative w-full h-[320px] md:h-[420px] overflow-hidden">
-                <SliderSquare
-                    :data="data.compiled_layout"
-                    :production="true"
-                    class="w-full h-full"
-                />
-            </div>
+            class="w-full max-w-[1200px] mx-auto" 
+            :class="(ratio && ratio != '1/4') && 'h-[500px]'"
+          >
+            <SliderLandscape
+              :data="data.compiled_layout"
+              view="desktop"
+              :ratio="ratio"
+            />
+          </div>
+
         </div>
 
+      </div>
     </div>
-</div>
+
+  </div>
 </template>

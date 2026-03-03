@@ -102,14 +102,19 @@ class StoreShipment extends OrgAction
                 OrderHydrateShipments::dispatch($orderData->order_id);
             }
         }
-
+        $faireFeedback = null;
         if ($parent instanceof DeliveryNote) {
             $order = $parent->orders()->first();
-            if ($order && $order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external && app()->isProduction()) {
-                UpdateShippingFaireOrder::run($parent);
+            if ($order && $order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external) {
+                $faireFeedback = UpdateShippingFaireOrder::run($parent);
             }
         }
 
+        $shipmentData                   = $shipment->data;
+        $shipmentData['faire_feedback'] = $faireFeedback;
+        $shipment->update([
+            'data' => $shipmentData
+        ]);
 
         return $shipment;
     }

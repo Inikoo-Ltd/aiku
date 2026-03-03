@@ -122,6 +122,7 @@ class StorePickingSession extends OrgAction
                 'number_delivery_notes' => $numberDeliveryNotes,
             ]);
 
+            WarehouseHydratePickingSessions::dispatch($warehouse);
 
             return $pickingSession;
         });

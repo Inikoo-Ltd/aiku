@@ -1,146 +1,208 @@
-<script setup lang="ts">
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import {  computed } from 'vue'
-import Icon from '../Icon.vue'
-import { router } from '@inertiajs/vue3'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import { Icon as IconTS } from '@/types/Utils/Icon'
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Thu, 23 Feb 2023 14:32:57 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2023, Raul A Perusquia Flores
+  -->
 
-const props = defineProps<{
+<script setup lang="ts">
+import { computed } from "vue"
+import { Link } from "@inertiajs/vue3"
+import Icon from "../Icon.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import {
+    faClock,
+    faList,
+    faCheck,
+    faBox,
+    faCheckCircle,
+    faBoxOpen,
+    faHourglassStart,
+    faAllergies,
+    faChartLine,
+} from "@fal"
+
+library.add(faClock, faList, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
+
+interface RouteTarget {
+    name: string
+    parameters?: object
+}
+
+interface MetricData {
+    value: number | null
+    route_target?: RouteTarget
+}
+
+interface MetricItem {
+    key: string
+    label: string
+    icon?: string[]
+}
+
+interface Metric {
+    key: string
+    label: string
+    type: string
+    icon?: string[]
+    items?: MetricItem[]
+}
+
+interface DashboardData {
+    dimension: {
+        key: string
+        label: string
+        items: { key: string; label: string }[]
+    }
+    metrics: Metric[]
     data: {
-        [key: string]: {
-            label: string
-            sublabel: string
-            count: number
-            cases: {
-                key: string
-                label: string
-                value?: number
-                icon: string | string[]
-                icon_state: IconTS
-                class?: string
-                route?: {
-                    name: string
-                    parameters?: object
-                }
-            }[]
+        [rowKey: string]: {
+            [metricKey: string]: MetricData
         }
     }
+    row_totals: {
+        [rowKey: string]: { value: number }
+    }
+    totals: {
+        [metricKey: string]: { value: number }
+    }
+    grand_total: {
+        value: number
+        icon?: string[]
+    }
+}
+
+const props = defineProps<{
+    tab: string
+    data: DashboardData
 }>()
 
-const states = computed(() => {
-    const firstGroup = Object.values(props.data)[1] as any
-    if (!firstGroup?.cases) return []
-    return Object.values(firstGroup.cases).map((item: any) => ({
-        key: item.key,
-        label: item.label
-    }))
-})
-
 const rows = computed(() => {
-    return Object.values(props.data).map((group: any) => ({
-        label: group.label,
-        total: group.count,
-        ...group.cases
-    }))
+    if (!props.data?.dimension) {
+        return [{ key: "_global", label: null }]
+    }
+    return props.data.dimension.items
 })
 
-const goToRoute = (item: any) => {
-    if (!item?.route?.name) return
-    router.visit(route(item.route.name, item.route.parameters))
+const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
+    if (!routeTarget) return null
+    try {
+        if (route().has(routeTarget.name)) {
+            return route(routeTarget.name, (routeTarget.parameters ?? {}) as Record<string, string>)
+        }
+    } catch {
+        return null
+    }
+    return null
+}
+const isWeakValue = (value: number | null | undefined) => {
+    return value === null || value === 0
 }
 </script>
 
 <template>
-<div class="p-4">
+    <div class="overflow-x-auto bg-white px-4 pb-4">
+        <div class="flex gap-3 w-full pt-3">
 
-    <DataTable
-        :value="rows"
-        responsiveLayout="stack"
-        breakpoint="768px"
-        stripedRows
-        class="p-datatable-sm text-sm"
-    >
-        <!-- CHANNEL -->
-        <Column>
-            <template #header>
-                <div class="w-full flex justify-start font-semibold">
-                    Channel
-                </div>
-            </template>
-
-            <template #body="{ data }">
+            <!-- ================= DIMENSION COLUMN ================= -->
+            <div v-if="data?.dimension"
+                class="flex-1 basis-0 min-w-[120px] flex flex-col rounded-xl border border-gray-200">
                 <div
-                    class="flex justify-between md:justify-start"
-                    data-label="Channel"
-                >
-                    <span class="font-semibold text-gray-700">
-                        {{ data.label }}
-                    </span>
+                    class="h-20 flex items-center justify-center text-lg font-semibold text-gray-600 border-b border-gray-200 px-4">
+                    {{ data.dimension.label }}
                 </div>
-            </template>
-        </Column>
 
-        <!-- TOTAL -->
-        <Column>
-            <template #header>
-                <div class="w-full flex justify-center font-semibold">
+                <div v-for="row in rows" :key="row.key"
+                    class="h-11 flex items-center justify-center text-lg text-gray-500 border-b border-gray-100 last:border-b-0">
+                    {{ row.label }}
+                </div>
+
+                <div class="h-12 flex items-center justify-center text-lg border-t border-gray-200">
                     Total
                 </div>
-            </template>
+            </div>
 
-            <template #body="{ data }">
-                <div
-                    class="flex justify-between md:justify-center"
-                    data-label="Total"
-                >
-                    <span class="font-bold text-indigo-600">
-                        {{ data.total ?? 0 }}
-                    </span>
+            <!-- ================= METRICS ================= -->
+            <template v-for="metric in data?.metrics" :key="metric.key">
+
+                <!-- SINGLE METRIC -->
+                <div v-if="metric.type !== 'group'"
+                    class="flex-1 basis-0 min-w-[140px] flex flex-col rounded-xl border border-gray-200">
+                    <div class="h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
+                        <span class="text-lg font-semibold text-gray-600">{{ metric.label }}</span>
+                        <Icon v-if="metric.icon" :data="metric" class='text-xl' />
+                    </div>
+
+                    <template v-for="row in rows" :key="row.key">
+                        <component :is="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? Link : 'div'"
+                            :href="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ?? undefined" :class="[
+                                'h-11 flex items-center justify-center text-lg border-b border-gray-100 last:border-b-0',
+                                isWeakValue(data.data[row.key]?.[metric.key]?.value)
+                                    ? 'text-gray-400 opacity-40'
+                                    : 'text-black',
+                                getSafeRoute(data.data[row.key]?.[metric.key]?.route_target)
+                                    ? 'hover:text-indigo-600 hover:underline cursor-pointer'
+                                    : ''
+                            ]">
+                            {{ data.data[row.key]?.[metric.key]?.value ?? '-' }}
+                        </component>
+                    </template>
+
+                    <div v-if="data?.dimension"
+                        class="h-12 flex items-center justify-center text-lg font-semibold text-gray-700 border-t border-gray-200">
+                        {{ data.totals[metric.key]?.value ?? '-' }}
+                    </div>
                 </div>
-            </template>
-        </Column>
 
-        <!-- DYNAMIC STATES -->
-        <Column
-            v-for="state in states"
-            :key="state.key"
-        >
+                <!-- GROUP METRIC -->
+                <div v-else class="flex flex-1 basis-0 min-w-max rounded-xl border border-gray-200">
+                    <div v-for="(item, itemIndex) in metric.items" :key="item.key" class="min-w-[140px] flex flex-col"
+                        :class="itemIndex < (metric.items?.length ?? 0) - 1 ? 'border-r border-gray-200' : ''">
+                        <div class="h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
+                            <span class="text-lg font-semibold text-gray-600">{{ item.label }}</span>
+                            <Icon v-if="item.icon" :data="item" class='text-xl' />
+                        </div>
 
-            <template #header>
-                <div class="w-full flex justify-center font-semibold">
-                    {{ state.label }}
-                </div>
-            </template>
+                        <template v-for="row in rows" :key="row.key + '-' + item.key">
+                            <component :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
+                                :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined" :class="[
+                                    'h-11 flex items-center justify-center text-lg border-b border-gray-100 last:border-b-0',
+                                    isWeakValue(data.data[row.key]?.[item.key]?.value)
+                                        ? 'text-gray-400 opacity-40'
+                                        : 'text-black',
+                                    getSafeRoute(data.data[row.key]?.[item.key]?.route_target)
+                                        ? 'hover:text-indigo-600 hover:underline cursor-pointer'
+                                        : ''
+                                ]">
+                                {{ data.data[row.key]?.[item.key]?.value ?? '-' }}
+                            </component>
+                        </template>
 
-            <template #body="{ data }">
-                <div
-                    class="flex justify-between md:justify-center items-center gap-2
-                           cursor-pointer hover:bg-gray-100 rounded-md py-1 transition"
-                    :data-label="state.label"
-                    @click="goToRoute(data[state.key])"
-                >
-                    <div class="flex items-center gap-2">
-                        <Icon
-                            v-if="data[state.key]?.icon_state"
-                            :data="data[state.key].icon_state"
-                        />
-
-                        <FontAwesomeIcon
-                            v-else-if="data[state.key]?.icon"
-                            :icon="data[state.key].icon"
-                            class="text-gray-400"
-                        />
-
-                        <span class="font-medium">
-                            {{ data[state.key]?.value ?? 0 }}
-                        </span>
+                        <div v-if="data?.dimension"
+                            class="h-12 flex items-center justify-center text-lg  text-gray-700 border-t border-gray-200">
+                            {{ data.totals[item.key]?.value ?? '-' }}
+                        </div>
                     </div>
                 </div>
             </template>
-        </Column>
 
-    </DataTable>
-</div>
+            <!-- ================= ROW TOTAL BOX ================= -->
+            <div class="flex-1 basis-0 min-w-[140px] flex flex-col rounded-xl border border-gray-200">
+                <div class="h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
+                    <span class="text-lg font-semibold text-gray-600">Total</span>
+                    <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xl' />
+                </div>
+
+                <div v-for="row in rows" :key="row.key"
+                    class="h-11 flex items-center justify-center text-lg font-semibold border-b border-gray-100 last:border-b-0">
+                    {{ data.row_totals[row.key]?.value ?? '-' }}
+                </div>
+
+                <div v-if="data?.dimension"
+                    class="h-12 flex items-center justify-center text-lg border-t border-gray-200">
+                    {{ data.grand_total?.value ?? '-' }}
+                </div>
+            </div>
+
+        </div>
+    </div>
 </template>

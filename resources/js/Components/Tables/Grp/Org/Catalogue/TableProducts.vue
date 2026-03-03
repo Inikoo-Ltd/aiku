@@ -501,14 +501,23 @@ const saveTradeUnits = (value, product) => {
         </template>
 
         <template #cell(name)="{ item: product }">
-            <div>
-                <ProductUnitLabel
-                    v-if="product?.units"
-                    :units="product?.units"
-                    :unit="product?.unit"
-                    class="mr-2"
-                />
-                {{ product.name }}
+            <div class="flex items-center">
+                <div v-if="product.org_stocks" class="text-xxs shrink-0">
+                    <LabelSKU
+                        :product="product"
+                        :trade_units="product.org_stocks"
+                    />
+                </div>
+
+                <div class="xtruncate">
+                    <!-- <ProductUnitLabel
+                        v-if="product?.units"
+                        :units="product?.units"
+                        :unit="product?.unit"
+                        class="mr-2"
+                    /> -->
+                    {{ product.name }}
+                </div>
             </div>
         </template>
 

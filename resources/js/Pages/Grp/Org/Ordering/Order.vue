@@ -94,6 +94,7 @@ import order from "@/Pages/Grp/Org/Ordering/Order.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import { Icon as IconTS } from "@/types/Utils/Icon"
+import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -1789,6 +1790,24 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     </ul>
                                 </div>
                             </div>
+
+                            <dl v-if="['packed', 'finalised', 'dispatched'].includes(note?.state) && !props.delivery_address_management.addresses.is_shipping_by_external && note.shipments"
+                                class="flex items-xcenter w-full pr-3 flex-none gap-x-1.5">
+                                <dt class="flex-none mt-1">
+                                    <FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width aria-hidden="true" class="text-gray-500" />
+                                </dt>
+                                <dd class="text-gray-500 w-full">
+                                    <ShipmentSection
+                                        :shipping_fields="note.shipping_fields"
+                                        :shipping_fields_update_route="note.shipping_fields_update_route"
+                                        :shipments="note.shipments"
+                                        :shipments_routes="note.shipments_routes"
+                                        :address="note.shipping_fields.address"
+                                        :currencyCode="box_stats?.currency?.data.code"
+                                        :external_shop="box_stats?.external_shop"
+                                    />
+                                </dd>
+                            </dl>
 
                             <!--                            <div v-else class="mt-1 text-xs italic text-gray-400">
                                 {{ trans('No shipments') }}

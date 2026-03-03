@@ -19,6 +19,7 @@ use App\Actions\Dropshipping\Ebay\ShowCallbackSuccessRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\StoreMagentoUser;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
+use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
@@ -169,4 +170,8 @@ Route::prefix('checkout')->name('checkout.')->group(function () {
 
 Route::prefix('back-in-stocks')->as('back_in_stock.')->group(function () {
     Route::get('/', IndexRetinaDropshippingBackInStocks::class)->name('index');
+});
+
+Route::prefix('tiktok')->as('tiktok.')->group(function () {
+    Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
 });

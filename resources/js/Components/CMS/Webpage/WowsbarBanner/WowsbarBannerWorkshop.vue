@@ -76,7 +76,15 @@ const getDataBanner = async (): Promise<void> => {
 		isLoading.value = true
 		const url = getRouteShow()
 		const response = await axios.get(url)
-		data.value = response.data
+		const components = response.data.compiled_layout.components.filter((item: any) => item?.visibility == true)
+
+		data.value = {
+			...response.data,
+			compiled_layout: {
+				...response.data.compiled_layout,
+				components: components
+			}
+		}
 	} catch (error: any) {
 		console.error(error)
 		notify({
@@ -89,6 +97,12 @@ const getDataBanner = async (): Promise<void> => {
 		isLoading.value = false
 	}
 }
+
+const bannerRatio = computed(() => {
+	return data.value?.ratio ?? '4/1'
+})
+
+
 
 /**
  * Single watcher for slug changes
@@ -103,11 +117,27 @@ watch(
 	{ immediate: true }
 )
 
+
+const bannerDimensionStyle = computed(() => {
+	const styles = getStyles(
+		props.modelValue?.banner_dimension?.properties,
+		props.screenType,
+		false
+	) || {}
+
+	return {
+		width: styles.width ?? '100%',
+		height: styles.height ?? '100%'
+	}
+})
+
 onMounted(() => {
 	if (activeSlug.value) {
 		getDataBanner()
 	}
 })
+
+console.log('banner', props)
 </script>
 
 <template>
@@ -116,42 +146,32 @@ onMounted(() => {
 			<LoadingIcon class="text-4xl" />
 		</div>
 
-		<section
-			v-else-if="data && activeSlug"
-			class="relative"
-		>
-			<div
-				v-if="data.state !== 'switch_off'"
-				class="pointer-events-none select-none"
-				:style="{
-					...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-					...getStyles(modelValue.container?.properties, screenType)
-				}"
-			>
-				<SliderLandscape
-					v-if="data.type === 'landscape'"
-					:data="data.compiled_layout"
-					:production="true"
-					:view="screenType"
-				/>
-				<SliderSquare
-					v-else
-					:data="data.compiled_layout"
-					:production="true"
-					:view="screenType"
-				/>
+
+		<section v-else-if="data && activeSlug" class="relative mx-auto" :style="bannerDimensionStyle">
+			<div v-if="data.state !== 'switch_off'" class="pointer-events-none select-none" :style="{
+				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+				...getStyles(modelValue.container?.properties, screenType)
+			}">
+
+				<div v-if="data?.compiled_layout?.type === 'landscape'" :class="[
+					'mx-auto',
+					bannerRatio !== '4/1' && 'max-w-full sm:max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-[1600px]'
+				]" :style="bannerDimensionStyle">
+					<SliderLandscape :data="data.compiled_layout" :production="true" :view="screenType"
+						:ratio="bannerRatio" />
+				</div>
+
+				<SliderSquare v-else :data="data.compiled_layout" :production="true" :view="screenType" />
 			</div>
 
-			
+
 		</section>
 
 		<div v-else>
-				<EmptyState
-					:data="{
-						title: trans('You do not have slides to show'),
-						description: trans('Create new slides in the workshop to get started')
-					}"
-				/>
-			</div>
+			<EmptyState :data="{
+				title: trans('You do not have slides to show'),
+				description: trans('Create new slides in the workshop to get started')
+			}" />
+		</div>
 	</div>
 </template>
