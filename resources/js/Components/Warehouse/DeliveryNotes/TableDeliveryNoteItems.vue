@@ -732,7 +732,7 @@ const submitTransactionAsWaiting = () => {
         </template>
 
          <template #cell(action)="{ item: item }">
-                <template class="" v-if="state === 'packing' && layout.app.environment === 'local' && props.shop_type === 'b2b'">
+                <template class="" v-if="state === 'packing' && layout.app.environment === 'local' && props.shop_type !== 'dropshipping'">
                     <ButtonWithLink
                         type="secondary"
                         tooltip="pack order"

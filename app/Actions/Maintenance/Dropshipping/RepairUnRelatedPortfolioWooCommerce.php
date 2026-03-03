@@ -13,9 +13,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairUnRelatedPortfolioWooCommerce
@@ -28,27 +26,27 @@ class RepairUnRelatedPortfolioWooCommerce
         $continue = true;
         $fetchedPortfolios = [];
 
-            do {
-                $fetchedPortfolio = $wooCommerceUser->getWooCommerceProducts([
-                    'per_page' => 20,
-                ]);
+        do {
+            $fetchedPortfolio = $wooCommerceUser->getWooCommerceProducts([
+                'per_page' => 20,
+            ]);
 
-                if(blank($fetchedPortfolio)) {
-                    $continue = false;
-                }
+            if (blank($fetchedPortfolio)) {
+                $continue = false;
+            }
 
-                echo count($fetchedPortfolio) . "\n";
+            echo count($fetchedPortfolio) . "\n";
 
-                $fetchedPortfolios[] = $fetchedPortfolio;
+            $fetchedPortfolios[] = $fetchedPortfolio;
 
-            } while ($continue);
+        } while ($continue);
 
         $fetchedPortfolioIds = collect($fetchedPortfolio)->pluck('id');
         $relatedPortfolioIds = $portfolios->pluck('platform_product_id');
 
         $foundedProduct = [];
         foreach ($fetchedPortfolioIds as $fetchedPortfolioId) {
-            if($relatedPortfolioIds->contains($fetchedPortfolioId)) {
+            if ($relatedPortfolioIds->contains($fetchedPortfolioId)) {
                 continue;
             } else {
                 $foundedProduct[] = $fetchedPortfolioId;
