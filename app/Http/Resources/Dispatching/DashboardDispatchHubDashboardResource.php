@@ -16,7 +16,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
     {
         $widgets = collect($this->resource);
 
-        $dimensionItems = $widgets->map(fn($widget) => [
+        $dimensionItems = $widgets->map(fn ($widget) => [
             'key'   => $widget['slug'] ?? str($widget['label'])->slug()->toString(),
             'label' => $widget['label'],
         ])->values()->toArray();
@@ -116,35 +116,5 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 'tooltip' => 'Total'
             ],
         ];
-    }
-
-    private function getMetricLabel(string $key): string
-    {
-        return match ($key) {
-            'todo'             => __('To do'),
-            'queued'           => __('Queued'),
-            'handling'         => __('Picking'),
-            'handling_blocked' => __('Waiting'),
-            'picked'           => __('Picked'),
-            'packing'          => __('Packing'),
-            'packed'           => __('Packed'),
-            'finalised'        => __('Finalised'),
-            default            => ucfirst($key),
-        };
-    }
-
-    private function getMetricIcon(string $key): array
-    {
-        return match ($key) {
-            'todo'             => ['fal', 'fa-clock'],
-            'queued'           => ['fal', 'fa-hourglass-start'],
-            'handling'         => ['fal', 'fa-list'],
-            'handling_blocked' => ['fal', 'fa-allergies'],
-            'picked'           => ['fal', 'fa-check'],
-            'packing'          => ['fal', 'fa-box-open'],
-            'packed'           => ['fal', 'fa-box'],
-            'finalised'        => ['fal', 'fa-check-circle'],
-            default            => ['fal', 'fa-circle'],
-        };
     }
 }

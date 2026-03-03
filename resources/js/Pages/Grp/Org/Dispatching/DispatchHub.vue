@@ -26,41 +26,8 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    dashboard: {
-        dimension: {
-            key: string
-            label: string
-            items: { key: string; label: string }[]
-        }
-        metrics: {
-            key: string
-            label: string
-            type: string
-            icon?: string[]
-            items?: { key: string; label: string; icon?: string[] }[]
-        }[]
-        data: {
-            [rowKey: string]: {
-                [metricKey: string]: {
-                    value: number | null
-                    route_target?: {
-                        name: string
-                        parameters?: object
-                    }
-                }
-            }
-        }
-        row_totals: {
-            [rowKey: string]: { value: number }
-        }
-        totals: {
-            [metricKey: string]: { value: number }
-        }
-        grand_total: {
-            value: number
-            icon?: string[]
-        }
-    }
+    dashboard: object
+    picking_session: object
     intervals: any
     settings: any
 }>();
@@ -70,10 +37,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
     const components: Component = {
-        dashboard: DispatchDashboard
+        dashboard: DispatchDashboard,
+        picking_session: DispatchDashboard,
     };
 
     return components[currentTab.value];
+});
+
+const tabData = computed(() => {
+    if (currentTab.value === 'picking_session') return props.picking_session;
+    return props.dashboard;
 });
 </script>
 
@@ -81,5 +54,5 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :tab="currentTab" :data="dashboard"></component>
+    <component :is="component" :tab="currentTab" :data="tabData"></component>
 </template>

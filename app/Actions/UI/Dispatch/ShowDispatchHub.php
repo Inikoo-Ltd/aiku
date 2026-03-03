@@ -17,6 +17,7 @@ use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
 use App\Http\Resources\Dispatching\DashboardDispatchHubDashboardResource;
 use App\Models\Inventory\Warehouse;
@@ -75,8 +76,66 @@ class ShowDispatchHub extends OrgAction
                     'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                 ],
                 'dashboard'   => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
+                'picking_session' => $this->getPickingSessionStats($warehouse),
             ]
         );
+    }
+
+    private function getPickingSessionStats(Warehouse $warehouse): array
+    {
+        $stats = $warehouse->stats;
+        $routeParams = [
+            'organisation' => $this->organisation->slug,
+            'warehouse'    => $warehouse->slug,
+        ];
+
+        $stateConfig = [
+            PickingSessionStateEnum::IN_PROCESS->value       => ['route' => 'grp.org.warehouses.show.dispatching.picking_sessions.in_process', 'icon' => ['fal', 'fa-chair']],
+            PickingSessionStateEnum::HANDLING->value         => ['route' => 'grp.org.warehouses.show.dispatching.picking_sessions.picking', 'icon' => ['fal', 'fa-hand-paper']],
+            PickingSessionStateEnum::HANDLING_BLOCKED->value => ['route' => 'grp.org.warehouses.show.dispatching.picking_sessions.waiting', 'icon' => ['fal', 'fa-hand-paper']],
+            PickingSessionStateEnum::PICKING_FINISHED->value => ['route' => 'grp.org.warehouses.show.dispatching.picking_sessions.picked', 'icon' => ['fal', 'fa-box-check']],
+            PickingSessionStateEnum::PACKING_FINISHED->value => ['route' => 'grp.org.warehouses.show.dispatching.picking_sessions.packed', 'icon' => ['fal', 'fa-box-check']],
+        ];
+
+        $metrics    = [];
+        $dataGlobal = [];
+        $totals     = [];
+
+        foreach (PickingSessionStateEnum::cases() as $case) {
+            $config    = $stateConfig[$case->value];
+            $statField = 'number_picking_sessions_state_'.$case->snake();
+            $count     = $stats->$statField ?? 0;
+
+            $metrics[] = [
+                'key'   => $case->snake(),
+                'label' => PickingSessionStateEnum::labels()[$case->value],
+                'type'  => 'stat',
+                'icon'  => $config['icon'],
+            ];
+
+            $dataGlobal[$case->snake()] = [
+                'value'        => $count,
+                'route_target' => [
+                    'name'       => $config['route'],
+                    'parameters' => $routeParams,
+                ],
+            ];
+
+            $totals[$case->snake()] = ['value' => $count];
+        }
+
+        $total = $stats->number_picking_sessions ?? 0;
+
+        return [
+            'metrics'     => $metrics,
+            'data'        => ['_global' => $dataGlobal],
+            'row_totals'  => ['_global' => ['value' => $total]],
+            'totals'      => $totals,
+            'grand_total' => [
+                'value' => $total,
+                'icon'  => ['fal', 'fa-arrow-from-left'],
+            ],
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters): array
