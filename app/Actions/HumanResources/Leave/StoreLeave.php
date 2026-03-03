@@ -7,7 +7,6 @@ use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Employee;
-use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\Timesheet;
@@ -190,25 +189,21 @@ class StoreLeave extends OrgAction
         $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
         $balanceYear = $startDate->year;
 
-        $balance = EmployeeLeaveBalance::firstOrCreate(
-            [
-                'employee_id' => $this->employee->id,
-                'year'        => $balanceYear,
-            ],
-            [
-                'annual_days'  => 14,
-                'unpaid_days'  => 0,
-            ]
-        );
+        if ($type === LeaveTypeEnum::ANNUAL->value) {
+            $annualSubmittedDays = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->where('type', LeaveTypeEnum::ANNUAL->value)
+                ->whereYear('start_date', $balanceYear)
+                ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
+                ->get()
+                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
 
-        $remainingField = match ($type) {
-            LeaveTypeEnum::ANNUAL->value => 'annual_remaining',
-            LeaveTypeEnum::MEDICAL->value => 'medical_remaining',
-            default => null,
-        };
+            $annualAllowance = (float) $this->employee->organisation->getDefaultAnnualLeaveDays();
+            $annualRemaining = max(0, $annualAllowance - (float) $annualSubmittedDays);
 
-        if ($remainingField && $balance->$remainingField < $durationDays) {
-            $validator->errors()->add('duration_days', __('Insufficient leave balance.'));
+            if ($annualRemaining < $durationDays) {
+                $validator->errors()->add('duration_days', __('Insufficient leave balance.'));
+            }
         }
     }
 
