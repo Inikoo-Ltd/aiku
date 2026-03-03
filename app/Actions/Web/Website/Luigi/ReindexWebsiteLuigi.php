@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website\Luigi;
 
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Website;
 use Exception;
@@ -36,7 +37,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
      */
     public function handle(Website $website, ?Command $command = null): void
     {
-        return;
+
         $command?->info("Reindexing website ".$website->domain);
 
         $accessToken = $this->getAccessToken($website);
@@ -56,26 +57,36 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
             ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
             ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
             ->chunk(1000, function ($webpages) use ($website, $command) {
-                $objects = [];
-                foreach ($webpages as $webpage) {
-                    $object = $this->getObjectFromWebpage($webpage);
-                    if ($object) {
-                        $objects[] = $object;
+
+                if($command){
+                    $objects = [];
+                    foreach ($webpages as $webpage) {
+                        $object = $this->getObjectFromWebpage($webpage);
+                        if ($object) {
+                            $objects[] = $object;
+                        }
                     }
+
+                    $body       = [
+                        'objects' => $objects
+                    ];
+                    $compressed = count($objects) >= 1000;
+                    $command?->info("Reindexing webpages $website->domain with ".count($objects)." objects");
+                    try {
+                        $this->request($website, '/v1/content', $body, 'post', $compressed);
+                    } catch (Exception $e) {
+                        print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
+
+                        return;
+                    }
+                }else{
+                    foreach ($webpages as $webpage) {
+                       ReindexWebpageLuigi::dispatch($webpage);
+                    }
+
                 }
 
-                $body       = [
-                    'objects' => $objects
-                ];
-                $compressed = count($objects) >= 1000;
-                $command?->info("Reindexing webpages $website->domain with ".count($objects)." objects");
-                try {
-                    $this->request($website, '/v1/content', $body, 'post', $compressed);
-                } catch (Exception $e) {
-                    print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
 
-                    return;
-                }
             });
     }
 
