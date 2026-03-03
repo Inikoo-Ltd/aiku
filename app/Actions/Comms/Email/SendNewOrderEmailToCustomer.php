@@ -257,7 +257,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
             $html .= sprintf(
                 '<tr>
                     <td style="width: 70%%; padding: 8px;"></td>
-                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #15803d;">' . __('Total Savings') . '</td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #15803d;">' . __('Discounts') . '</td>
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #15803d;">%s%s</td>
                 </tr>',
                 $currency,
