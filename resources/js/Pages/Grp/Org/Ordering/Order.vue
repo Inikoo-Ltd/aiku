@@ -1750,10 +1750,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 v-if="getShipmentFromPlatform(note) && ['packed', 'finalised', 'dispatched'].includes(note.state) && props.delivery_address_management.addresses.is_shipping_by_external && !note?.shipments?.length"
                                 class="flex items-center gap-2 text-sm mb-1"
                             >
+
                                 <ButtonWithLink
                                     :label="getShipmentFromPlatform(note)?.label"
                                     method="post"
-                                    :url="(route(getShipmentFromPlatform(note)?.name, getShipmentFromPlatform(note)?.parameters) as string)"
+                                    :url="(route(getShipmentFromPlatform(note)?.routeShipment?.name, getShipmentFromPlatform(note)?.routeShipment?.parameters) as string)"
                                     icon="fas fa-plus"
                                     size="xs"
                                     type="dashed"

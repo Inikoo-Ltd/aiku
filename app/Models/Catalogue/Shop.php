@@ -160,6 +160,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $external_shop_connection_error
  * @property int|null $migration_pivot
  * @property string|null $product_price_currency_exchange
+ * @property int|null $seeder_shop_id
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -234,6 +235,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\Catalogue\ShopSalesIntervals|null $salesIntervals
+ * @property-read Shop|null $seederShop
  * @property-read SenderEmail|null $senderEmail
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
@@ -453,6 +455,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function masterShop(): BelongsTo
     {
         return $this->belongsTo(MasterShop::class);
+    }
+
+    public function seederShop(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'seeder_shop_id');
     }
 
     public function currency(): BelongsTo

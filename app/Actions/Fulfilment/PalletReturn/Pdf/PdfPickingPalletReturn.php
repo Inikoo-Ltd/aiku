@@ -38,11 +38,11 @@ class PdfPickingPalletReturn
 
         // Generate PDF using Blade template and data array
         $pdf = PDF::loadView('pickings.templates.pdf.picking-pallet', [
-            'palletReturn' => $palletReturn,
-            'customer'     => $palletReturn->customer,
-            'deliveryAddress' => $palletReturn->deliveryAddress->formatted_address,
-            'shop'         => $palletReturn->fulfilment->shop,
-            'items'        => $palletReturn->items,
+            'palletReturn'      => $palletReturn,
+            'customer'          => $palletReturn->fulfilmentCustomer->customer,
+            'deliveryAddress'   => $palletReturn->deliveryAddress->formatted_address,
+            'shop'              => $palletReturn->fulfilment->shop,
+            'items'             => $palletReturn->items,
         ]);
 
         return response($pdf->stream($filename . '.pdf'), 200)

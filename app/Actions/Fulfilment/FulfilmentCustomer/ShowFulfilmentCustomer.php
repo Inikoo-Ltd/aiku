@@ -341,7 +341,7 @@ class ShowFulfilmentCustomer extends OrgAction
 
         return match ($routeName) {
             'grp.org.fulfilments.show.crm.customers.show' => [
-                'label' => $fulfilmentCustomer->customer->name,
+                'label' => $fulfilmentCustomer->customer?->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [

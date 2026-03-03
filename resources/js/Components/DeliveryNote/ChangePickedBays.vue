@@ -10,7 +10,7 @@ import { router } from '@inertiajs/vue3'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     warehouse: {
         slug: string
     }
@@ -19,7 +19,10 @@ const props = defineProps<{
         slug: string
         refrence: string
     }
-}>()
+    pickedBays: {}[]
+}>(), {
+    pickedBays: () => []
+})
 const layout = inject('layout', layoutStructure)
 
 const isOpenModal = ref(false)
@@ -60,6 +63,10 @@ watch(isOpenModal, (newVal) => {
 
 const isLoadingSubmitBay = ref<number|null|undefined>(undefined)
 const submitSelectBay = (bayId?: number|null) => {
+    if (props.pickedBays.map(pBay => pBay.id).includes(bayId)){
+        return
+    }
+    
     // Section: Submit
     router.patch(
         route(
@@ -114,7 +121,8 @@ const submitSelectBay = (bayId?: number|null) => {
             <div class="mb-1">
                 {{ trans("Available picked bays") }} ({{ isLoadingFetch ? '-' : listBays.length }}):
             </div>
-            <div class="h-64">
+            
+            <div class="h-64 overflow-y-auto">
                 <div class="grid grid-cols-3 gap-2">
                     <div
                         v-if="isLoadingFetch"
@@ -129,7 +137,7 @@ const submitSelectBay = (bayId?: number|null) => {
                             :key="bay.id"
                             @click="() => submitSelectBay(bay.id)"
                             class="cursor-pointer flex justify-between items-center py-2 px-3 border border-gray-300 text-sm rounded"
-                            :class="isLoadingSubmitBay == bay.id ? 'bg-[var(--theme-color-0)] opacity-70 text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
+                            :class="pickedBays.map(pBay => pBay.id).includes(bay.id) ? 'bg-gray-400' : isLoadingSubmitBay == bay.id ? 'bg-[var(--theme-color-0)] opacity-70 text-[var(--theme-color-1)]' : 'bg-gray-50 hover:bg-gray-200'"
                         >
                             {{ bay.name ?? bay.code ?? bay.slug }}
                             <LoadingIcon v-if="isLoadingSubmitBay == bay.id" />
@@ -158,7 +166,7 @@ const submitSelectBay = (bayId?: number|null) => {
 
             <Button
                 @click="() => submitSelectBay(null)"
-                :label="trans('Unassign Trolley')"
+                :label="trans('Unassign picked bay')"
                 full
                 iconRight="fal fa-trash-undo-alt"
                 class="mt-4"

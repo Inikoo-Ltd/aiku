@@ -13,8 +13,10 @@ use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaApiAction;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -28,8 +30,20 @@ class SubmitApiOrder extends RetinaApiAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order): Order|JsonResponse
     {
+        if ($order->customer_id != $this->customer->id || $order->shop_id != $this->shop->id) {
+            return response()->json([
+                'message' => "Unable to make modifications for this order"
+            ], 403);
+        }
+
+        if ($order->state != OrderStateEnum::CREATING) {
+            return response()->json([
+                'message' => "This order is already in the '{$order->state->value}' state and cannot be updated."
+            ], 409);
+        }
+
         try {
             PayOrderAsync::run($order);
         } catch (Exception $e) {
@@ -39,9 +53,13 @@ class SubmitApiOrder extends RetinaApiAction
         return SubmitOrder::make()->action($order);
     }
 
-    public function jsonResponse(Order $order): OrderApiResource|\Illuminate\Http\Resources\Json\JsonResource
+    public function jsonResponse(JsonResponse|Order $result): OrderApiResource|\Illuminate\Http\Resources\Json\JsonResource|JsonResponse
     {
-        return OrderApiResource::make($order)
+        if ($result instanceof JsonResponse) {
+            return $result;
+        }
+
+        return OrderApiResource::make($result)
             ->additional([
                 'message' => __('Order submitted successfully'),
             ]);
