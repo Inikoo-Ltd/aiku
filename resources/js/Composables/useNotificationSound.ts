@@ -94,7 +94,7 @@ export const fetchUnreadCount = async (
 		totalUnread.value = data?.total_unread_count ?? 0
 
 	} catch (e) {
-		console.error("Failed to fetch unread count", e)
+		console.error("Failed to fetch unread count!", e?.response?.data?.message || e)
 	}
 }
 
