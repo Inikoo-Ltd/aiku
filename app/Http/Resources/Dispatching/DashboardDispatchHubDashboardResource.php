@@ -43,13 +43,13 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     [
                         'key'   => 'handling_blocked',
                         'label' => __('Waiting'),
-                        'icon'  => ['fal', 'fa-list'],
+                        'icon'  => ['fal', 'fa-snooze'],
                         'tooltip' => 'Waiting'
                     ],
                     [
                         'key'   => 'picked',
                         'label' => __('Picked'),
-                        'icon'  => ['fal', 'fa-list'],
+                        'icon'  => ['fal', 'fa-check'],
                         'tooltip' => 'Picked'
                     ],
                     [
