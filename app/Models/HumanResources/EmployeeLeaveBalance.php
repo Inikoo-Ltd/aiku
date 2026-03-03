@@ -13,11 +13,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $annual_used
  * @property int $unpaid_days
  * @property int $unpaid_used
+ * @property int $medical_days
+ * @property int $medical_used
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\HumanResources\Employee $employee
  * @property-read int $annual_remaining
  * @property-read int $unpaid_remaining
+ * @property-read int $medical_remaining
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance query()
@@ -40,5 +43,10 @@ class EmployeeLeaveBalance extends Model
     public function getUnpaidRemainingAttribute(): int
     {
         return max(0, $this->unpaid_days - $this->unpaid_used);
+    }
+
+    public function getMedicalRemainingAttribute(): int
+    {
+        return max(0, $this->medical_days - $this->medical_used);
     }
 }
