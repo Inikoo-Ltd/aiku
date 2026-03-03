@@ -24,7 +24,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
     public string $jobQueue = 'default-long';
 
     public string $commandSignature = 'luigis:reindex_website {website?}';
-
+    public int $jobTries = 1;
 
     public function getJobUniqueId(Website $website): string
     {
