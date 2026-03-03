@@ -12,7 +12,7 @@ class GetEmployeeContract extends OrgAction
 {
     public function handle(Employee $employee): JsonResponse
     {
-        $contract = $employee->getFirstMedia('contracts');
+        $contract = $employee->getMedia('contracts')->sortByDesc('id')->first();
 
         return new JsonResponse([
             'employee_id' => $employee->id,
@@ -23,7 +23,7 @@ class GetEmployeeContract extends OrgAction
                 'id' => $contract->id,
                 'file_name' => $contract->file_name,
                 'mime_type' => $contract->mime_type,
-                'url' => $contract->getUrl(),
+                'url' => route('grp.media.show', ['media' => $contract->ulid]),
                 'size' => $contract->size,
             ] : null,
         ]);
