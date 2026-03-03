@@ -103,7 +103,7 @@ class ShowDispatchHub extends OrgAction
 
         foreach (PickingSessionStateEnum::cases() as $case) {
             $config    = $stateConfig[$case->value];
-            $statField = 'number_picking_sessions_state_'.$case->snake();
+            $statField = 'number_picking_sessions_state_' . $case->snake();
             $count     = $stats->$statField ?? 0;
 
             $metrics[] = [
@@ -111,6 +111,7 @@ class ShowDispatchHub extends OrgAction
                 'label' => PickingSessionStateEnum::labels()[$case->value],
                 'type'  => 'stat',
                 'icon'  => $config['icon'],
+                'tooltip' => PickingSessionStateEnum::labels()[$case->value],
             ];
 
             $dataGlobal[$case->snake()] = [
@@ -134,6 +135,7 @@ class ShowDispatchHub extends OrgAction
             'grand_total' => [
                 'value' => $total,
                 'icon'  => ['fal', 'fa-arrow-from-left'],
+                'tooltip' => 'Total'
             ],
         ];
     }

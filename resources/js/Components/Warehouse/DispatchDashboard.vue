@@ -142,7 +142,7 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                         </component>
                     </template>
 
-                    <div
+                    <div v-if="data?.dimension"
                         class="h-12 flex items-center justify-center text-sm font-semibold text-gray-700 border-t border-gray-200">
                         {{ data.totals[metric.key]?.value ?? '-' }}
                     </div>
@@ -169,7 +169,7 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                             </component>
                         </template>
 
-                        <div
+                        <div v-if="data?.dimension"
                             class="h-12 flex items-center justify-center text-sm font-semibold text-gray-700 border-t border-gray-200">
                             {{ data.totals[item.key]?.value ?? '-' }}
                         </div>
@@ -189,7 +189,7 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                     {{ data.row_totals[row.key]?.value ?? '-' }}
                 </div>
 
-                <div
+                <div v-if="data?.dimension"
                     class="h-12 flex items-center justify-center text-sm font-bold text-gray-700 border-t border-gray-200">
                     {{ data.grand_total?.value ?? '-' }}
                 </div>
