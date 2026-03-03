@@ -12,15 +12,24 @@ use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Website;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexWebsiteLuigi
+class ReindexWebsiteLuigi implements ShouldBeUnique
 {
     use AsAction;
     use WithLuigis;
 
+    public string $jobQueue = 'default-long';
+
     public string $commandSignature = 'luigis:reindex_website {website?}';
+
+
+    public function getJobUniqueId(Website $website): string
+    {
+        return $website->id;
+    }
 
     /**
      * @throws \Exception
