@@ -94,9 +94,9 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
     }
     return null
 }
-// const isWeakValue = (value: unknown): boolean => {
-//     return value === 0 || value === null || value === undefined
-// }
+const isWeakValue = (value: number | null | undefined) => {
+    return value === null || value === 0
+}
 </script>
 
 <template>
@@ -116,8 +116,7 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                     {{ row.label }}
                 </div>
 
-                <div
-                    class="h-12 flex items-center justify-center text-lg text-gray-700 border-t border-gray-200">
+                <div class="h-12 flex items-center justify-center text-lg border-t border-gray-200">
                     Total
                 </div>
             </div>
@@ -136,8 +135,10 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                     <template v-for="row in rows" :key="row.key">
                         <component :is="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? Link : 'div'"
                             :href="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ?? undefined" :class="[
-                                'h-11 flex items-center justify-center text-lg text-gray-500 border-b border-gray-100 last:border-b-0',
-                                
+                                'h-11 flex items-center justify-center text-lg border-b border-gray-100 last:border-b-0',
+                                isWeakValue(data.data[row.key]?.[metric.key]?.value)
+                                    ? 'text-gray-400 opacity-40'
+                                    : 'text-black',
                                 getSafeRoute(data.data[row.key]?.[metric.key]?.route_target)
                                     ? 'hover:text-indigo-600 hover:underline cursor-pointer'
                                     : ''
@@ -164,8 +165,10 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                         <template v-for="row in rows" :key="row.key + '-' + item.key">
                             <component :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
                                 :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined" :class="[
-                                    'h-11 flex items-center justify-center text-lg text-gray-500 border-b border-gray-100 last:border-b-0',
-                                    
+                                    'h-11 flex items-center justify-center text-lg border-b border-gray-100 last:border-b-0',
+                                    isWeakValue(data.data[row.key]?.[item.key]?.value)
+                                        ? 'text-gray-400 opacity-40'
+                                        : 'text-black',
                                     getSafeRoute(data.data[row.key]?.[item.key]?.route_target)
                                         ? 'hover:text-indigo-600 hover:underline cursor-pointer'
                                         : ''
@@ -190,12 +193,12 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
                 </div>
 
                 <div v-for="row in rows" :key="row.key"
-                    class="h-11 flex items-center justify-center text-lg font-semibold text-gray-600 border-b border-gray-100 last:border-b-0">
+                    class="h-11 flex items-center justify-center text-lg font-semibold border-b border-gray-100 last:border-b-0">
                     {{ data.row_totals[row.key]?.value ?? '-' }}
                 </div>
 
                 <div v-if="data?.dimension"
-                    class="h-12 flex items-center justify-center text-lg text-gray-700 border-t border-gray-200">
+                    class="h-12 flex items-center justify-center text-lg border-t border-gray-200">
                     {{ data.grand_total?.value ?? '-' }}
                 </div>
             </div>
