@@ -743,8 +743,7 @@ const submitTransactionAsWaiting = () => {
                     <ButtonWithLink
                         type="secondary"
                         tooltip="pack order"
-                        icon="fal fa-hand-holding-box"
-                        label="Packing order"
+                        :label="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'sm' : 'lg'"
                         :bindToLink="{preserveScroll: true}"
                         :routeTarget="item.packing_route"
