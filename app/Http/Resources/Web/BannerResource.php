@@ -53,6 +53,7 @@ class BannerResource extends JsonResource
             'state_icon'         => $banner->state->stateIcon()[$banner->state->value],
             'image_thumbnail'    => $imageThumbnail ? GetPictureSources::run($imageThumbnail) : null,
             'image'              => $image ? GetPictureSources::run($image) : null,
+            'ratio'              => $banner->ratio,
             'route'              => [
                 'name'       => 'customer.banners.banners.show',
                 'parameters' => [$banner->slug]
