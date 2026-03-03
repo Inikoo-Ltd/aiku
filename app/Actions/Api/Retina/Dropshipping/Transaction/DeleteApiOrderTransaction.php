@@ -41,7 +41,7 @@ class DeleteApiOrderTransaction extends RetinaApiAction
             ], 409);
         }
 
-        if($transaction->model_type != class_basename(Product::class)){
+        if ($transaction->model_type != class_basename(Product::class)) {
             return response()->json([
                 'message' => 'Unable to delete this transaction data. Only able to delete product transaction.',
             ], 422);
@@ -57,8 +57,10 @@ class DeleteApiOrderTransaction extends RetinaApiAction
 
     public function jsonResponse(Transaction|JsonResponse $result)
     {
-        if($result instanceof JsonResponse) return $result;
-        
+        if ($result instanceof JsonResponse) {
+            return $result;
+        }
+
         return TransactionApiResource::make($result)
             ->additional([
                 'message' => __('Transaction deleted successfully'),

@@ -18,13 +18,9 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
-import Icon from "@/Components/Icon.vue"
 import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
-// import EditTrolley from "@/Components/DeliveryNote/EditTrolley.vue"
 import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
@@ -42,6 +38,10 @@ const props = defineProps<{
         is_collection?: boolean
         is_replacement?: boolean
         is_create_replacement?: boolean
+        currency_code: string
+        external_shop: {
+
+        } | null
         delivery_note: {
             reference?: string
             route: routeType
@@ -416,7 +416,7 @@ const updateCollection = async (e: Event) => {
                     />
                     
                     <!-- Section: Picked Bays -->
-                    <div v-if="['handling', 'picked', 'packing'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
+                    <div v-if="[ 'picked', 'packing'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
                         <dl v-tooltip="trans('Picked bay name')"
                             class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
@@ -438,7 +438,7 @@ const updateCollection = async (e: Event) => {
                         </dl>
 
                         <ChangePickedBays
-                            v-if="['handling', 'picked', 'packing'].includes(deliveryNote.state)"
+                            v-if="['picked', 'packing'].includes(deliveryNote.state)"
                             :warehouse="warehouse"
                             :deliveryNote="deliveryNote"
                             :pickedBays="boxStats?.picked_bays"
@@ -447,15 +447,6 @@ const updateCollection = async (e: Event) => {
                     
                     <div class="!mt-2 border-t border-gray-300 w-full" />
 
-                    <!-- Current State -->
-                    <!-- <dl xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
-                        <dt class="flex-none">
-                            <Icon :data="boxStats?.state_icon" />
-                        </dt>
-                        <dd class="text-gray-500">
-                            {{ boxStats.state_label }}
-                        </dd>
-                    </dl> -->
 
                     <!-- Total Items -->
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -548,6 +539,8 @@ const updateCollection = async (e: Event) => {
                                 :shipments_routes="boxStats.shipments_routes"
                                 :address="boxStats.address"
                                 :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
+                                :currencyCode="boxStats?.currency_code"
+                                :external_shop="boxStats?.external_shop"
                             />
                         </dd>
                     </dl>

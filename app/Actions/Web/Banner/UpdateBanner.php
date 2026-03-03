@@ -16,6 +16,7 @@ use App\Http\Resources\Web\BannerResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Banner;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateBanner extends OrgAction
@@ -36,7 +37,8 @@ class UpdateBanner extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'required','string','max:255']
+            'name' => ['sometimes', 'required','string','max:255'],
+            'ratio' => ['sometimes', 'string', 'regex:/\d+\/\d+/'],
         ];
     }
 

@@ -78,6 +78,7 @@ import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
 import InputWorkingHours from '@/Components/Forms/Fields/InputWorkingHours.vue'
 import InputWithWarning from '@/Components/Forms/Fields/InputWithWarning.vue'
+import Ratio from '@/Components/Forms/Fields/Ratio.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -157,7 +158,7 @@ export const componentsList: { [key: string]: Component } = {
     'map-picker' : MapPickerField,
     'working-hours' : InputWorkingHours,
     'notification_preferences': NotificationPreferences,
-
+    'ratio' : Ratio,
     'free_gift': FreeGift,
 }
 

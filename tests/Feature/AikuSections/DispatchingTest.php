@@ -696,7 +696,7 @@ test("UI Index dispatching picking sessions", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page
-                    ->where("title", "Picking sessions")
+                    ->where("title", "Picking Sessions")
                     ->etc()
             )
             ->has("data");

@@ -156,6 +156,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_shipping_by_external
  * @property \Illuminate\Support\Carbon|null $picked_at
  * @property string|null $packing_at
+ * @property string $amount_off
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -171,6 +172,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Address> $fixedAddresses
  * @property-read Group $group
  * @property-read Collection<int, Invoice> $invoices
+ * @property-read Collection<int, \App\Models\Ordering\Transaction> $itemTransactions
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Collection<int, OrderPaymentApiPoint> $orderPaymentApiPoint
  * @property-read Organisation $organisation
