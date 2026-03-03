@@ -41,16 +41,28 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                         'tooltip' => 'Picking'
                     ],
                     [
-                        'key'   => 'packed',
-                        'label' => __('Packed'),
-                        'icon'  => ['fal', 'fa-box'],
-                        'tooltip' => 'Packed'
+                        'key'   => 'handling_blocked',
+                        'label' => __('Waiting'),
+                        'icon'  => ['fal', 'fa-list'],
+                        'tooltip' => 'Waiting'
+                    ],
+                    [
+                        'key'   => 'picked',
+                        'label' => __('Picked'),
+                        'icon'  => ['fal', 'fa-list'],
+                        'tooltip' => 'Picked'
                     ],
                     [
                         'key'   => 'packing',
                         'label' => __('Packing'),
                         'icon'  => ['fal', 'fa-box-open'],
                         'tooltip' => 'Packing'
+                    ],
+                    [
+                        'key'   => 'packed',
+                        'label' => __('Packed'),
+                        'icon'  => ['fal', 'fa-box'],
+                        'tooltip' => 'Packed'
                     ],
                 ],
             ],
@@ -63,7 +75,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             ],
         ];
 
-        $allCaseKeysForTotals = ['todo', 'handling', 'packed', 'packing', 'finalised'];
+        $allCaseKeysForTotals = ['todo', 'handling', 'handling_blocked', 'picked', 'packing', 'packed', 'finalised'];
 
         $data = [];
         foreach ($widgets as $widget) {
