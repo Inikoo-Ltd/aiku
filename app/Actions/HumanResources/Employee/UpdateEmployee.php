@@ -106,7 +106,7 @@ class UpdateEmployee extends OrgAction
                     'year'        => now()->year,
                 ],
                 [
-                    'annual_days'   => 14,
+                    'annual_days'   => $employee->organisation->getDefaultAnnualLeaveDays(),
                     'annual_used'   => 0,
                     'unpaid_days'   => 0,
                     'unpaid_used'   => 0,
