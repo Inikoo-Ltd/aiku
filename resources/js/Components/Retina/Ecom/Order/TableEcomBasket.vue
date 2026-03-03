@@ -114,7 +114,8 @@ const debounceUpdateQuantity = debounce(
                     <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                 </div>
                 <div v-else class="text-gray-400 italic text-xs">
-                     {{ trans('Stock :quantity available', { quantity: locale.number(item.available_quantity || 0) })  }}
+                  <!--   {{ trans('Stock :quantity available', { quantity: locale.number(item.available_quantity || 0) })  }} -->
+                    {{ trans('Stock')}} {{  locale.number(item.available_quantity || 0) }} {{ trans('available') }}
                 </div>
 
                 <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
@@ -185,7 +186,11 @@ const debounceUpdateQuantity = debounce(
                                     <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                                 </div>
                                 <div v-else class="text-gray-400 italic text-xs">
-                                   {{ trans('Stock :quantity available', { quantity: locale.number(item.available_quantity || 0) })  }}
+                                      {{ trans('Stock')}} {{  locale.number(item.available_quantity || 0) }} {{ trans('available') }}
+                                    <!-- {{ trans('Stock :xquantityx available', {
+                                        xquantityx:
+                                            locale.number(item.available_quantity || 0) })
+                                    }} -->
                                 </div>
                             </div>
                         </div>
