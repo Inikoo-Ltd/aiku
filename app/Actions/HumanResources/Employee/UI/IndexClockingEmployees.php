@@ -129,10 +129,12 @@ class IndexClockingEmployees extends OrgAction
             $medicalRequestCount = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->where('type', 'medical')
+                ->where('status', '!=', 'rejected')
                 ->count();
             $unpaidRequestCount = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->where('type', 'unpaid')
+                ->where('status', '!=', 'rejected')
                 ->count();
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
