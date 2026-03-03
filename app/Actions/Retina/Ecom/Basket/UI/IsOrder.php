@@ -204,6 +204,17 @@ trait IsOrder
             ]
         ];
 
+        if($order->amount_off!=0){
+            $orderSummary[] = [
+                [
+                    'label'       => __('Amount off'),
+                    'information' => '',
+                    'price_total' => -$order->amount_off,
+                    'slot_name'   => 'discounts',
+                ],
+                ];
+        }
+
         $orderSummary[] =
             [
                 [

@@ -153,10 +153,10 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
+ * @property-read Collection<int, \App\Models\Goods\TradeUnitTimeSeries> $timeSeries
  * @property-read Media|null $topImage
  * @property-read \App\Models\Goods\TradeUnitFamily|null $tradeUnitFamily
  * @property-read mixed $translations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnitTimeSeries> $timeSeries
  * @method static \Database\Factories\Goods\TradeUnitFactory factory($count = null, $state = [])
  * @method static Builder<static>|TradeUnit newModelQuery()
  * @method static Builder<static>|TradeUnit newQuery()

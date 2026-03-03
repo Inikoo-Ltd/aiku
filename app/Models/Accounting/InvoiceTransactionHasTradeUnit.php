@@ -35,13 +35,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_refund
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Customer|null $customer
  * @property-read Group $group
+ * @property-read \App\Models\Accounting\InvoiceTransaction $invoiceTransaction
+ * @property-read Order|null $order
  * @property-read Organisation $organisation
- * @property-read InvoiceTransaction $invoiceTransaction
  * @property-read TradeUnit $tradeUnit
  * @property-read TradeUnitFamily|null $tradeUnitFamily
- * @property-read Customer|null $customer
- * @property-read Order|null $order
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasTradeUnit newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasTradeUnit newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasTradeUnit query()

@@ -41,7 +41,7 @@ class DeleteApiOrder extends RetinaApiAction
             return response()->json([
                 'message' => "Order is in '{$order->state->value}' state and cannot be deleted.",
             ], 409);
-        } 
+        }
 
         $client = $order->customerClient;
         $order->transactions()->delete();

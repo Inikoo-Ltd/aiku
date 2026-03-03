@@ -39,7 +39,7 @@ class CalculateInvoiceTotals extends OrgAction
         $chargeNet     = $transactions->where('model_type', 'Charge')->sum('net_amount');
         $chargeGross   = $transactions->where('model_type', 'Charge')->sum('gross_amount');
 
-        $netAmount   = $rentalNet + $goodsNet + $serviceNet + $shippingNet + $chargeNet;
+        $netAmount   = $rentalNet + $goodsNet + $serviceNet + $shippingNet + $chargeNet - $invoice->amount_off;
         $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross;
         $taxAmount   = $netAmount * $taxRate;
 
