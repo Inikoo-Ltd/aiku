@@ -15,7 +15,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\SysAdmin\Organisation;
-use App\Models\CRM\Prospect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -46,7 +45,7 @@ class ShowProspectMailshotWorkshop extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, Shop $shop, Prospect $prospect, Mailshot $mailshot, ActionRequest $request): Mailshot
+    public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
         $this->initialisationFromShop($shop, $request)->withTab(EmailTemplateTabsEnum::values());
 

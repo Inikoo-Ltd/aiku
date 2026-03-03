@@ -10,23 +10,18 @@ namespace App\Actions\CRM\Prospect\Mailshots\UI;
 
 use App\Actions\Comms\Mailshot\UI\GetMailshotShowcase;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
-use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
-use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\UI\Mail\MailshotTabsEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Http\Resources\CRM\ProspectMailshotRecipientsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
-use App\Models\Comms\Outbox;
-use App\Models\CRM\Prospect;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -45,15 +40,7 @@ class ShowProspectMailshot extends OrgAction
         return $mailshot;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Prospect $prospect, Mailshot $mailshot, ActionRequest $request): Mailshot
-    {
-        $this->initialisationFromShop($shop, $request)->withTab(MailshotTabsEnum::values());
-
-        return $this->handle($mailshot);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inOutboxInWebsite(Organisation $organisation, Shop $shop, Prospect $prospect, Website $website, Outbox $outbox, Mailshot $mailshot, ActionRequest $request): Mailshot
+    public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
         $this->initialisationFromShop($shop, $request)->withTab(MailshotTabsEnum::values());
 
@@ -67,10 +54,6 @@ class ShowProspectMailshot extends OrgAction
         $isShowStop = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENDING]);
 
         $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
-
-        $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
-            ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
-            : 0;
 
         $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_enabled;
         $mailshotSecondWave = null;
@@ -264,7 +247,7 @@ class ShowProspectMailshot extends OrgAction
                 ],
                 'status' => $mailshot->state->value,
                 'secondWaveStatus' => $mailshot->secondWave?->state?->value,
-                'estimatedRecipients' => $estimatedRecipients,
+                'estimatedRecipients' => 0, // update this section if needed
                 'mailshotType' => $mailshot->type->value,
                 'isSecondWaveActive' => $isSecondWaveActive,
                 'secondwaveSubject' => $mailshotSecondWave?->subject,
@@ -288,7 +271,6 @@ class ShowProspectMailshot extends OrgAction
     }
 
 
-    //  TODO: Fix the breadcrumbs
     public function getBreadcrumbs(Mailshot $mailshot, string $routeName, array $routeParameters, string $suffix = ''): array
     {
         $headCrumb = function (Mailshot $mailshot, array $routeParameters, string $suffix) {
@@ -299,7 +281,7 @@ class ShowProspectMailshot extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => $mailshot->type == MailshotTypeEnum::NEWSLETTER ? __('Newsletters') : __('Mailshots')
+                            'label' => __('Mailshots')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
