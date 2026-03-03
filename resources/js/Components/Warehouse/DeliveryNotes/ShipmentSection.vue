@@ -195,7 +195,17 @@ const onSubmitShipment = () => {
 				onStart: () => {
 					isLoadingButton.value = "addTrackingNumber"
 				},
-				onSuccess: () => {
+				onSuccess: (q) => {
+					// Section: Notify if Faire Shipment is have error
+					const getNewShipmentData = get(q, 'props.box_stats.shipments', [])[q.props?.box_stats?.shipments?.length - 1]
+					if (getNewShipmentData?.data.faire_feedback.status !== 'success') {
+						notify({
+							title: trans("Something went wrong"),
+							text: getNewShipmentData?.data.faire_feedback.msg,
+							type: "error",
+						})
+					}
+
 					emits("addSuccsess", null)
 					isModalShipment.value = false
 					isModalErrorShipment.value = false // Close the error modal
@@ -422,10 +432,7 @@ const onCopyDataCustomer = (field: string) => {
 							
 							<template v-if="external_shop?.engine_value === 'faire'">
 								<div v-if="shipment?.data?.faire_feedback?.status === 'success'" v-tooltip="shipment.data.faire_feedback.msg" class="text-green-500">
-									<FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
-								</div>
-								<div v-else-if="shipment.data.faire_feedback" v-tooltip="shipment.data.faire_feedback.msg" class="text-red-500">
-									<FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+									<FontAwesomeIcon icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
 								</div>
 							</template>
 						</div>
@@ -574,6 +581,26 @@ const onCopyDataCustomer = (field: string) => {
                     {{ trans("Add shipment") }}
                 </div>
 
+				<!-- Shipment Cost -->
+				<div v-if="external_shop?.engine_value === 'faire'" class="mt-3">
+					<span class="text-xs px-1 my-2">{{ trans("Shipment cost") }}: </span>
+					<InputNumber
+						v-model="formTrackingNumber.cost"
+						@input="(e) => formTrackingNumber.cost = e?.value || 0"
+						inputId="currency-input"
+						mode="currency"
+						:currency="currencyCode"
+						:maxFractionDigits="2"
+						locale="en-US"
+						:min="0"
+						fluid
+					/>
+					<p v-if="get(formTrackingNumber, ['errors', 'cost'])"
+						class="mt-2 text-sm text-red-600">
+						{{ formTrackingNumber.errors.cost }}
+					</p>
+				</div>
+
 				<!-- Section: Create label -->
 				<div v-if="optionsCreateLabel.length" class="w-full mt-3">
 					<div class="text-xs px-1 my-2">
@@ -673,6 +700,7 @@ const onCopyDataCustomer = (field: string) => {
 				</div>
 
 				<div v-if="selectedShipment === 'other_options'" class="ml-6">
+					<!-- Section: Select shipping -->
 					<div class="">
 						<PureMultiselectInfiniteScroll
 							v-model="formTrackingNumber.shipping_id"
@@ -714,7 +742,10 @@ const onCopyDataCustomer = (field: string) => {
 							!formTrackingNumber.shipping_id?.api_shipper
 						"
 						class="mt-3">
-						<span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
+						<span class="text-xs xpx-1 my-2">
+							<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500" fixed-width aria-hidden="true" />
+							{{ trans("Tracking number") }}:
+						</span>
 						<PureInput
 							v-model="formTrackingNumber.tracking_number"
 							placeholder="ABC-DE-1234567"
@@ -723,27 +754,6 @@ const onCopyDataCustomer = (field: string) => {
 							v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
 							class="mt-2 text-sm text-red-600">
 							{{ formTrackingNumber.errors.tracking_number }}
-						</p>
-					</div>
-
-					<!-- Shipment Cost -->
-					<div v-if="formTrackingNumber.shipping_id && external_shop?.engine_value === 'faire'" class="mt-3">
-						<span class="text-xs px-1 my-2">{{ trans("Shipment cost") }}: </span>
-						<InputNumber
-							v-model="formTrackingNumber.cost"
-							@input="(e) => formTrackingNumber.cost = e?.value || 0"
-							inputId="currency-input"
-							mode="currency"
-							:currency="currencyCode"
-							:maxFractionDigits="2"
-							locale="en-US"
-							:min="0"
-							fluid
-						/>
-						<p
-							v-if="get(formTrackingNumber, ['errors', 'cost'])"
-							class="mt-2 text-sm text-red-600">
-							{{ formTrackingNumber.errors.cost }}
 						</p>
 					</div>
 
