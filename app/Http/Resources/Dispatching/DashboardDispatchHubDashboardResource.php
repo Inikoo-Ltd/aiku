@@ -26,7 +26,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 'key'   => 'todo',
                 'label' => __('To do'),
                 'type'  => 'stat',
-                'icon'  => ['fal', 'fa-clock'],
+                'icon'  => ['fal', 'fa-chair'],
                 'tooltip' => 'To do'
             ],
             [
@@ -37,7 +37,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     [
                         'key'   => 'handling',
                         'label' => __('Picking'),
-                        'icon'  => ['fal', 'fa-list'],
+                        'icon'  => ['fal', 'fa-hand-paper'],
                         'tooltip' => 'Picking'
                     ],
                     [
@@ -70,7 +70,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 'key'   => 'finalised',
                 'label' => __('Finalised'),
                 'type'  => 'stat',
-                'icon'  => ['fal', 'fa-check-circle'],
+                'icon'  => ['fal', 'fa-box-check'],
                 'tooltip' => 'Finalised'
             ],
         ];
