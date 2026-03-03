@@ -196,6 +196,7 @@ class IndexClockingEmployees extends OrgAction
                 ->join('overtime_types', 'overtime_types.id', '=', 'overtime_requests.overtime_type_id')
                 ->select([
                     'overtime_requests.id',
+                    'overtime_requests.overtime_type_id',
                     'overtime_requests.requested_date',
                     'overtime_requests.requested_start_at',
                     'overtime_requests.requested_end_at',
