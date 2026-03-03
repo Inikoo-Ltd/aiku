@@ -178,6 +178,17 @@
   },
   {
     "outboxes": [
+      "invoice_date_changed"
+    ],
+    "name": "Invoice date changed",
+    "content": "invoice_date_changed.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "invoice"
+    ]
+  },
+  {
+    "outboxes": [
       "delivery_note_dispatched"
     ],
     "name": "Delivery note dispatched",
