@@ -60,12 +60,6 @@ const props = defineProps<{
             </div>
         </RadioGroup>
 
-        <!-- Employment Start At -->
-        <div v-if="form[fieldName].state === 'hired' || form[fieldName].state === 'working'" class="space-y-1">
-            <div class="text-gray-500">{{ trans('Employee start date:')}}</div>
-            <PureDatePicker v-model="form[fieldName].employment_start_at" placeholder="Enter employee date start" />
-        </div>
-
         <!-- Employment End At -->
         <div v-if="form[fieldName].state === 'leaving' || form[fieldName].state === 'left'" class="space-y-1">
             <div class="text-gray-500">{{ trans('Employee end date:')}}</div>
