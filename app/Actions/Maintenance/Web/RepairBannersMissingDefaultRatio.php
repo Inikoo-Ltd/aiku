@@ -29,9 +29,9 @@ class RepairBannersMissingDefaultRatio
     public function asCommand(Command $command): void
     {
         $query     = Banner::where(function ($q) {
-                        $q->whereNull('ratio')
-                        ->orWhereRaw("TRIM(ratio) = ''");
-                    })->get();
+            $q->whereNull('ratio')
+            ->orWhereRaw("TRIM(ratio) = ''");
+        })->get();
 
         foreach ($query as $banner) {
             $command->info('Fixing '.$banner->name." ratio");

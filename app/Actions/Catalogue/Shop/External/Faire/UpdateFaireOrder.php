@@ -75,7 +75,7 @@ class UpdateFaireOrder extends OrgAction
         }
 
 
-        $amountOff=Arr::get($orderFaireData, 'payout_costs.total_brand_discounts.amount_minor',0)/100;
+        $amountOff = Arr::get($orderFaireData, 'payout_costs.total_brand_discounts.amount_minor', 0) / 100;
 
         $order->update([
             'amount_off' => $amountOff,

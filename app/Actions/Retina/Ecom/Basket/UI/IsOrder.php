@@ -249,7 +249,7 @@ trait IsOrder
             ]
         ];
 
-        if($order->amount_off!=0){
+        if ($order->amount_off != 0) {
             $orderSummary[] = [
                 [
                     'label'       => __('Amount off'),
