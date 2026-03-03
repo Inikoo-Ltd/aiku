@@ -31,6 +31,9 @@ class ProcessWebsiteVisitorTracking
         string $currentUrl,
         ?string $referrer
     ): void {
+
+        return;// todo this is taking 600s to complete
+
         $cacheKey = "visitor:session:$sessionId:$website->id";
         $visitor = Cache::remember($cacheKey, 1800, function () use ($sessionId, $website) {
             return WebsiteVisitor::where('session_id', $sessionId)
