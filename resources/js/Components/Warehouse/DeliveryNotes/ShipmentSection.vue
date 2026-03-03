@@ -24,7 +24,7 @@ import ConfirmDialog from "primevue/confirmdialog"
 import { faExclamationCircle } from "@fal"
 import { useConfirm } from "primevue/useconfirm"
 import { twBreakPoint } from "@/Composables/useWindowSize"
-import { RadioButton } from "primevue"
+import { InputNumber, RadioButton } from "primevue"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -71,10 +71,14 @@ const props = defineProps<{
 		email: string
 		address: Address
 	}
-	external_order: {
+	external_order?: {
 		status: boolean
 		route_view_packing_slip: routeType
 	}
+	currencyCode?: string
+	external_shop?: {
+		engine_value: string
+	} | null
 }>()
 
 const emits = defineEmits<{
@@ -145,7 +149,7 @@ const onPrintShipment = async (ship) => {
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false)
 const isLoadingData = ref<string | boolean>(false)
-const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" })
+const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "", cost: null, })
 const isModalShipment = ref(false)
 const optionShippingList = ref([])
 const optionsCreateLabel = ref([])
@@ -180,6 +184,7 @@ const onSubmitShipment = () => {
 		.transform((data) => ({
 			shipper_id: data.shipping_id?.id,
 			tracking: data.shipping_id?.api_shipper ? undefined : data.tracking_number,
+			cost: data.cost
 		}))
 		.post(
 			route(props.shipments_routes.submit_route.name, {
@@ -190,7 +195,17 @@ const onSubmitShipment = () => {
 				onStart: () => {
 					isLoadingButton.value = "addTrackingNumber"
 				},
-				onSuccess: () => {
+				onSuccess: (q) => {
+					// Section: Notify if Faire Shipment is have error
+					const getNewShipmentData = get(q, 'props.box_stats.shipments', [])[q.props?.box_stats?.shipments?.length - 1]
+					if (getNewShipmentData?.data.faire_feedback.status !== 'success') {
+						notify({
+							title: trans("Something went wrong"),
+							text: getNewShipmentData?.data.faire_feedback.msg,
+							type: "error",
+						})
+					}
+
 					emits("addSuccsess", null)
 					isModalShipment.value = false
 					isModalErrorShipment.value = false // Close the error modal
@@ -413,7 +428,13 @@ const onCopyDataCustomer = (field: string) => {
 								:title="shipment.name"
 								v-tooltip="shipment.name"
 							/>
-							<span>{{ shipment.name }}</span>
+							<span v-tooltip="shipment.name" class="max-w-52 truncate">{{ shipment.name }}</span>
+							
+							<template v-if="external_shop?.engine_value === 'faire'">
+								<div v-if="shipment?.data?.faire_feedback?.status === 'success'" v-tooltip="shipment.data.faire_feedback.msg" class="text-green-500">
+									<FontAwesomeIcon icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
+								</div>
+							</template>
 						</div>
 						<!-- <div class="font-semibold text-sm">{{ shipment.name }}</div> -->
 						<div
@@ -502,7 +523,7 @@ const onCopyDataCustomer = (field: string) => {
 							v-tooltip="trans('Remove shipment')"
 							@click="(e) => confirmdelete(e, shipment)">
 							<FontAwesomeIcon
-								icon="fal fa-times"
+								icon="fal fa-trash-alt"
 								class=" "
 								fixed-width
 								aria-hidden="true" />
@@ -516,7 +537,8 @@ const onCopyDataCustomer = (field: string) => {
 						icon="fal fa-print"
 						:label="trans('Print label')"
 						type="tertiary"
-						:loading="isLoadingPrint" />
+						:loading="isLoadingPrint"
+					/>
 				</li>
 			</ul>
 
@@ -558,6 +580,26 @@ const onCopyDataCustomer = (field: string) => {
 				<div class="text-center font-bold mb-6 text-2xl">
                     {{ trans("Add shipment") }}
                 </div>
+
+				<!-- Shipment Cost -->
+				<div v-if="external_shop?.engine_value === 'faire'" class="mt-3">
+					<span class="text-xs px-1 my-2">{{ trans("Shipment cost") }}: </span>
+					<InputNumber
+						v-model="formTrackingNumber.cost"
+						@input="(e) => formTrackingNumber.cost = e?.value || 0"
+						inputId="currency-input"
+						mode="currency"
+						:currency="currencyCode"
+						:maxFractionDigits="2"
+						locale="en-US"
+						:min="0"
+						fluid
+					/>
+					<p v-if="get(formTrackingNumber, ['errors', 'cost'])"
+						class="mt-2 text-sm text-red-600">
+						{{ formTrackingNumber.errors.cost }}
+					</p>
+				</div>
 
 				<!-- Section: Create label -->
 				<div v-if="optionsCreateLabel.length" class="w-full mt-3">
@@ -658,6 +700,7 @@ const onCopyDataCustomer = (field: string) => {
 				</div>
 
 				<div v-if="selectedShipment === 'other_options'" class="ml-6">
+					<!-- Section: Select shipping -->
 					<div class="">
 						<PureMultiselectInfiniteScroll
 							v-model="formTrackingNumber.shipping_id"
@@ -699,7 +742,10 @@ const onCopyDataCustomer = (field: string) => {
 							!formTrackingNumber.shipping_id?.api_shipper
 						"
 						class="mt-3">
-						<span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
+						<span class="text-xs xpx-1 my-2">
+							<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500" fixed-width aria-hidden="true" />
+							{{ trans("Tracking number") }}:
+						</span>
 						<PureInput
 							v-model="formTrackingNumber.tracking_number"
 							placeholder="ABC-DE-1234567"

@@ -21,6 +21,7 @@ class GetDispatchHubDropshippingWidget
         $organisation = $warehouse->organisation;
 
         return [
+            'slug'             => 'dropshipping',
             'label'            => __('Dropshipping'),
             'tooltip'          => __('Dropshipping Delivery Notes'),
             'cases'            => [

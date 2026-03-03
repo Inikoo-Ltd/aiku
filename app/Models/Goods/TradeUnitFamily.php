@@ -38,6 +38,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Goods\TradeUnitFamilyStats|null $stats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnitFamilyTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newModelQuery()
@@ -105,5 +106,10 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(TradeUnitFamilyStats::class);
+    }
+
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(TradeUnitFamilyTimeSeries::class);
     }
 }

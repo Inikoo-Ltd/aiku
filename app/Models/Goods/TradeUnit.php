@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -152,6 +153,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
+ * @property-read Collection<int, \App\Models\Goods\TradeUnitTimeSeries> $timeSeries
  * @property-read Media|null $topImage
  * @property-read \App\Models\Goods\TradeUnitFamily|null $tradeUnitFamily
  * @property-read mixed $translations
@@ -382,6 +384,9 @@ class TradeUnit extends Model implements HasMedia, Auditable
         return $this->hasOne(Media::class, 'id', 'art5_image_id');
     }
 
-
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(TradeUnitTimeSeries::class);
+    }
 
 }

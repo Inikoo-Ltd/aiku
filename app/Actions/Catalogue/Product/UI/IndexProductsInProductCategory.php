@@ -158,6 +158,9 @@ class IndexProductsInProductCategory extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }else{
+            $queryBuilder
+                ->with('orgStocks');
         }
 
         $queryBuilder
@@ -448,7 +451,7 @@ class IndexProductsInProductCategory extends OrgAction
         return match ($routeName) {
             'grp.org.shops.show.catalogue.products.current_products.index', =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -459,7 +462,7 @@ class IndexProductsInProductCategory extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.in_process_products.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -470,7 +473,7 @@ class IndexProductsInProductCategory extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.discontinued_products.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -481,7 +484,7 @@ class IndexProductsInProductCategory extends OrgAction
             ),
             'grp.org.shops.show.catalogue.products.all_products.index' =>
             array_merge(
-                ShowCatalogue::make()->getBreadcrumbs($routeParameters, $routeName),
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,

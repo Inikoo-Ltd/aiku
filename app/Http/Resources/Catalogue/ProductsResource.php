@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Catalogue;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -71,8 +72,15 @@ class ProductsResource extends JsonResource
             ];
         }
 
+        $extraField = [];
 
+        /** @var Product $product */
+        $product = $this->resource;
 
+        // Don't worry, won't run if relationship is not eager loaded
+        if ($product->relationLoaded('orgStocks')) {
+            data_set($extraField, 'org_stocks', $this->getDataPickingFactor($product->orgStocks));
+        }
 
         return [
             'id'                        => $this->id,
@@ -103,15 +111,13 @@ class ProductsResource extends JsonResource
             'gross_weight'              => $this->gross_weight,
             'rrp'                       => $this->rrp,
             'rrp_per_unit'              => $this->units != 0 ? $this->rrp / $this->units : '',
-            'customers_invoiced'        => $this->customers_invoiced ?? 0,
-            'customers_invoiced_ly'     => $this->customers_invoiced_ly ?? 0,
-            'customers_invoiced_delta'  => $this->calculateDelta($this->customers_invoiced ?? 0, $this->customers_invoiced_ly ?? 0),
             'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
             'invoices'                  => $this->invoices ?? 0,
-            'invoices_ly'               => $this->invoices_ly ?? 0,
-            'invoices_delta'            => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'refunds'                   => $this->refunds ?? 0,
+            'total_customers'           => $this->total_customers ?? 0,
+            'total_listed'              => $this->total_listed ?? 0,
             'currency_code'             => $this->currency_code,
             'stock'                     => $this->available_quantity,
             'image_thumbnail'           => Arr::get($this->web_images, 'main.thumbnail'),
@@ -120,8 +126,18 @@ class ProductsResource extends JsonResource
             'is_variant_leader'         => $this->is_variant_leader,
             'variant_code'              => $this->variant_code,
             'iris_url'                  => $this->webpage?->canonical_url,
-            'is_for_sale'               => $this->is_for_sale
+            'is_for_sale'               => $this->is_for_sale,
+            ...$extraField
         ];
+    }
+
+    private function getDataPickingFactor($orgStocks): ?array
+    {
+        return $orgStocks->map(function ($orgStock) {
+            return [
+                'pick_fractional'   => ($orgStock->pivot->quantity && $orgStock->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)), $orgStock->packed_in) : [],
+            ];
+        })->toArray();
     }
 
     private function calculateDelta($current, $previous): ?array

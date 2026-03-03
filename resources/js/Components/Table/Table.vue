@@ -332,7 +332,10 @@ function onPerPageChange(value) {
 }
 
 function findDataKey(dataKey, key) {
-    return findKey(queryBuilderData.value[dataKey], (value) => {
+    // return findKey(queryBuilderData.value[dataKey], (value) => {
+    //     return value.key === key;
+    // });
+    return findKey(queryBuilderProps.value[dataKey], (value) => {
         return value.key === key;
     });
 }

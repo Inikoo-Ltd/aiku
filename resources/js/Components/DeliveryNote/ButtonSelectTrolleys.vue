@@ -17,7 +17,7 @@ const props = defineProps<{
     deliveryNote: {
         id: number
         slug: string
-        refrence: string
+        reference: string
     }
 }>()
 const layout = inject('layout', layoutStructure)
@@ -158,7 +158,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
             <div class="mb-1">
                 {{ trans("Available trolleys") }} ({{ isLoadingFetch ? '-' : listTrolleys.length }}):
             </div>
-            <div class="h-64">
+            <div class="h-64 overflow-y-auto border-b border-dashed border-gray-300 pb-4">
                 <div class="grid grid-cols-3 gap-2">
                     <div
                         v-if="isLoadingFetch"
@@ -201,15 +201,15 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
             </div>
 
             <!-- Section: unavailable trolleys -->
-            <div class="mb-1 text-red-500 text-sm">
+            <div class="my-1 mb-1 text-red-500 text-sm">
                 {{ trans("Unavailable trolleys") }} ({{ isLoadingFetchUnavailableTrolleys ? '-' : listUnavailableTrolleys.length }}):
             </div>
             <div class="xh-64">
-                <div class="grid grid-cols-5 gap-2">
+                <div class="grid grid-cols-4 gap-2">
                     <div
                         v-if="isLoadingFetchUnavailableTrolleys"
                         v-for="trolley in 6"
-                        class="h-10 py-0.5 px-1 border border-gray-300 text-sm rounded-sm skeleton"
+                        class="h-10 py-0.5 px-1 border border-gray-300 rounded-sm skeleton"
                         
                     />
 
@@ -217,7 +217,7 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                         <div
                             v-for="trolley in listUnavailableTrolleys"
                             :key="trolley.id"
-                            class="py-0.5 px-1 bg-gray-300 border border-gray-400 text-xs rounded-sm"
+                            class="py-0.5 px-1 bg-gray-300 border border-gray-400 text-xs rounded-sm whitespace-nowrap truncate"
                         >
                             {{ trolley.name }}
                             <span class="whitespace-nowrap">(<FontAwesomeIcon icon="fal fa-truck" class="opacity-70 mr-0.5" fixed-width aria-hidden="true" /><Link :href="getUrlDeliveryNote(trolley.current_delivery_note?.slug)" class="font-bold opacity-60 hover:opacity-100 cursor-pointer">{{ trolley.current_delivery_note?.reference }}</Link>)</span>
