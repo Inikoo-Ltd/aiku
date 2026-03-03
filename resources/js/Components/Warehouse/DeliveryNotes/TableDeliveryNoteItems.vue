@@ -542,7 +542,7 @@ const submitTransactionAsWaiting = () => {
                                     <!-- Section: number of stocks -->
                                     <span
                                         v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.org_stock_id)?.location_code || '' })"
-                                        class="align-middle whitespace-nowrap text-base py-0.5 opacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
+                                        class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
                                     >
                                         <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1 text-base" fixed-width aria-hidden="true" /> -->
                                         (<span class="text-lg font-bold">
