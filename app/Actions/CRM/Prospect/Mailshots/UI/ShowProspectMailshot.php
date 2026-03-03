@@ -11,7 +11,6 @@ namespace App\Actions\CRM\Prospect\Mailshots\UI;
 use App\Actions\Comms\Mailshot\UI\GetMailshotShowcase;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
-use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -21,7 +20,7 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\UI\Mail\MailshotTabsEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
-use App\Http\Resources\Comms\MailshotRecipient\MailshotRecipientsResource;
+use App\Http\Resources\CRM\ProspectMailshotRecipientsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
@@ -186,8 +185,8 @@ class ShowProspectMailshot extends OrgAction
                     : Inertia::lazy(fn () => GetMailshotShowcase::run($mailshot)),
 
                 MailshotTabsEnum::RECIPIENTS->value => $this->tab == MailshotTabsEnum::RECIPIENTS->value ?
-                    fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))
-                    : Inertia::lazy(fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
+                    fn () => ProspectMailshotRecipientsResource::collection(IndexProspectMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))
+                    : Inertia::lazy(fn () => ProspectMailshotRecipientsResource::collection(IndexProspectMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
 
 
                 MailshotTabsEnum::DISPATCHED_EMAILS->value => $this->tab == MailshotTabsEnum::DISPATCHED_EMAILS->value
@@ -281,7 +280,7 @@ class ShowProspectMailshot extends OrgAction
                 prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
             )
         )->table(
-            IndexMailshotRecipients::make()->tableStructure(
+            IndexProspectMailshotRecipients::make()->tableStructure(
                 parent: $mailshot,
                 prefix: MailshotTabsEnum::RECIPIENTS->value
             )

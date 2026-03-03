@@ -21,6 +21,7 @@ class CreateProspectMailshot extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
+        // TODO: update if needed
         return true;
         // return $request->user()->authTo('crm.prospects.edit');
     }
@@ -40,7 +41,7 @@ class CreateProspectMailshot extends OrgAction
             'fields' => [
                 'subject' => [
                     'type'        => 'input',
-                    'label'       => __('subject'),
+                    'label'       => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required'    => true,
                     'value'       => '',
@@ -81,8 +82,6 @@ class CreateProspectMailshot extends OrgAction
         //     ]
         // ];
 
-
-        // TODO: Check and make sure the Route is correct
         return Inertia::render(
             'CreateModel',
             [

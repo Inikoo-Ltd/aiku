@@ -34,7 +34,7 @@ class EditProspectMailshot extends OrgAction
                     'type'        => 'input',
                     'label'       => __('Subject'),
                     'placeholder' => __('Email subject'),
-                    'required'    => false,
+                    'required'    => true,
                     'value'       => $mailshot->subject,
                 ],
             ]
@@ -68,7 +68,7 @@ class EditProspectMailshot extends OrgAction
                     'blueprint'  =>
                     [
                         [
-                            'title'  => __('Name'),
+                            'title'  => '',
                             'fields' => array_merge(...array_map(fn ($item) => $item['fields'], $fields))
                         ]
                     ],
