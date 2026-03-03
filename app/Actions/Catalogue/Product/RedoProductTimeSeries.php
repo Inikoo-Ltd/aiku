@@ -32,6 +32,8 @@ class RedoProductTimeSeries implements ShouldBeUnique
 
     public function handle(Product $product, bool $async = false): void
     {
+        return; // this fail after 7200 seconds timeout
+
         if ($product->state == ProductStateEnum::IN_PROCESS) {
             return;
         }

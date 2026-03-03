@@ -32,7 +32,7 @@ class ProcessWebsiteVisitorTracking
         ?string $referrer
     ): void {
 
-        return;// todo this is taking 600s to complete
+        return;// this fail after 600 seconds timeout
 
         $cacheKey = "visitor:session:$sessionId:$website->id";
         $visitor = Cache::remember($cacheKey, 1800, function () use ($sessionId, $website) {
