@@ -18,6 +18,7 @@ defineProps<{
 const locale = useLocaleStore()
 
 const timesheetRoute = (timesheet: Timesheet) => {
+    console.log("Data timesheet", timesheet)
     const params = route().params as Record<string, string | undefined>
 
     switch (route().current()) {
@@ -52,7 +53,7 @@ const timesheetRoute = (timesheet: Timesheet) => {
         <template #cell(date)="{ item: timesheet }">
             <div class="text-gray-500">
                 <Link :href="timesheetRoute(timesheet)" class="whitespace-nowrap primaryLink">
-                    {{ useFormatTime(timesheet.date, { localeCode: locale.language.code }) }}
+                    {{ useFormatTime(timesheet.start_at, { localeCode: locale.language.code }) }}
                 </Link>
             </div>
         </template>
