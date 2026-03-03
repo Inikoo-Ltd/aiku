@@ -551,6 +551,7 @@ onMounted(() => {
 			:format-time="'MMMM d yyyy, HH:mm'" />
 	</div>
 
+	<!-- Section: Box Stats -->
 	<BoxStatsDeliveryNote
 		v-if="box_stats && pickingView"
 		:boxStats="box_stats"

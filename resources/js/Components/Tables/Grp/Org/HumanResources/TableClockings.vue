@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import { router } from "@inertiajs/vue3";
 import { ref, computed } from "vue";
 import { format } from "date-fns";
 import Table from "@/Components/Table/Table.vue";
@@ -47,25 +48,11 @@ const canEdit = computed<boolean>(() => {
     return false;
 });
 
-const formatClockedAtForInput = (value: string | null | undefined): string => {
-    if (!value) {
-        return "";
-    }
-
-    const date = new Date(value);
-
-    if (isNaN(date.getTime())) {
-        return "";
-    }
-
-    return format(date, "yyyy-MM-dd'T'HH:mm");
-};
-
 const openEditModal = (clocking: any) => {
     selectedClocking.value = clocking;
     console.log(clocking);
     notes.value = typeof clocking.notes === "string" ? clocking.notes : "";
-    clockedAt.value = formatClockedAtForInput(clocking.clocked_at);
+    clockedAt.value = useFormatTime(clocking.clocked_at, { formatTime: "yyyy-MM-dd'T'HH:mm" });
     isEditModalOpen.value = true;
     errorMsg.value = null;
 };
@@ -106,6 +93,11 @@ const submitNotes = async () => {
         if (clockedAt.value) {
             selectedClocking.value.clocked_at = clockedAt.value;
         }
+
+        router.reload({
+            only: [props.tab || 'clockings'],
+        });
+
         closeEditModal();
     } catch (e: any) {
         const message =

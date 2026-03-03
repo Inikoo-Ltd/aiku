@@ -21,7 +21,6 @@ class SyncDeliveryNoteTrolleys extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    use WithWarehouseEditAuthorisation;
 
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote

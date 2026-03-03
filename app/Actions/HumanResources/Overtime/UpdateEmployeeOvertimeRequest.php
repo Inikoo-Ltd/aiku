@@ -7,7 +7,6 @@ use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\OvertimeRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -20,30 +19,11 @@ class UpdateEmployeeOvertimeRequest extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $date = $this->get('requested_date');
-
-        if ($date) {
-            $timezone = $this->organisation->timezone->name ?? null;
-            $date = Carbon::parse($date, $timezone)->startOfDay();
+        if (!$this->has('recorded_start_at') || is_null($this->get('recorded_start_at'))) {
+            $this->set('recorded_start_at', $this->get('requested_start_at'));
+            $this->set('recorded_end_at', $this->get('requested_end_at'));
+            $this->set('recorded_duration_minutes', $this->get('requested_duration_minutes'));
         }
-
-        $startHour = (int)$this->get('start_hour', 0);
-        $startMinute = (int)$this->get('start_minute', 0);
-        $durationHour = (int)$this->get('duration_hours', 0);
-        $durationMinute = (int)$this->get('duration_minutes', 0);
-
-        $durationMinutes = ($durationHour * 60) + $durationMinute;
-
-        if ($date) {
-            $startAt = $date->copy()->setTime($startHour, $startMinute);
-            $this->set('requested_start_at', $startAt);
-
-            if ($durationMinutes > 0) {
-                $this->set('requested_end_at', $startAt->copy()->addMinutes($durationMinutes));
-            }
-        }
-
-        $this->set('requested_duration_minutes', $durationMinutes);
     }
 
     public function rules(): array

@@ -8,6 +8,8 @@
 
 namespace App\Console;
 
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
@@ -306,14 +308,6 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        //        $this->logSchedule(
-        //            $schedule->command('faire:orders')->hourly()->sentryMonitor(
-        //                monitorSlug: 'GetFaireOrders',
-        //            ),
-        //            name: 'GetFaireOrders',
-        //            type: 'command',
-        //            scheduledAt: now()->format('H:i')
-        //        );
 
         $this->logSchedule(
             $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
@@ -334,7 +328,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
+            $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('20:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'ConsolidateRecurringBills',
             ),
             name: 'ConsolidateRecurringBills',
@@ -369,14 +363,7 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        $this->logSchedule(
-            $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
-            ),
-            name: 'PurgeDownloadPortfolioCustomerSalesChannel',
-            type: 'job',
-            scheduledAt: now()->format('H:i')
-        );
+
 
         $this->logSchedule(
             $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
@@ -441,6 +428,24 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+        $this->logSchedule(
+            $schedule->job(GetFaireOrdersAllShops::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'GetFaireOrdersAllShops',
+            ),
+            name: 'GetFaireOrdersAllShops',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(GetFaireProductsAllShops::makeJob())->twiceDailyAt(12, 17)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'GetFaireProductsAllShops',
+            ),
+            name: 'GetFaireProductsAllShops',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
 
         if (app()->environment('local')) {
             $this->logSchedule(
@@ -488,6 +493,15 @@ class Kernel extends ConsoleKernel
         //     type: 'job',
         //     scheduledAt: now()->format('H:i')
         // );
+
+        $this->logSchedule(
+            $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
+            ),
+            name: 'PurgeDownloadPortfolioCustomerSalesChannel',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
 
     }
 

@@ -14,12 +14,12 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Trolley;
+use Lorisleiva\Actions\ActionRequest;
 
 class AttachTrolleyToDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    use WithWarehouseEditAuthorisation;
 
 
     public function handle(Trolley $trolley, DeliveryNote $deliveryNote): void
@@ -33,8 +33,12 @@ class AttachTrolleyToDeliveryNote extends OrgAction
         UpdateTrolley::run($trolley, [
             'current_delivery_note_id' => $deliveryNote->id
         ]);
+    }
 
-
+    public function asController(DeliveryNote $deliveryNote, Trolley $trolley, ActionRequest $request): void
+    {
+        $this->initialisationFromWarehouse($deliveryNote->warehouse, $request);
+        $this->handle($trolley, $deliveryNote);
     }
 
 

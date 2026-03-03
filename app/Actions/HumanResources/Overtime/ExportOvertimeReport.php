@@ -84,7 +84,7 @@ class ExportOvertimeReport extends OrgAction
             ]);
         }
 
-        $export = new OvertimeRequestsExport($this->organisation->id, $filters);
+        $export = new OvertimeRequestsExport($this->organisation->id, $filters, $this->organisation->timezone->name ?? 'UTC');
 
         return $this->export($export, 'overtime_requests', $modelData['format']);
     }
