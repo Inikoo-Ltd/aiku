@@ -31,6 +31,10 @@ const props = defineProps<{
 	tab?: string
 	organisation?: string | null
 	balance?: LeaveBalanceSummary | { data?: LeaveBalanceSummary }
+	annualSubmittedDays?: number | null
+	annualRemainingAfterSubmission?: number | null
+	medicalRequestCount?: number | null
+	unpaidRequestCount?: number | null
 	isRequestLeaveModalOpen: boolean
 }>()
 
@@ -107,6 +111,41 @@ const balanceSummary = computed(() => {
 	}
 })
 
+const displayedMedicalCount = computed(() => {
+	if (typeof props.medicalRequestCount === "number" && Number.isFinite(props.medicalRequestCount)) {
+		return props.medicalRequestCount
+	}
+
+	return balanceSummary.value?.medical_used ?? 0
+})
+
+const annualSubmitted = computed(() => {
+	if (typeof props.annualSubmittedDays === "number" && Number.isFinite(props.annualSubmittedDays)) {
+		return props.annualSubmittedDays
+	}
+
+	return balanceSummary.value?.annual_used ?? 0
+})
+
+const annualRemaining = computed(() => {
+	if (
+		typeof props.annualRemainingAfterSubmission === "number" &&
+		Number.isFinite(props.annualRemainingAfterSubmission)
+	) {
+		return props.annualRemainingAfterSubmission
+	}
+
+	return balanceSummary.value?.annual_remaining ?? 0
+})
+
+const displayedUnpaidCount = computed(() => {
+	if (typeof props.unpaidRequestCount === "number" && Number.isFinite(props.unpaidRequestCount)) {
+		return props.unpaidRequestCount
+	}
+
+	return balanceSummary.value?.unpaid_used ?? 0
+})
+
 const typeOptions = [
 	{ value: "annual", label: trans("Annual Leave") },
 	{ value: "medical", label: trans("Medical Leave") },
@@ -137,7 +176,7 @@ const canSubmitLeave = computed(() => {
 	if (!balanceSummary.value) return true
 	switch (leaveForm.type) {
 		case "annual":
-			return balanceSummary.value.annual_remaining > 0
+			return annualRemaining.value > 0
 		case "medical":
 			return balanceSummary.value.medical_remaining > 0
 		default:
@@ -238,12 +277,12 @@ const submitEdit = () => {
 					<div>
 						<p class="text-sm text-gray-500">{{ trans("Annual Leave") }}</p>
 						<p class="text-2xl font-bold text-blue-600">
-							{{ balanceSummary.annual_remaining }}
+							{{ annualRemaining }}
 						</p>
 						<p class="text-xs text-gray-400">
 							{{
-								trans(":used of :total days used", {
-									used: balanceSummary.annual_used,
+								trans(":submitted of :total days submitted", {
+									submitted: annualSubmitted,
 									total: balanceSummary.annual_days,
 								})
 							}}
@@ -260,15 +299,10 @@ const submitEdit = () => {
 					<div>
 						<p class="text-sm text-gray-500">{{ trans("Medical Leave") }}</p>
 						<p class="text-2xl font-bold text-red-600">
-							{{ balanceSummary.medical_remaining }}
+							{{ displayedMedicalCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{
-								trans(":used of :total days used", {
-									used: balanceSummary.medical_used,
-									total: balanceSummary.medical_days,
-								})
-							}}
+							{{ trans("Requests Submitted") }}
 						</p>
 					</div>
 					<div class="text-3xl text-red-200">
@@ -282,15 +316,10 @@ const submitEdit = () => {
 					<div>
 						<p class="text-sm text-gray-500">{{ trans("Unpaid Leave") }}</p>
 						<p class="text-2xl font-bold text-gray-600">
-							{{ balanceSummary.unpaid_remaining }}
+							{{ displayedUnpaidCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{
-								trans(":used of :total days used", {
-									used: balanceSummary.unpaid_used,
-									total: balanceSummary.unpaid_days,
-								})
-							}}
+							{{ trans("requests submitted") }}
 						</p>
 					</div>
 					<div class="text-3xl text-gray-200">
