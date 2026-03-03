@@ -31,6 +31,7 @@ class AutoFinishPickingPickingSession extends OrgAction
             $this->update($pickingSession, [
                 'state' => PickingSessionStateEnum::PICKING_FINISHED
             ]);
+            WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }
         return $pickingSession;
     }

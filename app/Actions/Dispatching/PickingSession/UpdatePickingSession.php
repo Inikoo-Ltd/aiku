@@ -22,8 +22,11 @@ class UpdatePickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession, array $modelData): PickingSession
     {
-        return $this->update($pickingSession, $modelData);
+        $pickingSession = $this->update($pickingSession, $modelData);
 
+        WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
+
+        return $pickingSession;
     }
 
     public function rules(): array
