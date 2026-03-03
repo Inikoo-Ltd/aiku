@@ -362,11 +362,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(name)="{ item: masterProduct }">
             <div class="flex items-center">
 
-                <div v-if="masterProduct.trade_units" class=" text-xxs">
+                <div v-if="masterProduct.trade_units" class="text-xxs shrink-0">
                     <LabelSKU :product="masterProduct" :trade_units="masterProduct.trade_units" />
                 </div>
 
-                <div>
+                <div class="xtruncate">
                 <!-- <ProductUnitLabel
                     v-if="masterProduct?.units"
                     :units="masterProduct?.units"
