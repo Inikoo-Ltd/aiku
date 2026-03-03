@@ -9,9 +9,12 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\HasSelfCall;
+use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $code
@@ -57,6 +60,15 @@ class MasterProductsResource extends JsonResource
                 }
             }
             data_set($extraField, 'allChildHasWebpage', $hasValidProduct && $allChildHasWeb);
+        }
+
+        $dataTradeUnits = [];
+        /** @var MasterAsset $masterAsset */
+        $masterAsset = $this->resource;
+
+        // Don't worry, won't run if relationship is not eager loaded. Will only present from IndexMasterProduct
+        if ($masterAsset->relationLoaded('tradeUnits')) {
+            data_set($extraField, 'trade_units', $this->getDataTradeUnit($masterAsset->tradeUnits));
         }
 
         return [
@@ -121,5 +133,17 @@ class MasterProductsResource extends JsonResource
             'is_positive' => $delta > 0,
             'is_negative' => $delta < 0,
         ];
+    }
+
+    private function getDataTradeUnit($tradeUnits): array
+    {
+        $packedIn = $tradeUnits->pluck('pivot.quantity', 'id');
+
+        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
+            return array_merge(
+                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / Arr::get($packedIn, $tradeUnit->id, 1))), Arr::get($packedIn, $tradeUnit->id, 1))],
+                GetTradeUnitShowcase::run($tradeUnit)
+            );
+        })->toArray();
     }
 }
