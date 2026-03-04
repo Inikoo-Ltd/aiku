@@ -94,29 +94,44 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
     }
     return null
 }
+
 const isWeakValue = (value: number | null | undefined) => {
     return value === null || value === 0
 }
 </script>
 
 <template>
-    <div class="overflow-x-auto bg-white px-4 pb-4">
-        <div class="flex gap-3 w-full pt-3">
+    <div class="bg-white px-1 sm:px-2 md:px-4 pb-4">
+        <div class="flex gap-1 md:gap-3 w-full pt-3">
 
             <!-- ================= DIMENSION COLUMN ================= -->
             <div v-if="data?.dimension"
-                class="flex-1 basis-0 min-w-[120px] flex flex-col rounded-xl border border-gray-200">
-                <div class="h-20 flex items-center justify-center font-semibold text-lg border-b border-gray-200 px-4">
-                    {{ data.dimension.label }}
+                class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[120px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
+                :style="{ flexGrow: 1 }">
+
+                <div
+                    class="h-14 md:h-20 flex items-center justify-center font-semibold text-xs md:text-lg border-b border-gray-200 px-1 md:px-4">
+                    <span class="md:hidden">
+                        {{ data.dimension.label.charAt(0).toUpperCase() }}
+                    </span>
+                    <span class="hidden md:inline">
+                        {{ data.dimension.label }}
+                    </span>
                 </div>
 
                 <div v-for="row in rows" :key="row.key"
-                    class="h-11 flex items-center justify-center text-lg border-b border-gray-100 last:border-b-0">
-                    {{ row.label }}
+                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                    <span class="md:hidden">
+                        {{ row.label.charAt(0).toUpperCase() }}
+                    </span>
+                    <span class="hidden md:inline">
+                        {{ row.label }}
+                    </span>
                 </div>
 
-                <div class="h-12 flex items-center justify-center text-lg border-t border-gray-200">
-                    Total
+                <div class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
+                    <span class="md:hidden">Σ</span>
+                    <span class="hidden md:inline">Total</span>
                 </div>
             </div>
 
@@ -125,19 +140,24 @@ const isWeakValue = (value: number | null | undefined) => {
 
                 <!-- SINGLE METRIC -->
                 <div v-if="metric.type !== 'group'"
-                    class="flex-1 basis-0 min-w-[140px] flex flex-col rounded-xl border border-gray-200">
-                    <div class="h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
-                        <span class="text-lg font-semibold">{{ metric.label }}</span>
-                        <Icon v-if="metric.icon" :data="metric" class='text-xl' />
+                    class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
+                    :style="{ flexGrow: 1 }">
+
+                    <div
+                        class="h-14 md:h-20 flex flex-col items-center justify-center md:gap-1 border-b border-gray-200 px-1 md:px-4">
+                        <span class="hidden md:inline text-lg font-semibold">
+                            {{ metric.label }}
+                        </span>
+                        <Icon v-if="metric.icon" :data="metric" class='text-xs md:text-xl' />
                     </div>
 
                     <template v-for="row in rows" :key="row.key">
                         <component :is="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? Link : 'div'"
                             :href="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ?? undefined" :class="[
-                                'h-11 flex items-center justify-center text-lg border-b border-gray-100 last:border-b-0',
+                                'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
                                 isWeakValue(data.data[row.key]?.[metric.key]?.value)
-                                    ? 'text-gray-400 opacity-40'
-                                    : 'text-black',
+                                    ? 'opacity-40'
+                                    : '',
                                 getSafeRoute(data.data[row.key]?.[metric.key]?.route_target)
                                     ? 'hover:underline cursor-pointer'
                                     : ''
@@ -147,27 +167,33 @@ const isWeakValue = (value: number | null | undefined) => {
                     </template>
 
                     <div v-if="data?.dimension"
-                        class="h-12 flex items-center justify-center text-lg border-t border-gray-200">
+                        class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
                         {{ data.totals[metric.key]?.value ?? '-' }}
                     </div>
                 </div>
 
                 <!-- GROUP METRIC -->
-                <div v-else class="flex flex-1 basis-0 min-w-max rounded-xl border border-gray-200">
-                    <div v-for="(item, itemIndex) in metric.items" :key="item.key" class="min-w-[140px] flex flex-col"
+                <div v-else
+                    class="flex basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-max rounded-lg md:rounded-xl border border-gray-200"
+                    :style="{ flexGrow: metric.items.length }">
+                    <div v-for="(item, itemIndex) in metric.items" :key="item.key"
+                        class="flex-1 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col"
                         :class="itemIndex < (metric.items?.length ?? 0) - 1 ? 'border-r border-gray-200' : ''">
-                        <div class="h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
-                            <span class="text-lg font-semibold">{{ item.label }}</span>
-                            <Icon v-if="item.icon" :data="item" class='text-xl' />
+                        <div
+                            class="h-14 md:h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-1 md:px-4">
+                            <span class="hidden md:inline text-lg font-semibold">
+                                {{ item.label }}
+                            </span>
+                            <Icon v-if="item.icon" :data="item" class='text-xs md:text-lg' />
                         </div>
 
                         <template v-for="row in rows" :key="row.key + '-' + item.key">
                             <component :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
                                 :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined" :class="[
-                                    'h-11 flex items-center justify-center text-lg border-b border-gray-100 last:border-b-0',
+                                    'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
                                     isWeakValue(data.data[row.key]?.[item.key]?.value)
-                                        ? 'text-gray-400 opacity-40'
-                                        : 'text-black',
+                                        ? 'opacity-40'
+                                        : '',
                                     getSafeRoute(data.data[row.key]?.[item.key]?.route_target)
                                         ? 'hover:underline cursor-pointer'
                                         : ''
@@ -177,7 +203,7 @@ const isWeakValue = (value: number | null | undefined) => {
                         </template>
 
                         <div v-if="data?.dimension"
-                            class="h-12 flex items-center justify-center text-lg border-t border-gray-200">
+                            class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
                             {{ data.totals[item.key]?.value ?? '-' }}
                         </div>
                     </div>
@@ -185,19 +211,21 @@ const isWeakValue = (value: number | null | undefined) => {
             </template>
 
             <!-- ================= ROW TOTAL BOX ================= -->
-            <div class="flex-1 basis-0 min-w-[140px] flex flex-col rounded-xl border border-gray-200">
-                <div class="h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-4">
-                    <span class="text-lg font-semibold">Total</span>
-                    <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xl' />
+            <div class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
+                :style="{ flexGrow: 1 }">
+                <div
+                    class="h-14 md:h-20 flex flex-col items-center justify-center font-semibold text-xs md:text-lg gap-1 border-b border-gray-200">
+                    <span class="hidden md:inline">Total</span>
+                    <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xs md:text-lg' />
                 </div>
 
                 <div v-for="row in rows" :key="row.key"
-                    class="h-11 flex items-center justify-center text-lg border-b border-gray-100 last:border-b-0">
+                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0">
                     {{ data.row_totals[row.key]?.value ?? '-' }}
                 </div>
 
                 <div v-if="data?.dimension"
-                    class="h-12 flex items-center justify-center text-lg border-t border-gray-200">
+                    class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
                     {{ data.grand_total?.value ?? '-' }}
                 </div>
             </div>
