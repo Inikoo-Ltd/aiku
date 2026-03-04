@@ -294,12 +294,14 @@ class ShowPallet extends OrgAction
             $routeName = 'grp.org.fulfilments.show.crm.customers.show.pallets.edit';
         }
 
+        // TODO INI-514 REMOVE IS LOCAL IF WANT IN PRODUCTION
         if(app()->isLocal() && $this->pallet->status == PalletStatusEnum::INCIDENT){
             $actions[] = [
                 'type'      => 'button',
                 'style'     => 'secondary',
                 'tooltip'   => __('Will put back pallet into storing state'),
-                'label'     => __('Set pallet usable again'),
+                'label'     => __('Set pallet as usable again'),
+                'key'       => 'set-pallet-usable',
                 'route'   => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.pallet.pallet.back-to-storing',

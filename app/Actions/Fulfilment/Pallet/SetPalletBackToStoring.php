@@ -10,12 +10,18 @@
 namespace App\Actions\Fulfilment\Pallet;
 
 use App\Actions\Fulfilment\Pallet\Search\PalletRecordSearch;
+use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsCancelledIfEmpty;
+use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
+use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Fulfilment\Pallet;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetPalletBackToStoring extends OrgAction
@@ -23,12 +29,29 @@ class SetPalletBackToStoring extends OrgAction
 
     public function handle(Pallet $pallet, $modelData): Pallet
     {
-        data_set($modelData, 'state', PalletStateEnum::STORING);
-        data_set($modelData, 'status', PalletStatusEnum::STORING);
-        data_set($modelData, 'set_as_incident_at', null); // Empty incident message ?
-        data_set($modelData, 'incident_report', []); // Empty incident report message ?
+        DB::transaction(function () use ($pallet) {
+            $palletReturns = $pallet->palletReturns;
+            
+            data_set($modelData, 'state', PalletStateEnum::STORING);
+            data_set($modelData, 'status', PalletStatusEnum::STORING);
+            data_set($modelData, 'set_as_incident_at', null); // Empty incident message ?
+            data_set($modelData, 'incident_report', []); // Empty incident report message ?
+    
+            $pallet = UpdatePallet::run($pallet, Arr::except($modelData, 'message'));
+            $pallet->palletReturn()->dissociate(); // To empty the pallet.pallet_return_id
+            $pallet->save();
 
-        $pallet = UpdatePallet::run($pallet, Arr::except($modelData, 'message'));
+            foreach($palletReturns as $palletReturn){
+                $pallet->palletReturns()->detach($palletReturn?->id); // To delete model relationship
+                if($palletReturn->pallets()->exists()){
+                    AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturn);
+                }else{
+                    AutomaticallySetPalletReturnAsCancelledIfEmpty::run($palletReturn);
+                }
+                PalletReturnHydratePallets::run($palletReturn);
+            }
+        });
+
         PalletRecordSearch::dispatch($pallet);
 
         return $pallet;
@@ -43,11 +66,13 @@ class SetPalletBackToStoring extends OrgAction
         return $request->user()->authTo("fulfilment.{$this->warehouse->id}.edit");
     }
 
-    public function asController(Pallet $pallet, ActionRequest $request): Pallet
+    public function asController(Pallet $pallet, ActionRequest $request): RedirectResponse
     {
         $this->initialisationFromWarehouse($pallet->warehouse, $request);
+        $this->handle($pallet, $this->validatedData);
+        
 
-        return $this->handle($pallet, $this->validatedData);
+        return redirect()->back();
     }
 
     public function action(Pallet $pallet, array $modelData): Pallet
@@ -56,10 +81,5 @@ class SetPalletBackToStoring extends OrgAction
         $this->initialisationFromWarehouse($pallet->warehouse, $modelData);
 
         return $this->handle($pallet, $this->validatedData);
-    }
-
-    public function jsonResponse(Pallet $pallet): PalletResource
-    {
-        return new PalletResource($pallet);
     }
 }

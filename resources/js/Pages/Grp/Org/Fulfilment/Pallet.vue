@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import TableStoredItems from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItems.vue"
@@ -26,6 +26,8 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { trans } from 'laravel-vue-i18n'
 import ModalAfterConfirmationDelete from '@/Components/Utils/ModalAfterConfirmationDelete.vue'
 import ModalSupervisorList from '@/Components/Utils/ModalSupervisorList.vue'
+import axios, { Axios } from 'axios'
+import { notify } from '@kyvg/vue3-notification'
 
 library.add(faFragile, faNarwhal, faExchange)
 
@@ -55,11 +57,41 @@ const component = computed(() => {
 
 })
 
+const setPalletUsable = (pallet) => {
+    if(confirm('Are you sure you want to set this pallet back into storing? This would remove the pallet from any open pallet return orders')){
+        router.patch(
+            route('grp.models.pallet.pallet.back-to-storing', {pallet: pallet.data.id}), 
+            {},
+            {
+                onSuccess: () => {
+                    notify({
+                        title: "Successful",
+                        text: "Pallet is marked as usable and sent back to storing state",
+                        type: "success"
+                    })
+                },
+                onError: (e) => {
+                    notify({
+                        title: "Error",
+                        text: "An error occured. Unable to set pallet back to storing state",
+                        type: "error"
+                    })
+                }
+            },
+        );
+    }
+}
+
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #button-set-pallet-usable>
+            <Button type="secondary" @click="setPalletUsable(pallet)">
+                {{ trans('Set pallet as usable again') }}
+            </Button>
+        </template>
         <template #button-return-pallet="{ action }">
             <!-- {{ action }} -->
             <ModalConfirmation
