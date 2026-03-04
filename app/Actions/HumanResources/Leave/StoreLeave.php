@@ -158,6 +158,20 @@ class StoreLeave extends OrgAction
             return;
         }
 
+        if ($isHalfDay) {
+            $existingSession = Leave::where('employee_id', $this->employee->id)
+                ->whereDate('start_date', $startDate)
+                ->where('is_half_day', true)
+                ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
+                ->where('session', $session)
+                ->exists();
+
+            if ($existingSession) {
+                $validator->errors()->add('session', __('You already have a :session half-day leave on this date.', ['session' => $session]));
+                return;
+            }
+        }
+
         $existingLeave = Leave::where('employee_id', $this->employee->id)
             ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
             ->where(function ($query) use ($startDate, $endDate) {
