@@ -8,6 +8,7 @@
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
+use App\Actions\Catalogue\Product\UpdateOrdersInBasketsAfterProductUpdated;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -58,6 +59,7 @@ class RepairProductCurrentHistoric
                     'current_historic_asset_id' => $historicAsset->id,
                 ]
             );
+            UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
         }
     }
 

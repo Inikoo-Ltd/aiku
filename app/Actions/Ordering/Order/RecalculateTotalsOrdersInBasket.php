@@ -6,27 +6,37 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Maintenance\Ordering;
+namespace App\Actions\Ordering\Order;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
-use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
-use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Traits\WithFixedAddressActions;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class RecalculateTotalsOrdersInBasket
+class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
 {
-    use WithActionUpdate;
-    use WithFixedAddressActions;
+    use AsAction;
 
-    public function handle(Order $order, Command|null $command = null): void
+    public function getJobUniqueId(int|null $orderID): string
     {
+        return $orderID ?? 'empty';
+    }
+
+    public function handle(int|null $orderID, Command|null $command = null): void
+    {
+        if (!$orderID) {
+            return;
+        }
+        $order = Order::find($orderID);
+        if (!$order) {
+            return;
+        }
 
         $oldTotal = $order->total_amount;
         foreach ($order->transactions as $transaction) {
@@ -69,12 +79,13 @@ class RecalculateTotalsOrdersInBasket
         OrderHydrateCategoriesData::run($order);
         CalculateOrderTotalAmounts::run($order, true, true, false, true);
 
-        $order->refresh();
-        $newTotal = $order->total_amount;
-        if ($command && $oldTotal != $newTotal) {
-            $command->info("Order: $order->slug - old total: $oldTotal - new total: $newTotal");
+        if ($command) {
+            $order->refresh();
+            $newTotal = $order->total_amount;
+            if ($oldTotal != $newTotal) {
+                $command->info("Order: $order->slug - old total: $oldTotal - new total: $newTotal");
+            }
         }
-
     }
 
 
@@ -100,7 +111,7 @@ class RecalculateTotalsOrdersInBasket
         Order::where('state', OrderStateEnum::CREATING)->whereIn('shop_id', $shopsIds)->orderBy('date', 'desc')
             ->chunk(1000, function (Collection $models) use ($bar, $command) {
                 foreach ($models as $model) {
-                    $this->handle($model, $command);
+                    $this->handle($model->id, $command);
                     $bar->advance();
                 }
             });
