@@ -203,6 +203,9 @@ class IndexClockingEmployees extends OrgAction
                     'overtime_requests.requested_start_at',
                     'overtime_requests.requested_end_at',
                     'overtime_requests.requested_duration_minutes',
+                    'overtime_requests.recorded_start_at',
+                    'overtime_requests.recorded_end_at',
+                    'overtime_requests.recorded_duration_minutes',
                     'overtime_requests.lieu_requested_minutes',
                     'overtime_requests.reason',
                     'overtime_requests.status',
@@ -369,13 +372,25 @@ class IndexClockingEmployees extends OrgAction
                 )
                 ->column(
                     key: 'requested_start_at',
-                    label: __('From'),
+                    label: __('Request From'),
                     canBeHidden: true,
                     sortable: true
                 )
                 ->column(
                     key: 'requested_duration_minutes',
                     label: __('Duration'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'recorded_start_at',
+                    label: __('Recorded Start At'),
+                    canBeHidden: true,
+                    sortable: true
+                )
+                ->column(
+                    key: 'recorded_duration_minutes',
+                    label: __('Recorded Duration'),
                     canBeHidden: true,
                     sortable: true
                 )

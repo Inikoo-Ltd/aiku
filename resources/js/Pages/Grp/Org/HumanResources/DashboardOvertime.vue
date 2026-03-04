@@ -9,6 +9,7 @@ import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronLeft, faChevronRight, faFilter, faTachometerAlt, faList, faLayerGroup } from "@fal";
+import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(faChevronLeft, faChevronRight, faFilter, faTachometerAlt, faList, faLayerGroup);
 
@@ -309,7 +310,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                     <div>
                         <label class="block text-sm font-medium text-gray-500">{{ trans('Requested time') }}</label>
                         <div class="mt-1 text-sm text-gray-900">
-                            {{ selectedOvertime.start_time }} - {{ selectedOvertime.end_time }}
+                            {{ useFormatTime(selectedOvertime.start_time, { formatTime: 'HH:mm' }) }} - {{ useFormatTime(selectedOvertime.end_time, { formatTime: 'HH:mm' }) }}
                         </div>
                     </div>
                     <div>
@@ -333,7 +334,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                         <label class="block text-sm font-medium text-gray-500">{{ trans('Recorded time') }}</label>
                         <div class="mt-1 text-sm text-gray-900">
                             <template v-if="selectedOvertime.recorded_start_time && selectedOvertime.recorded_end_time">
-                                {{ selectedOvertime.recorded_start_time }} - {{ selectedOvertime.recorded_end_time }}
+                                {{ useFormatTime(selectedOvertime.recorded_start_time, { formatTime: 'HH:mm' }) }} - {{ useFormatTime(selectedOvertime.recorded_end_time, { formatTime: 'HH:mm' }) }}
                             </template>
                             <template v-else>
                                 —

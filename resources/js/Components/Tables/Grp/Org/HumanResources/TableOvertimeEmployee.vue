@@ -385,6 +385,18 @@ const submitOvertimeRequest = () => {
 				</span>
 			</template>
 
+            <template #cell(recorded_start_at)="{ item }">
+				<span class="whitespace-nowrap">
+					{{ useFormatTime(item.recorded_start_at, { formatTime: "hm" }) }}
+				</span>
+			</template>
+
+			<template #cell(recorded_duration_minutes)="{ item }">
+				<span class="whitespace-nowrap">
+					{{ formatDuration(item.recorded_duration_minutes) }}
+				</span>
+			</template>
+
 			<template #cell(lieu_requested_minutes)="{ item }">
 				<span class="whitespace-nowrap">
 					{{ formatDuration(item.lieu_requested_minutes) }}

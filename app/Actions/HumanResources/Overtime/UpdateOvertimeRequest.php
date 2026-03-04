@@ -8,6 +8,7 @@ use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use App\Models\HumanResources\OvertimeRequest;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,6 +21,20 @@ class UpdateOvertimeRequest extends OrgAction
 
     public function handle(Organisation $organisation, OvertimeRequest $overtimeRequest, array $modelData): OvertimeRequest
     {
+        if (isset($modelData['requested_start_at'])) {
+            $modelData['requested_start_at'] = Carbon::parse($modelData['requested_start_at'])->setTimezone('UTC');
+        }
+        if (isset($modelData['requested_end_at'])) {
+            $modelData['requested_end_at'] = Carbon::parse($modelData['requested_end_at'])->setTimezone('UTC');
+        }
+
+        if (isset($modelData['recorded_start_at'])) {
+            $modelData['recorded_start_at'] = Carbon::parse($modelData['recorded_start_at'])->setTimezone('UTC');
+        }
+        if (isset($modelData['recorded_end_at'])) {
+            $modelData['recorded_end_at'] = Carbon::parse($modelData['recorded_end_at'])->setTimezone('UTC');
+        }
+
         $overtimeRequest->update($modelData);
 
         return $overtimeRequest;
