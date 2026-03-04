@@ -96,6 +96,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read TaxCategory $taxCategory
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasTradeUnit> $tradeUnitBridges
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasOrgStock> $orgStockBridges
  * @property-read Transaction|null $transaction
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $transactionRefunds
  * @method static Builder<static>|InvoiceTransaction newModelQuery()
@@ -203,6 +204,11 @@ class InvoiceTransaction extends Model
     public function tradeUnitBridges(): HasMany
     {
         return $this->hasMany(InvoiceTransactionHasTradeUnit::class);
+    }
+
+    public function orgStockBridges(): HasMany
+    {
+        return $this->hasMany(InvoiceTransactionHasOrgStock::class);
     }
 
     public function taxCategory(): BelongsTo
