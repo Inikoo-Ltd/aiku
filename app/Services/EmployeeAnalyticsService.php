@@ -524,15 +524,15 @@ class EmployeeAnalyticsService
         Carbon $rangeStart,
         Carbon $rangeEnd
     ): array {
-        if (empty($expectedDateKeys) || $leaves->isEmpty()) {
+        if ($leaves->isEmpty()) {
             return [
                 'total_leave_days' => 0,
                 'leave_breakdown'  => [],
             ];
         }
 
-        $leaveDateKeys = [];
-        $breakdownDateKeys = [];
+        $totalLeaveDays = 0.0;
+        $leaveBreakdown = [];
 
         foreach ($leaves as $leave) {
             $leaveStart = Carbon::parse($leave->start_date)->startOfDay();
@@ -542,34 +542,23 @@ class EmployeeAnalyticsService
                 continue;
             }
 
-            $current = $leaveStart->gt($rangeStart)
-                ? $leaveStart->copy()
-                : $rangeStart->copy();
-
-            $last = $leaveEnd->lt($rangeEnd)
-                ? $leaveEnd->copy()
-                : $rangeEnd->copy();
-
             $leaveType = $leave->type->value ?? (string) $leave->type;
 
-            while ($current->lte($last)) {
-                $dateKey = $current->format('Y-m-d');
-                if (isset($expectedDateKeys[$dateKey])) {
-                    $leaveDateKeys[$dateKey] = true;
-                    $breakdownDateKeys[$leaveType][$dateKey] = true;
-                }
+            $isHalfDay = $leave->is_half_day ?? false
+                || in_array($leaveType, ['halfday-morning', 'halfday-afternoon']);
 
-                $current->addDay();
+            $durationDays = $isHalfDay ? 0.5 : (float) ($leave->duration_days ?? 1);
+
+            $totalLeaveDays += $durationDays;
+
+            if (!isset($leaveBreakdown[$leaveType])) {
+                $leaveBreakdown[$leaveType] = 0.0;
             }
-        }
-
-        $leaveBreakdown = [];
-        foreach ($breakdownDateKeys as $leaveType => $leaveDates) {
-            $leaveBreakdown[$leaveType] = count($leaveDates);
+            $leaveBreakdown[$leaveType] += $durationDays;
         }
 
         return [
-            'total_leave_days' => count($leaveDateKeys),
+            'total_leave_days' => $totalLeaveDays,
             'leave_breakdown'  => $leaveBreakdown,
         ];
     }

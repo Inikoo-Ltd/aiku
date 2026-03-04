@@ -130,12 +130,14 @@ class IndexClockingEmployees extends OrgAction
                 ->where('employee_id', $this->employee->id)
                 ->where('type', 'medical')
                 ->where('status', '!=', 'rejected')
-                ->count();
+                ->get()
+                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
             $unpaidRequestCount = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->where('type', 'unpaid')
                 ->where('status', '!=', 'rejected')
-                ->count();
+                ->get()
+                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $this->employee->id,
@@ -168,6 +170,40 @@ class IndexClockingEmployees extends OrgAction
                 ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
 
             $annualRemainingAfterSubmission = max(0, (float) $balance->annual_days - (float) $annualSubmittedDays);
+
+            $approvedAnnualDays = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->where('type', 'annual')
+                ->where('status', 'approved')
+                ->whereYear('start_date', now()->year)
+                ->get()
+                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
+            $approvedMedicalDays = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->where('type', 'medical')
+                ->where('status', 'approved')
+                ->whereYear('start_date', now()->year)
+                ->get()
+                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
+            $approvedUnpaidDays = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->where('type', 'unpaid')
+                ->where('status', 'approved')
+                ->whereYear('start_date', now()->year)
+                ->get()
+                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
+
+            if ((float) $balance->annual_used !== $approvedAnnualDays
+                || (float) $balance->medical_used !== $approvedMedicalDays
+                || (float) $balance->unpaid_used !== $approvedUnpaidDays
+            ) {
+                $balance->updateQuietly([
+                    'annual_used' => $approvedAnnualDays,
+                    'medical_used' => $approvedMedicalDays,
+                    'unpaid_used' => $approvedUnpaidDays,
+                ]);
+                $balance->refresh();
+            }
         }
 
         if ($this->tab == ClockingEmployeesTabsEnum::ADJUSTMENTS->value && $this->employee) {
