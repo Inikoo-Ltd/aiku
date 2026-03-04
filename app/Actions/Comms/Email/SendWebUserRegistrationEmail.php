@@ -23,9 +23,8 @@ class SendWebUserRegistrationEmail extends OrgAction
     use WithSendWebUserOutboxEmail;
 
 
-    public function handle(int $webUserID): ?DispatchedEmail
+    public function handle(WebUser $webUser, ?string $password): ?DispatchedEmail
     {
-        $webUser = WebUser::find($webUserID);
         if (!$webUser) {
             return null;
         }
@@ -34,24 +33,11 @@ class SendWebUserRegistrationEmail extends OrgAction
             $webUser,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             [
-                'customer_name' => $webUser->customer->name,
-                'web_user_name' => $webUser->username,
+                'customer_name' => $webUser->contact_name,
                 'email' => $webUser->email,
-                'registration_date' => $webUser->created_at->format('F jS, Y'),
-                'customer_id' => $webUser->customer_id,
-                'web_user_id' => $webUser->id,
+                'password' => $password,
+                'login_url' => $webUser->website->getUrl() . '/app/login', // TODO: Update this one later
             ]
         );
-    }
-
-    public string $commandSignature = 'test:send-web-user-registration-email';
-
-    public function asCommand(): void
-    {
-        $webUser = WebUser::first();
-
-        if ($webUser) {
-            $this->handle($webUser->id);
-        }
     }
 }

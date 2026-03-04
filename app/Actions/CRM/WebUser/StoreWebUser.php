@@ -47,7 +47,7 @@ class StoreWebUser extends OrgAction
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'shop_id', $customer->shop_id);
 
-
+        $passwordText = $modelData['password'] ?? null;
         if (Arr::exists($modelData, 'password')) {
             $modelData['password'] = Hash::make($modelData['password']);
         }
@@ -72,7 +72,7 @@ class StoreWebUser extends OrgAction
         ShopHydrateWebUsers::dispatch($webUser->shop)->delay($this->hydratorsDelay);
         CustomerHydrateWebUsers::dispatch($webUser->customer_id)->delay($this->hydratorsDelay);
 
-        SendWebUserRegistrationEmail::dispatch($webUser->id);
+        SendWebUserRegistrationEmail::dispatch($webUser, $passwordText);
 
         return $webUser;
     }
@@ -114,11 +114,11 @@ class StoreWebUser extends OrgAction
             'is_root'      => ['required', 'boolean'],
             'data'         => ['sometimes', 'array'],
             'password'     =>
-                [
-                    'sometimes',
-                    'required',
-                    app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)
-                ],
+            [
+                'sometimes',
+                'required',
+                app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)
+            ],
             'google_id'    => [
                 'sometimes',
                 'nullable',
