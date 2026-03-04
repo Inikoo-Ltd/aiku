@@ -124,7 +124,7 @@
                 </div>
             </td>
 
-            <td style="text-align: right;">{{ __($context . ' Number') }}<br/>
+            <td style="text-align: right;">{{ $invoiceNumberLabel }}<br />
                 <b>{{ $invoice->reference }}</b>
             </td>
 
@@ -132,19 +132,19 @@
     </table>
 </htmlpageheader>
 
-<sethtmlpageheader name="myHeader" value="on" show-this-page="1"/>
-<sethtmlpagefooter name="myFooter" value="on"/>
+<sethtmlpageheader name="myHeader" value="on" show-this-page="1" />
+<sethtmlpagefooter name="myFooter" value="on" />
 
 <table width="100%" style="margin-top: 40px">
     <tr>
         <td>
             <h1>
-                {{ __($context) }} {{ $invoice->reference }}
+                {{ $typeLabel }} {{ $invoice->reference }}
             </h1>
         </td>
         <td style="text-align: right">
             <div>
-                {{ __($context . ' Date') }}: <b>{{ $invoice->date?->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
+                {{ $dateLabel }}: <b>{{ $invoice->date?->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
             </div>
             @if($invoice->tax_liability_at && data_get($invoice->organisation->settings, 'invoicing.show_tax_liability_date'))
                 <div style="text-align: right">
@@ -169,17 +169,17 @@
 
                 <div>
                     <span class="address_label">{{ __('Email') }}:</span> <span
-                        class="address_value">{{ $invoice->customer['email'] }}</span>
+                            class="address_value">{{ $invoice->customer['email'] }}</span>
                 </div>
 
                 <div>
                     <span class="address_label">{{ __('Phone') }}:</span> <span
-                        class="address_value">{{ $invoice->customer['phone'] }}</span>
+                            class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
                 @if($invoice->tax_number  && $invoice->tax_number_valid)
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
-                            class="address_value">{{ $invoice->tax_number }}</span>
+                                class="address_value">{{ $invoice->tax_number }}</span>
                     </div>
                 @endif
                 @if($invoice->identity_document_number)
@@ -189,7 +189,7 @@
         </td>
         <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
             @if($deliveryNote?->estimated_weight)
-                <div style="text-align: right">Weight: <b>{{ $deliveryNote?->estimated_weight }} g</b></div>
+                <div style="text-align: right">{{__('Weight')}}: <b>{{ $deliveryNote?->estimated_weight }} g</b></div>
             @endif
         </td>
     </tr>
@@ -198,7 +198,7 @@
     <tr>
         @if($invoice->billingAddress)
             <td width="45%" style="border: 0.1mm solid #888888;"><span
-                    style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
+                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
                 <div>
                     {{ $invoice->billingAddress->address_line_1 }}
                 </div>
@@ -223,7 +223,7 @@
         @if($deliveryAddress)
             <td width="45%" style="border: 0.1mm solid #888888;">
                 <span
-                    style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
+                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
                 <div>
                     {{ $deliveryAddress->address_line_1 }}
                 </div>
@@ -298,9 +298,9 @@
 
             <td style="text-align:left">
                 @if($transaction->quantity==0 || $transaction->quantity==null)
-                    {{ $invoice->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                    {{ $invoice->currency->symbol .  optional($transaction->historicAsset)->price }}
                 @elseif($transaction->historicAsset)
-                    {{ $invoice->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
+                    {{ $invoice->currency->symbol .  number_format($transaction->net_amount / $transaction->quantity, 2) }}
                 @endif
             </td>
 
@@ -336,7 +336,7 @@
             {{ __('Tax') }}
 
             <br><small>{{$invoice->taxCategory->name}}
-             ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
+                ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
             </small>
         </td>
         <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
@@ -429,7 +429,7 @@
 
 <htmlpagefooter name="myFooter">
     <div
-        style="border-top: 1px solid #000000; font-size: 9pt; text-align: center; padding-top: 5mm; margin-top: 5mm;"></div>
+            style="border-top: 1px solid #000000; font-size: 9pt; text-align: center; padding-top: 5mm; margin-top: 5mm;"></div>
     <table width="100%">
         <tr>
         <tr>
