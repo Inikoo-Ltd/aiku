@@ -96,17 +96,17 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
         $address     = $customer->address;
         $countryCode = $address->country_code ?? '';
 
+        // Refund is already minus from DB, no need to times that by -1
         $isRefund   = $invoice->type === InvoiceTypeEnum::REFUND;
-        $multiplier = $isRefund ? -1 : 1;
 
-        $netAmount   = $multiplier * (float)$invoice->net_amount;
-        $taxAmount   = $multiplier * (float)$invoice->tax_amount;
-        $totalAmount = $multiplier * (float)$invoice->total_amount;
+        $netAmount   = (float)$invoice->net_amount;
+        $taxAmount   = (float)$invoice->tax_amount;
+        $totalAmount = (float)$invoice->total_amount;
 
-        $goodsAmount    = $multiplier * (float)($invoice->goods_amount ?? 0);
-        $servicesAmount = $multiplier * (float)($invoice->services_amount ?? 0);
-        $shippingAmount = $multiplier * (float)($invoice->shipping_amount ?? 0);
-        $chargesAmount  = $multiplier * (float)($invoice->charges_amount ?? 0);
+        $goodsAmount    = (float)($invoice->goods_amount ?? 0);
+        $servicesAmount = (float)($invoice->services_amount ?? 0);
+        $shippingAmount = (float)($invoice->shipping_amount ?? 0);
+        $chargesAmount  = (float)($invoice->charges_amount ?? 0);
 
         $itemsAmount = $goodsAmount + $servicesAmount;
 

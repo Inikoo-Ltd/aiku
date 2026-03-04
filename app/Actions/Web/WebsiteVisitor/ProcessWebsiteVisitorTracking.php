@@ -21,6 +21,8 @@ class ProcessWebsiteVisitorTracking
     use AsAction;
 
     public string $jobQueue = 'analytics';
+    public int $jobTimeout = 1;
+    public int $jobTries = 1;
 
     public function handle(
         string $sessionId,
@@ -32,7 +34,7 @@ class ProcessWebsiteVisitorTracking
         ?string $referrer
     ): void {
         $cacheKey = "visitor:session:$sessionId:$website->id";
-        $visitor = Cache::remember($cacheKey, 1800, function () use ($sessionId, $website) {
+        $visitor  = Cache::remember($cacheKey, 1800, function () use ($sessionId, $website) {
             return WebsiteVisitor::where('session_id', $sessionId)
                 ->where('website_id', $website->id)
                 ->first();
@@ -41,10 +43,10 @@ class ProcessWebsiteVisitorTracking
         if ($visitor) {
             $visitor = UpdateWebsiteVisitor::run($visitor, $currentUrl);
         } else {
-            $parsedUserAgent = (new Browser())->parse($userAgent);
-            $device = $parsedUserAgent->deviceType();
-            $browser = explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown';
-            $os = GetOsFromUserAgent::run($parsedUserAgent);
+            $parsedUserAgent = new Browser()->parse($userAgent);
+            $device          = $parsedUserAgent->deviceType();
+            $browser         = explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown';
+            $os              = GetOsFromUserAgent::run($parsedUserAgent);
 
             $visitor = StoreWebsiteVisitor::run(
                 website: $website,
