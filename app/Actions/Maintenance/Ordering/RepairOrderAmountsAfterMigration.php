@@ -24,7 +24,7 @@ class RepairOrderAmountsAfterMigration
     public function handle(Order $order, Command $command): void
     {
         $updateInvoice = false;
-
+        $invoice = $order->invoices()->first();
         foreach ($order->transactions as $transaction) {
             if ($transaction->model_type != 'Product') {
                 continue;
@@ -38,7 +38,7 @@ class RepairOrderAmountsAfterMigration
 
 
             $grossAmountFromHistoric = $transaction->historicAsset->price * $transaction->quantity_ordered;
-            if ($grossAmountFromHistoric == $transaction->gross_amount) {
+            if (!$invoice && $grossAmountFromHistoric == $transaction->gross_amount) {
                 $command->line('all ok');
                 continue;
             }
@@ -49,7 +49,8 @@ class RepairOrderAmountsAfterMigration
 
                 $newGrossAmount = $product->currentHistoricProduct->price * $transaction->quantity_ordered;
 
-                if ($currentGross != $newGrossAmount) {
+                $diff=abs($currentGross-$newGrossAmount);
+                if ($diff>0.00001) {
                     $command->error("Product: $product->slug - old net amount: $currentGross - new net amount: $newGrossAmount");
                 } else {
                     $command->info("Product: $product->slug - old historic asset id: $oldHistoricAssetId - new historic asset id: $newHistoricAssetId");
@@ -68,7 +69,7 @@ class RepairOrderAmountsAfterMigration
                 }
             }
         }
-        $invoice = $order->invoices()->first();
+
         if ($invoice && $updateInvoice) {
             CalculateInvoiceTotals::run($invoice);
         }
