@@ -16,7 +16,6 @@ use App\Http\Resources\Web\BannerResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Banner;
 use App\Models\Web\Website;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateBanner extends OrgAction

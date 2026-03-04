@@ -68,7 +68,8 @@ class IndexProductsInMasterProduct extends OrgAction
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
+            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id')
+            ->with('orgStocks');
 
         foreach (IndexProductsInCatalogue::make()->getElementGroups($masterAsset) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(

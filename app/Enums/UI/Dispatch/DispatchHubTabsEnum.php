@@ -5,8 +5,7 @@
  * Created on: 15-05-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
- *
-*/
+ */
 
 namespace App\Enums\UI\Dispatch;
 
@@ -19,7 +18,7 @@ enum DispatchHubTabsEnum: string
     use HasTabs;
 
     case DASHBOARD = 'dashboard';
-
+    case PICKING_SESSION = 'picking_session';
 
     public function blueprint(): array
     {
@@ -27,6 +26,10 @@ enum DispatchHubTabsEnum: string
             DispatchHubTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            DispatchHubTabsEnum::PICKING_SESSION => [
+                'title' => __('Picking Session'),
+                'icon'  => 'fal fa-truck',
             ],
         };
     }

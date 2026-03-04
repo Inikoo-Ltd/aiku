@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
@@ -22,8 +23,11 @@ class UpdatePickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession, array $modelData): PickingSession
     {
-        return $this->update($pickingSession, $modelData);
+        $pickingSession = $this->update($pickingSession, $modelData);
 
+        WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
+
+        return $pickingSession;
     }
 
     public function rules(): array

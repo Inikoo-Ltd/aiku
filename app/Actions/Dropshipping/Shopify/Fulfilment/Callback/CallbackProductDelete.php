@@ -8,8 +8,6 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
-use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
-use App\Actions\Dropshipping\Shopify\Product\DeleteShopifyProduct;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Actions\Traits\WithActionUpdate;
