@@ -25,15 +25,17 @@ class RecalculateTotalsOrdersInBasket
     use WithActionUpdate;
     use WithFixedAddressActions;
 
-    public function handle(Order $order): void
+    public function handle(Order $order, Command|null $command = null): void
     {
+
+        $oldTotal = $order->total_amount;
         foreach ($order->transactions as $transaction) {
             if ($transaction->model instanceof Product) {
                 /** @var Product $product */
                 $product = $transaction->model;
 
-
-                $netAmount = $product->currentHistoricProduct->price * $transaction->quantity_ordered;
+                $oldHistoric = $transaction->historic_asset_id;
+                $netAmount   = $product->currentHistoricProduct->price * $transaction->quantity_ordered;
                 if (!is_numeric($netAmount)) {
                     $netAmount = 0;
                 }
@@ -57,11 +59,22 @@ class RecalculateTotalsOrdersInBasket
                 data_set($transactionData, 'grp_net_amount', $grpExchange * $netAmount);
 
                 $transaction->update($transactionData);
+
+                if ($command && $oldHistoric != $product->current_historic_asset_id) {
+                    $command->info(" >> Product: $product->slug - old historic asset id: $oldHistoric - new historic asset id: $product->current_historic_asset_id");
+                }
             }
         }
 
         OrderHydrateCategoriesData::run($order);
         CalculateOrderTotalAmounts::run($order, true, true, false, true);
+
+        $order->refresh();
+        $newTotal = $order->total_amount;
+        if ($command && $oldTotal != $newTotal) {
+            $command->info("Order: $order->slug - old total: $oldTotal - new total: $newTotal");
+        }
+
     }
 
 
@@ -85,9 +98,9 @@ class RecalculateTotalsOrdersInBasket
         $bar->start();
 
         Order::where('state', OrderStateEnum::CREATING)->whereIn('shop_id', $shopsIds)->orderBy('date', 'desc')
-            ->chunk(1000, function (Collection $models) use ($bar) {
+            ->chunk(1000, function (Collection $models) use ($bar, $command) {
                 foreach ($models as $model) {
-                    $this->handle($model);
+                    $this->handle($model, $command);
                     $bar->advance();
                 }
             });
