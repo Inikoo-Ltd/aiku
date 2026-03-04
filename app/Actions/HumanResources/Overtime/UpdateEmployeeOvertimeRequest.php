@@ -7,6 +7,8 @@ use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\OvertimeRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -16,6 +18,42 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class UpdateEmployeeOvertimeRequest extends OrgAction
 {
     protected ?Employee $employee = null;
+
+    private function resolveEmployee(Request $request): ?Employee
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return null;
+        }
+
+        $organisationScope = $request->input('organisation') ?? $request->route('organisation');
+
+        if (is_object($organisationScope)) {
+            $organisationScope = $organisationScope->slug ?? $organisationScope->id ?? null;
+        }
+
+        if ($organisationScope) {
+            $organisationScope = (string) $organisationScope;
+            $isNumericOrganisationId = ctype_digit($organisationScope);
+
+            $employee = $user->employees()
+                ->whereHas('organisation', function ($query) use ($organisationScope, $isNumericOrganisationId) {
+                    $query->where('slug', $organisationScope);
+
+                    if ($isNumericOrganisationId) {
+                        $query->orWhere('id', (int) $organisationScope);
+                    }
+                })
+                ->first();
+
+            if ($employee) {
+                return $employee;
+            }
+        }
+
+        return $user->employees()->first();
+    }
 
     public function prepareForValidation(ActionRequest $request): void
     {
@@ -63,6 +101,13 @@ class UpdateEmployeeOvertimeRequest extends OrgAction
 
         if ($overtimeRequest->status !== OvertimeRequestStatusEnum::PENDING) {
             abort(403, __('Only pending overtime requests can be edited.'));
+        }
+
+        if (isset($modelData['requested_start_at'])) {
+            $modelData['requested_start_at'] = Carbon::parse($modelData['requested_start_at'])->setTimezone('UTC');
+        }
+        if (isset($modelData['requested_end_at'])) {
+            $modelData['requested_end_at'] = Carbon::parse($modelData['requested_end_at'])->setTimezone('UTC');
         }
 
         $overtimeRequest->update([
