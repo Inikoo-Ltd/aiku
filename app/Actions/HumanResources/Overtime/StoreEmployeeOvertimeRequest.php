@@ -10,6 +10,7 @@ use App\Models\HumanResources\OvertimeRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -71,6 +72,20 @@ class StoreEmployeeOvertimeRequest extends OrgAction
 
         if ($durationMinutes <= 0) {
             $modelData['requested_duration_minutes'] = 0;
+        }
+
+        if (isset($modelData['requested_start_at'])) {
+            $modelData['requested_start_at'] = Carbon::parse($modelData['requested_start_at'])->setTimezone('UTC');
+        }
+        if (isset($modelData['requested_end_at'])) {
+            $modelData['requested_end_at'] = Carbon::parse($modelData['requested_end_at'])->setTimezone('UTC');
+        }
+
+        if (isset($modelData['recorded_start_at'])) {
+            $modelData['recorded_start_at'] = Carbon::parse($modelData['recorded_start_at'])->setTimezone('UTC');
+        }
+        if (isset($modelData['recorded_end_at'])) {
+            $modelData['recorded_end_at'] = Carbon::parse($modelData['recorded_end_at'])->setTimezone('UTC');
         }
 
         return OvertimeRequest::query()->create($modelData);

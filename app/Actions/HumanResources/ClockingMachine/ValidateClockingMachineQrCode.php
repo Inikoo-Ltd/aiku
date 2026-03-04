@@ -139,7 +139,7 @@ class ValidateClockingMachineQrCode
 
     private function getWorkingHours(ClockingMachine $machine): ?array
     {
-        // dd($machine);
+
         $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
             ->where('schedulable_id', $machine->organisation_id)
             ->where('is_active', true)
