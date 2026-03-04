@@ -24,6 +24,7 @@ class RedoProductTimeSeries implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
     public string $commandSignature = 'products:redo_time_series {--a|async : Run asynchronously}';
+    public int $jobTries = 1;
 
     public function getJobUniqueId(string $from, string $to): string
     {

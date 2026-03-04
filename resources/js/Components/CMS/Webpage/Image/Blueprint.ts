@@ -39,11 +39,11 @@ export default {
 							label: "Use Caption",
 							type: "switch",
 						},
-						{
+						/* {
 							key: ["properties",'text'],
 							label: "Style",
 							type: "textProperty",
-						},
+						}, */
 					],
 				},
 				{
