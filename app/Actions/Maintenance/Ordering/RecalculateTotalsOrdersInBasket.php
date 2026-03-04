@@ -8,6 +8,7 @@
 
 namespace App\Actions\Maintenance\Ordering;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Traits\WithActionUpdate;
@@ -26,32 +27,55 @@ class RecalculateTotalsOrdersInBasket
 
     public function handle(Order $order): void
     {
-        OrderHydrateCategoriesData::run($order);
-        CalculateOrderTotalAmounts::run($order, true, true, false, true);
-
         foreach ($order->transactions as $transaction) {
+            if ($transaction->model instanceof Product) {
+                /** @var Product $product */
+                $product = $transaction->model;
 
-            $model = $transaction->model;
-            if ($model instanceof Product) {
-                $transaction->update(
-                    [
-                        'family_id'         => $model->family_id,
-                        'department_id'     => $model->department_id,
-                        'sub_department_id' => $model->sub_department_id,
-                    ]
-                );
+
+                $netAmount = $product->currentHistoricProduct->price * $transaction->quantity_ordered;
+                if (!is_numeric($netAmount)) {
+                    $netAmount = 0;
+                }
+                $shop        = $transaction->shop;
+                $orgExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->currency);
+                $grpExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->group->currency);
+
+                $transactionData = [
+                    'historic_asset_id' => $product->current_historic_asset_id,
+                    'gross_amount'      => $netAmount,
+                    'net_amount'        => $netAmount,
+                    'family_id'         => $product->family_id,
+                    'department_id'     => $product->department_id,
+                    'sub_department_id' => $product->sub_department_id,
+                ];
+
+                data_set($transactionData, 'org_exchange', $orgExchange);
+                data_set($transactionData, 'org_net_amount', $orgExchange * $netAmount);
+
+                data_set($transactionData, 'grp_exchange', $grpExchange);
+                data_set($transactionData, 'grp_net_amount', $grpExchange * $netAmount);
+
+                $transaction->update($transactionData);
             }
         }
 
-
+        OrderHydrateCategoriesData::run($order);
+        CalculateOrderTotalAmounts::run($order, true, true, false, true);
     }
 
 
-    public string $commandSignature = 'orders:recalculate_totals_orders_in_basket';
+    public string $commandSignature = 'orders:recalculate_totals_orders_in_basket {shop?}';
 
     public function asCommand(Command $command): void
     {
-        $shopsIds = Shop::where('is_aiku', true)->pluck('id')->toArray();
+        if ($command->argument('shop')) {
+            $shop     = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+            $shopsIds = [$shop->id];
+        } else {
+            $shopsIds = Shop::where('is_aiku', true)->pluck('id')->toArray();
+        }
+
 
         $count = Order::where('state', OrderStateEnum::CREATING)->whereIn('shop_id', $shopsIds)->count();
 

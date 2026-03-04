@@ -8,11 +8,10 @@
 
 namespace App\Actions\Maintenance\Ordering;
 
-use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
-use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
-use App\Models\Accounting\InvoiceTransaction;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 
@@ -24,7 +23,11 @@ class RepairOrderAmountsAfterMigration
     public function handle(Order $order, Command $command): void
     {
         $updateInvoice = false;
-        $invoice = $order->invoices()->first();
+        $invoice       = $order->invoices()->first();
+        if ($invoice) {
+            return;
+        }
+
         foreach ($order->transactions as $transaction) {
             if ($transaction->model_type != 'Product') {
                 continue;
@@ -38,7 +41,7 @@ class RepairOrderAmountsAfterMigration
 
 
             $grossAmountFromHistoric = $transaction->historicAsset->price * $transaction->quantity_ordered;
-            if (!$invoice && $grossAmountFromHistoric == $transaction->gross_amount) {
+            if ($grossAmountFromHistoric == $transaction->gross_amount) {
                 $command->line('all ok');
                 continue;
             }
@@ -49,41 +52,46 @@ class RepairOrderAmountsAfterMigration
 
                 $newGrossAmount = $product->currentHistoricProduct->price * $transaction->quantity_ordered;
 
-                $diff=abs($currentGross-$newGrossAmount);
-                if ($diff>0.00001) {
+                $diff = abs($currentGross - $newGrossAmount);
+                if ($diff > 0.00001) {
                     $command->error("Product: $product->slug - old net amount: $currentGross - new net amount: $newGrossAmount");
                 } else {
                     $command->info("Product: $product->slug - old historic asset id: $oldHistoricAssetId - new historic asset id: $newHistoricAssetId");
                     $transaction->update([
                         'historic_asset_id' => $newHistoricAssetId,
                     ]);
-                    $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)->first();
-
-
-                    if ($invoiceTransaction) {
-                        $updateInvoice = true;
-                        $dataToUpdate  = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction);
-
-                        $invoiceTransaction->update($dataToUpdate);
-                    }
                 }
             }
-        }
-
-        if ($invoice && $updateInvoice) {
-            CalculateInvoiceTotals::run($invoice);
         }
     }
 
 
-    public string $commandSignature = 'orders:repair_order_amounts {order}';
+    public string $commandSignature = 'orders:repair_order_amounts {order?}  {--S|shop= shop slug}';
 
     public function asCommand(Command $command): void
     {
-        $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+        if ($command->argument('order')) {
+            $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+            $command->info("Processing Order: $order->slug");
+            $this->handle($order, $command);
 
+            return;
+        }
 
-        $this->handle($order, $command);
+        if ($command->option('shop')) {
+            $shop = Shop::where('slug', $command->option('shop'))->firstOrFail();
+
+            foreach (
+                Order::where('shop_id', $shop->id)->whereNotIn('state', [
+                    OrderStateEnum::CANCELLED,
+                    OrderStateEnum::CREATING,
+                    OrderStateEnum::FINALISED,
+                    OrderStateEnum::DISPATCHED
+                ])->get() as $order
+            ) {
+                $this->handle($order, $command);
+            }
+        }
     }
 
 }
