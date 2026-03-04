@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Models\Accounting\Invoice;
+use Illuminate\Console\Command;
 
 class CalculateInvoiceTotals extends OrgAction
 {
@@ -78,4 +79,15 @@ class CalculateInvoiceTotals extends OrgAction
 
         return $this->handle($invoice);
     }
+
+    public string $commandSignature = 'invoice:totals {invoice}';
+
+    public function asCommand(Command $command): int
+    {
+        $invoice = Invoice::where('slug', $command->argument('invoice'))->firstOrFail();
+        $this->action($invoice);
+
+        return 0;
+    }
+
 }
