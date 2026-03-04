@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
+use App\Actions\Comms\Email\SendWebUserRegistrationEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -60,6 +61,8 @@ class StoreRetinaWebUser extends RetinaAction
 
         CustomerHydrateWebUsers::dispatch($webUser->customer_id);
 
+        SendWebUserRegistrationEmail::dispatch($webUser->id);
+
         return $webUser;
     }
 
@@ -77,7 +80,6 @@ class StoreRetinaWebUser extends RetinaAction
         if ($this->customer->webUsers->count() > 20) {
             $validator->errors()->add('username', 'Maximum number of web users reached');
         }
-
     }
 
     public function rules(): array
@@ -97,10 +99,10 @@ class StoreRetinaWebUser extends RetinaAction
                 ),
             ],
             'password'     =>
-                [
-                    'required',
-                    app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)
-                ],
+            [
+                'required',
+                app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)
+            ],
 
             'email'        => [
                 'required',
@@ -115,7 +117,6 @@ class StoreRetinaWebUser extends RetinaAction
             ],
 
         ];
-
     }
 
 
@@ -144,5 +145,4 @@ class StoreRetinaWebUser extends RetinaAction
             'webUser' => $webUser->slug
         ]));
     }
-
 }

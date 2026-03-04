@@ -471,7 +471,8 @@
   ,
    {
     "outboxes": [
-      "chat_notification_to_customer"
+      "chat_notification_to_customer",
+      "web_user_registration"
     ],
     "name": "Beefree blank email template",
     "content": "beefree_blank_email_template.json",

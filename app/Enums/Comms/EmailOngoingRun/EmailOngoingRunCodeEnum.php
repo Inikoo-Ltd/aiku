@@ -54,4 +54,5 @@ enum EmailOngoingRunCodeEnum: string
     case CHAT_NOTIFICATION_TO_CUSTOMER = 'chat_notification_to_customer';
 
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
+    case WEB_USER_REGISTRATION = 'web_user_registration';
 }
