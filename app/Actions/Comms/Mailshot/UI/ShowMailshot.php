@@ -232,7 +232,7 @@ class ShowMailshot extends OrgAction
                 'indexRoute' => [
                     'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.index',
-                        MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshot.index',
+                        MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.index',
                     },
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
