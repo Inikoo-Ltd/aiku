@@ -1,11 +1,10 @@
 <?php
 
 /*
- * Author: Cascade AI Assistant
- * Created on: 2025
- * Copyright: 2025
- *
-*/
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: Wednesday, 4 Mar 2026 09:46:14 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
+ */
 
 namespace App\Actions\Comms\Email;
 
