@@ -21,6 +21,6 @@ class WebsiteHydrateAnnouncements
             'number_announcements' => $website->announcements()->count(),
         ];
 
-        $website->stats->update($stats);
+        $website->stats?->update($stats);
     }
 }

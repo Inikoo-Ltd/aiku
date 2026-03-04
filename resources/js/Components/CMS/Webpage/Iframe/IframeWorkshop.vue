@@ -18,18 +18,24 @@ const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop";
 }>();
 
-const screenWidth = ref(window.innerWidth);
+const screenWidth = ref(typeof window !== "undefined" ? window.innerWidth : 1024);
 
 const updateScreenWidth = () => {
-	screenWidth.value = window.innerWidth;
+	if (typeof window !== "undefined") {	
+		screenWidth.value = window.innerWidth;
+	}
 };
 
 onMounted(() => {
-	window.addEventListener("resize", updateScreenWidth);
+	if (typeof window !== "undefined") {
+		window.addEventListener("resize", updateScreenWidth);
+	}
 });
 
 onUnmounted(() => {
-	window.removeEventListener("resize", updateScreenWidth);
+	if(typeof window !== "undefined"){
+		window.removeEventListener("resize", updateScreenWidth);
+	}	
 });
 
 const layout: any = inject("layout", {});
