@@ -167,13 +167,12 @@ class DashboardLeave extends OrgAction
             'daysInMonth' => $startOfMonth->daysInMonth,
             'monthName' => $startOfMonth->format('F'),
             'employeeOptions' => $employeeOptions,
-            'typeOptions' => [
-                ['value' => 'annual', 'label' => __('Annual Leave')],
-                ['value' => 'medical', 'label' => __('Medical Leave')],
-                ['value' => 'unpaid', 'label' => __('Unpaid Leave')],
-                ['value' => 'halfday-morning', 'label' => __('Half Day Morning')],
-                ['value' => 'halfday-afternoon', 'label' => __('Half Day Afternoon')],
-            ],
+            'typeOptions' => collect(LeaveTypeEnum::labels())
+                ->map(fn (string $label, string $value) => [
+                    'value' => $value,
+                    'label' => $label,
+                ])
+                ->values(),
             'type_options' => LeaveTypeEnum::labels(),
             'status_options' => LeaveStatusEnum::labels(),
         ]);

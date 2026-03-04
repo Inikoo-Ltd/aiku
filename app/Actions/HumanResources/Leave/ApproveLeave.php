@@ -45,6 +45,7 @@ class ApproveLeave extends OrgAction
             'medical' => 'medical_used',
             'unpaid' => 'unpaid_used',
             'halfday-morning', 'halfday-afternoon' => 'unpaid_used',
+            'training', 'leave-of-absence', 'compassionate', 'parental', 'sabbatical' => 'unpaid_used',
             default => null,
         };
 

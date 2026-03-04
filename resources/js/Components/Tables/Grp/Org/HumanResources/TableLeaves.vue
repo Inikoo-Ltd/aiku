@@ -31,6 +31,7 @@ const props = defineProps<{
 	tab?: string
 	organisation?: string | null
 	balance?: LeaveBalanceSummary | { data?: LeaveBalanceSummary }
+	typeOptions?: Record<string, string> | null
 	annualSubmittedDays?: number | null
 	annualRemainingAfterSubmission?: number | null
 	medicalRequestCount?: number | null
@@ -152,11 +153,34 @@ const displayedUnpaidCount = computed(() => {
 	return balanceSummary.value?.unpaid_used ?? 0
 })
 
-const typeOptions = [
-	{ value: "annual", label: trans("Annual Leave") },
-	{ value: "medical", label: trans("Medical Leave") },
-	{ value: "unpaid", label: trans("Unpaid Leave") },
-]
+const fallbackTypeOptions: Record<string, string> = {
+	annual: trans("Annual Leave"),
+	medical: trans("Medical Leave"),
+	unpaid: trans("Unpaid Leave"),
+	"halfday-morning": trans("Half Day Morning"),
+	"halfday-afternoon": trans("Half Day Afternoon"),
+	training: trans("Training Leave"),
+	"leave-of-absence": trans("Leave of Absence"),
+	compassionate: trans("Compassionate Leave"),
+	parental: trans("Parental Leave"),
+	sabbatical: trans("Sabbatical"),
+}
+
+const fixedHalfDayTypes: Record<string, "Morning" | "Afternoon"> = {
+	"halfday-morning": "Morning",
+	"halfday-afternoon": "Afternoon",
+}
+
+const typeOptions = computed(() => {
+	const options = props.typeOptions && Object.keys(props.typeOptions).length > 0
+		? props.typeOptions
+		: fallbackTypeOptions
+
+	return Object.entries(options).map(([value, label]) => ({
+		value,
+		label,
+	}))
+})
 
 const leaveForm = useForm<{
 	type: string
@@ -189,36 +213,6 @@ const canSubmitLeave = computed(() => {
 	}
 
 	return true
-})
-
-const showLeaveDuration = computed(() => {
-	return !["annual", "medical"].includes(leaveForm.type)
-})
-
-const leaveDurationOptions = [
-	{ value: "full", label: trans("Full Day") },
-	{ value: "half_morning", label: trans("Half Day (Morning)") },
-	{ value: "half_afternoon", label: trans("Half Day (Afternoon)") },
-]
-
-const leaveDuration = computed({
-	get: () => {
-		if (!leaveForm.is_half_day) return "full"
-		return leaveForm.session === "Afternoon" ? "half_afternoon" : "half_morning"
-	},
-	set: (value: string) => {
-		if (value === "full") {
-			leaveForm.is_half_day = false
-			leaveForm.session = "Full"
-			return
-		}
-
-		leaveForm.is_half_day = true
-		leaveForm.session = value === "half_afternoon" ? "Afternoon" : "Morning"
-		if (leaveForm.start_date) {
-			leaveForm.end_date = leaveForm.start_date
-		}
-	},
 })
 
 const getStatusTheme = (status: string): number => {
@@ -272,19 +266,30 @@ const closeCreateModal = () => {
 // Watch for changes in leave type to reset half-day settings when switching between types
 watch(
 	() => leaveForm.type,
-	(newValue, oldValue) => {
-		if (["annual", "medical"].includes(newValue)) {
-			// Switching to annual/medical, ensure half-day settings are reset
-			leaveForm.is_half_day = false
-			leaveForm.session = "Full"
+	(newValue) => {
+		const halfDaySession = fixedHalfDayTypes[newValue]
+		if (halfDaySession) {
+			leaveForm.is_half_day = true
+			leaveForm.session = halfDaySession
+			if (leaveForm.start_date) {
+				leaveForm.end_date = leaveForm.start_date
+			}
+			return
 		}
+
+		leaveForm.is_half_day = false
+		leaveForm.session = "Full"
 	}
 )
 
-// Watch showLeaveDuration to debug
-watch(showLeaveDuration, (newValue) => {
-	console.log("showLeaveDuration is now:", newValue)
-})
+watch(
+	() => leaveForm.start_date,
+	(newStartDate) => {
+		if (leaveForm.is_half_day && newStartDate) {
+			leaveForm.end_date = newStartDate
+		}
+	}
+)
 
 const openEditModal = (leave: any) => {
 	selectedLeave.value = leave
@@ -475,25 +480,6 @@ const submitEdit = () => {
 					</p>
 				</div>
 
-				<div v-if="showLeaveDuration">
-					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Leave Duration")
-					}}</label>
-					<select
-						v-model="leaveDuration"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-						<option
-							v-for="opt in leaveDurationOptions"
-							:key="opt.value"
-							:value="opt.value">
-							{{ opt.label }}
-						</option>
-					</select>
-					<p v-if="leaveForm.is_half_day" class="mt-1 text-xs text-gray-500">
-						{{ trans("Half day leave is applied to one date only.") }}
-					</p>
-				</div>
-
 				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700">{{
@@ -523,24 +509,9 @@ const submitEdit = () => {
 					</div>
 				</div>
 
-				<div v-if="showLeaveDuration">
-					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Leave Duration")
-					}}</label>
-					<select
-						v-model="leaveDuration"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-						<option
-							v-for="opt in leaveDurationOptions"
-							:key="opt.value"
-							:value="opt.value">
-							{{ opt.label }}
-						</option>
-					</select>
-					<p v-if="leaveForm.is_half_day" class="mt-1 text-xs text-gray-500">
-						{{ trans("Half day leave is applied to one date only.") }}
-					</p>
-				</div>
+				<p v-if="leaveForm.is_half_day" class="text-xs text-gray-500">
+					{{ trans("Half day leave is applied to one date only.") }}
+				</p>
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{

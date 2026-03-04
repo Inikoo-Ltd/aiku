@@ -25,6 +25,7 @@ use App\Models\HumanResources\AttendanceAdjustment;
 use App\Models\HumanResources\OvertimeRequest;
 use Illuminate\Support\Carbon;
 use App\Enums\Helpers\Period\PeriodEnum;
+use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use Closure;
 use App\InertiaTable\InertiaTable;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
@@ -500,6 +501,7 @@ class IndexClockingEmployees extends OrgAction
                     ? fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
+                        'type_options' => LeaveTypeEnum::labels(),
                         'annual_submitted_days' => $data['annual_submitted_days'],
                         'annual_remaining_after_submission' => $data['annual_remaining_after_submission'],
                         'medical_request_count' => $data['medical_request_count'],
@@ -509,6 +511,7 @@ class IndexClockingEmployees extends OrgAction
                     : Inertia::lazy(fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
+                        'type_options' => LeaveTypeEnum::labels(),
                         'annual_submitted_days' => $data['annual_submitted_days'],
                         'annual_remaining_after_submission' => $data['annual_remaining_after_submission'],
                         'medical_request_count' => $data['medical_request_count'],
