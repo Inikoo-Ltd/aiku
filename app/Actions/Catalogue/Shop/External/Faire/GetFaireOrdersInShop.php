@@ -24,6 +24,7 @@ use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\SalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -111,6 +112,11 @@ class GetFaireOrdersInShop extends OrgAction
                         $taxCategory = TaxCategory::where('status', true)->where('type', 'outside')->first();
                     }
                     $orderData['tax_category_id'] = $taxCategory->id;
+                }
+
+                $salesChannel=SalesChannel::where('code','faire')->first();
+                if($salesChannel){
+                    $orderData['sales_channel_id']=$salesChannel->id;
                 }
 
                 $transactionsData = [];
