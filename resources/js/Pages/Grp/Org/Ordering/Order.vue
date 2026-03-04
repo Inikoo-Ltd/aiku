@@ -1980,7 +1980,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         aria-hidden='true' />
 
                                     <span
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !is_shop_external"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
                                         @click="_shipping_price_method?.toggle"
                                         v-tooltip="trans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
@@ -1992,7 +1992,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
 
                                 <!-- Popover: Select shipping price method -->
-                                <PopoverPrimevue v-if="!is_shop_external" ref="_shipping_price_method">
+                                <PopoverPrimevue  ref="_shipping_price_method">
                                     <div class="relative flex flex-col gap-2">
                                         <div class="text-sm">
                                             {{ trans("Select to change shipping price method") }}:

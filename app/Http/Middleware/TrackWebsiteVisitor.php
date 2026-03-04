@@ -66,13 +66,7 @@ class TrackWebsiteVisitor
             'retina.webhooks',
         ];
 
-        foreach ($excludedRoutes as $excluded) {
-            if (str_starts_with($routeName, $excluded)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all($excludedRoutes, fn($excluded) => !str_starts_with($routeName, $excluded));
     }
 
     protected function isBot(Request $request): bool
@@ -83,7 +77,7 @@ class TrackWebsiteVisitor
             return false;
         }
 
-        $parsedUserAgent = (new Parser())->parse($userAgent);
+        $parsedUserAgent = new Parser()->parse($userAgent);
         $deviceType = $parsedUserAgent->deviceType();
 
         return strtolower($deviceType) === 'bot';

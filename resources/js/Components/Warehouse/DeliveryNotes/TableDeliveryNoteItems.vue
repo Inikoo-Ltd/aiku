@@ -742,11 +742,17 @@ const submitTransactionAsWaiting = () => {
                 <template class="" v-if="state === 'packing' && layout.app.environment === 'local' && props.shop_type !== 'dropshipping'">
                     <ButtonWithLink
                         type="secondary"
-                        tooltip="pack order"
+                        v-tooltip="trans('Click to packing the item')"
                         :label="ctrans('Packing')"
-                        :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                        :size="screenType == 'desktop' ? 'xs' : 'lg'"
+                        :key="screenType"
                         :bindToLink="{preserveScroll: true}"
-                        :routeTarget="item.packing_route"
+                        :routeTarget="{
+                            name: 'grp.models.delivery_note_item.packing.store',
+                            parameters: {
+                                deliveryNoteItem: item.id
+                            }
+                        }"
                     />
                 </template>
         </template>

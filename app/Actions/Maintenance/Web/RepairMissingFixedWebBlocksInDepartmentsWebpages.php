@@ -176,8 +176,10 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $webpagesID = DB::table('webpages')
             ->select('id')
             ->where('sub_type', 'department')
-            ->when(!empty($websiteId),
-                fn ($q) => $q->where('website_id', $websiteId))
+            ->when(
+                !empty($websiteId),
+                fn ($q) => $q->where('website_id', $websiteId)
+            )
             ->get();
 
 

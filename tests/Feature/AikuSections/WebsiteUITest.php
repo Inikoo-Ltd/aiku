@@ -77,6 +77,7 @@ beforeEach(function () {
         $banner = StoreBanner::make()->action($this->fulfilmentWebsite, [
             'name' => 'fulfilmentBanner',
             'type' => BannerTypeEnum::LANDSCAPE,
+            'ratio' => '16/9',
         ]);
         $banner->refresh();
     }
@@ -398,6 +399,7 @@ test('delete banner in shop', function () {
     $banner = StoreBanner::make()->action($this->shop->website, [
         'name' => 'delete shop banner',
         'type' => BannerTypeEnum::LANDSCAPE,
+        'ratio' => '16/9',
     ]);
 
     $response = delete(

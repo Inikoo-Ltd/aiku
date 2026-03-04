@@ -22,7 +22,7 @@ class RedoProductTimeSeries implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'sales';
     public string $commandSignature = 'products:redo_time_series {--a|async : Run asynchronously}';
 
     public function getJobUniqueId(string $from, string $to): string
@@ -32,6 +32,7 @@ class RedoProductTimeSeries implements ShouldBeUnique
 
     public function handle(Product $product, bool $async = false): void
     {
+
         if ($product->state == ProductStateEnum::IN_PROCESS) {
             return;
         }
@@ -57,11 +58,12 @@ class RedoProductTimeSeries implements ShouldBeUnique
 
     public function asJob(string $from, string $to): void
     {
-        Product::all()->each(function (Product $product) use ($from, $to) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
-            }
-        });
+       //todo this is all wrong and dangerous
+//        Product::all()->each(function (Product $product) use ($from, $to) {
+//            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+//                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
+//            }
+//        });
     }
 
     public function asCommand(Command $command): int

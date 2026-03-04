@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Catalogue;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -71,8 +72,15 @@ class ProductsResource extends JsonResource
             ];
         }
 
+        $extraField = [];
 
+        /** @var Product $product */
+        $product = $this->resource;
 
+        // Don't worry, won't run if relationship is not eager loaded
+        if ($product->relationLoaded('orgStocks')) {
+            data_set($extraField, 'org_stocks', $this->getDataPickingFactor($product->orgStocks));
+        }
 
         return [
             'id'                        => $this->id,
@@ -118,8 +126,18 @@ class ProductsResource extends JsonResource
             'is_variant_leader'         => $this->is_variant_leader,
             'variant_code'              => $this->variant_code,
             'iris_url'                  => $this->webpage?->canonical_url,
-            'is_for_sale'               => $this->is_for_sale
+            'is_for_sale'               => $this->is_for_sale,
+            ...$extraField
         ];
+    }
+
+    private function getDataPickingFactor($orgStocks): ?array
+    {
+        return $orgStocks->map(function ($orgStock) {
+            return [
+                'pick_fractional'   => ($orgStock->pivot->quantity && $orgStock->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)), $orgStock->packed_in) : [],
+            ];
+        })->toArray();
     }
 
     private function calculateDelta($current, $previous): ?array

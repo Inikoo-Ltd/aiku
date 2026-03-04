@@ -20,13 +20,13 @@ class GetIrisBasketTransactions extends IrisAction
     public function handle(Customer $customer): array
     {
         $basket = $customer->orderInBasket;
-        
+
         $query = DB::table('transactions')
             ->where('transactions.order_id', $basket->id)
             ->where('transactions.model_type', class_basename(Product::class))
             ->leftJoin('products', 'products.id', 'transactions.model_id')
             ->whereNull('transactions.deleted_at');
-        
+
         $query->select([
             'products.id as product_id',
             'transactions.id as transaction_id',
@@ -36,7 +36,7 @@ class GetIrisBasketTransactions extends IrisAction
         return $query
             ->get()
             ->keyBy('product_id')
-            ->map(function($data) { 
+            ->map(function ($data) {
                 return [
                     'transaction_id' => $data->transaction_id,
                     'quantity_ordered' => $data->quantity_ordered,

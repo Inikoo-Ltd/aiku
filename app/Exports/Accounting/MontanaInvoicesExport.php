@@ -61,13 +61,24 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             'Impuestos',
             '%IVA',
             'TOTAL',
+            'Tax code: ES-SR',
+            'Tax code: ES-SR+RE',
+            'Tax code: ES-RR+RE',
         ];
     }
 
     public function columnFormats(): array
     {
         return [
+            'A' => NumberFormat::FORMAT_TEXT,
+            'B' => NumberFormat::FORMAT_TEXT,
+            'C' => NumberFormat::FORMAT_TEXT,
+            'D' => NumberFormat::FORMAT_TEXT,
             'E' => NumberFormat::FORMAT_TEXT,
+            'F' => NumberFormat::FORMAT_TEXT,
+            'G' => NumberFormat::FORMAT_TEXT,
+            'H' => NumberFormat::FORMAT_TEXT,
+            'I' => NumberFormat::FORMAT_TEXT,
         ];
     }
 
@@ -85,17 +96,17 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
         $address     = $customer->address;
         $countryCode = $address->country_code ?? '';
 
+        // Refund is already minus from DB, no need to times that by -1
         $isRefund   = $invoice->type === InvoiceTypeEnum::REFUND;
-        $multiplier = $isRefund ? -1 : 1;
 
-        $netAmount   = $multiplier * (float)$invoice->net_amount;
-        $taxAmount   = $multiplier * (float)$invoice->tax_amount;
-        $totalAmount = $multiplier * (float)$invoice->total_amount;
+        $netAmount   = (float)$invoice->net_amount;
+        $taxAmount   = (float)$invoice->tax_amount;
+        $totalAmount = (float)$invoice->total_amount;
 
-        $goodsAmount    = $multiplier * (float)($invoice->goods_amount ?? 0);
-        $servicesAmount = $multiplier * (float)($invoice->services_amount ?? 0);
-        $shippingAmount = $multiplier * (float)($invoice->shipping_amount ?? 0);
-        $chargesAmount  = $multiplier * (float)($invoice->charges_amount ?? 0);
+        $goodsAmount    = (float)($invoice->goods_amount ?? 0);
+        $servicesAmount = (float)($invoice->services_amount ?? 0);
+        $shippingAmount = (float)($invoice->shipping_amount ?? 0);
+        $chargesAmount  = (float)($invoice->charges_amount ?? 0);
 
         $itemsAmount = $goodsAmount + $servicesAmount;
 
@@ -110,7 +121,21 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             $invoice->reference,
             $order ? $order->reference : '',
             $customer->company_name ?: $customer->name,
-            $invoice->tax_number ?? '',
+            (function () use ($invoice, $countryCode) {
+                $taxNumber = $invoice->tax_number ?? '';
+
+                if ($taxNumber === '') {
+                    return '';
+                }
+
+                $taxNumberClean = preg_replace('/\s+/', '', $taxNumber);
+
+                if ($countryCode !== '' && strncasecmp($taxNumberClean, $countryCode, strlen($countryCode)) === 0) {
+                    $taxNumberClean = substr($taxNumberClean, strlen($countryCode));
+                }
+
+                return $taxNumberClean;
+            })(),
             $countryCode,
             $invoice->date->format('Y-m-d H:i'),
             $invoice->currency->code ?? 'EUR',
@@ -123,6 +148,9 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
             number_format($taxAmount, 2, '.', ''),
             number_format($taxPercentage, 2, '.', ''),
             number_format($totalAmount, 2, '.', ''),
+            $invoice->tax_category_id === 30 ? number_format($taxAmount, 2, '.', '') : '',
+            $invoice->tax_category_id === 51 ? number_format($taxAmount, 2, '.', '') : '',
+            $invoice->tax_category_id === 53 ? number_format($taxAmount, 2, '.', '') : '',
         ];
     }
 
@@ -184,6 +212,6 @@ class MontanaInvoicesExport implements FromQuery, WithMapping, WithHeadings, Sho
 
     protected function emptyRow(): array
     {
-        return array_fill(0, 17, '');
+        return array_fill(0, 20, '');
     }
 }

@@ -20,6 +20,8 @@ class MatchPortfolioToCurrentWooProduct extends OrgAction
 {
     use AsAction;
 
+    public string $jobQueue = 'woo';
+
     public function handle(Portfolio $portfolio, array $modelData): void
     {
         /** @var WooCommerceUser $wooCommerceUser */

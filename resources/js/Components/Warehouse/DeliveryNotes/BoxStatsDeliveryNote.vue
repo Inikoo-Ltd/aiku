@@ -417,8 +417,7 @@ const updateCollection = async (e: Event) => {
                     
                     <!-- Section: Picked Bays -->
                     <div v-if="[ 'picked', 'packing'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
-                        <dl v-tooltip="trans('Picked bay name')"
-                            class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dl class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
                                 {{ trans("Picked bays") }}:
                             </dt>
