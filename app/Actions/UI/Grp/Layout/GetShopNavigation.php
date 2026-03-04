@@ -62,6 +62,16 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    [
+                        "label"   => __("History"),
+                        "tooltip" => __("History"),
+                        "icon"    => ["fal", "fa-history"],
+                        'root'    => 'grp.org.shops.show.dashboard.changelog',
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.dashboard.changelog.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
                 ],
             ]
         ];

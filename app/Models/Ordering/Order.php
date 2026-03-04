@@ -53,6 +53,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Audits\Transformers\AuditOrderTransformer;
 
 /**
  * @property int $id
@@ -278,10 +279,25 @@ class Order extends Model implements HasMedia, Auditable
 
     protected array $auditInclude = [
         'reference',
+        'customer_reference',
+        'state',
+        'status',
         'handing_type',
-        'is_shipping_by_external'
+        'collection_address_id',
+        'shipping_notes',
+        'customer_notes',
+        'public_notes',
+        'internal_notes',
+        'is_shipping_by_external',
+        'charges_amount',
+        'shipping_amount',
+        'discretionary_offers_data'
     ];
 
+    public function transformAudit(array $data): array
+    {
+       return AuditOrderTransformer::transform($data);
+    }
 
     public function getRouteKeyName(): string
     {

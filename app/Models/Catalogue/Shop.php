@@ -100,6 +100,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Ordering\SalesChannel;
 use App\Models\HumanResources\WorkSchedule;
+use App\Audits\Transformers\AuditShopTransformer;
 
 /**
  * App\Models\Catalogue\Shop
@@ -323,14 +324,20 @@ class Shop extends Model implements HasMedia, Auditable
         'email',
         'phone',
         'state',
+        'settings',
         'country_id',
         'currency_id',
         'language_id',
         'timezone_id',
         'company_name',
         'contact_name',
-        'identity_document_number'
+        'identity_document_number',
     ];
+
+    public function transform(array $data): array
+    {
+        return AuditShopTransformer::transform($data);
+    }
 
     protected static function booted()
     {
