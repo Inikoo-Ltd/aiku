@@ -108,10 +108,10 @@
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    <strong>Invoice Reference:</strong> <a href="{{ $invoice_link }}" style="color: #3498DB; text-decoration: none;">{{ $invoice_reference }}</a><br/>
-                    <strong>Customer:</strong> <a href="{{ $customer_link }}" style="color: #3498DB; text-decoration: none;">{{ $customer_name }}</a><br/>
-                    <strong>New Date:</strong> {{ $new_date }}<br/>
-                    <strong>Previous Date:</strong> {{ $previous_date }}
+                    <strong>Invoice Reference:</strong> <a href="[Invoice Link]" style="color: #3498DB; text-decoration: none;">[Invoice Reference]</a><br/>
+                    <strong>Customer:</strong> <a href="[Customer Link]" style="color: #3498DB; text-decoration: none;">[Customer Name]</a><br/>
+                    <strong>New Date:</strong> [New Date]<br/>
+                    <strong>Previous Date:</strong> [Previous Date]
                   </td>
                 </tr>
               </table>
