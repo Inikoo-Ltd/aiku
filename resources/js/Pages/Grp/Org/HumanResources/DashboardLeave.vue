@@ -287,6 +287,19 @@ const getLeaveColor = (type: string): string => {
 			return "#F97316"
 		case "unpaid":
 			return "#DC2626"
+		case "halfday-morning":
+		case "halfday-afternoon":
+			return "#16A34A"
+		case "training":
+			return "#9333EA"
+		case "leave-of-absence":
+			return "#EA580C"
+		case "compassionate":
+			return "#DB2777"
+		case "parental":
+			return "#0891B2"
+		case "sabbatical":
+			return "#4F46E5"
 		default:
 			return "#4F46E5"
 	}
