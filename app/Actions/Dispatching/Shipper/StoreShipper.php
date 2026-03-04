@@ -61,7 +61,7 @@ class StoreShipper extends OrgAction
                 new IUnique(
                     table: 'shippers',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->organisation->group_id],
+                        ['column' => 'organisation_id', 'value' => $this->organisation->id],
                     ]
                 ),
             ],

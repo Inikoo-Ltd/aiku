@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
