@@ -85,6 +85,8 @@ class ShowEmployeeAnalytics extends OrgAction
                     'annual'  => __('Annual Leave'),
                     'medical' => __('Medical Leave'),
                     'unpaid'  => __('Unpaid Leave'),
+                    'halfday-morning'  => __('Half Day Morning Leave'),
+                    'halfday-afternoon'  => __('Half Day Afternoon Leave'),
                 ],
             ]
         );

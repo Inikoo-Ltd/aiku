@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
@@ -8,11 +8,11 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { faEdit, faCalendarCheck, faMedkit, faCalendarTimes } from "@fal"
+import { faEdit, faCalendarCheck, faMedkit, faCalendarTimes, faClock } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faEdit, faCalendarCheck, faMedkit, faCalendarTimes)
+library.add(faEdit, faCalendarCheck, faMedkit, faCalendarTimes, faClock)
 
 type LeaveBalanceSummary = {
 	annual_days: number
@@ -112,7 +112,10 @@ const balanceSummary = computed(() => {
 })
 
 const displayedMedicalCount = computed(() => {
-	if (typeof props.medicalRequestCount === "number" && Number.isFinite(props.medicalRequestCount)) {
+	if (
+		typeof props.medicalRequestCount === "number" &&
+		Number.isFinite(props.medicalRequestCount)
+	) {
 		return props.medicalRequestCount
 	}
 
@@ -120,7 +123,10 @@ const displayedMedicalCount = computed(() => {
 })
 
 const annualSubmitted = computed(() => {
-	if (typeof props.annualSubmittedDays === "number" && Number.isFinite(props.annualSubmittedDays)) {
+	if (
+		typeof props.annualSubmittedDays === "number" &&
+		Number.isFinite(props.annualSubmittedDays)
+	) {
 		return props.annualSubmittedDays
 	}
 
@@ -156,12 +162,16 @@ const leaveForm = useForm<{
 	type: string
 	start_date: string
 	end_date: string
+	is_half_day: boolean
+	session: "Morning" | "Afternoon" | "Full"
 	reason: string
 	attachments: File[]
 }>({
 	type: "annual",
 	start_date: "",
 	end_date: "",
+	is_half_day: false,
+	session: "Full",
 	reason: "",
 	attachments: [],
 })
@@ -174,14 +184,41 @@ const editForm = useForm<{
 
 const canSubmitLeave = computed(() => {
 	if (!balanceSummary.value) return true
-	switch (leaveForm.type) {
-		case "annual":
-			return annualRemaining.value > 0
-		case "medical":
-			return balanceSummary.value.medical_remaining > 0
-		default:
-			return true
+	if (leaveForm.type === "annual") {
+		return annualRemaining.value > 0
 	}
+
+	return true
+})
+
+const showLeaveDuration = computed(() => {
+	return !["annual", "medical"].includes(leaveForm.type)
+})
+
+const leaveDurationOptions = [
+	{ value: "full", label: trans("Full Day") },
+	{ value: "half_morning", label: trans("Half Day (Morning)") },
+	{ value: "half_afternoon", label: trans("Half Day (Afternoon)") },
+]
+
+const leaveDuration = computed({
+	get: () => {
+		if (!leaveForm.is_half_day) return "full"
+		return leaveForm.session === "Afternoon" ? "half_afternoon" : "half_morning"
+	},
+	set: (value: string) => {
+		if (value === "full") {
+			leaveForm.is_half_day = false
+			leaveForm.session = "Full"
+			return
+		}
+
+		leaveForm.is_half_day = true
+		leaveForm.session = value === "half_afternoon" ? "Afternoon" : "Morning"
+		if (leaveForm.start_date) {
+			leaveForm.end_date = leaveForm.start_date
+		}
+	},
 })
 
 const getStatusTheme = (status: string): number => {
@@ -206,6 +243,7 @@ const submitLeave = () => {
 	leaveForm
 		.transform((data) => ({
 			...data,
+			end_date: data.is_half_day && data.start_date ? data.start_date : data.end_date,
 			organisation: props.organisation ?? undefined,
 		}))
 		.post(route("grp.clocking_employees.leaves.store"), {
@@ -227,7 +265,26 @@ const submitLeave = () => {
 const closeCreateModal = () => {
 	emit("update:isRequestLeaveModalOpen", false)
 	leaveForm.reset()
+	leaveForm.is_half_day = false
+	leaveForm.session = "Full"
 }
+
+// Watch for changes in leave type to reset half-day settings when switching between types
+watch(
+	() => leaveForm.type,
+	(newValue, oldValue) => {
+		if (["annual", "medical"].includes(newValue)) {
+			// Switching to annual/medical, ensure half-day settings are reset
+			leaveForm.is_half_day = false
+			leaveForm.session = "Full"
+		}
+	}
+)
+
+// Watch showLeaveDuration to debug
+watch(showLeaveDuration, (newValue) => {
+	console.log("showLeaveDuration is now:", newValue)
+})
 
 const openEditModal = (leave: any) => {
 	selectedLeave.value = leave
@@ -349,6 +406,16 @@ const submitEdit = () => {
 					</span>
 				</template>
 
+				<template #cell(duration)="{ item: leave }">
+					<span class="whitespace-nowrap block sm:inline">
+						<FontAwesomeIcon
+							v-if="leave.is_half_day"
+							icon="fal fa-clock"
+							class="mr-1 text-blue-500" />
+						{{ leave.is_half_day ? `Half Day (${leave.session})` : "Full Day" }}
+					</span>
+				</template>
+
 				<template #cell(status_label)="{ item: leave }">
 					<Tag :theme="getStatusTheme(leave.status)" size="xs" :label="leave.status">
 						<template #label>
@@ -408,6 +475,25 @@ const submitEdit = () => {
 					</p>
 				</div>
 
+				<div v-if="showLeaveDuration">
+					<label class="block text-sm font-medium text-gray-700">{{
+						trans("Leave Duration")
+					}}</label>
+					<select
+						v-model="leaveDuration"
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+						<option
+							v-for="opt in leaveDurationOptions"
+							:key="opt.value"
+							:value="opt.value">
+							{{ opt.label }}
+						</option>
+					</select>
+					<p v-if="leaveForm.is_half_day" class="mt-1 text-xs text-gray-500">
+						{{ trans("Half day leave is applied to one date only.") }}
+					</p>
+				</div>
+
 				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700">{{
@@ -429,11 +515,31 @@ const submitEdit = () => {
 						<input
 							v-model="leaveForm.end_date"
 							type="date"
+							:disabled="leaveForm.is_half_day"
 							class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
 						<p v-if="leaveForm.errors.end_date" class="mt-1 text-sm text-red-600">
 							{{ leaveForm.errors.end_date }}
 						</p>
 					</div>
+				</div>
+
+				<div v-if="showLeaveDuration">
+					<label class="block text-sm font-medium text-gray-700">{{
+						trans("Leave Duration")
+					}}</label>
+					<select
+						v-model="leaveDuration"
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+						<option
+							v-for="opt in leaveDurationOptions"
+							:key="opt.value"
+							:value="opt.value">
+							{{ opt.label }}
+						</option>
+					</select>
+					<p v-if="leaveForm.is_half_day" class="mt-1 text-xs text-gray-500">
+						{{ trans("Half day leave is applied to one date only.") }}
+					</p>
 				</div>
 
 				<div>
@@ -469,7 +575,9 @@ const submitEdit = () => {
 					</p>
 				</div>
 
-				<p v-if="!canSubmitLeave" class="text-sm text-red-600">
+				<p
+					v-if="leaveForm.type === 'annual' && !canSubmitLeave"
+					class="text-sm text-red-600">
 					{{ trans("Insufficient leave balance for the selected type.") }}
 				</p>
 
@@ -480,7 +588,7 @@ const submitEdit = () => {
 						nativeType="submit"
 						:label="trans('Submit Request')"
 						:loading="isSubmitting"
-						:disabled="!canSubmitLeave" />
+						:disabled="leaveForm.type === 'annual' && !canSubmitLeave" />
 				</div>
 			</form>
 		</Modal>

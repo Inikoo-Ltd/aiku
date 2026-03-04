@@ -129,10 +129,12 @@ class IndexClockingEmployees extends OrgAction
             $medicalRequestCount = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->where('type', 'medical')
+                ->where('status', '!=', 'rejected')
                 ->count();
             $unpaidRequestCount = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->where('type', 'unpaid')
+                ->where('status', '!=', 'rejected')
                 ->count();
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
@@ -309,7 +311,7 @@ class IndexClockingEmployees extends OrgAction
                 ->column(key: 'start_date', label: __('Start Date'), sortable: true)
                 ->column(key: 'end_date', label: __('End Date'), sortable: true)
                 ->column(key: 'type_label', label: __('Type'))
-                ->column(key: 'duration_days', label: __('Days'))
+                ->column(key: 'duration', label: __('Duration'))
                 ->column(key: 'status_label', label: __('Status'))
                 ->column(key: 'reason', label: __('Reason'))
                 ->column(key: 'actions', label: 'Actions');

@@ -63,7 +63,9 @@ class StoreLeave extends OrgAction
     {
         $startDate = Carbon::parse($modelData['start_date']);
         $endDate = Carbon::parse($modelData['end_date']);
-        $durationDays = $this->calculateDurationDays($startDate, $endDate, $employee);
+        $isHalfDay = (bool) ($modelData['is_half_day'] ?? false);
+        $session = $modelData['session'] ?? 'Full';
+        $durationDays = $isHalfDay ? 1 : $this->calculateDurationDays($startDate, $endDate, $employee);
 
         $leave = Leave::create([
             'group_id'        => $employee->group_id,
@@ -74,6 +76,8 @@ class StoreLeave extends OrgAction
             'start_date'      => $startDate,
             'end_date'        => $endDate,
             'duration_days'   => $durationDays,
+            'is_half_day'     => $isHalfDay,
+            'session'         => $session,
             'reason'          => $modelData['reason'] ?? null,
             'status'          => LeaveStatusEnum::PENDING,
         ]);
@@ -118,6 +122,8 @@ class StoreLeave extends OrgAction
             'type'         => ['required', Rule::in($leaveTypes)],
             'start_date'   => ['required', 'date', 'after_or_equal:today'],
             'end_date'     => ['required', 'date', 'after_or_equal:start_date'],
+            'is_half_day'  => ['sometimes', 'boolean'],
+            'session'      => ['sometimes', Rule::in(['Morning', 'Afternoon', 'Full'])],
             'reason'       => ['required', 'string', 'max:1000'],
             'attachments'  => ['nullable', 'array', 'max:3'],
             'attachments.*' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(5 * 1024)],
@@ -138,6 +144,17 @@ class StoreLeave extends OrgAction
         $endDate = Carbon::parse(request()->input('end_date'));
 
         if ($endDate->lt($startDate)) {
+            return;
+        }
+
+        $isHalfDay = (bool) request()->boolean('is_half_day');
+        $session = request()->input('session', 'Full');
+        if ($isHalfDay && !$startDate->isSameDay($endDate)) {
+            $validator->errors()->add('end_date', __('Half day leave must be a single date.'));
+            return;
+        }
+        if ($isHalfDay && !in_array($session, ['Morning', 'Afternoon'], true)) {
+            $validator->errors()->add('session', __('Please select Morning or Afternoon for half day leave.'));
             return;
         }
 
@@ -187,6 +204,7 @@ class StoreLeave extends OrgAction
 
         $type = request()->input('type');
         $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
+        $requestedDays = $isHalfDay ? 0.5 : (float) $durationDays;
         $balanceYear = $startDate->year;
 
         if ($type === LeaveTypeEnum::ANNUAL->value) {
@@ -201,7 +219,7 @@ class StoreLeave extends OrgAction
             $annualAllowance = (float) $this->employee->organisation->getDefaultAnnualLeaveDays();
             $annualRemaining = max(0, $annualAllowance - (float) $annualSubmittedDays);
 
-            if ($annualRemaining < $durationDays) {
+            if ($annualRemaining < $requestedDays) {
                 $validator->errors()->add('duration_days', __('Insufficient leave balance.'));
             }
         }
