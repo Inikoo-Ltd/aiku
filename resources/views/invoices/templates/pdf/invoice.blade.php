@@ -119,9 +119,11 @@
                 <div style="font-size:7pt">
                     {{$shop->address->locality}} {{$shop->address->postal_code}}
                 </div>
-                <div style="font-size:7pt">
-                    www.{{$shop->website->domain}}
-                </div>
+                @if($shop->website)
+                    <div style="font-size:7pt">
+                        {{$shop->website->domain}}
+                    </div>
+                @endif
             </td>
 
             <td style="text-align: right;">{{ $invoiceNumberLabel }}<br />
