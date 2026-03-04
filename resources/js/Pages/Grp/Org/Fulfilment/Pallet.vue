@@ -58,7 +58,7 @@ const component = computed(() => {
 })
 
 const setPalletUsable = (pallet) => {
-    if(confirm('Are you sure you want to set this pallet back into storing? This would remove the pallet from any open pallet return orders')){
+    if(confirm('Are you sure you want to set this pallet back into storing? This would remove the pallet from its current open pallet order')){
         router.patch(
             route('grp.models.pallet.pallet.back-to-storing', {pallet: pallet.data.id}), 
             {},

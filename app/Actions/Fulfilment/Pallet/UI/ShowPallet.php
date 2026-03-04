@@ -294,8 +294,7 @@ class ShowPallet extends OrgAction
             $routeName = 'grp.org.fulfilments.show.crm.customers.show.pallets.edit';
         }
 
-        // TODO INI-514 REMOVE IS LOCAL IF WANT IN PRODUCTION
-        if(app()->isLocal() && $this->pallet->status == PalletStatusEnum::INCIDENT){
+        if($this->pallet->status == PalletStatusEnum::INCIDENT){
             $actions[] = [
                 'type'      => 'button',
                 'style'     => 'secondary',

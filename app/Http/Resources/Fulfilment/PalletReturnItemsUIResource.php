@@ -200,7 +200,7 @@ class PalletReturnItemsUIResource extends JsonResource
                 ]
             },
         ];
-        // TODO INI-514 CHANGE IF WANT IN PRODUCTION
-        return !(app()->isLocal()) ? $returnFormat : Arr::except($returnFormat, 'unlinkRoute');
+        
+        return $returnFormat;
     }
 }
