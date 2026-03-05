@@ -10,6 +10,7 @@ namespace App\Actions\Traits;
 
 use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Rawilk\Printing\Api\PrintNode\Enums\ContentType;
@@ -101,16 +102,29 @@ trait WithPrintNode
         return PrintJob::create($pendingJob);
     }
 
-    public function printPdfFromPdfUri(string $title, int $printId, string $pdfUri)
+    public function printPdfFromPdfUri(string $title, int $printId, string $pdfUri): PrintJob
     {
-        $this->ensureClientInitialized();
+        $pdfContent = 'data:application/pdf;base64,' . base64_encode(Http::get($pdfUri)->body());
+
+        $content    = Str::fromBase64($pdfContent);
         $pendingJob = PendingPrintJob::make()
-            ->setUrl($pdfUri)
-            ->setContentType(ContentType::PdfUri)
+            ->setContent($content)
+            ->setContentType(ContentType::PdfBase64)
             ->setPrinter($printId)
             ->setTitle($title)
             ->setSource(config('app.name'));
 
         return PrintJob::create($pendingJob);
+
+
+//        $this->ensureClientInitialized();
+//        $pendingJob = PendingPrintJob::make()
+//            ->setContent($pdfContent)
+//            ->setContentType(ContentType::PdfBase64)
+//            ->setPrinter($printId)
+//            ->setTitle($title)
+//            ->setSource(config('app.name'));
+//
+//        return PrintJob::create($pendingJob);
     }
 }
