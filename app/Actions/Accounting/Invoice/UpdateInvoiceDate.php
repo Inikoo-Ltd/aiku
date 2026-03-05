@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
+use App\Actions\Comms\Email\SendInvoiceDateChangedNotification;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
@@ -43,6 +44,7 @@ class UpdateInvoiceDate extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
+        $oldDate = $invoice->date;
         $invoice = $this->update($invoice, $modelData);
 
         $changes = $invoice->getChanges();
@@ -103,6 +105,8 @@ class UpdateInvoiceDate extends OrgAction
             // }
 
             InvoiceRecordSearch::dispatch($invoice);
+
+            SendInvoiceDateChangedNotification::dispatch($invoice, $oldDate);
         }
 
         return $invoice;

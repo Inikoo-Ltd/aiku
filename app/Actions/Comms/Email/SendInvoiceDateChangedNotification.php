@@ -16,8 +16,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Comms\Outbox;
+use Illuminate\Support\Carbon;
 
-// TODO: Update this section when testing
 class SendInvoiceDateChangedNotification extends OrgAction
 {
     use WithActionUpdate;
@@ -26,20 +26,26 @@ class SendInvoiceDateChangedNotification extends OrgAction
     use WithSendSubscribersOutboxEmail;
 
 
-    public function handle(Invoice $invoice, string $previousDate, string $newDate): void
+    public function handle(Invoice $invoice, ?string $previousDate): void
     {
+        if (!$previousDate || !$invoice->date) {
+            return;
+        }
+
         /** @var Outbox $outbox */
         $outbox = $invoice->shop->outboxes()->where('code', OutboxCodeEnum::INVOICE_DATE_CHANGED->value)->first();
 
         $customer = $invoice->customer;
+
+        $previousDate = Carbon::parse($previousDate)->format('Y-m-d');
+        $invoiceDate = Carbon::parse($invoice->date)->format('Y-m-d');
 
         $this->sendOutboxEmailToSubscribers(
             $outbox,
             additionalData: [
                 'customer_name' => $customer->name,
                 'invoice_reference' => $invoice->reference,
-                'previous_date' => $previousDate,
-                'new_date' => $newDate,
+                'invoice_date_change_blade' => '<strong>New Date:</strong> ' . $invoiceDate . '<br/><strong>Previous Date:</strong> ' .   $previousDate,
                 'invoice_link' => route('grp.org.accounting.invoices.show', [
                     $invoice->organisation->slug,
                     $invoice->slug
@@ -58,6 +64,4 @@ class SendInvoiceDateChangedNotification extends OrgAction
             ]
         );
     }
-
-
 }
