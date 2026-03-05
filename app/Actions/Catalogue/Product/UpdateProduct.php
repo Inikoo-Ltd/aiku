@@ -244,10 +244,12 @@ class UpdateProduct extends OrgAction
             );
 
             UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
-
         }
 
-        UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
+
+        if ($product->asset) {
+            UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
+        }
 
         if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);
