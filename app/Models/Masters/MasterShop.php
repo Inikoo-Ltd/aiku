@@ -159,7 +159,7 @@ class MasterShop extends Model implements Auditable
 
     public function listMasterProducts(): HasMany
     {
-        return $this->hasMany(MasterAsset::class);
+        return $this->hasMany(MasterAsset::class, 'master_shop_id');
     }
 
     public function getMasterProducts(): BelongsToMany
