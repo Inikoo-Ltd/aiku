@@ -75,7 +75,7 @@ class ShowDispatchHub extends OrgAction
                     'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                     'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                 ],
-                'dashboard'   => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
+                'delivery_note'   => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
                 'picking_session' => $this->getPickingSessionStats($warehouse),
             ]
         );

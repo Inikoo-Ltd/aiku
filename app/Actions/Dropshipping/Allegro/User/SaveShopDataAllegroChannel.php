@@ -38,7 +38,6 @@ class SaveShopDataAllegroChannel
                 data_set($data, 'marketplace_id', Arr::get($userInfo, 'baseMarketplace.id'));
 
                 $allegroUser->update([
-                    'name' => Arr::get($data, 'company_name'),
                     'allegro_id' => Arr::get($data, 'user_id'),
                     'marketplace_id' => Arr::get($data, 'marketplace_id'),
                     'data' => $data,

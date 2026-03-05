@@ -72,9 +72,19 @@ class ShowProductsWithMismatchTradeUnits
                             }
 
                             echo "====================================================\n\n";
+                            echo "1. Follow master data (default)\n";
+                            echo "2. Follow children data [{$product->shop->slug}]\n";
+                            echo "3. Do nothing\n\n";
 
-                            if ($command->confirm('Do you want to repair this product?', true)) {
-                                $this->copyMasterToProducts($masterProduct);
+                            switch($command->ask("option: ", '1')){
+                                case "1":
+                                    $this->copyMasterToProducts($masterProduct);
+                                    break;
+                                case "2":
+                                    $this->copyProductToMaster($product);
+                                    break;
+                                default:
+                                    break;
                             }
                         }
                     }
@@ -85,18 +95,15 @@ class ShowProductsWithMismatchTradeUnits
 
     public function copyProductToMaster(Product $product): void
     {
-        $tradeUnitData = [];
-        foreach ($product->tradeUnits as $tradeUnit) {
-            $tradeUnitData[] = [
-                'id'       => $tradeUnit->id,
-                'quantity' => data_get($tradeUnit, 'pivot.quantity'),
-            ];
-        }
+        $tradeUnits = $product->tradeUnits
+            ->map(function ($tradeUnit) {
+                $tradeUnit->quantity = $tradeUnit->pivot->quantity;
+                return $tradeUnit;
+            })->toArray();
 
         UpdateMasterAsset::run($product->masterProduct, [
-            'trade_units' => $tradeUnitData
+            'trade_units' => $tradeUnits
         ]);
-
 
         echo "{$product->masterProduct->slug} | Repaired --  Product -> Master OK\n";
     }

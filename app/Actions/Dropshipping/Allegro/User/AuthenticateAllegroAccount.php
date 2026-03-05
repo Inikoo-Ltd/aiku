@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Allegro\User;
 
+use App\Actions\Dropshipping\Allegro\Traits\WithAllegroApiServices;
 use App\Actions\Dropshipping\Allegro\Traits\WithAllegroOAuth;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -16,9 +17,14 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Platform;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -28,13 +34,14 @@ class AuthenticateAllegroAccount extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
-    use WithAllegroOAuth;
+    use WithAllegroApiServices;
 
-    public function handle(array $modelData): AllegroUser|array|string|null
+    /**
+     * @throws ValidationException
+     */
+    public function handle(array $modelData)
     {
         try {
-            $platform = Platform::where('type', PlatformTypeEnum::ALLEGRO->value)->first();
-
             $customer = null;
             if (Arr::get($modelData, 'state')) {
                 $stateData = json_decode(base64_decode(Arr::get($modelData, 'state')), true);
@@ -42,7 +49,6 @@ class AuthenticateAllegroAccount extends OrgAction
                 $codeVerifier = Arr::get($stateData, 'code_verifier');
             }
 
-            // Exchange authorization code for tokens
             $tokenData = $this->exchangeCodeForTokens(
                 Arr::get($modelData, 'code'),
                 route('retina.dropshipping.allegro.callback'),
@@ -55,9 +61,20 @@ class AuthenticateAllegroAccount extends OrgAction
                     ? now()->addDays(90)->timestamp
                     : null;
 
+                $http = Http::withHeaders([
+                    'Authorization'  => 'Bearer ' . $tokenData['access_token'],
+                    'Accept'         => $this->allegroApiVersion,
+                    'Content-Type'   => $this->allegroApiVersion,
+                ])->baseUrl(config('services.allegro.base_url'))
+                ->get('/me');
+
+                $response = $http->json();
+
                 $userData = [
-                    'allegro_id' => Arr::get($tokenData, 'allegro_user_id', Str::uuid()->toString()),
-                    'name' => $customer?->name ?? 'Allegro User',
+                    'allegro_id' => Arr::get($response, 'id'),
+                    'name' => (Arr::get($response, 'firstName') && Arr::get($response, 'lastName'))
+                        ? Arr::get($response, 'firstName') . ' ' . Arr::get($response, 'lastName')
+                        : Arr::get($response, 'company.name'),
                     'access_token' => $tokenData['access_token'],
                     'access_token_expire_in' => $accessTokenExpiresAt,
                     'refresh_token' => $tokenData['refresh_token'] ?? null,
@@ -88,32 +105,20 @@ class AuthenticateAllegroAccount extends OrgAction
                     }
                 }
 
-                $model = $allegroUser;
-            } else {
-                $model = __('Failed to obtain access token from Allegro');
+                return Redirect::route('retina.dropshipping.customer_sales_channels.show', [
+                    'customerSalesChannel' => $allegroUser->customerSalesChannel->slug
+                ]);
             }
-
-            /*return redirect()->route('aiku-public.allegro.onboarding', [
-                'allegro_code' => base64_encode(json_encode([
-                    'allegro_user_id' => $model instanceof AllegroUser ? $model->id : null,
-                    'message' => $model instanceof AllegroUser ? null : $model
-                ]))
-            ]);*/
-
-            return null;
 
         } catch (\Exception $e) {
             Log::error('Allegro authentication failed: ' . $e->getMessage());
 
-            /*return redirect()->route('aiku-public.allegro.onboarding', [
-                'allegro_code' => base64_encode(json_encode([
-                    'allegro_user_id' => null,
-                    'message' => $e->getMessage()
-                ]))
-            ]);*/
+            \Sentry::captureException($e);
 
-            return null;
+            return $e->getMessage();
         }
+
+        return null;
     }
 
     public function redirectToAllegro(Customer $customer): string
@@ -154,7 +159,7 @@ class AuthenticateAllegroAccount extends OrgAction
         ];
     }
 
-    public function asController(ActionRequest $request): AllegroUser|array|string|null
+    public function asController(ActionRequest $request): Response|string|RedirectResponse|null
     {
         $this->fillFromRequest($request);
         $validatedData = $this->validateAttributes();

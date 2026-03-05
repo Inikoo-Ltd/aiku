@@ -633,12 +633,14 @@ provide("goNext", goNext)
 				</div>
 
 				<div class="w-full flex justify-end">
-					<Button
-						v-if="layout?.app?.environment === 'local'"
-						:label="trans('Connect')"
-						type="primary"
-						full
-						@click="() => (isModalAllegro = true)" />
+					<a v-if="layout?.app?.environment === 'local'" :href="props.allegroAuth?.url" class="w-full">
+						<Button
+							:label="trans('Connect')"
+							type="primary"
+							full
+							xclick="() => (isModalAllegro = true)"
+						/>
+					</a>
 					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 				</div>
 			</div>
