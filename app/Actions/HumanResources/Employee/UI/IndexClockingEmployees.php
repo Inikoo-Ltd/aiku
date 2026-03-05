@@ -624,13 +624,45 @@ class IndexClockingEmployees extends OrgAction
                 'month' => $month,
                 'holidays' => [],
                 'holidayRanges' => [],
+                'holidayYearPeriod' => null,
+                'allHolidayYears' => [],
+                'defaultPeriod' => [
+                    'start_date' => sprintf('%d-01-01', $year),
+                    'end_date'   => sprintf('%d-12-31', $year),
+                ],
             ];
         }
 
-        $holidays = Holiday::query()
+        $activeHolidayYear = \DB::table('holiday_years')
             ->where('organisation_id', $this->employee->organisation_id)
-            ->where('year', $year)
+            ->where('is_active', true)
+            ->select(['id', 'label', 'start_date', 'end_date'])
+            ->first();
+
+        $allHolidayYears = \DB::table('holiday_years')
+            ->where('organisation_id', $this->employee->organisation_id)
+            ->orderBy('start_date', 'desc')
+            ->select(['id', 'label', 'start_date', 'end_date', 'is_active'])
             ->get();
+
+        $minDate = $allHolidayYears->min('start_date');
+        $maxDate = $allHolidayYears->max('end_date');
+
+        $holidaysQuery = Holiday::query()
+            ->where('organisation_id', $this->employee->organisation_id);
+
+        $holidaysQuery->where(function ($query) use ($year, $minDate, $maxDate) {
+            $query->where('year', $year);
+
+            if ($minDate && $maxDate) {
+                $query->orWhere(function ($q) use ($minDate, $maxDate) {
+                    $q->where('from', '<=', $maxDate)
+                      ->where('to', '>=', $minDate);
+                });
+            }
+        });
+
+        $holidays = $holidaysQuery->get();
 
         $holidayDates = [];
 
@@ -679,6 +711,17 @@ class IndexClockingEmployees extends OrgAction
             'month' => $month,
             'holidays' => $calendarHolidays,
             'holidayRanges' => $holidayRanges,
+            'holidayYearPeriod' => $activeHolidayYear ? [
+                'id'         => $activeHolidayYear->id,
+                'label'      => $activeHolidayYear->label,
+                'start_date' => (string) $activeHolidayYear->start_date,
+                'end_date'   => (string) $activeHolidayYear->end_date,
+            ] : null,
+            'allHolidayYears' => $allHolidayYears,
+            'defaultPeriod' => [
+                'start_date' => sprintf('%d-01-01', $year),
+                'end_date'   => sprintf('%d-12-31', $year),
+            ],
         ];
     }
 
