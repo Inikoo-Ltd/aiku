@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 05 Mar 2026 22:17:31 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
@@ -27,7 +32,7 @@ class UpdateFaireOrder extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order, Command|null $command = null): void
+    public function handle(Order $order): void
     {
         $shop = $order->shop;
 
@@ -68,15 +73,13 @@ class UpdateFaireOrder extends OrgAction
             ]);
 
             $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)->first();
-            if ($invoiceTransaction) {
-                $invoiceTransaction->update([
-                    'historic_asset_id' => $product->current_historic_asset_id,
-                    'gross_amount'      => $netAmount,
-                    'net_amount'        => $netAmount,
-                    'grp_net_amount'    => $netAmount * $grpExchange,
-                    'org_net_amount'    => $netAmount * $orgExchange,
-                ]);
-            }
+            $invoiceTransaction?->update([
+                'historic_asset_id' => $product->current_historic_asset_id,
+                'gross_amount'      => $netAmount,
+                'net_amount'        => $netAmount,
+                'grp_net_amount'    => $netAmount * $grpExchange,
+                'org_net_amount'    => $netAmount * $orgExchange,
+            ]);
         }
 
 
@@ -124,7 +127,6 @@ class UpdateFaireOrder extends OrgAction
         }
     }
 
-
     public string $commandSignature = 'faire:update_order {order?}';
 
     /**
@@ -134,7 +136,7 @@ class UpdateFaireOrder extends OrgAction
     {
         if ($command->argument('order')) {
             $order = Order::where('slug', $command->argument('order'))->firstOrFail();
-            $this->handle($order, $command);
+            $this->handle($order);
 
             return 0;
         }
@@ -145,7 +147,7 @@ class UpdateFaireOrder extends OrgAction
         /** @var Order $order */
         foreach (Order::whereIn('shop_id', $faireShops)->get() as $order) {
             $command->info("Updating order {$order->shop->slug} $order->slug");
-            $this->handle($order, $command);
+            $this->handle($order);
         }
 
         return 0;
