@@ -47,8 +47,8 @@ class StoreRetinaWebUser extends RetinaAction
         data_set($modelData, 'is_root', false);
         data_set($modelData, 'website_id', $customer->shop->website->id);
 
-        $passwordText = $modelData['password'];
-        $modelData['password'] = Hash::make($passwordText);
+        $passwordText = $modelData['password'] ?? null;
+        $modelData['password'] = Hash::make($modelData['password']);
 
         $webUser = DB::transaction(function () use ($customer, $modelData) {
             /** @var WebUser $webUser */

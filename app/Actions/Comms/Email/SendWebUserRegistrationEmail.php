@@ -23,7 +23,7 @@ class SendWebUserRegistrationEmail extends OrgAction
     use WithSendWebUserOutboxEmail;
 
 
-    public function handle(WebUser $webUser, ?string $password): ?DispatchedEmail
+    public function handle(WebUser $webUser, ?string $password = null): ?DispatchedEmail
     {
         if (!$webUser) {
             return null;
@@ -33,10 +33,10 @@ class SendWebUserRegistrationEmail extends OrgAction
             $webUser,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             [
-                'customer_name' => $webUser->contact_name,
-                'email' => $webUser->email,
-                'password' => $password,
-                'login_url' => $webUser->website->getUrl() . '/app/login', // TODO: Update this one later
+                'web_user_contact_name' => $webUser->contact_name,
+                'customer_email' => $webUser->email,
+                'retina_login_link' => $webUser->website?->getUrl() . '/app/login',
+                'customer_password' => $password,
             ]
         );
     }

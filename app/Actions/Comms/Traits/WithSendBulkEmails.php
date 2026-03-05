@@ -129,6 +129,9 @@ trait WithSendBulkEmails
             'payment-note' => Arr::get($additionalData, 'payment_note'),
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
             'preview-amount' => Arr::get($additionalData, 'preview_amount'),
+            'customer-password' => Arr::get($additionalData, 'customer_password'),
+            'retina-login-link' => Arr::get($additionalData, 'retina_login_link'),
+            'web-user-contact-name' => Arr::get($additionalData, 'web_user_contact_name'),
 
             default => $originalPlaceholder,
         };
