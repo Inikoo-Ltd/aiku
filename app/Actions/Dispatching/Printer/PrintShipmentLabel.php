@@ -25,7 +25,7 @@ class PrintShipmentLabel extends OrgAction
     public function handle(Shipment $shipment, User $user): \Rawilk\Printing\Api\PrintNode\Resources\PrintJob|RedirectResponse
     {
         $printerId = Arr::get($user->settings, 'preferred_printer_id');
-
+        $this->ensureClientInitialized();
         try {
             if ($shipment->combined_label_url) {
                 $res = $this->printPdfFromPdfUri(

@@ -104,6 +104,7 @@ trait WithPrintNode
 
     public function printPdfFromPdfUri(string $title, int $printId, string $pdfUri): PrintJob
     {
+        $this->ensureClientInitialized();
         $pdfContent = 'data:application/pdf;base64,' . base64_encode(Http::get($pdfUri)->body());
 
         $content    = Str::fromBase64($pdfContent);
