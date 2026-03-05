@@ -263,7 +263,7 @@ Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::c
 Route::post('variant/{variant}/products', GetGrpProductOfVariant::class)->name('variant.products');
 
 Route::get('product/{product}/trade-units', GetExternalProductTradeUnits::class)->name('product.external.trade-units-linked');
-Route::post('masterproduct/{masterAsset}/check-org-stocks-existence', CheckMasterAssetTradeUnitOrgStockExistence::class)->name('master_product.check_org_stock_existence');
+Route::post('master-product/{masterAsset}/check-org-stocks-existence', CheckMasterAssetTradeUnitOrgStockExistence::class)->name('master_product.check_org_stock_existence');
 
 Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');

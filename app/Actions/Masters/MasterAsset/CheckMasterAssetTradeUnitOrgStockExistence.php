@@ -16,7 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CheckMasterAssetTradeUnitOrgStockExistence extends OrgAction
 {
-    public function handle(MasterAsset $masterProduct, array $modelData): bool
+    public function handle(MasterAsset $masterAsset, array $modelData): bool
     {
         $isValid = true;
 
@@ -26,7 +26,7 @@ class CheckMasterAssetTradeUnitOrgStockExistence extends OrgAction
         ->whereIn('id', data_get($modelData, 'trade_units.*.id'))
         ->get();
 
-        $expected = $masterProduct->masterShop->shops->pluck('organisation_id');
+        $expected = $masterAsset->masterShop->shops->pluck('organisation_id');
 
         foreach ($tradeUnits as $tradeUnit) {
 
@@ -53,15 +53,15 @@ class CheckMasterAssetTradeUnitOrgStockExistence extends OrgAction
         ];
     }
 
-    public function asController(MasterAsset $masterProduct, ActionRequest $request): bool
+    public function asController(MasterAsset $masterAsset, ActionRequest $request): bool
     {
-        $this->initialisationFromGroup($masterProduct->group, $request);
+        $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($this->masterFamily, $this->validatedData);
+        return $this->handle($masterAsset, $this->validatedData);
     }
 
-    public function jsonResponse(array $result)
+    public function jsonResponse(bool $result)
     {
-        return $result;
+        return ['status' => $result ];
     }
 }
