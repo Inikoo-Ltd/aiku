@@ -55,6 +55,7 @@ import {
     faTrashAlt,
 	faShippingFast,
 	faWeight, faPrint,
+	faAlignSlash,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -66,6 +67,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import InputNumber from "primevue/inputnumber"
 import Fieldset from "primevue/fieldset"
+import Icon from "@/Components/Icon.vue"
 
 library.add(
 	faIdCardAlt,
@@ -82,7 +84,9 @@ library.add(
 	faArrowAltLeft,
     faTrashAlt,
 	faShippingFast,
-	faWeight, faPrint
+	faWeight, 
+	faPrint,
+	faAlignSlash
 )
 
 const props = defineProps<{
@@ -636,6 +640,10 @@ provide("listError", listError.value)
 				:label="trans('Attach file')"
 				icon="fal fa-upload"
 				type="secondary" />
+		</template>
+
+		<template #afterTitle2>
+			<Icon :data="data.data.state_icon"/>
 		</template>
 	</PageHeading>
 

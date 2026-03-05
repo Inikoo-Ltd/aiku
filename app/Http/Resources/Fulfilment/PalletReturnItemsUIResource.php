@@ -49,6 +49,7 @@ class PalletReturnItemsUIResource extends JsonResource
             'fulfilment_customer_slug'         => $this->fulfilment_customer_slug,
             'fulfilment_customer_id'           => $this->fulfilment_customer_id,
             'notes'                            => (string)$this->notes,
+            'pivot_state'                      => $this->pivot_state,
             'state'                            => $this->state->value,
             'type_icon'                        => $this->type->typeIcon()[$this->type->value],
             'type'                             => $this->type,
