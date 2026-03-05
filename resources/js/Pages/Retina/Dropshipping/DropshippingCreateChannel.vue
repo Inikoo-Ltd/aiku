@@ -129,6 +129,7 @@ const onCreateStoreShopify = async () => {
 // Section: Woocommerce
 const isModalWooCommerce = ref<boolean>(false)
 const isModalTiktok = ref<boolean>(false)
+const isModalAllegro = ref<boolean>(false)
 const wooCommerceInput = ref({
 	name: null as null | string,
 	url: null as null | string,
@@ -604,6 +605,38 @@ provide("goNext", goNext)
 					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 				</div>
 			</div>
+
+			<!-- Section: Allegro -->
+			<div
+				v-if="layout?.app?.environment === 'local'"
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="https://assets.allegrostatic.com/opbox/allegro.pl/homepage/Main%20Page/6lJEwSSohvBIIWNlJUU9sx-w1200-h1200.png"
+						alt=""
+						class="h-12 filter" />
+
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Allegro
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.allegro ?? 0 }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
+
+				<div class="w-full flex justify-end">
+					<Button
+						v-if="layout?.app?.environment === 'local'"
+						:label="trans('Connect')"
+						type="primary"
+						full
+						@click="() => (isModalAllegro = true)" />
+					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -714,6 +747,17 @@ provide("goNext", goNext)
 	<Modal
 		:isOpen="isModalTiktok"
 		@onClose="isModalTiktok = false"
+		width="w-full max-w-lg">
+		<div class="flex flex-col gap-6">
+			<ProgressBar />
+			<component :is="stepTiktokComponents[currentStep]" :props="props" />
+		</div>
+	</Modal>
+
+	<!-- Modal: Allegro -->
+	<Modal
+		:isOpen="isModalAllegro"
+		@onClose="isModalAllegro = false"
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
 			<ProgressBar />
