@@ -244,10 +244,12 @@ class UpdateProduct extends OrgAction
             );
 
             UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
-
         }
 
-        UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
+
+        if ($product->asset) {
+            UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
+        }
 
         if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);
@@ -284,9 +286,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInLuigi
-            )
+                    $changed,
+                    $fieldsUsedInLuigi
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60 * 15);
@@ -300,9 +302,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInWebpages
-            )
+                    $changed,
+                    $fieldsUsedInWebpages
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
