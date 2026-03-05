@@ -4,25 +4,28 @@ namespace App\Audits\Transformers\Traits;
 
 use Illuminate\Support\Arr;
 
-class ExtractJsonAudit
+trait ExtractJsonAudit
 {
-    public static function extractJsonDifferences(array $data, string $columnName, string $labelPrefix) : array
+    public static function extractJsonDifferences(array $data, string $columnName) : array
     {
         $oldValues = Arr::get($data, 'old_values.' . $columnName, []);
         $newValues = Arr::get($data, 'new_values.' . $columnName, []);
 
         if(is_string($oldValues)) $oldValues = json_decode($oldValues, true) ?? [];
         if(is_string($newValues)) $newValues = json_decode($newValues, true) ?? [];
+
+        $oldFlat = Arr::dot($oldValues);
+        $newFlat = Arr::dot($newValues);
         
-        $changeKeys = array_unique(array_merge(array_keys($oldValues), array_keys($newValues)));
+        $changeKeys = array_unique(array_merge(array_keys($oldFlat), array_keys($newFlat)));
         
         foreach($changeKeys as $key){
-            $oldVal = $oldValues[$key] ?? null;
-            $newVal = $newValues[$key] ?? null;
+            $oldVal = $oldFlat[$key] ?? null;
+            $newVal = $newFlat[$key] ?? null;
 
             if(json_encode($oldVal) !== json_encode($newVal))
             {
-                $cleanLabel = $labelPrefix . ' - ' . ucwords(str_replace('_', ' ', $key));
+                $cleanLabel = ucwords(str_replace('.', ' ', $key));
 
                 $formatValue = function($val){
                 if (is_bool($val)) return $val ? 'True' : 'False';
