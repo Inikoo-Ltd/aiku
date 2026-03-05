@@ -111,6 +111,31 @@ trait WithPrintNode
         return PrintJob::create($pendingJob);
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function printPdfFromPdfUriDpdSk(string $title, int $printId, string $pdfUri): PrintJob
+    {
+        $this->ensureClientInitialized();
+
+        $pdfData = file_get_contents($pdfUri);
+
+        if ($pdfData === false) {
+            throw ValidationException::withMessages([
+                'messages' => 'Error: Could not retrieve file from the URL.',
+            ]);
+        }
+
+        $content    = Str::fromBase64(base64_encode($pdfData));
+        $pendingJob = PendingPrintJob::make()
+            ->setContent($content)
+            ->setContentType(ContentType::PdfBase64)
+            ->setPrinter($printId)
+            ->setTitle($title)
+            ->setSource(config('app.name'));
+
+        return PrintJob::create($pendingJob);
+    }
 
     /**
      * @throws \Illuminate\Validation\ValidationException

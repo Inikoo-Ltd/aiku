@@ -22,18 +22,28 @@ class PrintShipmentLabel extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(Shipment $shipment, User $user, Command|null $command=null): \Rawilk\Printing\Api\PrintNode\Resources\PrintJob|RedirectResponse
+    public function handle(Shipment $shipment, User $user, Command|null $command = null): \Rawilk\Printing\Api\PrintNode\Resources\PrintJob|RedirectResponse
     {
         $printerId = Arr::get($user->settings, 'preferred_printer_id');
         $this->ensureClientInitialized();
+
         try {
             if ($shipment->combined_label_url) {
-                $command?->info('Printing printPdfFromPdfUri');
-                $res = $this->printPdfFromPdfUri(
-                    title: $shipment->tracking,
-                    printId: $printerId,
-                    pdfUri: $shipment->combined_label_url
-                );
+                $command?->info('Printing printPdfFromPdfUri (Combined Label)');
+
+                if ($shipment->shipper->api_shipper == 'dpd-sk') {
+                    $res = $this->printPdfFromPdfUriDpdSk(
+                        title: $shipment->tracking,
+                        printId: $printerId,
+                        pdfUri: $shipment->combined_label_url
+                    );
+                } else {
+                    $res = $this->printPdfFromPdfUri(
+                        title: $shipment->tracking,
+                        printId: $printerId,
+                        pdfUri: $shipment->combined_label_url
+                    );
+                }
             } elseif ($shipment->label && $shipment->label_type == ShipmentLabelTypeEnum::HTML) {
                 $command?->info('Printing printRawBase64');
                 $res = $this->printRawBase64(
