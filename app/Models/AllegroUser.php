@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Actions\Dropshipping\Allegro\Traits\WithAllegroApiServices;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -28,6 +30,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $deleted_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read CustomerSalesChannel $customerSalesChannel
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser query()
@@ -36,4 +39,11 @@ use Illuminate\Database\Eloquent\Model;
 class AllegroUser extends Model
 {
     use WithAllegroApiServices;
+
+    protected $guarded = [];
+
+    public function customerSalesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class);
+    }
 }

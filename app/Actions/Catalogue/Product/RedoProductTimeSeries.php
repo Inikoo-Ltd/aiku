@@ -59,12 +59,12 @@ class RedoProductTimeSeries implements ShouldBeUnique
 
     public function asJob(string $from, string $to): void
     {
-       //todo this is all wrong and dangerous
-//        Product::all()->each(function (Product $product) use ($from, $to) {
-//            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-//                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
-//            }
-//        });
+        //todo this is all wrong and dangerous
+        //        Product::all()->each(function (Product $product) use ($from, $to) {
+        //            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+        //                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
+        //            }
+        //        });
     }
 
     public function asCommand(Command $command): int

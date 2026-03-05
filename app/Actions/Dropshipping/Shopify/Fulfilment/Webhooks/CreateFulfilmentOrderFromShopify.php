@@ -16,7 +16,6 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use function Termwind\render;
 
 class CreateFulfilmentOrderFromShopify extends OrgAction
 {
@@ -49,7 +48,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
 
                 $productId = data_get($lineItem, 'lineItem.product.id');
 
-                if(empty($productId)){
+                if (empty($productId)) {
                     continue;
                 }
 
@@ -61,7 +60,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
                 ];
             }
 
-            if(empty($assignedLineItems)){
+            if (empty($assignedLineItems)) {
                 return;
             }
 
