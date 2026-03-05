@@ -22,6 +22,7 @@ import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
 import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
+import Select from 'primevue/select';
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -230,6 +231,28 @@ const updateCollection = async (e: Event) => {
     }
 }
 
+const parcelPresets = [
+    { label: '40 × 40 × 40 cm', weight: null, dimensions: [40, 40, 40] },
+    { label: '60 × 40 × 30 cm', weight: null, dimensions: [60, 40, 30] },
+    { label: '60 × 50 × 40 cm', weight: null, dimensions: [60, 50, 40] },
+    { label: '60 × 60 × 40 cm', weight: null, dimensions: [60, 60, 40] },
+    { label: '41 × 24 × 31 cm', weight: null, dimensions: [41, 24, 31] },
+    { label: '94 × 48 × 37 cm', weight: null, dimensions: [94, 48, 37] },
+    { label: '94 × 48 × 43 cm', weight: null, dimensions: [94, 48, 43] },
+    { label: '22 × 19 × 17 cm', weight: null, dimensions: [22, 19, 17] },
+    { label: '68 × 68 × 44 cm', weight: null, dimensions: [68, 68, 44] },
+]
+
+const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: { dimensions: any; weight: any }) => {
+
+    if (!preset) return
+
+    parcel.dimensions = [...preset.dimensions]
+
+    if (preset.weight) {
+        parcel.weight = preset.weight
+    }
+}
 </script>
 
 <template>
@@ -567,7 +590,7 @@ const updateCollection = async (e: Event) => {
         </BoxStatPallet>
 
         <!-- Modal: Parcels -->
-        <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg">
+        <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-2xl">
             <div class="text-center font-bold mb-4">
                 {{ trans('Add shipment') }}
             </div>
@@ -591,33 +614,33 @@ const updateCollection = async (e: Event) => {
                     </div>
 
                     <!-- Field: row parcels -->
-                    <div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
+                    <div class="grid gap-y-1 max-h-64 overflow-y-auto">
                         <TransitionGroup v-if="parcelsCopy?.length" name="list">
                             <div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex"
-                                class="grid grid-cols-12 items-center gap-x-6">
-                                <div @click="() => onDeleteParcel(parcelIndex)" class="flex justify-center">
+                                class="grid grid-cols-12 items-center gap-x-1">
+                                <div @click="() => onDeleteParcel(parcelIndex)" class="col-span-1 flex justify-center pr-2">
                                     <FontAwesomeIcon icon="fal fa-trash-alt"
                                         class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width
                                         aria-hidden="true" />
                                 </div>
-                                <div class="col-span-2 flex items-center space-x-2">
+                               
+                                <div class="col-span-1 flex justify-center">
                                     <InputNumber
                                         v-model="parcel.weight"
                                         :min="0.001"
-                                        inputClass="!w-16 !text-sm !py-2 !px-1.5 !text-center"
+                                        inputClass="!text-xs !w-6 sm:!w-12 sm:!text-sm !py-3 sm:!py-2 !px-1.5 !text-center"
                                         size="small"
                                         placeholder="0"
-                                        fluid
                                         :locale="locale.locale_iso"
                                         :max-fraction-digits="3"
                                     />
                                 </div>
 
-                                <div class="col-span-9 flex items-center gap-x-1 font-light">
+                                <div class="col-span-7 sm:col-span-5 flex justify-center items-center gap-x-1 sm:gap-x-2 font-light ml-1 sm:ml-2">
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[0]"
-                                        class="w-16"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
                                         fluid
@@ -628,7 +651,7 @@ const updateCollection = async (e: Event) => {
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[1]"
-                                        class="w-16"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
                                         fluid
@@ -639,7 +662,7 @@ const updateCollection = async (e: Event) => {
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[2]"
-                                        class="w-16"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
                                         fluid
@@ -665,6 +688,19 @@ const updateCollection = async (e: Event) => {
                                             </div>
                                         </template>
                                     </Popover> -->
+                                </div>
+
+                                 <div class="col-span-3 sm:col-span-5 pl-1 sm:pl-0">
+                                    <Select
+                                        :modelValue="parcelPresets.find(p =>
+                                            p.dimensions.every((d,i)=>d===parcel.dimensions[i])
+                                        )"
+                                        :options="parcelPresets"
+                                        optionLabel="label"
+                                        placeholder="Preset Size"
+                                        class="w-20 sm:w-full text-xs sm:text-sm"
+                                        @change="(e)=>applyParcelPreset(parcel,e.value)"
+                                    />
                                 </div>
                             </div>
                         </TransitionGroup>

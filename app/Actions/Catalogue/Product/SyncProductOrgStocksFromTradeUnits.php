@@ -38,13 +38,13 @@ class SyncProductOrgStocksFromTradeUnits
                             $orgStockFamily = StoreOrgStockFamily::make()->action($product->organisation, $stock->stockFamily, []);
                         }
                         $parent = $orgStockFamily;
-                    }else{
+                    } else {
                         $parent = $product->organisation;
                     }
 
-                    $orgStock= StoreOrgStock::make()->action($parent,$stock,[
-                        'state'=>OrgStockStateEnum::ACTIVE,
-                        'quantity_status'=>OrgStockQuantityStatusEnum::OUT_OF_STOCK
+                    $orgStock = StoreOrgStock::make()->action($parent, $stock, [
+                        'state' => OrgStockStateEnum::ACTIVE,
+                        'quantity_status' => OrgStockQuantityStatusEnum::OUT_OF_STOCK
 
                     ]);
                 }

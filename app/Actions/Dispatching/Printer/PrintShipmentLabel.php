@@ -5,7 +5,10 @@ namespace App\Actions\Dispatching\Printer;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithPrintNode;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
+use App\Models\SysAdmin\User;
+use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
@@ -16,25 +19,30 @@ class PrintShipmentLabel extends OrgAction
 {
     use WithPrintNode;
 
-    public function handle(Shipment $shipment): \Rawilk\Printing\Api\PrintNode\Resources\PrintJob|RedirectResponse
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function handle(Shipment $shipment, User $user): \Rawilk\Printing\Api\PrintNode\Resources\PrintJob|RedirectResponse
     {
+        $printerId = Arr::get($user->settings, 'preferred_printer_id');
+
         try {
             if ($shipment->combined_label_url) {
                 $res = $this->printPdfFromPdfUri(
                     title: $shipment->tracking,
-                    printId: $this->get('printerId'),
+                    printId: $printerId,
                     pdfUri: $shipment->combined_label_url
                 );
             } elseif ($shipment->label && $shipment->label_type == ShipmentLabelTypeEnum::HTML) {
                 $res = $this->printRawBase64(
                     title: $shipment->tracking,
-                    printId: $this->get('printerId'),
+                    printId: $printerId,
                     rawBase64: $shipment->label
                 );
             } else {
                 $res = $this->printPdf(
                     title: $shipment->tracking,
-                    printId: $this->get('printerId'),
+                    printId: $printerId,
                     pdfBase64: $shipment->label ?? ''
                 );
             }
@@ -52,8 +60,8 @@ class PrintShipmentLabel extends OrgAction
      */
     public function afterValidator(Validator $validator): void
     {
-        $user      = request()->user();
-        $printerId = Arr::get($user->settings, 'preferred_printer_id');
+        $user          = request()->user();
+        $printerId     = Arr::get($user->settings, 'preferred_printer_id');
         $existsPrinter = $this->isExistPrinter($printerId);
         if (!$printerId || !$existsPrinter) {
             throw ValidationException::withMessages([
@@ -67,15 +75,33 @@ class PrintShipmentLabel extends OrgAction
                 'messages' => __('Print by Printnode is not enabled for your group!'),
             ]);
         }
-
-
-        $this->set('printerId', $printerId);
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(Shipment $shipment, ActionRequest $request): \Rawilk\Printing\Api\PrintNode\Resources\PrintJob|RedirectResponse
     {
         $this->initialisationFromGroup($shipment->group, $request);
 
-        return $this->handle($shipment);
+        return $this->handle($shipment, $request->user());
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'printer:print-shipment-label {deliveryNote} {user}';
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function asCommand(Command $command): void
+    {
+        $user         = User::where('slug', $command->argument('user'))->firstOrFail();
+        $deliveryNote = DeliveryNote::where('slug', $command->argument('deliveryNote'))->firstOrFail();
+        foreach ($deliveryNote->shipments as $shipment) {
+            $this->handle($shipment, $user);
+        }
+    }
+
 }
