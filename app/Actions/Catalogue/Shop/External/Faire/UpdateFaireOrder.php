@@ -4,8 +4,11 @@ namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -13,6 +16,7 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
@@ -28,6 +32,7 @@ class UpdateFaireOrder extends OrgAction
         $shop = $order->shop;
 
         $orderFaireData = $shop->getFaireOrder($order->external_id);
+
 
         foreach ($orderFaireData['items'] as $item) {
             $transaction = Transaction::where('order_id', $order->id)->where('marketplace_id', $item['id'])->first();
@@ -81,10 +86,35 @@ class UpdateFaireOrder extends OrgAction
             'amount_off' => $amountOff,
         ]);
 
+        $tax = 0;
+
+        foreach (Arr::get($orderFaireData, 'payout_costs.taxes', []) as $taxData) {
+            $tax += Arr::get($taxData, 'value.amount_minor', 0) / 100;
+        }
+
+        if ($tax == 0) {
+            if (IsEuropeanUnion::run($shop->organisation->country->code)) {
+                $taxCategory = TaxCategory::where('status', true)->where('type', 'eu_vtc')->first();
+            } else {
+                $taxCategory = TaxCategory::where('status', true)->where('type', 'outside')->first();
+            }
+        } else {
+            $taxCategory = GetTaxCategory::run(
+                country: $order->organisation->country,
+                taxNumber: null,
+                billingAddress: $order->billingAddress,
+                deliveryAddress: $order->deliveryAddress,
+            );
+        }
+
+        $order = UpdateOrder::run($order, [
+            'tax_category_id' => $taxCategory->id,
+        ]);
+
+
         CalculateOrderTotalAmounts::run($order);
         $invoice = $order->invoices()->first();
         if ($invoice) {
-
             $order->update([
                 'amount_off' => $amountOff,
             ]);
@@ -117,6 +147,7 @@ class UpdateFaireOrder extends OrgAction
             $command->info("Updating order {$order->shop->slug} $order->slug");
             $this->handle($order, $command);
         }
+
         return 0;
     }
 }
