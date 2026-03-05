@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import Toggle from '@/Components/Pure/Toggle.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faChevronLeft, faChevronRight , faDownload } from '@fal'
 
@@ -44,6 +45,23 @@ const props = defineProps<{
     holidays?: CalendarHoliday[]
     holidayRanges?: HolidayRange[]
     tabs?: unknown
+    holidayYearPeriod?: {
+        id: number
+        label: string
+        start_date: string
+        end_date: string
+    } | null
+    allHolidayYears?: {
+        id: number
+        label: string
+        start_date: string
+        end_date: string
+        is_active: boolean
+    }[]
+    defaultPeriod?: {
+        start_date: string
+        end_date: string
+    }
 }>()
 
 const currentYear = new Date().getFullYear()
@@ -54,6 +72,24 @@ const initialMonth = props.month && props.month >= 1 && props.month <= 12 ? Stri
 
 const filterYear = ref<string>(String(displayYear.value))
 const filterMonth = ref<string>(initialMonth)
+const filterHolidayYear = ref<number | null>(props.holidayYearPeriod?.id ?? null)
+
+const useHolidayYearPeriod = ref<boolean>(!!props.holidayYearPeriod)
+
+const selectedHolidayYear = computed(() => {
+    if (!props.allHolidayYears) return null
+    return props.allHolidayYears.find(hy => hy.id === filterHolidayYear.value) || props.holidayYearPeriod
+})
+
+watch(useHolidayYearPeriod, (val) => {
+    if (val) {
+        filterMonth.value = ''
+        if (!filterHolidayYear.value && props.allHolidayYears?.length) {
+            const active = props.allHolidayYears.find(hy => hy.is_active)
+            filterHolidayYear.value = active ? active.id : props.allHolidayYears[0].id
+        }
+    }
+})
 
 const yearOptions = computed(() => {
     const baseYear = currentYear
@@ -112,9 +148,29 @@ const monthNames = [
 
 const calendarMonths = computed<CalendarMonth[]>(() => {
     const months: CalendarMonth[] = []
-    const year = displayYear.value
 
-    for (let month = 0; month < 12; month += 1) {
+    // Determine start and end date based on mode
+    let startDate: Date
+    let endDate: Date
+
+    if (useHolidayYearPeriod.value && selectedHolidayYear.value) {
+        startDate = new Date(selectedHolidayYear.value.start_date)
+        endDate = new Date(selectedHolidayYear.value.end_date)
+    } else {
+        const year = Number(filterYear.value)
+        startDate = new Date(year, 0, 1)
+        endDate = new Date(year, 11, 31)
+    }
+
+    const startYear = startDate.getFullYear()
+    const startMonth = startDate.getMonth()
+    const totalMonths = (endDate.getFullYear() - startYear) * 12 + (endDate.getMonth() - startMonth) + 1
+
+    for (let i = 0; i < totalMonths; i++) {
+        const currentMonthDate = new Date(startYear, startMonth + i, 1)
+        const year = currentMonthDate.getFullYear()
+        const month = currentMonthDate.getMonth()
+
         const firstDay = new Date(year, month, 1)
         const daysInMonth = new Date(year, month + 1, 0).getDate()
 
@@ -125,7 +181,7 @@ const calendarMonths = computed<CalendarMonth[]>(() => {
 
         const firstWeekdayIndex = (firstDay.getDay() + 6) % 7
 
-        for (let i = 0; i < firstWeekdayIndex; i += 1) {
+        for (let j = 0; j < firstWeekdayIndex; j += 1) {
             week.push({
                 date: '',
                 dayOfMonth: null,
@@ -183,7 +239,7 @@ const calendarMonths = computed<CalendarMonth[]>(() => {
 })
 
 const visibleMonths = computed<CalendarMonth[]>(() => {
-    if (!filterMonth.value) {
+    if (useHolidayYearPeriod.value || !filterMonth.value) {
         return calendarMonths.value
     }
 
@@ -192,40 +248,30 @@ const visibleMonths = computed<CalendarMonth[]>(() => {
     return calendarMonths.value.filter((month) => month.month === monthIndex)
 })
 
-const holidaySummariesByMonth = computed<Record<number, { fromDay: number; toDay: number; label: string }[]>>(() => {
-    const result: Record<number, { fromDay: number; toDay: number; label: string }[]> = {}
+const holidaySummariesByMonth = computed<Record<string, { fromDay: number; toDay: number; label: string }[]>>(() => {
+    const result: Record<string, { fromDay: number; toDay: number; label: string }[]> = {}
 
     if (!props.holidayRanges || props.holidayRanges.length === 0) {
         return result
     }
 
-    const year = displayYear.value
-
     for (const range of props.holidayRanges) {
         const fromDate = new Date(range.from)
         const toDate = new Date(range.to)
 
-        if (fromDate.getFullYear() !== year && toDate.getFullYear() !== year) {
-            continue
-        }
-
         const startMonth = fromDate.getMonth()
-        const endMonth = toDate.getMonth()
+        const startYear = fromDate.getFullYear()
 
-        if (startMonth !== endMonth || fromDate.getFullYear() !== toDate.getFullYear()) {
-            continue
-        }
+        const key = `${startYear}-${startMonth}`
 
-        const monthIndex = startMonth
-
-        if (!result[monthIndex]) {
-            result[monthIndex] = []
+        if (!result[key]) {
+            result[key] = []
         }
 
         const fromDay = fromDate.getDate()
         const toDay = toDate.getDate()
 
-        result[monthIndex].push({
+        result[key].push({
             fromDay,
             toDay,
             label: range.label,
@@ -233,8 +279,7 @@ const holidaySummariesByMonth = computed<Record<number, { fromDay: number; toDay
     }
 
     Object.keys(result).forEach((key) => {
-        const index = Number(key)
-        result[index] = result[index].sort((a, b) => a.fromDay - b.fromDay)
+        result[key] = result[key].sort((a, b) => a.fromDay - b.fromDay)
     })
 
     return result
@@ -276,6 +321,14 @@ const resetFilters = () => {
 }
 
 const goPrevious = () => {
+    if (useHolidayYearPeriod.value && selectedHolidayYear.value && props.allHolidayYears) {
+        const currentIndex = props.allHolidayYears.findIndex(hy => hy.id === selectedHolidayYear.value?.id)
+        if (currentIndex < props.allHolidayYears.length - 1) {
+            filterHolidayYear.value = props.allHolidayYears[currentIndex + 1].id
+        }
+        return
+    }
+
     if (filterMonth.value) {
         let year = Number(filterYear.value || displayYear.value)
         let month = Number(filterMonth.value)
@@ -299,6 +352,16 @@ const goPrevious = () => {
 }
 
 const goNext = () => {
+    if (useHolidayYearPeriod.value && selectedHolidayYear.value && props.allHolidayYears) {
+        const currentIndex = props.allHolidayYears.findIndex(hy => hy.id === selectedHolidayYear.value?.id)
+
+        // Next (Newer) -> index - 1
+        if (currentIndex > 0) {
+            filterHolidayYear.value = props.allHolidayYears[currentIndex - 1].id
+        }
+        return
+    }
+
     if (filterMonth.value) {
         let year = Number(filterYear.value || displayYear.value)
         let month = Number(filterMonth.value)
@@ -338,7 +401,10 @@ const goNext = () => {
                     />
 
                     <h2 class="text-xl font-bold text-gray-800 w-48 text-center">
-                        <template v-if="filterMonth">
+                        <template v-if="useHolidayYearPeriod && selectedHolidayYear">
+                            {{ selectedHolidayYear.label }}
+                        </template>
+                        <template v-else-if="filterMonth">
                             {{ monthNames[Number(filterMonth) - 1] }} {{ filterYear }}
                         </template>
                         <template v-else>
@@ -355,36 +421,57 @@ const goNext = () => {
                 </div>
 
                 <div class="flex gap-2 items-center flex-wrap">
-                    <select
-                        v-model="filterYear"
-                        @change="applyFilters"
-                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    >
-                        <option
-                            v-for="option in yearOptions"
-                            :key="option.value"
-                            :value="option.value"
+                    <template v-if="useHolidayYearPeriod && allHolidayYears && allHolidayYears.length">
+                        <select
+                            v-model="filterHolidayYear"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm min-w-[200px]"
                         >
-                            {{ option.label }}
-                        </option>
-                    </select>
+                            <option
+                                v-for="hy in allHolidayYears"
+                                :key="hy.id"
+                                :value="hy.id"
+                            >
+                                {{ hy.label }} ({{ hy.start_date }} - {{ hy.end_date }})
+                            </option>
+                        </select>
+                    </template>
+                    <template v-else>
+                        <select
+                            v-model="filterYear"
+                            @change="applyFilters"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        >
+                            <option
+                                v-for="option in yearOptions"
+                                :key="option.value"
+                                :value="option.value"
+                            >
+                                {{ option.label }}
+                            </option>
+                        </select>
 
-                    <select
-                        v-model="filterMonth"
-                        @change="applyFilters"
-                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    >
-                        <option value="">
-                            {{ trans('All months') }}
-                        </option>
-                        <option
-                            v-for="option in monthOptions"
-                            :key="option.value"
-                            :value="option.value"
+                        <select
+                            v-model="filterMonth"
+                            @change="applyFilters"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         >
-                            {{ option.label }}
-                        </option>
-                    </select>
+                            <option value="">
+                                {{ trans('All months') }}
+                            </option>
+                            <option
+                                v-for="option in monthOptions"
+                                :key="option.value"
+                                :value="option.value"
+                            >
+                                {{ option.label }}
+                            </option>
+                        </select>
+                    </template>
+
+                    <div v-if="allHolidayYears && allHolidayYears.length" class="flex items-center gap-2 ml-2">
+                        <span class="text-sm text-gray-600">{{ trans('Holiday Year') }}</span>
+                        <Toggle v-model="useHolidayYearPeriod" />
+                    </div>
 
                     <a
                         :href="route('grp.org.hr.holidays.export', {
@@ -457,11 +544,11 @@ const goNext = () => {
                     </div>
 
                     <div
-                        v-if="holidaySummariesByMonth[month.month] && holidaySummariesByMonth[month.month].length"
+                        v-if="holidaySummariesByMonth[`${month.name.split(' ')[1]}-${month.month}`] && holidaySummariesByMonth[`${month.name.split(' ')[1]}-${month.month}`].length"
                         class="mt-2 border-t border-gray-200 pt-2 text-[11px]"
                     >
                         <div
-                            v-for="summary in holidaySummariesByMonth[month.month]"
+                            v-for="summary in holidaySummariesByMonth[`${month.name.split(' ')[1]}-${month.month}`]"
                             :key="`${summary.fromDay}-${summary.toDay}-${summary.label}`"
                             class="flex gap-1 text-red-600"
                         >
