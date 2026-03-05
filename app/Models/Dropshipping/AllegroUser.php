@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Dropshipping;
 
 use App\Actions\Dropshipping\Allegro\Traits\WithAllegroApiServices;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -41,6 +40,16 @@ class AllegroUser extends Model
     use WithAllegroApiServices;
 
     protected $guarded = [];
+
+    protected $casts = [
+        'data' => 'array',
+        'settings' => 'array',
+    ];
+
+    protected $attributes = [
+        'data' => '{}',
+        'settings' => '{}',
+    ];
 
     public function customerSalesChannel(): BelongsTo
     {

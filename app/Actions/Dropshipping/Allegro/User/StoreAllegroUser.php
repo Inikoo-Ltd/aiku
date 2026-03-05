@@ -13,9 +13,10 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\AllegroUser;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Platform;
+use Illuminate\Support\Facades\Log;
 
 class StoreAllegroUser extends RetinaAction
 {
@@ -23,24 +24,29 @@ class StoreAllegroUser extends RetinaAction
 
     public function handle(Customer $customer, array $modelData): AllegroUser
     {
-        $platform = Platform::where('type', PlatformTypeEnum::ALLEGRO->value)->first();
+        try {
+            $platform = Platform::where('type', PlatformTypeEnum::ALLEGRO->value)->first();
 
-        data_set($modelData, 'group_id', $customer->group_id);
-        data_set($modelData, 'organisation_id', $customer->organisation_id);
+            data_set($modelData, 'group_id', $customer->group_id);
+            data_set($modelData, 'organisation_id', $customer->organisation_id);
 
-        /** @var AllegroUser $allegroUser */
-        $allegroUser = $customer->allegroUsers()->create($modelData);
+            /** @var AllegroUser $allegroUser */
+            $allegroUser = $customer->allegroUsers()->create($modelData);
 
-        $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
-            'platform_user_type' => class_basename($allegroUser),
-            'platform_user_id' => $allegroUser->id,
-            'reference' => $allegroUser->name,
-            'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
-        ]);
+            $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer, $platform, [
+                'platform_user_type' => class_basename($allegroUser),
+                'platform_user_id' => $allegroUser->id,
+                'reference' => $allegroUser->name,
+                'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+            ]);
 
-        $allegroUser->update([
-            'customer_sales_channel_id' => $customerSalesChannel->id,
-        ]);
+            $allegroUser->update([
+                'customer_sales_channel_id' => $customerSalesChannel->id,
+            ]);
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+            Log::info('Failed to store Allegro user: ' . $e->getMessage());
+        }
 
         return $allegroUser;
     }

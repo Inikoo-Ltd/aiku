@@ -10,7 +10,7 @@ namespace App\Actions\Dropshipping\Allegro\User;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\AllegroUser;
+use App\Models\Dropshipping\AllegroUser;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;

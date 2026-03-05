@@ -12,12 +12,11 @@ use App\Actions\Dropshipping\Allegro\Traits\WithAllegroOAuth;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\AllegroUser;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Platform;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
@@ -40,21 +39,20 @@ class AuthenticateAllegroAccount extends OrgAction
             if (Arr::get($modelData, 'state')) {
                 $stateData = json_decode(base64_decode(Arr::get($modelData, 'state')), true);
                 $customer = Customer::find(Arr::get($stateData, 'customer_id'));
-                $codeVerifier = Cache::pull('allegro_code_verifier_' . Arr::get($stateData, 'session_id'));
+                $codeVerifier = Arr::get($stateData, 'code_verifier');
             }
 
             // Exchange authorization code for tokens
             $tokenData = $this->exchangeCodeForTokens(
                 Arr::get($modelData, 'code'),
-                route('webhooks.allegro.callback'),
+                route('retina.dropshipping.allegro.callback'),
                 $codeVerifier ?? null
             );
 
             if (isset($tokenData['access_token'])) {
-                // Calculate expiration timestamps
                 $accessTokenExpiresAt = now()->addSeconds($tokenData['expires_in'])->timestamp;
                 $refreshTokenExpiresAt = isset($tokenData['refresh_token'])
-                    ? now()->addDays(90)->timestamp // Allegro refresh tokens typically last 90 days
+                    ? now()->addDays(90)->timestamp
                     : null;
 
                 $userData = [
@@ -72,13 +70,13 @@ class AuthenticateAllegroAccount extends OrgAction
                     ->first();
 
                 if (!$allegroUser && $customer?->id) {
-                    $allegroUser = StoreAllegroUser::make()->action($customer, $userData);
+                    $allegroUser = StoreAllegroUser::run($customer, $userData);
                 } elseif (!$allegroUser && $customer === null) {
                     $allegroUser = AllegroUser::create($userData);
                 }
 
                 if ($customer?->id && $allegroUser) {
-                    $allegroUser = UpdateAllegroUser::make()->action($allegroUser, $userData);
+                    $allegroUser = UpdateAllegroUser::run($allegroUser, $userData);
                 }
 
                 if ($allegroUser) {
@@ -95,41 +93,41 @@ class AuthenticateAllegroAccount extends OrgAction
                 $model = __('Failed to obtain access token from Allegro');
             }
 
-            return redirect()->route('aiku-public.allegro.onboarding', [
+            /*return redirect()->route('aiku-public.allegro.onboarding', [
                 'allegro_code' => base64_encode(json_encode([
                     'allegro_user_id' => $model instanceof AllegroUser ? $model->id : null,
                     'message' => $model instanceof AllegroUser ? null : $model
                 ]))
-            ]);
+            ]);*/
+
+            return null;
 
         } catch (\Exception $e) {
             Log::error('Allegro authentication failed: ' . $e->getMessage());
 
-            return redirect()->route('aiku-public.allegro.onboarding', [
+            /*return redirect()->route('aiku-public.allegro.onboarding', [
                 'allegro_code' => base64_encode(json_encode([
                     'allegro_user_id' => null,
                     'message' => $e->getMessage()
                 ]))
-            ]);
+            ]);*/
+
+            return null;
         }
     }
 
     public function redirectToAllegro(Customer $customer): string
     {
-        $sessionId = Str::uuid()->toString();
         $codeVerifier = $this->generateCodeVerifier();
         $codeChallenge = $this->generateCodeChallenge($codeVerifier);
 
-        // Store code verifier for later use (expires in 10 minutes)
-        Cache::put('allegro_code_verifier_' . $sessionId, $codeVerifier, 600);
-
         $state = base64_encode(json_encode([
             'customer_id' => $customer->id,
-            'session_id' => $sessionId
+            'code_verifier' => $codeVerifier
         ]));
 
-        $redirectUri = route('webhooks.allegro.callback');
-        $scope = 'allegro:api:sale:offers:read allegro:api:sale:offers:write allegro:api:orders:read allegro:api:orders:write';
+        $redirectUri = route('retina.dropshipping.allegro.callback');
+        $scope = 'allegro:api:sale:offers:read allegro:api:sale:offers:write allegro:api:sale:settings:read allegro:api:sale:settings:write allegro:api:orders:read allegro:api:orders:write allegro:api:ratings allegro:api:disputes allegro:api:bids allegro:api:ads allegro:api:campaigns allegro:api:profile:read allegro:api:profile:write allegro:api:fulfillment:read allegro:api:fulfillment:write allegro:api:shipments:read allegro:api:shipments:write';
 
         return $this->getAuthorizationUrl($redirectUri, $codeChallenge, $scope, $state);
     }
