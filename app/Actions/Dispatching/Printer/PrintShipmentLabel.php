@@ -22,24 +22,27 @@ class PrintShipmentLabel extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(Shipment $shipment, User $user): \Rawilk\Printing\Api\PrintNode\Resources\PrintJob|RedirectResponse
+    public function handle(Shipment $shipment, User $user, Command|null $command=null): \Rawilk\Printing\Api\PrintNode\Resources\PrintJob|RedirectResponse
     {
         $printerId = Arr::get($user->settings, 'preferred_printer_id');
         $this->ensureClientInitialized();
         try {
             if ($shipment->combined_label_url) {
+                $command?->info('Printing printPdfFromPdfUri');
                 $res = $this->printPdfFromPdfUri(
                     title: $shipment->tracking,
                     printId: $printerId,
                     pdfUri: $shipment->combined_label_url
                 );
             } elseif ($shipment->label && $shipment->label_type == ShipmentLabelTypeEnum::HTML) {
+                $command?->info('Printing printRawBase64');
                 $res = $this->printRawBase64(
                     title: $shipment->tracking,
                     printId: $printerId,
                     rawBase64: $shipment->label
                 );
             } else {
+                $command?->info('Printing printPdf');
                 $res = $this->printPdf(
                     title: $shipment->tracking,
                     printId: $printerId,
@@ -49,6 +52,7 @@ class PrintShipmentLabel extends OrgAction
 
             return $res;
         } catch (\Throwable $e) {
+            $command?->error('Error printing shipment label: '.$e->getMessage());
             throw ValidationException::withMessages([
                 'messages' => __('Error printing shipment label').' '.$e->getMessage(),
             ]);
@@ -100,7 +104,7 @@ class PrintShipmentLabel extends OrgAction
         $user         = User::where('slug', $command->argument('user'))->firstOrFail();
         $deliveryNote = DeliveryNote::where('slug', $command->argument('deliveryNote'))->firstOrFail();
         foreach ($deliveryNote->shipments as $shipment) {
-            $this->handle($shipment, $user);
+            $this->handle($shipment, $user, $command);
         }
     }
 
