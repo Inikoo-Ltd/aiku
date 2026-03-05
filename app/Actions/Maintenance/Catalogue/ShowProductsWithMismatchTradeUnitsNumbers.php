@@ -9,11 +9,8 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Catalogue\Product\SyncProductTradeUnits;
-use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
@@ -25,35 +22,45 @@ class ShowProductsWithMismatchTradeUnitsNumbers
     protected function handle(MasterShop $masterShop, Command $command): void
     {
         $totalCount = 0;
+        $totalWrong = 0;
         MasterAsset::where('master_shop_id', $masterShop->id)->where('type', MasterAssetTypeEnum::PRODUCT)
             ->where('status', true)
             ->orderBy('id')
-            ->chunkById(1000, function ($masterProducts) use (&$totalCount) {
+            ->chunkById(1000, function ($masterProducts) use (&$totalCount, &$totalWrong) {
                 foreach ($masterProducts as $masterProduct) {
+                    $totalCount++;
                     $masterAssetTradeUnits = $masterProduct->tradeUnits->pluck('pivot.quantity', 'id');
 
-                    $products = $masterProduct->products;
+                    $products     = $masterProduct->products;
                     $hasDifferent = false;
                     foreach ($products as $product) {
                         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
 
-                        $hasDifferent = $masterAssetTradeUnits->diffAssoc($productTradeUnits) || $productTradeUnits->diffAssoc($masterAssetTradeUnits);
-                        
-                        if($hasDifferent) break;
+                        $hasDifferent = $masterAssetTradeUnits->diffAssoc($productTradeUnits)->count()
+                            || $productTradeUnits->diffAssoc($masterAssetTradeUnits)->count();
+
+
+                        if ($hasDifferent) {
+                            break;
+                        }
                     }
 
-                    if($hasDifferent) $totalCount++;
+                    if ($hasDifferent) {
+                        $totalWrong++;
+                    }
                 }
             });
 
-        echo "Total Count: {$totalCount} of different between master and 1 or more of their products | {$masterShop->code}";
+        echo "Result:   $totalWrong / $totalCount ".percentage($totalWrong, $totalCount)."\n";
     }
 
     public string $commandSignature = 'count:products_with_mismatch_trade_units {masterShop}';
 
     public function asCommand(Command $command): void
     {
-        $masterShop = MasterShop::where('slug', $command->argument('masterShop'))->firstOrFail();
+        $masterShop = MasterShop::where('slug', $command->argument('masterShop'))
+            ->where('status', true)
+            ->firstOrFail();
         $this->handle($masterShop, $command);
     }
 
