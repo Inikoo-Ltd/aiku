@@ -158,7 +158,7 @@ class IndexProductsInProductCategory extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-        }else{
+        } else {
             $queryBuilder
                 ->with('orgStocks');
         }

@@ -12,7 +12,6 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\Pallet;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property mixed $id
@@ -200,7 +199,7 @@ class PalletReturnItemsUIResource extends JsonResource
                 ]
             },
         ];
-        
+
         return $returnFormat;
     }
 }

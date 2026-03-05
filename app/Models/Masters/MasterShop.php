@@ -42,6 +42,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $offers_data
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $listMasterProducts
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $masterProductCategories

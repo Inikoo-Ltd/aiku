@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $deleted_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read CustomerSalesChannel $customerSalesChannel
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser query()

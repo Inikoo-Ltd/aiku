@@ -91,12 +91,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferAllowance> $offerAllowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferCampaign> $offerCampaign
  * @property-read Order|null $order
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasOrgStock> $orgStockBridges
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read RecurringBillTransaction|null $recurringBillTransaction
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read TaxCategory $taxCategory
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasTradeUnit> $tradeUnitBridges
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasOrgStock> $orgStockBridges
  * @property-read Transaction|null $transaction
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $transactionRefunds
  * @method static Builder<static>|InvoiceTransaction newModelQuery()

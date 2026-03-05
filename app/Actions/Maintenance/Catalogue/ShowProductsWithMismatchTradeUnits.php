@@ -9,15 +9,8 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\PublishWebpage;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterShop;
-use Exception;
 use Illuminate\Console\Command;
 
 class ShowProductsWithMismatchTradeUnits
@@ -30,11 +23,11 @@ class ShowProductsWithMismatchTradeUnits
             ->listMasterProducts()
             ->orderBy('id')
             ->chunkById(1000, function ($masterProducts) {
-                foreach($masterProducts as $masterProduct) {
+                foreach ($masterProducts as $masterProduct) {
                     $masterAssetTradeUnits = $masterProduct->tradeUnits->pluck('pivot.quantity', 'id');
-                    
+
                     $products = $masterProduct->products;
-                    foreach($products as $product) {
+                    foreach ($products as $product) {
                         $productTradeUnits = $product->tradeUnits->pluck('pivot.quantity', 'id');
 
                         $diffFromMaster = $masterAssetTradeUnits->diffAssoc($productTradeUnits);
@@ -89,8 +82,8 @@ class ShowProductsWithMismatchTradeUnits
 
         $masterShops = MasterShop::when(!empty($masterShopId), fn ($q) => $q->where('id', $masterShopID))
                         ->get();
-        
-        foreach($masterShops as $masterShop){
+
+        foreach ($masterShops as $masterShop) {
             $this->handle($masterShop, $command);
         }
 

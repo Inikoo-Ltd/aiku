@@ -690,7 +690,7 @@ Route::name('pallet.')->prefix('pallet/{pallet:id}')->group(function () {
     Route::patch('undo-not-received', UndoNotReceivedPallet::class)->name('undo-not-received');
     Route::patch('undo-booked-in', UndoBookedInPallet::class)->name('undo_book_in');
 
-    
+
     Route::patch('return', ReturnPallet::class)->name('return');
     Route::patch('damaged', SetPalletAsDamaged::class)->name('damaged');
     Route::patch('lost', SetPalletAsLost::class)->name('lost');
