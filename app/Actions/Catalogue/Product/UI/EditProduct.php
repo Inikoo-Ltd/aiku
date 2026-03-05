@@ -534,6 +534,7 @@ class EditProduct extends OrgAction
                                 'maxFractionDigits' => 2,
                             ],
                             'value'    => $product->rrp,
+                            'min'      => 0.01
                         ],
                         'cost_price_ratio' => [
                             'type'        => 'input_number',
@@ -544,7 +545,7 @@ class EditProduct extends OrgAction
                             'placeholder' => __('Cost price ratio'),
                             'required'    => true,
                             'value'       => $product->cost_price_ratio,
-                            'min'         => 0
+                            'min'         => 0.01
                         ],
                     ]
                 ],
