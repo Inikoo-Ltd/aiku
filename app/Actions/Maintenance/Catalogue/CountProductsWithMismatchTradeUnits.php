@@ -15,7 +15,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 
-class ShowProductsWithMismatchTradeUnitsNumbers
+class CountProductsWithMismatchTradeUnits
 {
     use WithActionUpdate;
 
