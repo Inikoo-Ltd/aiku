@@ -46,6 +46,13 @@ class CheckMasterAssetTradeUnitOrgStockExistence extends OrgAction
         return $isValid;
     }
 
+    public function rules() 
+    {
+        return [
+            'trade_units'   => ['sometimes', 'array', 'nullable'],
+        ]
+    }
+
     public function asController(MasterAsset $masterProduct, ActionRequest $request): bool
     {
         $this->initialisationFromGroup($masterProduct->group, $request);
