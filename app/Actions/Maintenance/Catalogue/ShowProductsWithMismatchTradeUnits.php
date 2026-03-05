@@ -49,19 +49,19 @@ class ShowProductsWithMismatchTradeUnits
                             echo "MASTER UNITS:\n";
                             foreach ($masterAssetTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
-                                echo "  - TradeUnit $tradeUnit->slug: {$qty}\n";
+                                echo "  - TradeUnit $tradeUnit->slug: $qty\n";
                             }
 
                             echo "\nPRODUCT UNITS:\n";
                             foreach ($productTradeUnits as $id => $qty) {
                                 $tradeUnit = TradeUnit::find($id);
-                                echo "  - TradeUnit $tradeUnit->slug: {$qty}\n";
+                                echo "  - TradeUnit $tradeUnit->slug: $qty\n";
                             }
 
                             if ($diffFromMaster->isNotEmpty()) {
                                 echo "\nMissing / Different From Master:\n";
                                 foreach ($diffFromMaster as $id => $qty) {
-                                    echo "  - TradeUnit {$id}: Master=$qty, Product=".
+                                    echo "  - TradeUnit $id: Master=$qty, Product=".
                                         ($productTradeUnits[$id] ?? 'N/A')."\n";
                                 }
                             }
@@ -69,7 +69,7 @@ class ShowProductsWithMismatchTradeUnits
                             if ($diffFromProduct->isNotEmpty()) {
                                 echo "\nExtra / Different In Product:\n";
                                 foreach ($diffFromProduct as $id => $qty) {
-                                    echo "  - TradeUnit {$id}: Product={$qty}, Master=".
+                                    echo "  - TradeUnit $id: Product=$qty, Master=".
                                         ($masterAssetTradeUnits[$id] ?? 'N/A')."\n";
                                 }
                             }
