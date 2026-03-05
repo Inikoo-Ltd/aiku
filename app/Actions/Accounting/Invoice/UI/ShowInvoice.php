@@ -323,7 +323,15 @@ class ShowInvoice extends OrgAction
 
                 'invoiceExportOptions' => $exportInvoiceOptions,
                 'routes'               => [
-                    'delivery_note' => $deliveryNoteRoute
+                    'delivery_note'          => $deliveryNoteRoute,
+                    'updateInvoiceDateRoute' => [
+                        'name'       => 'grp.models.invoice.update.date',
+                        'parameters' => [$invoice->id]
+                    ],
+                ],
+                //  Todo: Edit restriction
+                'can'                  => [
+                    'editInvoiceDate' => app()->isLocal() && $request->user()->authTo("accounting.{$this->organisation->id}.edit"),
                 ],
 
                 'box_stats'    => $this->getBoxStats($invoice),
