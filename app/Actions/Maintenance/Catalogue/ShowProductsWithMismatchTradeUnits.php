@@ -14,6 +14,7 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
@@ -47,12 +48,14 @@ class ShowProductsWithMismatchTradeUnits
 
                             echo "MASTER UNITS:\n";
                             foreach ($masterAssetTradeUnits as $id => $qty) {
-                                echo "  - TradeUnit {$id}: {$qty}\n";
+                                $tradeUnit = TradeUnit::find($id);
+                                echo "  - TradeUnit $tradeUnit->slug: {$qty}\n";
                             }
 
                             echo "\nPRODUCT UNITS:\n";
                             foreach ($productTradeUnits as $id => $qty) {
-                                echo "  - TradeUnit {$id}: {$qty}\n";
+                                $tradeUnit = TradeUnit::find($id);
+                                echo "  - TradeUnit $tradeUnit->slug: {$qty}\n";
                             }
 
                             if ($diffFromMaster->isNotEmpty()) {
@@ -76,7 +79,7 @@ class ShowProductsWithMismatchTradeUnits
                             echo "2. Follow children data [{$product->shop->slug}]\n";
                             echo "3. Do nothing\n\n";
 
-                            switch($command->ask("option: ", '1')){
+                            switch($command->ask("option: ", '3')){
                                 case "1":
                                     $this->copyMasterToProducts($masterProduct);
                                     break;
