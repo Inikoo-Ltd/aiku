@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateNewsletter extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
     /**
      * @throws Exception
      */

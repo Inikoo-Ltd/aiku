@@ -8,10 +8,10 @@
 
 namespace App\Actions\Maintenance\Ordering;
 
-use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
-use App\Models\Accounting\InvoiceTransaction;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 
@@ -20,36 +20,78 @@ class RepairOrderAmountsAfterMigration
     use WithActionUpdate;
     use WithFixedAddressActions;
 
-    public function handle(Order $order): void
+    public function handle(Order $order, Command $command): void
     {
+        $updateInvoice = false;
+        $invoice       = $order->invoices()->first();
+        if ($invoice) {
+            return;
+        }
+
         foreach ($order->transactions as $transaction) {
             if ($transaction->model_type != 'Product') {
                 continue;
             }
 
-            $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)->first();
-            if ($invoiceTransaction) {
-                $invoiceTransaction->update([
-                    'gross_amount'   => $transaction->gross_amount,
-                    'net_amount'     => $transaction->net_amount,
-                    'grp_net_amount' => $transaction->grp_net_amount,
-                    'org_net_amount' => $transaction->org_net_amount,
-                ]);
+            $oldHistoricAssetId = $transaction->historic_asset_id;
+
+            /** @var \App\Models\Catalogue\Product $product */
+            $product            = $transaction->model;
+            $newHistoricAssetId = $product->current_historic_asset_id;
+
+
+            $grossAmountFromHistoric = $transaction->historicAsset->price * $transaction->quantity_ordered;
+            if ($grossAmountFromHistoric == $transaction->gross_amount) {
+                $command->line('all ok');
+                continue;
+            }
+
+
+            if ($oldHistoricAssetId != $newHistoricAssetId) {
+                $currentGross = $transaction->gross_amount;
+
+                $newGrossAmount = $product->currentHistoricProduct->price * $transaction->quantity_ordered;
+
+                $diff = abs($currentGross - $newGrossAmount);
+                if ($diff > 0.00001) {
+                    $command->error("Product: $product->slug - old net amount: $currentGross - new net amount: $newGrossAmount");
+                } else {
+                    $command->info("Product: $product->slug - old historic asset id: $oldHistoricAssetId - new historic asset id: $newHistoricAssetId");
+                    $transaction->update([
+                        'historic_asset_id' => $newHistoricAssetId,
+                    ]);
+                }
             }
         }
-        $invoice = $order->invoices()->first();
-        CalculateInvoiceTotals::run($invoice);
     }
 
 
-    public string $commandSignature = 'orders:repair_order_amounts {order}';
+    public string $commandSignature = 'orders:repair_order_amounts {order?}  {--S|shop= shop slug}';
 
     public function asCommand(Command $command): void
     {
-        $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+        if ($command->argument('order')) {
+            $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+            $command->info("Processing Order: $order->slug");
+            $this->handle($order, $command);
 
+            return;
+        }
 
-        $this->handle($order);
+        if ($command->option('shop')) {
+            $shop = Shop::where('slug', $command->option('shop'))->firstOrFail();
+
+            foreach (
+                Order::where('shop_id', $shop->id)->whereNotIn('state', [
+                    OrderStateEnum::CANCELLED,
+                    OrderStateEnum::CREATING,
+                    OrderStateEnum::FINALISED,
+                    OrderStateEnum::DISPATCHED
+                ])->get() as $order
+            ) {
+                $this->handle($order, $command);
+            }
+        }
     }
 
 }
