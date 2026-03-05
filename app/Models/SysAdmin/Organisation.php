@@ -68,6 +68,7 @@ use App\Models\Helpers\Upload;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
+use App\Models\HumanResources\HolidayYear;
 use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\Workplace;
 use App\Models\Inventory\Location;
@@ -909,6 +910,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function holidays(): HasMany
     {
         return $this->hasMany(Holiday::class);
+    }
+
+    public function holidayYears(): HasMany
+    {
+        return $this->hasMany(HolidayYear::class);
     }
 
     public function trolleys(): HasMany
