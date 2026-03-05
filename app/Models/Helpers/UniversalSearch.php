@@ -15,7 +15,36 @@ use Illuminate\Support\Arr;
 use Laravel\Scout\Searchable;
 
 /**
- * @property-read Model|\Eloquent $model
+ * @property int $id
+ * @property int|null $group_id
+ * @property int|null $organisation_id
+ * @property string|null $organisation_slug
+ * @property int|null $shop_id
+ * @property string|null $shop_slug
+ * @property int|null $fulfilment_id
+ * @property string|null $fulfilment_slug
+ * @property int|null $warehouse_id
+ * @property string|null $warehouse_slug
+ * @property int|null $website_id
+ * @property string|null $website_slug
+ * @property int|null $customer_id
+ * @property string|null $customer_slug
+ * @property string|null $model_type
+ * @property int|null $model_id
+ * @property string|null $keyword
+ * @property string|null $keyword_2
+ * @property string|null $haystack_tier_1
+ * @property string|null $haystack_tier_2
+ * @property string|null $haystack_tier_3
+ * @property string $status
+ * @property float $weight
+ * @property string|null $date
+ * @property array<array-key, mixed> $sections
+ * @property array<array-key, mixed> $permissions
+ * @property array<array-key, mixed> $result
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Model|\Eloquent|null $model
  * @method static Builder<static>|UniversalSearch newModelQuery()
  * @method static Builder<static>|UniversalSearch newQuery()
  * @method static Builder<static>|UniversalSearch query()

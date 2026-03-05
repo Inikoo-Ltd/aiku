@@ -9,21 +9,15 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\PublishWebpage;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
-use Exception;
 use Illuminate\Console\Command;
 
-class ShowProductsWithMismatchTradeUnits 
+class ShowProductsWithMismatchTradeUnits
 {
     use WithActionUpdate;
 
@@ -90,7 +84,7 @@ class ShowProductsWithMismatchTradeUnits
     public function repairTradeUnits(MasterAsset $masterProduct, Product $product)
     {
         $tradeUnitData = [];
-        foreach($masterProduct->tradeUnits as $tradeUnit) {
+        foreach ($masterProduct->tradeUnits as $tradeUnit) {
             array_push($tradeUnitData, [
                 'id'       => $tradeUnit->id,
                 'quantity' => data_get($tradeUnit, 'pivot.quantity'),

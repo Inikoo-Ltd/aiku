@@ -117,14 +117,14 @@ trait WithPrintNode
         return PrintJob::create($pendingJob);
 
 
-//        $this->ensureClientInitialized();
-//        $pendingJob = PendingPrintJob::make()
-//            ->setContent($pdfContent)
-//            ->setContentType(ContentType::PdfBase64)
-//            ->setPrinter($printId)
-//            ->setTitle($title)
-//            ->setSource(config('app.name'));
-//
-//        return PrintJob::create($pendingJob);
+        //        $this->ensureClientInitialized();
+        //        $pendingJob = PendingPrintJob::make()
+        //            ->setContent($pdfContent)
+        //            ->setContentType(ContentType::PdfBase64)
+        //            ->setPrinter($printId)
+        //            ->setTitle($title)
+        //            ->setSource(config('app.name'));
+        //
+        //        return PrintJob::create($pendingJob);
     }
 }
