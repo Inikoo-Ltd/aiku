@@ -31,11 +31,9 @@ class CheckAllegroChannel
 
             $isExpired = $allegroUser->access_token_expire_in && now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($allegroUser->access_token_expire_in));
 
-            // Try to refresh token if expired
             if ($isExpired && $allegroUser->refresh_token) {
                 try {
                     $allegroUser->refreshAndPersistTokens();
-                    $isExpired = false;
                 } catch (\Exception $e) {
                     Log::error('Failed to refresh Allegro token: ' . $e->getMessage());
                 }
