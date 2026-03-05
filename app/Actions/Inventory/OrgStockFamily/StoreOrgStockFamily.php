@@ -62,7 +62,7 @@ class StoreOrgStockFamily extends OrgAction
     public function rules(ActionRequest $request): array
     {
         return [
-            'source_id' => 'nullable|string',
+            'source_id' => 'sometimes|nullable|string',
         ];
     }
 

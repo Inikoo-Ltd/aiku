@@ -42,7 +42,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $offers_data
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
- * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $listMasterProducts
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $masterProductCategories
@@ -156,11 +155,6 @@ class MasterShop extends Model implements Auditable
     public function getMasterFamilies(): LaravelCollection
     {
         return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
-    }
-
-    public function listMasterProducts(): HasMany
-    {
-        return $this->hasMany(MasterAsset::class, 'master_shop_id');
     }
 
     public function getMasterProducts(): BelongsToMany
