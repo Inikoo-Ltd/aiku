@@ -78,14 +78,14 @@ const startCamera = async () => {
     }
 
     try {
-       const stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
             video: {
                 facingMode: { ideal: "environment" },
             }
         })
         stream.getTracks().forEach(track => track.stop())
         cameraOn.value = true
-   } catch (err: any) {
+    } catch (err: any) {
         console.error("Camera error:", err)
 
         if (err.name === "NotAllowedError") {
@@ -116,7 +116,7 @@ const stopCamera = async () => {
 }
 
 const onDetect = async (detectedCodes: DetectedCode[]) => {
-     if (isProcessing.value) return
+    if (isProcessing.value) return
     isProcessing.value = true
 
     const result = detectedCodes[0]?.rawValue
@@ -243,7 +243,7 @@ const submitNotes = async () => {
 </script>
 
 <template>
-    <div class="relative">
+    <div class="relative z-0">
         <div v-if="!cameraOn" class="max-w-lg mx-auto p-6">
 
             <h2 class="text-2xl font-bold mb-6">{{ trans("Employee Clocking") }}</h2>
@@ -302,7 +302,7 @@ const submitNotes = async () => {
 
         </div>
 
-        <Dialog v-model:visible="showSuccessModal" modal :closable="false" :style="{ width: '420px' }"  appendTo="body">
+        <Dialog v-model:visible="showSuccessModal" modal :closable="false" :style="{ width: '420px' }" appendTo="body">
             <div class="text-center space-y-4 py-4">
 
                 <!-- ICON -->
@@ -369,8 +369,17 @@ const submitNotes = async () => {
     </div>
 </template>
 <style scoped>
+.leaflet-pane {
+    z-index: 1 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+    z-index: 1 !important;
+}
+
 .p-dialog {
-  z-index: 9999 !important;
+    z-index: 9999 !important;
 }
 
 .scanner-frame {

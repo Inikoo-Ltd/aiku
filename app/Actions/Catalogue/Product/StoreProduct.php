@@ -109,6 +109,7 @@ class StoreProduct extends OrgAction
         $product = DB::transaction(function () use ($shop, $modelData, $orgStocks, $tradeUnits) {
             /** @var Product $product */
             $product = $shop->products()->create($modelData);
+            $product->stats()->create();
 
             if ($tradeUnits) {
                 $product = SyncProductTradeUnits::run($product, $tradeUnits);
@@ -132,7 +133,7 @@ class StoreProduct extends OrgAction
                 ]);
             }
 
-            $product->stats()->create();
+
             $product->refresh();
 
             $product = $this->createAsset($product);

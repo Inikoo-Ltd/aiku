@@ -11,9 +11,9 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
@@ -34,16 +34,15 @@ use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
-use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Stubs\Migrations\HasProductInformation;
+use Carbon\Carbon;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Event;
 use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateProduct extends OrgAction
@@ -243,6 +242,9 @@ class UpdateProduct extends OrgAction
                     'current_historic_asset_id' => $historicAsset->id,
                 ]
             );
+
+            UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+
         }
 
         UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
