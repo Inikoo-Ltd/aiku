@@ -10,6 +10,7 @@ namespace App\Models\Inventory;
 
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockTimeSeriesRecord> $records
+ * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockTimeSeries newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockTimeSeries newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockTimeSeries query()
@@ -34,15 +36,25 @@ class OrgStockTimeSeries extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'data'      => 'array',
-        'frequency' => TimeSeriesFrequencyEnum::class,
+    protected function casts(): array
+    {
+        return [
+            'data'      => 'array',
+            'frequency' => TimeSeriesFrequencyEnum::class,
+        ];
+    }
 
-    ];
+    protected function attributes(): array
+    {
+        return [
+            'data' => [],
+        ];
+    }
 
-    protected $attributes = [
-        'data' => '{}',
-    ];
+    public function orgStock(): BelongsTo
+    {
+        return $this->belongsTo(OrgStock::class);
+    }
 
     public function records(): HasMany
     {

@@ -35,7 +35,9 @@ class FetchAuroraProduct extends FetchAurora
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             return;
         }
-
+        if ($shop->is_aiku) {
+            return;
+        }
 
         $this->parsedData['shop'] = $shop;
 
@@ -58,10 +60,8 @@ class FetchAuroraProduct extends FetchAurora
 
 
         if ($this->parsedData['parent'] === null) {
-
-            $this->parsedData['shop'] = $shop;
+            $this->parsedData['shop']   = $shop;
             $this->parsedData['parent'] = $shop;
-
         }
 
 

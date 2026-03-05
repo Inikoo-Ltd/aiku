@@ -28,6 +28,10 @@ class SplitShopifyFulfillmentRequest extends OrgAction
                 $lineItem = $fulfillmentOrderItems['node'];
                 $productId = Arr::get($lineItem, 'lineItem.product.id');
 
+                if (! $productId) {
+                    continue;
+                }
+
                 /** @var Portfolio $portfolio */
                 $portfolio = $shopifyUser->customerSalesChannel->portfolios()
                     ->where('platform_product_id', $productId)->exists();
@@ -55,6 +59,10 @@ class SplitShopifyFulfillmentRequest extends OrgAction
             RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], $rejectMsg);
 
             if (! $destination) {
+                return ['error' => $rejectMsg];
+            }
+
+            if(count($fulfillmentOrderItemsDefined) === 0) {
                 return ['error' => $rejectMsg];
             }
 

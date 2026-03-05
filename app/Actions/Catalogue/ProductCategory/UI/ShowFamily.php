@@ -239,7 +239,7 @@ class ShowFamily extends OrgAction
                             'tooltip' => 'Department',
                             'icon'    => ['fal', 'folder-tree']
                         ] : [],
-                        $family->subDepartment ? [
+                        ($family->subDepartment && $family->department) ? [
                             'label'   => $family->subDepartment->name,
                             'to'      => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',

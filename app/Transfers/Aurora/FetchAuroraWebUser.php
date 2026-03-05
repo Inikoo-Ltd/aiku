@@ -38,6 +38,11 @@ class FetchAuroraWebUser extends FetchAurora
         }
 
 
+        if ($customer->shop->is_aiku) {
+            return;
+        }
+
+
         if (!$customer->shop->website) {
             return;
         }

@@ -282,6 +282,16 @@ class Pallet extends Model implements Auditable
         return $this->belongsTo(PalletReturn::class);
     }
 
+    public function palletReturns(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PalletReturn::class,
+            'pallet_return_items',
+            'pallet_id',
+            'pallet_return_id'
+        );
+    }
+
     public function currentRecurringBill(): BelongsTo
     {
         return $this->belongsTo(RecurringBill::class, 'current_recurring_bill_id');
