@@ -9,8 +9,10 @@
 namespace App\Actions\Dropshipping\Allegro\User;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
-use App\Models\AllegroUser;
+use App\Models\Dropshipping\AllegroUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -55,5 +57,14 @@ class CheckAllegroChannel
         } catch (\Exception $e) {
             Log::error('Failed to check Allegro channel: ' . $e->getMessage());
         }
+    }
+
+    public string $commandSignature = 'allegro:check {customerSalesChannel}';
+
+    public function asCommand(Command $command)
+    {
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
+
+        $this->handle($customerSalesChannel->user);
     }
 }

@@ -8,7 +8,10 @@
 
 namespace App\Actions\Dropshipping\Allegro\User;
 
-use App\Models\AllegroUser;
+use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
+use App\Models\Dropshipping\AllegroUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -30,12 +33,21 @@ class SaveShopDataAllegroChannel
                 data_set($data, 'user_id', Arr::get($userInfo, 'id'));
                 data_set($data, 'login', Arr::get($userInfo, 'login'));
                 data_set($data, 'email', Arr::get($userInfo, 'email'));
-                data_set($data, 'company_name', Arr::get($userInfo, 'company_name'));
+                data_set($data, 'company_name', Arr::get($userInfo, 'company.name'));
+                data_set($data, 'taxId', Arr::get($userInfo, 'company.taxId'));
+                data_set($data, 'marketplace_id', Arr::get($userInfo, 'baseMarketplace.id'));
 
                 $allegroUser->update([
+                    'name' => Arr::get($data, 'company_name'),
+                    'allegro_id' => Arr::get($data, 'user_id'),
+                    'marketplace_id' => Arr::get($data, 'marketplace_id'),
                     'data' => $data,
-                    'email' => Arr::get($userInfo, 'email') ?? $allegroUser->email,
-                    'username' => Arr::get($userInfo, 'login') ?? $allegroUser->username,
+                    'email' => Arr::get($data, 'email') ?? $allegroUser->email,
+                    'username' => Arr::get($data, 'login') ?? $allegroUser->username,
+                ]);
+
+                UpdateCustomerSalesChannel::run($allegroUser->customerSalesChannel, [
+                    'name' => Arr::get($data, 'company_name')
                 ]);
             }
 
@@ -44,5 +56,14 @@ class SaveShopDataAllegroChannel
             Log::error('Failed to save Allegro shop data: ' . $e->getMessage());
             return $allegroUser;
         }
+    }
+
+    public string $commandSignature = 'allegro:save-shop-data {customerSalesChannel}';
+
+    public function asCommand(Command $command)
+    {
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
+
+        $this->handle($customerSalesChannel->user);
     }
 }

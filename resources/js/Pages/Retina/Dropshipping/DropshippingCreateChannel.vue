@@ -36,6 +36,7 @@ import TiktokAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChanne
 import TiktokBusinessAccountsForm
 	from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokBusinessAccountsForm.vue"
 import TiktokConnectedFinish from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokConnectedFinish.vue"
+import AllegroAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelAllegro/AllegroAuthKeyForm.vue"
 library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers)
@@ -54,6 +55,9 @@ const props = defineProps<{
 		isAuthenticatedExpired: boolean
 		tiktokName: string
 		deleteAccountRoute: routeType
+	}
+	allegroAuth: {
+		url: string
 	}
 	type_manual: {
 		createRoute: routeType
@@ -360,6 +364,7 @@ const stepComponents = [
 
 const stepWooComponents = [WooAccountNameForm, WooAuthKeyForm, WooConnectedFinish]
 const stepTiktokComponents = [TiktokAuthKeyForm, TiktokBusinessAccountsForm, TiktokConnectedFinish]
+const stepAllegroComponents = [AllegroAuthKeyForm]
 
 const currentStep = ref(0)
 
@@ -761,7 +766,7 @@ provide("goNext", goNext)
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
 			<ProgressBar />
-			<component :is="stepTiktokComponents[currentStep]" :props="props" />
+			<component :is="stepAllegroComponents[currentStep]" :props="props" />
 		</div>
 	</Modal>
 
