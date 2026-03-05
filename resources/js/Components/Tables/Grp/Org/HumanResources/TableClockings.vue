@@ -12,6 +12,7 @@ import Table from "@/Components/Table/Table.vue";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
+import DatePicker from "primevue/datepicker";
 import axios from "axios";
 import { trans } from "laravel-vue-i18n";
 import { notify } from "@kyvg/vue3-notification";
@@ -28,7 +29,7 @@ const props = defineProps<{
 const isEditModalOpen = ref(false);
 const selectedClocking = ref<any | null>(null);
 const notes = ref<string>("");
-const clockedAt = ref<string>("");
+const clockedAt = ref<Date | null>(null);
 const isSubmitting = ref(false);
 const errorMsg = ref<string | null>(null);
 
@@ -52,7 +53,7 @@ const openEditModal = (clocking: any) => {
     selectedClocking.value = clocking;
     console.log(clocking);
     notes.value = typeof clocking.notes === "string" ? clocking.notes : "";
-    clockedAt.value = useFormatTime(clocking.clocked_at, { formatTime: "yyyy-MM-dd'T'HH:mm" });
+    clockedAt.value = clocking.clocked_at ? new Date(clocking.clocked_at) : null;
     isEditModalOpen.value = true;
     errorMsg.value = null;
 };
@@ -61,7 +62,7 @@ const closeEditModal = () => {
     isEditModalOpen.value = false;
     selectedClocking.value = null;
     notes.value = "";
-    clockedAt.value = "";
+    clockedAt.value = null;
     errorMsg.value = null;
 };
 
@@ -78,7 +79,7 @@ const submitNotes = async () => {
             route("grp.models.clocking-machine.clocking.notes.update", selectedClocking.value.id),
             {
                 notes: notes.value,
-                clocked_at: clockedAt.value || null,
+                clocked_at: clockedAt.value ? format(clockedAt.value, "yyyy-MM-dd'T'HH:mm:ssXXX") : null,
             }
         );
 
@@ -91,7 +92,7 @@ const submitNotes = async () => {
         selectedClocking.value.notes = notes.value;
 
         if (clockedAt.value) {
-            selectedClocking.value.clocked_at = clockedAt.value;
+            selectedClocking.value.clocked_at = clockedAt.value.toISOString();
         }
 
         router.reload({
@@ -158,10 +159,14 @@ const submitNotes = async () => {
                         <label class="block text-sm font-medium text-gray-700">
                             {{ trans("Clocked At") }}
                         </label>
-                        <input
+                        <DatePicker
                             v-model="clockedAt"
-                            type="datetime-local"
-                            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            showIcon
+                            fluid
+                            class="mt-1"
                         />
                     </div>
 
