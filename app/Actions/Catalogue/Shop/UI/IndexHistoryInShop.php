@@ -7,6 +7,7 @@ use App\Actions\SysAdmin\User\Traits\WithFormattedUserHistories;
 use App\Http\Resources\History\HistoryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -43,8 +44,18 @@ class IndexHistoryInShop extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Audit::class);
 
-        $queryBuilder->where('auditable_type', $shop->getMorphClass())
-            ->where('auditable_id', $shop->id);
+        $queryBuilder->where(function ($query) use ($shop) {
+            $query->where('auditable_type', $shop->getMorphClass())
+                ->where('auditable_id', $shop->id);
+
+        });
+
+        if ($shop->address_id) {
+            $queryBuilder->orWhere(function ($query) use ($shop) {
+                $query->where('auditable_type', (new Address)->getMorphClass())
+                    ->where('auditable_id', $shop->address_id);
+            });
+        }
 
         $queryBuilder->orderBy('id', 'DESC');
 
