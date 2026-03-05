@@ -81,11 +81,11 @@ const updateFormValue = (newValue) => {
 const checkValidation = () => {
    /*  loadingValidation.value = true
     try {
-        const response = await axios.get(route('grp.json.master_product.check_org_stock_existence', { masterAsset : route().params['masterProduct']}),{
+        const response = await axios.post(route('grp.json.master_product.check_org_stock_existence', { masterAsset : route().params['masterProduct']}),{
             tradeunit : value.value
         })
 
-        if(response.data == true) emits("submit");
+        if(response) emits("submit");
         else showValidationDialog.value = true
     } catch (error) {
         console.log(error)
