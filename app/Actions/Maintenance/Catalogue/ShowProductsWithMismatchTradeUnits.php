@@ -10,6 +10,7 @@
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
+use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
@@ -24,10 +25,10 @@ class ShowProductsWithMismatchTradeUnits
     protected function handle(MasterShop $masterShop, Command $command): void
     {
         MasterAsset::where('master_shop_id', $masterShop->id)->where('type', MasterAssetTypeEnum::PRODUCT)
+            ->where('status', true)
             ->orderBy('id')
             ->chunkById(1000, function ($masterProducts) use ($command) {
                 foreach ($masterProducts as $masterProduct) {
-
                     $masterAssetTradeUnits = $masterProduct->tradeUnits->pluck('pivot.quantity', 'id');
 
                     $products = $masterProduct->products;
@@ -73,7 +74,7 @@ class ShowProductsWithMismatchTradeUnits
                             echo "====================================================\n\n";
 
                             if ($command->confirm('Do you want to repair this product?', true)) {
-                                $this->repairTradeUnits($masterProduct, $product);
+                                $this->copyMasterToProducts($masterProduct);
                             }
                         }
                     }
@@ -81,17 +82,41 @@ class ShowProductsWithMismatchTradeUnits
             });
     }
 
-    public function repairTradeUnits(MasterAsset $masterProduct, Product $product)
+
+    public function copyProductToMaster(Product $product): void
+    {
+        $tradeUnitData = [];
+        foreach ($product->tradeUnits as $tradeUnit) {
+            $tradeUnitData[] = [
+                'id'       => $tradeUnit->id,
+                'quantity' => data_get($tradeUnit, 'pivot.quantity'),
+            ];
+        }
+
+        UpdateMasterAsset::run($product->masterProduct, [
+            'trade_units' => $tradeUnitData
+        ]);
+
+
+        echo "{$product->masterProduct->slug} | Repaired --  Product -> Master OK\n";
+    }
+
+    public function copyMasterToProducts(MasterAsset $masterProduct): void
     {
         $tradeUnitData = [];
         foreach ($masterProduct->tradeUnits as $tradeUnit) {
-            array_push($tradeUnitData, [
+            $tradeUnitData[] = [
                 'id'       => $tradeUnit->id,
                 'quantity' => data_get($tradeUnit, 'pivot.quantity'),
-            ]);
+            ];
         }
-        SyncProductTradeUnits::run($product, $tradeUnitData);
-        echo "$tradeUnit->id | Repaired -- OK\n";
+
+        foreach ($masterProduct->products as $product) {
+            SyncProductTradeUnits::run($product, $tradeUnitData);
+        }
+
+
+        echo "$masterProduct->slug | Repaired -- OK\n";
     }
 
     public string $commandSignature = 'show:products_with_mismatch_trade_units {masterShop}';
