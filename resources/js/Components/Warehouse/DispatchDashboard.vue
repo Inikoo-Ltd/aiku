@@ -101,7 +101,7 @@ const isWeakValue = (value: number | null | undefined) => {
 </script>
 
 <template>
-    <div class="bg-white px-1 sm:px-2 md:px-4 pb-4">
+    <div class="bg-white px-1 sm:px-2 md:px-4 overflow-x-auto pb-4">
         <div class="flex gap-1 md:gap-3 w-full pt-3">
 
             <!-- ================= DIMENSION COLUMN ================= -->
