@@ -42,8 +42,8 @@ class ShowProductsWithMismatchTradeUnits
                         if ($diffFromMaster->isNotEmpty() || $diffFromProduct->isNotEmpty()) {
                             echo "\n";
                             echo "====================================================\n";
-                            echo "MASTER PRODUCT ID: {$masterProduct->code} | {$masterProduct->slug}\n";
-                            echo "PRODUCT ID:        {$product->code} | {$product->slug}\n";
+                            echo "MASTER PRODUCT ID: $masterProduct->code | $masterProduct->slug $masterProduct->id \n";
+                            echo "PRODUCT ID:        $product->code | $product->slug $product->id \n";
                             echo "----------------------------------------------------\n";
 
                             echo "MASTER UNITS:\n";
@@ -79,7 +79,7 @@ class ShowProductsWithMismatchTradeUnits
                             echo "2. Follow children data [{$product->shop->slug}]\n";
                             echo "3. Do nothing\n\n";
 
-                            switch($command->ask("option: ", '3')){
+                            switch ($command->ask("option: ", '3')) {
                                 case "1":
                                     $this->copyMasterToProducts($masterProduct);
                                     break;
@@ -101,6 +101,7 @@ class ShowProductsWithMismatchTradeUnits
         $tradeUnits = $product->tradeUnits
             ->map(function ($tradeUnit) {
                 $tradeUnit->quantity = $tradeUnit->pivot->quantity;
+
                 return $tradeUnit;
             })->toArray();
 
