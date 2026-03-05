@@ -50,7 +50,7 @@ class CheckMasterAssetTradeUnitOrgStockExistence extends OrgAction
     {
         return [
             'trade_units'   => ['sometimes', 'array', 'nullable'],
-        ]
+        ];
     }
 
     public function asController(MasterAsset $masterProduct, ActionRequest $request): bool
