@@ -9,8 +9,8 @@ return new class () extends Migration {
     {
         Schema::create('holiday_years', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('group_id')->constrained()->nullable()->cascadeOnDelete();
-            $table->foreignId('organisation_id')->constrained()->nullable()->cascadeOnDelete();
+            $table->foreignId('group_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('organisation_id')->nullable()->constrained()->nullOnDelete();
             $table->string('label');
             $table->date('start_date');
             $table->date('end_date');
