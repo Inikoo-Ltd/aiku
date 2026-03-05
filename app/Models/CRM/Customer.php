@@ -271,6 +271,7 @@ class Customer extends Model implements HasMedia, Auditable
         'identity_document_number',
     ];
 
+    // Needs to be present. This is to know which column the search blob would be taken it's value from
     protected array $searchable_columns = [
         'reference',
         'name',

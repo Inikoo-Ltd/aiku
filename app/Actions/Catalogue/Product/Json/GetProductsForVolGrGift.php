@@ -15,6 +15,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Http\Resources\Discounts\ProductsForVolGrGiftResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Traits\HasSearchableText;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -24,6 +25,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class GetProductsForVolGrGift extends OrgAction
 {
     use WithCatalogueAuthorisation;
+    use HasSearchableText;
 
     private Shop $parent;
 
@@ -31,8 +33,17 @@ class GetProductsForVolGrGift extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value);
+                $normalizedValue = $this->normalizeSearchableText($value);
+
+                // Ignore if search token is less than 2 words
+                $searchTokens = array_values(array_filter(
+                    explode(' ', trim($normalizedValue)),
+                    fn ($t) => strlen($t) >= 2
+                ));
+
+                foreach ($searchTokens as $searchToken) {
+                    $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+                }
             });
         });
 

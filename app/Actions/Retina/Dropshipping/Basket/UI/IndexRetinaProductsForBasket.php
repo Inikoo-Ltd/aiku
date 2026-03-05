@@ -12,6 +12,7 @@ use App\Actions\RetinaAction;
 use App\Http\Resources\Dropshipping\SelectProductsForBasketResource;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
+use App\Models\Traits\HasSearchableText;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,12 +20,23 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaProductsForBasket extends RetinaAction
 {
+    use HasSearchableText;
+
     public function handle(Order $order, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value);
+                $normalizedValue = $this->normalizeSearchableText($value);
+
+                // Ignore if search token is less than 2 words
+                $searchTokens = array_values(array_filter(
+                    explode(' ', trim($normalizedValue)),
+                    fn ($t) => strlen($t) >= 2
+                ));
+
+                foreach ($searchTokens as $searchToken) {
+                    $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+                }
             });
         });
 
