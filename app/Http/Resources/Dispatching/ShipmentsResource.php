@@ -51,6 +51,7 @@ class ShipmentsResource extends JsonResource
             'tracking_url'            => $shipment->shipper->tracking_url,
             'combined_label_url'      => $shipment->combined_label_url,
             'label'                   => $shipment->label,
+            'data'                    => $shipment->data,   //  faire_feedback.msg, faire_feedback.status
             'label_type'              => $shipment->label_type,
             'is_printable'            => $isPrintable,
         ];

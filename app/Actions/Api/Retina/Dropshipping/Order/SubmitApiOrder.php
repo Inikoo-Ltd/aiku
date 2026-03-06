@@ -55,7 +55,9 @@ class SubmitApiOrder extends RetinaApiAction
 
     public function jsonResponse(JsonResponse|Order $result): OrderApiResource|\Illuminate\Http\Resources\Json\JsonResource|JsonResponse
     {
-        if($result instanceof JsonResponse) return $result;
+        if ($result instanceof JsonResponse) {
+            return $result;
+        }
 
         return OrderApiResource::make($result)
             ->additional([

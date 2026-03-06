@@ -30,6 +30,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $sales_internal
  * @property string|null $sales_org_currency_internal
  * @property string|null $sales_grp_currency_internal
+ * @property int|null $dropshippers
+ * @property int|null $listings
+ * @property int|null $sold
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAssetTimeSeriesRecord query()

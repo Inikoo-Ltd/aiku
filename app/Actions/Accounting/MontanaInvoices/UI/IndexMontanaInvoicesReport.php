@@ -86,8 +86,7 @@ class IndexMontanaInvoicesReport extends OrgAction
                 'customers.slug as customer_slug',
                 'customers.company_name as customer_company',
                 'customers.contact_name as customer_contact',
-                'customers.identity_document_number as customer_identity_document',
-                'customers.identity_document_type as customer_identity_document_type',
+                'invoices.tax_number',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
                 'addresses.address_line_1',
@@ -121,7 +120,7 @@ class IndexMontanaInvoicesReport extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), sortable: true, searchable: true)
                 ->column(key: 'customer_name', label: __('Customer'), sortable: true, searchable: true)
                 ->column(key: 'customer_contact', label: __('Contact'), sortable: false)
-                ->column(key: 'customer_identity_document', label: __('ID Document'), sortable: false)
+                ->column(key: 'tax_number', label: __('ID Document'), sortable: false)
                 ->column(key: 'type', label: __('Type'))
                 ->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency')
                 ->column(key: 'tax_amount', label: __('Tax'), sortable: true, type: 'currency')

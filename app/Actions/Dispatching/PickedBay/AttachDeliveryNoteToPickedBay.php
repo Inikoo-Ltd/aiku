@@ -10,7 +10,6 @@ namespace App\Actions\Dispatching\PickedBay;
 
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;

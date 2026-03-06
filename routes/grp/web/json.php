@@ -81,6 +81,7 @@ use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
@@ -262,6 +263,7 @@ Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::c
 Route::post('variant/{variant}/products', GetGrpProductOfVariant::class)->name('variant.products');
 
 Route::get('product/{product}/trade-units', GetExternalProductTradeUnits::class)->name('product.external.trade-units-linked');
+Route::post('master-product/{masterAsset}/check-org-stocks-existence', CheckMasterAssetTradeUnitOrgStockExistence::class)->name('master_product.check_org_stock_existence');
 
 Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');

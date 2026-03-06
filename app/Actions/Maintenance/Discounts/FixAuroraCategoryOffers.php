@@ -71,6 +71,9 @@ class FixAuroraCategoryOffers
 
             $auroraDealComponentData = DB::connection('aurora')->table('Deal Component Dimension')->where('Deal Component Deal Key', $auroraDealData->{'Deal Key'})->first();
 
+            if (!$auroraDealComponentData) {
+                continue;
+            }
 
             $discount = $auroraDealComponentData->{'Deal Component Allowance'};
 

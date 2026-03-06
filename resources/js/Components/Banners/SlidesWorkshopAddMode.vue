@@ -21,6 +21,7 @@ const props = defineProps<{
         stock_images : routeType,
         uploaded_images : routeType
     }
+    ratio : string
 }>()
 
 
@@ -169,7 +170,7 @@ const onClickQuickStart = () => {
     <Modal :isOpen="isOpenModalCrop" @onClose="closeModalCrop">
         <div>
             <CropImage 
-                :ratio="data.type == 'square' ? {w: 1, h: 1} : {w: 4, h: 1}" 
+                :ratio="ratio" 
                 :data="addedFiles" 
                 :imagesUploadRoute="route(imagesUploadRoute.name,imagesUploadRoute.parameters)" 
                 :response="uploadImageRespone" 

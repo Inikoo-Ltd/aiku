@@ -180,7 +180,6 @@ onBeforeUnmount(() => {
         <!-- <ConditionIcon v-if="status" :state="status" class="text-xl" /> -->
 
         <Button
-            vxlse
             v-tooltip="useFormatTime(banner.updated_at, {formatTime: 'hms'})"
             @click="saveBanner"
             type="tertiary"
@@ -211,11 +210,12 @@ onBeforeUnmount(() => {
 
     <div v-else>
         <BannerWorkshopComponent
-    v-model="data"
-    :imagesUploadRoute="imagesUploadRoute"
-    :banner="banner"
-    :galleryRoute="galleryRoute"
-/>
+            v-model="data"
+            :imagesUploadRoute="imagesUploadRoute"
+            :banner="banner"
+            :galleryRoute="galleryRoute"
+            :ratio="banner.ratio"
+        />
     </div>
 </section>
 </template>

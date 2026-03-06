@@ -146,13 +146,12 @@ const generateRouteEditBarcode = () => {
 
 
 <template>
-    <div
-        class="grid max-w-2xl grid-cols-1 gap-x-8 gap-y-4 lg:gap-y-16 lg:max-w-7xl lg:grid-cols-2 px-4 lg:px-8 pb-10 pt-4">
+    <div class="grid w-full grid-cols-1 gap-x-8 gap-y-4 lg:gap-y-16 lg:grid-cols-2 px-4 lg:px-8 pb-10 pt-4">
         <div class="col-span-2 w-full pb-4 border-b border-gray-300 overflow-x-auto whitespace-nowrap">
             <Timeline :options="data.data.timeline" :slidesPerView="8" :state="data.data.state" />
         </div>
 
-<!-- <pre>{{ list_stored_items }}</pre> -->
+        <!-- <pre>{{ list_stored_items }}</pre> -->
         <!-- Section: field data -->
         <dl class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 sm:gap-y-8 lg:gap-x-8">
             <div :class="[blueprint.note.value && 'border-t border-gray-200', 'pt-4']">

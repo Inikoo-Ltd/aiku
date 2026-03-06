@@ -123,6 +123,9 @@ onMounted(() => {
 
     irisStyleVariables(theme?.color)
 
+    if(layout?.iris?.is_logged_in){
+        fetchHasInBasket()
+    }
 })
 
 onBeforeUnmount(() => {
@@ -148,6 +151,27 @@ const fetchSidebarOnce = async () => {
         isSidebarFetching.value = false
     }
 }
+
+const fetchHasInBasket = async () => {
+    set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
+    try {
+        const apiUrl = `/json/basket/transaction-data`
+
+        if (!apiUrl) {
+            throw new Error("Invalid model_type or missing route configuration");
+        }
+
+        const response = await axios.get(apiUrl);
+        console.log('plmnbvc',response.data)
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+    } catch (error) {
+        console.error('Failed to load product portfolio', error);
+    } finally {
+        set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
+
+    }
+};
+
 
 
 

@@ -49,6 +49,7 @@ trait HasSearchableText
         // Since we search the query like so
         // $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
         // Otherwise, if searchable_text looking like "ob 195a floralna maslena gorelka zielta", the ob won't be trackable.
-        $this->searchable_text = ' '.trim(preg_replace('/\s+/', ' ', $this->buildSearchableText($values)));;
+        $this->searchable_text = ' '.trim(preg_replace('/\s+/', ' ', $this->buildSearchableText($values)));
+
     }
 }

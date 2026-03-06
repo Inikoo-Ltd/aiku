@@ -113,12 +113,19 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_sub_departments_webpages';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_sub_departments_webpages {--website_id=}';
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->where('sub_type', 'sub_department')->get();
-
+        $websiteId       = $command->option('website_id');
+        $webpagesID = DB::table('webpages')
+                        ->select('id')
+                        ->where('sub_type', 'sub_department')
+                        ->when(
+                            !empty($websiteId),
+                            fn ($q) => $q->where('website_id', $websiteId)
+                        )
+                        ->get();
 
         foreach ($webpagesID as $webpageID) {
             $webpage = Webpage::find($webpageID->id);

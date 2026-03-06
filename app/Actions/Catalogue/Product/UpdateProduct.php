@@ -11,9 +11,9 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Dropshipping\Portfolio\UpdateProductCustomerSalesChannelThresholdQuantity;
@@ -34,16 +34,15 @@ use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
-use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Stubs\Migrations\HasProductInformation;
+use Carbon\Carbon;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Event;
 use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateProduct extends OrgAction
@@ -243,9 +242,14 @@ class UpdateProduct extends OrgAction
                     'current_historic_asset_id' => $historicAsset->id,
                 ]
             );
+
+            UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
         }
 
-        UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
+
+        if ($product->asset) {
+            UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
+        }
 
         if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);
@@ -369,12 +373,12 @@ class UpdateProduct extends OrgAction
         $rules = [
             'code'                      => $codeRule,
             'name'                      => ['sometimes', 'required', 'max:250', 'string'],
-            'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
-            'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0'],
+            'price'                     => ['sometimes', 'required', 'numeric', 'min:0.01'],
+            'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'               => ['sometimes', 'required', 'max:1500'],
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
             'description_extra'         => ['sometimes', 'nullable', 'max:65500'],
-            'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'data'                      => ['sometimes', 'array'],
             'settings'                  => ['sometimes', 'array'],
             'status'                    => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],

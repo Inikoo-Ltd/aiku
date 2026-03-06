@@ -235,7 +235,7 @@ function roundDown2(num: number) {
                             <InputNumber v-model="item.product.price" mode="currency"
                                 :disabled="!item.product.create_in_shop"
                                 :currency="item?.product?.shop_currency ?? currency" :step="0.25"
-                                :showButtons="true" inputClass="w-full text-xs" :min="0"
+                                :showButtons="true" inputClass="w-full text-xs" :min="0.01"
                                 @input="emits('change', modelValue)" />
                             <span v-if="form?.errors[`shop_products.${item.id}.price`]" class="text-xs text-red-500">{{ form?.errors[`shop_products.${item.id}.price`] }}</span>
                         </td>
@@ -269,7 +269,7 @@ function roundDown2(num: number) {
                                     <InputNumber v-model="item.product.rrp" mode="currency"
                                         :disabled="!item.product.create_in_shop"
                                         :currency="item?.product?.shop_currency ?? currency" :step="0.25"
-                                        :showButtons="true" inputClass="w-full text-xs" :min="0"
+                                        :showButtons="true" inputClass="w-full text-xs" :min="0.01"
                                         @input="emits('change', modelValue)" />
 
                                 </div>

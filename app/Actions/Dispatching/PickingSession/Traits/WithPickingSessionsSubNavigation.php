@@ -11,10 +11,12 @@ trait WithPickingSessionsSubNavigation
 {
     public function getSubNavigation(): array
     {
+        $warehouseStats = $this->warehouse->stats;
+
         return [
             [
                 'label'    => __('In Process'),
-                // 'number'   => 0,
+                'number'   => $warehouseStats->number_picking_sessions_state_in_process,
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.in_process',
                     'parameters' => [
@@ -29,7 +31,7 @@ trait WithPickingSessionsSubNavigation
             ],
             [
                 'label'    => __('Picking'),
-                // 'number'   => 0,
+                'number'   => $warehouseStats->number_picking_sessions_state_handling,
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.picking',
                     'parameters' => [
@@ -44,7 +46,7 @@ trait WithPickingSessionsSubNavigation
             ],
             [
                 'label'    => __('Waiting'),
-                // 'number'   => 0,
+                'number'   => $warehouseStats->number_picking_sessions_state_handling_blocked,
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.waiting',
                     'parameters' => [
@@ -59,7 +61,7 @@ trait WithPickingSessionsSubNavigation
             ],
             [
                 'label'    => __('Picked'),
-                // 'number'   => 0,
+                'number'   => $warehouseStats->number_picking_sessions_state_picking_finished,
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.picked',
                     'parameters' => [
@@ -74,7 +76,7 @@ trait WithPickingSessionsSubNavigation
             ],
             [
                 'label'    => __('Packed'),
-                // 'number'   => 0,
+                'number'   => $warehouseStats->number_picking_sessions_state_packing_finished,
                 'route'    => [
                 'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.packed',
                 'parameters' => [
@@ -89,7 +91,7 @@ trait WithPickingSessionsSubNavigation
             ],
             [
                 'label'    => __('All'),
-                // 'number'   => 0,
+                'number'   => $warehouseStats->number_picking_sessions,
                 'align'    => 'right',
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.index',

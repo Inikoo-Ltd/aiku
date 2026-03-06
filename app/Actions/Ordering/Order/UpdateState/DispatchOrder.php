@@ -8,13 +8,11 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
-use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
-use App\Actions\Dropshipping\Tiktok\Order\FulfillOrderToTiktok;
 use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -94,10 +92,6 @@ class DispatchOrder extends OrgAction
                         'shipping_notes' => __('We\'re unable update shipping to customer\'s sales channel due to their sales channel are not found or already deleted.')
                     ]);
                 }
-            }
-
-            if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external && app()->isProduction()) {
-                //UpdateShippingFaireOrder::run($order->shop, $order);
             }
 
             return $order;

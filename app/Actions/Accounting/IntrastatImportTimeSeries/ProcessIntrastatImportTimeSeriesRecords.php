@@ -14,6 +14,7 @@ use App\Enums\Accounting\Intrastat\IntrastatNatureOfTransactionEnum;
 use App\Enums\Accounting\Intrastat\IntrastatTransportModeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Accounting\IntrastatImportTimeSeries;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
@@ -43,10 +44,7 @@ class ProcessIntrastatImportTimeSeriesRecords implements ShouldBeUnique
         }
 
         $euCountryCodes = Country::getCountryCodesInEU();
-        $euCountryIds = Country::whereIn('code', $euCountryCodes)
-            ->where('id', '!=', $organisation->country_id)
-            ->pluck('id')
-            ->toArray();
+        $euCountryIds   = Country::whereIn('code', $euCountryCodes)->where('id', '!=', $organisation->country_id)->pluck('id')->toArray();
 
         if (empty($euCountryIds)) {
             return;
@@ -57,7 +55,6 @@ class ProcessIntrastatImportTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(Organisation $organisation, array $euCountryIds, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        // Query for OrgSupplier deliveries
         $supplierMetrics = DB::table('stock_delivery_items as sdi')
             ->join('stock_deliveries as sd', 'sd.id', '=', 'sdi.stock_delivery_id')
             ->joinSub(
@@ -98,7 +95,6 @@ class ProcessIntrastatImportTimeSeriesRecords implements ShouldBeUnique
                 'stock_products.product_weight'
             );
 
-        // Query for OrgPartner deliveries (from partner organisations)
         $partnerMetrics = DB::table('stock_delivery_items as sdi')
             ->join('stock_deliveries as sd', 'sd.id', '=', 'sdi.stock_delivery_id')
             ->joinSub(
@@ -138,83 +134,44 @@ class ProcessIntrastatImportTimeSeriesRecords implements ShouldBeUnique
                 'stock_products.product_weight'
             );
 
-        // Combine both queries
         $rawMetrics = $supplierMetrics->union($partnerMetrics)->get();
-
         $aggregated = [];
 
         foreach ($rawMetrics as $item) {
             $tariffCodes = array_map('trim', explode(',', $item->tariff_code));
 
             foreach ($tariffCodes as $tariffCode) {
-                if (empty($tariffCode)) {
-                    continue;
-                }
-
-                $tariffCode = str_replace(' ', '', $tariffCode);
+                $tariffCode = str_replace(' ', '', trim($tariffCode));
 
                 if (empty($tariffCode)) {
                     continue;
                 }
 
-                // Determine period based on frequency
-                $checkedAt = Carbon::parse($item->checked_at);
+                ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriodFromDate(Carbon::parse($item->checked_at), $frequency);
 
-                if ($frequency == TimeSeriesFrequencyEnum::YEARLY) {
-                    $periodKey = $checkedAt->year;
-                    $periodFrom = Carbon::create($checkedAt->year, 1, 1)->startOfDay();
-                    $periodTo = Carbon::create($checkedAt->year, 12, 31)->endOfDay();
-                    $period = (string) $checkedAt->year;
-                } elseif ($frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-                    $quarter = $checkedAt->quarter;
-                    $periodKey = $checkedAt->year . '-Q' . $quarter;
-                    $periodFrom = Carbon::create($checkedAt->year, ($quarter - 1) * 3 + 1, 1)->startOfQuarter();
-                    $periodTo = Carbon::create($checkedAt->year, ($quarter - 1) * 3 + 1, 1)->endOfQuarter();
-                    $period = $checkedAt->year . ' Q' . $quarter;
-                } elseif ($frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-                    $periodKey = $checkedAt->format('Y-m');
-                    $periodFrom = Carbon::create($checkedAt->year, $checkedAt->month, 1)->startOfMonth();
-                    $periodTo = Carbon::create($checkedAt->year, $checkedAt->month, 1)->endOfMonth();
-                    $period = $checkedAt->format('Y-m');
-                } elseif ($frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-                    $week = $checkedAt->week;
-                    $periodKey = $checkedAt->year . '-W' . $week;
-                    $periodFrom = Carbon::create($checkedAt->year)->week($week)->startOfWeek();
-                    $periodTo = Carbon::create($checkedAt->year)->week($week)->endOfWeek();
-                    $period = $checkedAt->year . ' W' . str_pad($week, 2, '0', STR_PAD_LEFT);
-                } else { // DAILY
-                    $periodKey = $checkedAt->format('Y-m-d');
-                    $periodFrom = $checkedAt->copy()->startOfDay();
-                    $periodTo = $checkedAt->copy()->endOfDay();
-                    $period = $checkedAt->format('Y-m-d');
-                }
-
-                $key = $periodKey . '|' .
-                       $tariffCode . '|' .
-                       $item->country_id . '|' .
-                       'null';
+                $key = $period . '|' . $tariffCode . '|' . $item->country_id . '|null';
 
                 if (!isset($aggregated[$key])) {
                     $aggregated[$key] = [
-                        'period' => $period,
-                        'period_from' => $periodFrom,
-                        'period_to' => $periodTo,
-                        'tariff_code' => $tariffCode,
-                        'country_id' => $item->country_id,
-                        'tax_category_id' => null,
-                        'quantity' => 0,
-                        'value' => 0,
-                        'weight' => 0,
+                        'period'           => $period,
+                        'period_from'      => $periodFrom,
+                        'period_to'        => $periodTo,
+                        'tariff_code'      => $tariffCode,
+                        'country_id'       => $item->country_id,
+                        'tax_category_id'  => null,
+                        'quantity'         => 0,
+                        'value'            => 0,
+                        'weight'           => 0,
                         'stock_deliveries' => [],
-                        'parts' => [],
+                        'parts'            => [],
                     ];
                 }
 
-                $aggregated[$key]['quantity'] += $item->unit_quantity ?? 0;
-                $aggregated[$key]['value'] += $item->org_net_amount ?? 0;
-                $aggregated[$key]['weight'] += ($item->unit_quantity ?? 0) * ($item->product_weight ?? 0);
+                $aggregated[$key]['quantity']                                  += $item->unit_quantity ?? 0;
+                $aggregated[$key]['value']                                     += $item->org_net_amount ?? 0;
+                $aggregated[$key]['weight']                                    += ($item->unit_quantity ?? 0) * ($item->product_weight ?? 0);
                 $aggregated[$key]['stock_deliveries'][$item->stock_delivery_id] = true;
-                $aggregated[$key]['parts'][$item->product_id] = true;
+                $aggregated[$key]['parts'][$item->product_id]                   = true;
             }
         }
 
@@ -222,14 +179,14 @@ class ProcessIntrastatImportTimeSeriesRecords implements ShouldBeUnique
             $timeSeries = IntrastatImportTimeSeries::firstOrCreate(
                 [
                     'organisation_id' => $organisation->id,
-                    'tariff_code' => $data['tariff_code'],
-                    'country_id' => $data['country_id'],
+                    'tariff_code'     => $data['tariff_code'],
+                    'country_id'      => $data['country_id'],
                     'tax_category_id' => $data['tax_category_id'],
-                    'frequency' => $frequency,
+                    'frequency'       => $frequency,
                 ],
                 [
                     'from' => null,
-                    'to' => null,
+                    'to'   => null,
                 ]
             );
 

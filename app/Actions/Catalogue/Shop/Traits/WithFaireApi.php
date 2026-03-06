@@ -104,7 +104,11 @@ trait WithFaireApi
 
     public function updateShippingFaireOrder(string $orderId, array $attributes): array
     {
-        return $this->buildRequest('PUT', "orders/$orderId/shipments", $attributes);
+        return $this->buildRequest(
+            'POST',
+            "orders/$orderId/shipments",
+            data: $attributes
+        );
     }
 
     public function getPackingSlip(string $orderId): array|string

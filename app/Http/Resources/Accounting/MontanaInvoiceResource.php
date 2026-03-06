@@ -24,8 +24,6 @@ class MontanaInvoiceResource extends JsonResource
                 'slug'                     => $this->customer_slug,
                 'company_name'             => $this->customer_company,
                 'contact_name'             => $this->customer_contact,
-                'identity_document'        => $this->customer_identity_document,
-                'identity_document_type'   => $this->customer_identity_document_type,
             ],
             'address'              => [
                 'line_1'               => $this->address_line_1,
@@ -37,6 +35,7 @@ class MontanaInvoiceResource extends JsonResource
             ],
             'net_amount'           => number_format($this->net_amount, 2, '.', ''),
             'tax_amount'           => number_format($this->tax_amount, 2, '.', ''),
+            'tax_number'           => $this->tax_number,
             'total_amount'         => number_format($this->total_amount, 2, '.', ''),
             'currency'             => [
                 'code'   => $this->currency_code,

@@ -52,8 +52,10 @@ class UpdateApiOrder extends RetinaApiAction
 
     public function jsonResponse(Order|JsonResponse $result)
     {
-        if($result instanceof JsonResponse) return $result;
-        
+        if ($result instanceof JsonResponse) {
+            return $result;
+        }
+
         return OrderApiResource::make($result)
             ->additional([
                 'message' => __('Order updated successfully'),

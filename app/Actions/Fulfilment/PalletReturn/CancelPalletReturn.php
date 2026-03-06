@@ -21,11 +21,12 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Http\Resources\Fulfilment\PalletReturnResource;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class CancelPalletReturn extends OrgAction
@@ -35,25 +36,43 @@ class CancelPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
-        $modelData[PalletReturnStateEnum::CANCEL->value.'_at']    = now();
-        $modelData['state']                                       = PalletReturnStateEnum::CANCEL;
+        $palletReturn = DB::transaction(function () use ($palletReturn, $modelData) {
 
-        $palletReturn->pallets()->update([
-            'status' => PalletStatusEnum::STORING,
-            'state'  => PalletStateEnum::STORING
-        ]);
+            $modelData[PalletReturnStateEnum::CANCEL->value.'_at']    = now();
+            $modelData['state']                                       = PalletReturnStateEnum::CANCEL;
 
-        $palletReturn = $this->update($palletReturn, $modelData);
+            if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
+                $palletReturn->storedItems->each(function ($storedItem) {
+                    $storedItem->increment('total_quantity', (float) $storedItem->pivot->quantity_ordered);
+                });
+            }   
 
-        GroupHydratePalletReturns::dispatch($palletReturn->group);
-        OrganisationHydratePalletReturns::dispatch($palletReturn->organisation);
-        WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
-        FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
-        FulfilmentCustomerHydratePallets::dispatch($palletReturn->fulfilmentCustomer);
-        FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+            $palletReturn->pallets()->update([
+                'status' => PalletStatusEnum::STORING,
+                'state'  => PalletStateEnum::STORING,
+                'pallet_return_id'  => null
+            ]);
+            $palletReturn = $this->update($palletReturn, $modelData);
+            $palletReturn->pallets()->updateExistingPivot($palletReturn->pallets->pluck('id'), [
+                'state'  => PalletReturnStateEnum::CANCEL
+            ]);
+            $palletReturn->refresh();
 
-        SendPalletReturnNotification::run($palletReturn);
-        PalletReturnRecordSearch::dispatch($palletReturn);
+
+            GroupHydratePalletReturns::dispatch($palletReturn->group);
+            OrganisationHydratePalletReturns::dispatch($palletReturn->organisation);
+            WarehouseHydratePalletReturns::dispatch($palletReturn->warehouse);
+            FulfilmentCustomerHydratePalletReturns::dispatch($palletReturn->fulfilmentCustomer);
+            FulfilmentCustomerHydratePallets::dispatch($palletReturn->fulfilmentCustomer);
+            FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
+
+            SendPalletReturnNotification::run($palletReturn);
+            PalletReturnRecordSearch::dispatch($palletReturn);
+
+            return $palletReturn;
+
+        });
+
         return $palletReturn;
     }
 
@@ -71,9 +90,10 @@ class CancelPalletReturn extends OrgAction
         return new PalletReturnResource($palletReturn);
     }
 
-    public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
-        $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
+
+        $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
         return $this->handle($palletReturn, $this->validatedData);
     }

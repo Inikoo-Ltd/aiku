@@ -19,24 +19,24 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
 
     public function toArray($request): array
     {
-        $data = (array) $this->resource;
+        $data = (array)$this->resource;
 
         $routeTargets = [
-            'refunds' => [
+            'refunds'           => [
                 'route_target' => [
-                    'name' => 'grp.org.accounting.invoice-categories.show.refunds.index',
-                    'parameters' => [
-                        'organisation' => $data['organisation_slug'],
+                    'name'            => 'grp.org.accounting.invoice-categories.show.refunds.index',
+                    'parameters'      => [
+                        'organisation'    => $data['organisation_slug'],
                         'invoiceCategory' => $data['slug'],
                     ],
                     'key_date_filter' => 'between[date]',
                 ],
             ],
-            'invoices' => [
+            'invoices'          => [
                 'route_target' => [
-                    'name' => 'grp.org.accounting.invoice-categories.show.invoices.index',
-                    'parameters' => [
-                        'organisation' => $data['organisation_slug'],
+                    'name'            => 'grp.org.accounting.invoice-categories.show.invoices.index',
+                    'parameters'      => [
+                        'organisation'    => $data['organisation_slug'],
                         'invoiceCategory' => $data['slug'],
                     ],
                     'key_date_filter' => 'between[date]',
@@ -44,26 +44,21 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
             ],
             'invoiceCategories' => [
                 'route_target' => [
-                    'name' => 'grp.org.accounting.invoice-categories.show',
+                    'name'       => 'grp.org.accounting.invoice-categories.show',
                     'parameters' => [
-                        'organisation' => $data['organisation_slug'],
+                        'organisation'    => $data['organisation_slug'],
                         'invoiceCategory' => $data['slug'],
                     ],
                 ],
             ],
         ];
 
-        $organisationCode = $data['organisation_code'] ?? 'Unknown';
-        $name = $data['name'] ?? 'Unknown';
-        $isGlobalMarketplaces = (bool) ($data['is_global_marketplaces'] ?? false);
+        $name  = $data['name'] ?? 'Unknown';
+        $label = $data['name'] ?? 'Unknown';
 
-        $label = $organisationCode ? $organisationCode . ': ' . $name : $name;
-        if ($isGlobalMarketplaces) {
-            $label = $name . ' (' . $organisationCode . ')';
-        }
 
         $columns = [
-            'label' => [
+            'label'          => [
                 'formatted_value' => $label,
                 'align'           => 'left',
                 ...$routeTargets['invoiceCategories']
@@ -79,10 +74,10 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
         $columns = array_merge(
             $columns,
             $this->getDashboardColumnsFromArray($data, [
-                'refunds' => $routeTargets['refunds'],
-                'refunds_minified' => $routeTargets['refunds'],
+                'refunds'           => $routeTargets['refunds'],
+                'refunds_minified'  => $routeTargets['refunds'],
                 'refunds_inverse_delta',
-                'invoices' => $routeTargets['invoices'],
+                'invoices'          => $routeTargets['invoices'],
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
                 'sales_org_currency_external',

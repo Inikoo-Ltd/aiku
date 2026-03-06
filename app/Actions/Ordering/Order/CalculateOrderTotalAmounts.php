@@ -37,7 +37,7 @@ class CalculateOrderTotalAmounts extends OrgAction
             $shippingAmount = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         }
 
-        $netAmount = $itemsNet + $shippingAmount + $chargesAmount;
+        $netAmount = $itemsNet + $shippingAmount + $chargesAmount - $order->amount_off;
 
         $taxAmount   = $netAmount * $tax;
         $totalAmount = $netAmount + $taxAmount;

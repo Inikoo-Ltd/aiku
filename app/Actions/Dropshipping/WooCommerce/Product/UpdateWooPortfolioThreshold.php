@@ -51,7 +51,7 @@ class UpdateWooPortfolioThreshold
                     'stock_last_updated_at' => now()
                 ]);
             } else {
-                $rawMessage  = Arr::get($response, '0', 'Unknown error');
+                $rawMessage = Arr::get($response, '0', 'Unknown error');
                 if (is_array($rawMessage)) {
                     $rawMessage = json_encode($rawMessage);
                 }

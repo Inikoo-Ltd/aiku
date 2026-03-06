@@ -32,7 +32,7 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
             match ($portfolio->platform->type) {
                 PlatformTypeEnum::EBAY => StoreNewProductToCurrentEbay::run($portfolio->customerSalesChannel->user, $portfolio),
                 PlatformTypeEnum::WOOCOMMERCE => StoreWooCommerceProduct::run($portfolio->customerSalesChannel->user, $portfolio),
-                PlatformTypeEnum::SHOPIFY => StoreNewProductToCurrentShopify::run($portfolio),
+                PlatformTypeEnum::SHOPIFY => StoreNewProductToCurrentShopify::run($portfolio, $modelData),
                 default => null
             };
         }

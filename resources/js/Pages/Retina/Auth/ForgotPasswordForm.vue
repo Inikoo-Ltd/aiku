@@ -5,10 +5,12 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faArrowLeft, faCheckCircle } from '@fal'
+import { faExclamationTriangle } from "@fas"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ref } from 'vue'
 import InputError from '@/Components/InputError.vue'
-library.add(faArrowLeft, faCheckCircle)
+import Modal from "@/Components/Utils/Modal.vue"
+library.add(faArrowLeft, faCheckCircle, faExclamationTriangle)
 
 
 defineOptions({ layout: RetinaShowIris })
@@ -30,9 +32,46 @@ const form = useForm({
 
 const isResetLinkSent = ref(false)
 const submit = () => {
+    const { isDirty, errors, hasErrors, processing, progress, wasSuccessful, ...data } = form
+
+    if (isUserInputPassed(data)) return
+    
     form.post(route('retina.reset-password.send'), {
         onSuccess: () => isResetLinkSent.value = true
     })
+}
+
+const isModalRemoveScript = ref(false)
+const isModalRemoveHtml = ref(false)
+
+const isUserInputPassed = (dataToCheck: Record<string, any>) => {
+    // Check <script>
+    for (const key in dataToCheck) {
+        const inputValue = dataToCheck[key]
+
+        if (typeof inputValue === 'string' && /<script>/i.test(inputValue)) {
+            isModalRemoveScript.value = true
+            form.errors[key] = "Script tags are not allowed."
+            return true
+        }
+    }
+
+    // Check HTML tags
+    for (const key in dataToCheck) {
+        const inputValue = dataToCheck[key]
+
+        if (
+            typeof inputValue === 'string' &&
+            /<[^>]+>/i.test(inputValue) &&
+            !/<script>/i.test(inputValue)
+        ) {
+            isModalRemoveHtml.value = true
+            form.errors[key] = "HTML tags are not allowed."
+            return true
+        }
+    }
+
+    return false
 }
 </script>
 
@@ -135,7 +174,66 @@ const submit = () => {
           <Link :href="route('retina.login.show', { tiktok_code: route().queryParams?.tiktok_code })" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition duration-150 ease-in-out ml-1">{{ ctrans("Login here") }}</Link>
         </p>
       </div>
+      
     </div>
+    <Modal :isOpen="isModalRemoveScript" @onClose="isModalRemoveScript = false" width="w-full max-w-lg">
+          <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+              <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+                  <div>
+                      <div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100">
+                          <FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-red-500 text-4xl" />
+                      </div>
+
+                      <div class="mt-3 text-center">
+                          <div class="font-semibold text-2xl text-red-600">
+                              {{ ctrans("Don't do that to us") }}!
+                          </div>
+
+                          <div class="mt-2 text-sm opacity-75">
+                              {{ ctrans("Please remove the script before you submit") }}
+                          </div>
+                      </div>
+                  </div>
+
+                  <div class="mt-5">
+                      <Button
+                          @click="isModalRemoveScript = false"
+                          :label="ctrans('Okay')"
+                          full
+                      />
+                  </div>
+              </div>
+          </div>
+      </Modal>
+      <Modal :isOpen="isModalRemoveHtml" width="w-full max-w-2xl" @close="isModalRemoveHtml = false">
+          <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+              <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+                  <div>
+                      <div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100">
+                          <FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-amber-500 text-4xl" />
+                      </div>
+
+                      <div class="mt-3 text-center">
+                          <div class="font-semibold text-2xl text-amber-600">
+                              {{ ctrans("Remove the HTML code") }}!
+                          </div>
+
+                          <div class="mt-2 text-sm opacity-75">
+                              {{ ctrans("It looks like you added HTML code. Please remove it before submitting.") }}
+                          </div>
+                      </div>
+                  </div>
+
+                  <div class="mt-5">
+                      <Button
+                          @click="isModalRemoveHtml = false"
+                          :label="ctrans('Okay')"
+                          full
+                      />
+                  </div>
+              </div>
+          </div>
+      </Modal>
   </div>
   <ValidationErrors />
 </template>

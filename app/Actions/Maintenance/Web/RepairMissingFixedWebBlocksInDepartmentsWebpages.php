@@ -69,13 +69,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             }
         }
 
-
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'sub-departments-1');
-
-        if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'sub-departments-1');
-        }
-
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS->value);
 
@@ -175,11 +168,19 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {--website_id=}';
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->where('sub_type', 'department')->get();
+        $websiteId       = $command->option('website_id');
+        $webpagesID = DB::table('webpages')
+            ->select('id')
+            ->where('sub_type', 'department')
+            ->when(
+                !empty($websiteId),
+                fn ($q) => $q->where('website_id', $websiteId)
+            )
+            ->get();
 
 
         foreach ($webpagesID as $webpageID) {

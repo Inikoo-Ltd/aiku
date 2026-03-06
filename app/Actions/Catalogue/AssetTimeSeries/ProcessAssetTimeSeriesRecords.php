@@ -14,6 +14,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\AssetTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,6 +23,20 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
+
+    protected function fullInvoiceTransactionSelects(): array
+    {
+        return [
+            DB::raw('SUM(net_amount) as sales_external'),
+            DB::raw('SUM(org_net_amount) as sales_org_currency_external'),
+            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
+            DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
+            DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN id END) as invoices'),
+            DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN id END) as refunds'),
+            DB::raw('COUNT(DISTINCT order_id) as orders'),
+            DB::raw('CAST(SUM(CASE WHEN is_refund = false THEN quantity ELSE 0 END) AS INTEGER) as sold'),
+        ];
+    }
 
     public function getJobUniqueId(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -68,6 +83,8 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
+            $metrics = $this->getPortfolioStats($timeSeries->asset_id, $periodFrom, $periodTo);
+
             $timeSeries->records()->updateOrCreate(
                 [
                     'asset_time_series_id' => $timeSeries->id,
@@ -84,6 +101,8 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
+                    'sold'                        => $result->sold,
+                    ...$metrics,
                 ]
             );
 
@@ -98,6 +117,14 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
         foreach ($nonInvoicePeriods as $periodData) {
+            $metrics = $this->getPortfolioStats($timeSeries->asset_id, $periodData['from'], $periodData['to']);
+
+            $hasActivity = collect($metrics)->some(fn ($value) => $value != 0 && $value !== null);
+
+            if (!$hasActivity) {
+                continue;
+            }
+
             $timeSeries->records()->updateOrCreate(
                 [
                     'asset_time_series_id' => $timeSeries->id,
@@ -114,8 +141,27 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => 0,
                     'refunds'                     => 0,
                     'orders'                      => 0,
+                    'sold'                        => 0,
+                    ...$metrics,
                 ]
             );
         }
+    }
+
+    protected function getPortfolioStats(int $assetId, Carbon $periodFrom, Carbon $periodTo): array
+    {
+        $result = DB::table('portfolios')
+            ->selectRaw('COUNT(id) as total_listed, COUNT(DISTINCT customer_id) as total_customers')
+            ->where('item_type', 'Product')
+            ->where('item_id', $assetId)
+            ->where('last_added_at', '>=', $periodFrom)
+            ->where('last_added_at', '<=', $periodTo)
+            ->whereNull('last_removed_at')
+            ->first();
+
+        return [
+            'dropshippers' => $result->total_customers ?? 0,
+            'listings'     => $result->total_listed ?? 0,
+        ];
     }
 }

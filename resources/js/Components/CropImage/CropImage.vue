@@ -28,16 +28,38 @@ const props = withDefaults(defineProps<{
     response?: any
     ratio?: Array<any>,
 }>(), {
-    ratio: [4 / 1]
+    ratio: [4 / 1] 
 })
 
 const emits = defineEmits<{
     (e: 'onFinishCropped', image: any): void
 }>()
 
-const aspectRatios = computed(() => {
+const parseRatio = (value: number | string): number | null => {
+    if (typeof value === "number") return value
+
+    if (typeof value === "string") {
+        if (value.includes("/")) {
+            const [w, h] = value.split("/").map(Number)
+            if (!isNaN(w) && !isNaN(h) && h !== 0) {
+                return w / h
+            }
+        }
+
+        const num = Number(value)
+        if (!isNaN(num)) return num
+    }
+
+    return null
+}
+
+const aspectRatios = computed<number[]>(() => {
     const ratio = props.ratio
-    return Array.isArray(ratio) ? ratio : [ratio]
+    const list = Array.isArray(ratio) ? ratio : [ratio]
+
+    return list
+        .map(parseRatio)
+        .filter((r): r is number => r !== null)
 })
 const selectedRatio = ref(aspectRatios.value[0])
 
@@ -167,6 +189,7 @@ watch(aspectRatios, (newRatios) => {
 </script>
 
 <template>
+    {{ ratio }}
     <!-- Preview cropped image -->
     <div class="mb-6 relative w-full flex justify-center">
         <div class="flex items-center border-2 border-gray-500 shadow-md" :class="[

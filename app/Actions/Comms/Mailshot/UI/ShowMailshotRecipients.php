@@ -10,12 +10,15 @@ use App\Models\Comms\Mailshot;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Helpers\Tag;
 use App\Models\Helpers\Country;
 
 class ShowMailshotRecipients extends OrgAction
 {
+    use WithMarketingAuthorisation;
+
     public function handle(Mailshot $mailshot, ActionRequest $request): Response
     {
         $requestFilters = $request->input('filters', []);
@@ -305,11 +308,6 @@ class ShowMailshotRecipients extends OrgAction
                 'estimatedRecipients' => $estimatedRecipients
             ]
         );
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
     public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): Response

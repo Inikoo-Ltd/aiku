@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from "vue"
-import { useBannerBackgroundColor, useHeadlineText } from "@/Composables/useStockList"
 import { ulid } from "ulid"
 
 import SliderCommonWorkshop from "@/Components/Banners/SlidesWorkshop/SliderCommonWorkshop.vue"
@@ -27,6 +26,7 @@ const props = defineProps<{
     stock_images: routeType
     uploaded_images: routeType
   }
+  ratio : string
 }>()
 
 const emits = defineEmits<{
@@ -180,6 +180,7 @@ const data = computed<BannerWorkshop>({
                 :blueprint="ComponentsBlueprint"
                 :remove="removeComponent"  
                 :uploadRoutes="imagesUploadRoute" 
+                :ratio
             />
         </div>
 
@@ -202,7 +203,7 @@ const data = computed<BannerWorkshop>({
          <Modal :isOpen="isOpenCropModal" @onClose="closeCropModal">
             <div>
                 <CropImage
-                    :ratio="modelValue.type == 'square' ? [1/1] : [ 4/1, null]"
+                    :ratio="ratio"
                     :data="uploadedFilesList"
                     :imagesUploadRoute="route(imagesUploadRoute.name,imagesUploadRoute.parameters)"
                     :response="uploadImageRespone" />

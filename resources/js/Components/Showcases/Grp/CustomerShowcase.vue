@@ -152,13 +152,14 @@ function openRejectedModal(customer: any) {
     isModalUploadOpen.value = true
 }
 
-const links = ref([
-    {
+const links = ref([])
+if (props.data.editWebUser) {
+    links.value.push({
         label: trans("Edit Web User"),
         route_target: props.data.editWebUser,
         icon: 'fal fa-pencil'
-    },
-]);
+    })
+}
 
 
 // Section: Balance increase and decrease
@@ -548,7 +549,7 @@ function tagColorClass(scope?: string) {
                     </div>
                 </div>
 
-                <div class="mt-4 w-64 border border-gray-300 rounded-md p-2">
+                <div v-if="links.length" class="mt-4 w-64 border border-gray-300 rounded-md p-2">
                     <div v-for="(item, index) in links" :key="index" class="p-2">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
                             type="secondary" />

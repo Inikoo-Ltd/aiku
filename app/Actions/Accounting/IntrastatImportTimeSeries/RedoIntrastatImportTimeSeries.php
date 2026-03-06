@@ -8,41 +8,40 @@
 
 namespace App\Actions\Accounting\IntrastatImportTimeSeries;
 
-use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class RedoIntrastatImportTimeSeries
+class RedoIntrastatImportTimeSeries implements ShouldBeUnique
 {
-    use WithHydrateCommand;
+    use AsAction;
 
-    public string $commandSignature = 'intrastat-import:redo_time_series {organisations?*} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    public string $jobQueue = 'default-long';
+    public string $commandSignature = 'intrastat-import:redo_time_series {--a|async : Run asynchronously}';
 
-    public function __construct()
+    public function getJobUniqueId(string $from, string $to): string
     {
-        $this->model = Organisation::class;
+        return "{$from}_{$to}";
     }
 
-    public function handle(Organisation $organisation, array $frequencies, bool $async = true): void
+    public function handle(Organisation $organisation, bool $async = false): void
     {
-        $dates = DB::table('stock_deliveries')
-            ->where('organisation_id', $organisation->id)
-            ->whereNotNull('checked_at')
-            ->selectRaw('MIN(checked_at) as min_date, MAX(checked_at) as max_date')
-            ->first();
+        $dates = DB::table('stock_deliveries')->where('organisation_id', $organisation->id)->whereNotNull('checked_at')->selectRaw('MIN(checked_at) as min_date, MAX(checked_at) as max_date')->first();
 
         if (!$dates || !$dates->min_date || !$dates->max_date) {
             return;
         }
 
         $from = Carbon::parse($dates->min_date)->toDateString();
-        $to = Carbon::parse($dates->max_date)->toDateString();
+        $to   = Carbon::parse($dates->max_date)->toDateString();
 
-        foreach ($frequencies as $frequency) {
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
                 ProcessIntrastatImportTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to)->onQueue('low-priority');
             } else {
@@ -51,57 +50,35 @@ class RedoIntrastatImportTimeSeries
         }
     }
 
+    public function asJob(string $from, string $to): void
+    {
+        Organisation::where('type', OrganisationTypeEnum::SHOP->value)->get()->each(function (Organisation $organisation) use ($from, $to) {
+            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                ProcessIntrastatImportTimeSeriesRecords::run($organisation->id, $frequency, $from, $to);
+            }
+        });
+    }
+
     public function asCommand(Command $command): int
     {
         $command->info($command->getName());
-        $tableName = (new $this->model())->getTable();
-        $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
+
+        $async = (bool) $command->option('async');
+
+        $organisations = Organisation::where('type', OrganisationTypeEnum::SHOP->value)->get();
+
+        $bar = $command->getOutput()->createProgressBar($organisations->count());
         $bar->setFormat('debug');
         $bar->start();
 
-        try {
-            $frequencyOption = $command->option('frequency');
-
-            if ($frequencyOption === 'all') {
-                $frequencies = TimeSeriesFrequencyEnum::cases();
-            } else {
-                $frequencies = [
-                    TimeSeriesFrequencyEnum::from($frequencyOption),
-                ];
+        foreach ($organisations as $organisation) {
+            try {
+                $this->handle($organisation, $async);
+            } catch (Throwable $e) {
+                $command->error($e->getMessage());
             }
-        } catch (Throwable $e) {
-            $command->error($e->getMessage());
-
-            return 1;
+            $bar->advance();
         }
-
-        $query->chunk(
-            1000,
-            function (\Illuminate\Support\Collection $modelsData) use ($bar, $command, $frequencies) {
-                foreach ($modelsData as $modelId) {
-                    if ($this->modelAsHandleArg) {
-                        $model = (new $this->model());
-                        if ($this->hasSoftDeletes($model)) {
-                            $instance = $model->withTrashed()->find($modelId->id);
-                        } else {
-                            $instance = $model->find($modelId->id);
-                        }
-                    } else {
-                        $instance = $modelId->id;
-                    }
-
-                    try {
-                        $this->handle($instance, $frequencies, $command->option('async'));
-                    } catch (Throwable $e) {
-                        $command->error($e->getMessage());
-                    }
-
-                    $bar->advance();
-                }
-            }
-        );
 
         $bar->finish();
         $command->info('');

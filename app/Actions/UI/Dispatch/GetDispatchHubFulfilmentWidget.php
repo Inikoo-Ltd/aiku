@@ -18,6 +18,7 @@ class GetDispatchHubFulfilmentWidget
     public function handle(Warehouse $warehouse): array
     {
         return [
+            'slug'     => 'fulfilment',
             'label'    => __('Fulfilment'),
             'tooltip'  => __('Fulfilment Delivery Notes'),
             'cases'    => [

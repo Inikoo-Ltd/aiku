@@ -32,6 +32,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactions;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsOfVariant;
@@ -45,6 +46,8 @@ use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 use App\Actions\Iris\Json\GetBanner;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
+    Route::get('basket/transaction-data', GetIrisBasketTransactions::class)->name('basket.transaction_data');
+
     Route::get('product-category/{productCategory:id}/portfolio-data', GetIrisPortfoliosInProductCategory::class)->name('product_category.portfolio_data');
     Route::get('product-category/{productCategory:id}/transaction-data', GetIrisBasketTransactionsInProductCategory::class)->name('product_category.transaction_data');
     Route::get('product/{product:id}/transaction-data', GetIrisBasketTransactionsInProduct::class)->name('product.transaction_data')->withoutScopedBindings();

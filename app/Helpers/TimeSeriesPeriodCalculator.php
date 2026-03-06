@@ -12,6 +12,37 @@ use Carbon\Carbon;
 
 class TimeSeriesPeriodCalculator
 {
+    public static function resolvePeriodFromDate(Carbon $date, TimeSeriesFrequencyEnum $frequency): array
+    {
+        return match ($frequency) {
+            TimeSeriesFrequencyEnum::QUARTERLY => [
+                'periodFrom' => $date->copy()->startOfQuarter(),
+                'periodTo'   => $date->copy()->endOfQuarter(),
+                'period'     => $date->year . ' Q' . $date->quarter,
+            ],
+            TimeSeriesFrequencyEnum::MONTHLY => [
+                'periodFrom' => $date->copy()->startOfMonth(),
+                'periodTo'   => $date->copy()->endOfMonth(),
+                'period'     => $date->year . '-' . str_pad($date->month, 2, '0', STR_PAD_LEFT),
+            ],
+            TimeSeriesFrequencyEnum::WEEKLY => [
+                'periodFrom' => $date->copy()->startOfWeek(),
+                'periodTo'   => $date->copy()->endOfWeek(),
+                'period'     => $date->year . ' W' . str_pad($date->isoWeek(), 2, '0', STR_PAD_LEFT),
+            ],
+            TimeSeriesFrequencyEnum::DAILY => [
+                'periodFrom' => $date->copy()->startOfDay(),
+                'periodTo'   => $date->copy()->endOfDay(),
+                'period'     => $date->format('Y-m-d'),
+            ],
+            default => [
+                'periodFrom' => $date->copy()->startOfYear(),
+                'periodTo'   => $date->copy()->endOfYear(),
+                'period'     => (string) $date->year,
+            ],
+        };
+    }
+
     public static function resolvePeriod(object $result, TimeSeriesFrequencyEnum $frequency): array
     {
         return match ($frequency) {

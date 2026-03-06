@@ -76,13 +76,10 @@ const exportExcel = () => {
             </span>
         </template>
 
-        <template #cell(customer_identity_document)="{ item }">
+        <template #cell(tax_number)="{ item }">
             <div class="flex flex-col">
                 <span class="font-mono text-xs text-gray-900">
-                    {{ item.customer.identity_document || '-' }}
-                </span>
-                <span v-if="item.customer.identity_document_type" class="text-xs text-gray-500">
-                    {{ item.customer.identity_document_type }}
+                    {{ item.tax_number || '-' }}
                 </span>
             </div>
         </template>

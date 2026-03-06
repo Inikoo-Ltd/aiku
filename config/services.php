@@ -40,6 +40,12 @@ return [
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),
         'scopes' => env('TIKTOK_SCOPES')
     ],
+    'allegro' => [
+        'base_url'    => env('ALLEGRO_BASE_URL'),
+        'auth_url'    => env('ALLEGRO_AUTH_URL'),
+        'client_id' => env('ALLEGRO_CLIENT_ID'),
+        'client_secret' => env('ALLEGRO_CLIENT_SECRET')
+    ],
     'ebay' => [
         'client_id' => env('EBAY_CLIENT_ID'),
         'client_secret' => env('EBAY_CLIENT_SECRET'),
