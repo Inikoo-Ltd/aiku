@@ -92,7 +92,7 @@ class UpdateProductFamily extends OrgAction
             if ($product->webpage) {
                 UpdateWebpageCanonicalUrl::dispatch($product->webpage, false)->delay(2);
             }
-            if ($product->department_id) {
+            if ($product->department) {
                 BreakProductInWebpagesCache::make()->breakCache($product->department->webpage);
                 DepartmentHydrateProducts::dispatch($product->department);
             }
@@ -106,7 +106,7 @@ class UpdateProductFamily extends OrgAction
             if ($product->webpage) {
                 UpdateWebpageCanonicalUrl::dispatch($product->webpage, false)->delay(2);
             }
-            if ($product->sub_department_id) {
+            if ($product->subDepartment) {
                 BreakProductInWebpagesCache::make()->breakCache($product->subDepartment->webpage);
                 SubDepartmentHydrateProducts::dispatch($product->subDepartment);
             }
