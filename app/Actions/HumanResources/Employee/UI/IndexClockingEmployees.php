@@ -143,9 +143,12 @@ class IndexClockingEmployees extends OrgAction
             $approvedLeaves = $leaveRequests->filter(function (Leave $leave) {
                 return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
             });
+            $pendingLeaves = $leaveRequests->filter(function (Leave $leave) {
+                return $leave->status?->value === LeaveStatusEnum::PENDING->value;
+            });
 
-            $medicalRequestCount = $this->sumLeaveDaysByBucket($submittedLeaves, 'medical');
-            $unpaidRequestCount = $this->sumLeaveDaysByBucket($submittedLeaves, 'unpaid');
+            $medicalRequestCount = $this->sumLeaveDaysByBucket($pendingLeaves, 'medical');
+            $unpaidRequestCount = $this->sumLeaveDaysByBucket($pendingLeaves, 'unpaid');
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $this->employee->id,
