@@ -25,7 +25,7 @@ class GetOfferCampaignOverview
             'stats'   => [
                 [
                     "label" => "Offers",
-                    "icon"  => "fal fal fa-tags",
+                    "icon"  => "fal fa-tags",
                     "value" => $stats->number_offers,
                     "route_target" => "?tab=offers"
                 ],
@@ -33,7 +33,7 @@ class GetOfferCampaignOverview
                     "label" => "Current Offers",
                     "icon"  => "fal fa-badge-percent",
                     "value" => $stats->number_current_offers,
-                    "route_target" => ""
+                    "route_target" => null
                 ],
                 [
                     "label" => "Offers in Process",
@@ -57,13 +57,13 @@ class GetOfferCampaignOverview
                     "label" => "Customers",
                     "icon"  => "fal fa-users",
                     "value" => $stats->number_customers,
-                    "route_target" => ""
+                    "route_target" => null
                 ],
                 [
                     "label" => "Orders",
                     "icon"  => "fal fa-shopping-cart",
                     "value" => $stats->number_orders,
-                    "route_target" => ""
+                    "route_target" => null
                 ],
             ]
         ];
