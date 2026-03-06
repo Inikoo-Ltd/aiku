@@ -5,10 +5,10 @@ namespace App\Actions\HumanResources\Leave\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Leave;
 use App\Models\SysAdmin\Organisation;
+use App\Services\HumanResources\LeaveTypeResolver;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -75,7 +75,7 @@ class DashboardLeave extends OrgAction
             ])
             ->whereDate('start_date', '<=', $visibleEnd->toDateString())
             ->whereDate('end_date', '>=', $visibleStart->toDateString())
-            ->with(['employee']);
+            ->with(['employee', 'leaveType']);
 
         if ($type) {
             $leavesQuery->where('type', $type);
@@ -106,8 +106,8 @@ class DashboardLeave extends OrgAction
                         'employee_name' => $leave->employee_name,
                         'start_date' => $leave->start_date?->format('Y-m-d'),
                         'end_date' => $leave->end_date?->format('Y-m-d'),
-                        'type' => $leave->type?->value,
-                        'type_label' => $leave->type_label,
+                        'type' => $leave->type,
+                        'type_label' => $leave->leaveType?->name ?? $leave->type,
                         'duration_days' => $leave->duration_days,
                         'reason' => $leave->reason,
                         'status' => $leave->status?->value,
@@ -167,13 +167,13 @@ class DashboardLeave extends OrgAction
             'daysInMonth' => $startOfMonth->daysInMonth,
             'monthName' => $startOfMonth->format('F'),
             'employeeOptions' => $employeeOptions,
-            'typeOptions' => collect(LeaveTypeEnum::labels())
+            'typeOptions' => collect(LeaveTypeResolver::optionsForOrganisation($organisation->id, false))
                 ->map(fn (string $label, string $value) => [
                     'value' => $value,
                     'label' => $label,
                 ])
                 ->values(),
-            'type_options' => LeaveTypeEnum::labels(),
+            'type_options' => LeaveTypeResolver::optionsForOrganisation($organisation->id, false),
             'status_options' => LeaveStatusEnum::labels(),
         ]);
     }
