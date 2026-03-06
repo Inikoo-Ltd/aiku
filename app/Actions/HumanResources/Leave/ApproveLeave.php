@@ -8,6 +8,7 @@ use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\SysAdmin\Organisation;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
+use App\Services\HumanResources\LeaveTypeResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -18,6 +19,7 @@ class ApproveLeave extends OrgAction
     public function handle(Leave $leave): Leave
     {
         $balanceYear = $leave->start_date?->year ?? now()->year;
+        $leave->loadMissing(['leaveType', 'employee.organisation']);
 
         $leave->update([
             'status' => LeaveStatusEnum::APPROVED,
@@ -40,18 +42,16 @@ class ApproveLeave extends OrgAction
             ]
         );
 
-        $field = match ($leave->type->value) {
+        $field = match (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type)) {
             'annual' => 'annual_used',
             'medical' => 'medical_used',
             'unpaid' => 'unpaid_used',
-            'halfday-morning', 'halfday-afternoon' => 'unpaid_used',
-            'training', 'leave-of-absence', 'compassionate', 'parental', 'sabbatical' => 'unpaid_used',
             default => null,
         };
 
         if ($field) {
             $isHalfDay = $leave->is_half_day
-                || in_array($leave->type->value, ['halfday-morning', 'halfday-afternoon']);
+                || in_array((string) $leave->type, ['halfday-morning', 'halfday-afternoon'], true);
 
             $deduction = $isHalfDay ? 0.5 : (float) $leave->duration_days;
             $balance->increment($field, $deduction);

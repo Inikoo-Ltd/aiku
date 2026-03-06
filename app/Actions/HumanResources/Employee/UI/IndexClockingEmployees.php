@@ -25,13 +25,15 @@ use App\Models\HumanResources\AttendanceAdjustment;
 use App\Models\HumanResources\OvertimeRequest;
 use Illuminate\Support\Carbon;
 use App\Enums\Helpers\Period\PeriodEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use Closure;
 use App\InertiaTable\InertiaTable;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
+use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Models\HumanResources\OvertimeType;
 use App\Models\HumanResources\Holiday;
+use App\Services\HumanResources\LeaveTypeResolver;
+use Illuminate\Support\Collection;
 
 class IndexClockingEmployees extends OrgAction
 {
@@ -79,6 +81,7 @@ class IndexClockingEmployees extends OrgAction
         $annualRemainingAfterSubmission = null;
         $medicalRequestCount = null;
         $unpaidRequestCount = null;
+        $leaveTypeOptions = [];
         $adjustmentsData = collect();
         $overtimeData = collect();
 
@@ -119,7 +122,7 @@ class IndexClockingEmployees extends OrgAction
 
             $leavesQuery = QueryBuilder::for(Leave::class)
                 ->where('employee_id', $this->employee->id)
-                ->with(['media'])
+                ->with(['media', 'leaveType'])
                 ->allowedSorts(['start_date', 'end_date', 'created_at'])
                 ->defaultSort('-created_at');
 
@@ -127,18 +130,22 @@ class IndexClockingEmployees extends OrgAction
                 ->withQueryString();
 
             $organisation = $this->employee->organisation;
-            $medicalRequestCount = Leave::query()
+            $leaveTypeOptions = LeaveTypeResolver::optionsForOrganisation($organisation->id);
+            $leaveRequests = Leave::query()
                 ->where('employee_id', $this->employee->id)
-                ->where('type', 'medical')
-                ->where('status', '!=', 'rejected')
-                ->get()
-                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
-            $unpaidRequestCount = Leave::query()
-                ->where('employee_id', $this->employee->id)
-                ->where('type', 'unpaid')
-                ->where('status', '!=', 'rejected')
-                ->get()
-                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
+                ->whereYear('start_date', now()->year)
+                ->with('leaveType')
+                ->get();
+
+            $submittedLeaves = $leaveRequests->filter(function (Leave $leave) {
+                return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+            });
+            $approvedLeaves = $leaveRequests->filter(function (Leave $leave) {
+                return $leave->status?->value === LeaveStatusEnum::APPROVED->value;
+            });
+
+            $medicalRequestCount = $this->sumLeaveDaysByBucket($submittedLeaves, 'medical');
+            $unpaidRequestCount = $this->sumLeaveDaysByBucket($submittedLeaves, 'unpaid');
             $balance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $this->employee->id,
@@ -162,37 +169,13 @@ class IndexClockingEmployees extends OrgAction
                 $balance->refresh();
             }
 
-            $annualSubmittedDays = Leave::query()
-                ->where('employee_id', $this->employee->id)
-                ->where('type', 'annual')
-                ->whereYear('start_date', now()->year)
-                ->where('status', '!=', 'rejected')
-                ->get()
-                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
+            $annualSubmittedDays = $this->sumLeaveDaysByBucket($submittedLeaves, 'annual');
 
             $annualRemainingAfterSubmission = max(0, (float) $balance->annual_days - (float) $annualSubmittedDays);
 
-            $approvedAnnualDays = Leave::query()
-                ->where('employee_id', $this->employee->id)
-                ->where('type', 'annual')
-                ->where('status', 'approved')
-                ->whereYear('start_date', now()->year)
-                ->get()
-                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
-            $approvedMedicalDays = Leave::query()
-                ->where('employee_id', $this->employee->id)
-                ->where('type', 'medical')
-                ->where('status', 'approved')
-                ->whereYear('start_date', now()->year)
-                ->get()
-                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
-            $approvedUnpaidDays = Leave::query()
-                ->where('employee_id', $this->employee->id)
-                ->where('type', 'unpaid')
-                ->where('status', 'approved')
-                ->whereYear('start_date', now()->year)
-                ->get()
-                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
+            $approvedAnnualDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'annual');
+            $approvedMedicalDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'medical');
+            $approvedUnpaidDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'unpaid');
 
             if ((float) $balance->annual_used !== $approvedAnnualDays
                 || (float) $balance->medical_used !== $approvedMedicalDays
@@ -296,6 +279,7 @@ class IndexClockingEmployees extends OrgAction
             'annual_remaining_after_submission' => $annualRemainingAfterSubmission,
             'medical_request_count' => $medicalRequestCount,
             'unpaid_request_count' => $unpaidRequestCount,
+            'leave_type_options' => $leaveTypeOptions,
             'adjustments' => $adjustmentsData,
             'overtime' => $overtimeData,
             'organisation' => $this->employee?->organisation?->slug,
@@ -459,6 +443,18 @@ class IndexClockingEmployees extends OrgAction
         };
     }
 
+    protected function sumLeaveDaysByBucket(Collection $leaves, string $bucket): float
+    {
+        return (float) $leaves->sum(function (Leave $leave) use ($bucket) {
+            $leaveBucket = LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type);
+            if ($leaveBucket !== $bucket) {
+                return 0;
+            }
+
+            return $leave->is_half_day ? 0.5 : (float) $leave->duration_days;
+        });
+    }
+
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
         $organisationId = $this->employee?->organisation_id;
@@ -501,7 +497,7 @@ class IndexClockingEmployees extends OrgAction
                     ? fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
-                        'type_options' => LeaveTypeEnum::labels(),
+                        'type_options' => $data['leave_type_options'],
                         'annual_submitted_days' => $data['annual_submitted_days'],
                         'annual_remaining_after_submission' => $data['annual_remaining_after_submission'],
                         'medical_request_count' => $data['medical_request_count'],
@@ -511,7 +507,7 @@ class IndexClockingEmployees extends OrgAction
                     : Inertia::lazy(fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
-                        'type_options' => LeaveTypeEnum::labels(),
+                        'type_options' => $data['leave_type_options'],
                         'annual_submitted_days' => $data['annual_submitted_days'],
                         'annual_remaining_after_submission' => $data['annual_remaining_after_submission'],
                         'medical_request_count' => $data['medical_request_count'],

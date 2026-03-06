@@ -542,7 +542,7 @@ class EmployeeAnalyticsService
                 continue;
             }
 
-            $leaveType = $leave->type->value ?? (string) $leave->type;
+            $leaveType = (string) $leave->type;
 
             $isHalfDay = $leave->is_half_day ?? false
                 || in_array($leaveType, ['halfday-morning', 'halfday-afternoon']);
