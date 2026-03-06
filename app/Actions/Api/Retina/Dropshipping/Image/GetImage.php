@@ -12,7 +12,6 @@ namespace App\Actions\Api\Retina\Dropshipping\Image;
 
 use App\Actions\RetinaApiAction;
 use App\Models\Helpers\Media;
-use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -36,10 +35,10 @@ class GetImage extends RetinaApiAction
 
     public function jsonResponse(Media $image)
     {
-        $relativePath = ltrim(str_replace(storage_path('media'), '', $image->getPath()), '/');
+        $path = $image->getPath();
 
         return response()->file(
-            Storage::disk($image->disk)->path($relativePath),
+            $path,
             [
                 'Content-Type' => $image->mime_type,
                 'Content-Disposition' => 'inline; filename="' . $image->name . '"',

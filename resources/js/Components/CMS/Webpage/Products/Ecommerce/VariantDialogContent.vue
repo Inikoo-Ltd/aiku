@@ -26,12 +26,14 @@ const emits = defineEmits<{
 const layout = inject('layout', retinaLayoutStructure)
 const selectedIndex = ref(0)
 const selectedProduct = ref(props.variants[0])
-const width = ref(window.innerWidth)
+const width = ref(typeof window !== "undefined" ? window.innerWidth : 1024)
 
 const isMobile = computed(() => width.value < 768)
 
 const onResize = () => {
-  width.value = window.innerWidth
+    if(typeof window !== "undefined") {
+        width.value = window.innerWidth
+    }
 }
 
 const selectVariant = (variant: ProductResource, index: number) => {
@@ -51,11 +53,15 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
 
 onMounted(() => {
-  window.addEventListener('resize', onResize)
+    if (typeof window !== "undefined") {
+        window.addEventListener('resize', onResize)   
+    }
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', onResize)
+    if(typeof window !== "undefined") {
+        window.removeEventListener('resize', onResize)
+    }
 })
 
 

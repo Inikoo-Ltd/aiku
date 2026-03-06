@@ -7,10 +7,17 @@
  */
 
 
+use App\Actions\Catalogue\Shop\UI\IndexHistoryInShop;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowShop::class)->name('show');
+
+Route::prefix("changelog")
+    ->name("changelog.")
+    ->group(function () {
+        Route::get('', IndexHistoryInShop::class)->name('index');
+    });
 
 Route::name("comms.")->prefix('comms')
     ->group(__DIR__."/comms.php");

@@ -100,6 +100,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Ordering\SalesChannel;
 use App\Models\HumanResources\WorkSchedule;
+use App\Audits\Transformers\AuditShopTransformer;
 
 /**
  * App\Models\Catalogue\Shop
@@ -319,21 +320,48 @@ class Shop extends Model implements HasMedia, Auditable
         ];
     }
 
-    protected array $auditInclude = [
+    protected $auditInclude = [
         'code',
         'name',
+        'data',
         'email',
         'phone',
         'state',
+        'location',
+        'settings',
+        'address_id',
         'country_id',
         'currency_id',
         'language_id',
         'timezone_id',
         'company_name',
         'contact_name',
-        'identity_document_number'
+        'invoice_footer',
+        'price_rrp_ratio',
+        'cost_price_ratio',
+        'collection_address_id',
+        'identity_document_number',
+        'product_price_currency_exchange'
     ];
 
+    public function transformAudit(array $data): array
+    {
+        $dirty = $this->getDirty();
+
+        if (array_key_exists('data', $dirty)) {
+            $data['old_values']['data'] = $this->getOriginal('data');
+            $data['new_values']['data'] = $this->getAttribute('data');
+        }
+
+        if (array_key_exists('settings', $dirty)) {
+            $data['old_values']['settings'] = $this->getOriginal('settings');
+            $data['new_values']['settings'] = $this->getAttribute('settings');
+        }
+
+        return AuditShopTransformer::transform($data);
+    }
+
+    
     protected static function booted()
     {
         static::creating(function ($shop) {
@@ -341,6 +369,17 @@ class Shop extends Model implements HasMedia, Auditable
                 $shop->external_shop_platform_status = true;
             }
         });
+
+        static::updated(function ($model) {
+            if (isset($model->getChanges()['data'])) {
+
+                $original = $model->getOriginal('data') ?? [];
+                $changes  = json_decode($model->getChanges()['data'], true) ?? [];
+
+                $model->data = array_replace_recursive($original, $changes);
+            }
+        });
+
     }
 
     public function getSlugOptions(): SlugOptions
