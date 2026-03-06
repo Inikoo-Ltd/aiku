@@ -346,6 +346,8 @@ class Shop extends Model implements HasMedia, Auditable
     {
         $dirty = $this->getDirty();
 
+        dd($dirty);
+
         if (array_key_exists('data', $dirty)) {
             $data['old_values']['data'] = $this->getOriginal('data');
             $data['new_values']['data'] = $this->getAttribute('data');
