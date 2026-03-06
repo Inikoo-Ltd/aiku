@@ -12,7 +12,6 @@ namespace App\Actions\Api\Retina\Dropshipping\Image;
 
 use App\Actions\RetinaApiAction;
 use App\Models\Helpers\Media;
-use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -38,8 +37,14 @@ class GetImage extends RetinaApiAction
     {
         $path = $image->getPath();
 
+        if (!file_exists($path)) {
+            return response()->json([
+                'error' => 'Image not found on the server'
+            ], 404);
+        }
+
         return response()->file(
-            Storage::disk($image->disk)->path($relativePath),
+            $path,
             [
                 'Content-Type' => $image->mime_type,
                 'Content-Disposition' => 'inline; filename="' . $image->name . '"',
