@@ -153,18 +153,7 @@ const displayedUnpaidCount = computed(() => {
 	return balanceSummary.value?.unpaid_used ?? 0
 })
 
-const fallbackTypeOptions: Record<string, string> = {
-	annual: trans("Annual Leave"),
-	medical: trans("Medical Leave"),
-	unpaid: trans("Unpaid Leave"),
-	"halfday-morning": trans("Half Day Morning"),
-	"halfday-afternoon": trans("Half Day Afternoon"),
-	training: trans("Training Leave"),
-	"leave-of-absence": trans("Leave of Absence"),
-	compassionate: trans("Compassionate Leave"),
-	parental: trans("Parental Leave"),
-	sabbatical: trans("Sabbatical"),
-}
+const fallbackTypeOptions: Record<string, string> = {}
 
 const fixedHalfDayTypes: Record<string, "Morning" | "Afternoon"> = {
 	"halfday-morning": "Morning",
@@ -191,7 +180,7 @@ const leaveForm = useForm<{
 	reason: string
 	attachments: File[]
 }>({
-	type: "annual",
+	type: "",
 	start_date: "",
 	end_date: "",
 	is_half_day: false,
@@ -199,6 +188,17 @@ const leaveForm = useForm<{
 	reason: "",
 	attachments: [],
 })
+
+watch(
+	typeOptions,
+	(options) => {
+		const hasSelectedType = options.some((option) => option.value === leaveForm.type)
+		if (!hasSelectedType) {
+			leaveForm.type = options[0]?.value ?? ""
+		}
+	},
+	{ immediate: true }
+)
 
 const editForm = useForm<{
 	attachments: File[]
