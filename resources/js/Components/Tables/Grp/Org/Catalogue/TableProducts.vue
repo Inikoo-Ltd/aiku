@@ -603,7 +603,7 @@ const deleteError = (product) => {
         <template #cell(price)="{ item: product }">
             <div v-if="onEditOpen.includes(product.id)">
                 <InputNumber v-model="editingValues[product.id].price" mode="currency" :currency="product.currency_code"
-                    :step="0.25"  showButtons button-layout="horizontal" inputClass="w-full text-xs" 
+                    :step="0.25"  showButtons button-layout="horizontal" inputClass="w-full text-xs"
                     @update:model-value="()=>deleteError(product)" :min="0.01">
                     <template #incrementbuttonicon>
                         <FontAwesomeIcon :icon="faPlus" />
@@ -690,6 +690,10 @@ const deleteError = (product) => {
                     aria-hidden="true"
                 />
             </div>
+        </template>
+
+        <template #cell(sold)="{ item }">
+            <div class="inline" v-tooltip="'Number if outers sold'">{{ item.sold }}</div>
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: product }">

@@ -46,7 +46,7 @@ class CheckMasterAssetTradeUnitOrgStockExistence extends OrgAction
         return $isValid;
     }
 
-    public function rules() 
+    public function rules()
     {
         return [
             'trade_units'   => ['sometimes', 'array', 'nullable'],

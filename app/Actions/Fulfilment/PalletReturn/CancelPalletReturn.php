@@ -45,7 +45,7 @@ class CancelPalletReturn extends OrgAction
                 $palletReturn->storedItems->each(function ($storedItem) {
                     $storedItem->increment('total_quantity', (float) $storedItem->pivot->quantity_ordered);
                 });
-            }   
+            }
 
             $palletReturn->pallets()->update([
                 'status' => PalletStatusEnum::STORING,
