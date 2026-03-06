@@ -30,7 +30,6 @@ class IndexProducts extends OrgAction
     use WithCollectionSubNavigation;
     use WithCatalogueAuthorisation;
 
-
     public function handle(Shop $shop, $prefix = null, $bucket = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -45,13 +44,11 @@ class IndexProducts extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->orderBy('products.state');
-
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
+        // Todo: Remove Intervals
+        // $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
+        // $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
-
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
         $selects = [
@@ -81,7 +78,8 @@ class IndexProducts extends OrgAction
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true,
-                localKey: 'asset_id'
+                localKey: 'asset_id',
+                timeSeriesFilters: ['shop_id' => $shop->id],
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -177,22 +175,17 @@ class IndexProducts extends OrgAction
                             'discontinued' => __('There is no discontinued products'),
                             default => __("No products found"),
                         },
-
-
                         'count' => match ($bucket) {
                             'current' => $shop->stats->number_current_products,
                             'in_process' => $shop->stats->number_products_state_in_process,
                             'discontinued' => $shop->stats->number_products_state_discontinued,
                             default => $shop->stats->number_products,
                         }
-
                     ]
                 );
 
-
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-
-            $table->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
                 ->column(key: 'listings', label: __('Total Listing'), canBeHidden: true, sortable: true, align: 'right')
                 ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'refunds', label: __('Refunds'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
@@ -201,5 +194,4 @@ class IndexProducts extends OrgAction
                 ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
         };
     }
-
 }
