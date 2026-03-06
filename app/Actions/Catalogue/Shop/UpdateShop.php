@@ -24,8 +24,10 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Country;
 use App\Models\Helpers\SerialReference;
 use App\Models\Inventory\Warehouse;
+use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -33,7 +35,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Ordering\SalesChannel;
 
 class UpdateShop extends OrgAction
 {
@@ -62,7 +63,14 @@ class UpdateShop extends OrgAction
         if (Arr::exists($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
             Arr::forget($modelData, 'address');
+
+            $oldAddress = $shop->address?->toArray();
+
             $shop = $this->updateModelAddress($shop, $addressData);
+
+            $newAddress = $shop->address?->fresh()->toArray();
+
+            $this->auditChangeAddress($shop, $oldAddress, $newAddress);
         }
 
         if (Arr::has($modelData, 'image')) {
@@ -418,4 +426,54 @@ class UpdateShop extends OrgAction
         return new ShopResource($shop);
     }
 
+    public function auditChangeAddress(Shop $shop, ?array $oldAddress, ?array $newAddress): void
+    {
+        if (!$oldAddress && !$newAddress) {
+            return;
+        }
+
+        $oldAddress = $oldAddress ?? [];
+        $newAddress = $newAddress ?? [];
+
+        $attribute = [
+            'address_line_1',
+            'address_line_2',
+            'locality',
+            'address_id',
+            'country_id',
+            'postal_code',
+        ];
+
+        foreach($attribute as $item) {
+            $oldValue = Arr::get($oldAddress, $item, 'Empty');
+            $newValue = Arr::get($newAddress, $item, 'Empty');
+
+            if ($oldValue != $newValue) {
+                if(Arr::has($oldAddress, 'country_id')) {
+                    $oldValue = Country::find($oldValue)?->name ?? 'Empty';
+                    $newValue = Country::find($newValue)?->name ?? 'Empty';
+
+                    // TODO change $item ($attribute) -> Country_id to country_name
+                    $oldAddress['country_name'] = $oldValue;
+                    $newAddress['country_name'] = $newValue;
+                    
+                    unset($oldAddress['country_id'], $newAddress['country_id']);
+                }
+                $shop->audits()->create([
+                    'event' => 'updated',
+                    'old_values' => [
+                        $item => $oldValue,
+                    ],
+                    'new_values' => [
+                        $item => $newValue,
+                    ],
+                    'url' => request()->fullUrl(),
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                    'user_type' => get_class(request()->user()),
+                    'user_id' => request()->user()->id,
+                ]);
+            }
+        }
+    }
 }
