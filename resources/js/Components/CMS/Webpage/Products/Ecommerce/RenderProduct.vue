@@ -314,7 +314,6 @@ onBeforeUnmount(() => {
         basketButton
         :isLoadingFavourite
         :isLoadingRemindBackInStock
-        :button
         :bestSeller="bestSeller"
         :screenType
         :ref="(e)=> _render_components = e"

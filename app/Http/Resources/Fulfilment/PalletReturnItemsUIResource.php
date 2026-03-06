@@ -39,7 +39,7 @@ class PalletReturnItemsUIResource extends JsonResource
     public function toArray($request): array
     {
         $pallet = Pallet::find($this->pallet_id);
-        return [
+        $returnFormat = [
             'id'                               => $this->id,
             'pallet_id'                        => $this->pallet_id,
             'slug'                             => $this->slug,
@@ -49,6 +49,7 @@ class PalletReturnItemsUIResource extends JsonResource
             'fulfilment_customer_slug'         => $this->fulfilment_customer_slug,
             'fulfilment_customer_id'           => $this->fulfilment_customer_id,
             'notes'                            => (string)$this->notes,
+            'pivot_state'                      => $this->pivot_state,
             'state'                            => $this->state->value,
             'type_icon'                        => $this->type->typeIcon()[$this->type->value],
             'type'                             => $this->type,
@@ -102,6 +103,17 @@ class PalletReturnItemsUIResource extends JsonResource
                 default => [
                     'name'       => 'grp.models.pallet-return-item.set_as_picked',
                     'parameters' => $this->id
+                ]
+            },
+            'unlinkRoute'           => match (request()->routeIs('retina.*')) {
+                true => [
+                    // TODO add route to unlink from retina if needed
+                    // 'name'       => 'retina.models.pallet-return-item.update',
+                    // 'parameters' => $this->id
+                ],
+                default => [
+                    'name'       => 'grp.models.pallet.pallet.back-to-storing',
+                    'parameters' => $this->pallet_id,
                 ]
             },
             'undoPickingRoute' => [
@@ -188,5 +200,7 @@ class PalletReturnItemsUIResource extends JsonResource
                 ]
             },
         ];
+
+        return $returnFormat;
     }
 }

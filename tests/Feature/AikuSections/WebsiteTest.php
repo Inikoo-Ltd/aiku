@@ -297,7 +297,7 @@ test('store hello banner', function (Website $website) {
     $banner = StoreBanner::make()->action($website, [
         'name' => 'hello',
         'type' => BannerTypeEnum::LANDSCAPE,
-        'ratio'=>'16/9'
+        'ratio' => '16/9'
     ]);
 
     expect($banner)->toBeInstanceOf(Banner::class)

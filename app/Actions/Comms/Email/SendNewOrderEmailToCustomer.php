@@ -109,7 +109,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
         foreach ($productTransactions as $transaction) {
 
             $product = $transaction->model;
-            $productImage = Arr::get($product?->imageSources(200, 200), 'original', '');
+            $productImage = Arr::get($product?->imageSources(200, 200), 'png', '');
             $productLink = $product?->webpage?->getCanonicalUrl();
 
             $productName = $transaction->historicAsset->name ?? 'N/A';

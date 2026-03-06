@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
@@ -53,9 +54,10 @@ class SyncProductTradeUnits
                 }
             }
         }
-
+        CloneProductImagesFromTradeUnits::run($product);
         $product->refresh();
         SyncProductOrgStocksFromTradeUnits::run($product);
+        ProductHydrateAvailableQuantity::run($product);
 
         return $product;
     }

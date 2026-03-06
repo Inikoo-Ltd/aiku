@@ -157,11 +157,6 @@ class MasterShop extends Model implements Auditable
         return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
     }
 
-    public function listMasterProducts(): HasMany
-    {
-        return $this->hasMany(MasterAsset::class);
-    }
-
     public function getMasterProducts(): BelongsToMany
     {
         return $this->belongsToMany(MasterAsset::class, 'master_shop_has_master_products')

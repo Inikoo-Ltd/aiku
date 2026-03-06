@@ -247,6 +247,22 @@ onMounted(() => {
             <div v-else class="text-gray-500 italic">
                 {{ trans("No shipping information available.") }}
             </div>
+
+            <div class="border-t border-gray-200 pt-3 mt-3 text-sm">
+                <div class="flex justify-between py-1">
+                    <span>{{ trans("Company Name") }}:</span>
+                    <span class="font-medium">{{ data.delivery_note?.customer.company_name }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                    <span>{{ trans("Customer") }}:</span>
+                    <span class="font-medium">
+                        {{ data.delivery_note?.customer.contact_name }}
+                        <span v-if="data.delivery_note?.customer.reference" class="text-gray-500">
+                            #{{ data.delivery_note.customer.reference }}
+                        </span>
+                    </span>
+                </div>
+            </div>
         </BoxStatPallet>
 
         <!-- Box 2: Delivery Note -->
