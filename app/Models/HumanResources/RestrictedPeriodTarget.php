@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RestrictedPeriodTarget extends Model
 {
-    protected $table = 'restricted_period_targets';
-
     protected $guarded = [];
 
     public function restrictedPeriod(): BelongsTo
