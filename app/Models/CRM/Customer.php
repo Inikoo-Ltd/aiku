@@ -142,6 +142,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
+ * @property-read Collection<int, AllegroUser> $allegroUsers
  * @property-read Collection<int, AmazonUser> $amazonUsers
  * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
  * @property-read MediaCollection<int, Media> $attachments

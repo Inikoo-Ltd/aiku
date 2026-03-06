@@ -72,7 +72,7 @@ import {
 	faEyeSlash,
 	faCheckDouble,
 	faSmile,
-	faMailBulk,
+	faMailBulk, faEllipsisV,
 	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument,faUnlink, faBoxOpen, faArrowRight as falArrowRight
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
@@ -168,7 +168,7 @@ library.add(
 	faTrashAlt,
 	faCheck,
 	faAsterisk,
-	faMailBulk,
+	faMailBulk, faEllipsisV,
 	faShare, faUndoAlt,faRobot,faMonument, faCubes, fasExclamationTriangle, faDollyFlatbedAlt, faViruses,
 	faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
 	faBadgePercent
