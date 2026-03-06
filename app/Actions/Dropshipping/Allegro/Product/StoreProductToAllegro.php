@@ -45,7 +45,7 @@ class StoreProductToAllegro extends RetinaAction
 
             $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio);
             $allegroProductId = Arr::get($proposedProduct, 'id');
-
+dd($proposedProduct);
             if (!$allegroProductId) {
                 throw new \Exception('Failed to propose product to Allegro: no product ID returned.');
             }

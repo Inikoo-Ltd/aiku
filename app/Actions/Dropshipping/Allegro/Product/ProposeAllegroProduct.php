@@ -8,13 +8,12 @@
 
 namespace App\Actions\Dropshipping\Allegro\Product;
 
-use App\Actions\Dropshipping\Allegro\Image\UploadProductImageToAllegro;
-use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -38,11 +37,14 @@ class ProposeAllegroProduct
 
         $productImages = [];
         foreach ($product->images as $image) {
-            $productImages[] = GetImgProxyUrl::run($image->getImage()->extension('jpg'));
+            $image = UploadProductImageToAllegro::run($allegroUser, $image);
+            $productImages[] = [
+                'url' => Arr::get($image, 'location')
+            ];
         }
 
         $productData = [
-            'name'     => $portfolio->customer_product_name,
+            'name'     => Str::substr($portfolio->customer_product_name, 0, 75),
             'category' => [
                 'id' => $allegroUser->allegro_category_id ?? '257931'
             ],
@@ -54,12 +56,13 @@ class ProposeAllegroProduct
                         'items' => [
                             [
                                 'type' => 'TEXT',
-                                'text' => $portfolio->customer_description ?? ''
+                                'content' => $portfolio->customer_description ?? ''
                             ]
                         ]
                     ]
                 ]
-            ]
+            ],
+            'language' => 'en-US'
         ];
 
         return $allegroUser->proposeProduct($productData);
