@@ -432,7 +432,7 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
 
                     <!-- Section: Trolleys -->
                     <ManageTrolleysInDeliveryNote
-                        v-if="!(['unassigned', 'queued'].includes(deliveryNote.state))"
+                        v-if="!(['unassigned', 'queued'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
                         :deliveryNote
                         :trolleys="boxStats.trolleys"
                         :warehouse
