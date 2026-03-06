@@ -15,8 +15,15 @@ class LeaveTypeResolver
                 $query->where('is_active', true);
             })
             ->orderBy('name')
-            ->get(['code', 'name'])
-            ->mapWithKeys(fn (LeaveType $leaveType) => [$leaveType->code => $leaveType->name])
+            ->get(['code', 'name', 'category'])
+            ->mapWithKeys(function (LeaveType $leaveType) {
+                return [
+                    $leaveType->code => [
+                        'label' => $leaveType->name,
+                        'category' => $leaveType->category
+                    ]
+                ];
+            })
             ->all();
     }
 
@@ -35,9 +42,9 @@ class LeaveTypeResolver
     {
         if ($leaveType?->category) {
             return match ($leaveType->category) {
-                LeaveCategoryEnum::STATUTORY => 'annual',
+                LeaveCategoryEnum::ANNUAL => 'annual',
                 LeaveCategoryEnum::MEDICAL => 'medical',
-                LeaveCategoryEnum::PERSONAL,
+                LeaveCategoryEnum::PERSONAL => 'personal',
                 LeaveCategoryEnum::SPECIAL => 'unpaid',
             };
         }

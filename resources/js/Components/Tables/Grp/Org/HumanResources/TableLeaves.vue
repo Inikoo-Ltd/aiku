@@ -153,7 +153,12 @@ const displayedUnpaidCount = computed(() => {
 	return balanceSummary.value?.unpaid_used ?? 0
 })
 
-const fallbackTypeOptions: Record<string, string> = {}
+const fallbackTypeOptions: Record<string, { label: string, category?: string }> = {
+	'annual': { label: 'Annual Leave', category: 'annual' },
+	'personal': { label: 'Personal Leave', category: 'personal' },
+	'medical': { label: 'Medical Leave', category: 'medical' },
+	'special': { label: 'Special Leave', category: 'special' },
+}
 
 const fixedHalfDayTypes: Record<string, "Morning" | "Afternoon"> = {
 	"halfday-morning": "Morning",
@@ -165,9 +170,10 @@ const typeOptions = computed(() => {
 		? props.typeOptions
 		: fallbackTypeOptions
 
-	return Object.entries(options).map(([value, label]) => ({
+	return Object.entries(options).map(([value, data]) => ({
 		value,
-		label,
+		label: typeof data === 'string' ? data : data.label,
+		category: typeof data === 'string' ? null : data.category,
 	}))
 })
 
@@ -204,6 +210,11 @@ const editForm = useForm<{
 	attachments: File[]
 }>({
 	attachments: [],
+})
+
+const isMedicalType = computed(() => {
+	const selectedOption = typeOptions.value.find(opt => opt.value === leaveForm.type);
+	return selectedOption?.category === 'medical';
 })
 
 const canSubmitLeave = computed(() => {
@@ -443,7 +454,7 @@ const submitEdit = () => {
 				</template>
 
 				<template #cell(actions)="{ item: leave }">
-					<div v-if="leave.status === 'pending' && leave.type === 'medical'">
+					<div v-if="leave.status === 'pending' && typeOptions.find(opt => opt.value === leave.type)?.category === 'medical'">
 						<Button
 							@click="openEditModal(leave)"
 							:label="trans('Edit')"
@@ -471,6 +482,7 @@ const submitEdit = () => {
 					<select
 						v-model="leaveForm.type"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+						<option value="" disabled> {{ trans("Please Select Your Leave Type!") }} </option>
 						<option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
 							{{ opt.label }}
 						</option>
@@ -527,7 +539,7 @@ const submitEdit = () => {
 					</p>
 				</div>
 
-				<div v-if="leaveForm.type === 'medical'">
+				<div v-if="isMedicalType">
 					<label class="block text-sm font-medium text-gray-700">{{
 						trans("Medical Certificate")
 					}}</label>

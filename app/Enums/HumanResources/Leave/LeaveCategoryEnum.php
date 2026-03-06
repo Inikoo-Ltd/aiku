@@ -8,7 +8,7 @@ enum LeaveCategoryEnum: string
 {
     use EnumHelperTrait;
 
-    case Annual = 'Annual';
+    case ANNUAL = 'annual';
     case PERSONAL = 'personal';
     case MEDICAL = 'medical';
     case SPECIAL = 'special';
@@ -26,7 +26,7 @@ enum LeaveCategoryEnum: string
     public static function colors(): array
     {
         return [
-            'statutory' => 'blue',
+            'annual' => 'blue',
             'personal'  => 'green',
             'medical'   => 'yellow',
             'special'   => 'purple',

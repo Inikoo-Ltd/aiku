@@ -28,7 +28,7 @@ trait WithLeaveSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-calendar-minus'],
-                    'tooltip' => __('Leave requests'),
+                    'tooltip' => __('Leave Requests'),
                 ],
             ],
             [
