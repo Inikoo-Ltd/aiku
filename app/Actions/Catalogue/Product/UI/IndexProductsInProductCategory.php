@@ -291,7 +291,9 @@ class IndexProductsInProductCategory extends OrgAction
                 'label' => __('Products')
             ];
 
-            $modelNavigation = GetFamilyNavigation::run($productCategory, $request);
+            //to do ini-1241 
+            //Also, the next and previous navigation are not based on the selected product category.
+            /* $modelNavigation = GetFamilyNavigation::run($productCategory, $request); */
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $title      = $productCategory->name;
             $model      = '';
