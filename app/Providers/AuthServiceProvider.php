@@ -8,6 +8,7 @@
 
 namespace App\Providers;
 
+use App\Extensions\CaseInsensitiveEloquentUserProvider;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\SysAdmin\User;
@@ -25,6 +26,10 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerPolicies();
+
+        Auth::provider('case-insensitive-eloquent', function ($app, array $config) {
+            return new CaseInsensitiveEloquentUserProvider($app['hash'], $config['model']);
+        });
 
         Auth::viaRequest('websockets-auth', function () {
             $id = Session::get('login_web_'.sha1('Illuminate\Auth\SessionGuard'));
