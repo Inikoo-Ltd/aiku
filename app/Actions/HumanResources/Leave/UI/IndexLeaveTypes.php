@@ -95,23 +95,23 @@ class IndexLeaveTypes extends OrgAction
                 'title'       => __('Leave types'),
                 'pageHead'    => [
                     'icon'           => ['fal', 'fa-calendar-minus'],
-                    'title'          => __('Leave types'),
+                    'title'          => __('Leave Type'),
                     'actions'        => [
                         [
                             'type'  => 'button',
                             'style' => 'create',
                             'key'   => 'leave type',
-                            'label' => __('New leave type'),
+                            'label' => __('New Leave Type'),
                             'icon'  => ['fal', 'fa-plus'],
                         ],
                     ],
                     'subNavigation' => $this->getLeaveSubNavigation($request),
                 ],
                 'data'                => $leaveTypes,
-                'categoryOptions'     => collect(LeaveCategoryEnum::labels())
-                    ->map(fn ($label, $value) => [
-                        'value' => $value,
-                        'label' => $label,
+                'categoryOptions'     => collect(LeaveCategoryEnum::cases())
+                    ->map(fn ($case) => [
+                        'value' => $case->value,
+                        'label' => $case->label(),
                     ])
                     ->values(),
             ]
@@ -137,7 +137,7 @@ class IndexLeaveTypes extends OrgAction
                             'name'       => $routeName,
                             'parameters' => $routeParameters,
                         ],
-                        'label' => __('Leave types'),
+                        'label' => __('Leave Type'),
                         'icon'  => 'fal fa-bars',
                     ],
                 ],
