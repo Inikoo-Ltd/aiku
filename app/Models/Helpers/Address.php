@@ -8,14 +8,11 @@
 
 namespace App\Models\Helpers;
 
-use App\Models\Traits\HasHistory;
 use App\Models\Traits\IsAddress;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use OwenIt\Auditing\Contracts\Auditable;
-use App\Audits\Transformers\AuditAddressTransformer;
 
 /**
  * App\Models\Helpers\Address
@@ -51,35 +48,14 @@ use App\Audits\Transformers\AuditAddressTransformer;
  * @method static Builder<static>|Address query()
  * @mixin Eloquent
  */
-class Address extends Model implements Auditable
+class Address extends Model
 {
     use HasFactory;
     use IsAddress;
-    use HasHistory;
-    use \OwenIt\Auditing\Auditable;
 
     protected $table = 'addresses';
 
     protected $guarded = [];
-
-    protected array $auditInclude = [
-        'address_line_1',
-        'address_line_2',
-        'sorting_code',
-        'postal_code',
-        'dependent_locality',
-        'locality',
-        'administrative_area',
-        'country_code',
-        'country_id',
-        'latitude',
-        'longitude',
-    ];
-
-    public function transformAudit(array $data): array
-    {
-        return AuditAddressTransformer::transform($data);
-    }
 
     protected static function booted(): void
     {
