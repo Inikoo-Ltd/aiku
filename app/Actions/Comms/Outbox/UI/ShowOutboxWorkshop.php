@@ -145,10 +145,11 @@ class ShowOutboxWorkshop extends OrgAction
                     'method' => 'post'
                 ],
                 'sendTestRoute' => [
-                    'name' => 'grp.models.shop.outboxes.send.test',
+                    'name' => 'grp.org.shops.show.dashboard.comms.outboxes.send.test.email',
                     'parameters' => [
-                        'shop' => $email->shop_id,
-                        'outbox' => $email->outbox_id
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug,
+                        'outbox' => $email->outbox->slug
                     ],
                     'method' => 'post'
                 ],

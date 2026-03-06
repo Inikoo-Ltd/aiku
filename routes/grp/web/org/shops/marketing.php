@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Comms\Email\SendTestEmail;
 use App\Stubs\UIDummies\EditDummy;
 use App\Stubs\UIDummies\ShowDummy;
 use App\Stubs\UIDummies\CreateDummy;
@@ -43,6 +44,7 @@ Route::name("mailshots.")->prefix('mailshots')
         Route::get('{mailshot}/workshop', ShowMailshotWorkshop::class)->name('workshop');
         Route::get('{mailshot}/edit', EditMailshot::class)->name('edit');
         Route::get('{mailshot}/recipients', ShowMailshotRecipients::class)->name('recipients');
+        Route::post('{mailshot}/send-test', SendTestEmail::class)->name('send-test');
         // Route::put('{mailshot}/recipients', UpdateMailshotRecipients::class)->name('recipients.update');
     });
 Route::name("notifications.")->prefix('notifications')
