@@ -435,8 +435,8 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                         :loading="get(isLoadingUndoPick, [`row${value.rowIndex}`, `id${pallet_stored_item.id}`], false)"
                                         type="tertiary"
                                     />
-                                    <span class="pr-2 mr-1 text-red-500 border-r-2 border-gray-300" v-tooltip="trans('Item quantity on storage left untouched')">
-                                        <FontAwesomeIcon v-if="pallet_stored_item.state == 'cancel'" :icon="faTimes" />
+                                    <span v-if="pallet_stored_item.state == 'cancel'" class="pr-2 mr-1 text-red-500 border-r-2 border-gray-300" v-tooltip="trans('Item quantity on storage left untouched')">
+                                        <FontAwesomeIcon :icon="faTimes" />
                                         {{ trans('Cancelled') }}
                                     </span>
                                     {{ locale.number(pallet_stored_item.picked_quantity) }}/{{ locale.number(pallet_stored_item.selected_quantity) }}
