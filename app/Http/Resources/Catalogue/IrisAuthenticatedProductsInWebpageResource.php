@@ -129,6 +129,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'offers_data'          => $this->offers_data, // this come3 from transaction.offers_data
 
 
+            // Gold Reward price
             'discounted_price'           => round($this->price * $bestPercentageOffOfferFactor, 2),
             'discounted_price_per_unit'  => $pricePerUnitDiscounted,
             'discounted_profit'          => $profitDiscounted,

@@ -37,10 +37,11 @@ class PdfPickingStoredItemReturn
         // Prepare data to pass to the Blade template
         $filename = 'stored-item-return-' . $palletReturn->reference . '-' . Carbon::now()->format('Y-m-d');
         // Generate PDF using Blade template and data array
+
         $pdf = PDF::loadView('pickings.templates.pdf.picking-stored-item', [
             'palletReturn' => $palletReturn,
-            'customer'     => $palletReturn->customer,
-            'deliveryAddress' => $palletReturn->deliveryAddress->formatted_address,
+            'customer'     => $palletReturn->fulfilmentCustomer->customer,
+            'deliveryAddress' => $palletReturn->deliveryAddress?->formatted_address,
             'shop'         => $palletReturn->fulfilment->shop,
             'items'        => $palletReturn->items,
         ]);

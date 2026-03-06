@@ -16,8 +16,8 @@ const props = defineProps<{
       comment?: string
       published_at?: string
     }
+    ratio?: string
   }
-  ratio?: string
 }>()
 
 /*
@@ -27,21 +27,26 @@ const props = defineProps<{
   - "1.77"
   - undefined → fallback based on type
 */
+
+const rawRatio = computed(() => props.data?.ratio)
+
 const ratioStyle = computed(() => {
-  if (!props.ratio) {
+  const ratio = rawRatio.value
+
+  if (!ratio) {
     return props.data.type === 'landscape'
       ? { paddingTop: '20%' }     // 4/1
       : { paddingTop: '100%' }    // 1/1
   }
 
-  if (props.ratio.includes('/')) {
-    const [w, h] = props.ratio.split('/').map(Number)
+  if (ratio.includes('/')) {
+    const [w, h] = ratio.split('/').map(Number)
     if (w > 0 && h > 0) {
       return { paddingTop: `${(h / w) * 100}%` }
     }
   }
 
-  const numeric = Number(props.ratio)
+  const numeric = Number(ratio)
   if (!isNaN(numeric) && numeric > 0) {
     return { paddingTop: `${(1 / numeric) * 100}%` }
   }
@@ -111,19 +116,18 @@ const publishedAgo = computed(() => {
             <SliderSquare
               :data="data.compiled_layout"
               view="desktop"
-              :ratio="ratio"
+              :ratio="rawRatio"
             />
           </div>
 
           <div
             v-else
-            class="w-full max-w-[1200px] mx-auto" 
-            :class="(ratio && ratio != '1/4') && 'h-[500px]'"
+            class="w-full max-w-[1200px] mx-auto"
           >
             <SliderLandscape
               :data="data.compiled_layout"
               view="desktop"
-              :ratio="ratio"
+              :ratio="rawRatio"
             />
           </div>
 

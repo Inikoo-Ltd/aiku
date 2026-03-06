@@ -24,20 +24,6 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
-    protected function fullInvoiceTransactionSelects(): array
-    {
-        return [
-            DB::raw('SUM(net_amount) as sales_external'),
-            DB::raw('SUM(org_net_amount) as sales_org_currency_external'),
-            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
-            DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-            DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN id END) as invoices'),
-            DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN id END) as refunds'),
-            DB::raw('COUNT(DISTINCT order_id) as orders'),
-            DB::raw('CAST(SUM(CASE WHEN is_refund = false THEN quantity ELSE 0 END) AS INTEGER) as sold'),
-        ];
-    }
-
     public function getJobUniqueId(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$assetId:$frequency->value:$from:$to";

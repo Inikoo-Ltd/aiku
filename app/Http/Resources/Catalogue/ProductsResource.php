@@ -90,6 +90,7 @@ class ProductsResource extends JsonResource
             'state'                     => $state,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
+            'discontinued_at'           => $this->discontinued_at,
             'shop_slug'                 => $this->shop_slug,
             'shop_code'                 => $this->shop_code,
             'shop_name'                 => $this->shop_name,
