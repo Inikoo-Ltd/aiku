@@ -363,7 +363,14 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-
+        $this->logSchedule(
+            $schedule->command('hydrate:product_ordered')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateProductOrdered',
+            ),
+            name: 'HydrateProductOrdered',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
 
         $this->logSchedule(
             $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
