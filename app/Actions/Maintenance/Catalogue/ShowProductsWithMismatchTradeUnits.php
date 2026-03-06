@@ -14,6 +14,7 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
@@ -41,24 +42,26 @@ class ShowProductsWithMismatchTradeUnits
                         if ($diffFromMaster->isNotEmpty() || $diffFromProduct->isNotEmpty()) {
                             echo "\n";
                             echo "====================================================\n";
-                            echo "MASTER PRODUCT ID: {$masterProduct->code} | {$masterProduct->slug}\n";
-                            echo "PRODUCT ID:        {$product->code} | {$product->slug}\n";
+                            echo "MASTER PRODUCT ID: $masterProduct->code | $masterProduct->slug | $masterProduct->id \n";
+                            echo "PRODUCT ID:        $product->code | $product->slug | $product->id \n";
                             echo "----------------------------------------------------\n";
 
                             echo "MASTER UNITS:\n";
                             foreach ($masterAssetTradeUnits as $id => $qty) {
-                                echo "  - TradeUnit {$id}: {$qty}\n";
+                                $tradeUnit = TradeUnit::find($id);
+                                echo "  - TradeUnit $tradeUnit->slug: $qty\n";
                             }
 
                             echo "\nPRODUCT UNITS:\n";
                             foreach ($productTradeUnits as $id => $qty) {
-                                echo "  - TradeUnit {$id}: {$qty}\n";
+                                $tradeUnit = TradeUnit::find($id);
+                                echo "  - TradeUnit $tradeUnit->slug: $qty\n";
                             }
 
                             if ($diffFromMaster->isNotEmpty()) {
                                 echo "\nMissing / Different From Master:\n";
                                 foreach ($diffFromMaster as $id => $qty) {
-                                    echo "  - TradeUnit {$id}: Master=$qty, Product=".
+                                    echo "  - TradeUnit $id: Master=$qty, Product=".
                                         ($productTradeUnits[$id] ?? 'N/A')."\n";
                                 }
                             }
@@ -66,15 +69,25 @@ class ShowProductsWithMismatchTradeUnits
                             if ($diffFromProduct->isNotEmpty()) {
                                 echo "\nExtra / Different In Product:\n";
                                 foreach ($diffFromProduct as $id => $qty) {
-                                    echo "  - TradeUnit {$id}: Product={$qty}, Master=".
+                                    echo "  - TradeUnit $id: Product=$qty, Master=".
                                         ($masterAssetTradeUnits[$id] ?? 'N/A')."\n";
                                 }
                             }
 
                             echo "====================================================\n\n";
+                            echo "1. Follow master data (default)\n";
+                            echo "2. Follow children data [{$product->shop->slug}]\n";
+                            echo "3. Do nothing\n\n";
 
-                            if ($command->confirm('Do you want to repair this product?', true)) {
-                                $this->copyMasterToProducts($masterProduct);
+                            switch ($command->ask("option: ", '1')) {
+                                case "1":
+                                    $this->copyMasterToProducts($masterProduct);
+                                    break;
+                                case "2":
+                                    $this->copyProductToMaster($product);
+                                    break;
+                                default:
+                                    break;
                             }
                         }
                     }
@@ -85,18 +98,16 @@ class ShowProductsWithMismatchTradeUnits
 
     public function copyProductToMaster(Product $product): void
     {
-        $tradeUnitData = [];
-        foreach ($product->tradeUnits as $tradeUnit) {
-            $tradeUnitData[] = [
-                'id'       => $tradeUnit->id,
-                'quantity' => data_get($tradeUnit, 'pivot.quantity'),
-            ];
-        }
+        $tradeUnits = $product->tradeUnits
+            ->map(function ($tradeUnit) {
+                $tradeUnit->quantity = $tradeUnit->pivot->quantity;
+
+                return $tradeUnit;
+            })->toArray();
 
         UpdateMasterAsset::run($product->masterProduct, [
-            'trade_units' => $tradeUnitData
+            'trade_units' => $tradeUnits
         ]);
-
 
         echo "{$product->masterProduct->slug} | Repaired --  Product -> Master OK\n";
     }

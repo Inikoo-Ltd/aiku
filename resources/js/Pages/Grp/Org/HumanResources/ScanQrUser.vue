@@ -267,41 +267,42 @@ const submitNotes = async () => {
             <!-- OPEN CAMERA -->
             <Button label="Open Camera" type="primary" @click="startCamera" :disabled="!canOpenCamera" full />
         </div>
+        <Teleport to="body">
+            <div v-if="cameraOn" class="fixed inset-0 bg-black z-[9999] flex flex-col">
 
-        <div v-else class="fixed inset-0 bg-black z-50 flex flex-col">
+                <div class="flex justify-between items-center text-white p-4">
+                    <h3 class="font-semibold">{{ trans("Scan QR Code") }}</h3>
+                    <Button @click="stopCamera" class="!text-white text-2xl" type="tertiary" :icon="faTimes" />
+                </div>
 
-            <div class="flex justify-between items-center text-white p-4">
-                <h3 class="font-semibold">{{ trans("Scan QR Code") }}</h3>
-                <Button @click="stopCamera" class="!text-white text-2xl" type="tertiary" :icon="faTimes" />
-            </div>
+                <div class="flex-1 flex items-center justify-center relative">
+                    <div class="w-full max-w-xl aspect-square relative">
 
-            <div class="flex-1 flex items-center justify-center relative">
-                <div class="w-full max-w-xl aspect-square relative">
+                        <QrcodeStream @detect="onDetect" @error="onStreamError" :paused="loading"
+                            :formats="['qr_code']" />
 
-                    <QrcodeStream @detect="onDetect" @error="onStreamError" :paused="loading" :formats="['qr_code']" />
+                        <!-- TARGET OVERLAY -->
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none ">
+                            <div class="scanner-frame">
 
-                    <!-- TARGET OVERLAY -->
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none ">
-                        <div class="scanner-frame">
+                                <!-- 4 CORNERS -->
+                                <span class="corner tl"></span>
+                                <span class="corner tr"></span>
+                                <span class="corner bl"></span>
+                                <span class="corner br"></span>
 
-                            <!-- 4 CORNERS -->
-                            <span class="corner tl"></span>
-                            <span class="corner tr"></span>
-                            <span class="corner bl"></span>
-                            <span class="corner br"></span>
-
-                            <!-- SCAN LINE -->
-                            <div class="scan-line"></div>
+                                <!-- SCAN LINE -->
+                                <div class="scan-line"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="text-center text-white pb-6 text-sm opacity-70">
-                {{ trans("Align QR code inside the frame") }}
-            </div>
+                <div class="text-center text-white pb-6 text-sm opacity-70">
+                    {{ trans("Align QR code inside the frame") }}
+                </div>
 
-        </div>
-
+            </div>
+        </Teleport>
         <Dialog v-model:visible="showSuccessModal" modal :closable="false" :style="{ width: '420px' }" appendTo="body">
             <div class="text-center space-y-4 py-4">
 

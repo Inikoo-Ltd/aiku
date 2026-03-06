@@ -119,17 +119,17 @@ class IndexPickingSessions extends OrgAction
             $table->withModelOperations($modelOperations);
 
             if (!$this->restriction) {
-                $table->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_delivery_notes', label: __('delivery notes'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_items', label: __('items'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'picking_percentage', label: __('picking'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'packing_percentage', label: __('packing'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'user_name', label: __('user'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'start_at', label: __('start'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'date');
-            $table->column(key: 'end_at', label: __('end'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'date');
+            $table->column(key: 'number_delivery_notes', label: __('Delivery Notes'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'picking_percentage', label: __('Picking'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'packing_percentage', label: __('Packing'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'user_name', label: __('User'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'start_at', label: __('Start'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'date');
+            $table->column(key: 'end_at', label: __('End'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'date');
             $table->withGlobalSearch();
             $table->defaultSort('reference');
         };

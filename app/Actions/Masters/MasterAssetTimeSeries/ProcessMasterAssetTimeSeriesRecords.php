@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -66,6 +67,8 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
+            $metrics = $this->getPortfolioStats($timeSeries->master_asset_id, $periodFrom, $periodTo);
+
             $timeSeries->records()->updateOrCreate(
                 [
                     'master_asset_time_series_id' => $timeSeries->id,
@@ -82,6 +85,8 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
+                    'sold'                        => $result->sold,
+                    ...$metrics,
                 ]
             );
 
@@ -96,6 +101,14 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
         foreach ($nonInvoicePeriods as $periodData) {
+            $metrics = $this->getPortfolioStats($timeSeries->master_asset_id, $periodData['from'], $periodData['to']);
+
+            $hasActivity = collect($metrics)->some(fn ($value) => $value != 0 && $value !== null);
+
+            if (!$hasActivity) {
+                continue;
+            }
+
             $timeSeries->records()->updateOrCreate(
                 [
                     'master_asset_time_series_id' => $timeSeries->id,
@@ -112,8 +125,35 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => 0,
                     'refunds'                     => 0,
                     'orders'                      => 0,
+                    'sold'                        => 0,
+                    ...$metrics,
                 ]
             );
         }
+    }
+
+    protected function getPortfolioStats(int $masterAssetId, Carbon $periodFrom, Carbon $periodTo): array
+    {
+        $assetIds = DB::table('assets')
+            ->where('master_asset_id', $masterAssetId)
+            ->pluck('id');
+
+        if ($assetIds->isEmpty()) {
+            return ['dropshippers' => 0, 'listings' => 0];
+        }
+
+        $result = DB::table('portfolios')
+            ->selectRaw('COUNT(id) as total_listed, COUNT(DISTINCT customer_id) as total_customers')
+            ->where('item_type', 'Product')
+            ->whereIn('item_id', $assetIds)
+            ->where('last_added_at', '>=', $periodFrom)
+            ->where('last_added_at', '<=', $periodTo)
+            ->whereNull('last_removed_at')
+            ->first();
+
+        return [
+            'dropshippers' => $result->total_customers ?? 0,
+            'listings'     => $result->total_listed ?? 0,
+        ];
     }
 }

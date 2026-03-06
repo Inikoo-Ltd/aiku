@@ -23,6 +23,7 @@ trait BuildsInvoiceTransactionTimeSeriesQuery
             DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN id END) as invoices'),
             DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN id END) as refunds'),
             DB::raw('COUNT(DISTINCT order_id) as orders'),
+            DB::raw('CAST(SUM(CASE WHEN is_refund = false THEN quantity ELSE 0 END) AS INTEGER) as sold'),
         ];
     }
 

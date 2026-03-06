@@ -26,7 +26,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    dashboard: object
+    delivery_note: object
     picking_session: object
     intervals: any
     settings: any
@@ -37,7 +37,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
     const components: Component = {
-        dashboard: DispatchDashboard,
+        delivery_note: DispatchDashboard,
         picking_session: DispatchDashboard,
     };
 
@@ -46,7 +46,7 @@ const component = computed(() => {
 
 const tabData = computed(() => {
     if (currentTab.value === 'picking_session') return props.picking_session;
-    return props.dashboard;
+    return props.delivery_note;
 });
 </script>
 

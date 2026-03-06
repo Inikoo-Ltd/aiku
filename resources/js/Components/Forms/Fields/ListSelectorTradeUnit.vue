@@ -78,15 +78,16 @@ const updateFormValue = (newValue) => {
     emits("update:form", target);
 };
 
-const checkValidation = () => {
-   /*  loadingValidation.value = true
+const checkValidation = async () => {
+    loadingValidation.value = true
     try {
         const response = await axios.post(route('grp.json.master_product.check_org_stock_existence', { masterAsset : route().params['masterProduct']}),{
-            tradeunit : value.value
+            trade_units : value.value
         })
 
-        if(response) emits("submit");
+        if(response.data.status) emits("submit");
         else showValidationDialog.value = true
+
     } catch (error) {
         console.log(error)
         notify({
@@ -96,7 +97,7 @@ const checkValidation = () => {
         })
     }finally{
          loadingValidation.value = false
-    } */
+    }
 }
 
 const onSave = () => {
