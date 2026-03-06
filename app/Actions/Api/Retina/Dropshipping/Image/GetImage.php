@@ -37,12 +37,6 @@ class GetImage extends RetinaApiAction
     {
         $path = $image->getPath();
 
-        if (!file_exists($path)) {
-            return response()->json([
-                'error' => 'Image not found on the server'
-            ], 404);
-        }
-
         return response()->file(
             $path,
             [
