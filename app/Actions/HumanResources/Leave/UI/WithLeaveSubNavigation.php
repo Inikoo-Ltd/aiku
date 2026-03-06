@@ -31,6 +31,17 @@ trait WithLeaveSubNavigation
                     'tooltip' => __('Leave requests'),
                 ],
             ],
+            [
+                'label'    => __('Leave Types'),
+                'route'    => [
+                    'name'       => 'grp.org.hr.leaves.types.index',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-layer-group'],
+                    'tooltip' => __('Leave Types'),
+                ],
+            ],
         ];
     }
 }

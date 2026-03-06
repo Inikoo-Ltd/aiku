@@ -4,12 +4,13 @@ namespace App\Actions\HumanResources\Leave;
 
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
+use App\Models\HumanResources\LeaveType;
 use App\Models\HumanResources\Timesheet;
+use App\Services\HumanResources\LeaveTypeResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreLeave extends OrgAction
 {
     private ?Employee $employee = null;
+    private ?LeaveType $selectedLeaveType = null;
 
     private function resolveEmployee(Request $request): ?Employee
     {
@@ -73,6 +75,7 @@ class StoreLeave extends OrgAction
             'employee_id'     => $employee->id,
             'employee_name'   => $employee->contact_name,
             'type'            => $modelData['type'],
+            'leave_type_id'   => $this->selectedLeaveType?->id,
             'start_date'      => $startDate,
             'end_date'        => $endDate,
             'duration_days'   => $durationDays,
@@ -115,11 +118,20 @@ class StoreLeave extends OrgAction
     public function rules(): array
     {
         $this->employee = $this->resolveEmployee(request());
-        $leaveTypes = array_column(LeaveTypeEnum::cases(), 'value');
+
+        $typeRules = ['required', 'string'];
+        if ($this->employee) {
+            $typeRules[] = Rule::exists('leave_types', 'code')
+                ->where(function ($query) {
+                    $query
+                        ->where('organisation_id', $this->employee->organisation_id)
+                        ->where('is_active', true);
+                });
+        }
 
         return [
             'organisation' => ['nullable', 'string'],
-            'type'         => ['required', Rule::in($leaveTypes)],
+            'type'         => $typeRules,
             'start_date'   => ['required', 'date', 'after_or_equal:today'],
             'end_date'     => ['required', 'date', 'after_or_equal:start_date'],
             'is_half_day'  => ['sometimes', 'boolean'],
@@ -142,6 +154,21 @@ class StoreLeave extends OrgAction
 
         $startDate = Carbon::parse(request()->input('start_date'));
         $endDate = Carbon::parse(request()->input('end_date'));
+        $type = request()->input('type');
+
+        $this->selectedLeaveType = null;
+        if ($type) {
+            $this->selectedLeaveType = LeaveTypeResolver::findForOrganisationByCode(
+                organisationId: $this->employee->organisation_id,
+                code: (string) $type,
+                onlyActive: true
+            );
+        }
+
+        if (!$this->selectedLeaveType) {
+            $validator->errors()->add('type', __('The selected leave type is invalid.'));
+            return;
+        }
 
         if ($endDate->lt($startDate)) {
             return;
@@ -216,19 +243,26 @@ class StoreLeave extends OrgAction
             );
         }
 
-        $type = request()->input('type');
         $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
         $requestedDays = $isHalfDay ? 0.5 : (float) $durationDays;
         $balanceYear = $startDate->year;
 
-        if ($type === LeaveTypeEnum::ANNUAL->value) {
+        if (LeaveTypeResolver::bucketFromLeaveType($this->selectedLeaveType, (string) $type) === 'annual') {
             $annualSubmittedDays = Leave::query()
                 ->where('employee_id', $this->employee->id)
-                ->where('type', LeaveTypeEnum::ANNUAL->value)
                 ->whereYear('start_date', $balanceYear)
-                ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
+                ->with('leaveType')
                 ->get()
-                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
+                ->filter(function (Leave $leave) {
+                    return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+                })
+                ->sum(function (Leave $leave) {
+                    if (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type) !== 'annual') {
+                        return 0;
+                    }
+
+                    return $leave->is_half_day ? 0.5 : (float) $leave->duration_days;
+                });
 
             $annualAllowance = (float) $this->employee->organisation->getDefaultAnnualLeaveDays();
             $annualRemaining = max(0, $annualAllowance - (float) $annualSubmittedDays);
@@ -248,6 +282,17 @@ class StoreLeave extends OrgAction
         }
 
         $this->initialisation($this->employee->organisation, $request);
+
+        if (!$this->selectedLeaveType) {
+            $type = (string) ($this->validatedData['type'] ?? '');
+            if ($type !== '') {
+                $this->selectedLeaveType = LeaveTypeResolver::findForOrganisationByCode(
+                    organisationId: $this->employee->organisation_id,
+                    code: $type,
+                    onlyActive: true
+                );
+            }
+        }
 
         return $this->handle($this->employee, $this->validatedData);
     }
