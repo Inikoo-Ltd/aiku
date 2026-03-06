@@ -82,7 +82,7 @@ const updateCustomRatio = () => {
 
 const customRatio = computed(() => {
     if (customWidth.value === null || customHeight.value === null) return 1
-    return customHeight.value / customWidth.value 
+    return customWidth.value / customHeight.value
 })
 </script>
 

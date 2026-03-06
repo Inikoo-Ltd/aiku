@@ -9,7 +9,10 @@
 namespace App\Actions\Fulfilment\PalletReturn\Pdf;
 
 use App\Actions\Traits\WithExportData;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
+use App\Models\Fulfilment\PalletReturnItem;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -39,13 +42,44 @@ class PdfPalletReturn
             'auto_page_break_margin' => 10
         ];
 
-        $pdf = PDF::chunkLoadView('<html-separator/>', 'pickings.templates.pdf.return', [
+        $data = [
             'filename'     => $filename,
             'return'       => $palletReturn,
             'customer'     => $palletReturn->fulfilmentCustomer->customer,
             'shop'         => $palletReturn->fulfilment->shop,
             'organisation' => $palletReturn->organisation,
-        ], [], $config);
+        ];
+
+        $pallets = $palletReturn
+            ->pallets()
+            ->with('location');
+        
+        if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {    
+            $pallets = $pallets
+                ->with('storedItems')
+                ->get()
+                ->keyBy('id');  
+            data_set($data, 'pallets', $pallets);
+        } else {
+            $pallets = $pallets
+                ->get()
+                ->keyBy('id');
+            $storedItems = PalletReturnItem::select([
+                    'pallet_id',
+                    'stored_item_id'
+                ])
+                ->where('pallet_return_id', $palletReturn->id)
+                ->get()
+                ->groupBy('stored_item_id')
+                ->map(
+                    fn ($items) => $items->pluck('pallet_id')->mapWithKeys(fn ($id) => [$id => $pallets->get($id)])
+                )
+                ->toArray();
+
+            data_set($data, 'stored_items_pallet_data', $storedItems);
+        }
+
+        $pdf = PDF::chunkLoadView('<html-separator/>', 'pickings.templates.pdf.return', $data, [], $config);
 
         return response($pdf->stream($filename . '.pdf'), 200)
             ->header('Content-Type', 'application/pdf')

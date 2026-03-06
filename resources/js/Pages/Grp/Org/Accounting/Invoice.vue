@@ -57,6 +57,8 @@ import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
 import Icon from "@/Components/Icon.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
+import ListColumnToDownload from "../../Invoices/ListColumnToDownload.vue"
+import { Icon as IconType } from "@/types/Utils/Icon"
 
 
 library.add(faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird);
@@ -139,7 +141,12 @@ const props = defineProps<{
         label: string
         parameters: any
         tooltip: string
-        icon: Icon
+        icon: IconType
+    }[]
+    download_pdf_column: {
+        label: string
+        value: string
+        is_checked: boolean
     }[]
 }>();
 
@@ -217,6 +224,10 @@ const generateShowOrderRoute = () => {
         order: props.invoice_pay.order_slug
     });
 };
+
+// Section: Download invoice
+const isOpenModalProforma = ref(false)
+const selectedRouteToDownloadInvoice = ref('')
 </script>
 
 
@@ -229,19 +240,35 @@ const generateShowOrderRoute = () => {
         <template #otherBefore>
             <div v-if="props.invoiceExportOptions?.length"
                  class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
-                <a v-for="exportOption in props.invoiceExportOptions"
-                   :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
-                   target="_blank"
-                   class="w-auto mt-0 sm:flex-none text-base"
-                   v-tooltip="exportOption.tooltip"
-                >
-                    <Button
-                        :label="exportOption.label"
-                        :icon="exportOption.icon"
-                        type="tertiary"
-                        class="rounded-none border-transparent"
+                <div v-for="exportOption in props.invoiceExportOptions" class="w-auto mt-0 sm:flex-none text-base flex items-center">
+                    <a
+                       :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
+                       target="_blank"
+                       v-tooltip="exportOption.tooltip"
+                    >
+                        <Button
+                            :label="exportOption.label"
+                            :icon="exportOption.icon"
+                            type="tertiary"
+                            class="rounded-none border-transparent"
+                        />
+                    </a>
+                    <div
+                        v-if="exportOption.key == 'pdf'"
+                        @click="() => (isOpenModalProforma = true, selectedRouteToDownloadInvoice = exportOption.name ? exportOption : null)"
+                        v-tooltip="ctrans('Open data selector for Invoice')"
+                        class="text-xl border-r border-gray-300 h-full flex items-center hover:text-indigo-500 cursor-pointer opacity-40 hover:opacity-100 hover:bg-gray-200"
+                    >
+                        <FontAwesomeIcon icon="fal fa-ellipsis-v" class="" fixed-width aria-hidden="true" />
+                    </div>
+                </div>
+
+                <Modal :isOpen="isOpenModalProforma" @onClose="isOpenModalProforma = false" width="w-full max-w-lg">
+                    <ListColumnToDownload
+                        :routeDownload="selectedRouteToDownloadInvoice"
+                        :listColumn="download_pdf_column"
                     />
-                </a>
+                </Modal>
             </div>
         </template>
 
@@ -307,7 +334,7 @@ const generateShowOrderRoute = () => {
                 </template>
             </div>
         </template>
-        
+
         <template #wrapped-delete-booked-in="{ action }">
             <ModalConfirmationDelete
                 :routeDelete="action.route"
@@ -387,9 +414,9 @@ const generateShowOrderRoute = () => {
                 </dt>
                 <dd class="text-base text-gray-500 flex items-center gap-x-2">
                     <span>{{ invoice.tax_number }}</span>
-                    <FontAwesomeIcon 
+                    <FontAwesomeIcon
                         :icon="getStatusIcon(invoice.tax_number_status, invoice.tax_number_valid)"
-                        :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)" 
+                        :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)"
                         size="xs"
                         v-tooltip="taxNumberStatusText"
                     />

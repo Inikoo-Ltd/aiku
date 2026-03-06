@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Dropshipping;
 
 use App\Actions\Dropshipping\Allegro\Traits\WithAllegroApiServices;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -23,11 +24,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $refresh_token_expire_in
  * @property string $auth_type
  * @property string $state
- * @property string $data
- * @property string $settings
+ * @property array<array-key, mixed> $data
+ * @property array<array-key, mixed> $settings
  * @property string|null $deleted_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Dropshipping\CustomerSalesChannel $customerSalesChannel
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser query()
@@ -36,4 +38,21 @@ use Illuminate\Database\Eloquent\Model;
 class AllegroUser extends Model
 {
     use WithAllegroApiServices;
+
+    protected $guarded = [];
+
+    protected $casts = [
+        'data' => 'array',
+        'settings' => 'array',
+    ];
+
+    protected $attributes = [
+        'data' => '{}',
+        'settings' => '{}',
+    ];
+
+    public function customerSalesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class);
+    }
 }

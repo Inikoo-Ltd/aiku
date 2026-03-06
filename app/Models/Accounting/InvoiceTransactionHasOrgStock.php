@@ -40,9 +40,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Group $group
  * @property-read \App\Models\Accounting\InvoiceTransaction $invoiceTransaction
  * @property-read Order|null $order
- * @property-read Organisation $organisation
  * @property-read OrgStock $orgStock
  * @property-read OrgStockFamily|null $orgStockFamily
+ * @property-read Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasOrgStock newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasOrgStock newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasOrgStock query()

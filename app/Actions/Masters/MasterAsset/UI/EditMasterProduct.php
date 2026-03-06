@@ -301,6 +301,8 @@ class EditMasterProduct extends GrpAction
                         'key_quantity' => 'quantity',
                         'withQuantity' => true,
                         'full'         => true,
+                        'noSaveButton' => true,
+                        'use_confirm'  => true,
                         'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
                         'tabs' => array_values(array_filter([
                             $masterProduct->masterFamily ? [

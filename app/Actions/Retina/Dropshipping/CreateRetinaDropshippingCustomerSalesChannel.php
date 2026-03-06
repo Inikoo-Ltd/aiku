@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Dropshipping;
 
+use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\RetinaAction;
@@ -72,6 +73,9 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                 ],
                 'tiktokAuth'         => [
                     'url'                    => AuthenticateTiktokAccount::make()->redirectToTikTok($customer)
+                ],
+                'allegroAuth'         => [
+                    'url'                    => AuthenticateAllegroAccount::make()->redirectToAllegro($customer)
                 ],
                 'type_shopify'       => [
                     'shopify_url'  => '.'.config('shopify-app.my_shopify_domain'),

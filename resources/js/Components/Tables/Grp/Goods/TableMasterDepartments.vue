@@ -150,6 +150,10 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </Link>
       </template>
 
+        <template #cell(sold)="{ item }">
+            <div class="inline" v-tooltip="'Number if outers sold'">{{ item.sold }}</div>
+        </template>
+
         <template #cell(sales_grp_currency_external)="{ item: department }">
             <span class="tabular-nums">{{ locale.currencyFormat(department.currency_code, department.sales_grp_currency_external) }}</span>
         </template>

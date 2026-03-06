@@ -40,9 +40,9 @@ class PdfPickingPalletReturn
         $pdf = PDF::loadView('pickings.templates.pdf.picking-pallet', [
             'palletReturn'      => $palletReturn,
             'customer'          => $palletReturn->fulfilmentCustomer->customer,
-            'deliveryAddress'   => $palletReturn->deliveryAddress->formatted_address,
+            'deliveryAddress'   => $palletReturn->deliveryAddress?->formatted_address,
             'shop'              => $palletReturn->fulfilment->shop,
-            'items'             => $palletReturn->items,
+            'pallets'           => $palletReturn->pallets()->with('storedItems')->get(),
         ]);
 
         return response($pdf->stream($filename . '.pdf'), 200)

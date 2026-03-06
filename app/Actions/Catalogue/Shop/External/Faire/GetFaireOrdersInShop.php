@@ -114,9 +114,9 @@ class GetFaireOrdersInShop extends OrgAction
                     $orderData['tax_category_id'] = $taxCategory->id;
                 }
 
-                $salesChannel=SalesChannel::where('code','faire')->first();
-                if($salesChannel){
-                    $orderData['sales_channel_id']=$salesChannel->id;
+                $salesChannel = SalesChannel::where('code', 'faire')->first();
+                if ($salesChannel) {
+                    $orderData['sales_channel_id'] = $salesChannel->id;
                 }
 
                 $transactionsData = [];
