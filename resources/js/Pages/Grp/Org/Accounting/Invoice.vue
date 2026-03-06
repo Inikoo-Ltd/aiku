@@ -146,6 +146,7 @@ const props = defineProps<{
     download_pdf_column: {
         label: string
         value: string
+        is_checked: boolean
     }[]
 }>();
 
@@ -333,7 +334,7 @@ const selectedRouteToDownloadInvoice = ref('')
                 </template>
             </div>
         </template>
-        
+
         <template #wrapped-delete-booked-in="{ action }">
             <ModalConfirmationDelete
                 :routeDelete="action.route"
@@ -413,9 +414,9 @@ const selectedRouteToDownloadInvoice = ref('')
                 </dt>
                 <dd class="text-base text-gray-500 flex items-center gap-x-2">
                     <span>{{ invoice.tax_number }}</span>
-                    <FontAwesomeIcon 
+                    <FontAwesomeIcon
                         :icon="getStatusIcon(invoice.tax_number_status, invoice.tax_number_valid)"
-                        :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)" 
+                        :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)"
                         size="xs"
                         v-tooltip="taxNumberStatusText"
                     />
