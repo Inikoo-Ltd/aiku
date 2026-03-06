@@ -36,7 +36,7 @@ class GetImage extends RetinaApiAction
 
     public function jsonResponse(Media $image)
     {
-        $relativePath = ltrim(str_replace(storage_path('media'), '', $image->getPath()), '/');
+        $path = $image->getPath();
 
         return response()->file(
             Storage::disk($image->disk)->path($relativePath),
