@@ -51,6 +51,11 @@ enum LeaveTypeEnum: string
         ];
     }
 
+    public function label(): string
+    {
+        return self::labels()[$this->value] ?? '';
+    }
+
     public function color(): string
     {
         return self::colors()[$this->value] ?? 'gray';

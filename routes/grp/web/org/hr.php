@@ -181,6 +181,10 @@ Route::delete('/overtime-types/{overtimeType}', DeleteOvertimeType::class)->name
 Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('dashboard', \App\Actions\HumanResources\Leave\UI\DashboardLeave::class)->name('dashboard');
     Route::get('', \App\Actions\HumanResources\Leave\UI\IndexLeavesAdmin::class)->name('index');
+    Route::get('types', \App\Actions\HumanResources\Leave\UI\IndexLeaveTypes::class)->name('types.index');
+    Route::post('types/store', \App\Actions\HumanResources\Leave\StoreLeaveType::class)->name('types.store');
+    Route::patch('types/{leaveType}', \App\Actions\HumanResources\Leave\UpdateLeaveType::class)->name('types.update');
+    Route::delete('types/{leaveType}', \App\Actions\HumanResources\Leave\DeleteLeaveType::class)->name('types.delete');
     Route::get('export', [ExportLeaveReport::class, 'asController'])->name('export');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
