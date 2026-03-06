@@ -26,6 +26,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateFaireOrder extends OrgAction
 {
@@ -151,5 +152,14 @@ class UpdateFaireOrder extends OrgAction
         }
 
         return 0;
+    }
+
+    public function asController(Order $order, ActionRequest $request): void
+    {
+        $this->order = $order;
+
+        $this->initialisation($order->organisation, $request);
+
+        $this->handle($order);
     }
 }
