@@ -115,6 +115,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read mixed $translations
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
+ * @property-read LaravelCollection<int, FamilyHasProductOrdered> $familyHasProductOrdered
  * @method static \Database\Factories\Catalogue\ProductCategoryFactory factory($count = null, $state = [])
  * @method static Builder<static>|ProductCategory newModelQuery()
  * @method static Builder<static>|ProductCategory newQuery()
@@ -334,5 +335,10 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->where('trigger_type', class_basename(ProductCategory::class))
             ->where('state', OfferStateEnum::ACTIVE)
             ->where('type', 'Category Quantity Ordered Order Interval');
+    }
+
+    public function familyHasProductOrdered(): HasMany
+    {
+        return $this->hasMany(FamilyHasProductOrdered::class, 'family_id');
     }
 }
