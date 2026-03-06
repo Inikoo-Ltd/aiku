@@ -229,7 +229,7 @@ class RunBasketLowStockEmailBulkRuns
 
             $productImage = Arr::get(
                 $dataProduct->imageSources(200, 200),
-                'original'
+                'png'
             );
 
             $availableQuantity = $dataProduct->available_quantity ?? 0;

@@ -226,7 +226,7 @@ class RunPriceChangeNotificationEmailBulkRuns
 
             $productImage = Arr::get(
                 $dataProduct->imageSources(200, 200),
-                'original'
+                'png'
             );
 
             $currency = $dataProduct->currency;
