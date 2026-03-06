@@ -2,8 +2,10 @@
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { Checkbox } from 'primevue'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { ref } from 'vue'
+import axios from 'axios'
+import { debounce } from 'lodash-es'
 
 const props = defineProps<{
     routeDownload: routeType | null
@@ -15,6 +17,24 @@ const props = defineProps<{
 }>()
 
 const selectedCheck = ref<string[]>(props.listColumn.map(check => check.is_checked ? check.value : null).filter(Boolean) as string[])
+
+const saveSettings = debounce((selected: string[]) => {
+    const columnSettings = props.listColumn.reduce<Record<string, boolean>>((acc, col) => {
+        acc[col.value] = selected.includes(col.value)
+        return acc
+    }, {})
+
+    axios.patch(route('grp.models.profile.update'), {
+        settings: {
+            download_pdf_column: columnSettings,
+        },
+    })
+}, 800)
+
+watch(selectedCheck, (newVal) => {
+    saveSettings(newVal)
+}, { deep: true })
+
 const compSelectedDeck = computed(() => {
     const xxx = selectedCheck.value?.reduce((acc, curr) => {
         acc[curr] = true;
@@ -43,8 +63,8 @@ const compSelectedDeck = computed(() => {
             </div>
         </div>
 
-        <a aclick="() => onClickProforma()" :href="compSelectedDeck" target="_blank" rel="noopener noreferrer"
-            class="w-full block mt-6" xdownload>
+        <a :href="compSelectedDeck" target="_blank" rel="noopener noreferrer"
+            class="w-full block mt-6">
             <Button full :label="ctrans('Download Proforma Invoice')" />
         </a>
     </div>
