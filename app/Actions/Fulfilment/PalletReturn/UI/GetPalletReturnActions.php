@@ -46,7 +46,7 @@ class GetPalletReturnActions
             $actions = [];
         }
 
-        return $this->addPdf($palletReturn, $actions);
+        return $this->addCancelButton($palletReturn, $this->addPdf($palletReturn, $actions));
     }
 
 
@@ -122,7 +122,7 @@ class GetPalletReturnActions
                 'type'    => 'button',
                 'style'   => 'save',
                 'tooltip' => __('confirm'),
-                'label'   => __('confirm'),
+                'label'   => __('Confirm'),
                 'key'     => 'confirm',
                 'route'   => [
                     'method'     => 'post',
@@ -168,7 +168,7 @@ class GetPalletReturnActions
                 'type'    => 'button',
                 'style'   => 'save',
                 'tooltip' => __('Start picking'),
-                'label'   => __('start picking'),
+                'label'   => __('Start picking'),
                 'key'     => 'start picking',
                 'icon'    => 'fal fa-arrow-alt-right',
                 'route'   => [
@@ -196,7 +196,7 @@ class GetPalletReturnActions
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Set all pending as picked'),
-                    'label'   => __('pick all'),
+                    'label'   => __('Pick all'),
                     'key'     => 'pick all',
                     'route'   => [
                         'method'     => 'post',
@@ -324,7 +324,7 @@ class GetPalletReturnActions
                             'type'    => 'button',
                             'style'   => 'secondary',
                             'icon'    => 'fal fa-plus',
-                            'label'   => __('service'),
+                            'label'   => __('Service'),
                             'key'     => 'add-service',
                             'tooltip' => __('Add single service'),
                             'route'   => [
@@ -339,7 +339,7 @@ class GetPalletReturnActions
                             'style'   => 'secondary',
                             'icon'    => 'fal fa-plus',
                             'key'     => 'add-physical-good',
-                            'label'   => __('physical good'),
+                            'label'   => __('Physical good'),
                             'tooltip' => __('Add physical good'),
                             'route'   => [
                                 'name'       => 'grp.models.pallet-return.transaction.store',
@@ -365,7 +365,7 @@ class GetPalletReturnActions
                 [
                     'type'    => 'button',
                     'style'   => 'delete',
-                    'label'   => '',
+                    'label'   => 'Delete',
                     'tooltip' => __('Delete return'),
                     'key'     => 'delete_return',
                     'route'   => [
@@ -377,6 +377,32 @@ class GetPalletReturnActions
                     ]
                 ]
             ], $actions);
+        }
+
+        return $actions;
+    }
+
+    public function addCancelButton(PalletReturn $palletReturn, array $actions): array
+    {
+        if (in_array($palletReturn->state, [
+            PalletReturnStateEnum::CONFIRMED,
+            PalletReturnStateEnum::PICKING,
+            PalletReturnStateEnum::PICKED,
+        ])) {
+            $actions[] = [
+                'type'   => 'button',
+                'style'  => 'delete',
+                'label'  => 'Cancel',
+                'icon'   => 'fal fa-align-slash',
+                'key'    => 'cancel-pallet-return',
+                'route'  => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.pallet-return.cancel',
+                    'parameters' => [
+                        'palletReturn' => $palletReturn->id
+                    ]
+                ]
+            ];
         }
 
         return $actions;

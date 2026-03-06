@@ -12,6 +12,7 @@ use App\Actions\Fulfilment\Pallet\ReturnPalletToCustomer;
 use App\Actions\Fulfilment\Pallet\SetPalletAsDamaged;
 use App\Actions\Fulfilment\Pallet\SetPalletAsLost;
 use App\Actions\Fulfilment\Pallet\SetPalletAsNotReceived;
+use App\Actions\Fulfilment\Pallet\SetPalletBackToStoring;
 use App\Actions\Fulfilment\Pallet\PickWholePalletInPalletReturn;
 use App\Actions\Fulfilment\Pallet\SetPalletRental;
 use App\Actions\Fulfilment\Pallet\UndoBookedInPallet;
@@ -48,6 +49,7 @@ Route::patch('pallet/{pallet:id}/undo-not-received', UndoBookedInPallet::class)-
 
 Route::patch('pallet/{pallet:id}/damaged', SetPalletAsDamaged::class)->name('pallet.damaged');
 Route::patch('pallet/{pallet:id}/lost', SetPalletAsLost::class)->name('pallet.lost');
+Route::patch('pallet/{pallet:id}/back-to-storing', SetPalletBackToStoring::class)->name('pallet.back-to-storing');
 
 Route::patch('pallet/{pallet:id}/set-rental', SetPalletRental::class)->name('pallet.set-rental');
 

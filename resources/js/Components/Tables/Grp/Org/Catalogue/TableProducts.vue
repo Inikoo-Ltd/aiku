@@ -83,6 +83,8 @@ function onEdit(data) {
     }
 }
 
+const errors = ref({})
+
 function onSave(item) {
     const updated = editingValues.value[item.id]
 
@@ -109,8 +111,11 @@ function onSave(item) {
                 delete editingBackup.value[item.id]
                 delete editingValues.value[item.id]
             },
-            onError: (errors) => {
-                console.error("Save failed", errors)
+            onError: (error) => {
+                errors.value = {
+                    ...errors.value,
+                    [item.id]: error
+                }
             },
             onFinish: () => {
                 loRemove(loadingSave.value, (id) => id === item.id)
@@ -445,7 +450,6 @@ const resetTradeUnits = () => {
 }
 
 const saveTradeUnits = (value, product) => {
-    console.log("Saving trade units", value, product)
       router.patch(
         route("grp.models.product.external.update", { product: product.id }),
         {
@@ -479,6 +483,12 @@ const saveTradeUnits = (value, product) => {
     )
 }
 
+const deleteError = (product) => {
+    if (errors.value?.[product.id]) {
+        errors.value[product.id] = null
+    }
+}
+
 </script>
 
 <template>
@@ -501,14 +511,23 @@ const saveTradeUnits = (value, product) => {
         </template>
 
         <template #cell(name)="{ item: product }">
-            <div>
-                <ProductUnitLabel
-                    v-if="product?.units"
-                    :units="product?.units"
-                    :unit="product?.unit"
-                    class="mr-2"
-                />
-                {{ product.name }}
+            <div class="flex items-center">
+                <div v-if="product.org_stocks" class="text-xxs shrink-0">
+                    <LabelSKU
+                        :product="product"
+                        :trade_units="product.org_stocks"
+                    />
+                </div>
+
+                <div class="xtruncate">
+                    <!-- <ProductUnitLabel
+                        v-if="product?.units"
+                        :units="product?.units"
+                        :unit="product?.unit"
+                        class="mr-2"
+                    /> -->
+                    {{ product.name }}
+                </div>
             </div>
         </template>
 
@@ -582,10 +601,10 @@ const saveTradeUnits = (value, product) => {
         </template>
 
         <template #cell(price)="{ item: product }">
-            <div>
-                <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].price"
-                    mode="currency" :currency="product.currency_code" :step="0.25" showButtons
-                    button-layout="horizontal" inputClass="w-full text-xs">
+            <div v-if="onEditOpen.includes(product.id)">
+                <InputNumber v-model="editingValues[product.id].price" mode="currency" :currency="product.currency_code"
+                    :step="0.25"  showButtons button-layout="horizontal" inputClass="w-full text-xs" 
+                    @update:model-value="()=>deleteError(product)" :min="0.01">
                     <template #incrementbuttonicon>
                         <FontAwesomeIcon :icon="faPlus" />
                     </template>
@@ -593,10 +612,11 @@ const saveTradeUnits = (value, product) => {
                         <FontAwesomeIcon :icon="faMinus" />
                     </template>
                 </InputNumber>
-                <span v-else>
-                    {{ locale.currencyFormat(product.currency_code, product.price) }}
-                </span>
+                <p class="text-red-600 text-xxs">{{ errors?.[product.id]?.price }}</p>
             </div>
+            <span v-else>
+                {{ locale.currencyFormat(product.currency_code, product.price) }}
+            </span>
         </template>
 
         <template #cell(rrp_per_unit)="{ item: product }">
@@ -605,10 +625,9 @@ const saveTradeUnits = (value, product) => {
         </template>
 
         <template #cell(rrp)="{ item: product }">
-            <div>
-                <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp"
-                    mode="currency" :currency="product.currency_code" :step="0.25" showButtons
-                    button-layout="horizontal" inputClass="w-full text-xs">
+            <div v-if="onEditOpen.includes(product.id)">
+                <InputNumber v-model="editingValues[product.id].rrp" mode="currency" :currency="product.currency_code" :min="0.01"
+                    :step="0.25" showButtons  button-layout="horizontal" inputClass="w-full text-xs"  @update:model-value="()=>deleteError(product)">
                     <template #incrementbuttonicon>
                         <FontAwesomeIcon :icon="faPlus" />
                     </template>
@@ -616,8 +635,9 @@ const saveTradeUnits = (value, product) => {
                         <FontAwesomeIcon :icon="faMinus" />
                     </template>
                 </InputNumber>
-                <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
+                <p class="text-red-600 text-xxs">{{ errors?.[product.id]?.rrp }}</p>
             </div>
+            <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
         </template>
 
         <template #cell(margin)="{ item }">

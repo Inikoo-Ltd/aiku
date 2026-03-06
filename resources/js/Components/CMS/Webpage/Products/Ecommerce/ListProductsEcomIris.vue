@@ -279,6 +279,13 @@ onMounted(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const sortParam = urlParams.get("order_by")
 
+    layout.buttonBasket = {
+        buttonStyle: getStyles(props.fieldValue?.button?.properties, props.screenType, false),
+        buttonStyleLogin : getStyles(props.fieldValue?.buttonLogin?.properties, props.screenType),
+        buttonStyleHover : getStyles(props.fieldValue?.buttonHover?.properties, props.screenType, false),
+        button: props.fieldValue?.button
+    }
+
     if (sortParam) {
         orderBy.value = sortParam
         const key = sortParam.replace("-", "")
@@ -289,13 +296,13 @@ onMounted(() => {
     if (layout?.iris?.is_logged_in) {
         firstLoad.value = 1
         fetchProducts(); // break chace from product dont deleted
-        fetchHasInBasket();
+        /* fetchHasInBasket(); */
     } else {
         setTimeout(() => {   // Needed, to handle, after login phase
             if (layout?.iris?.is_logged_in) {
                 firstLoad.value = 1
                 fetchProducts()
-                fetchHasInBasket()
+                /* fetchHasInBasket() */
             }
         }, 400)
     }
@@ -340,23 +347,24 @@ const toggleSort = (key: string) => {
     handleSearch()
 }
 
+//do not delete the comment please it will be use it
 
 // const productInBasket = ref({
 //     isLoading: false,
 //     list: []
 // })
 
-const getRouteForProductInBasket = () => {
+/* const getRouteForProductInBasket = () => {
     const { model_type, model_id } = props.fieldValue;
     if (model_type == "ProductCategory") {
         return `/json/product-category/${model_id}/transaction-data`
     } else if (model_type == "Collection") {
         return `/json/collection/${model_id}/transaction-data`
     }
-};
+}; */
 
 // Method: fetch each quantity_ordered of the products
-const fetchHasInBasket = async () => {
+/* const fetchHasInBasket = async () => {
     // productInBasket.value.isLoading = true;
     set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
     try {
@@ -380,7 +388,7 @@ const fetchHasInBasket = async () => {
         set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
 
     }
-};
+}; */
 
 
 
@@ -541,10 +549,10 @@ watch(
                                 :key="index" 
                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" 
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])" 
-                                :bestSeller="fieldValue.bestseller" 
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
                                 :button="fieldValue?.button"
+                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])" 
+                                :bestSeller="fieldValue.bestseller" 
                                 :screenType
                             />
                         </div>

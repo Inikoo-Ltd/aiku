@@ -2,6 +2,7 @@
 
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
@@ -23,6 +24,7 @@ use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\SalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -112,12 +114,25 @@ class GetFaireOrdersInShop extends OrgAction
                     $orderData['tax_category_id'] = $taxCategory->id;
                 }
 
+                $salesChannel = SalesChannel::where('code', 'faire')->first();
+                if ($salesChannel) {
+                    $orderData['sales_channel_id'] = $salesChannel->id;
+                }
+
                 $transactionsData = [];
                 $errors           = [];
                 foreach (Arr::get($faireOrder, 'items', []) as $item) {
                     $product = Product::where('shop_id', $shop->id)
                         ->where('marketplace_id', $item['variant_id'])
                         ->first();
+
+                    $product = UpdateProduct::run(
+                        $product,
+                        [
+                            'price' => $product->units * Arr::get($item, 'price.amount_minor') / 100,
+                        ]
+                    );
+
 
                     if (!$product) {
                         $errors[] = [
@@ -130,7 +145,7 @@ class GetFaireOrdersInShop extends OrgAction
                     }
 
 
-                    $historicAsset = $product->asset->historicAsset;
+                    $historicAsset = $product->currentHistoricProduct;
 
                     if (!$historicAsset) {
                         $errors[] = [
@@ -201,6 +216,8 @@ class GetFaireOrdersInShop extends OrgAction
                     }
 
                     AcceptFaireOrder::run($order);
+
+                    UpdateFaireOrder::run($order);
 
                     $command?->info('Order '.$externalId.' created');
                 } elseif ($command) {

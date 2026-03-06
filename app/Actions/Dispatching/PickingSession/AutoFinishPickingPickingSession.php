@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -31,6 +32,7 @@ class AutoFinishPickingPickingSession extends OrgAction
             $this->update($pickingSession, [
                 'state' => PickingSessionStateEnum::PICKING_FINISHED
             ]);
+            WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }
         return $pickingSession;
     }

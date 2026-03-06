@@ -25,6 +25,11 @@ trait WithShopifyShopApiCollection
                             }
                         }
                     }
+                    pageInfo {
+                        endCursor
+                        hasNextPage
+                        hasPreviousPage
+                    }
                 }
             }
         ',

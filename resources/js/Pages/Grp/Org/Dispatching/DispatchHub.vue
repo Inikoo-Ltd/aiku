@@ -15,7 +15,6 @@ import { useTabChange } from "@/Composables/tab-change";
 import { faHandsHelping, faBan, faCheckCircle, faList, faCheck } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue";
-import DashboardTable from "@/Components/DataDisplay/Dashboard/DashboardTable.vue"
 import { PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck);
@@ -27,52 +26,33 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    dashboard: {
-        [key: string]: {
-            label: string
-            count: number
-            cases: {
-                key: string
-                label: string
-                value?: number
-                icon: string | string[]
-                class?: string
-                route?: {
-                    name: string
-                    parameters?: object
-                }
-            }[]
-        }
-    }
+    delivery_note: object
+    picking_session: object
     intervals: any
     settings: any
-    blocks: any
 }>();
 
-// let currentTab = ref(props.tabs.current);
-// const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+let currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
-// const component: Component = computed(() => {
-//     const components = {
-//         ["dashboard" as string]: DispatchDashboard
-//     };
+const component = computed(() => {
+    const components: Component = {
+        delivery_note: DispatchDashboard,
+        picking_session: DispatchDashboard,
+    };
 
-//     return components[currentTab.value];
-// });
+    return components[currentTab.value];
+});
+
+const tabData = computed(() => {
+    if (currentTab.value === 'picking_session') return props.picking_session;
+    return props.delivery_note;
+});
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <!-- <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" /> -->
-    <!-- <component :is="component" :tab="currentTab" :data="props[currentTab]"></component> -->
-    <DashboardTable
-        v-if="blocks"
-    	class="border-t border-gray-200"
-    	:idTable="blocks.id"
-    	:tableData="blocks"
-        :intervals="intervals"
-        :settings="settings"
-        :currentTab="blocks.current_tab"
-    />
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <component :is="component" :tab="currentTab" :data="tabData"></component>
 </template>

@@ -91,6 +91,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Fulfilment\PalletDelivery|null $palletDelivery
  * @property-read \App\Models\Fulfilment\PalletReturn|null $palletReturn
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletReturn> $palletReturns
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\PalletStoredItem> $palletStoredItems
  * @property-read Rental|null $rental
  * @property-read \App\Models\Fulfilment\RentalAgreementClause|null $rentalAgreementClause
@@ -280,6 +281,16 @@ class Pallet extends Model implements Auditable
     public function palletReturn(): BelongsTo
     {
         return $this->belongsTo(PalletReturn::class);
+    }
+
+    public function palletReturns(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PalletReturn::class,
+            'pallet_return_items',
+            'pallet_id',
+            'pallet_return_id'
+        );
     }
 
     public function currentRecurringBill(): BelongsTo

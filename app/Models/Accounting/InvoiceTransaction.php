@@ -82,7 +82,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Currency|null $currency
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransactionHasFeedback> $feedbackBridges
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransactionHasTradeUnit> $tradeUnitBridges
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset
  * @property-read \App\Models\Accounting\Invoice|null $invoice
@@ -92,10 +91,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferAllowance> $offerAllowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferCampaign> $offerCampaign
  * @property-read Order|null $order
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasOrgStock> $orgStockBridges
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read RecurringBillTransaction|null $recurringBillTransaction
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read TaxCategory $taxCategory
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasTradeUnit> $tradeUnitBridges
  * @property-read Transaction|null $transaction
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $transactionRefunds
  * @method static Builder<static>|InvoiceTransaction newModelQuery()
@@ -203,6 +204,11 @@ class InvoiceTransaction extends Model
     public function tradeUnitBridges(): HasMany
     {
         return $this->hasMany(InvoiceTransactionHasTradeUnit::class);
+    }
+
+    public function orgStockBridges(): HasMany
+    {
+        return $this->hasMany(InvoiceTransactionHasOrgStock::class);
     }
 
     public function taxCategory(): BelongsTo

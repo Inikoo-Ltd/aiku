@@ -16,7 +16,7 @@ enum WebBlockTemplateEnum: string
     use EnumHelperTrait;
 
     // DO NOT CHANGE. THIS IS USED ON REPAIR FILES. VALUE MUST BE THE SAME AS FUNCTION CALL ON WEBSITE ['live{Value}Snapshot', 'unpublished{Value}Snapshot']
-    case SUB_DEPARTMENTS  = 'SubDepartments';
+    case SUB_DEPARTMENTS  = 'SubDepartment';
     case LIST_PRODUCTS  = 'Products';
     case FAMILIES  = 'Family';
 

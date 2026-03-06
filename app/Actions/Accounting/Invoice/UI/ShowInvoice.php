@@ -203,6 +203,7 @@ class ShowInvoice extends OrgAction
                 'type'       => 'pdf',
                 'icon'       => 'fas fa-file-pdf',
                 'label'      => 'PDF',
+                'key'        => 'pdf',
                 'tooltip'    => __('Download PDF'),
                 'name'       => 'grp.org.accounting.invoices.download',
                 'parameters' => [
@@ -323,7 +324,15 @@ class ShowInvoice extends OrgAction
 
                 'invoiceExportOptions' => $exportInvoiceOptions,
                 'routes'               => [
-                    'delivery_note' => $deliveryNoteRoute
+                    'delivery_note'          => $deliveryNoteRoute,
+                    'updateInvoiceDateRoute' => [
+                        'name'       => 'grp.models.invoice.update.date',
+                        'parameters' => [$invoice->id]
+                    ],
+                ],
+                //  Todo: Edit restriction
+                'can'                  => [
+                    'editInvoiceDate' => app()->isLocal() && $request->user()->authTo("accounting.{$this->organisation->id}.edit"),
                 ],
 
                 'box_stats'    => $this->getBoxStats($invoice),
@@ -332,6 +341,58 @@ class ShowInvoice extends OrgAction
                 'outbox'       => [
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,
                     'workshop_route' => $this->getOutboxRoute($invoice)
+                ],
+                'download_pdf_column'    => [  // TODO: Make this dynamic based on settings
+                    [
+                        'label'         => __('Pro mode'),
+                        'is_checked'    => false,
+                        'value'         => 'pro_mode',
+                    ],
+                    [
+                        'label'         => __('Recommended retail prices') . ' ' . __('(RRP)'),
+                        'is_checked'    => false,
+                        'value'         => 'rrp',
+                    ],
+                    [
+                        'label'         => __('Parts'),
+                        'is_checked'    => false,
+                        'value'         => 'parts',
+                    ],
+                    [
+                        'label'         => __('Commodity Codes'),
+                        'is_checked'    => false,
+                        'value'         => 'commodity_codes',
+                    ],
+                    [
+                        'label'         => __('Barcode'),
+                        'is_checked'    => false,
+                        'value'         => 'barcode',
+                    ],
+                    [
+                        'label'         => __('Weight'),
+                        'is_checked'    => false,
+                        'value'         => 'weight',
+                    ],
+                    [
+                        'label'         => __('Country of Origin'),
+                        'is_checked'    => false,
+                        'value'         => 'country_of_origin',
+                    ],
+                    [
+                        'label'         => __('Hide Payment Status'),
+                        'is_checked'    => false,
+                        'value'         => 'hide_payment_status',
+                    ],
+                    [
+                        'label'         => __('CPNP'),
+                        'is_checked'    => false,
+                        'value'         => 'cpnp',
+                    ],
+                    [
+                        'label'         => __('Group by Tariff Code'),
+                        'is_checked'    => false,
+                        'value'         => 'group_by_tariff_code',
+                    ],
                 ],
 
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value

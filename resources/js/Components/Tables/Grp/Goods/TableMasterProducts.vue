@@ -22,6 +22,7 @@ import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { faShapes, faStar, faTriangle, faEquals } from "@fas"
 import { routeType } from "@/types/route"
+import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 
 const props = defineProps<{
     data: {}
@@ -351,23 +352,29 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </span>
                 </span>
             </Link>
-            <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
+<!--             <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
                border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
                 -
-            </span>
+            </span> -->
         </template>
 
         <template #cell(name)="{ item: masterProduct }">
-            <div>
-                <ProductUnitLabel
+            <div class="flex items-center">
+
+                <div v-if="masterProduct.trade_units" class="text-xxs shrink-0">
+                    <LabelSKU :product="masterProduct" :trade_units="masterProduct.trade_units" />
+                </div>
+
+                <div class="xtruncate">
+                <!-- <ProductUnitLabel
                     v-if="masterProduct?.units"
                     :units="masterProduct?.units"
                     :unit="masterProduct?.unit"
                     class="!py-0 !px-1 !rounded-sm !text-sm mr-1"
-                />
-
-                {{ masterProduct["name"] }}
+                /> -->
+                    {{ masterProduct.name }}
+                </div>
 
             </div>
         </template>

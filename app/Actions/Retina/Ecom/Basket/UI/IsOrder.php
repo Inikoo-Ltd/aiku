@@ -8,7 +8,10 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
@@ -130,7 +133,49 @@ trait IsOrder
                     'parcels'   => $deliveryNote->parcels,
                     'state'     => $deliveryNote->state,
                     'state_icon' => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                    'shipping_fields'              => [
+                        'company_name' => $deliveryNote->company_name,
+                        'contact_name' => $deliveryNote->contact_name,
+                        'phone'        => $deliveryNote->phone,
+                        'email'        => $deliveryNote->email,
+                        'address'      => [
+                            'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
+                            'options'  => [
+                                'countriesAddressData' => GetAddressData::run()
+                            ]
+                        ]
+                    ],
+                    'shipping_fields_update_route' => [
+                        'name'       => 'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id,
+                            'shipper_id'   => null
+                        ]
+                    ],
+                    'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
+                    'shipments_routes'    => [
+                        'submit_route' => [
+                            'name'       => 'grp.models.delivery_note.shipment.store',
+                            'parameters' => [
+                                'deliveryNote' => $deliveryNote->id
+                            ]
+                        ],
+
+                        'fetch_route' => [
+                            'name'       => 'grp.json.shippers.index',
+                            'parameters' => [
+                                'organisation' => $deliveryNote->organisation->slug,
+                            ]
+                        ],
+
+                        'delete_route' => [
+                            'name'       => 'grp.models.delivery_note.shipment.detach',
+                            'parameters' => [
+                                'deliveryNote' => $deliveryNote->id
+                            ]
+                        ],
+                    ],
+
                 ];
             }
         }
@@ -203,6 +248,17 @@ trait IsOrder
                 ]
             ]
         ];
+
+        if ($order->amount_off != 0) {
+            $orderSummary[] = [
+                [
+                    'label'       => __('Amount off'),
+                    'information' => '',
+                    'price_total' => -$order->amount_off,
+                    'slot_name'   => 'discounts',
+                ],
+                ];
+        }
 
         $orderSummary[] =
             [
@@ -309,8 +365,12 @@ trait IsOrder
             ],
 
             'order_summary' => $orderSummary,
-            'currency'      => CurrencyResource::make($order->currency)
-
+            'currency'      => CurrencyResource::make($order->currency),
+            'external_shop'           => $order->shop->type == ShopTypeEnum::EXTERNAL ? [
+                'engine_value'            => $order->shop->engine->value,
+                'engine_label'            => ShopEngineEnum::from($order->shop->engine->value)->label(),
+                'external_shipping_label' => $order->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
+            ] : null,
         ];
     }
 

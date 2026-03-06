@@ -12,7 +12,9 @@ use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
+use App\Enums\UI\Inventory\OrgStockFamiliesTabsEnum;
 use App\Http\Resources\Inventory\OrgStockFamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStockFamily;
@@ -37,49 +39,49 @@ class IndexOrgStockFamilies extends OrgAction
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockFamiliesTabsEnum::values());
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
     }
 
     public function active(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockFamiliesTabsEnum::values());
         $this->bucket = 'active';
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
     }
 
     public function inProcess(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockFamiliesTabsEnum::values());
         $this->bucket = 'in_process';
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
     }
 
     public function discontinuing(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockFamiliesTabsEnum::values());
         $this->bucket = 'discontinuing';
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
     }
 
     public function discontinued(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromWarehouse($warehouse, $request);
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockFamiliesTabsEnum::values());
         $this->bucket = 'discontinued';
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
     }
 
     public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->maya = true;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(OrgStockFamiliesTabsEnum::values());
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
     }
 
 
@@ -129,30 +131,59 @@ class IndexOrgStockFamilies extends OrgAction
             $queryBuilder->where('org_stock_families.state', OrgStockFamilyStateEnum::IN_PROCESS);
         }
 
+        $selects = [
+            'org_stock_families.slug',
+            'org_stock_families.code',
+            'org_stock_families.id as id',
+            'org_stock_families.name',
+            'number_current_org_stocks',
+            'organisations.name as organisation_name',
+            'organisations.slug as organisation_slug',
+            'warehouses.slug as warehouse_slug',
+        ];
+
+        if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'org_stock_family_time_series',
+                timeSeriesRecordsTable: 'org_stock_family_time_series_records',
+                foreignKey: 'org_stock_family_id',
+                aggregateColumns: [
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices',
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: true
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+        }
+
+        $allowedSorts = ['code', 'name', 'number_current_org_stocks'];
+
+        if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
+            $allowedSorts[] = 'sales_grp_currency_external';
+            $allowedSorts[] = 'invoices';
+        }
+
         return $queryBuilder
             ->defaultSort('code')
-            ->select([
-                'org_stock_families.slug',
-                'org_stock_families.code',
-                'org_stock_families.id as id',
-                'org_stock_families.name',
-                'number_current_org_stocks',
-                'organisations.name as organisation_name',
-                'organisations.slug as organisation_slug',
-                'warehouses.slug as warehouse_slug', // just work if the org has only one warehouse
-            ])
+            ->select($selects)
             ->leftJoin('organisations', 'org_stock_families.organisation_id', 'organisations.id')
             ->leftJoin('warehouses', 'warehouses.organisation_id', 'organisations.id')
             ->leftJoin('org_stock_family_stats', 'org_stock_family_stats.org_stock_family_id', 'org_stock_families.id')
-            ->allowedSorts(['code', 'name', 'number_current_org_stocks'])
+            ->allowedSorts($allowedSorts)
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation $organisation, $prefix = null): Closure
+    public function tableStructure(Organisation $organisation, $prefix = null, bool $sales = false): Closure
     {
-        return function (InertiaTable $table) use ($organisation, $prefix) {
+        return function (InertiaTable $table) use ($organisation, $prefix, $sales) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -171,8 +202,17 @@ class IndexOrgStockFamilies extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'code', label: 'Code', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
-                ->defaultSort('code');
+
+            if ($sales) {
+                $table->betweenDates(['date'])
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+            } else {
+                $table->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
+                    ->defaultSort('code');
+            }
         };
     }
 
@@ -284,9 +324,21 @@ class IndexOrgStockFamilies extends OrgAction
                     ],
                     'subNavigation' => $subNavigation
                 ],
-                'data'        => OrgStockFamiliesResource::collection($orgStockFamilies),
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => OrgStockFamiliesTabsEnum::navigation(),
+                ],
+
+                OrgStockFamiliesTabsEnum::INDEX->value => $this->tab == OrgStockFamiliesTabsEnum::INDEX->value
+                    ? fn () => OrgStockFamiliesResource::collection($orgStockFamilies)
+                    : Inertia::lazy(fn () => OrgStockFamiliesResource::collection($orgStockFamilies)),
+
+                OrgStockFamiliesTabsEnum::SALES->value => $this->tab == OrgStockFamiliesTabsEnum::SALES->value
+                    ? fn () => OrgStockFamiliesResource::collection($this->handle($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => OrgStockFamiliesResource::collection($this->handle($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value))),
             ]
-        )->table($this->tableStructure($this->organisation));
+        )->table($this->tableStructure($this->organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value))
+         ->table($this->tableStructure($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value, sales: true));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array

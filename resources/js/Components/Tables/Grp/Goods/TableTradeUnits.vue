@@ -9,13 +9,16 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { TradeUnit } from "@/types/trade-unit"
 import Icon from "@/Components/Icon.vue"
-import {faSeedling, faScarecrow } from "@fal"
-import { faCheckCircle,faSkull } from "@fas"
-
+import { faSeedling, faScarecrow } from "@fal"
+import { faCheckCircle, faSkull, faTriangle, faEquals, faMinus } from "@fas"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { inject } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
-library.add(faCheckCircle, faSeedling, faSkull, faScarecrow)
+library.add(faCheckCircle, faSeedling, faSkull, faScarecrow, faTriangle, faEquals, faMinus)
 
+const locale = inject("locale", aikuLocaleStructure)
 
 defineProps<{
     data: {}
@@ -28,6 +31,17 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
         [tradeUnit.slug])
 }
 
+const getIntervalChangesIcon = (isPositive: boolean) => {
+    if (isPositive) {
+        return { icon: faTriangle }
+    } else {
+        return { icon: faTriangle, class: "rotate-180" }
+    }
+}
+
+const getIntervalStateColor = (isPositive: boolean) => {
+    return isPositive ? "text-green-500" : "text-red-500"
+}
 </script>
 
 <template>
@@ -52,7 +66,55 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
         <template #cell(units)="{ item: tradeUnit }">
             {{ tradeUnit["units"] }}
         </template>
+
+        <template #cell(sales_grp_currency_external)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat('GBP', item.sales_grp_currency_external) }}</span>
+        </template>
+
+        <template #cell(sales_grp_currency_external_delta)="{ item }">
+            <div v-if="item.sales_grp_currency_external_delta">
+                <span>{{ item.sales_grp_currency_external_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_grp_currency_external_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+            </div>
+        </template>
+
+        <template #cell(invoices)="{ item }">
+            <span class="tabular-nums">{{ item.invoices }}</span>
+        </template>
+
+        <template #cell(invoices_delta)="{ item }">
+            <div v-if="item.invoices_delta">
+                <span>{{ item.invoices_delta.formatted }}</span>
+                <FontAwesomeIcon
+                    :icon="getIntervalChangesIcon(item.invoices_delta.is_positive)?.icon"
+                    class="text-xxs md:text-sm"
+                    :class="[
+                        getIntervalChangesIcon(item.invoices_delta.is_positive).class,
+                        getIntervalStateColor(item.invoices_delta.is_positive),
+                    ]"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+            <div v-else>
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
+            </div>
+        </template>
     </Table>
 </template>
-
-

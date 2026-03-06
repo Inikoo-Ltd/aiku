@@ -191,7 +191,7 @@ class RunBackInStockEmailBulkRuns
 
             $productImage = Arr::get(
                 $dataProduct->imageSources(200, 200),
-                'original'
+                'png'
             );
 
             $stock = $dataProduct->available_quantity ?? 0;

@@ -26,6 +26,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -461,6 +462,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function tiktokUsers(): HasMany
     {
         return $this->hasMany(TiktokUser::class);
+    }
+
+    public function allegroUsers(): HasMany
+    {
+        return $this->hasMany(AllegroUser::class);
     }
 
     public function amazonUsers(): HasMany

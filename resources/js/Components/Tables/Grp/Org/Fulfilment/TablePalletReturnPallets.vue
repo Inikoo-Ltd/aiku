@@ -23,7 +23,7 @@ import { debounce, isNull } from 'lodash-es'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrashAlt, faPaperPlane } from "@far"
-import { faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote } from "@fal"
+import { faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faBackspace } from "@fal"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { routeType } from "@/types/route"
@@ -33,7 +33,7 @@ import axios from "axios"
 
 const layout = inject('layout', layoutStructure)
 
-library.add(faTrashAlt, faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faPaperPlane)
+library.add(faTrashAlt, faSignOutAlt, faTimes, faShare, faCross, faUndo, faStickyNote, faPaperPlane, faBackspace)
 
 const props = defineProps<{
     data: {}
@@ -47,6 +47,7 @@ console.log('s',props)
 
 const isPickingLoading = ref(false)
 const isUndoLoading = ref(false)
+const isUnlinkLoading = ref(false)
 const selectedRow = ref({})
 // Not Picked
 const listStatusNotPicked = [
@@ -365,6 +366,12 @@ const generateLinkPallet = (pallet: {}) => {
             <!-- State: Pick or not-picked -->
             <div v-if="props.state == 'picking' && layout.app.name == 'Aiku'" class="flex gap-x-2 ">
                 <!-- {{ pallet.state }} -->
+                
+                <!-- 1. Picking -> Able to pick / set it as not picked due to reasons (Will set pallet to lost)
+                2. Picked -> Undo picking
+                3. Lost -> Display text that pallet is lost
+                4. NEW -> if pallet state is picking have a button to unlink -->
+
                 <!-- Button: Picking -->
                 <Link v-if="pallet.state === 'picking'" as="div"
                     :href="route(pallet.updateRoute.name, pallet.updateRoute.parameters)"
@@ -381,23 +388,6 @@ const generateLinkPallet = (pallet: {}) => {
                     </div> -->
                     <Button icon="fal fa-check" type="positive" :loading="isPickingLoading === pallet.id" class="py-0" />
                 </Link>
-
-                <!-- Button: Undo picking -->
-                <Link v-if="pallet.state === 'picked'" as="div"
-                    :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
-                    :data="{ state: 'picked' }"
-                    @start="() => isUndoLoading = pallet.id"
-                    @finish="() => isUndoLoading = false"
-                    method="patch"
-                    preserveScroll
-                    :only="['pallets', 'pageHead']"
-                    v-tooltip="`Undo`"
-                >
-                    <Button icon="fal fa-undo" label="Undo picking" type="tertiary" size="xs" :loading="isUndoLoading === pallet.id" class="py-0" />
-                </Link>
-
-                <div v-else-if="pallet.state === 'lost'" class="text-red-300 italic">{{ trans("Pallet lost") }}</div>
-
                 <!-- Button: Set as not picked -->
                 <Popover v-if="pallet.state === 'picking'">
                     <template #button="{ open }">
@@ -437,8 +427,47 @@ const generateLinkPallet = (pallet: {}) => {
                         </div>
                     </template>
                 </Popover>
+
+                <!-- Button: Unlink -->
+                <Link v-if="pallet.state === 'picking' && pallet.unlinkRoute" as="div"
+                    :href="route(pallet.unlinkRoute.name, pallet.unlinkRoute.parameters)"
+                    @start="() => isUnlinkLoading = pallet.id"
+                    @finish="() => isPickingLoading = false"
+                    preserveScroll
+                    :only="['pallets', 'pageHead']"
+                    method="patch"
+                    v-tooltip="trans(`Unlink pallet from this return order (Will set it as in-warehouse)`)"
+                >
+                    <!-- <div class="border border-green-500 rounded py-2 px-6 hover:bg-green-500/10 cursor-pointer">
+                        <FontAwesomeIcon icon='fal fa-check' class='flex items-center justify-center text-green-500' fixed-width aria-hidden='true' />
+                    </div> -->
+                    <Button icon="fal fa-backspace" type="warning" :loading="isPickingLoading === pallet.id" class="py-0" />
+                </Link>
+                
+                <!-- Button: Undo picking -->
+                <Link v-if="pallet.state === 'picked'" as="div"
+                    :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
+                    @start="() => isUndoLoading = pallet.id"
+                    @finish="() => isUndoLoading = false"
+                    method="patch"
+                    preserveScroll
+                    :only="['pallets', 'pageHead']"
+                    v-tooltip="`Undo`"
+                >
+                    <Button icon="fal fa-undo" label="Undo picking" type="tertiary" size="xs" :loading="isUndoLoading === pallet.id" class="py-0" />
+                </Link>
+
+                <div v-else-if="pallet.state === 'lost'" class="text-red-300 italic">
+                    {{ trans("Pallet lost") }}
+                </div>  
             </div>
         </template>
+        
+        <template #cell(actions)="{ item: pallet }" v-else>
+            <div v-if="pallet.pivot_state == 'cancel'" class="text-red-300 italic" >
+                {{ trans("Pallet set back to storing") }}
+            </div>
+        </template> 
 
 
     </Table>
