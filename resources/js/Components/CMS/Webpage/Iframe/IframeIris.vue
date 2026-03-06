@@ -14,13 +14,14 @@ const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 }>();
 
-const screenWidth = ref(window.innerWidth);
+const screenWidth = ref(0);
 
 const updateScreenWidth = () => {
 	screenWidth.value = window.innerWidth;
 };
 
 onMounted(() => {
+	updateScreenWidth();
 	window.addEventListener("resize", updateScreenWidth);
 });
 
@@ -28,18 +29,16 @@ onUnmounted(() => {
 	window.removeEventListener("resize", updateScreenWidth);
 });
 
-const layout: any = inject("layout", {})
+const layout: any = inject("layout", {});
+
 const iframeStyles = computed(() => {
-	const baseStyles = {
+	return {
 		...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
 		...getStyles(props.fieldValue.container?.properties, props.screenType),
-		width : 'auto'
+		width: "auto"
 	};
-	return baseStyles;
 });
-
 </script>
-
 <template>
 	<div id="iframe" :style="iframeStyles" :id="fieldValue?.id ? fieldValue?.id  : 'iframe'"  component="iframe" >
 		<iframe

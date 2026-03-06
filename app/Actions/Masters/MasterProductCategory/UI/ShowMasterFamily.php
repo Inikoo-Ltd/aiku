@@ -311,6 +311,7 @@ class ShowMasterFamily extends GrpAction
                 ],
                 'isPerfectFamily'         => true,
                 'masterProductCategoryId' => $masterFamily->id,
+                'price_rrp_warning_ratio' => $masterFamily->masterShop->price_rrp_warning_ratio,
                 'shopsData'               => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
                 ...$tabs,
 

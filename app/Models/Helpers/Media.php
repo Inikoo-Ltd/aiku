@@ -79,4 +79,13 @@ class Media extends BaseMedia
         $data   = file_get_contents($path);
         return base64_encode($data);
     }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if(!is_numeric($value)){
+            abort(404);
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
 }
