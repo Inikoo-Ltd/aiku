@@ -78,7 +78,7 @@ trait HasIrisUserData
 
             $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
 
-            if ($lastDaysSinceLastInvoiced != null && $lastDaysSinceLastInvoiced <= $grInterval) {
+            if ($lastDaysSinceLastInvoiced??10000 <= $grInterval) {
                 $grData['customer_is_gr'] = true;
                 $grData['gr_label']       = Arr::get($this->shop->offers_data, 'gr.label', 'Gold reward member');
                 $grData['meter']          = [
