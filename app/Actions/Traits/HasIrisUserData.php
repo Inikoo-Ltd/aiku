@@ -72,9 +72,8 @@ trait HasIrisUserData
         if (Arr::get($this->shop->offers_data, 'gr.active')) {
             $grData['shop_has_gr'] = true;
 
-            $lastDaysSinceLastInvoiced = Cache::remember("customer_days_since_last_invoiced_at_".$this->customer->id, now()->addMinutes(15), function () {
-                return $this->customer->last_invoiced_at ? -now()->diffInDays($this->customer->last_invoiced_at) : null;
-            });
+
+            $lastDaysSinceLastInvoiced=$this->customer->last_invoiced_at ? -now()->diffInDays($this->customer->last_invoiced_at) : null;
 
             $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
 
