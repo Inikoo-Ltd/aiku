@@ -6,8 +6,10 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Discounts\Offer;
+namespace App\Actions\Discounts\Offer\VolGr;
 
+use App\Actions\Discounts\Offer\ActivateOffer;
+use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;

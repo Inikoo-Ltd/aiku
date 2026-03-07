@@ -72,7 +72,10 @@ class StoreOffer extends OrgAction
         return $offer;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request)
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): Offer
     {
         $this->initialisationFromShop($shop, $request);
 

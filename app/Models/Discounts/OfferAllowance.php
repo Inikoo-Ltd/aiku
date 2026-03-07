@@ -132,7 +132,7 @@ class OfferAllowance extends Model implements Auditable
             ->generateSlugsFrom(function () {
                 $slug = '';
 
-                if ($this->target_type) {
+                if ($this->target_type && $this->target_type != OfferAllowanceTargetTypeEnum::ORDER) {
                     $slug = $this->target_type->slug();
 
                     if ($this->target_type == OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY) {
