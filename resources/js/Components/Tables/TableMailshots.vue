@@ -12,6 +12,9 @@ import icon from "@/Components/Icon.vue";
 import { faSpellCheck, faSeedling, faPaperPlane, faStop, faCheckDouble, faCheck, faSkull, faDungeon, faEnvelopeOpen, faHandPointer, faEyeSlash, faInboxIn, faDumpsterFire, faThumbsDown } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouteParams } from "@/types/route-params";
+import { useFormatTime } from "@/Composables/useFormatTime";
+import { inject } from "vue";
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 
 library.add(faSpellCheck, faSeedling, faPaperPlane, faStop, faCheckDouble, faCheck, faSkull, faDungeon, faEnvelopeOpen, faHandPointer, faEyeSlash, faInboxIn, faDumpsterFire, faThumbsDown);
 
@@ -20,9 +23,9 @@ defineProps<{
     tab?: string
 }>();
 
+const locale = inject("locale", aikuLocaleStructure);
 
 function mailshotRoute(mailshot: Mailshot) {
-    // console.log(route().current())
     switch (route().current()) {
         case "grp.org.shops.show.marketing.mailshots.index":
             return route(
@@ -47,6 +50,13 @@ function mailshotRoute(mailshot: Mailshot) {
                     (route().params as RouteParams).website,
                     (route().params as RouteParams).outbox,
                     mailshot.slug]);
+        case "grp.org.shops.show.crm.prospects.mailshots.index":
+            return route(
+                "grp.org.shops.show.crm.prospects.mailshots.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    mailshot.slug]);
         default:
             return '';
     }
@@ -66,7 +76,10 @@ function mailshotRoute(mailshot: Mailshot) {
                 <icon :data="mailshot.state_icon" />
             </div>
         </template>
+        <template #cell(date)="{ item: mailshot }">
+            <div class="text-sm">
+                {{ useFormatTime(mailshot.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
+            </div>
+        </template>
     </Table>
 </template>
-
-

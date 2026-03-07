@@ -46,6 +46,7 @@ class StopMailshot extends OrgAction
             match ($mailshot->type) {
                 MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.show',
                 MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.show',
+                MailshotTypeEnum::INVITE => 'grp.org.shops.show.crm.prospects.mailshots.show',
             },
             [
                 'organisation' => $this->organisation->slug,
