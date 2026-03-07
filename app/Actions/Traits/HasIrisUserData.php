@@ -11,13 +11,12 @@ namespace App\Actions\Traits;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 trait HasIrisUserData
 {
     use InteractsWithOrderInBasket;
+    use HasGrData;
 
     public function getIrisUserData(): array
     {
@@ -62,49 +61,9 @@ trait HasIrisUserData
             }
         }
 
-        $grData = [
-            'shop_has_gr'           => false,
-            'shop_has_gr_armistice' => false,
-            'customer_is_gr'        => false,
-        ];
+        $grData = $this->getGrData($this->customer);
 
-
-        if (Arr::get($this->shop->offers_data, 'gr.active')) {
-            $grData['shop_has_gr'] = true;
-
-
-            $lastDaysSinceLastInvoiced=$this->customer->last_invoiced_at ? -now()->diffInDays($this->customer->last_invoiced_at) : null;
-
-            $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
-
-            if ($lastDaysSinceLastInvoiced??10000 <= $grInterval) {
-                $grData['customer_is_gr'] = true;
-                $grData['gr_label']       = Arr::get($this->shop->offers_data, 'gr.label', 'Gold reward member');
-                $grData['meter']          = [
-                    $grInterval - $lastDaysSinceLastInvoiced,
-                    $grInterval
-                ];
-            }
-        }
-
-        $offerData = null;
-
-        if (Arr::get($this->shop->offers_data, 'gr.active')) {
-            $lastDaysSinceLastInvoiced = Cache::remember("customer_days_since_last_invoiced_at_".$this->customer->id, now()->addMinutes(15), function () {
-                return $this->customer->last_invoiced_at ? -now()->diffInDays($this->customer->last_invoiced_at) : null;
-            });
-
-            $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
-
-            if ($lastDaysSinceLastInvoiced != null && $lastDaysSinceLastInvoiced <= $grInterval) {
-                $offerData['type']  = 'gr';
-                $offerData['label'] = Arr::get($this->shop->offers_data, 'gr.label', 'Gold reward member');
-                $offerData['meter'] = [
-                    $grInterval - $lastDaysSinceLastInvoiced,
-                    $grInterval
-                ];
-            }
-        }
+        $offerData = $this->getGrOfferData($this->customer);
 
 
         return [
