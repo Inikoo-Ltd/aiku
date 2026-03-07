@@ -6,11 +6,16 @@
 
 import { defineStore } from 'pinia'
 import { notify } from '@kyvg/vue3-notification'
+import { usePage } from '@inertiajs/vue3'
+import axios from 'axios'
+import { useLayoutStore } from "@/Stores/layout"
 
 interface NotificationData {
     title: string
     text: string
     type: string
+    id: string
+    read?: boolean
 }
 
 export const useEchoGrpGeneral = defineStore(
@@ -22,18 +27,40 @@ export const useEchoGrpGeneral = defineStore(
             subscribe(groupId: string) {
                 if (!groupId) {
                     console.log("WS General Failed (Group id isn't provided)")
-                    return 
+                    return
                 }
-                let abcdef = window.Echo.private(`grp.${groupId}.general`).
-                    listen('.notification', (e: NotificationData) => {
-                        // console.log('From echo-org-general', e)
-                        notify({
-                            title: e.title || 'General',
-                            text: e.text || 'From echo-org-general',
-                            type: e.type || 'success',
-                        })
+
+                const layout = useLayoutStore()
+
+                window.Echo.private(`grp.${groupId}.general`).
+                    listen('.notification', (e: any) => {
+                        const data = e.data || e;
+                        // Fetch unread notifications from API and update layout structure
+                        axios.get(route('grp.models.notifications.unread'))
+                            .then((response) => {
+                            const unreadData = (response.data?.notifications ?? []).map((n: any) => ({
+                                    ...n,
+                                    read: false
+                                }))
+
+                                const existingRead = layout.notifications.filter(n => n.read)
+
+                                layout.notifications = [
+                                    ...unreadData,
+                                    ...existingRead
+                                ]
+                                if (unreadData.length > 0) {
+                                    notify({
+                                        title: data.title || "General",
+                                        text: data.text || "Notification received",
+                                        type: "info",
+                                    })
+                                }
+                            })
+                            .catch((error) => {
+                                console.error('Failed to fetch unread notifications:', error)
+                            })
                     })
-                // console.log('Subscribed to General: :', abcdef)
             },
         },
     }
