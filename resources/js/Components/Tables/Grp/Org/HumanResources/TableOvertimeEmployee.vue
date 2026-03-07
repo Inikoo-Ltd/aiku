@@ -184,6 +184,27 @@ const extractTimeParts = (value?: string | null): { hour: string; minute: string
 	}
 }
 
+const getFullDate = (dateStr: string, hour: string, minute: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d, Number(hour), Number(minute));
+}
+
+const toLocalISOString = (date: Date) => {
+    const tzo = -date.getTimezoneOffset(),
+        dif = tzo >= 0 ? '+' : '-',
+        pad = (num: number) => {
+            const norm = Math.floor(Math.abs(num));
+            return (norm < 10 ? '0' : '') + norm;
+        };
+    return date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds()) +
+        dif + pad(tzo / 60) + ':' + pad(tzo % 60);
+}
+
 const resetFormState = () => {
 	overtimeForm.reset()
 	overtimeForm.clearErrors()
@@ -208,11 +229,13 @@ const openEditModal = (item: any) => {
 	overtimeForm.clearErrors()
 
 	overtimeForm.overtime_type_id = item.overtime_type_id ?? null
-	overtimeForm.requested_date = item.requested_date ?? ""
+	overtimeForm.requested_date = item.requested_date ? useFormatTime(item.requested_date, { formatTime: 'yyyy-MM-dd' }) : ''
 
-	const { hour, minute } = extractTimeParts(item.requested_start_at)
-	overtimeForm.start_hour = hour
-	overtimeForm.start_minute = minute
+	const startAt: string | null = item.requested_start_at ?? null
+    if (startAt) {
+        overtimeForm.start_hour = useFormatTime(startAt, { formatTime: 'HH' })
+        overtimeForm.start_minute = useFormatTime(startAt, { formatTime: 'mm' })
+    }
 
 	const durationMinutes = item.requested_duration_minutes ?? 0
 	const hours = Math.floor(durationMinutes / 60)
@@ -233,10 +256,19 @@ const closeModal = () => {
 
 const submitOvertimeRequest = () => {
 	overtimeForm
-		.transform((data) => ({
-			...data,
-			organisation: props.organisation ?? undefined,
-		}))
+		.transform((data) => {
+            const requestedStartAt = getFullDate(data.requested_date, data.start_hour, data.start_minute)
+            const requestedDurationMinutes = (Number(data.duration_hours) * 60) + Number(data.duration_minutes)
+            const requestedEndAt = new Date(requestedStartAt.getTime() + requestedDurationMinutes * 60000)
+
+            return {
+                ...data,
+                organisation: props.organisation ?? undefined,
+                requested_start_at: toLocalISOString(requestedStartAt),
+                requested_end_at: toLocalISOString(requestedEndAt),
+                requested_duration_minutes: requestedDurationMinutes,
+            }
+        })
 		.post(
 			isEditMode.value && editingOvertimeId.value
 				? route("grp.clocking_employees.overtime_requests.update", {
@@ -350,6 +382,18 @@ const submitOvertimeRequest = () => {
 			<template #cell(requested_duration_minutes)="{ item }">
 				<span class="whitespace-nowrap">
 					{{ formatDuration(item.requested_duration_minutes) }}
+				</span>
+			</template>
+
+            <template #cell(recorded_start_at)="{ item }">
+				<span class="whitespace-nowrap">
+					{{ useFormatTime(item.recorded_start_at, { formatTime: "hm" }) }}
+				</span>
+			</template>
+
+			<template #cell(recorded_duration_minutes)="{ item }">
+				<span class="whitespace-nowrap">
+					{{ formatDuration(item.recorded_duration_minutes) }}
 				</span>
 			</template>
 
@@ -509,7 +553,7 @@ const submitOvertimeRequest = () => {
 				</div>
 
 				<div class="mt-6 flex justify-end gap-2">
-					<Button @click="closeModal" :label="trans('Cancel')" type="tertiary" />
+					<Button @click.prevent="closeModal" :label="trans('Cancel')" type="tertiary" />
 					<Button
 						type="save"
 						nativeType="submit"

@@ -119,5 +119,17 @@ const handleDragLeave = () => {
             <FontAwesomeIcon icon="fas fa-check-circle" class="h-4 w-4 text-green-500 inline mr-1" />
             File selected: <span class="font-medium">{{ fileName }}</span>
         </div>
+
+        <!-- Existing File Preview -->
+        <div v-if="fieldData?.preview_url" class="mt-2 text-sm">
+            <a
+                :href="fieldData.preview_url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-org-600 hover:text-org-500 underline"
+            >
+                {{ fieldData?.preview_label || 'Preview current file' }}
+            </a>
+        </div>
     </div>
 </template>

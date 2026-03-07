@@ -28,8 +28,8 @@ class DashboardLeave extends OrgAction
      */
     public function handle(Organisation $organisation, ActionRequest $request): Response
     {
-        $year = (int) $request->input('year', now()->year);
-        $month = (int) $request->input('month', now()->month);
+        $year = (int)$request->input('year', now()->year);
+        $month = (int)$request->input('month', now()->month);
         $employeeId = $request->input('employee_id');
         $type = $request->input('type');
         $view = $request->input('view') === 'week' ? 'week' : 'month';
@@ -127,7 +127,7 @@ class DashboardLeave extends OrgAction
             ->where('state', 'working')
             ->orderBy('alias')
             ->get()
-            ->map(fn ($employee) => [
+            ->map(fn($employee) => [
                 'value' => $employee->id,
                 'label' => $employee->contact_name,
             ]);
@@ -153,7 +153,7 @@ class DashboardLeave extends OrgAction
             'filters' => [
                 'year' => $year,
                 'month' => $month,
-                'employee_id' => $employeeId ? (int) $employeeId : null,
+                'employee_id' => $employeeId ? (int)$employeeId : null,
                 'type' => $type,
                 'view' => $view,
                 'week_start' => $weekStart?->toDateString(),
@@ -171,6 +171,8 @@ class DashboardLeave extends OrgAction
                 ['value' => 'annual', 'label' => __('Annual Leave')],
                 ['value' => 'medical', 'label' => __('Medical Leave')],
                 ['value' => 'unpaid', 'label' => __('Unpaid Leave')],
+                ['value' => 'halfday-morning', 'label' => __('Half Day Morning')],
+                ['value' => 'halfday-afternoon', 'label' => __('Half Day Afternoon')],
             ],
             'type_options' => LeaveTypeEnum::labels(),
             'status_options' => LeaveStatusEnum::labels(),
@@ -186,11 +188,12 @@ class DashboardLeave extends OrgAction
      * @return array<int, array<string, mixed>>
      */
     protected function buildWeeks(
-        Carbon $visibleStart,
-        Carbon $visibleEnd,
+        Carbon  $visibleStart,
+        Carbon  $visibleEnd,
         ?Carbon $monthStart = null,
         ?Carbon $monthEnd = null,
-    ): array {
+    ): array
+    {
         $weeks = [];
         $weekIndex = 0;
 
@@ -242,14 +245,14 @@ class DashboardLeave extends OrgAction
         $headCrumb = function (string $routeName, array $routeParameters) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => $routeName,
+                            'name' => $routeName,
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Dashboard'),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];

@@ -22,6 +22,9 @@ use App\Actions\HumanResources\Employee\DownloadEmployeesTemplate;
 use App\Actions\HumanResources\Employee\ExportEmployees;
 use App\Actions\HumanResources\Employee\ExportEmployeeTimesheets;
 use App\Actions\HumanResources\Employee\GeneratePinEmployee;
+use App\Actions\HumanResources\Employee\GetEmployeesByBirthMonth;
+use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
+use App\Actions\HumanResources\Employee\GetEmployeeContract;
 use App\Actions\HumanResources\Employee\UI\CreateEmployee;
 use App\Actions\HumanResources\Employee\UI\EditEmployee;
 use App\Actions\HumanResources\Employee\UI\IndexEmployees;
@@ -65,6 +68,10 @@ use App\Actions\HumanResources\Holiday\UpdateHoliday;
 use App\Actions\HumanResources\Holiday\DeleteHoliday;
 use App\Actions\HumanResources\Holiday\GenerateNextYearHolidays;
 use App\Actions\HumanResources\Holiday\ExportHolidays;
+use App\Actions\HumanResources\HolidayYear\UI\IndexHolidayYears;
+use App\Actions\HumanResources\HolidayYear\StoreHolidayYear;
+use App\Actions\HumanResources\HolidayYear\UpdateHolidayYear;
+use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
@@ -107,6 +114,11 @@ Route::post('/holidays', StoreHoliday::class)->name('holidays.store');
 Route::post('/holidays/generate', GenerateNextYearHolidays::class)->name('holidays.generate');
 Route::patch('/holidays/{holiday}', UpdateHoliday::class)->name('holidays.update');
 Route::delete('/holidays/{holiday}', DeleteHoliday::class)->name('holidays.delete');
+
+Route::get('/holiday-years', IndexHolidayYears::class)->name('holiday_years.index');
+Route::post('/holiday-years', StoreHolidayYear::class)->name('holiday_years.store');
+Route::patch('/holiday-years/{holidayYear}', UpdateHolidayYear::class)->name('holiday_years.update');
+Route::patch('/holiday-years/{holidayYear}/activate', ActivateHolidayYear::class)->name('holiday_years.activate');
 
 Route::get('/timesheets', IndexTimesheets::class)->name('timesheets.index');
 Route::get('/timesheets-export', PdfTimesheets::class)->name('timesheets.export');
@@ -185,4 +197,10 @@ Route::prefix('adjustments')->as('adjustments.')->group(function () {
 Route::prefix('analytics')->as('analytics.')->group(function () {
     Route::get('', \App\Actions\HumanResources\EmployeeAnalytics\UI\IndexEmployeeAnalytics::class)->name('index');
     Route::get('employees/{employee}', \App\Actions\HumanResources\EmployeeAnalytics\UI\ShowEmployeeAnalytics::class)->name('show');
+});
+
+Route::prefix('employees')->as('employees.')->group(function () {
+    Route::get('birthdays', GetEmployeesByBirthMonth::class)->name('birthdays');
+    Route::patch('{employee}/adjust-leave', AdjustEmployeeLeaveBalance::class)->name('adjust-leave');
+    Route::get('{employee}/contract', GetEmployeeContract::class)->name('contract');
 });

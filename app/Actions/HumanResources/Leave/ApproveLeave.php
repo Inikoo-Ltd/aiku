@@ -31,9 +31,12 @@ class ApproveLeave extends OrgAction
                 'year'        => $balanceYear,
             ],
             [
-                'annual_days'  => 14,
-                'medical_days' => 14,
-                'unpaid_days'  => 0,
+                'annual_days'   => $leave->employee->organisation->getDefaultAnnualLeaveDays(),
+                'annual_used'   => 0,
+                'medical_days'  => 0,
+                'medical_used'  => 0,
+                'unpaid_days'   => 0,
+                'unpaid_used'   => 0,
             ]
         );
 
@@ -41,11 +44,16 @@ class ApproveLeave extends OrgAction
             'annual' => 'annual_used',
             'medical' => 'medical_used',
             'unpaid' => 'unpaid_used',
+            'halfday-morning', 'halfday-afternoon' => 'unpaid_used',
             default => null,
         };
 
         if ($field) {
-            $balance->increment($field, $leave->duration_days);
+            $isHalfDay = $leave->is_half_day
+                || in_array($leave->type->value, ['halfday-morning', 'halfday-afternoon']);
+
+            $deduction = $isHalfDay ? 0.5 : (float) $leave->duration_days;
+            $balance->increment($field, $deduction);
         }
 
         return $leave;

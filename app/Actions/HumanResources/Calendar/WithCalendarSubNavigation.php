@@ -30,6 +30,17 @@ trait WithCalendarSubNavigation
                     'icon'    => ['fal', 'fa-umbrella'],
                     'tooltip' => __('Holiday'),
                 ],
+            ],
+            [
+                'label'    => __('Holiday Year'),
+                'route'    => [
+                    'name'       => 'grp.org.hr.holiday_years.index',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-calendar-alt'],
+                    'tooltip' => __('Holiday Year'),
+                ],
             ]
         ];
     }

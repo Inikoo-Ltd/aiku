@@ -26,6 +26,7 @@ use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Http\Resources\HumanResources\EmployeeResource;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Rules\PinRule;
@@ -55,6 +56,13 @@ class UpdateEmployee extends OrgAction
             $contactAddressData = Arr::get($modelData, 'contact_address');
             Arr::forget($modelData, 'contact_address');
 
+            // Extract religion if it's nested inside contact_address
+            if (Arr::has($contactAddressData, 'religion')) {
+                $religion = Arr::pull($contactAddressData, 'religion');
+                if ($religion) {
+                    Arr::set($modelData, 'religion', $religion);
+                }
+            }
 
             if (!blank($contactAddressData)) {
                 if ($employee->address) {
@@ -75,10 +83,43 @@ class UpdateEmployee extends OrgAction
             );
         }
 
+        // Handle religion if it's nested in personal section
+        if (Arr::has($modelData, 'personal.religion')) {
+            $religion = Arr::pull($modelData, 'personal.religion');
+            if ($religion) {
+                Arr::set($modelData, 'religion', $religion);
+            }
+        }
+
         if (Arr::has($modelData, 'job_positions')) {
             $jobPositions = Arr::pull($modelData, 'job_positions', []);
             $jobPositions = $this->reorganisePositionsSlugsToIds($jobPositions);
             SyncEmployeeJobPositions::run($employee, $jobPositions);
+        }
+
+        if (Arr::has($modelData, 'annual_days')) {
+            $annualDays = Arr::pull($modelData, 'annual_days');
+
+            $leaveBalance = EmployeeLeaveBalance::firstOrCreate(
+                [
+                    'employee_id' => $employee->id,
+                    'year'        => now()->year,
+                ],
+                [
+                    'annual_days'   => $employee->organisation->getDefaultAnnualLeaveDays(),
+                    'annual_used'   => 0,
+                    'unpaid_days'   => 0,
+                    'unpaid_used'   => 0,
+                ]
+            );
+
+            $updateData = [];
+            if ($annualDays !== null) {
+                $updateData['annual_days'] = $annualDays;
+            }
+            if (!empty($updateData)) {
+                $leaveBalance->update($updateData);
+            }
         }
 
         $credentials = Arr::only($modelData, ['username', 'password', 'auth_type', 'user_model_status']);
@@ -186,7 +227,15 @@ class UpdateEmployee extends OrgAction
             'notes'                                     => ['sometimes', 'nullable', 'string', 'max:4000'],
             'identity_document_type'                    => ['sometimes', 'nullable', 'string', 'max:256'],
             'identity_document_number'                  => ['sometimes', 'nullable', 'string', 'max:256'],
-
+            'contract_start_date'                       => ['sometimes', 'nullable', 'date'],
+            'contract_end_date'                         => ['sometimes', 'nullable', 'date', 'after_or_equal:contract_start_date'],
+            'religion'                                  => ['sometimes', 'nullable', 'string', 'max:50'],
+            'bank_account_number'                       => ['sometimes', 'nullable', 'string', 'max:50'],
+            'bank_account_name'                         => ['sometimes', 'nullable', 'string', 'max:100'],
+            'insurance_number'                          => ['sometimes', 'nullable', 'string', 'max:50'],
+            'annual_days'                               => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
+            'gender'                                    => ['sometimes', 'nullable', 'string', 'max:20'],
+            'probation_period_days'                     => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
 
         ];
 
@@ -258,6 +307,10 @@ class UpdateEmployee extends OrgAction
             {
                 $this->set('employment_start_at', $this->get('cluster.employment_start_at'));
             }
+        }
+
+        if ($this->has('contract_start_date')) {
+            $this->set('employment_start_at', $this->get('contract_start_date'));
         }
 
         if ($this->has('cluster.employment_end_at')) {

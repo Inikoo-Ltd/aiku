@@ -7,7 +7,6 @@ use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Employee;
-use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\Timesheet;
@@ -64,7 +63,9 @@ class StoreLeave extends OrgAction
     {
         $startDate = Carbon::parse($modelData['start_date']);
         $endDate = Carbon::parse($modelData['end_date']);
-        $durationDays = $this->calculateDurationDays($startDate, $endDate, $employee);
+        $isHalfDay = (bool) ($modelData['is_half_day'] ?? false);
+        $session = $modelData['session'] ?? 'Full';
+        $durationDays = $isHalfDay ? 1 : $this->calculateDurationDays($startDate, $endDate, $employee);
 
         $leave = Leave::create([
             'group_id'        => $employee->group_id,
@@ -75,6 +76,8 @@ class StoreLeave extends OrgAction
             'start_date'      => $startDate,
             'end_date'        => $endDate,
             'duration_days'   => $durationDays,
+            'is_half_day'     => $isHalfDay,
+            'session'         => $session,
             'reason'          => $modelData['reason'] ?? null,
             'status'          => LeaveStatusEnum::PENDING,
         ]);
@@ -119,6 +122,8 @@ class StoreLeave extends OrgAction
             'type'         => ['required', Rule::in($leaveTypes)],
             'start_date'   => ['required', 'date', 'after_or_equal:today'],
             'end_date'     => ['required', 'date', 'after_or_equal:start_date'],
+            'is_half_day'  => ['sometimes', 'boolean'],
+            'session'      => ['sometimes', Rule::in(['Morning', 'Afternoon', 'Full'])],
             'reason'       => ['required', 'string', 'max:1000'],
             'attachments'  => ['nullable', 'array', 'max:3'],
             'attachments.*' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(5 * 1024)],
@@ -140,6 +145,31 @@ class StoreLeave extends OrgAction
 
         if ($endDate->lt($startDate)) {
             return;
+        }
+
+        $isHalfDay = (bool) request()->boolean('is_half_day');
+        $session = request()->input('session', 'Full');
+        if ($isHalfDay && !$startDate->isSameDay($endDate)) {
+            $validator->errors()->add('end_date', __('Half day leave must be a single date.'));
+            return;
+        }
+        if ($isHalfDay && !in_array($session, ['Morning', 'Afternoon'], true)) {
+            $validator->errors()->add('session', __('Please select Morning or Afternoon for half day leave.'));
+            return;
+        }
+
+        if ($isHalfDay) {
+            $existingSession = Leave::where('employee_id', $this->employee->id)
+                ->whereDate('start_date', $startDate)
+                ->where('is_half_day', true)
+                ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
+                ->where('session', $session)
+                ->exists();
+
+            if ($existingSession) {
+                $validator->errors()->add('session', __('You already have a :session half-day leave on this date.', ['session' => $session]));
+                return;
+            }
         }
 
         $existingLeave = Leave::where('employee_id', $this->employee->id)
@@ -188,28 +218,24 @@ class StoreLeave extends OrgAction
 
         $type = request()->input('type');
         $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
+        $requestedDays = $isHalfDay ? 0.5 : (float) $durationDays;
         $balanceYear = $startDate->year;
 
-        $balance = EmployeeLeaveBalance::firstOrCreate(
-            [
-                'employee_id' => $this->employee->id,
-                'year'        => $balanceYear,
-            ],
-            [
-                'annual_days'  => 14,
-                'medical_days' => 14,
-                'unpaid_days'  => 0,
-            ]
-        );
+        if ($type === LeaveTypeEnum::ANNUAL->value) {
+            $annualSubmittedDays = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->where('type', LeaveTypeEnum::ANNUAL->value)
+                ->whereYear('start_date', $balanceYear)
+                ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
+                ->get()
+                ->sum(fn (Leave $leave) => $leave->is_half_day ? 0.5 : (float) $leave->duration_days);
 
-        $remainingField = match ($type) {
-            LeaveTypeEnum::ANNUAL->value => 'annual_remaining',
-            LeaveTypeEnum::MEDICAL->value => 'medical_remaining',
-            default => null,
-        };
+            $annualAllowance = (float) $this->employee->organisation->getDefaultAnnualLeaveDays();
+            $annualRemaining = max(0, $annualAllowance - (float) $annualSubmittedDays);
 
-        if ($remainingField && $balance->$remainingField < $durationDays) {
-            $validator->errors()->add('duration_days', __('Insufficient leave balance.'));
+            if ($annualRemaining < $requestedDays) {
+                $validator->errors()->add('duration_days', __('Insufficient leave balance.'));
+            }
         }
     }
 

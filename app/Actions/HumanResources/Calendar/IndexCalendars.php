@@ -15,6 +15,7 @@ use App\Http\Resources\HumanResources\EmployeeResource;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -81,10 +82,48 @@ class IndexCalendars extends OrgAction
         $year  = (int) $request->input('year', now()->year);
         $month = $request->integer('month') ?: null;
 
-        $holidays = Holiday::query()
+        $activeHolidayYear = DB::table('holiday_years')
             ->where('organisation_id', $this->organisation->id)
-            ->where('year', $year)
+            ->where('is_active', true)
+            ->select(['id', 'label', 'start_date', 'end_date'])
+            ->first();
+
+        $allHolidayYears = DB::table('holiday_years')
+            ->where('organisation_id', $this->organisation->id)
+            ->orderBy('start_date', 'desc')
+            ->select(['id', 'label', 'start_date', 'end_date', 'is_active'])
             ->get();
+
+        $holidayYearPeriod = $activeHolidayYear ? [
+            'id'         => $activeHolidayYear->id,
+            'label'      => $activeHolidayYear->label,
+            'start_date' => (string) $activeHolidayYear->start_date,
+            'end_date'   => (string) $activeHolidayYear->end_date,
+        ] : null;
+
+        $defaultPeriod = [
+            'start_date' => sprintf('%d-01-01', $year),
+            'end_date'   => sprintf('%d-12-31', $year),
+        ];
+
+        $holidaysQuery = Holiday::query()
+            ->where('organisation_id', $this->organisation->id);
+
+        $holidaysQuery->where(function ($query) use ($year, $allHolidayYears) {
+            $query->where('year', $year);
+
+            if ($allHolidayYears->isNotEmpty()) {
+                $minDate = $allHolidayYears->min('start_date');
+                $maxDate = $allHolidayYears->max('end_date');
+
+                $query->orWhere(function ($q) use ($minDate, $maxDate) {
+                    $q->where('from', '<=', $maxDate)
+                      ->where('to', '>=', $minDate);
+                });
+            }
+        });
+
+        $holidays = $holidaysQuery->get();
 
         $holidayDates = [];
 
@@ -141,6 +180,9 @@ class IndexCalendars extends OrgAction
                 'month'          => $month,
                 'holidays'       => $calendarHolidays,
                 'holidayRanges'  => $holidayRanges,
+                'holidayYearPeriod' => $holidayYearPeriod,
+                'allHolidayYears'   => $allHolidayYears,
+                'defaultPeriod'     => $defaultPeriod,
             ]
         )->table($this->tableStructure());
     }

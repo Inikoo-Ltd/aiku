@@ -25,7 +25,8 @@ class UpdateClockingNotes
         ];
 
         if ($clockedAt) {
-            $data['clocked_at'] = Carbon::parse($clockedAt);
+            $tz = config('app.timezone');
+            $data['clocked_at'] = Carbon::parse($clockedAt, $tz)->utc();
         }
 
         $clocking->update($data);

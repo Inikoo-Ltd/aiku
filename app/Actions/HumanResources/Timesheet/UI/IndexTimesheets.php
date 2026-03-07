@@ -312,10 +312,13 @@ class IndexTimesheets extends OrgAction
                 $table->periodFilters($periodFilter['elements']);
             }
 
-            $table->column(key: 'working_duration', label: __('Working'), sortable: true)
+            $table->column(key: 'start_at', label: __('Start At'))
+                ->column(key: 'end_at', label: __('End At'))
+                ->column(key: 'working_duration', label: __('Working'), sortable: true)
                 ->column(key: 'breaks_duration', label: __('Breaks'), sortable: true)
                 ->column(key: 'clock_in_count', label: __('Clock In'))
                 ->column(key: 'clock_out_count', label: __('Clock Out'));
+
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), searchable: true);
