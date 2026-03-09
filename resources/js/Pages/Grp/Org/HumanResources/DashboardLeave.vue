@@ -222,12 +222,10 @@ const displayPeriodLabel = computed(() => {
 const parsedTypeOptions = computed(() => {
 	if (!props.type_options) return []
 
-	// If it's already an array with label/value, return as is
 	if (Array.isArray(props.type_options)) {
 		return props.type_options
 	}
 
-	// If it's an object, convert to array format
 	if (typeof props.type_options === "object") {
 		return Object.entries(props.type_options).map(([value, label]) => ({
 			value,
@@ -565,15 +563,21 @@ const getLeaveTooltip = (segment: LeaveSegment): string => {
 
 const openExportModal = () => {
 	exportForm.reset()
+	exportError.value = false
+	exportMessage.value = ""
+	isExporting.value = false
 	isExportModalOpen.value = true
 }
 
 const closeExportModal = () => {
 	isExportModalOpen.value = false
 	exportForm.reset()
+	isExporting.value = false
 }
 
 const submitExport = () => {
+	exportError.value = false
+	exportMessage.value = ""
 	isExporting.value = true
 
 	// Build export parameters FIRST
@@ -624,6 +628,9 @@ const submitExport = () => {
 					: "grp.org.hr.leaves.export"
 
 			window.location.href = route(exportRoute, { ...route().params, ...exportParams })
+			setTimeout(() => {
+				isExporting.value = false
+			}, 1500)
 		}
 
 		clearTimeout(exportTimeOut)
