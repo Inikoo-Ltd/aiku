@@ -68,10 +68,10 @@ class CreateVolGrGift extends OrgAction
                                     ],
                                     "value" => [],
                                 ],
-                                'default'   => [
-                                    'hidden' => true,
-                                    'value' => null
-                                ]
+                                // 'default'   => [
+                                //     'hidden' => true,
+                                //     'value' => null
+                                // ]
                             ],
                         ],
                     ],
