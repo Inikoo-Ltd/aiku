@@ -45,9 +45,10 @@ const isLoadingVisit = ref(false)
 
             <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                 <NewAddToCartButton 
-                    v-if="product.stock" 
-                    :hasInBasket="layout?.family_page?.productInBasket?.[product.id]"
-                    :product="product" :key="product.id" 
+                    v-if="product.iris_attributes?.stock && layout.retina?.type === 'b2b'" 
+                    :hasInBasket="layout?.family_page?.productInBasket?.list?.[product.iris_attributes.id]"
+                    :product="product.iris_attributes" 
+                    :key="product.iris_attributes.id"
                     :addToBasketRoute="{ name: 'iris.models.transaction.store'}" 
                     :updateBasketQuantityRoute="{ name: 'iris.models.transaction.update'}" 
                     :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
