@@ -60,7 +60,7 @@ class FetchIrisEcomBasket extends IrisAction
 
 
         $grGifts = [
-            'eligible' => false,
+            'is_eligible' => false,
             'gifts'    => []
         ];
         if ($order) {
@@ -71,6 +71,10 @@ class FetchIrisEcomBasket extends IrisAction
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
             if ($selectedGrGift) {
                 foreach ($grGifts as $key => $gift) {
+                    
+                    $grGifts[$key]['id'] = $gift['id'];
+                    $grGifts[$key]['name'] = $gift['name'];
+
                     if ($gift['id'] == $selectedGrGift) {
                         $grGifts[$key]['selected'] = true;
                     } else {
@@ -79,12 +83,14 @@ class FetchIrisEcomBasket extends IrisAction
                 }
             } else {
                 foreach ($grGifts as $key => $gift) {
+                    $grGifts[$key]['id'] = $gift['id'];
+                    $grGifts[$key]['name'] = $gift['name'];
                     $grGifts[$key]['selected'] = Arr::get($gift, 'default', false);
                 }
             }
 
             $grGifts = [
-                'eligible' => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
+                'is_eligible' => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
                 'gifts'    => $grGifts
             ];
         }
