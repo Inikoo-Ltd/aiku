@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $description
  * @property string $number_current_org_stocks
  * @property mixed $number_out_of_stock_org_stocks
+ * @property mixed $woc
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property mixed $currency_code
@@ -41,6 +42,7 @@ class OrgStockFamiliesResource extends JsonResource
             'name'                              => $this->name,
             'number_current_org_stocks'         => $this->number_current_org_stocks,
             'number_out_of_stock_org_stocks'    => $this->number_out_of_stock_org_stocks ?? 0,
+            'woc'                               => $this->woc !== null ? round((float) $this->woc, 1) : null,
             'created_at'                        => $this->created_at,
             'updated_at'                        => $this->updated_at,
             'organisation_name'                 => $this->organisation_name,

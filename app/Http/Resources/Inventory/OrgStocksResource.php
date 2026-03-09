@@ -42,6 +42,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $invoices_ly
  * @property mixed $on_the_way_po_value
  * @property mixed $on_the_way_po_count
+ * @property mixed $woc
  */
 class OrgStocksResource extends JsonResource
 {
@@ -83,6 +84,7 @@ class OrgStocksResource extends JsonResource
             'invoices_delta'                        => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
             'on_the_way_po_value'                   => $this->on_the_way_po_value ?? 0,
             'on_the_way_po_count'                   => $this->on_the_way_po_count ?? 0,
+            'woc'                                   => $this->woc !== null ? round((float) $this->woc, 1) : null,
         ];
     }
 
