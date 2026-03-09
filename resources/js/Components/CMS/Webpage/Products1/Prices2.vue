@@ -225,7 +225,7 @@ const _popoverProfit = ref(null)
                         ({{ layout?.user?.gr_data?.customer_is_gr ? product?.discounted_margin : product?.margin }})
                     </div>
 
-                    <Popover ref="_popoverProfit" :style="{ width: '385px' }" class="py-1 px-2 text-xxs">
+                    <Popover ref="_popoverProfit" class="py-1 px-2 text-xxs max-w-[90vw] md:max-w-none">
                         <ProfitCalculationList :product="product" />
                     </Popover>
                 </div>
