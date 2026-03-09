@@ -207,6 +207,28 @@ class ShowOutboxWorkshop extends OrgAction
                     $suffix
                 ),
             ),
+            'grp.org.fulfilments.show.operations.comms.outboxes.workshop' =>
+            array_merge(
+                ShowOutbox::make()->getBreadcrumbs(
+                    'grp.org.fulfilments.show.operations.comms.outboxes.show',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $outbox->emailOngoingRun->email,
+                    [
+                        'index' => [
+                            'name' => 'grp.org.fulfilments.show.operations.comms.outboxes.show',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name' => 'grp.org.fulfilments.show.operations.comms.outboxes.workshop',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+
             default => []
         };
     }
