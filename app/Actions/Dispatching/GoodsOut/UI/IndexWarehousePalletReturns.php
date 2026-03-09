@@ -320,6 +320,14 @@ class IndexWarehousePalletReturns extends OrgAction
 
         $actions = [];
 
+        $todo = $this->restriction === 'confirmed';
+
+        $pickingSessionRoute = [
+            'name'       => 'grp.models.warehouse.fulfilment_picking_session.store',
+            'parameters' => [
+                'warehouse' => $warehouse->id
+            ]
+        ];
 
 
 
@@ -341,6 +349,8 @@ class IndexWarehousePalletReturns extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'        => PalletReturnsResource::collection($returns),
+                'todo'        => $todo,
+                'picking_session_route' => $pickingSessionRoute,
 
                 'tabs' => [
                     'current'    => $this->tab,
