@@ -16,9 +16,10 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 const locale = inject("locale", aikuLocaleStructure)
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
+    offerCampaign?: {}
 }>()
 
 function offerRoute(offer: Order) {
@@ -27,15 +28,32 @@ function offerRoute(offer: Order) {
         case "grp.org.shops.show.discounts.campaigns.show":
         case "grp.org.shops.show.catalogue.families.show":
             return route(
-                "grp.org.shops.show.discounts.offers.show",
+                returnRouteOffer(offer),
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
+                    props.offerCampaign?.slug,
                     offer.slug])
         default:
             return ""
     }
 }
+
+function returnRouteOffer(offer: any) {
+    console.log('offer type:', offer.type)
+    switch (offer.type) {
+        case 'VolGr Gift':
+            return "grp.org.shops.show.discounts.campaigns.gift.show";
+        case 'GR Amnesty':
+            return "grp.org.shops.show.discounts.campaigns.amnesty.show";
+        default:
+            return "grp.org.shops.show.discounts.campaigns.offer.show";
+    }
+}
+
+console.log("Curr Route", route().current())
+
+
 </script>
 
 <template>
@@ -44,6 +62,9 @@ function offerRoute(offer: Order) {
             <Link :href="offerRoute(offer)" class="primaryLink">
                 {{ offer.name }}
             </Link>
+            <pre>
+                {{ offerCampaign }}
+            </pre>
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: collection }">

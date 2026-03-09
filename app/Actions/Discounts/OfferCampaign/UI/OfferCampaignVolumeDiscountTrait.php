@@ -101,6 +101,7 @@ trait OfferCampaignVolumeDiscountTrait
                         ]
                     ],
                 ],
+                'data'           => $offerCampaign,
                 'tabs'                                 => [
                     'current'    => $this->tab,
                     'navigation' => OfferCampaignTabsEnum::navigation()
@@ -111,10 +112,10 @@ trait OfferCampaignVolumeDiscountTrait
                 OfferCampaignTabsEnum::OFFERS->value   => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
                     fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))
                     : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))),
-                OfferCampaignTabsEnum::GR_GIFT->value   => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
+                OfferCampaignTabsEnum::GR_GIFT->value   => $this->tab == OfferCampaignTabsEnum::GR_GIFT->value ?
                     fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'VolGr Gift'))
                     : Inertia::lazy(fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'VolGr Gift'))),
-                OfferCampaignTabsEnum::GR_AMNESTY->value   => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
+                OfferCampaignTabsEnum::GR_AMNESTY->value   => $this->tab == OfferCampaignTabsEnum::GR_AMNESTY->value ?
                     fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'GR Amnesty'))
                     : Inertia::lazy(fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'GR Amnesty'))),
                 OfferCampaignTabsEnum::HISTORY->value  => $this->tab == OfferCampaignTabsEnum::HISTORY->value ?

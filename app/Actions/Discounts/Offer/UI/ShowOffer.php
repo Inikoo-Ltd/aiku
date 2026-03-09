@@ -10,7 +10,10 @@
 namespace App\Actions\Discounts\Offer\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\OrgAction;
+use App\Http\Resources\Catalogue\OfferResource;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
@@ -20,8 +23,6 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Catalogue\OfferResource;
-use App\Models\Catalogue\ProductCategory;
 
 class ShowOffer extends OrgAction
 {
@@ -68,7 +69,7 @@ class ShowOffer extends OrgAction
                 'type'  => 'button',
                 'style' => 'edit',
                 'route' => [
-                    'name'       => 'grp.org.shops.show.discounts.offers.edit',
+                    'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit',
                     'parameters' => $request->route()->originalParameters()
                 ],
             ];
@@ -118,6 +119,41 @@ class ShowOffer extends OrgAction
         return $this->handle($shop, $offer);
     }
 
+    public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
+    {
+        if($offer->type != "Category Quantity Ordered") {
+            abort(404);
+        }
+
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop, $offer);
+    }
+
+    public function inGiftCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
+    {
+        if($offer->type != "VolGr Gift") {
+            abort(404);
+        }
+
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop, $offer);
+    }
+
+    public function inAmnestyCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer{
+        if($offer->type != "GR Amnesty"){
+            abort(404);
+        }
+
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop, $offer);
+    } 
+
     public function getBreadcrumbs(Offer $offer, string $routeName, array $routeParameters, string|null $suffix = null): array
     {
         $headCrumb = function (array $routeParameters = []) {
@@ -134,6 +170,87 @@ class ShowOffer extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.discounts.campaigns.amnesty.show'  => 
+            array_merge(
+                ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters, $suffix),
+                [
+                    [
+                        'type'           => 'modelWithIndex',
+                        'modelWithIndex' => [
+                            'index' => [
+                                'route' => [
+                                    'name'       => 'grp.org.shops.show.discounts.campaigns.show',
+                                    'parameters' => $routeParameters
+                                ],
+                                'label' => __('Offers'),
+                                'icon'  => 'fal fa-bars'
+                            ],
+                            'model' => [
+                                'route' => [
+                                    'name'       => $routeName,
+                                    'parameters' => $routeParameters,
+                                ],
+                                'label' => $offer->name,
+                            ],
+                        ],
+                        'suffix' => $suffix,
+                    ],
+                ]
+            ),
+            'grp.org.shops.show.discounts.campaigns.gift.show'  => 
+            array_merge(
+                ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters, $suffix),
+                [
+                    [
+                        'type'           => 'modelWithIndex',
+                        'modelWithIndex' => [
+                            'index' => [
+                                'route' => [
+                                    'name'       => 'grp.org.shops.show.discounts.campaigns.show',
+                                    'parameters' => $routeParameters
+                                ],
+                                'label' => __('Offers'),
+                                'icon'  => 'fal fa-bars'
+                            ],
+                            'model' => [
+                                'route' => [
+                                    'name'       => $routeName,
+                                    'parameters' => $routeParameters,
+                                ],
+                                'label' => $offer->name,
+                            ],
+                        ],
+                        'suffix' => $suffix,
+                    ],
+                ]
+            ),
+            'grp.org.shops.show.discounts.campaigns.offer.show'  => 
+            array_merge(
+                ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters, $suffix),
+                [
+                    [
+                        'type'           => 'modelWithIndex',
+                        'modelWithIndex' => [
+                            'index' => [
+                                'route' => [
+                                    'name'       => 'grp.org.shops.show.discounts.campaigns.show',
+                                    'parameters' => $routeParameters
+                                ],
+                                'label' => __('Offers'),
+                                'icon'  => 'fal fa-bars'
+                            ],
+                            'model' => [
+                                'route' => [
+                                    'name'       => $routeName,
+                                    'parameters' => $routeParameters,
+                                ],
+                                'label' => $offer->name,
+                            ],
+                        ],
+                        'suffix' => $suffix,
+                    ],
+                ]
+            ),
             'grp.org.shops.show.discounts.offers.show' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
