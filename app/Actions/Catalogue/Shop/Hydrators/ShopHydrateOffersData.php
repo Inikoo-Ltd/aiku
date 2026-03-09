@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -57,7 +58,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
         $volGrCampaign = OfferCampaign::where('shop_id', $shop->id)
             ->where('status', true)
             ->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->first();
-        if ($volGrCampaign) {
+        if ($volGrCampaign and $shop->type == ShopTypeEnum::B2B) {
             data_set($offersData, 'gr.active', true);
             data_set($offersData, 'gr.interval', Arr::get($volGrCampaign, 'settings.interval', 30));
 
@@ -89,13 +90,16 @@ class ShopHydrateOffersData implements ShouldBeUnique
                     foreach (Arr::get($giftAllowance->data, 'products', []) as $productData) {
                         $product = Product::find($productData['id']);
                         if ($product) {
-
                             $productOptions[] = [
                                 'id'      => $product->id,
                                 'code'    => $product->code,
                                 'name'    => $product->name,
-                                'default' => Arr::get($productData
-                                    , 'default', false),
+                                'default' => Arr::get(
+                                    $productData
+                                    ,
+                                    'default',
+                                    false
+                                ),
                             ];
                         }
                     }
@@ -110,6 +114,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
         }
 
         Cache::put("gr_amnesty_offer_id_$shop->id", Arr::get($offersData, "gr.amnesty_offer_id"), now()->addHour());
+
         $shop->updateQuietly(['offers_data' => $offersData]);
         $shop->refresh();
     }
