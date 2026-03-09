@@ -87,10 +87,14 @@ class DashboardLeave extends OrgAction
         // Apply sorting
         switch ($sortBy) {
             case 'last_name':
-                $employeesQuery->orderByRaw("SUBSTRING_INDEX(contact_name, ' ', -1)");
+                $employeesQuery
+                    ->orderByRaw("(string_to_array((trim(coalesce(contact_name, '')) COLLATE \"C\"), ' '))[array_length(string_to_array((trim(coalesce(contact_name, '')) COLLATE \"C\"), ' '), 1)]")
+                    ->orderBy('contact_name');
                 break;
             case 'first_name':
-                $employeesQuery->orderByRaw("SUBSTRING_INDEX(contact_name, ' ', 1)");
+                $employeesQuery
+                    ->orderByRaw("split_part((trim(coalesce(contact_name, '')) COLLATE \"C\"), ' ', 1)")
+                    ->orderBy('contact_name');
                 break;
             case 'department':
                 $employeesQuery->select('employees.*')
