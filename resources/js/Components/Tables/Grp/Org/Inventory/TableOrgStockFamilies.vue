@@ -80,6 +80,11 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
             </span>
         </template>
 
+        <template #cell(woc)="{ item }">
+            <span v-if="item.woc !== null" class="tabular-nums">{{ item.woc }}w</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
         <template #cell(stock_value)="{ item }">
             <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.stock_value) }}</span>
         </template>
