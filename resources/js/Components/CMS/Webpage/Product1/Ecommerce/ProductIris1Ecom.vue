@@ -37,6 +37,7 @@ import { Navigation, Thumbs } from 'swiper/modules'
 // import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
 
 
 
@@ -294,7 +295,8 @@ onMounted(async () => {
                     <template v-if="product.offers_data?.number_offers > 0">
                         <div class="flex flex-col w-1/2 offers">
                             <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
-                                <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" :offer="bestOffer" />
+                                <GRAmnestyPriceLabel v-if="layout?.user?.gr_data?.amnesty" :offer="bestOffer" />
+                                <MemberPriceLabel v-else-if="layout?.user?.gr_data?.customer_is_gr" :offer="bestOffer" />
                                 <NonMemberPriceLabel v-else :product />
                             </template>
             
