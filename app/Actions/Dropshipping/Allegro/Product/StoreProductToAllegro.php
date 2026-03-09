@@ -16,7 +16,10 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Dropshipping\AllegroUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -32,8 +35,17 @@ class StoreProductToAllegro extends RetinaAction
 
     public function handle(Portfolio $portfolio): Portfolio
     {
+        /** @var CustomerSalesChannel $customerSalesChannel */
+        $customerSalesChannel = $portfolio->customerSalesChannel;
+
         /** @var AllegroUser $allegroUser */
-        $allegroUser = $portfolio->customerSalesChannel->user;
+        $allegroUser = $customerSalesChannel->user;
+
+        /** @var Customer $customer */
+        $customer = $customerSalesChannel->customer;
+
+        /** @var Shop $shop */
+        $shop = $customer->shop;
 
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
@@ -46,18 +58,22 @@ class StoreProductToAllegro extends RetinaAction
             $getRecommendedCategory = $allegroUser->getRecommendedCategory($product->family->name);
             $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id');
 
-            // $getParameters = $allegroUser->getCategoryParameters($categoryId);
+            $getParameters = $allegroUser->getCategoryParameters($categoryId);
 
-            /*$proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
+            $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
                 'category_id' => $categoryId,
                 'parameters' => $getParameters
             ]);
-            $allegroProductId = Arr::get($proposedProduct, 'id');*/
-
-            $allegroProductId = "28c49b7b-0d8f-4aff-bd94-e8f2b4922395";
+            $allegroProductId = Arr::get($proposedProduct, 'id');
 
             if (!$allegroProductId) {
                 throw new \Exception('Failed to propose product to Allegro: no product ID returned.');
+            }
+
+            $availableQuantity = $product->available_quantity;
+
+            if ($customerSalesChannel->max_quantity_advertise > 0) {
+                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
             $offerData = [
@@ -67,7 +83,7 @@ class StoreProductToAllegro extends RetinaAction
                             'id' => $allegroProductId
                         ],
                         'quantity' => [
-                            'value' => 1
+                            'value' => $availableQuantity
                         ]
                     ]
                 ],
@@ -83,7 +99,7 @@ class StoreProductToAllegro extends RetinaAction
                     ]
                 ],
                 'stock' => [
-                    'available' => $product->available_quantity,
+                    'available' => $availableQuantity,
                     'unit'      => 'UNIT'
                 ],
                 'delivery' => [
@@ -97,10 +113,10 @@ class StoreProductToAllegro extends RetinaAction
                     'republish' => true
                 ],
                 'location' => [
-                    'city'        => $allegroUser->city ?? 'Warszawa',
-                    'countryCode' => $allegroUser->country_code ?? 'PL',
-                    'postCode'    => $allegroUser->post_code ?? '00-001',
-                    'province'    => $allegroUser->province ?? 'MAZOWIECKIE'
+                    'city'        => $shop->address->locality,
+                    'countryCode' => $shop->country->code,
+                    'postCode'    => $shop->address->postal_code,
+                    'province'    => $shop->address->administrative_area
                 ],
                 'external' => [
                     'id' => (string) $portfolio->id

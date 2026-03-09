@@ -42,26 +42,30 @@ const isLoading = ref(false)
 const inProgress = ref(false)
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
-const email = ref([])
+const email = ref('')
 const templateName = ref('')
 const temporaryData = ref()
 
-const openSendTest = (data) => {
+const openSendTest = (data: any) => {
     visibleEmailTestModal.value = true
     temporaryData.value = {
-        layout: data?.jsonFile,
         compiled_layout: data?.htmlFile
     }
 }
 
 
-const sendTestToServer = async () => {
+const sendTestToServer = () => {
     isLoading.value = true;
-    try {
-        const response = await axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
-            { ...temporaryData.value, emails: email.value }
-        );
-    } catch (error) {
+    axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
+        { ...temporaryData.value, email: email.value }
+    ).then((response) => {
+        notify({
+            title: trans('Success!'),
+            text: trans('Test email sent successfully'),
+            type: 'success',
+        });
+        email.value = '';
+    }).catch((error) => {
         console.error("Error in sendTest:", error);
         visibleEmailTestModal.value = false
         temporaryData.value = null
@@ -71,9 +75,12 @@ const sendTestToServer = async () => {
             text: errorMessage,
             type: "error",
         });
-    } finally {
-        isLoading.value = false;
-    }
+    })
+        .finally(() => {
+            isLoading.value = false;
+            visibleEmailTestModal.value = false
+            temporaryData.value = null
+        });
 };
 
 const onSaveTemplate = (data: any) => {
@@ -224,21 +231,13 @@ const handleDelete = async () => {
     <Dialog v-model:visible="visibleEmailTestModal" modal :closable="false" :showHeader="false"
         :style="{ width: '25rem' }">
         <div class="pt-4">
-            <div class="font-semibold w-24 mb-3">Email</div>
-            <Multiselect v-model="email" mode="tags" :close-on-select="false" :searchable="true" :create-option="true"
-                :options="[]" :showOptions="false" :caret="false">
-                <template #tag="{ option, handleTagRemove, disabled }">
-                    <slot name="tag" :option="option" :handleTagRemove="handleTagRemove" :disabled="disabled">
-                        <div class="px-0.5 py-[3px]">
-                            <Tag :label="option.label" :closeButton="true" :stringToColor="true" size="sm"
-                                @onClose="(event) => handleTagRemove(option, event)" />
-                        </div>
-                    </slot>
-                </template>
-            </Multiselect>
+            <div class="font-semibold mb-3">Email</div>
+            <PureInput v-model="email" placeholder="Email" />
             <div class="flex justify-end mt-3 gap-3">
-                <Button :type="'tertiary'" label="Cancel" @click="visibleEmailTestModal = false"></Button>
-                <Button @click="sendTestToServer" :icon="faPaperPlane" label="Send"></Button>
+                <Button :type="'tertiary'" label="Cancel" @click="visibleEmailTestModal = false"
+                    :disabled="isLoading"></Button>
+                <Button @click="sendTestToServer" :icon="faPaperPlane" label="Send" :loading="isLoading"
+                    :disabled="!email"></Button>
             </div>
         </div>
     </Dialog>
