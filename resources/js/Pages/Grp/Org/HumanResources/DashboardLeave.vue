@@ -7,7 +7,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Dropdown from "primevue/dropdown"
+import Select from "primevue/select"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv } from "@fal"
 import { notify } from "@kyvg/vue3-notification"
@@ -735,7 +735,7 @@ const submitExport = () => {
 					</option>
 				</select>
 
-				<Dropdown
+				<Select
 					v-model="selectedType"
 					@change="updateFilter"
 					:options="typeOptions"
@@ -1044,7 +1044,7 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
 							trans("Leave Type")
 						}}</label>
-						<Dropdown
+						<Select
 							v-model="exportForm.type"
 							:options="parsedTypeOptions"
 							optionLabel="label"
