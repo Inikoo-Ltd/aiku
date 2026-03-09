@@ -47,7 +47,7 @@ class GetFaireOrdersInShop extends OrgAction
 
 
         foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
-            try {
+           // try {
                 $externalId             = Arr::get($faireOrder, 'id');
                 $retailerId             = Arr::get($faireOrder, 'retailer_id');
                 $retailer               = GetFaireRetailers::run($shop, $retailerId);
@@ -130,14 +130,6 @@ class GetFaireOrdersInShop extends OrgAction
                             ->where('marketplace_id', $item['variant_id'])
                             ->first();
 
-                        $product = UpdateProduct::run(
-                            $product,
-                            [
-                                'price' => $product->units * Arr::get($item, 'price.amount_minor') / 100,
-                            ]
-                        );
-
-
                         if (!$product) {
                             $errors[] = [
                                 'product_code'           => Arr::get($item, 'sku', 'NO SKU'),
@@ -147,6 +139,16 @@ class GetFaireOrdersInShop extends OrgAction
                             ];
                             continue;
                         }
+
+                        $product = UpdateProduct::run(
+                            $product,
+                            [
+                                'price' => $product->units * Arr::get($item, 'price.amount_minor') / 100,
+                            ]
+                        );
+
+
+
 
 
                         $historicAsset = $product->currentHistoricProduct;
@@ -229,9 +231,9 @@ class GetFaireOrdersInShop extends OrgAction
                         print_r($errors);
                     }
                 }
-            } catch (\Throwable $e) {
-                $command?->error('Error processing order '.Arr::get($faireOrder, 'display_id').' - '.$e->getMessage());
-            }
+//            } catch (\Throwable $e) {
+//                $command?->error('Error processing order '.Arr::get($faireOrder, 'display_id').' - '.$e->getMessage());
+//            }
         }
     }
 
