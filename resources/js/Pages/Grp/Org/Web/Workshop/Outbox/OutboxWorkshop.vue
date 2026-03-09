@@ -103,13 +103,13 @@ const onSaveTemplate = (data: any) => {
     }
 }
 
-const sendTestToServer = async () => {
+const sendTestToServer = () => {
     isLoading.value = true;
-    try {
-        const response = await axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
-            { ...temporaryData.value, email: email.value }
-        );
-    } catch (error) {
+    axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
+        { ...temporaryData.value, email: email.value }
+    ).then((response) => {
+        // Handle successful response if needed
+    }).catch((error) => {
         console.error("Error in sendTest:", error);
         visibleEmailTestModal.value = false
         temporaryData.value = null
@@ -119,11 +119,11 @@ const sendTestToServer = async () => {
             text: errorMessage,
             type: "error",
         });
-    } finally {
+    }).finally(() => {
         isLoading.value = false;
         visibleEmailTestModal.value = false
         temporaryData.value = null
-    }
+    });
 };
 
 

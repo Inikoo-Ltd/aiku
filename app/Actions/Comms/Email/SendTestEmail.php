@@ -23,7 +23,7 @@ class SendTestEmail extends OrgAction
 {
     use WithSendBulkEmails;
 
-    public function handle(Mailshot|Outbox $entity, array $modelData): DispatchedEmail
+    public function handle(Mailshot|Outbox $entity, array $modelData): ?DispatchedEmail
     {
         if ($entity instanceof Mailshot) {
             $parent = $entity;
@@ -79,7 +79,7 @@ class SendTestEmail extends OrgAction
         ];
     }
 
-    public function asControllerOutbox(Organisation $organisation, Shop $shop, Outbox $outbox, ActionRequest $request): DispatchedEmail
+    public function asControllerOutbox(Shop $shop, Outbox $outbox, ActionRequest $request): DispatchedEmail
     {
         $this->initialisationFromShop($shop, $request);
 
