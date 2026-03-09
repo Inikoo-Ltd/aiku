@@ -9,6 +9,7 @@
 namespace App\Actions\Discounts\OfferCampaign\UI;
 
 use App\Actions\OrgAction;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
@@ -38,6 +39,18 @@ class EditVolGrGift extends OrgAction
         }
         if (!$giftAllowance) {
             abort(423);
+        }
+
+        $productOptions = [];
+        foreach (Arr::get($giftAllowance->data, 'products', []) as $productID) {
+            $product = Product::find($productID);
+            if ($product) {
+                $productOptions[] = [
+                    'id'=> $product->id,
+                    'name'=>$product->name,
+                    'default'=>Arr::get($giftAllowance->data, 'default') == $product->id,
+                ];
+            }
         }
 
 
@@ -93,7 +106,7 @@ class EditVolGrGift extends OrgAction
                                             'shop' => $offerCampaign->shop->id,
                                         ],
                                     ],
-                                    "value"      => Arr::get($giftAllowance->data, 'products'),
+                                    "value"      => $productOptions,
                                 ],
                                 'default'  => [
                                     'hidden' => true,
@@ -123,14 +136,11 @@ class EditVolGrGift extends OrgAction
 
     public function getBreadcrumbs(OfferCampaign $offerCampaign, string $routeName, array $routeParameters): array
     {
-
-        return  ShowOfferCampaign::make()->getBreadcrumbs(
+        return ShowOfferCampaign::make()->getBreadcrumbs(
             $offerCampaign,
             routeName: preg_replace('/edit_vol_gr_gift$/', 'show', $routeName),
             routeParameters: $routeParameters,
             suffix: __('Edit Vol/GR Gift')
         );
-
-
     }
 }
