@@ -7,8 +7,10 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Dropdown from "primevue/dropdown"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv } from "@fal"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv)
 
@@ -98,6 +100,8 @@ const showModal = ref(false)
 const selectedLeave = ref<LeaveItem | null>(null)
 const isExportModalOpen = ref(false)
 const isExporting = ref(false)
+const exportError = ref(false)
+const exportMessage = ref("")
 
 const selectedYear = ref<number>(props.filters.year)
 const selectedMonth = ref<number>(props.filters.month)
@@ -213,6 +217,39 @@ const displayPeriodLabel = computed(() => {
 
 	const week = visibleWeeks.value[0]
 	return `${formatRangeDate(week.start)} - ${formatRangeDate(week.end)}`
+})
+
+const parsedTypeOptions = computed(() => {
+	if (!props.type_options) return []
+
+	// If it's already an array with label/value, return as is
+	if (Array.isArray(props.type_options)) {
+		return props.type_options
+	}
+
+	// If it's an object, convert to array format
+	if (typeof props.type_options === "object") {
+		return Object.entries(props.type_options).map(([value, label]) => ({
+			value,
+			label: typeof label === "string" ? label : label.label || value,
+		}))
+	}
+
+	// If it's a JSON string, parse it
+	if (typeof props.type_options === "string") {
+		try {
+			const parsed = JSON.parse(props.type_options)
+			return Object.entries(parsed).map(([value, label]) => ({
+				value,
+				label: typeof label === "string" ? label : label.label || value,
+			}))
+		} catch (e) {
+			console.error("Failed to parse type_options:", e)
+			return []
+		}
+	}
+
+	return []
 })
 
 const openModal = (leave: LeaveItem) => {
@@ -539,15 +576,17 @@ const closeExportModal = () => {
 const submitExport = () => {
 	isExporting.value = true
 
-	const exportParams: Record<string, any> = {}
+	// Build export parameters FIRST
+	const exportParams: Record<string, any> = {
+		year: selectedYear.value,
+		month: selectedMonth.value,
+		employee_id: selectedEmployeeId.value,
+		type: selectedType.value,
+		department: selectedDepartment.value,
+		search: searchQuery.value,
+	}
 
-	exportParams.year = selectedYear.value
-	exportParams.month = selectedMonth.value
-	exportParams.employee_id = selectedEmployeeId.value
-	exportParams.type = selectedType.value
-	exportParams.department = selectedDepartment.value
-	exportParams.search = searchQuery.value
-
+	// Add form filters
 	if (exportForm.from) exportParams.from = exportForm.from
 	if (exportForm.to) exportParams.to = exportForm.to
 	if (exportForm.type) exportParams.type = exportForm.type
@@ -558,22 +597,48 @@ const submitExport = () => {
 
 	isExportModalOpen.value = false
 
-	if (exportForm.export_type === "calendar" && exportForm.format === "print") {
-		const printUrl = route("grp.org.hr.leaves.print", exportParams)
-		window.open(printUrl, "_blank")
-	} else {
-		exportParams.format = exportForm.format
-		const exportRoute =
-			exportForm.export_type === "calendar"
-				? "grp.org.hr.leaves.export.calendar"
-				: "grp.org.hr.leaves.export"
-
-		window.location.href = route(exportRoute, { ...route().params, ...exportParams })
-	}
-
-	setTimeout(() => {
+	// Set up timeout for long exports
+	const exportTimeOut = setTimeout(() => {
 		isExporting.value = false
-	}, 1500)
+		notify({
+			title: "Export taking longer than expected",
+			text: "The Export is taking longer than expected",
+			type: "warning",
+		})
+	}, 30000)
+
+	try {
+		if (exportForm.export_type === "calendar" && exportForm.format === "print") {
+			// Handle print export
+			const printUrl = route("grp.org.hr.leaves.print", {
+				...route().params,
+				...exportParams,
+			})
+			window.open(printUrl, "_blank")
+		} else {
+			// Handle file export
+			exportParams.format = exportForm.format
+			const exportRoute =
+				exportForm.export_type === "calendar"
+					? "grp.org.hr.leaves.export.calendar"
+					: "grp.org.hr.leaves.export"
+
+			window.location.href = route(exportRoute, { ...route().params, ...exportParams })
+		}
+
+		clearTimeout(exportTimeOut)
+	} catch (error) {
+		clearTimeout(exportTimeOut)
+		isExporting.value = false
+		exportError.value = true
+		exportMessage.value = "Export failed. Please try again."
+		console.error("Export failed:", error)
+		notify({
+			title: "Export Failed",
+			text: "Unable to export calendar. Please try again.",
+			type: "error",
+		})
+	}
 }
 </script>
 
@@ -663,15 +728,15 @@ const submitExport = () => {
 					</option>
 				</select>
 
-				<select
+				<Dropdown
 					v-model="selectedType"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-					<option :value="null">{{ trans("All Types") }}</option>
-					<option v-for="type in typeOptions" :key="type.value" :value="type.value">
-						{{ type.label }}
-					</option>
-				</select>
+					:options="typeOptions"
+					optionLabel="label"
+					optionValue="value"
+					:placeholder="trans('All Types')"
+					showClear
+					class="w-full md:w-48" />
 
 				<select
 					v-model="selectedDepartment"
@@ -941,6 +1006,9 @@ const submitExport = () => {
 			<p class="text-sm text-gray-600 mb-4">
 				{{ trans("Select filters and export format for your leave report.") }}
 			</p>
+			<div v-if="exportError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+				<p class="text-sm text-red-800">{{ exportMessage }}</p>
+			</div>
 
 			<form @submit.prevent="submitExport" class="space-y-4">
 				<div class="grid grid-cols-2 gap-4">
@@ -969,17 +1037,14 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
 							trans("Leave Type")
 						}}</label>
-						<select
+						<Dropdown
 							v-model="exportForm.type"
-							class="w-full border border-gray-300 rounded-lg px-3 py-2">
-							<option value="">{{ trans("All Types") }}</option>
-							<option
-								v-for="(label, value) in type_options"
-								:key="value"
-								:value="value">
-								{{ label }}
-							</option>
-						</select>
+							:options="parsedTypeOptions"
+							optionLabel="label"
+							optionValue="value"
+							:placeholder="trans('All Types')"
+							showClear
+							class="w-full" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
@@ -1008,7 +1073,7 @@ const submitExport = () => {
 							v-model="exportForm.department"
 							type="text"
 							class="w-full border border-gray-300 rounded-lg px-3 py-2"
-							:placeholder="trans('Filter by department')" />
+							:placeholder="trans('Filter by Department')" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
@@ -1018,7 +1083,7 @@ const submitExport = () => {
 							v-model="exportForm.team"
 							type="text"
 							class="w-full border border-gray-300 rounded-lg px-3 py-2"
-							:placeholder="trans('Filter by team')" />
+							:placeholder="trans('Filter by Team')" />
 					</div>
 				</div>
 
