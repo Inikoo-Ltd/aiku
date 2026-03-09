@@ -27,6 +27,25 @@ Route::name("campaigns.")->prefix('campaigns')
     ->group(function () {
         Route::get('', IndexOfferCampaigns::class)->name('index');
         Route::get('{offerCampaign}', ShowOfferCampaign::class)->name('show');
+
+        Route::name('offer.')->prefix('{offerCampaign}/offer')
+            ->group(function ()     { 
+                Route::get('{offer}', [ShowOffer::class, 'inOfferCampaign'])->name('show');
+                Route::get('{offer}/edit', [EditOffer::class, 'inOfferCampaign'])->name('edit');
+            });
+
+        Route::name('gift.')->prefix('{offerCampaign}/gift')
+            ->group(function () { 
+                Route::get('{offer}', [ShowOffer::class, 'inGiftCampaign'])->name('show');
+                Route::get('{offer}/edit', [EditOffer::class, 'inGiftCampaign'])->name('edit');                                
+            });
+
+        Route::name('amnesty.')->prefix('{offerCampaign}/amnesty')
+            ->group(function () { 
+                Route::get('{offer}', [ShowOffer::class, 'inAmnestyCampaign'])->name('show');
+                Route::get('{offer}/edit', [EditOffer::class, 'inAmnestyCampaign'])->name('edit');                
+            });
+
         Route::get('{offerCampaign}/edit', EditDummy::class)->name('edit');
         Route::get('{offerCampaign}/create-vol-gr-gift', CreateVolGrGift::class)->name('create_vol_gr_gift');
         Route::get('{offerCampaign}/edit-vol-gr-gift', EditVolGrGift::class)->name('edit_vol_gr_gift')->withoutScopedBindings();
