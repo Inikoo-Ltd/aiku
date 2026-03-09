@@ -45,6 +45,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
         data_set($offersData, 'gr.interval', null);
         data_set($offersData, 'gr.amnesty', false);
         data_set($offersData, 'gr.amnesty_offer_id', null);
+        data_set($offersData, 'gr.amnesty_until', null);
 
 
         $volGrCampaign = OfferCampaign::where('shop_id', $shop->id)
@@ -63,6 +64,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
                 if ($amnestyOffer->status) {
                     data_set($offersData, 'gr.amnesty', true);
                     data_set($offersData, 'gr.amnesty_offer_id', $amnestyOffer->id);
+                    data_set($offersData, 'gr.amnesty_until', $amnestyOffer->end_at);
                 }
             }
         }

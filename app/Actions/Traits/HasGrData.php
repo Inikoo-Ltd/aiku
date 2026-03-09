@@ -29,7 +29,7 @@ trait HasGrData
 
             $grInterval = Arr::get($this->shop->offers_data, 'gr.interval', 30);
 
-            if ($lastDaysSinceLastInvoiced ?? 10000 <= $grInterval) {
+            if (($lastDaysSinceLastInvoiced ?? 10000) <= $grInterval) {
                 $grData['customer_is_gr'] = true;
                 $grData['gr_label']       = Arr::get($this->shop->offers_data, 'gr.label', 'Gold reward member');
                 $grData['meter']          = [
@@ -37,8 +37,9 @@ trait HasGrData
                     $grInterval,
                 ];
             }
+            $grData['amnesty']       = Arr::get($this->shop->offers_data, 'gr.amnesty');
+            $grData['amnesty_until'] = Arr::get($this->shop->offers_data, 'gr.amnesty_until');
         }
-
         return $grData;
     }
 
@@ -61,6 +62,8 @@ trait HasGrData
                     $grInterval,
                 ];
             }
+            $offerData['amnesty']       = Arr::get($this->shop->offers_data, 'gr.amnesty');
+            $offerData['amnesty_until'] = Arr::get($this->shop->offers_data, 'gr.amnesty_until');
         }
 
         return $offerData;
