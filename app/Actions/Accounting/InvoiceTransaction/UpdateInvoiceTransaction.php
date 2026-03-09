@@ -29,8 +29,8 @@ class UpdateInvoiceTransaction extends OrgAction
     {
         $invoiceTransaction = $this->update($invoiceTransaction, $modelData, ['data']);
 
-        $this->updateTradeUnitBridges($invoiceTransaction);
-        $this->updateOrgStockBridges($invoiceTransaction);
+        SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id);
+        SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id);
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
@@ -45,34 +45,6 @@ class UpdateInvoiceTransaction extends OrgAction
         ProcessInvoiceTransactionTimeSeries::run($invoiceTransaction);
 
         return $invoiceTransaction;
-    }
-
-    protected function updateTradeUnitBridges(InvoiceTransaction $invoiceTransaction): void
-    {
-        $invoiceTransaction->tradeUnitBridges()->update([
-            'net_amount'      => $invoiceTransaction->net_amount,
-            'org_net_amount'  => $invoiceTransaction->org_net_amount,
-            'grp_net_amount'  => $invoiceTransaction->grp_net_amount,
-            'in_process'      => $invoiceTransaction->in_process ?? false,
-            'is_refund'       => $invoiceTransaction->is_refund ?? false,
-            'date'            => $invoiceTransaction->date,
-            'order_id'        => $invoiceTransaction->order_id,
-            'customer_id'     => $invoiceTransaction->customer_id,
-        ]);
-    }
-
-    protected function updateOrgStockBridges(InvoiceTransaction $invoiceTransaction): void
-    {
-        $invoiceTransaction->orgStockBridges()->update([
-            'net_amount'     => $invoiceTransaction->net_amount,
-            'org_net_amount' => $invoiceTransaction->org_net_amount,
-            'grp_net_amount' => $invoiceTransaction->grp_net_amount,
-            'in_process'     => $invoiceTransaction->in_process ?? false,
-            'is_refund'      => $invoiceTransaction->is_refund ?? false,
-            'date'           => $invoiceTransaction->date,
-            'order_id'       => $invoiceTransaction->order_id,
-            'customer_id'    => $invoiceTransaction->customer_id,
-        ]);
     }
 
     public function rules(): array
