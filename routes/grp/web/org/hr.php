@@ -186,6 +186,8 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::patch('types/{leaveType}', \App\Actions\HumanResources\Leave\UpdateLeaveType::class)->name('types.update');
     Route::delete('types/{leaveType}', \App\Actions\HumanResources\Leave\DeleteLeaveType::class)->name('types.delete');
     Route::get('export', [ExportLeaveReport::class, 'asController'])->name('export');
+    Route::get('export/calendar', [ExportCalendar::class, 'asController'])->name('export.calendar');
+    Route::get('print', [PrintCalendar::class, 'asController'])->name('print');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
     Route::post('{leave}', UpdateLeave::class)->name('update');

@@ -319,7 +319,7 @@ const nextRange = () => {
 
 const isHoliday = (date: string): boolean => {
 	if (!props.holidays) return false
-	return props.holidays.some(holiday => {
+	return props.holidays.some((holiday) => {
 		const holidayStart = new Date(holiday.from)
 		const holidayEnd = new Date(holiday.to)
 		const checkDate = new Date(date)
@@ -329,7 +329,7 @@ const isHoliday = (date: string): boolean => {
 
 const getHolidayLabel = (date: string): string => {
 	if (!props.holidays) return ""
-	const holiday = props.holidays.find(holiday => {
+	const holiday = props.holidays.find((holiday) => {
 		const holidayStart = new Date(holiday.from)
 		const holidayEnd = new Date(holiday.to)
 		const checkDate = new Date(date)
@@ -541,7 +541,6 @@ const submitExport = () => {
 
 	const exportParams: Record<string, any> = {}
 
-	// Add current filters
 	exportParams.year = selectedYear.value
 	exportParams.month = selectedMonth.value
 	exportParams.employee_id = selectedEmployeeId.value
@@ -559,18 +558,17 @@ const submitExport = () => {
 
 	isExportModalOpen.value = false
 
-	if (exportForm.export_type === 'calendar' && exportForm.format === 'print') {
-		// Open print view in new window
+	if (exportForm.export_type === "calendar" && exportForm.format === "print") {
 		const printUrl = route("grp.org.hr.leaves.print", exportParams)
-		window.open(printUrl, '_blank')
+		window.open(printUrl, "_blank")
 	} else {
-		// Export file
 		exportParams.format = exportForm.format
-		const exportRoute = exportForm.export_type === 'calendar'
-			? "grp.org.hr.leaves.export.calendar"
-			: "grp.org.hr.leaves.export"
+		const exportRoute =
+			exportForm.export_type === "calendar"
+				? "grp.org.hr.leaves.export.calendar"
+				: "grp.org.hr.leaves.export"
 
-		window.location.href = route(exportRoute, exportParams)
+		window.location.href = route(exportRoute, { ...route().params, ...exportParams })
 	}
 
 	setTimeout(() => {

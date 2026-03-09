@@ -3,18 +3,17 @@
 namespace App\Exports\HumanResources;
 
 use App\Enums\HumanResources\Leave\LeaveTypeEnum;
-use App\Models\HumanResources\Leave;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
-use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 // use Maatwebsite\Excel\Concerns WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 
-class CalendarExport implements FromView, WithColumnWidths
+class CalendarExport implements FromArray, WithHeadings, WithColumnWidths
 {
     protected Organisation $organisation;
     protected array $filters;
@@ -31,33 +30,24 @@ class CalendarExport implements FromView, WithColumnWidths
         $this->holidays = $holidays;
     }
 
-    public function view(): View
-    {
-        $visibleStart = Carbon::parse($this->filters['start_date'] ?? now()->startOfMonth());
-        $visibleEnd = Carbon::parse($this->filters['end_date'] ?? now()->endOfMonth());
-
-        return view('exports.human-resources.calendar', [
-            'exportData' => $this->prepareExportData(),
-            'organisation' => $this->organisation,
-            'filters' => $this->filters,
-            'holidays' => $this->holidays,
-        ]);
-    }
-
-    private function prepareExportData(): array
+    public function headings(): array
     {
         $headers = ['Employee', 'Department', 'Job Title'];
 
-        // Add date headers
         foreach ($this->weeks as $week) {
             foreach ($week['days'] as $day) {
-                $headers[] = $day['date'];
+                $headers[] = Carbon::parse($day['date'])->format('M d');
             }
         }
 
-        $exportData['headers'] = $headers;
+        return $headers;
+    }
 
-        // Add employee rows
+    public function array(): array
+    {
+        $exportData = [];
+
+        // Add employee data rows
         foreach ($this->calendarData as $employee) {
             $row = [
                 $employee['name'],
@@ -65,7 +55,6 @@ class CalendarExport implements FromView, WithColumnWidths
                 $employee['job_title'] ?? ''
             ];
 
-            // Add leave data for each day
             foreach ($this->weeks as $week) {
                 foreach ($week['days'] as $day) {
                     $leaveData = $this->getLeaveForDate($employee, $day['date']);
@@ -73,11 +62,13 @@ class CalendarExport implements FromView, WithColumnWidths
                 }
             }
 
-            $exportData['rows'][] = $row;
+            $exportData[] = $row;
         }
 
         return $exportData;
     }
+
+
 
     private function getLeaveForDate(array $employee, string $date): string
     {
@@ -89,7 +80,6 @@ class CalendarExport implements FromView, WithColumnWidths
             }
         }
 
-        // Check if it's a holiday
         foreach ($this->holidays as $holiday) {
             if ($date >= $holiday['from'] && $date <= $holiday['to']) {
                 return 'HOL';
@@ -102,12 +92,11 @@ class CalendarExport implements FromView, WithColumnWidths
     public function columnWidths(): array
     {
         $widths = [
-            'A' => 25, // Employee name
-            'B' => 20, // Department
-            'C' => 20, // Job Title
+            'A' => 25,
+            'B' => 20,
+            'C' => 20,
         ];
 
-        // Set width for each date column
         $col = 'D';
         foreach ($this->weeks as $week) {
             foreach ($week['days'] as $day) {
