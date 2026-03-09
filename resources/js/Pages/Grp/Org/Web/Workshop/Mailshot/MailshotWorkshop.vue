@@ -113,7 +113,12 @@ const sendTestToServer = () => {
     axios.post(route(props.sendTestRoute.name, props.sendTestRoute.parameters),
         { ...temporaryData.value, email: email.value }
     ).then((response) => {
-        // Handle successful response if needed
+        notify({
+            title: trans('Success!'),
+            text: trans('Test email sent successfully'),
+            type: 'success',
+        });
+        email.value = '';
     }).catch((error) => {
         console.error("Error in sendTest:", error);
         visibleEmailTestModal.value = false
@@ -322,8 +327,10 @@ watch(
             <div class="font-semibold w-24 mb-3">Email</div>
             <PureInput v-model="email" placeholder="Email" />
             <div class="flex justify-end mt-3 gap-3">
-                <Button :type="'tertiary'" label="Cancel" @click="visibleEmailTestModal = false"></Button>
-                <Button @click="sendTestToServer" :icon="faPaperPlane" label="Send"></Button>
+                <Button :type="'tertiary'" label="Cancel" @click="visibleEmailTestModal = false"
+                    :disabled="isLoading"></Button>
+                <Button @click="sendTestToServer" :icon="faPaperPlane" label="Send" :loading="isLoading"
+                    :disabled="!email"></Button>
             </div>
         </div>
     </Dialog>
