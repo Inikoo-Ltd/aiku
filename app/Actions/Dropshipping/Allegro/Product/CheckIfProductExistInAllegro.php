@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Allegro\Product;
 
 use App\Actions\RetinaAction;
+use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
@@ -24,7 +25,7 @@ class CheckIfProductExistInAllegro extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(TiktokUser $tiktokUser, Portfolio $portfolio): array
+    public function handle(AllegroUser $allegroUser, Portfolio $portfolio): array
     {
         try {
             if ($portfolio->platform_product_id) {
@@ -40,10 +41,10 @@ class CheckIfProductExistInAllegro extends RetinaAction
             $result = [];
 
             if (Arr::has($searchFields, 'product_id')) {
-                $result = $tiktokUser->getProduct($portfolio->platform_product_id);
+                $result = $allegroUser->getProduct($portfolio->platform_product_id);
             } else {
                 foreach ($searchFields as $field => $value) {
-                    $searchResult = $tiktokUser->getProducts([
+                    $searchResult = $allegroUser->getProducts([
                         $field => $value
                     ], [
                         'page_size' => 1
