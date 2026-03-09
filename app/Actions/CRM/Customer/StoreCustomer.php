@@ -68,6 +68,7 @@ class StoreCustomer extends OrgAction
     {
         $this->shop = $shop;
         data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
+        data_set($modelData, 'master_shop_id', $shop->master_shop_id);
 
         $contactAddressData = Arr::get($modelData, 'contact_address', []);
         Arr::forget($modelData, 'contact_address');

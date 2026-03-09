@@ -8,8 +8,8 @@
 
 namespace App\Actions\Discounts\OfferCampaign\UI;
 
-use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\OrgAction;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
@@ -41,12 +41,24 @@ class EditVolGrGift extends OrgAction
             abort(423);
         }
 
+        $productOptions = [];
+        foreach (Arr::get($giftAllowance->data, 'products', []) as $productID) {
+            $product = Product::find($productID);
+            if ($product) {
+                $productOptions[] = [
+                    'id'=> $product->id,
+                    'name'=>$product->name,
+                    'default'=>Arr::get($giftAllowance->data, 'default') == $product->id,
+                ];
+            }
+        }
+
 
         return Inertia::render(
             'CreateModel',
             [
                 'title'       => __('Edit Vol/GR Gift'),
-                'breadcrumbs' => $this->getBreadcrumbs($offerCampaign,request()->route()->getName(), request()->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($offerCampaign, request()->route()->getName(), request()->route()->originalParameters()),
                 'pageHead'    => [
                     'title'   => __('Edit Vol/GR Gift'),
                     'icon'    => [
@@ -94,7 +106,7 @@ class EditVolGrGift extends OrgAction
                                             'shop' => $offerCampaign->shop->id,
                                         ],
                                     ],
-                                    "value"      => Arr::get($giftAllowance->data, 'products'),
+                                    "value"      => $productOptions,
                                 ],
                                 'default'  => [
                                     'hidden' => true,
@@ -122,15 +134,13 @@ class EditVolGrGift extends OrgAction
         return $this->handle($offerCampaign);
     }
 
-    public function getBreadcrumbs(OfferCampaign $offerCampaign,string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(OfferCampaign $offerCampaign, string $routeName, array $routeParameters): array
     {
-
-        return  ShowOfferCampaign::make()->getBreadcrumbs(
+        return ShowOfferCampaign::make()->getBreadcrumbs(
             $offerCampaign,
             routeName: preg_replace('/edit_vol_gr_gift$/', 'show', $routeName),
-            routeParameters: $routeParameters,suffix: __('Edit Vol/GR Gift')
+            routeParameters: $routeParameters,
+            suffix: __('Edit Vol/GR Gift')
         );
-
-
     }
 }

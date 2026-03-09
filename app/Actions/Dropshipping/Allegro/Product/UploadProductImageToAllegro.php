@@ -24,7 +24,7 @@ class UploadProductImageToAllegro extends RetinaAction
 
     public function handle(AllegroUser $allegroUser, Media $media)
     {
-        if(! app()->isLocal()) {
+        if (! app()->isLocal()) {
             $imageUrl = GetImgProxyUrl::run($media->getImage()
                 ->resize(480, 480));
         } else {

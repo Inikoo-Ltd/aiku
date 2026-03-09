@@ -21,6 +21,7 @@ use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\SuspendOffer;
 use App\Actions\Discounts\Offer\UpdateOffer;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
+use App\Actions\Discounts\Offer\UpdateOfferStatusFromDates;
 use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
@@ -336,14 +337,21 @@ test('create first order bonus', function () {
 test('update offer allowance signature', function () {
     $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
-    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offerData = Offer::factory()->definition();
+    $offerData['duration'] = OfferDurationEnum::PERMANENT;
+    $offerData['start_at']   = now();
+
+
+    $offer         = StoreOffer::make()->action($offerCampaign, $offerData);
+    UpdateOfferStatusFromDates::run($offer);
+
 
     $allowanceData = OfferAllowance::factory()->definition();
     data_set($allowanceData, 'type', OfferAllowanceType::PERCENTAGE_OFF);
     data_set($allowanceData, 'target_type', OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER);
     data_set($allowanceData, 'data.percentage_off', 10);
-    // Ensure status is true via state
-    data_set($allowanceData, 'state', OfferAllowanceStateEnum::ACTIVE);
+
 
     $allowance1 = StoreOfferAllowance::make()->action($offer, $allowanceData);
     $allowance1->update(['status' => true]);
@@ -359,7 +367,6 @@ test('update offer allowance signature', function () {
     data_set($allowanceData2, 'type', OfferAllowanceType::PERCENTAGE_OFF);
     data_set($allowanceData2, 'target_type', OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY);
     data_set($allowanceData2, 'data.percentage_off', 20);
-    data_set($allowanceData2, 'state', OfferAllowanceStateEnum::ACTIVE);
 
     $allowance2 = StoreOfferAllowance::make()->action($offer, $allowanceData2);
     $allowance2->update(['status' => true]);

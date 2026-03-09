@@ -29,6 +29,7 @@ class UpdateCatalogueDuringMigration
 
     public function handle(MasterShop $masterShop, Command $command): void
     {
+        /** @var MasterShop $primaryPivotShop */
         $primaryPivotShop = $masterShop->shops()->where('migration_pivot', 1)->firstOrFail();
         if ($primaryPivotShop) {
             $command->info('Updating master catalogue from pivot shop '.$primaryPivotShop->name);
@@ -77,7 +78,7 @@ class UpdateCatalogueDuringMigration
                 shop: $shop,
                 deleteMissing: true
             );
-            if (!in_array($shop->slug, ['bg', 'ua'])) {
+            if (!$shop->is_aiku) {
                 UpdateProductDescriptionAndNameFromAurora::run($shop);
                 UpdateFamilyDescriptionAndNameFromAurora::run($shop);
             }

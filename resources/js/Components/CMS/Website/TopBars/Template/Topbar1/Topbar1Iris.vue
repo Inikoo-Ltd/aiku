@@ -146,7 +146,7 @@ watch(
                 <span v-if="layout.offer_data.amnesty" class="text-yellow-300 text-xs inline-flex items-center gap-x-1">
                     <span class="">{{ ctrans('Gold Reward Amnesty') }}</span>
                     <FontAwesomeIcon icon="fas fa-candle-holder" class="" fixed-width aria-hidden="true" />
-                    <span class="text-xs">({{ ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout.offer_data.amnesty_until) }) }})</span>
+                    <span class="text-xs">({{ ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout.offer_data.amnesty_until, { formatTime: 'MMM do' }) }) }})</span>
                 </span>
 
                 <!-- Section: GR status -->
