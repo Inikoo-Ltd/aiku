@@ -14,6 +14,7 @@ use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsBulkEdit;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithMismatch;
 use App\Actions\Masters\MasterAsset\UI\UpdateMasterProductsBulkEdit;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterProductCategory\UI\ShowCreateMasterVariant;
@@ -32,6 +33,7 @@ use App\Actions\Masters\MasterProductCategory\UI\EditMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesGR;
+use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesWithMismatch;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
@@ -250,6 +252,20 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('{masterProduct}', ShowMasterProduct::class)->name('show');
                 Route::get('{masterProduct}/edit', EditMasterProduct::class)->name('edit');
                 Route::get('{masterProduct}/invoices', [IndexInvoicesInProduct::class, 'inMaster'])->name('invoices');
+
+            });
+
+            Route::prefix('/master-family-mismatch-detected')->as('.master_family.mismatch_detected.')->group(function () {
+                Route::get('/', IndexMasterFamiliesWithMismatch::class)->name('index');
+                Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
+                Route::get('{masterFamily}/edit', EditMasterFamily::class)->name('edit');
+                Route::get('{masterFamily}/master-products', [IndexMasterProducts::class, 'inMasterFamilyInMasterShop'])->name('master_products.index');
+            });
+
+            Route::prefix('/master-products-mismatch-detected')->as('.master_products.mismatch_detected.')->group(function () {
+                Route::get('/', IndexMasterProductsWithMismatch::class)->name('index');
+                Route::get('{masterProduct}', ShowMasterProduct::class)->name('show');
+                Route::get('{masterProduct}/edit', EditMasterProduct::class)->name('edit');
             });
 
             Route::get('/master-products-orphan', [IndexMasterProductsWithNoFamily::class, 'inMasterShop'])->name('.master_products_orphan');

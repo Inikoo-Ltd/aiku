@@ -205,6 +205,15 @@ class ShowMasterProduct extends GrpAction
                             'class'   => 'text-red-400'
                         ],
                     'actions'   => [
+                        $masterAsset->mismatch_detected ? [
+                            'key'   => 'repair-mismatch',
+                            'type'  => 'button',
+                            'style' => 'delete',
+                            'route' => [
+                                'name'       => 'grp.models.master_asset.repair_mismatch_trade_units',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
                         [
                             'key'   => 'edit',
                             'type'  => 'button',
@@ -248,6 +257,7 @@ class ShowMasterProduct extends GrpAction
                 ],
                 'masterVariant'        => $masterAsset->masterVariant,
                 'is_variant_leader'    => $masterAsset->is_variant_leader,
+                'mismatch_detected'    => $masterAsset->mismatch_detected,
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductShowcase::run($masterAsset)
@@ -329,6 +339,24 @@ class ShowMasterProduct extends GrpAction
                         ],
                         'model' => [
                             'name'       => 'grp.masters.master_shops.show.master_products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_products.mismatch_detected.show' =>
+            array_merge(
+                ShowMasterShop::make()->getBreadcrumbs($masterAsset->masterShop),
+                $headCrumb(
+                    $masterAsset,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_products.mismatch_detected.index',
+                            'parameters' => $routeParameters,
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_products.mismatch_detected.show',
                             'parameters' => $routeParameters
                         ]
                     ],

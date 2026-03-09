@@ -76,6 +76,21 @@ trait WithMasterFamilySubNavigation
                     ]
                 )
             ];
+        } elseif (in_array(request()->route()->getName(), ['grp.masters.master_shops.show.master_family.mismatch_detected.show', 'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index'])) {
+            $routeFamily = [
+                'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.show',
+                'parameters' => request()->route()->originalParameters()
+            ];
+
+            $routeProducts = [
+                'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index',
+                'parameters' => array_merge(
+                    request()->route()->originalParameters(),
+                    [
+                        'index_elements[status]' => 'active'
+                    ]
+                )
+            ];
         }
 
         return [

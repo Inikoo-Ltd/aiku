@@ -14,9 +14,13 @@ use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Masters\HydrateMasterAssetsAndFamilyMismatch;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMismatch;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamiliesHydrateMismatch;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMismatch;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
@@ -122,9 +126,17 @@ class UpdateMasterAsset extends OrgAction
                 foreach ($masterAsset->products as $product) {
                     SyncProductTradeUnits::run($product, $tradeUnits);
                 }
+
+                data_set($modelData, 'mismatch_detected', false);
             }
 
             $this->update($masterAsset, $modelData);
+            $masterAsset->refresh();
+            $masterFamily = $masterAsset->masterFamily;
+            $masterFamily->update(['mismatch_detected' => $masterFamily->masterAssets()->where('mismatch_detected', true)->exists()]);
+
+            MasterAssetHydrateMismatch::run(true);
+            MasterFamiliesHydrateMismatch::run(true);
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
