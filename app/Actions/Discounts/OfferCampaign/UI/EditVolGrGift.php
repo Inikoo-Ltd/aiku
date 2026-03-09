@@ -8,7 +8,6 @@
 
 namespace App\Actions\Discounts\OfferCampaign\UI;
 
-use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
@@ -46,7 +45,7 @@ class EditVolGrGift extends OrgAction
             'CreateModel',
             [
                 'title'       => __('Edit Vol/GR Gift'),
-                'breadcrumbs' => $this->getBreadcrumbs($offerCampaign,request()->route()->getName(), request()->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($offerCampaign, request()->route()->getName(), request()->route()->originalParameters()),
                 'pageHead'    => [
                     'title'   => __('Edit Vol/GR Gift'),
                     'icon'    => [
@@ -122,13 +121,14 @@ class EditVolGrGift extends OrgAction
         return $this->handle($offerCampaign);
     }
 
-    public function getBreadcrumbs(OfferCampaign $offerCampaign,string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(OfferCampaign $offerCampaign, string $routeName, array $routeParameters): array
     {
 
         return  ShowOfferCampaign::make()->getBreadcrumbs(
             $offerCampaign,
             routeName: preg_replace('/edit_vol_gr_gift$/', 'show', $routeName),
-            routeParameters: $routeParameters,suffix: __('Edit Vol/GR Gift')
+            routeParameters: $routeParameters,
+            suffix: __('Edit Vol/GR Gift')
         );
 
 

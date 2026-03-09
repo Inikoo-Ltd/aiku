@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $organisation_id
  * @property string $allegro_id
  * @property int $customer_id
- * @property int $customer_sales_channel_id
+ * @property int|null $customer_sales_channel_id
  * @property bool $status
  * @property string $name
  * @property string|null $email
@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $deleted_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Dropshipping\CustomerSalesChannel $customerSalesChannel
+ * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser query()

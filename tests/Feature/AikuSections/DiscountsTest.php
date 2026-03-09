@@ -343,7 +343,7 @@ test('update offer allowance signature', function () {
     $offerData['start_at']   = now();
 
 
-    $offer         = StoreOffer::make()->action($offerCampaign,$offerData);
+    $offer         = StoreOffer::make()->action($offerCampaign, $offerData);
     UpdateOfferStatusFromDates::run($offer);
 
 

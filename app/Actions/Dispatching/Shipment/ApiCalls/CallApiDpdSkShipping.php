@@ -98,10 +98,10 @@ class CallApiDpdSkShipping extends OrgAction
                 $errorMessage = Arr::get($apiResponse, 'result.result.0.messages.0', 'Unknown error');
             }
 
-            $element=null;
-            if(is_array($errorMessage) and Arr::has($errorMessage,'value')){
-                $errorMessage=Arr::get($errorMessage,'value');
-                $element=Arr::get($errorMessage,'element');
+            $element = null;
+            if (is_array($errorMessage) and Arr::has($errorMessage, 'value')) {
+                $errorMessage = Arr::get($errorMessage, 'value');
+                $element = Arr::get($errorMessage, 'element');
             }
 
 
@@ -160,8 +160,8 @@ class CallApiDpdSkShipping extends OrgAction
         }
 
 
-        if(Arr::get($parentResource, 'to_address.sorting_code')){
-            $nameDetail.=' '.Arr::get($parentResource, 'to_address.sorting_code');
+        if (Arr::get($parentResource, 'to_address.sorting_code')) {
+            $nameDetail .= ' '.Arr::get($parentResource, 'to_address.sorting_code');
         }
 
         $postcode = Arr::get($parentResource, 'to_address.postal_code');

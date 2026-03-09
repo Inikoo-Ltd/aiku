@@ -133,9 +133,9 @@ class IndexOffers extends OrgAction
         $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
 
         if ($filterByOfferType) {
-            if($filterByOfferType == 'offer_only') {
+            if ($filterByOfferType == 'offer_only') {
                 $query->whereNotIn('offers.type', ['VolGr Gift', 'GR Amnesty']);
-            }else{
+            } else {
                 $query->where('offers.type', $filterByOfferType);
             }
         }
