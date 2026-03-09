@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFilter, faSearch, faLayerGroup } from "@fas";
+import { faFilter, faSearch, faLayerGroup, } from "@fas";
 import { ref, computed, inject, watch } from "vue";
 import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue";
 import Drawer from "primevue/drawer";
@@ -13,6 +13,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import ProductRenderEcom from "@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue"
 import { getProductsRenderB2bComponent } from "@/Composables/getIrisComponents";
+import ListItem from "@tiptap/extension-list-item";
+import Image from "@/Components/Image.vue";
 
 library.add(faFileDownload)
 
@@ -162,6 +164,18 @@ watch(
               :button="modelValue?.button" 
               :screenType
              />
+          </div>
+
+          <div v-if="modelValue?.cards" v-for="card in modelValue?.cards.filter((item) => item.visible)"
+            class="relative rounded-2xl overflow-hidden min-h-80">
+            <Image :src="card.image.source" class="absolute inset-0 w-full h-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+            <!-- Center Content -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
+              <div v-html="card.text"></div>
+              <Button class="mt-4" :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
+                :label="card?.button?.text" />
+            </div>
           </div>
         </div>
       </main>
