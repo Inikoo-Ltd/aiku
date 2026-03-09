@@ -32,6 +32,9 @@ class DashboardLeave extends OrgAction
         $month = (int)$request->input('month', now()->month);
         $employeeId = $request->input('employee_id');
         $type = $request->input('type');
+        $department = $request->input('department');
+        $search = $request->input('search');
+        $sortBy = $request->input('sort_by', 'name');
         $view = $request->input('view') === 'week' ? 'week' : 'month';
         $weekStartInput = $request->input('week_start');
 
@@ -58,11 +61,46 @@ class DashboardLeave extends OrgAction
         }
 
         $employeesQuery = $organisation->employees()
-            ->where('state', 'working')
-            ->orderBy('contact_name');
+            ->where('state', 'working');
 
         if ($employeeId) {
             $employeesQuery->where('id', $employeeId);
+        }
+
+        if ($department) {
+            $employeesQuery->whereHas('jobPositions', function ($query) use ($department) {
+                $query->where('department', $department);
+            });
+        }
+
+        if ($search) {
+            $employeesQuery->where(function ($query) use ($search) {
+                $query->whereWith('contact_name', $search)
+                    ->orWhereWith('work_email', $search)
+                    ->orWhereHas('jobPositions', function ($query) use ($search) {
+                        $query->whereWith('department', $search)
+                            ->orWhereWith('name', $search);
+                    });
+            });
+        }
+
+        // Apply sorting
+        switch ($sortBy) {
+            case 'last_name':
+                $employeesQuery->orderByRaw("SUBSTRING_INDEX(contact_name, ' ', -1)");
+                break;
+            case 'first_name':
+                $employeesQuery->orderByRaw("SUBSTRING_INDEX(contact_name, ' ', 1)");
+                break;
+            case 'department':
+                $employeesQuery->select('employees.*')
+                    ->leftJoin('employee_has_job_positions', 'employees.id', '=', 'employee_has_job_positions.employee_id')
+                    ->leftJoin('job_positions', 'employee_has_job_positions.job_position_id', '=', 'job_positions.id')
+                    ->orderBy('job_positions.department')
+                    ->orderBy('contact_name');
+                break;
+            default:
+                $employeesQuery->orderBy('contact_name');
         }
 
         $employees = $employeesQuery->get();
@@ -87,6 +125,11 @@ class DashboardLeave extends OrgAction
 
         $leaves = $leavesQuery->get()->groupBy('employee_id');
 
+        // Get public holidays for the visible date range
+        $holidays = $organisation->holidays()
+            ->forDateRange($visibleStart, $visibleEnd)
+            ->get();
+
         $calendarData = $employees->map(function (Employee $employee) use ($leaves, $visibleStart, $visibleEnd) {
             $employeeLeaves = $leaves->get($employee->id, collect());
 
@@ -97,9 +140,16 @@ class DashboardLeave extends OrgAction
                 return $leaveStart->lte($visibleEnd) && $leaveEnd->gte($visibleStart);
             });
 
+            // Get current job position for department info
+            $currentJobPosition = $employee->jobPositions()->first();
+            $department = $currentJobPosition?->department;
+            $jobTitle = $currentJobPosition?->name;
+
             return [
                 'id' => $employee->id,
                 'name' => $employee->contact_name,
+                'job_title' => $jobTitle,
+                'department' => $department,
                 'leaves' => $visibleLeaves->map(function ($leave) {
                     return [
                         'id' => $leave->id,
@@ -127,9 +177,19 @@ class DashboardLeave extends OrgAction
             ->where('state', 'working')
             ->orderBy('alias')
             ->get()
-            ->map(fn($employee) => [
+            ->map(fn ($employee) => [
                 'value' => $employee->id,
                 'label' => $employee->contact_name,
+            ]);
+
+        $departmentOptions = $organisation->jobPositions()
+            ->whereNotNull('department')
+            ->distinct('department')
+            ->orderBy('department')
+            ->pluck('department')
+            ->map(fn ($dept) => [
+                'value' => $dept,
+                'label' => $dept,
             ]);
 
         return Inertia::render('Org/HumanResources/DashboardLeave', [
@@ -155,6 +215,9 @@ class DashboardLeave extends OrgAction
                 'month' => $month,
                 'employee_id' => $employeeId ? (int)$employeeId : null,
                 'type' => $type,
+                'department' => $department,
+                'search' => $search,
+                'sort_by' => $sortBy,
                 'view' => $view,
                 'week_start' => $weekStart?->toDateString(),
             ],
@@ -168,13 +231,25 @@ class DashboardLeave extends OrgAction
             'monthName' => $startOfMonth->format('F'),
             'employeeOptions' => $employeeOptions,
             'typeOptions' => collect(LeaveTypeResolver::optionsForOrganisation($organisation->id, false))
-                ->map(fn (string $label, string $value) => [
-                    'value' => $value,
-                    'label' => $label,
-                ])
+                ->map(function (array $data, string $value) {
+                    return [
+                        'value' => $value,
+                        'label' => $data['label'],
+                    ];
+                })
                 ->values(),
             'type_options' => LeaveTypeResolver::optionsForOrganisation($organisation->id, false),
             'status_options' => LeaveStatusEnum::labels(),
+            'departmentOptions' => $departmentOptions,
+            'holidays' => $holidays->map(function ($holiday) {
+                return [
+                    'id' => $holiday->id,
+                    'label' => $holiday->label,
+                    'from' => $holiday->from->format('Y-m-d'),
+                    'to' => $holiday->to->format('Y-m-d'),
+                    'type' => $holiday->type->value,
+                ];
+            }),
         ]);
     }
 
@@ -191,8 +266,7 @@ class DashboardLeave extends OrgAction
         Carbon  $visibleEnd,
         ?Carbon $monthStart = null,
         ?Carbon $monthEnd = null,
-    ): array
-    {
+    ): array {
         $weeks = [];
         $weekIndex = 0;
 
