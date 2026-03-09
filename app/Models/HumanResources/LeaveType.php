@@ -48,4 +48,9 @@ class LeaveType extends Model
     {
         return $this->hasMany(Leave::class);
     }
+
+    public function getShortCodeAttribute(): string
+    {
+        return \App\Enums\HumanResources\Leave\LeaveTypeEnum::shortCodes()[$this->code] ?? '';
+    }
 }
