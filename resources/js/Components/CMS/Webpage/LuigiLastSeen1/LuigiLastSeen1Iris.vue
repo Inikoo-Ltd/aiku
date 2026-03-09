@@ -178,7 +178,6 @@ const fetchRecommendersToGetProducts = async () => {
                     }
                 }
             )
-            console.log('product detail:', response.data.data)
             listProducts.value = response.data.data
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
