@@ -18,6 +18,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -98,6 +99,13 @@ class SendTestEmail extends OrgAction
     public function asControllerOutbox(Shop $shop, Outbox $outbox, ActionRequest $request): DispatchedEmail
     {
         $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($outbox, $this->validatedData);
+    }
+
+    public function asControllerFulfillment(Organisation $organisation, Fulfilment $fulfilment, Outbox $outbox, ActionRequest $request): DispatchedEmail
+    {
+        $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($outbox, $this->validatedData);
     }
