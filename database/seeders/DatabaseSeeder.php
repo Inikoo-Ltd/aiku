@@ -24,6 +24,5 @@ class DatabaseSeeder extends Seeder
             TaxCategorySeeder::class,
         ]);
         Artisan::call('import:tariff_codes harmonized-system.csv');
-
     }
 }

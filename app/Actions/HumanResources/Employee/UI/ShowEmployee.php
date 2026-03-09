@@ -103,14 +103,14 @@ class ShowEmployee extends OrgAction
                 ],
 
                 EmployeeTabsEnum::SHOWCASE->value => $this->tab == EmployeeTabsEnum::SHOWCASE->value ?
-                    fn() => GetEmployeeShowcase::run($employee)
-                    : Inertia::lazy(fn() => GetEmployeeShowcase::run($employee)),
+                    fn () => GetEmployeeShowcase::run($employee)
+                    : Inertia::lazy(fn () => GetEmployeeShowcase::run($employee)),
                 EmployeeTabsEnum::HISTORY->value => $this->tab == EmployeeTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($employee))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($employee))),
+                    fn () => HistoryResource::collection(IndexHistory::run($employee))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($employee))),
                 EmployeeTabsEnum::ATTACHMENTS->value => $this->tab == EmployeeTabsEnum::ATTACHMENTS->value ?
-                    fn() => AttachmentsResource::collection(IndexAttachments::run($employee))
-                    : Inertia::lazy(fn() => AttachmentsResource::collection(IndexAttachments::run($employee))),
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($employee))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($employee))),
 
             ]
         )->table(

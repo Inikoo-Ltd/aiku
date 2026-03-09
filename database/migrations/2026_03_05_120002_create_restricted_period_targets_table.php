@@ -23,4 +23,3 @@ return new class () extends Migration {
         Schema::dropIfExists('restricted_period_targets');
     }
 };
-

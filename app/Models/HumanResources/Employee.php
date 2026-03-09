@@ -269,7 +269,7 @@ class Employee extends Model implements HasMedia, Auditable
     {
         return $this->hasOne(EmployeeAnalytics::class)->latestOfMany();
     }
-    
+
     public function timesheets(): MorphMany
     {
         return $this->morphMany(Timesheet::class, 'subject');
@@ -331,6 +331,28 @@ class Employee extends Model implements HasMedia, Auditable
         }
 
         return 'Less than a month';
+    }
+
+    public function getCurrentJobTitle(): ?string
+    {
+        $currentJobPosition = $this->jobPositions()->first();
+        return $currentJobPosition?->name;
+    }
+
+    public function getCurrentDepartment(): ?string
+    {
+        $currentJobPosition = $this->jobPositions()->first();
+        return $currentJobPosition?->department;
+    }
+
+    public function getJobTitleAttribute(): ?string
+    {
+        return $this->getCurrentJobTitle();
+    }
+
+    public function getDepartmentAttribute(): ?string
+    {
+        return $this->getCurrentDepartment();
     }
 
 }
