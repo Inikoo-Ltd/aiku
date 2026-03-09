@@ -36,6 +36,8 @@ const props = defineProps<{
         offerCampaign: {}
         stats: {}
     }
+    gr_gift: {},
+    gr_amnesty: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -44,7 +46,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         overview: CampaignOverview,
-        offers: TableOffers
+        offers: TableOffers,
+        gr_gift: TableOffers,
+        gr_amnesty: TableOffers
     }
 
     return components[currentTab.value]
