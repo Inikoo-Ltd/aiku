@@ -90,7 +90,6 @@ class ShopHydrateOffersData implements ShouldBeUnique
                         $product = Product::find($productData['id']);
                         if ($product) {
 
-                            print_r($product);
                             $productOptions[] = [
                                 'id'      => $product->id,
                                 'code'    => $product->code,
