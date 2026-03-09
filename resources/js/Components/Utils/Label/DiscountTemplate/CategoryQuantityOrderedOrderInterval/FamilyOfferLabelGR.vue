@@ -31,6 +31,7 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
                 <span>
                     <span v-if="offer?.max_percentage_discount">{{ Number(offer?.max_percentage_discount) * 100 + ' ' }}% <strong>OFF</strong></span>
                     {{ ' ' + ctrans('Gold Reward Amnesty') }}
+                    <FontAwesomeIcon icon="fas fa-candle-holder" class="text-base" fixed-width aria-hidden="true" />
                     <span class="text-base">
                         ({{ ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout?.user?.gr_data?.amnesty_until) }) }})
                     </span>
