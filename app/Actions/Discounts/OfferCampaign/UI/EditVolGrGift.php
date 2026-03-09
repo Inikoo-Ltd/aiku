@@ -42,8 +42,8 @@ class EditVolGrGift extends OrgAction
         }
 
         $productOptions = [];
-        foreach (Arr::get($giftAllowance->data, 'products', []) as $productID) {
-            $product = Product::find($productID);
+        foreach (Arr::get($giftAllowance->data, 'products', []) as $product) {
+            $product = Product::find($product['id']);
             if ($product) {
                 $productOptions[] = [
                     'id'=> $product->id,
