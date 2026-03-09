@@ -61,6 +61,8 @@ trait HasGrData
                     $grInterval,
                 ];
             }
+            $offerData['amnesty']       = Arr::get($this->shop->offers_data, 'gr.amnesty');
+            $offerData['amnesty_until'] = Arr::get($this->shop->offers_data, 'gr.amnesty_until');
         }
 
         return $offerData;
