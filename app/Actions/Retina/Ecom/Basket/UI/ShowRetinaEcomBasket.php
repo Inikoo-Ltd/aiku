@@ -23,6 +23,7 @@ use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Http\Resources\Sales\OrderResource;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,13 +35,11 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function handle(Customer $customer): Order|null
     {
-
         if (!$customer->current_order_in_basket_id) {
             return null;
         }
 
         return $this->getOrderInBasket($customer);
-
     }
 
 
@@ -68,12 +67,31 @@ class ShowRetinaEcomBasket extends RetinaAction
 
         $grGifts = [
             'eligible' => false,
-            'gifts' => []
+            'gifts'    => []
         ];
-        if($order) {
-            $offersData=$order->shop->offers_data;
+        if ($order) {
+            $offersData = $order->shop->offers_data;
+
+            $grGifts = Arr::get($offersData, 'gr.gifts_products');
+
+            $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
+            if ($selectedGrGift) {
+                foreach ($grGifts as $key => $gift) {
+                    if ($gift['id'] == $selectedGrGift) {
+                        $grGifts[$key]['selected'] = true;
+                    } else {
+                        $grGifts[$key]['selected'] = false;
+                    }
+                }
+            } else {
+                foreach ($grGifts as $key => $gift) {
+                    $grGifts[$key]['selected'] = Arr::get($gift, 'default', false);
+                }
+            }
+
             $grGifts = [
-                'eligible' => true,
+                'eligible' => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
+                'gifts'    => $grGifts
             ];
         }
 
@@ -179,29 +197,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'total_to_pay'       => $order ? max(0, $order->total_amount - $order->customer->balance) : 0,
                 'total_products'     => $order ? $order->transactions->whereIn('model_type', ['Product', 'Service'])->count() : 0,
                 'transactions'       => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
-                'gr_gifts'      => [
-                    'eligible' => true,
-                    'gifts' => [
-                        [
-                            'id'    => 123,
-                            'label' => 'Rainbow bath bomb',
-                            'selected' => true,
-
-                        ],
-                        [
-                            'id'    => 234,
-                            'label' => 'Lavender bath bomb',
-                            'selected' => false,
-
-                        ],
-                        [
-                            'id'    => 456,
-                            'label' => 'Rose bath bomb',
-                            'selected' => false,
-
-                        ],
-                    ],
-                ],
+                'gr_gifts'           => $grGifts
             ]
         )->table(
             IndexBasketTransactions::make()->tableStructure()
