@@ -43,9 +43,19 @@ class StoreProductToAllegro extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
-            $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio);
-            $allegroProductId = Arr::get($proposedProduct, 'id');
-dd($proposedProduct);
+            $getRecommendedCategory = $allegroUser->getRecommendedCategory($product->family->name);
+            $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id');
+
+            // $getParameters = $allegroUser->getCategoryParameters($categoryId);
+
+            /*$proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
+                'category_id' => $categoryId,
+                'parameters' => $getParameters
+            ]);
+            $allegroProductId = Arr::get($proposedProduct, 'id');*/
+
+            $allegroProductId = "28c49b7b-0d8f-4aff-bd94-e8f2b4922395";
+
             if (!$allegroProductId) {
                 throw new \Exception('Failed to propose product to Allegro: no product ID returned.');
             }
@@ -63,7 +73,7 @@ dd($proposedProduct);
                 ],
                 'name'     => $portfolio->customer_product_name,
                 'category' => [
-                    'id' => $allegroUser->allegro_category_id ?? '257931'
+                    'id' => $categoryId
                 ],
                 'sellingMode' => [
                     'format' => 'BUY_NOW',
@@ -79,7 +89,7 @@ dd($proposedProduct);
                 'delivery' => [
                     'handlingTime'  => 'PT24H',
                     'shippingRates' => [
-                        'id' => $allegroUser->allegro_shipping_rates_id
+                        'id' => "98b6ff13-91ec-488d-8a39-155118fe581c"
                     ]
                 ],
                 'publication' => [
@@ -101,7 +111,7 @@ dd($proposedProduct);
                             'items' => [
                                 [
                                     'type' => 'TEXT',
-                                    'text' => $portfolio->customer_description ?? ''
+                                    'content' => $portfolio->customer_description ?? ''
                                 ]
                             ]
                         ]
@@ -134,6 +144,7 @@ dd($proposedProduct);
 
             return $portfolio;
         } catch (\Exception $e) {
+            dd($e);
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [
                     'message' => $e->getMessage()
