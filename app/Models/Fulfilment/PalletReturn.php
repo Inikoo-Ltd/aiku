@@ -17,6 +17,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
@@ -197,6 +198,17 @@ class PalletReturn extends Model implements HasMedia
     {
         return $this->belongsTo(Warehouse::class);
     }
+
+    public function pickingSessions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PickingSession::class,
+            'picking_session_has_pallet_returns',
+            'pallet_return_id',
+            'picking_session_id'
+        );
+    }
+
 
     public function organisation(): BelongsTo
     {

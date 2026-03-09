@@ -10,6 +10,7 @@ namespace App\Models\Fulfilment;
 
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\PickingSession;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -81,6 +82,11 @@ class PalletReturnItem extends Model
     public function pickingLocation(): BelongsTo
     {
         return $this->belongsTo(Location::class, 'picking_location_id');
+    }
+
+    public function pickingSession(): BelongsTo
+    {
+        return $this->belongsTo(PickingSession::class);
     }
 
 }

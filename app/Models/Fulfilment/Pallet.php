@@ -304,3 +304,4 @@ class Pallet extends Model implements Auditable
     }
 
 }
+    
