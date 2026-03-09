@@ -87,7 +87,7 @@ trait HasIrisUserData
             'gr_data'      => $grData,
             // 'traffic_source_cookies' => CaptureTrafficSource::run(),
             'offer_meters' => $offerMeters,
-            'offer_data'   => $offerData,
+            'offer_data'   => $offerData, // this is used in the top bar
         ];
     }
 }

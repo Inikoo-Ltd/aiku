@@ -1,6 +1,5 @@
 <script setup lang='ts'>
 
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faDollarSign } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { inject } from 'vue'

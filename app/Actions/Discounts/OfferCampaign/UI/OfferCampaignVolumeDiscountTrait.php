@@ -31,6 +31,12 @@ trait OfferCampaignVolumeDiscountTrait
             $giftOffer = Offer::find($giftOfferId);
         }
 
+        $amnestyOffer   = null;
+        $amnestyOfferId = Arr::get($offerCampaign->data, 'gr_amnesty_offer_id');
+        if ($amnestyOfferId) {
+            $amnestyOffer = Offer::find($amnestyOfferId);
+        }
+
 
         return Inertia::render(
             'Org/Discounts/VolumeDiscountCampaign',
@@ -71,6 +77,27 @@ trait OfferCampaignVolumeDiscountTrait
                                 'parameters' => array_values(request()->route()->originalParameters())
 
                             ]
+                        ],
+                        $amnestyOffer
+                            ? [
+                            'type'  => 'button',
+                            'icon'  => 'fal fa-candle-holder',
+                            'label' => __('Edit ongoing GR Amnesty'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit_current_gr_amnesty_offer', request()->route()->getName()),
+                                'parameters' => array_values(request()->route()->originalParameters())
+
+                            ]
+                        ]
+                            : [
+                            'type'  => 'button',
+                            'icon'  => 'fal fa-candle-holder',
+                            'label' => __('Set up GR Amnesty'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'create_gr_amnesty_offer', request()->route()->getName()),
+                                'parameters' => array_values(request()->route()->originalParameters())
+
+                            ]
                         ]
                     ],
                 ],
@@ -79,14 +106,14 @@ trait OfferCampaignVolumeDiscountTrait
                     'navigation' => OfferCampaignTabsEnum::navigation()
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
-                    fn() => GetOfferCampaignOverview::run($offerCampaign)
-                    : Inertia::lazy(fn() => GetOfferCampaignOverview::run($offerCampaign)),
+                    fn () => GetOfferCampaignOverview::run($offerCampaign)
+                    : Inertia::lazy(fn () => GetOfferCampaignOverview::run($offerCampaign)),
                 OfferCampaignTabsEnum::OFFERS->value   => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
-                    fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))
-                    : Inertia::lazy(fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))),
+                    fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))
+                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value))),
                 OfferCampaignTabsEnum::HISTORY->value  => $this->tab == OfferCampaignTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
+                    fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]
         )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
