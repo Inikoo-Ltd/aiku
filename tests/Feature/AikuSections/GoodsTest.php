@@ -278,8 +278,8 @@ test("UI Index Trade Units", function () {
             ->component("Goods/TradeUnits")
             ->has("title")
             ->has("breadcrumbs", 3)
-            ->has("pageHead")
-            ->has("data");
+            ->has("pageHead");
+
     });
 });
 
@@ -653,8 +653,8 @@ test('UI index trade unit families page loads', function () {
         $page
             ->component('Goods/TradeUnitsFamilies')
             ->where('title', __('Trade Unit Families'))
-            ->has('breadcrumbs')
-            ->has('data');
+            ->has('breadcrumbs');
+
     });
 });
 

@@ -39,7 +39,7 @@
         td {
             vertical-align: top;
         }
-
+        
         .items td {
             border-left: 0.1mm solid #000000;
             border-right: 0.1mm solid #000000;
@@ -71,6 +71,10 @@
         .items tr.last td {
 
             border-bottom: 0.1mm solid #000000;
+        }
+
+        .items tr.lastChild td {
+            border-bottom: 0.1mm solid #707070;
         }
 
         table thead td, table tr.title td {
@@ -219,46 +223,138 @@
     <p>{{ __('Pallets') }}</p>
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <thead>
-        <tr>
-            <td style="width:20%; text-align:left">{{ __('Reference') }}</td>
-            <td style="width:50%; text-align:left">{{ __("Pallet Reference (Customer's)") }}</td>
-            <td style="text-align:right">{{ __('Notes') }}</td>
-        </tr>
+            <tr>
+                <td style="width:20%; text-align:left; vertical-align: middle;">
+                    {{ __('Reference') }}
+                </td>
+                <td style="width:30%; text-align:left; vertical-align: middle;">
+                    {{ __("Customer's Reference") }}
+                </td>
+                <td style="text-align:center; width:fit-content; vertical-align: middle;">
+                    {{ __('Pallet Location') }}
+                </td>
+                <td style="text-align:center; vertical-align: middle;">
+                    {{ __('SKUs') }}
+                </td>
+            </tr>
         </thead>
         <tbody>
-
-        @foreach($return->pallets as $pallet)
-            <tr class="@if($loop->last) last @endif">
-                <td style="text-align:left">{{ $pallet->reference }}</td>
-                <td style="text-align:left">{{ $pallet->customer_reference }}</td>
-                <td style="text-align:left">{{ $pallet->notes }}</td>
-            </tr>
-        @endforeach
-
+            @foreach($pallets as $pallet)
+                @php
+                    $rowSpan = $pallet->storedItems->count() + 1;
+                    $parentLoopLast = $loop->last;
+                @endphp
+                <tr class="@if($loop->last) last @endif">
+                    <td rowspan="{{ $rowSpan }}" style="text-align:left; vertical-align:middle">
+                        {{ $pallet->reference }}
+                    </td>
+                    <td rowspan="{{ $rowSpan }}" style="text-align:left; vertical-align:middle">
+                        <div>
+                            {{ $pallet->customer_reference }}
+                        </div>
+                        <div style='color:#555555'>
+                            <small>
+                                {{ __("Notes") }}: {{ $pallet->notes ?? "-" }}
+                            </small>
+                        </div>
+                    </td>
+                    <td rowspan="{{ $rowSpan }}" style="text-align:center; vertical-align:middle">
+                        {{ $pallet->location->code }}
+                    </td>
+                    @if($pallet->storedItems->isEmpty())
+                        <td style="text-align:left; vertical-align:middle">
+                            -
+                        </td>
+                    @endif
+                </tr>
+                @foreach($pallet->storedItems as $storedItem)
+                    <tr class="@if($loop->last && $parentLoopLast) last @elseif($loop->last) lastChild @endif">
+                        <td style="text-align:left; vertical-align:middle">
+                            <div>
+                                {{ $storedItem->reference }}
+                            </div>
+                            <div style="color:#555555">
+                                {{ $storedItem->name }}
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+            @endforeach
         </tbody>
     </table>
 @else
     <p>{{ __("Customer's SKUs") }}</p>
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <thead>
-        <tr>
-            <td style="width:50%; text-align:left">{{ __('SKU Reference') }}</td>
-            <td style="text-align:right">{{ __('Quantity requested') }}</td>
-        </tr>
-        </thead>
-        <tbody>
-
-        @foreach($return->storedItems as $storedItem)
-            <tr class="@if($loop->last) last @endif">
-                <td style="text-align:left">{{ $storedItem->reference }}</td>
-                <td style="text-align:right">
-                    {{ preg_match('/^\s*\d+(?:\.0+)?\s*$/', (string) $storedItem->pivot->quantity_ordered)
-                        ? (int) $storedItem->pivot->quantity_ordered
-                        : $storedItem->pivot->quantity_ordered }}
+            <tr>
+                <td rowspan="2" style="width:15%; text-align:left; vertical-align: middle;">
+                    {{ __('SKU Reference') }}
+                </td>
+                <td colspan="7" style="text-align:center; vertical-align: middle;">
+                    {{ __('Pallet Details') }}
                 </td>
             </tr>
-        @endforeach
-
+            <tr>
+                <td colspan="2" style="text-align:left; width: 20%; vertical-align: middle;">
+                    {{ __('Pallet reference') }}
+                </td>
+                <td colspan="2" style="text-align:left; vertical-align: middle;">
+                    {{ __('Customer reference') }}
+                </td>
+                <td style="text-align:right; width: fit-content; vertical-align: middle;">
+                    {{ __('Qty ordered') }}
+                </td>
+                <td style="text-align:right; width: fit-content;vertical-align: middle;">
+                    @if($return->state == \App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum::DISPATCHED) 
+                        {{ __('Qty dispatched') }}
+                    @else
+                        {{ __('Qty picked') }}
+                    @endif
+                </td>
+                <td style="text-align:right; width: fit-content;vertical-align: middle;">
+                    {{ __('Pallet Location') }}
+                </td>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($return->storedItems as $storedItem)
+                @php
+                    $palletData = $stored_items_pallet_data[$storedItem->id];
+                    $parentLoopLast = $loop->last;
+                @endphp
+                <tr class="@if($parentLoopLast) last @else lastChild @endif">
+                    <td rowspan="{{ count($palletData) + 1 }}" style="text-align:left">
+                        {{ $storedItem->reference }}
+                        <div>
+                            (<small>{{ $storedItem->name }}</small>)
+                        </div>
+                    </td>
+                </tr>
+                @foreach($palletData as $pallet)
+                    <tr class="@if($loop->last && $parentLoopLast) last @elseif($loop->last) lastChild @endif">
+                        <td colspan="2" style="text-align:left; vertical-align: middle;">
+                            {{ data_get($pallet, 'reference') }}
+                        </td>
+                        <td colspan="2" style="text-align:left; vertical-align: middle;">
+                            <div>
+                                {{ data_get($pallet, 'customer_reference') }}
+                            </div>
+                            <div style='color:#555555; vertical-align: middle;'>
+                                {{ __('Notes') }}: {{ data_get($pallet, 'notes', '-') }}
+                            </div>
+                        </td>
+                        <td style="text-align:right; vertical-align: middle;">
+                            {{ preg_match('/^\s*\d+(?:\.0+)?\s*$/', (string) data_get($pallet, 'pivot.quantity_ordered')) ? (int) data_get($pallet, 'pivot.quantity_ordered') : data_get($pallet, 'pivot.quantity_ordered') }}
+                        </td>
+                        <td style="text-align:right; vertical-align: middle;">
+                            {{ preg_match('/^\s*\d+(?:\.0+)?\s*$/', (string) data_get($pallet, 'pivot.quantity_picked')) ? (int) data_get($pallet, 'pivot.quantity_picked') : data_get($pallet, 'pivot.quantity_picked') }}
+                        </td>
+                        <td style="text-align:right; vertical-align: middle;">
+                            {{ data_get($pallet, 'location.code') }}
+                        </td>
+                    </tr>
+                @endforeach
+            @endforeach
         </tbody>
     </table>
 @endif

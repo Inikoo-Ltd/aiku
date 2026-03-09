@@ -36,6 +36,7 @@ import TiktokAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChanne
 import TiktokBusinessAccountsForm
 	from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokBusinessAccountsForm.vue"
 import TiktokConnectedFinish from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokConnectedFinish.vue"
+import AllegroAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelAllegro/AllegroAuthKeyForm.vue"
 library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers)
@@ -54,6 +55,9 @@ const props = defineProps<{
 		isAuthenticatedExpired: boolean
 		tiktokName: string
 		deleteAccountRoute: routeType
+	}
+	allegroAuth: {
+		url: string
 	}
 	type_manual: {
 		createRoute: routeType
@@ -129,6 +133,7 @@ const onCreateStoreShopify = async () => {
 // Section: Woocommerce
 const isModalWooCommerce = ref<boolean>(false)
 const isModalTiktok = ref<boolean>(false)
+const isModalAllegro = ref<boolean>(false)
 const wooCommerceInput = ref({
 	name: null as null | string,
 	url: null as null | string,
@@ -359,6 +364,7 @@ const stepComponents = [
 
 const stepWooComponents = [WooAccountNameForm, WooAuthKeyForm, WooConnectedFinish]
 const stepTiktokComponents = [TiktokAuthKeyForm, TiktokBusinessAccountsForm, TiktokConnectedFinish]
+const stepAllegroComponents = [AllegroAuthKeyForm]
 
 const currentStep = ref(0)
 
@@ -604,6 +610,40 @@ provide("goNext", goNext)
 					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
 				</div>
 			</div>
+
+			<!-- Section: Allegro -->
+			<div
+				v-if="layout?.app?.environment === 'local'"
+				class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+				<div
+					class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+					<img
+						src="https://assets.allegrostatic.com/opbox/allegro.pl/homepage/Main%20Page/6lJEwSSohvBIIWNlJUU9sx-w1200-h1200.png"
+						alt=""
+						class="h-12 filter" />
+
+					<div class="flex flex-col">
+						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
+							Allegro
+						</div>
+						<div class="text-xs text-gray-500 text-center sm:text-left">
+							{{ total_channels?.allegro ?? 0 }} {{ trans("Channels") }}
+						</div>
+					</div>
+				</div>
+
+				<div class="w-full flex justify-end">
+					<a v-if="layout?.app?.environment === 'local'" :href="props.allegroAuth?.url" class="w-full">
+						<Button
+							:label="trans('Connect')"
+							type="primary"
+							full
+							xclick="() => (isModalAllegro = true)"
+						/>
+					</a>
+					<Button v-else :label="trans('Coming soon')" type="tertiary" disabled full />
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -718,6 +758,17 @@ provide("goNext", goNext)
 		<div class="flex flex-col gap-6">
 			<ProgressBar />
 			<component :is="stepTiktokComponents[currentStep]" :props="props" />
+		</div>
+	</Modal>
+
+	<!-- Modal: Allegro -->
+	<Modal
+		:isOpen="isModalAllegro"
+		@onClose="isModalAllegro = false"
+		width="w-full max-w-lg">
+		<div class="flex flex-col gap-6">
+			<ProgressBar />
+			<component :is="stepAllegroComponents[currentStep]" :props="props" />
 		</div>
 	</Modal>
 

@@ -82,6 +82,7 @@ class GetProducts extends RetinaApiAction
         $query->leftJoin('product_categories as department', 'products.department_id', 'department.id');
         $query->leftJoin('product_categories as sub_department', 'products.sub_department_id', 'sub_department.id');
         $query->leftJoin('product_categories as family', 'products.family_id', 'family.id');
+        $query->leftJoin('shops', 'products.shop_id', 'shops.id');
         $query->leftJoin('currencies', 'currencies.id', 'products.currency_id');
         $query->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
         $query->leftJoin('media', 'products.image_id', '=', 'media.id');
@@ -100,6 +101,9 @@ class GetProducts extends RetinaApiAction
             'products.slug',
             'currencies.code as currency_code',
             'currencies.id as currency_id',
+            'department.slug as department_slug',
+            'family.slug as family_slug',
+            'shops.slug as shop_slug',
         ];
 
         $include = explode(',', Arr::get($modelData, 'include', ''));

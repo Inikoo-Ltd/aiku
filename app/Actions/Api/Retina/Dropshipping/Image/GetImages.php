@@ -28,7 +28,7 @@ class GetImages extends RetinaApiAction
     use AsAction;
     use WithAttributes;
 
-    private Product|Portfolio $model;
+    private Product|Portfolio|null $model;
 
     public function handle(): LengthAwarePaginator
     {

@@ -50,7 +50,7 @@ class IndexOffers extends OrgAction
         ];
     }
 
-    public function handle(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null, $filterByOfferType = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -131,6 +131,14 @@ class IndexOffers extends OrgAction
         $selects[] = $timeSeriesData['selectRaw']['orders'];
         $selects[] = $timeSeriesData['selectRaw']['invoices'];
         $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+
+        if ($filterByOfferType) {
+            if ($filterByOfferType == 'offer_only') {
+                $query->whereNotIn('offers.type', ['VolGr Gift', 'GR Amnesty']);
+            } else {
+                $query->where('offers.type', $filterByOfferType);
+            }
+        }
 
         return $query->defaultSort('offers.id')
             ->select($selects)

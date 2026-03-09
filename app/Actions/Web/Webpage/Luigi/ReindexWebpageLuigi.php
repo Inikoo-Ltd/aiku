@@ -10,10 +10,20 @@ namespace App\Actions\Web\Webpage\Luigi;
 
 use App\Actions\OrgAction;
 use App\Models\Web\Webpage;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\ActionRequest;
 
-class ReindexWebpageLuigi extends OrgAction
+class ReindexWebpageLuigi extends OrgAction implements ShouldBeUnique
 {
+    public string $jobQueue = 'low-priority';
+
+    public int $jobTries = 1;
+
+    public function getJobUniqueId(Webpage $webpage): string
+    {
+        return $webpage->id;
+    }
+
     /**
      * @throws \Exception
      */

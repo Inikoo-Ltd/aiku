@@ -13,18 +13,6 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesCustomersStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesStats;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
-use App\Actions\Catalogue\CollectionTimeSeries\RedoCollectionTimeSeries;
-use App\Actions\Catalogue\Product\RedoProductTimeSeries;
-use App\Actions\Catalogue\ProductCategory\RedoDepartmentsTimeSeries;
-use App\Actions\Catalogue\ProductCategory\RedoFamiliesTimeSeries;
-use App\Actions\Catalogue\ProductCategory\RedoSubDepartmentsTimeSeries;
-use App\Actions\Discounts\Offer\RedoOfferTimeSeries;
-use App\Actions\Discounts\OfferCampaign\RedoOfferCampaignTimeSeries;
-use App\Actions\Masters\MasterAssetTimeSeries\RedoMasterAssetTimeSeries;
-use App\Actions\Masters\MasterCollectionTimeSeries\RedoMasterCollectionTimeSeries;
-use App\Actions\Masters\MasterProductCategoryTimeSeries\RedoMasterDepartmentsTimeSeries;
-use App\Actions\Masters\MasterProductCategoryTimeSeries\RedoMasterFamiliesTimeSeries;
-use App\Actions\Masters\MasterProductCategoryTimeSeries\RedoMasterSubDepartmentsTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -41,9 +29,9 @@ class UpdateInvoiceTransaction extends OrgAction
     {
         $invoiceTransaction = $this->update($invoiceTransaction, $modelData, ['data']);
 
-        $this->updateTradeUnitBridges($invoiceTransaction);
+        SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id);
+        SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id);
 
-        $invoiceDate = \Carbon\Carbon::parse($invoiceTransaction->date);
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
         if ($invoiceTransaction->asset_id) {
@@ -52,62 +40,11 @@ class UpdateInvoiceTransaction extends OrgAction
             AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
             AssetHydrateInvoicesCustomersStats::dispatch($invoiceTransaction->asset_id)->delay($this->hydratorsDelay);
             AssetHydrateInvoicesStats::dispatch($invoiceTransaction->asset_id)->delay($this->hydratorsDelay);
-
-            RedoProductTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-            RedoCollectionTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
         }
 
-        if ($invoiceTransaction->family_id) {
-            RedoFamiliesTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-        }
-
-        if ($invoiceTransaction->department_id) {
-            RedoDepartmentsTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-        }
-
-        if ($invoiceTransaction->sub_department_id) {
-            RedoSubDepartmentsTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-        }
-
-        if ($invoiceTransaction->master_asset_id) {
-            RedoMasterAssetTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-            RedoMasterCollectionTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-        }
-
-        if ($invoiceTransaction->master_family_id) {
-            RedoMasterFamiliesTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-        }
-
-        if ($invoiceTransaction->master_department_id) {
-            RedoMasterDepartmentsTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-        }
-
-        if ($invoiceTransaction->master_sub_department_id) {
-            RedoMasterSubDepartmentsTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-        }
-
-        if ($invoiceTransaction->transaction) {
-            if ($invoiceTransaction->offerAllowances->isNotEmpty()) {
-                RedoOfferTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-                RedoOfferCampaignTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-            }
-        }
+        ProcessInvoiceTransactionTimeSeries::run($invoiceTransaction);
 
         return $invoiceTransaction;
-    }
-
-    protected function updateTradeUnitBridges(InvoiceTransaction $invoiceTransaction): void
-    {
-        $invoiceTransaction->tradeUnitBridges()->update([
-            'net_amount'      => $invoiceTransaction->net_amount,
-            'org_net_amount'  => $invoiceTransaction->org_net_amount,
-            'grp_net_amount'  => $invoiceTransaction->grp_net_amount,
-            'in_process'      => $invoiceTransaction->in_process ?? false,
-            'is_refund'       => $invoiceTransaction->is_refund ?? false,
-            'date'            => $invoiceTransaction->date,
-            'order_id'        => $invoiceTransaction->order_id,
-            'customer_id'     => $invoiceTransaction->customer_id,
-        ]);
     }
 
     public function rules(): array

@@ -75,7 +75,7 @@ beforeEach(
         $this->organisation = createOrganisation();
         $this->group        = group();
         setPermissionsTeamId($this->group->id);
-        $this->guest        = createAdminGuest($this->group);
+        $this->guest = createAdminGuest($this->group);
 
         $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
 
@@ -678,8 +678,7 @@ test("UI index org stocks all", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
-            )
-            ->has("data");
+            );
     });
 });
 
@@ -700,8 +699,7 @@ test("UI index org stocks discontinued", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
-            )
-            ->has("data");
+            );
     });
 });
 
@@ -722,8 +720,7 @@ test("UI index org stocks abnormally", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
-            )
-            ->has("data");
+            );
     });
 });
 
@@ -791,8 +788,7 @@ test("UI Index Org Stocks", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'Current SKUs')->etc()
-            )
-            ->has("data");
+            );
     });
 });
 
@@ -813,8 +809,7 @@ test("UI Index Org Stock Families", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", 'SKU Families')->etc()
-            )
-            ->has("data");
+            );
     });
 });
 

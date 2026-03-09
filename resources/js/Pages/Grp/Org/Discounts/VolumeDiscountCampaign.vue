@@ -6,22 +6,22 @@
 -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
 import { computed, ref } from "vue"
-import type { Component } from 'vue'
+import type { Component } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 
 import CampaignOverview from "@/Components/Shop/Offers/CampaignOverview.vue"
-import { PageHeadingTypes } from '@/types/PageHeading'
-import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
+import { PageHeadingTypes } from "@/types/PageHeading"
+import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 
 
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCommentDollar, faInfoCircle, faPercentage } from '@fal'
-library.add( faCommentDollar, faInfoCircle, faPercentage )
+import { faCommentDollar, faInfoCircle, faPercentage, faCandleHolder } from "@fal"
+library.add(faCommentDollar, faInfoCircle, faPercentage, faCandleHolder)
 
 
 const props = defineProps<{

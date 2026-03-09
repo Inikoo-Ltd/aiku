@@ -139,7 +139,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
         foreach ($transactions as $transaction) {
             $historicAsset = $transaction->historicAsset;
             $product = $transaction->model;
-            $productImage = Arr::get($product?->imageSources(200, 200), 'original', '');
+            $productImage = Arr::get($product?->imageSources(200, 200), 'png', '');
             $productLink = route('grp.org.shops.show.catalogue.products.current_products.show', [
                 $transaction->organisation?->slug,
                 $transaction->shop?->slug,

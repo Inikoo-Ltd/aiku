@@ -85,10 +85,10 @@ class SageInvoicesExport implements FromQuery, WithMapping, WithHeadings, Should
         // Map tax category to Sage tax code
         $taxCode = $this->mapTaxCode($invoice->taxCategory);
 
-        // Format amounts (negative for credit notes)
+        // Refund is already minus from DB, no need to do -abs anyway
         $isRefund  = $invoice->type === InvoiceTypeEnum::REFUND;
-        $netAmount = $isRefund ? -abs((float)$invoice->net_amount) : (float)$invoice->net_amount;
-        $taxAmount = $isRefund ? -abs((float)$invoice->tax_amount) : (float)$invoice->tax_amount;
+        $netAmount = (float)$invoice->net_amount;
+        $taxAmount = (float)$invoice->tax_amount;
 
         return [
             $isRefund ? 'SC' : 'SI',                            // Type

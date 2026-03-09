@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, provide, onMounted } from "vue"
+import { ref, computed, provide, onMounted, onBeforeUnmount, watch, nextTick } from "vue"
 import SlidesWorkshop from "@/Components/Banners/SlidesWorkshop.vue"
 import SliderLandscape from "@/Components/Banners/Slider/SliderLandscape.vue"
 import SliderSquare from "@/Components/Banners/Slider/SliderSquare.vue"
@@ -43,10 +43,24 @@ const hasSlides = computed(() => {
 const containerRef = ref<HTMLElement | null>(null)
 const containerWidth = ref(0)
 
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
-  if (containerRef.value) {
-    containerWidth.value = containerRef.value.offsetWidth
-  }
+  if (!containerRef.value) return
+
+  containerWidth.value = containerRef.value.offsetWidth
+
+  resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      containerWidth.value = entry.contentRect.width
+    }
+  })
+
+  resizeObserver.observe(containerRef.value)
+})
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
 })
 
 const calculatedHeight = computed(() => {
@@ -57,7 +71,7 @@ const calculatedHeight = computed(() => {
     return containerWidth.value * (h / w)
   }
 
-  const numeric = Number(ratio)
+  const numeric = Number(props.ratio)
   if (!isNaN(numeric) && numeric > 0) {
     return containerWidth.value * (1 / numeric)
   }
@@ -72,6 +86,19 @@ const scaleValue = computed(() => {
 
 const needsScale = computed(() => calculatedHeight.value > 500)
 
+watch(
+  () => props.modelValue.components.length,
+  async () => {
+
+    await nextTick()
+
+    requestAnimationFrame(() => {
+      if (containerRef.value) {
+        containerWidth.value = containerRef.value.offsetWidth
+      }
+    })
+  }
+)
 </script>
 
 <template>
@@ -88,7 +115,7 @@ const needsScale = computed(() => calculatedHeight.value > 500)
         <SliderSquare :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio />
       </div>
 
-      <div ref="containerRef" class="w-full max-w-[1200px] mx-auto overflow-hidden relative"
+      <div v-else ref="containerRef" class="w-full max-w-[1200px] mx-auto overflow-hidden relative"
         :style="needsScale ? { height: '500px' } : {}">
         <div :style="needsScale
           ? {

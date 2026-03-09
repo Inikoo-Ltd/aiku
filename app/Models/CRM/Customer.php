@@ -26,6 +26,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -141,6 +142,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
+ * @property-read Collection<int, AllegroUser> $allegroUsers
  * @property-read Collection<int, AmazonUser> $amazonUsers
  * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
  * @property-read MediaCollection<int, Media> $attachments
@@ -461,6 +463,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function tiktokUsers(): HasMany
     {
         return $this->hasMany(TiktokUser::class);
+    }
+
+    public function allegroUsers(): HasMany
+    {
+        return $this->hasMany(AllegroUser::class);
     }
 
     public function amazonUsers(): HasMany

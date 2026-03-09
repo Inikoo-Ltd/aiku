@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;

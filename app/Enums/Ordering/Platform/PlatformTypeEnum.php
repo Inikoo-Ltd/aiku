@@ -22,6 +22,7 @@ enum PlatformTypeEnum: string
     case AMAZON = 'amazon';
     case MAGENTO = 'magento';
     case WIX = 'wix';
+    case ALLEGRO = 'allegro';
 
     public function labels(): array
     {
@@ -34,6 +35,7 @@ enum PlatformTypeEnum: string
             'manual'      => 'Manual/API',
             'magento'     => 'Magento',
             'wix'         => 'Wix',
+            'allegro'         => 'Allegro',
         ];
     }
 }

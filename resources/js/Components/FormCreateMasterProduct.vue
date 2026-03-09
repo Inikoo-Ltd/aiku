@@ -69,6 +69,7 @@ const props = defineProps<{
     shopsData?: any
     masterProductCategoryId: number
     is_dropship: boolean
+    price_rrp_warning_ratio : number
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
@@ -653,7 +654,7 @@ const successEditTradeUnit = (data) => {
                 </button>
 
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form" />
+                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form" :price_rrp_warning_ratio="price_rrp_warning_ratio"/>
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
                         {{ form.errors.shop_products.join(", ") }}
                     </small>

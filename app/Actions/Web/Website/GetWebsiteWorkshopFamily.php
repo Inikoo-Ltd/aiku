@@ -54,6 +54,7 @@ class GetWebsiteWorkshopFamily
             'top_seller' => $topSeller,
             'family' =>  $family,
             'layout' => Arr::get($website->unpublishedFamilySnapshot, 'layout.family', []),
+            'type_shop' => $website->shop->type,
             'autosaveRoute' => [
                 'name' => 'grp.models.website.autosave.family',
                 'parameters' => [

@@ -288,10 +288,6 @@ const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
-console.log("dispatched_emails", props.dispatched_emails)
-
-console.log("props", props)
-
 const component = computed(() => {
     const components: Component = {
         transactions: OrderProductTable,
@@ -1870,12 +1866,30 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         <!-- Box: Order summary -->
         <BoxStatPallet class="pb-4 border-t lg:border-t-0 border-gray-300">
             <div class="text-xs md:text-sm">
-                <!-- <div class="px-3 font-semibold xmb-2 text-base">
-                    {{ trans("Summary") }}
-                </div> -->
+                <div class="pt-2 px-3 flex justify-between items-center">
+                    <div class="font-semibold xmb-2 text-base">
+                        {{ trans("Summary") }}
+                    </div>
 
+                    <div v-if="props.external_shop?.engine_value === 'faire'">
+                        <ButtonWithLink
+                            :label="trans('Refresh Faire data')"
+                            size="xs"
+                            type="tertiary"
+                            key="2"
+                            icon="fal fa-sync-alt"
+                            :routeTarget="{
+                                name: 'grp.models.order.update_faire',
+                                parameters: {
+                                    order: props.data?.data?.id
+                                },
+                                method: 'post'
+                            }"
+                        />
+                    </div>
+                </div>
 
-                <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-4 lg:mt-0">
+                <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-2 sm:px-4 lg:mt-0">
                     <div class="border-b border-gray-300 mb-2 pb-2">
                         <!-- Field: weight -->
                         <dl class="flex w-full items-center">
@@ -1980,7 +1994,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         aria-hidden='true' />
 
                                     <span
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !is_shop_external"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
                                         @click="_shipping_price_method?.toggle"
                                         v-tooltip="trans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
@@ -1992,7 +2006,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
 
                                 <!-- Popover: Select shipping price method -->
-                                <PopoverPrimevue v-if="!is_shop_external" ref="_shipping_price_method">
+                                <PopoverPrimevue  ref="_shipping_price_method">
                                     <div class="relative flex flex-col gap-2">
                                         <div class="text-sm">
                                             {{ trans("Select to change shipping price method") }}:

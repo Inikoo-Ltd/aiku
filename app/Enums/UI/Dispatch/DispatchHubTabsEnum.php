@@ -17,19 +17,19 @@ enum DispatchHubTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case DASHBOARD = 'dashboard';
+    case DELIVERY_NOTE = 'delivery_note';
     case PICKING_SESSION = 'picking_session';
 
     public function blueprint(): array
     {
         return match ($this) {
-            DispatchHubTabsEnum::DASHBOARD => [
-                'title' => __('Dashboard'),
-                'icon'  => 'fal fa-tachometer-alt-fast',
+            DispatchHubTabsEnum::DELIVERY_NOTE => [
+                'title' => __('Delivery Note'),
+                'icon'  => 'fal fa-truck',
             ],
             DispatchHubTabsEnum::PICKING_SESSION => [
                 'title' => __('Picking Session'),
-                'icon'  => 'fal fa-truck',
+                'icon'  => 'fab fa-stack-overflow',
             ],
         };
     }

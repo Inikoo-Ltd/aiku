@@ -597,7 +597,7 @@ const initSocketFetchListener = () => {
 
 const initSocketUploadListener = () => {
 	fetchChannel = window.Echo.private(
-		`channel.${props.customer_sales_channel.id}.upload-product`
+		`channel.${props.customer_sales_channel?.id}.upload-product`
 	).listen(".channel-upload-progress", (eventData: any) => {
 		isOpenModalUploadProgress.value = true
 		uploadProgressData.value = {

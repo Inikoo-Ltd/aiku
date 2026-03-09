@@ -164,7 +164,7 @@ const onOpenModalTrackingNumber = async () => {
 		)
 		optionShippingList.value = xxx?.data?.data || []
 		optionsCreateLabel.value = xxx?.data?.data?.filter((shipment) => shipment.api_shipper)
-
+		
 		if (optionShippingList.value?.filter((shipment) => shipment.api_shipper ).length < 1) {
 			selectedShipment.value	= 'other_options'
 		}
@@ -196,15 +196,15 @@ const onSubmitShipment = () => {
 					isLoadingButton.value = "addTrackingNumber"
 				},
 				onSuccess: (q) => {
-					// Section: Notify if Faire Shipment is have error
-					const getNewShipmentData = get(q, 'props.box_stats.shipments', [])[q.props?.box_stats?.shipments?.length - 1]
-					if (getNewShipmentData?.data.faire_feedback.status !== 'success') {
-						notify({
-							title: trans("Something went wrong"),
-							text: getNewShipmentData?.data.faire_feedback.msg,
-							type: "error",
-						})
-					}
+					// // Section: Notify if Faire Shipment is have error
+					// const getNewShipmentData = get(q, 'props.box_stats.shipments', [])[q.props?.box_stats?.shipments?.length - 1]
+					// if (getNewShipmentData?.data.faire_feedback.status !== 'success') {
+					// 	notify({
+					// 		title: trans("Something went wrong"),
+					// 		text: getNewShipmentData?.data.faire_feedback.msg,
+					// 		type: "error",
+					// 	})
+					// }
 
 					emits("addSuccsess", null)
 					isModalShipment.value = false
@@ -491,7 +491,7 @@ const onCopyDataCustomer = (field: string) => {
 								aria-hidden="true" />
 						</div>
 
-						<div v-else-if="shipment.tracking" class="text-gray-400 text-base">
+						<div v-if="shipment.tracking" class="text-gray-400 text-base">
 							{{ shipment.tracking }}
 						</div>
 						<div
