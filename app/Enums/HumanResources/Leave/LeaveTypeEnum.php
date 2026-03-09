@@ -38,9 +38,9 @@ enum LeaveTypeEnum: string
     public static function colors(): array
     {
         return [
-            'annual'             => 'blue',
-            'medical'            => 'yellow',
-            'unpaid'             => 'fuchsia',
+            'annual'             => 'green',
+            'medical'            => 'orange',
+            'unpaid'             => 'black',
             'halfday-morning'    => 'green',
             'halfday-afternoon'  => 'green',
             'training'           => 'purple',
@@ -48,6 +48,22 @@ enum LeaveTypeEnum: string
             'compassionate'       => 'pink',
             'parental'           => 'cyan',
             'sabbatical'         => 'indigo',
+        ];
+    }
+
+    public static function shortCodes(): array
+    {
+        return [
+            'annual'             => 'H',
+            'medical'            => 'S',
+            'unpaid'             => 'U',
+            'halfday-morning'    => 'HM',
+            'halfday-afternoon'  => 'HA',
+            'training'           => 'T',
+            'leave-of-absence'   => 'LA',
+            'compassionate'       => 'C',
+            'parental'           => 'P',
+            'sabbatical'         => 'SA',
         ];
     }
 
@@ -59,5 +75,10 @@ enum LeaveTypeEnum: string
     public function color(): string
     {
         return self::colors()[$this->value] ?? 'gray';
+    }
+
+    public function shortCode(): string
+    {
+        return self::shortCodes()[$this->value] ?? '';
     }
 }
