@@ -395,4 +395,11 @@ trait WithAllegroApiServices
     {
         return $this->makeApiRequest('GET', "/sale/categories/$categoryId/parameters");
     }
+
+    public function getRecommendedCategory(string $name): array
+    {
+        return $this->makeApiRequest('GET', "/sale/matching-categories", [], [
+            'name' => $name
+        ]);
+    }
 }

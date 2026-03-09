@@ -10,7 +10,6 @@ namespace App\Actions\Fulfilment\PalletReturn\Pdf;
 
 use App\Actions\Traits\WithExportData;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
 use Lorisleiva\Actions\ActionRequest;
@@ -53,12 +52,12 @@ class PdfPalletReturn
         $pallets = $palletReturn
             ->pallets()
             ->with('location');
-        
-        if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {    
+
+        if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
             $pallets = $pallets
                 ->with('storedItems')
                 ->get()
-                ->keyBy('id');  
+                ->keyBy('id');
             data_set($data, 'pallets', $pallets);
         } else {
             $pallets = $pallets

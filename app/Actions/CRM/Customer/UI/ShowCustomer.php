@@ -41,6 +41,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\SalesChannel\GetSalesChannelOptions;
+use App\Actions\Traits\HasGrData;
 
 class ShowCustomer extends OrgAction
 {
@@ -48,6 +49,7 @@ class ShowCustomer extends OrgAction
     use WithWebUserMeta;
     use WithCustomerSubNavigation;
     use WithCRMAuthorisation;
+    use HasGrData;
 
     private Organisation|Shop $parent;
 
@@ -104,6 +106,8 @@ class ShowCustomer extends OrgAction
             ];
         }
 
+        $grData = $this->getGrData($customer);
+
         return Inertia::render(
             'Org/Shop/CRM/Customer',
             [
@@ -118,6 +122,7 @@ class ShowCustomer extends OrgAction
                 ],
                 'sales_channels' => GetSalesChannelOptions::make()->getOptions($customer->shop),
                 'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
+                'gr_data'        => $grData,
                 'pageHead'         => [
                     'title'         => $customer->name,
                     'icon'          => [

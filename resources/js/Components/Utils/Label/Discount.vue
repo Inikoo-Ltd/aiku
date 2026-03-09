@@ -12,6 +12,7 @@ const props = defineProps<{
             t: string  // Type: "percentage"
             p: string  // Percentage: "10.0%"
             l: string  // Label
+            st: string  // "a" => Gold Reward Amnesty, "i" => Gold Reward Member
         }
     }
 }>()

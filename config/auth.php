@@ -81,7 +81,7 @@ return [
             'model'  => User::class,
         ],
         'web-users'   => [
-            'driver' => 'eloquent',
+            'driver' => 'case-insensitive-eloquent',
             'model'  => WebUser::class,
         ],
         'pupil'   => [

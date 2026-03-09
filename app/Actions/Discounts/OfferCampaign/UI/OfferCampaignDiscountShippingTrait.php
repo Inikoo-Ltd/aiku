@@ -53,7 +53,10 @@ trait OfferCampaignDiscountShippingTrait
                 ],
                 'tabs'                                               => [
                     'current'    => $this->tab,
-                    'navigation' => OfferCampaignTabsEnum::navigation()
+                    'navigation' => OfferCampaignTabsEnum::navigationExcept([
+                        OfferCampaignTabsEnum::GR_GIFT,
+                        OfferCampaignTabsEnum::GR_AMNESTY
+                    ])
                 ],
                 'shop_data' => [
                     'slug'          => $offerCampaign->shop->slug,
