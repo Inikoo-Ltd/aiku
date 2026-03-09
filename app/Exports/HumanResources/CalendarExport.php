@@ -2,7 +2,6 @@
 
 namespace App\Exports\HumanResources;
 
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\FromArray;
@@ -74,7 +73,7 @@ class CalendarExport implements FromArray, WithHeadings, WithColumnWidths
     {
         foreach ($employee['leaves'] as $leave) {
             if ($date >= $leave['start_date'] && $date <= $leave['end_date']) {
-                $shortCode = LeaveTypeEnum::shortCodes()[$leave['type']] ?? '';
+                $shortCode = $leave['type_code'] ?? '';
                 $status = $leave['status'] === 'pending' ? ' (P)' : '';
                 return $shortCode . $status;
             }
