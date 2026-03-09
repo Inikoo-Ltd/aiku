@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Discounts\OfferCampaignTabsEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Response;
@@ -44,7 +45,17 @@ class ShowOfferCampaign extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): OfferCampaign
     {
-        $this->initialisationFromShop($shop, $request)->withTab(OfferCampaignTabsEnum::values());
+        $tabs = OfferCampaignTabsEnum::values();
+        
+
+        if($offerCampaign->type !== OfferCampaignTypeEnum::VOLUME_DISCOUNT) {
+            $tabs = OfferCampaignTabsEnum::valuesExcept([
+                OfferCampaignTabsEnum::GR_GIFT,
+                OfferCampaignTabsEnum::GR_AMNESTY
+            ]);
+        }
+
+        $this->initialisationFromShop($shop, $request)->withTab($tabs);
 
         return $this->handle($offerCampaign);
     }
@@ -64,7 +75,6 @@ class ShowOfferCampaign extends OrgAction
             OfferCampaignTypeEnum::DISCRETIONARY => $this->getDiscretionaryHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::SHIPPING => $this->getDiscountShippingHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::ORDER_RECURSION => throw new \Exception('To be implemented'), // todo make its own action
-
         };
     }
 
