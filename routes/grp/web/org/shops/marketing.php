@@ -60,4 +60,5 @@ Route::name("templates.")->prefix('templates')
         Route::get('create', CreateMailshotTemplate::class)->name('create');
         Route::get('{emailTemplate}/workshop', ShowMailshotTemplateWorkshop::class)->name('workshop');
         Route::get('{emailTemplate}/edit', EditMailshotTemplate::class)->name('edit');
+        Route::post('{emailTemplate}/send-test', [SendTestEmail::class, 'asControllerTemplate'])->name('send-test');
     });

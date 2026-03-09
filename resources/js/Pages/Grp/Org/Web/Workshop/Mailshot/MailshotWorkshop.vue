@@ -97,7 +97,6 @@ const onSendPublish = async (data) => {
 const openSendTest = (data) => {
     visibleEmailTestModal.value = true
     temporaryData.value = {
-        layout: data?.jsonFile,
         compiled_layout: data?.htmlFile
     }
 }

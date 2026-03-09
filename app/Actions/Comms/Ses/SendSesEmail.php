@@ -150,7 +150,9 @@ class SendSesEmail
             break;
         } while ($attempt < $numberAttempts);
 
-        OutboxHydrateEmails::run($dispatchedEmail->outbox);
+        if ($dispatchedEmail->outbox) {
+            OutboxHydrateEmails::run($dispatchedEmail->outbox);
+        }
 
         return $dispatchedEmail;
     }
