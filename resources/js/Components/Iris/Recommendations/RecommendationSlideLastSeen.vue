@@ -25,7 +25,7 @@ const locale = inject('locale', aikuLocaleStructure)
 const currency = layout?.iris?.currency
 const isLoadingVisit = ref(false)
 
-console.log('dddd',layout.buttonBasket)
+
 
 </script>
 
@@ -42,7 +42,7 @@ console.log('dddd',layout.buttonBasket)
 
       <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
         <NewAddToCartButton 
-          v-if="product.stock" 
+          v-if="product.stock && layout.retina?.type === 'b2b'" 
           :hasInBasket="layout?.family_page?.productInBasket?.[product.id]"
           :product="product" :key="product.id" 
           :addToBasketRoute="{ name: 'iris.models.transaction.store'}" 
