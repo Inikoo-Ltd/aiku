@@ -19,7 +19,7 @@ const props = defineProps<{
 <template>
     <div class="relative w-fit">
         <div
-            v-tooltip="trans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout.user.gr_data.amnesty_until) })"
+            v-tooltip="trans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout.user.gr_data.amnesty_until, { formatTime: 'MMMM do' }) })"
             class="background-primary rounded px-2 py-0.5 text-xxs 2xl:text-sm w-fit text-white">
             {{ ctrans("Gold Reward Amnesty Price") }}
             <FontAwesomeIcon icon="fas fa-candle-holder" class="" fixed-width aria-hidden="true" />

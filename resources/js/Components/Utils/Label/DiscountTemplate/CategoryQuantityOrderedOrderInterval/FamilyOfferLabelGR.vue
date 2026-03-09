@@ -33,7 +33,7 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
                     {{ ' ' + ctrans('Gold Reward Amnesty') }}
                     <FontAwesomeIcon icon="fas fa-candle-holder" class="text-base" fixed-width aria-hidden="true" />
                     <span class="text-base">
-                        ({{ ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout?.user?.gr_data?.amnesty_until) }) }})
+                        ({{ ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout?.user?.gr_data?.amnesty_until, { formatTime: 'MMM do' }) }) }})
                     </span>
                 </span>
             </template>
