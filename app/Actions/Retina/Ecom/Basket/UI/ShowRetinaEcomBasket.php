@@ -66,6 +66,17 @@ class ShowRetinaEcomBasket extends RetinaAction
             $isUnableDispatch = in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? []));
         }
 
+        $grGifts = [
+            'eligible' => false,
+            'gifts' => []
+        ];
+        if($order) {
+            $offersData=$order->shop->offers_data;
+            $grGifts = [
+                'eligible' => true,
+            ];
+        }
+
 
         return Inertia::render(
             'Ecom/RetinaEcomBasket',

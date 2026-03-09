@@ -10,8 +10,10 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Discounts\OfferCampaign;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -46,6 +48,10 @@ class ShopHydrateOffersData implements ShouldBeUnique
         data_set($offersData, 'gr.amnesty', false);
         data_set($offersData, 'gr.amnesty_offer_id', null);
         data_set($offersData, 'gr.amnesty_until', null);
+        data_set($offersData, 'gr.gifts', false);
+        data_set($offersData, 'gr.gifts_min_amount', 0);
+        data_set($offersData, 'gr.gifts_products', []);
+        data_set($offersData, 'gr.gifts_offer_id', null);
 
 
         $volGrCampaign = OfferCampaign::where('shop_id', $shop->id)
@@ -67,7 +73,43 @@ class ShopHydrateOffersData implements ShouldBeUnique
                     data_set($offersData, 'gr.amnesty_until', $amnestyOffer->end_at);
                 }
             }
+
+
+            $grGiftOfferId = Arr::get($volGrCampaign->data, 'vol_gr_gift_offer_id');
+            if ($grGiftOfferId) {
+                $grGiftOffer = Offer::find($grGiftOfferId);
+
+
+                if ($grGiftOffer->status) {
+                    /** @var OfferAllowance $giftAllowance */
+                    $giftAllowance  = $grGiftOffer->offerAllowances()->first();
+                    $productOptions = [];
+
+
+                    foreach (Arr::get($giftAllowance->data, 'products', []) as $productData) {
+                        $product = Product::find($productData['id']);
+                        if ($product) {
+
+                            print_r($product);
+                            $productOptions[] = [
+                                'id'      => $product->id,
+                                'code'    => $product->code,
+                                'name'    => $product->name,
+                                'default' => Arr::get($productData
+                                    , 'default', false),
+                            ];
+                        }
+                    }
+
+
+                    data_set($offersData, 'gr.gifts', true);
+                    data_set($offersData, 'gr.gifts_offer_id', $grGiftOffer->id);
+                    data_set($offersData, 'gr.gifts_min_amount', Arr::get($grGiftOffer->trigger_data, 'min_amount', 0));
+                    data_set($offersData, 'gr.gifts_products', $productOptions);
+                }
+            }
         }
+
         Cache::put("gr_amnesty_offer_id_$shop->id", Arr::get($offersData, "gr.amnesty_offer_id"), now()->addHour());
         $shop->updateQuietly(['offers_data' => $offersData]);
         $shop->refresh();

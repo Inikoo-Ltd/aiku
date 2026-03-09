@@ -49,7 +49,7 @@ class EditVolGrGift extends OrgAction
                     'id'=> $product->id,
                     'code'=> $product->code,
                     'name'=>$product->name,
-                    'default'=>Arr::get($giftAllowance->data, 'default') == $product->id,
+                    'default'=>Arr::get($product, 'default', false),
                 ];
             }
         }

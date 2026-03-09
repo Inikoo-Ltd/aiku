@@ -30,12 +30,7 @@ class StoreVolGrGift extends OrgAction
 
     public function handle(OfferCampaign $offerCampaign, $modelData): Offer
     {
-        if ($offerId = Arr::get($offerCampaign->data, 'vol_gr_gift_offer_id')) {
-            $offer = Offer::find($offerId);
-            if ($offer) {
-                return UpdateVolGrGift::run($offer, $modelData);
-            }
-        }
+
 
         $offerData = [];
         data_set($offerData, 'duration', OfferDurationEnum::PERMANENT);
@@ -79,11 +74,12 @@ class StoreVolGrGift extends OrgAction
             ]
         );
         $offer = StoreOffer::run($offerCampaign, $offerData);
-        ActivateOffer::run($offer);
-
         $data = $offerCampaign->data;
         data_set($data, 'vol_gr_gift_offer_id', $offer->id);
         $offerCampaign->update(['data' => $data]);
+        ActivateOffer::run($offer);
+
+
 
         return $offer;
     }
