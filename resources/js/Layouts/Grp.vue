@@ -88,7 +88,7 @@ import {
 	faStar,
 	faCheckCircle,
 	faTimesCircle,
-	faSkull as fasSkull, faMonument, faCubes, faExclamationTriangle as fasExclamationTriangle, faMedal
+	faSkull as fasSkull, faMonument, faCubes, faExclamationTriangle as fasExclamationTriangle, faCandleHolder, faMedal
 } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
@@ -169,7 +169,7 @@ library.add(
 	faCheck,
 	faAsterisk,
 	faMailBulk, faEllipsisV,
-	faShare, faUndoAlt,faRobot,faMonument, faCubes, fasExclamationTriangle, faMedal, faDollyFlatbedAlt, faViruses,
+	faShare, faUndoAlt,faRobot,faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses,
 	faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
 	faBadgePercent
 )
