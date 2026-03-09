@@ -212,8 +212,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
             OutboxCodeEnum::REGISTRATION_REJECTED,
-            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
-            OutboxCodeEnum::WEB_USER_REGISTRATION
+            OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
             => ['Website'],
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::INVOICE_DELETED,
@@ -224,7 +223,8 @@ enum OutboxCodeEnum: string
             // NOTE: need confirm to raul
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
-            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER
+            OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
+            OutboxCodeEnum::WEB_USER_REGISTRATION
             => ['Fulfilment', 'Shop'],
 
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER,
