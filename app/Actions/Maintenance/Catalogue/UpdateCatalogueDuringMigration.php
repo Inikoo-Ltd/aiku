@@ -19,6 +19,7 @@ use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateStatu
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryWebImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -31,6 +32,7 @@ class UpdateCatalogueDuringMigration
     {
         /** @var MasterShop $primaryPivotShop */
         $primaryPivotShop = $masterShop->shops()->where('migration_pivot', 1)->firstOrFail();
+
         if ($primaryPivotShop) {
             $command->info('Updating master catalogue from pivot shop '.$primaryPivotShop->name);
             CloneCatalogueStructure::run(
@@ -52,7 +54,9 @@ class UpdateCatalogueDuringMigration
             }
         }
 
-        foreach ($masterShop->shops as $shop) {
+
+        /** @var Shop $shop */
+        foreach ($masterShop->shops()->orderBy('id')->get() as $shop) {
             if ($shop->state == ShopStateEnum::CLOSED) {
                 continue;
             }
