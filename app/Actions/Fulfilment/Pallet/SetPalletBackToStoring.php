@@ -17,41 +17,38 @@ use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
-use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Fulfilment\Pallet;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetPalletBackToStoring extends OrgAction
 {
-
     public function handle(Pallet $pallet): Pallet
     {
         DB::transaction(function () use ($pallet) {
             $currPalletReturn = $pallet->palletReturn;
-            
+
             data_set($modelData, 'state', PalletStateEnum::STORING);
             data_set($modelData, 'status', PalletStatusEnum::STORING);
             data_set($modelData, 'set_as_incident_at', null); // Empty incident message ?
             data_set($modelData, 'incident_report', []); // Empty incident report message ?
-    
+
             $pallet = UpdatePallet::run($pallet, Arr::except($modelData, 'message'));
             $pallet->palletReturn()->dissociate(); // To empty the pallet.pallet_return_id
             $pallet->palletReturns()->syncWithoutDetaching([
                 $currPalletReturn->id => ['state' => PalletReturnStateEnum::CANCEL]
             ]); // To declare it as cancelled in the relationship
             $pallet->save();
-            
-            if($currPalletReturn->pallets()->whereNot('pallet_id', $pallet->id)->whereNotIn('pallet_return_items.state', [PalletReturnStateEnum::DISPATCHED, PalletReturnStateEnum::CANCEL])->exists()){
+
+            if ($currPalletReturn->pallets()->whereNot('pallet_id', $pallet->id)->whereNotIn('pallet_return_items.state', [PalletReturnStateEnum::DISPATCHED, PalletReturnStateEnum::CANCEL])->exists()) {
                 AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($currPalletReturn);
-            }else{
+            } else {
                 AutomaticallySetPalletReturnAsCancelledIfEmpty::run($currPalletReturn);
             }
             PalletReturnHydratePallets::run($currPalletReturn);
-            
+
         });
 
         PalletRecordSearch::dispatch($pallet);
@@ -72,7 +69,7 @@ class SetPalletBackToStoring extends OrgAction
     {
         $this->initialisationFromWarehouse($pallet->warehouse, $request);
         $this->handle($pallet);
-        
+
 
         return redirect()->back();
     }

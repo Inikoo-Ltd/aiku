@@ -13,7 +13,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\OrgStockFamilyTimeSeries;
-use App\Traits\BuildsInvoiceTransactionHasOrgStockFamilyTimeSeriesQuery;
+use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
-    use BuildsInvoiceTransactionHasOrgStockFamilyTimeSeriesQuery;
+    use BuildsInvoiceTransactionTimeSeriesQuery;
 
     public function getJobUniqueId(int $orgStockFamilyId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -54,11 +54,16 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoice_transaction_has_org_stocks')
-            ->where('org_stock_family_id', $timeSeries->org_stock_family_id)
-            ->where('in_process', false)
-            ->where('date', '>=', $from)
-            ->where('date', '<=', $to);
+        $query = DB::table('invoice_transactions')
+            ->whereExists(function ($query) use ($timeSeries) {
+                $query->select(DB::raw(1))
+                      ->from('invoice_transaction_has_org_stocks')
+                      ->whereColumn('invoice_transaction_has_org_stocks.invoice_transaction_id', 'invoice_transactions.id')
+                      ->where('invoice_transaction_has_org_stocks.org_stock_family_id', $timeSeries->org_stock_family_id);
+            })
+            ->where('invoice_transactions.date', '>=', $from)
+            ->where('invoice_transactions.date', '<=', $to)
+            ->whereNull('invoice_transactions.deleted_at');
 
         $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
 

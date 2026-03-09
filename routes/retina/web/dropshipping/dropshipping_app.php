@@ -8,6 +8,7 @@
  *
 */
 
+use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Amazon\AuthorizeRetinaAmazonUser;
 use App\Actions\Dropshipping\Amazon\CallbackRetinaAmazonUser;
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
@@ -174,4 +175,8 @@ Route::prefix('back-in-stocks')->as('back_in_stock.')->group(function () {
 
 Route::prefix('tiktok')->as('tiktok.')->group(function () {
     Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
+});
+
+Route::prefix('allegro')->as('allegro.')->group(function () {
+    Route::get('callback', AuthenticateAllegroAccount::class)->name('callback');
 });

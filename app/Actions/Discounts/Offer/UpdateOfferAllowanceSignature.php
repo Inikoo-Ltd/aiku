@@ -51,6 +51,8 @@ class UpdateOfferAllowanceSignature extends OrgAction
             }
         }
 
+        $allowanceSignature = trim($allowanceSignature, ':');
+        $allowanceSignature = preg_replace('/\s+/', '', $allowanceSignature);
 
         $offer->update(['allowance_signature' => $allowanceSignature]);
 

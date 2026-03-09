@@ -119,7 +119,7 @@ trait WithInvoicesExport
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);
 
-            if ($isAttachIsdocToPdf) {
+            if ($isAttachIsdocToPdf && !app()->environment('local')) {
                 try {
                     $outputFile = AttacheIsDocToInvoicePdf::make()->handle($invoice, $pdf, $filename);
 

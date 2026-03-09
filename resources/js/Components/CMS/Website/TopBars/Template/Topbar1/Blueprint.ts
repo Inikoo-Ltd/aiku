@@ -29,6 +29,11 @@ export default {
 			},
 			replaceForm: [
 				{
+					key: ["visible"],
+					label :'Visibility',
+					type: "VisibleLoggedIn",
+				},
+				{
 					key: ["text"],
 					label: "Text",
 					type: "editorhtml",

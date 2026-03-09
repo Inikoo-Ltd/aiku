@@ -11,7 +11,6 @@ namespace App\Actions\Fulfilment\PalletReturn;
 
 use App\Actions\HydrateModel;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 
@@ -24,7 +23,7 @@ class AutomaticallySetPalletReturnAsCancelledIfEmpty extends HydrateModel
         $baseQuery = $palletReturn->pallets()->whereNotIn('pallet_return_items.state', [PalletReturnStateEnum::DISPATCHED, PalletReturnStateEnum::CANCEL]);
         $palletCount = $baseQuery->count();
 
-        if(empty($palletCount)){
+        if (empty($palletCount)) {
             CancelPalletReturn::run($palletReturn, []);
         }
 

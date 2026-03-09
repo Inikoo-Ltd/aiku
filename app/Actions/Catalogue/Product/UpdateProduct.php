@@ -244,10 +244,12 @@ class UpdateProduct extends OrgAction
             );
 
             UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
-
         }
 
-        UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
+
+        if ($product->asset) {
+            UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
+        }
 
         if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);
@@ -371,12 +373,12 @@ class UpdateProduct extends OrgAction
         $rules = [
             'code'                      => $codeRule,
             'name'                      => ['sometimes', 'required', 'max:250', 'string'],
-            'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
-            'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0'],
+            'price'                     => ['sometimes', 'required', 'numeric', 'min:0.01'],
+            'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'               => ['sometimes', 'required', 'max:1500'],
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
             'description_extra'         => ['sometimes', 'nullable', 'max:65500'],
-            'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'data'                      => ['sometimes', 'array'],
             'settings'                  => ['sometimes', 'array'],
             'status'                    => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
@@ -462,11 +464,14 @@ class UpdateProduct extends OrgAction
 
 
         if (!$this->strict) {
+            $rules['code']                      = ['sometimes', 'string'];
             $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
             $rules['description']               = ['sometimes', 'nullable', 'max:15000'];
+            $rules['price']                     = ['sometimes', 'nullable', 'numeric'];
+            $rules['unit_price']                = ['sometimes', 'nullable', 'numeric'];
 
 
             $rules = $this->noStrictUpdateRules($rules);

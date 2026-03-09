@@ -67,7 +67,7 @@ trait WithRepairWebpages
             $usedWebBlocks = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes);
             if (count($usedWebBlocks) == 0) {
                 $this->createWebBlock($webpage, $usedWebBlockTemplateCodes);
-            }elseif (count($usedWebBlocks) > 1) {
+            } elseif (count($usedWebBlocks) > 1) {
                 $usedWebBlocks->pop();
 
                 foreach ($usedWebBlocks as $webBlock) {

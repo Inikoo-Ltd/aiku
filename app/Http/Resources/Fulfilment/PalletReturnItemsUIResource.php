@@ -12,7 +12,6 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\Pallet;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property mixed $id
@@ -50,6 +49,7 @@ class PalletReturnItemsUIResource extends JsonResource
             'fulfilment_customer_slug'         => $this->fulfilment_customer_slug,
             'fulfilment_customer_id'           => $this->fulfilment_customer_id,
             'notes'                            => (string)$this->notes,
+            'pivot_state'                      => $this->pivot_state,
             'state'                            => $this->state->value,
             'type_icon'                        => $this->type->typeIcon()[$this->type->value],
             'type'                             => $this->type,
@@ -200,7 +200,7 @@ class PalletReturnItemsUIResource extends JsonResource
                 ]
             },
         ];
-        
+
         return $returnFormat;
     }
 }

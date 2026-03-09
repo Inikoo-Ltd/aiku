@@ -69,7 +69,7 @@ class Media extends BaseMedia
 
     public function getImage(): Image
     {
-        return (new Image())->make($this->getImgProxyFilename(), $this->is_animated);
+        return new Image()->make($this->getImgProxyFilename(), $this->is_animated);
     }
 
     public function getBase64Image(): string
@@ -79,4 +79,5 @@ class Media extends BaseMedia
         $data   = file_get_contents($path);
         return base64_encode($data);
     }
+
 }

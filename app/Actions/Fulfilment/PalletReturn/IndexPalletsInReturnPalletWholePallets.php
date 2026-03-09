@@ -67,10 +67,18 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
 
         $query->where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id);
 
-        $query->where(function ($query) use ($palletReturn) {
-            $query->where('pallets.pallet_return_id', $palletReturn->id)
-                ->orWhereNull('pallets.pallet_return_id');
-        });
+        $query->when(
+            $palletReturn->state !== PalletReturnStateEnum::CANCEL,
+            function ($q) use ($palletReturn) {
+                $q->where(function ($query) use ($palletReturn) {
+                    $query->where('pallets.pallet_return_id', $palletReturn->id)
+                        ->orWhereNull('pallets.pallet_return_id');
+                });
+            },
+            function ($q) use ($palletReturn) {
+                $q->where('pallet_return_items.pallet_return_id', $palletReturn->id);
+            }
+        );
 
         if ($palletReturn->state !== PalletReturnStateEnum::DISPATCHED) {
             $query->whereNotIn('pallets.status', [
@@ -83,7 +91,7 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
             $query->where('pallets.status', PalletStatusEnum::STORING);
         }
 
-        if ($palletReturn->state !== PalletReturnStateEnum::IN_PROCESS) {
+        if ($palletReturn->state !== PalletReturnStateEnum::IN_PROCESS && $palletReturn->state !== PalletReturnStateEnum::CANCEL) {
             $query->where('pallets.pallet_return_id', $palletReturn->id);
         }
 
@@ -112,6 +120,7 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
                 'pallets.reference',
                 'pallets.customer_reference',
                 'pallets.notes',
+                'pallet_return_items.state as pivot_state',
                 'pallets.state',
                 'pallets.status',
                 'pallets.rental_id',

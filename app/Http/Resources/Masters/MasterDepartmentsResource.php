@@ -67,6 +67,9 @@ class MasterDepartmentsResource extends JsonResource
             'invoices'         => $this->invoices ?? 0,
             'invoices_ly'      => $this->invoices_ly ?? 0,
             'invoices_delta'   => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'dropshippers'     => $this->dropshippers ?? 0,
+            'listings'         => $this->listings ?? 0,
+            'sold'             => $this->sold ?? 0,
         ];
     }
 

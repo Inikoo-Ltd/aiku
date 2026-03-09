@@ -36,20 +36,20 @@ class UpdateOrdersInBasketsAfterProductUpdated implements ShouldBeUnique
             return;
         }
 
-        if(!$product->shop->is_aiku){
+        if (!$product->shop->is_aiku) {
             return;
         }
 
 
-        foreach(DB::table('transactions')
+        foreach (DB::table('transactions')
             ->leftJoin('orders', 'orders.id', '=', 'transactions.order_id')
             ->where('orders.state', OrderStateEnum::CREATING)
             ->where('model_type', 'Product')
-            ->where('model_id', $product->id)->get() as $transactionData){
+            ->where('model_id', $product->id)->get() as $transactionData) {
 
 
-            if($command){
-                $order=Order::find($transactionData->order_id);
+            if ($command) {
+                $order = Order::find($transactionData->order_id);
                 $command->getOutput()->writeln("Updating order $order->slug ".$order->state->value);
             }
 

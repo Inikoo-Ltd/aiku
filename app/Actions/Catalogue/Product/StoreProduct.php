@@ -182,6 +182,7 @@ class StoreProduct extends OrgAction
                 'asset_id' => $asset->id
             ]
         );
+        $product->refresh();
         $historicAsset = StoreHistoricAsset::run(
             $product,
             [

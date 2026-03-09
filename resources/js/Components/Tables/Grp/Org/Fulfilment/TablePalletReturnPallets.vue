@@ -388,7 +388,6 @@ const generateLinkPallet = (pallet: {}) => {
                     </div> -->
                     <Button icon="fal fa-check" type="positive" :loading="isPickingLoading === pallet.id" class="py-0" />
                 </Link>
-
                 <!-- Button: Set as not picked -->
                 <Popover v-if="pallet.state === 'picking'">
                     <template #button="{ open }">
@@ -460,9 +459,15 @@ const generateLinkPallet = (pallet: {}) => {
 
                 <div v-else-if="pallet.state === 'lost'" class="text-red-300 italic">
                     {{ trans("Pallet lost") }}
-                </div>
+                </div>  
             </div>
         </template>
+        
+        <template #cell(actions)="{ item: pallet }" v-else>
+            <div v-if="pallet.pivot_state == 'cancel'" class="text-red-300 italic" >
+                {{ trans("Pallet set back to storing") }}
+            </div>
+        </template> 
 
 
     </Table>

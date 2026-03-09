@@ -38,6 +38,12 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import type { Navigation } from "@/types/Tabs"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import {
+  Listbox,
+  ListboxButton,
+  ListboxOptions,
+  ListboxOption
+} from "@headlessui/vue"
 
 library.add(
 	faShapes,
@@ -71,14 +77,14 @@ const locale = inject('locale', aikuLocaleStructure)
 
 const props = defineProps<{
 	navigation: Navigation
-	current: string | Number
+	current: string | number
 }>()
 
 const emits = defineEmits<{
 	(e: "update:tab", value: string): void
 }>()
 
-const currentTab = ref(props.current)
+const currentTab = ref<string | number>(props.current)
 const tabLoading = ref<boolean | string>(false)
 
 // Method: click Tab
@@ -115,40 +121,92 @@ const tabIconClass = function (
 	<div>
 		<!-- Tabs: Mobile view -->
 		<div v-if="Object.keys(navigation ?? {})?.length > 1" class="sm:hidden px-3 pt-2">
-			<label for="tabs" class="sr-only">Select a tab</label>
 
-			<!-- TODO: use Headless or component Dropdown so the icon is able to show (currrently not) -->
-			<select
-				id="tabs"
-				name="tabs"
-				class="block w-full disabled:bg-gray-200 rounded-md border-gray-300 focus:border-gray-500 focus:ring-gray-500"
-				@input="(val: any) => onChangeTab(val.target.value)"
-				:disabled="Object.keys(navigation ?? {})?.length < 2">
-				<option
-					v-for="(tab, tabSlug) in navigation"
-					:key="tabSlug"
-					:selected="tabSlug == currentTab"
-					:value="tabSlug"
-					class="">
-					<FontAwesomeIcon
-						v-if="tabLoading == tabSlug"
-						icon="fad fa-spinner-third"
-						class="animate-spin"
-						:class="
-							tabIconClass(
-								tabSlug === currentTab,
-								tab.type,
-								tab.align,
-								tab.iconClass || ''
-							)
-						"
-						aria-hidden="true" />
-					<FontAwesomeIcon v-else-if="tab.icon" :icon="tab.icon" aria-hidden="true" />
-					{{ tab.title }}
-				</option>
-			</select>
+			<Listbox :model-value="currentTab" @update:modelValue="onChangeTab">
+				<div class="relative">
+
+					<!-- Button -->
+					<ListboxButton
+						class="relative w-full cursor-pointer rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 sm:text-sm">
+
+						<span class="flex items-center">
+
+							<!-- Loading spinner -->
+							<FontAwesomeIcon
+								v-if="tabLoading"
+								icon="fad fa-spinner-third"
+								class="animate-spin mr-2 h-5 w-5"
+							/>
+
+							<!-- Icon -->
+							<FontAwesomeIcon
+								v-else-if="navigation[currentTab]?.icon"
+								:icon="navigation[currentTab].icon"
+								class="mr-2 h-5 w-5"
+							/>
+
+							<!-- Title -->
+							<span class="block truncate">
+								{{ navigation[currentTab]?.title }}
+							</span>
+						</span>
+
+					</ListboxButton>
+
+					<!-- Options -->
+					<ListboxOptions
+						class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+
+						<ListboxOption
+						v-for="(tab, tabSlug) in navigation"
+						:key="tabSlug"
+						:value="tabSlug"
+						v-slot="{ active, selected }"
+						>
+
+						<li
+							:class="[
+							active ? 'bg-gray-100' : '',
+							'relative cursor-pointer select-none py-2 pl-3 pr-9'
+							]"
+						>
+							<div class="flex items-center">
+
+								<!-- Spinner -->
+								<FontAwesomeIcon
+									v-if="tabLoading === tabSlug"
+									icon="fad fa-spinner-third"
+									class="animate-spin mr-2 h-5 w-5"
+								/>
+
+								<!-- Icon -->
+								<FontAwesomeIcon
+									v-else-if="tab.icon"
+									:icon="tab.icon"
+									class="mr-2 h-5 w-5"
+								/>
+
+								<!-- Title -->
+								<span
+									:class="[
+									selected ? 'font-semibold' : 'font-normal',
+									'block truncate'
+									]"
+								>
+									{{ tab.title }}
+								</span>
+
+							</div>
+						</li>
+
+						</ListboxOption>
+
+					</ListboxOptions>
+
+				</div>
+			</Listbox>
+
 		</div>
-
 		<!-- Tabs: Desktop view -->
 		<div class="hidden sm:block">
 			<div class="border-b border-gray-200 flex">

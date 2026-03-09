@@ -58,7 +58,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
             ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
             ->chunk(1000, function ($webpages) use ($website, $command) {
 
-                if($command){
+                if ($command) {
                     $objects = [];
                     foreach ($webpages as $webpage) {
                         $object = $this->getObjectFromWebpage($webpage);
@@ -79,9 +79,9 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
 
                         return;
                     }
-                }else{
+                } else {
                     foreach ($webpages as $webpage) {
-                       ReindexWebpageLuigi::dispatch($webpage);
+                        ReindexWebpageLuigi::dispatch($webpage);
                     }
 
                 }

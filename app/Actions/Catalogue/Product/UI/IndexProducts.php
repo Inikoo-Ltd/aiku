@@ -14,7 +14,6 @@ use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -22,7 +21,6 @@ use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexProducts extends OrgAction
@@ -31,7 +29,6 @@ class IndexProducts extends OrgAction
     use WithFamilySubNavigation;
     use WithCollectionSubNavigation;
     use WithCatalogueAuthorisation;
-
 
     public function handle(Shop $shop, $prefix = null, $bucket = null): LengthAwarePaginator
     {
@@ -47,16 +44,12 @@ class IndexProducts extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->orderBy('products.state');
-
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
+        // Todo: Remove Intervals
+        // $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
+        // $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
-
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
-
-        $isDropshipping = $shop->type === ShopTypeEnum::DROPSHIPPING;
 
         $selects = [
             'products.id',
@@ -69,23 +62,6 @@ class IndexProducts extends OrgAction
             'products.slug',
         ];
 
-        if ($isDropshipping) {
-            $portfolioStats = DB::table('portfolios')
-                ->select('item_id')
-                ->selectRaw('COUNT(id) as total_listed')
-                ->selectRaw('COUNT(DISTINCT customer_id) as total_customers')
-                ->where('item_type', 'Product')
-                ->whereNull('last_removed_at')
-                ->groupBy('item_id');
-
-            $queryBuilder->leftJoinSub($portfolioStats, 'portfolio_stats', function ($join) {
-                $join->on('portfolio_stats.item_id', '=', 'products.asset_id');
-            });
-
-            $selects[] = DB::raw('COALESCE(portfolio_stats.total_listed, 0) as total_listed');
-            $selects[] = DB::raw('COALESCE(portfolio_stats.total_customers, 0) as total_customers');
-        }
-
         if ($prefix === 'sales') {
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
                 timeSeriesTable: 'asset_time_series',
@@ -94,18 +70,25 @@ class IndexProducts extends OrgAction
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
                     'invoices'                    => 'invoices',
-                    'refunds'                     => 'refunds'
+                    'refunds'                     => 'refunds',
+                    'dropshippers'                => 'dropshippers',
+                    'listings'                    => 'listings',
+                    'sold'                        => 'sold'
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true,
-                localKey: 'asset_id'
+                localKey: 'asset_id',
+                timeSeriesFilters: ['shop_id' => $shop->id],
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['refunds'];
+            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+            $selects[] = $timeSeriesData['selectRaw']['listings'];
+            $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
 
         if ($bucket == 'current') {
@@ -147,12 +130,10 @@ class IndexProducts extends OrgAction
             'customers_invoiced',
             'sales_grp_currency_external',
             'invoices',
+            'dropshippers',
+            'listings',
+            'sold',
         ];
-
-        if ($isDropshipping) {
-            $allowedSorts[] = 'total_listed';
-            $allowedSorts[] = 'total_customers';
-        }
 
         return $queryBuilder->allowedSorts($allowedSorts)
             ->allowedFilters([$globalSearch])
@@ -194,31 +175,23 @@ class IndexProducts extends OrgAction
                             'discontinued' => __('There is no discontinued products'),
                             default => __("No products found"),
                         },
-
-
                         'count' => match ($bucket) {
                             'current' => $shop->stats->number_current_products,
                             'in_process' => $shop->stats->number_products_state_in_process,
                             'discontinued' => $shop->stats->number_products_state_discontinued,
                             default => $shop->stats->number_products,
                         }
-
                     ]
                 );
 
-
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-
-            if ($shop->type === ShopTypeEnum::DROPSHIPPING) {
-                $table->column(key: 'total_customers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'total_listed', label: __('Total Listing'), canBeHidden: true, sortable: true, align: 'right');
-            }
-
-            $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                ->column(key: 'listings', label: __('Total Listing'), canBeHidden: true, sortable: true, align: 'right')
+                ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'refunds', label: __('Refunds'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
         };
     }
-
 }

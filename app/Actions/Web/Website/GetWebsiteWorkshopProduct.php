@@ -28,6 +28,7 @@ class GetWebsiteWorkshopProduct
         $propsValue = [
             'layout' => $layout,
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
+            'type_shop' => $website->shop->type,
             'autosaveRoute' => [
                 'name' => 'grp.models.website.autosave.product',
                 'parameters' => [

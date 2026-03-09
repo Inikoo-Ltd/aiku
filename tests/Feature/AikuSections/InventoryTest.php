@@ -464,7 +464,7 @@ test("UI Index locations", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", "Locations")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "Locations")->etc()
             )
             ->has("data");
     });
@@ -485,7 +485,7 @@ test("UI Create location", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", "New location")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "New location")->etc()
             )
             ->has("formData");
     });
@@ -508,7 +508,7 @@ test("UI Show location", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $location->slug)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $location->slug)->etc()
             )
             ->has("navigation")
             ->has("tabs");
@@ -533,7 +533,7 @@ test("UI Show location (showcase tab)", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $location->slug)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $location->slug)->etc()
             )
             ->has("navigation")
             ->has("tabs")
@@ -558,7 +558,7 @@ test("UI Edit location", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $location->code)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $location->code)->etc()
             )
             ->has("navigation")
             ->has("formData");
@@ -584,7 +584,7 @@ test("UI Index fulfilment locations", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", "Locations")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "Locations")->etc()
             )
             ->has("data");
     });
@@ -608,7 +608,7 @@ test("UI Show fulfilment location", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $location->slug)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $location->slug)->etc()
             )
             ->has("navigation")
             ->has("tabs");
@@ -631,7 +631,7 @@ test("UI Index warehouses", function () {
             ->has("breadcrumbs", 2)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $warehouse->name)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $warehouse->name)->etc()
             )
             ->has("tabs");
     });
@@ -655,7 +655,7 @@ test("UI show org stock", function (OrgStock $orgStock) {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
             )
             ->has("tabs");
     });
@@ -677,7 +677,7 @@ test("UI index org stocks all", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
             );
     });
 });
@@ -698,7 +698,7 @@ test("UI index org stocks discontinued", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
             );
     });
 });
@@ -719,7 +719,7 @@ test("UI index org stocks abnormally", function () {
             ->has("breadcrumbs")
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
             );
     });
 });
@@ -740,7 +740,7 @@ test("UI Index warehouse areas", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", 'warehouse areas')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'warehouse areas')->etc()
             );
     });
 });
@@ -766,7 +766,7 @@ test("UI Show warehouse area", function () {
             ->has('tabs')
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $warehouseArea->name)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $warehouseArea->name)->etc()
             );
     });
 });
@@ -787,7 +787,7 @@ test("UI Index Org Stocks", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", 'Current SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Current SKUs')->etc()
             );
     });
 });
@@ -808,7 +808,7 @@ test("UI Index Org Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", 'SKU Families')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKU Families')->etc()
             );
     });
 });
@@ -830,7 +830,7 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
             )
             ->has("tabs");
     });
@@ -854,7 +854,7 @@ test("UI Show Org Stock Family (tab org stocks)", function (OrgStockFamily $orgS
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
+                fn (AssertableInertia $page) => $page->where("title", $orgStockFamily->name)->etc()
             )
             ->has("tabs");
     });
@@ -872,7 +872,7 @@ test("UI Index Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
             )
             ->has("data");
     });
@@ -889,7 +889,7 @@ test("UI Create stock family", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", "New SKU family")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "New SKU family")->etc()
             )
             ->has("formData");
     });
@@ -909,7 +909,7 @@ test("UI index inventory stored item", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn(AssertableInertia $page) => $page->where("title", "Customer's SKUs")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "Customer's SKUs")->etc()
             )
             ->has("tabs");
     });

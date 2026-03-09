@@ -79,6 +79,7 @@ const props = defineProps<{
     mini_breadcrumbs?: any[]
     variants?:object
     isPerfectFamily: boolean
+    price_rrp_warning_ratio : number
 }>()
 const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
@@ -105,7 +106,7 @@ const component = computed(() => {
 
 const showDialog = ref(false);
 
-
+console.log(props.price_rrp_warning_ratio)
 </script>
 
 <template>
@@ -184,6 +185,7 @@ const showDialog = ref(false);
         :shopsData="shopsData"
         :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
+        :price_rrp_warning_ratio="price_rrp_warning_ratio"
     />
 
 

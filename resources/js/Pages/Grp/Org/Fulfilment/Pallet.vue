@@ -116,7 +116,6 @@ const setPalletUsable = (pallet) => {
                 </template>
             </ModalConfirmation>
         </template>
-
         <template #button-delete-booked-in="{ action }">
             <div>
                 <template v-if="action.supervisor">

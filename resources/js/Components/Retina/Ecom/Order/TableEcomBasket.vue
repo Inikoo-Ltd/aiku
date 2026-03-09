@@ -100,6 +100,7 @@ const debounceUpdateQuantity = debounce(
 
         <!-- Column: Name -->
         <template #cell(asset_name)="{ item }">
+          <!--  <pre> {{ item }}</pre> -->
             <div>
                 <a v-if="item.webpage_url" :href="item.webpage_url" class="primaryLink -ml-1 italic text-xs">
                     {{ item.asset_code }}

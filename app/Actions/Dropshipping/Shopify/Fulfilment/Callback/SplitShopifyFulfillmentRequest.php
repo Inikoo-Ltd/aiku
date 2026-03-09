@@ -62,7 +62,7 @@ class SplitShopifyFulfillmentRequest extends OrgAction
                 return ['error' => $rejectMsg];
             }
 
-            if(count($fulfillmentOrderItemsDefined) === 0) {
+            if (count($fulfillmentOrderItemsDefined) === 0) {
                 return ['error' => $rejectMsg];
             }
 

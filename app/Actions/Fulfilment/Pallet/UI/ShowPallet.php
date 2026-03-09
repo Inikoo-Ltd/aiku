@@ -294,7 +294,7 @@ class ShowPallet extends OrgAction
             $routeName = 'grp.org.fulfilments.show.crm.customers.show.pallets.edit';
         }
 
-        if($this->pallet->status == PalletStatusEnum::INCIDENT){
+        if ($this->pallet->status == PalletStatusEnum::INCIDENT) {
             $actions[] = [
                 'type'      => 'button',
                 'style'     => 'secondary',
