@@ -12,4 +12,5 @@ enum OfferAllowanceClass: string
 {
     case DISCOUNT = 'discount';
     case GIFT = 'gift';
+    case GR_Amnesty = 'amnesty';
 }

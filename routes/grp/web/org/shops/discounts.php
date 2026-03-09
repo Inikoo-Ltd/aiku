@@ -12,6 +12,7 @@ use App\Actions\Discounts\Offer\UI\EditOffer;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Discounts\Offer\UI\ShowOffer;
 use App\Actions\Discounts\Offer\UpdateOffer;
+use App\Actions\Discounts\OfferCampaign\UI\CreateGrAmnesty;
 use App\Actions\Discounts\OfferCampaign\UI\CreateVolGrGift;
 use App\Actions\Discounts\OfferCampaign\UI\EditVolGrGift;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOfferCampaigns;
@@ -28,6 +29,8 @@ Route::name("campaigns.")->prefix('campaigns')
         Route::get('{offerCampaign}/edit', EditDummy::class)->name('edit');
         Route::get('{offerCampaign}/create-vol-gr-gift', CreateVolGrGift::class)->name('create_vol_gr_gift');
         Route::get('{offerCampaign}/edit-vol-gr-gift', EditVolGrGift::class)->name('edit_vol_gr_gift')->withoutScopedBindings();
+        Route::get('{offerCampaign}/create-gr-amnesty-offer', CreateGrAmnesty::class)->name('create_gr_amnesty_offer');
+        Route::get('{offerCampaign}/edit-vol-gr-gift', EditVolGrGift::class)->name('edit_current_gr_amnesty_offer')->withoutScopedBindings();
     });
 
 Route::name("offers.")->prefix('offers')
@@ -38,5 +41,4 @@ Route::name("offers.")->prefix('offers')
         Route::get('{offer}/edit', EditOffer::class)->name('edit');
         Route::post('store', StoreOffer::class)->name('store');
         Route::patch('{offer}/update', [UpdateOffer::class, 'inShop'])->name('update');
-        Route::post('campaigns/{offerCampaign}/store', [StoreOffer::class, 'inOfferCampaign'])->name('campaigns.store');
     });
