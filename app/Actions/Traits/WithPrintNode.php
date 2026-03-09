@@ -24,6 +24,9 @@ trait WithPrintNode
 {
     protected bool $clientInitialized = false;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function ensureClientInitialized(): void
     {
         $isProduction = app()->isProduction();
@@ -31,9 +34,7 @@ trait WithPrintNode
         if (!$this->clientInitialized) {
             if (!$isProduction) {
                 $driver = config('printing.driver');
-                $apiKey = config('printing.drivers.' . $driver . '.key');
-
-
+                $apiKey = config('printing.drivers.'.$driver.'.key');
             } else {
                 $group  = group();
                 $apiKey = Arr::get($group->settings, 'printnode.apikey');
@@ -48,6 +49,9 @@ trait WithPrintNode
         }
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function isExistPrinter(int $printerId): bool
     {
         $this->ensureClientInitialized();
@@ -56,12 +60,15 @@ trait WithPrintNode
 
             return true;
         } catch (Exception $e) {
-            Log::error('Error checking printer existence: ' . $e->getMessage());
+            Log::error('Error checking printer existence: '.$e->getMessage());
 
             return false;
         }
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function printPdf(string $title, int $printId, string $pdfBase64): PrintJob
     {
         $this->ensureClientInitialized();
@@ -76,10 +83,13 @@ trait WithPrintNode
         return PrintJob::create($pendingJob);
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function printRawBase64(string $title, int $printId, string $rawBase64, string $type = 'html'): PrintJob
     {
         $content = Str::fromBase64($rawBase64);
-        // check if content is html
+
         if ($type === 'html') {
             $pdfContent = Browsershot::html($content)
                 ->setOption('no-stop-slow-scripts', true)
@@ -87,7 +97,7 @@ trait WithPrintNode
                 ->margins(10, 10, 10, 10)
                 ->pdf();
         } else {
-            $pdfContent = 'data:application/pdf;base64,' . $rawBase64;
+            $pdfContent = 'data:application/pdf;base64,'.$rawBase64;
         }
 
         $this->ensureClientInitialized();
@@ -101,7 +111,36 @@ trait WithPrintNode
         return PrintJob::create($pendingJob);
     }
 
-    public function printPdfFromPdfUri(string $title, int $printId, string $pdfUri)
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function printPdfFromPdfUriDpdSk(string $title, int $printId, string $pdfUri): PrintJob
+    {
+        $this->ensureClientInitialized();
+
+        $pdfData = file_get_contents($pdfUri);
+
+        if ($pdfData === false) {
+            throw ValidationException::withMessages([
+                'messages' => 'Error: Could not retrieve file from the URL.',
+            ]);
+        }
+
+        $content    = Str::fromBase64(base64_encode($pdfData));
+        $pendingJob = PendingPrintJob::make()
+            ->setContent($content)
+            ->setContentType(ContentType::PdfBase64)
+            ->setPrinter($printId)
+            ->setTitle($title)
+            ->setSource(config('app.name'));
+
+        return PrintJob::create($pendingJob);
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function printPdfFromPdfUri(string $title, int $printId, string $pdfUri): PrintJob
     {
         $this->ensureClientInitialized();
         $pendingJob = PendingPrintJob::make()

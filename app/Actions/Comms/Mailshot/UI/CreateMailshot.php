@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateMailshot extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
     /**
      * @throws Exception
      */
@@ -91,11 +93,6 @@ class CreateMailshot extends OrgAction
 
             ]
         );
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
     /**

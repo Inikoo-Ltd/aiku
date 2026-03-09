@@ -16,7 +16,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
 import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faMedal } from '@fal'
-import { faMedal as fasMedal, faCircle } from '@fas'
+import { faMedal as fasMedal, faCandleHolder, faCircle } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -40,7 +40,7 @@ interface ChatConfig {
     }
 }
 
-library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
+library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
 
@@ -123,6 +123,9 @@ onMounted(() => {
 
     irisStyleVariables(theme?.color)
 
+    if(layout?.iris?.is_logged_in){
+        fetchHasInBasket()
+    }
 })
 
 onBeforeUnmount(() => {
@@ -148,6 +151,27 @@ const fetchSidebarOnce = async () => {
         isSidebarFetching.value = false
     }
 }
+
+const fetchHasInBasket = async () => {
+    set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
+    try {
+        const apiUrl = `/json/basket/transaction-data`
+
+        if (!apiUrl) {
+            throw new Error("Invalid model_type or missing route configuration");
+        }
+
+        const response = await axios.get(apiUrl);
+        /* console.log('plmnbvc',response.data) */
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+    } catch (error) {
+        console.error('Failed to load product portfolio', error);
+    } finally {
+        set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
+
+    }
+};
+
 
 
 

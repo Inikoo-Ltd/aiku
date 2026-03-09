@@ -3,16 +3,13 @@ import Multiselect from "@vueform/multiselect"
 import { debounce } from 'lodash-es'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
-import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
-import { Links, Meta, Table } from '@/types/Table'
+import { Links, Meta } from '@/types/Table'
 import { inject, onMounted, onUnmounted, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
-import { router } from '@inertiajs/vue3'
 import { routeType } from "@/types/route"
 
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -155,6 +152,7 @@ defineExpose({
     multiselectRef: _multiselectRef,
     fetchProductList,
     onSearchQuery,
+    optionsList
 })
 
 </script>

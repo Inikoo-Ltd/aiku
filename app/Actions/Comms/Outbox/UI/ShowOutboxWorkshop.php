@@ -144,13 +144,19 @@ class ShowOutboxWorkshop extends OrgAction
                     ],
                     'method' => 'post'
                 ],
-                'sendTestRoute' => [
+                'sendTestRoute' => $this->parent instanceof Fulfilment ? [
+                    'name' => 'grp.org.fulfilments.show.operations.comms.outboxes.send.test',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'fulfilment' => $this->parent->slug,
+                        'outbox' => $email->outbox->slug
+                    ]
+                ] : [
                     'name' => 'grp.models.shop.outboxes.send.test',
                     'parameters' => [
-                        'shop' => $email->shop_id,
-                        'outbox' => $email->outbox_id
-                    ],
-                    'method' => 'post'
+                        'shop' => $this->shop->id,
+                        'outbox' => $email->outbox->id
+                    ]
                 ],
                 'storeTemplateRoute' => [
                     'name' => 'grp.models.shop.outboxes.workshop.store.template',
@@ -207,6 +213,28 @@ class ShowOutboxWorkshop extends OrgAction
                     $suffix
                 ),
             ),
+            'grp.org.fulfilments.show.operations.comms.outboxes.workshop' =>
+            array_merge(
+                ShowOutbox::make()->getBreadcrumbs(
+                    'grp.org.fulfilments.show.operations.comms.outboxes.show',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $outbox->emailOngoingRun->email,
+                    [
+                        'index' => [
+                            'name' => 'grp.org.fulfilments.show.operations.comms.outboxes.show',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name' => 'grp.org.fulfilments.show.operations.comms.outboxes.workshop',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+
             default => []
         };
     }

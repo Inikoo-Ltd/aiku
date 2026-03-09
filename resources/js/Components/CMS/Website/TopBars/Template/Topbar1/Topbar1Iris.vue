@@ -17,6 +17,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 import GoldReward from "@/Components/Utils/GoldReward.vue"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck)
 
@@ -139,7 +141,16 @@ watch(
                         <span class="font-bold">{{ layout.iris_variables?.name }}</span>
                     </LinkIris>!
                 </span>
-                <span v-if="layout.offer_data?.type === 'gr'" class="text-yellow-500 inline-flex items-center gap-x-1">
+
+                <!-- Section: GR Amnesty (all users have GR) -->
+                <span v-if="layout.offer_data.amnesty" class="text-yellow-300 text-xs inline-flex items-center gap-x-1">
+                    <span class="">{{ ctrans('Gold Reward Amnesty') }}</span>
+                    <FontAwesomeIcon icon="fas fa-candle-holder" class="" fixed-width aria-hidden="true" />
+                    <span class="text-xs">({{ ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout.offer_data.amnesty_until, { formatTime: 'MMM do' }) }) }})</span>
+                </span>
+
+                <!-- Section: GR status -->
+                <span v-else-if="layout.offer_data?.type === 'gr'" class="text-yellow-500 inline-flex items-center gap-x-1">
                     {{ layout.offer_data?.label }}
                     <GoldReward>
                         <template #default>
@@ -162,6 +173,7 @@ watch(
                         </template>
                     </GoldReward>
                 </span>
+
                 <span v-if="layout.offer_data?.type === 'fob'" class="text-yellow-500">
                     {{ layout.offer_data?.label }}
                     <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />

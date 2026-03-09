@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
 use App\Actions\Dispatching\Picking\AssignPackerToPicking;
@@ -61,6 +62,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('pay-with-balance', PayOrderWithCustomerBalance::class)->name('pay_order_with_balance');
 
     Route::patch('update', UpdateOrder::class)->name('update');
+    Route::post('update-faire', UpdateFaireOrder::class)->name('update_faire');
     Route::patch('rollback-dispatch', RollbackDispatchedOrder::class)->name('rollback_dispatch');
     Route::patch('delivery-address-update', UpdateOrderDeliveryAddress::class)->name('delivery_address_update');
     Route::patch('generate-invoice', GenerateInvoiceFromOrder::class)->name('generate_invoice');

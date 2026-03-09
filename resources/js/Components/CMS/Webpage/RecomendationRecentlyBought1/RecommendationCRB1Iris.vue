@@ -70,7 +70,7 @@ const fetchRecommenders = async () => {
             )
 
             listProducts.value = response.data.data
-            console.log('Final listProducts value:', listProducts.value)
+            /* console.log('Final listProducts value:', listProducts.value) */
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         } finally {
@@ -107,7 +107,6 @@ onMounted(() => {
                     :pagination="{ clickable: true }"
                     :modules="[Autoplay]"
                     class="w-full"
-                    xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
                     spaceBetween="12"
                     autoHeight
                 >

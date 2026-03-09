@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, computed } from 'vue'
+import { inject, ref, computed, watch } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -69,15 +69,15 @@ const props = withDefaults(
     }
 )
 
-
+const localBasket = ref({...props.hasInBasket})
 const layout = inject('layout', retinaLayoutStructure)
 const isLoadingSubmitQuantityProduct = ref(false)
 const status = ref<null | 'loading' | 'success' | 'error'>(null)
 
 
 const currentQuantity = computed(() => {
-  const quantityNew = Number(get(props.hasInBasket, 'quantity_ordered_new') ?? 0)
-  const quantity = Number(get(props.hasInBasket, 'quantity_ordered') ?? 0)
+  const quantityNew = Number(get(localBasket.value, 'quantity_ordered_new') ?? 0)
+  const quantity = Number(get(localBasket.value, 'quantity_ordered') ?? 0)
 
     return quantityNew
     // if ( quantityNew === 0) {
@@ -96,7 +96,7 @@ const currentQuantity = computed(() => {
 
 // Check if value is dirty (changed) - dari ButtonAddToBasketInFamily
 const compIsValueDirty = computed(() => {
-    return get(props.hasInBasket, ['quantity_ordered_new'], null) !== get(props.hasInBasket, ['quantity_ordered'], null)
+    return get(localBasket.value, ['quantity_ordered_new'], null) !== get(localBasket.value, ['quantity_ordered'], null)
 })
 
 // Set status with timeout - dari ButtonAddToBasketInFamily
@@ -168,6 +168,19 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
 
         layout.reload_handle()
         fetchProduct(response.data?.transaction_id)
+        const currentList = layout.family_page?.productInBasket?.list || {}
+
+        const updatedList = {
+            ...currentList,
+            [product.id]: {
+                transaction_id: response.data?.transaction_id,
+                quantity_ordered: response.data?.quantity_ordered,
+                quantity_ordered_new: response.data?.quantity_ordered,
+            }
+        }
+
+
+        set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
         // router.reload({
         //     only: ['iris', 'data'],
         // })
@@ -255,6 +268,19 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
 
                     fetchProduct(productTransactionId)
                 }
+
+                const currentList = layout.family_page?.productInBasket?.list || {}
+                const updatedList = {
+                    ...currentList,
+                    [product.id]: {
+                        transaction_id: product.transaction_id,
+                        quantity_ordered: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
+                        quantity_ordered_new: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
+                    }
+                }
+
+
+        set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
             },
             onError: errors => {
                 setStatus('error')
@@ -273,12 +299,12 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
 
 // Main function to add/update product - dari ButtonAddToBasketInFamily
 const addAndUpdateProduct = () => {
-    if (!props.hasInBasket.quantity_ordered) {
-        onAddToBasket(props.product, props.hasInBasket)
-    } else if (props.hasInBasket.quantity_ordered_new === 0) {
-        onUpdateQuantity(props.product, props.hasInBasket)
+    if (!localBasket.value.quantity_ordered) {
+        onAddToBasket(props.product, localBasket.value)
+    } else if (localBasket.value.quantity_ordered_new === 0) {
+        onUpdateQuantity(props.product, localBasket.value)
     } else {
-        onUpdateQuantity(props.product, props.hasInBasket)
+        onUpdateQuantity(props.product, localBasket.value)
     }
 }
 
@@ -291,12 +317,12 @@ const debAddAndUpdateProduct = debounce(() => {
 const updateQuantity = (newQuantity: number) => {
 
     if (newQuantity === 0) {
-        set(props.hasInBasket, ['quantity_ordered_new'], 0)
+        set(localBasket.value, ['quantity_ordered_new'], 0)
     } else {
         const clampedQuantity = Math.max(0, Math.min(newQuantity, props.product.stock))
     
         // set quantity_ordered_new
-        set(props.hasInBasket, ['quantity_ordered_new'], clampedQuantity)
+        set(localBasket.value, ['quantity_ordered_new'], clampedQuantity)
     }
 
     // trigger debounced update jika berubah
@@ -323,12 +349,12 @@ const decrement = () => {
 
 
 const instantAddToBasket = () => {
-    set(props.hasInBasket, ['quantity_ordered_new'], 1)
-    onAddToBasket(props.product, props.hasInBasket)
+    set(localBasket.value, ['quantity_ordered_new'], 1)
+    onAddToBasket(props.product, localBasket.value)
 }
 
 const showChartButton = computed(() => {
-    const quantityOrdered = get(props.hasInBasket, ['quantity_ordered'], 0)
+    const quantityOrdered = get(localBasket.value, ['quantity_ordered'], 0)
     return !quantityOrdered && currentQuantity.value === 0
 })
 
@@ -339,6 +365,14 @@ const canOrder = computed(() => {
 
 const hoveredButton = ref<string | null>(null)
 
+
+watch(
+  () => props.hasInBasket,
+  (newVal) => {
+    localBasket.value = { ...newVal }
+  },
+  { deep: true, immediate: true }
+)
 
 </script>
 

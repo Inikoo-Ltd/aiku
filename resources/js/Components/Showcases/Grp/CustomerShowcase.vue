@@ -46,6 +46,7 @@ import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
 import CustomerClv from "@/Components/CustomerCLV.vue"
 import { notify } from "@kyvg/vue3-notification"
 import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue";
+import GoldReward from "@/Components/Utils/GoldReward.vue"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy)
 
@@ -128,6 +129,11 @@ const props = defineProps<{
         tags: {}[]
         tags_selected_id: number[]
     },
+    gr_data: {
+        gr_label: string
+        meter: number[]
+        customer_is_gr: boolean
+    }
     tab: string
     handleTabUpdate?: Function
 }>()
@@ -152,13 +158,14 @@ function openRejectedModal(customer: any) {
     isModalUploadOpen.value = true
 }
 
-const links = ref([
-    {
+const links = ref([])
+if (props.data.editWebUser) {
+    links.value.push({
         label: trans("Edit Web User"),
         route_target: props.data.editWebUser,
         icon: 'fal fa-pencil'
-    },
-]);
+    })
+}
 
 
 // Section: Balance increase and decrease
@@ -303,6 +310,37 @@ function tagColorClass(scope?: string) {
 
                     <!-- Section: Field -->
                     <div class="flex flex-col gap-y-3 border-t border-gray-900/5 w-full py-6">
+                        <!-- Field: Gold reward member -->
+                        <div v-if="gr_data.customer_is_gr" class="flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt class="flex-none">
+                                <FontAwesomeIcon icon="fas fa-medal" class="align-middle text-yellow-500" fixed-width aria-hidden="true" />
+                            </dt>
+                            
+                            <dd class="text-yellow-600 inline-flex items-center">
+                                {{ gr_data?.gr_label }}
+                                <GoldReward
+                                    :label="gr_data?.gr_label"
+                                    :meter="gr_data?.meter"
+                                >
+                                    <template #default>
+                                        <div>
+                                            <div class="ml-2 inline-block align-middle w-20 text-xxs rounded-sm h-3 my-1 bg-gray-200 relative overflow-hidden">
+                                                <div class="bg-green-500 absolute  left-0   top-0 h-full transition-all duration-1000 ease-in-out"
+                                                    :style="{
+                                                        width: true ? gr_data?.meter?.[0]/gr_data?.meter?.[1] * 100 + '%' : '100%'
+                                                    }"
+                                                />
+                                                
+                                                <div class="absolute inset-0 flex items-center justify-center text-xxs font-medium text-black">
+                                                    {{ Number(gr_data?.meter?.[0]).toFixed(0) }} / {{ Number(gr_data?.meter?.[1]).toFixed(0) }} days
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </GoldReward>
+                            </dd>
+                        </div>
+
                         <!-- Field: Contact name -->
                         <div v-if="data?.customer?.contact_name"
                             class="flex items-center w-full flex-none gap-x-4 px-6">
@@ -548,7 +586,7 @@ function tagColorClass(scope?: string) {
                     </div>
                 </div>
 
-                <div class="mt-4 w-64 border border-gray-300 rounded-md p-2">
+                <div v-if="links.length" class="mt-4 w-64 border border-gray-300 rounded-md p-2">
                     <div v-for="(item, index) in links" :key="index" class="p-2">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
                             type="secondary" />

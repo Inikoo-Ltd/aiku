@@ -16,13 +16,20 @@ use Illuminate\Validation\ValidationException;
 trait WithAllegroOAuth
 {
     // OAuth endpoints live on allegro.pl, NOT api.allegro.pl
-    protected string $allegroAuthUrl   = 'https://allegro.pl/auth/oauth/authorize';
-    protected string $allegroTokenUrl  = 'https://allegro.pl/auth/oauth/token';
-    protected string $allegroDeviceUrl = 'https://allegro.pl/auth/oauth/device';
+    public string $allegroAuthUrl;
+    protected string $allegroTokenUrl;
+    protected string $allegroDeviceUrl;
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    public function __construct()
+    {
+        $this->allegroAuthUrl   = config('services.allegro.auth_url') . '/auth/oauth/authorize';
+        $this->allegroTokenUrl  = config('services.allegro.auth_url') . '/auth/oauth/token';
+        $this->allegroDeviceUrl = config('services.allegro.base_url') . '/auth/oauth/device';
+    }
 
     protected function basicAuthHeader(): string
     {

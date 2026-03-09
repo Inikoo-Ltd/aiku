@@ -121,12 +121,11 @@ const resolvedGap = computed(() => {
             </div>
           </component>
 
-          <div v-if="modelValue.value.caption?.use_caption" class="flex justify-center mt-2">
-            <div v-if="modelValue.value.caption?.use_caption">
+          <div v-if="modelValue.value.caption?.use_caption" class="flex mt-2">
+            <div class="text-center w-full">
               <span v-if="image.caption" :style="getStyles(modelValue.value.caption?.properties, screenType)">
-                {{ image.caption }}
+                <div v-html="image.caption"></div>
               </span>
-              <span v-else class="text-gray-300 font-semibold">No caption</span>
             </div>
           </div>
         </div>

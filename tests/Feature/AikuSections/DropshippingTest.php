@@ -84,13 +84,13 @@ beforeEach(function () {
 
 
 test('test platform were seeded', function () {
-    expect($this->group->platforms()->count())->toBe(8);
+    expect($this->group->platforms()->count())->toBe(9);
     $platform = Platform::first();
     expect($platform)->toBeInstanceOf(Platform::class)
         ->and($platform->stats)->toBeInstanceOf(PlatformStats::class);
 
     $this->artisan('group:seed-platforms')->assertExitCode(0);
-    expect($this->group->platforms()->count())->toBe(8);
+    expect($this->group->platforms()->count())->toBe(9);
 });
 
 test('add sales channel to customer', function () {

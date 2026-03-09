@@ -76,6 +76,7 @@ const fetchCustomerOrderingProduct = async () => {
             })
         )
 
+        console.log('sdfsdf',response.data)
         Object.keys(response.data).forEach(key => {
             props.customerData[key] = response.data[key]
         })
@@ -121,6 +122,16 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
                 : products.unshift({ ...manipProduct })
         }
 
+        const currentList = layout.family_page?.productInBasket?.list || {}
+        const updatedList = {
+            ...currentList,
+            [product.value.id]: {
+                transaction_id: payload.transaction_id,
+                quantity_ordered: payload.quantity_ordered,
+                quantity_ordered_new:  payload.quantity_ordered
+            }
+        }
+        set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
         // router.reload({ only: ['iris'] })
         layout.reload_handle()
         fetchCustomerOrderingProduct()
@@ -168,6 +179,17 @@ const onUpdateQuantity = async () => {
         if (willRemove) {
             customer.value.transaction_id = null
         }
+
+        const currentList = layout.family_page?.productInBasket?.list || {}
+        const updatedList = {
+            ...currentList,
+            [product.value.id]: {
+                transaction_id: transactionId,
+                quantity_ordered: payload.quantity_ordered,
+                quantity_ordered_new:  qty
+            }
+        }
+        set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
 
         fetchCustomerOrderingProduct()
         layout.reload_handle()

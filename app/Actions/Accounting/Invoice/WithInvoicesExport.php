@@ -23,6 +23,9 @@ trait WithInvoicesExport
 {
     public function processDataExportPdf(Invoice $invoice): \Symfony\Component\HttpFoundation\Response
     {
+        $locale = $invoice->shop->language->code;
+        app()->setLocale($locale);
+
         try {
             $totalItemsNet = $invoice->total_amount;
             $totalShipping = $invoice->order?->shipping_amount ?? 0;
@@ -39,11 +42,11 @@ trait WithInvoicesExport
 
             $transactions = $transactionModel->map(function ($transaction) {
                 if (!empty($transaction->data['pallet_id'])) {
-                    $pallet = Pallet::find($transaction->data['pallet_id']);
-                    $transaction->pallet = $pallet->reference;
+                    $pallet                      = Pallet::find($transaction->data['pallet_id']);
+                    $transaction->pallet         = $pallet->reference;
                     $transaction->customerPallet = $pallet->customer_reference;
                 } elseif ($transaction->model_type == 'Rental' && $transaction->recurringBillTransaction) {
-                    $transaction->pallet = $transaction->recurringBillTransaction->item?->reference;
+                    $transaction->pallet         = $transaction->recurringBillTransaction->item?->reference;
                     $transaction->customerPallet = $transaction->recurringBillTransaction->item?->customer_reference;
                 }
 
@@ -97,40 +100,44 @@ trait WithInvoicesExport
             ];
 
             $deliveryNote = $invoice->order?->deliveryNotes?->first();
-            $filename = $invoice->slug . '-' . now()->format('Y-m-d');
-            $pdf      = PDF::loadView('invoices.templates.pdf.invoice', [
-                'shop'              => $invoice->shop,
-                'invoice'           => $invoice,
-                'deliveryNote'      => $deliveryNote,
-                'deliveryAddress'   => $deliveryNote?->deliveryAddress,
-                'context'           => $invoice->original_invoice_id ? 'Refund' : 'Invoice',
-                'transactions'      => $transactions,
-                'totalNet'          => number_format($totalNet, 2, '.', ''),
-                'refunds'           => $refundData,
-                'country_of_origin' => true,
-                'weight'            => true,
-                'commodity_codes'   => true,
+            $filename     = $invoice->slug.'-'.now()->format('Y-m-d');
+            $pdf          = PDF::loadView('invoices.templates.pdf.invoice', [
+                'shop'               => $invoice->shop,
+                'invoice'            => $invoice,
+                'deliveryNote'       => $deliveryNote,
+                'deliveryAddress'    => $deliveryNote?->deliveryAddress,
+                'invoiceNumberLabel' => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Refund Number'),
+                'dateLabel'          => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
+                'typeLabel'          => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
+                'transactions'       => $transactions,
+                'totalNet'           => number_format($totalNet, 2, '.', ''),
+                'refunds'            => $refundData,
+                'country_of_origin'  => true,
+                'weight'             => true,
+                'commodity_codes'    => true,
             ], [], $config);
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);
 
-            if ($isAttachIsdocToPdf) {
+            if ($isAttachIsdocToPdf && !app()->environment('local')) {
                 try {
                     $outputFile = AttacheIsDocToInvoicePdf::make()->handle($invoice, $pdf, $filename);
+
                     return response()->file($outputFile, [
-                        'Content-Type' => 'application/pdf',
-                        'Content-Disposition' => 'inline; filename="' . $filename . '.pdf"',
+                        'Content-Type'        => 'application/pdf',
+                        'Content-Disposition' => 'inline; filename="'.$filename.'.pdf"',
                     ]);
                 } catch (Exception $e) {
                     return response()->json(['error' => 'Failed to generate ISDOC'.' '.$e->getMessage()], 404);
                 }
             }
 
-            return response($pdf->stream($filename . '.pdf'), 200)
+            return response($pdf->stream($filename.'.pdf'), 200)
                 ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
+                ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
         } catch (Exception $e) {
             Sentry::captureException($e);
+
             return response()->json(['error' => 'Failed to generate PDF'], 404);
         }
     }

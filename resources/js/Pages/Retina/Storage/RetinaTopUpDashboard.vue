@@ -15,7 +15,7 @@ import { notify } from '@kyvg/vue3-notification'
 import InputNumber from 'primevue/inputnumber'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import FlashNotification from "@/Components/UI/FlashNotification.vue"
-import { template } from "lodash"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
 library.add(faCheckCircle, faInfoCircle, faExclamationTriangle, faSeedling, faShare, faSpellCheck, faCheck, faTimes, faSignOutAlt, faTruck, faCheckDouble, faCross)
 
@@ -203,9 +203,18 @@ const isCustom = ref(false)
                 <div v-if="isCustom" class="mt-4">
                     <label for="amount" class="block font-medium mb-2">
                         {{ trans("Amount to deposit") }}
+                        <InformationIcon :information="ctrans('Minimum amount is :minAmount', { minAmount: locale.currencyFormat(currency.code, 1)})" />
                     </label>
-                    <InputNumber v-model="amount" inputId="currency-germany" mode="currency" placeholder="100"
-                        :currency="currency.code" locale="en-GB" fluid />
+                    <InputNumber
+                        v-model="amount"
+                        inputId="currency-deposit"
+                        mode="currency"
+                        placeholder="100"
+                        :currency="currency.code"
+                        locale="en-GB"
+                        fluid
+                        :min="1"
+                    />
                 </div>
 
                 <div class="mt-8 flex justify-end space-x-4">

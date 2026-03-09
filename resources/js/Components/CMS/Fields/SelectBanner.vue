@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { faCopy } from '@fal'
 import { faEye, faEyeSlash } from '@far'
 import { faTimesCircle } from '@fas'
@@ -8,6 +8,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { routeType } from '@/types/route'
 import Image from '@/Components/Image.vue'
+import ListItem from '@tiptap/extension-list-item'
 
 library.add(faCopy, faEye, faEyeSlash, faTimesCircle, faSpinnerThird)
 
@@ -16,19 +17,32 @@ const props = defineProps<{
   fetchRoute: routeType
 }>()
 
+
 const emits = defineEmits<{
   (e: 'update:modelValue', value: number | string | null): void
 }>()
 
+const _pureMultiselectInfiniteScroll = ref(null)
 const value = computed({
   get: () => props.modelValue,
   set: v => emits('update:modelValue', { id: v?.id, name: v?.name, slug: v?.slug })
 })
+
+const setOptionList = (data) =>{
+
+}
+
 </script>
 
 <template>
-  <PureMultiselectInfiniteScroll v-model="value" :fetch-route="fetchRoute" :object="true" labelProp="name"
-    value-prop="id">
+  <PureMultiselectInfiniteScroll 
+      v-model="value" 
+      :fetch-route="fetchRoute" 
+      :object="true" 
+      labelProp="name"
+      value-prop="id"
+      ref="_pureMultiselectInfiniteScroll"
+     :optionFunc="(item) => item.state == 'live'">
 
     <!-- selected label -->
     <template #singlelabel="{ value }">
