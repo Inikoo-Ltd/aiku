@@ -278,7 +278,6 @@ class IndexMasterFamilies extends OrgAction
 
         $queryBuilder->select($selects);
 
-        $queryBuilder->where('master_product_categories.mismatch_detected', true);
         $queryBuilder->addSelect('master_product_categories.mismatch_detected');
 
         return $queryBuilder
