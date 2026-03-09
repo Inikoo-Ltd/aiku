@@ -58,6 +58,38 @@ class FetchIrisEcomBasket extends IrisAction
 
         $hasDiscounts = $order->goods_amount != $order->gross_amount;
 
+
+        $grGifts = [
+            'eligible' => false,
+            'gifts'    => []
+        ];
+        if ($order) {
+            $offersData = $order->shop->offers_data;
+
+            $grGifts = Arr::get($offersData, 'gr.gifts_products');
+
+            $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
+            if ($selectedGrGift) {
+                foreach ($grGifts as $key => $gift) {
+                    if ($gift['id'] == $selectedGrGift) {
+                        $grGifts[$key]['selected'] = true;
+                    } else {
+                        $grGifts[$key]['selected'] = false;
+                    }
+                }
+            } else {
+                foreach ($grGifts as $key => $gift) {
+                    $grGifts[$key]['selected'] = Arr::get($gift, 'default', false);
+                }
+            }
+
+            $grGifts = [
+                'eligible' => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
+                'gifts'    => $grGifts
+            ];
+        }
+
+
         if ($hasDiscounts) {
             $itemsData = [
                 [
@@ -229,29 +261,7 @@ class FetchIrisEcomBasket extends IrisAction
             ] : null,
         ];
 
-        $orderArr['gr_gifts'] = [
-            'eligible' => true,
-            'gifts'    => [
-                [
-                    'id'       => 123,
-                    'label'    => 'Rainbow bath bomb',
-                    'selected' => true,
-
-                ],
-                [
-                    'id'       => 234,
-                    'label'    => 'Lavender bath bomb',
-                    'selected' => false,
-
-                ],
-                [
-                    'id'       => 456,
-                    'label'    => 'Rose bath bomb',
-                    'selected' => false,
-
-                ],
-            ],
-        ];
+        $orderArr['gr_gifts'] = $grGifts;
 
         return $orderArr;
     }
