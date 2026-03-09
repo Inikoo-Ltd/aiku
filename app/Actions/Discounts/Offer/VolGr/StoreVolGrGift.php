@@ -110,7 +110,7 @@ class StoreVolGrGift extends OrgAction
         return Redirect::route('grp.org.shops.show.discounts.offers.show', [
             'organisation' => $this->organisation,
             'shop'         => $this->shop,
-            'offer'        => $offer->id
+            'offer'        => $offer->slug
         ]);
     }
 }
