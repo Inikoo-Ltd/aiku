@@ -40,6 +40,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $cost_price_ratio
  * @property string $price_rrp_ratio
  * @property array<array-key, mixed>|null $offers_data
+ * @property float $price_rrp_warning_ratio
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets

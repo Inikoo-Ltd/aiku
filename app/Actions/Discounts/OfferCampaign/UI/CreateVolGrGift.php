@@ -18,7 +18,7 @@ class CreateVolGrGift extends OrgAction
             'CreateModel',
             [
                 'title'       => __('Vol/GR Gift'),
-                'breadcrumbs' => $this->getBreadcrumbs($offerCampaign,request()->route()->getName(), request()->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($offerCampaign, request()->route()->getName(), request()->route()->originalParameters()),
                 'pageHead'    => [
                     'title'   => __('Vol/GR Gift'),
                     'icon'    => [
@@ -94,7 +94,7 @@ class CreateVolGrGift extends OrgAction
         return $this->handle($offerCampaign);
     }
 
-    public function getBreadcrumbs(OfferCampaign $offerCampaign,string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(OfferCampaign $offerCampaign, string $routeName, array $routeParameters): array
     {
 
         return array_merge(
