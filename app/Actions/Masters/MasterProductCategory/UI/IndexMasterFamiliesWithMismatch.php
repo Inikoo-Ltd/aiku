@@ -1,10 +1,11 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 29 Dec 2024 03:09:13 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
- */
+ * author Louis Perez
+ * created on 09-03-2026-12h-58m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
@@ -12,12 +13,10 @@ use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
-use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\MasterProductCategoryTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Masters\MasterFamiliesResource;
@@ -34,7 +33,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterFamilies extends OrgAction
+class IndexMasterFamiliesWithMismatch extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
@@ -87,54 +86,6 @@ class IndexMasterFamilies extends OrgAction
         $this->initialisationFromGroup($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $masterShop, prefix: MasterProductCategoryTabsEnum::INDEX->value);
-    }
-
-    public function inGroup(ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = group();
-        $parent       = $this->parent;
-        $this->initialisationFromGroup($parent, $request)->withTab(MasterProductCategoryTabsEnum::values());
-
-        return $this->handle(parent: $parent, prefix: MasterProductCategoryTabsEnum::INDEX->value);
-    }
-
-    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $masterDepartment;
-        $parent       = $this->parent;
-        $this->initialisationFromGroup($masterDepartment->group, $request)->withTab(MasterProductCategoryTabsEnum::values());
-
-        return $this->handle(parent: $parent, prefix: MasterProductCategoryTabsEnum::INDEX->value);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $masterDepartment;
-        $parent       = $this->parent;
-        $this->initialisationFromGroup($masterDepartment->group, $request)->withTab(MasterProductCategoryTabsEnum::values());
-
-        return $this->handle(parent: $parent, prefix: MasterProductCategoryTabsEnum::INDEX->value);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $masterSubDepartment;
-        $parent       = $this->parent;
-        $this->initialisationFromGroup($masterSubDepartment->group, $request)->withTab(MasterProductCategoryTabsEnum::values());
-
-        return $this->handle(parent: $parent, parentType: 'sub_department', prefix: MasterProductCategoryTabsEnum::INDEX->value);
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $masterSubDepartment;
-        $parent       = $this->parent;
-        $this->initialisationFromGroup($masterSubDepartment->group, $request)->withTab(MasterProductCategoryTabsEnum::values());
-
-        return $this->handle(parent: $parent, parentType: 'sub_department', prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
 
     public function handle(Group|MasterShop|MasterProductCategory $parent, string $parentType = 'department', $prefix = null): LengthAwarePaginator
@@ -238,46 +189,12 @@ class IndexMasterFamilies extends OrgAction
             'master_shops.code as master_shop_code',
             'master_shops.name as master_shop_name',
 
-            // Department
-            'departments.slug as master_department_slug',
-            'departments.code as master_department_code',
-            'departments.name as master_department_name',
-
-            // Sub Department
-            'sub_departments.slug as master_sub_department_slug',
-            'sub_departments.code as master_sub_department_code',
-            'sub_departments.name as master_sub_department_name',
             'currencies.code as currency_code',
         ];
 
-        if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
-            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
-                timeSeriesTable: 'master_product_category_time_series',
-                timeSeriesRecordsTable: 'master_product_category_time_series_records',
-                foreignKey: 'master_product_category_id',
-                aggregateColumns: [
-                    'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'invoices'                    => 'invoices',
-                    'dropshippers'                => 'dropshippers',
-                    'listings'                    => 'listings',
-                    'sold'                        => 'sold',
-                ],
-                frequency: TimeSeriesFrequencyEnum::DAILY->value,
-                prefix: $prefix,
-                includeLY: true
-            );
-
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['invoices'];
-            $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
-            $selects[] = $timeSeriesData['selectRaw']['sold'];
-        }
-
         $queryBuilder->select($selects);
 
+        $queryBuilder->where('master_product_categories.mismatch_detected', true);
         $queryBuilder->addSelect('master_product_categories.mismatch_detected');
 
         return $queryBuilder
@@ -300,17 +217,13 @@ class IndexMasterFamilies extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $sales = false): Closure
+    public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $sales) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
-            }
-
-            if ($sales) {
-                $table->betweenDates(['date']);
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -338,25 +251,15 @@ class IndexMasterFamilies extends OrgAction
             }
 
 
-            if ($sales) {
-                $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
-            } else {
-                $table
-                    ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
-                    ->column(key: 'image_thumbnail', label: '', type: 'avatar')
-                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'master_department_code', label: __('M. Department'), canBeHidden: false, sortable: true, searchable: false)
-                    ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false)
-                    ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'products', label: __('Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
-            }
+            $table
+                ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'master_department_code', label: __('M. Department'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'products', label: __('Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -478,7 +381,7 @@ class IndexMasterFamilies extends OrgAction
 
         return Inertia::render('Masters/MasterFamilies', $baseData)
             ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))
-            ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value, sales: true));
+            ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value));
     }
 
     public function getActions(): array
@@ -510,71 +413,15 @@ class IndexMasterFamilies extends OrgAction
                         'label' => __('Master families'),
                         'icon'  => 'fal fa-bars'
                     ],
-                    'suffix' => $suffix
+                    'suffix' => trim('('.__('Has mismatch').') '.$suffix)
                 ]
             ];
         };
 
         return match ($routeName) {
-            'grp.masters.master_families.index' =>
+            'grp.masters.master_shops.show.master_family.mismatch_detected.index' =>
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.masters.master_shops.show.master_families.index' =>
-            array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($parent),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.masters.master_departments.show.master_families.index' =>
-            array_merge(
-                ShowMasterDepartment::make()->getBreadcrumbs(
-                    $parent->group,
-                    $parent,
-                    $routeName,
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.masters.master_shops.show.master_sub_departments.master_families.index',
-            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index' =>
-            array_merge(
-                ShowMasterSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.masters.master_shops.show.master_departments.show.master_families.index',
-            'grp.masters.master_shops.show.master_departments.show.master_families.create' =>
-            array_merge(
-                ShowMasterDepartment::make()->getBreadcrumbs(
-                    $parent->masterShop,
-                    $parent,
-                    $routeName,
-                    $routeParameters
-                ),
                 $headCrumb(
                     [
                         'name'       => $routeName,

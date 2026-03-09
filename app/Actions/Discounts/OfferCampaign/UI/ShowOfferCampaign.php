@@ -29,6 +29,8 @@ class ShowOfferCampaign extends OrgAction
     use OfferCampaignProductOffersTrait;
     use OfferCampaignDiscretionaryTrait;
     use OfferCampaignDiscountShippingTrait;
+    use OfferCampaignGiftTrait;
+    use OfferCampaignOrderRecursionTrait;
 
     public function handle(OfferCampaign $offerCampaign): OfferCampaign
     {
@@ -44,27 +46,34 @@ class ShowOfferCampaign extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): OfferCampaign
     {
-        $this->initialisationFromShop($shop, $request)->withTab(OfferCampaignTabsEnum::values());
+        $tabs = OfferCampaignTabsEnum::values();
+
+
+        if ($offerCampaign->type !== OfferCampaignTypeEnum::VOLUME_DISCOUNT) {
+            $tabs = OfferCampaignTabsEnum::valuesExcept([
+                OfferCampaignTabsEnum::GR_GIFT,
+                OfferCampaignTabsEnum::GR_AMNESTY
+            ]);
+        }
+
+        $this->initialisationFromShop($shop, $request)->withTab($tabs);
 
         return $this->handle($offerCampaign);
     }
 
-    /**
-     * @throws \Exception
-     */
     public function htmlResponse(OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
         return match ($offerCampaign->type) {
-            OfferCampaignTypeEnum::VOLUME_DISCOUNT => $this->getVolumeDiscountHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::FIRST_ORDER => $this->getFirstOrderHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::CUSTOMER_OFFERS => $this->getCustomerOffersHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::SHOP_OFFERS => $this->getShopOffersHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::CATEGORY_OFFERS => $this->getCategoryOffersHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::PRODUCT_OFFERS => $this->getProductOffersHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::DISCRETIONARY => $this->getDiscretionaryHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::SHIPPING => $this->getDiscountShippingHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::ORDER_RECURSION => throw new \Exception('To be implemented'), // todo make its own action
-
+            OfferCampaignTypeEnum::VOLUME_DISCOUNT  => $this->getVolumeDiscountHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::FIRST_ORDER      => $this->getFirstOrderHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::CUSTOMER_OFFERS  => $this->getCustomerOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::SHOP_OFFERS      => $this->getShopOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::CATEGORY_OFFERS  => $this->getCategoryOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::PRODUCT_OFFERS   => $this->getProductOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::DISCRETIONARY    => $this->getDiscretionaryHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::SHIPPING         => $this->getDiscountShippingHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::GIFT             => $this->getGiftHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::ORDER_RECURSION  => $this->getOrderRecursionHtmlResponse($offerCampaign, $request),
         };
     }
 

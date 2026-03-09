@@ -376,6 +376,7 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
+use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -471,6 +472,7 @@ Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(
 
 Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
     Route::patch('update', UpdateMasterAsset::class)->name('update');
+    Route::patch('repair-trade-units', RepairMasterAssetTradeUnitsToChildren::class)->name('repair_mismatch_trade_units');
     Route::patch('update-images', UpdateMasterProductImages::class)->name('update_images');
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();

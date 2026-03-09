@@ -1,8 +1,9 @@
 <?php
 
 /*
- * Author: stewicca <stewicalf@gmail.com>
- * Copyright (c) 2026, Steven Wicca Alfredo
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 09 Mar 2026, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Discounts\OfferCampaign\UI;
@@ -18,39 +19,34 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-trait OfferCampaignShopOffersTrait
+trait OfferCampaignOrderRecursionTrait
 {
-    public function getShopOffersHtmlResponse(OfferCampaign $offerCampaign, ActionRequest $request): Response
+    public function getOrderRecursionHtmlResponse(OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Discounts/ShopOffersCampaign',
+            'Org/Discounts/OrderRecursionCampaign',
             [
-                'title'                                              => __('Offer Campaign'),
-                'breadcrumbs'                                        => $this->getBreadcrumbs($offerCampaign, $request->route()->getName(), $request->route()->originalParameters()),
-                'navigation'                                         => [
+                'title'       => __('Offer Campaign'),
+                'breadcrumbs' => $this->getBreadcrumbs($offerCampaign, $request->route()->getName(), $request->route()->originalParameters()),
+                'navigation'  => [
                     'previous' => $this->getPreviousModel($offerCampaign, $request),
                     'next'     => $this->getNextModel($offerCampaign, $request),
                 ],
-                'pageHead'                                           => [
-                    'icon'  =>
-                    [
+                'pageHead'    => [
+                    'icon'      => [
                         'icon'  => ['fal', 'comment-dollar'],
                         'title' => __('Offer campaign')
                     ],
-                    'title'         => $offerCampaign->name,
-                    'model'         => __('Offer Campaign'),
-                    'iconRight'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
+                    'title'     => $offerCampaign->name,
+                    'model'     => __('Offer Campaign'),
+                    'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
                 ],
-                'tabs'                                               => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => OfferCampaignTabsEnum::navigationExcept([
                         OfferCampaignTabsEnum::GR_GIFT,
                         OfferCampaignTabsEnum::GR_AMNESTY
                     ])
-                ],
-                'shop_data' => [
-                    'slug'          => $offerCampaign->shop->slug,
-                    'currency_code' => $offerCampaign->shop->currency->code,
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)
@@ -63,6 +59,6 @@ trait OfferCampaignShopOffersTrait
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]
         )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
+         ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
     }
 }
