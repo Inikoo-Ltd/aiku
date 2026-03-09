@@ -3,13 +3,14 @@ import { Head, router, useForm } from "@inertiajs/vue3"
 import { computed, ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Select from "primevue/select"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv } from "@fal"
+import { faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv, faPrint } from "@fal"
 import { notify } from "@kyvg/vue3-notification"
 
 library.add(faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv)
@@ -102,6 +103,8 @@ const isExportModalOpen = ref(false)
 const isExporting = ref(false)
 const exportError = ref(false)
 const exportMessage = ref("")
+let exportController: AbortController | null = null
+let exportTimeoutId: NodeJS.Timeout | null = null
 
 const selectedYear = ref<number>(props.filters.year)
 const selectedMonth = ref<number>(props.filters.month)
@@ -563,6 +566,7 @@ const getLeaveTooltip = (segment: LeaveSegment): string => {
 
 const openExportModal = () => {
 	exportForm.reset()
+	exportForm.export_type = "calendar"
 	exportError.value = false
 	exportMessage.value = ""
 	isExporting.value = false
@@ -570,6 +574,18 @@ const openExportModal = () => {
 }
 
 const closeExportModal = () => {
+	// Cancel any pending export
+	if (exportController) {
+		exportController.abort()
+		exportController = null
+	}
+
+	// Clear any pending timeout
+	if (exportTimeoutId) {
+		clearTimeout(exportTimeoutId)
+		exportTimeoutId = null
+	}
+
 	isExportModalOpen.value = false
 	exportForm.reset()
 	isExporting.value = false
@@ -579,6 +595,9 @@ const submitExport = () => {
 	exportError.value = false
 	exportMessage.value = ""
 	isExporting.value = true
+
+	// Create new abort controller for this export
+	exportController = new AbortController()
 
 	// Build export parameters FIRST
 	const exportParams: Record<string, any> = {
@@ -599,19 +618,26 @@ const submitExport = () => {
 	if (exportForm.team) exportParams.team = exportForm.team
 	if (exportForm.employee_id) exportParams.employee_id = exportForm.employee_id
 
-	isExportModalOpen.value = false
-
-	// Set up timeout for long exports
-	const exportTimeOut = setTimeout(() => {
-		isExporting.value = false
-		notify({
-			title: "Export taking longer than expected",
-			text: "The Export is taking longer than expected",
-			type: "warning",
-		})
+	// Set up timeout for long exports with stored ID
+	exportTimeoutId = setTimeout(() => {
+		if (exportController) {
+			// Check if not cancelled
+			isExporting.value = false
+			notify({
+				title: "Export taking longer than expected",
+				text: "The Export is taking longer than expected",
+				type: "warning",
+			})
+		}
 	}, 30000)
 
 	try {
+		if (exportController?.signal.aborted) {
+			return
+		}
+
+		isExportModalOpen.value = false
+
 		if (exportForm.export_type === "calendar" && exportForm.format === "print") {
 			// Handle print export
 			const printUrl = route("grp.org.hr.leaves.print", {
@@ -619,6 +645,12 @@ const submitExport = () => {
 				...exportParams,
 			})
 			window.open(printUrl, "_blank")
+
+			setTimeout(() => {
+				if (exportController && !exportController.signal.aborted) {
+					isExporting.value = false
+				}
+			}, 1000)
 		} else {
 			// Handle file export
 			exportParams.format = exportForm.format
@@ -629,13 +661,15 @@ const submitExport = () => {
 
 			window.location.href = route(exportRoute, { ...route().params, ...exportParams })
 			setTimeout(() => {
-				isExporting.value = false
+				if (exportController && !exportController.signal.aborted) {
+					isExporting.value = false
+				}
 			}, 1500)
 		}
 
-		clearTimeout(exportTimeOut)
+		clearTimeout(exportTimeoutId)
 	} catch (error) {
-		clearTimeout(exportTimeOut)
+		clearTimeout(exportTimeoutId)
 		isExporting.value = false
 		exportError.value = true
 		exportMessage.value = "Export failed. Please try again."
@@ -1179,15 +1213,10 @@ const submitExport = () => {
 					</div>
 				</div>
 
-				<div class="flex justify-end gap-3 pt-4">
-					<Button @click="closeExportModal" :label="trans('Cancel')" type="tertiary" />
-					<Button
-						type="primary"
-						nativeType="submit"
-						:label="trans('Export')"
-						:loading="isExporting"
-						:icon="exportForm.format === 'xlsx' ? faFileExcel : faFileCsv" />
-				</div>
+				<ExportModalActions
+					:loading="isExporting"
+					:export-icon="exportForm.format === 'xlsx' ? faFileExcel : faFileCsv"
+					@cancel="closeExportModal" />
 			</form>
 		</div>
 	</Modal>

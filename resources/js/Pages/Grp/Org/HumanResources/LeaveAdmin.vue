@@ -4,6 +4,7 @@ import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
@@ -462,15 +463,11 @@ const formatDate = (date: string) => {
 				</div>
 			</div>
 
-			<div class="mt-6 flex justify-end gap-2">
-				<Button @click="closeExportModal" :label="trans('Cancel')" type="tertiary" />
-				<Button
-					type="save"
-					nativeType="submit"
-					:label="trans('Export')"
-					:loading="isExporting"
-					icon="fal fa-download" />
-			</div>
+			<ExportModalActions
+				class-name="mt-6 flex justify-end gap-2"
+				:loading="isExporting"
+				export-icon="fal fa-download"
+				@cancel="closeExportModal" />
 		</form>
 	</Modal>
 </template>
