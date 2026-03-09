@@ -36,6 +36,8 @@ class CalculateOrderDiscounts
 
         $this->setEnabledOffers($order);
 
+
+
         if (!empty($this->enabledOffers) || !empty($order->discretionary_offers_data)) {
             $this->transactions = DB::table('transactions')
                 ->select([
@@ -171,7 +173,8 @@ class CalculateOrderDiscounts
                     $daysSinceLastInvoiced = $this->getDaysSinceLastInvoiced($order);
                     $triggerData           = json_decode($offerData->trigger_data, true);
 
-                    if ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($triggerData, 'interval')) {
+                    if ($daysSinceLastInvoiced <= Arr::get($triggerData, 'interval')) {
+
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
@@ -196,10 +199,10 @@ class CalculateOrderDiscounts
         $this->enabledOffers = $enabledOffers;
     }
 
-    public function getDaysSinceLastInvoiced(Order $order): null|int
+    public function getDaysSinceLastInvoiced(Order $order): int
     {
         if ($this->isLastInvoicedSet) {
-            return $this->daysSinceLastInvoiced;
+            return $this->daysSinceLastInvoiced??10000;
         }
 
         $lastInvoiced            = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
@@ -209,7 +212,7 @@ class CalculateOrderDiscounts
         // Explicitly cast to int to prevent PHP 8.4+ precision loss warnings
         $this->daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
 
-        return $this->daysSinceLastInvoiced;
+        return $this->daysSinceLastInvoiced??10000;
     }
 
     public function checkAmountAndOrderNumber($order, $offerData): array

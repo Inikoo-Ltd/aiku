@@ -59,6 +59,7 @@ const emits = defineEmits<{
 const props = defineProps<{
     currency: string;
     form: any;
+    price_rrp_warning_ratio : number
 }>();
 
 const locale = inject("locale", {});
@@ -238,6 +239,13 @@ function roundDown2(num: number) {
                                 :showButtons="true" inputClass="w-full text-xs" :min="0.01"
                                 @input="emits('change', modelValue)" />
                             <span v-if="form?.errors[`shop_products.${item.id}.price`]" class="text-xs text-red-500">{{ form?.errors[`shop_products.${item.id}.price`] }}</span>
+                            <span v-if="item.product.org_cost
+                                && item.product.price
+                                && price_rrp_warning_ratio
+                                && item.product.price < item.product.org_cost * (1 + price_rrp_warning_ratio / 100)"
+                                class="text-xxs text-yellow-500">
+                                Price should be at least {{ (item.product.org_cost * (1 + price_rrp_warning_ratio /  100)).toFixed(2) }} ({{ price_rrp_warning_ratio }}% above cost).
+                            </span>
                         </td>
 
                         <!-- Price per unit -->

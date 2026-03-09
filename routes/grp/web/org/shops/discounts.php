@@ -6,19 +6,19 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Discounts\Offer\StoreOffer;
+use App\Actions\Discounts\Offer\UI\CreateOffer;
+use App\Actions\Discounts\Offer\UI\EditOffer;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Discounts\Offer\UI\ShowOffer;
-use App\Actions\Discounts\Offer\UI\EditOffer;
 use App\Actions\Discounts\Offer\UpdateOffer;
+use App\Actions\Discounts\OfferCampaign\UI\CreateVolGrGift;
+use App\Actions\Discounts\OfferCampaign\UI\EditVolGrGift;
 use App\Actions\Discounts\OfferCampaign\UI\IndexOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\Discounts\UI\ShowDiscountsDashboard;
 use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Discounts\Offer\StoreOffer;
-use App\Actions\Discounts\Offer\UI\CreateOffer;
-use App\Actions\Discounts\OfferCampaign\StoreVolGrGift;
-use App\Actions\Discounts\OfferCampaign\UI\CreateVolGrGift;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
@@ -26,8 +26,8 @@ Route::name("campaigns.")->prefix('campaigns')
         Route::get('', IndexOfferCampaigns::class)->name('index');
         Route::get('{offerCampaign}', ShowOfferCampaign::class)->name('show');
         Route::get('{offerCampaign}/edit', EditDummy::class)->name('edit');
-        Route::get('{offerCampaign}/vol-gr-gift', CreateVolGrGift::class)->name('vol_gr_gift');
-        Route::post('{offerCampaign}/store-free-gift', StoreVolGrGift::class)->name('store_vol_gr_gift');
+        Route::get('{offerCampaign}/create-vol-gr-gift', CreateVolGrGift::class)->name('create_vol_gr_gift');
+        Route::get('{offerCampaign}/edit-vol-gr-gift', EditVolGrGift::class)->name('edit_vol_gr_gift')->withoutScopedBindings();
     });
 
 Route::name("offers.")->prefix('offers')

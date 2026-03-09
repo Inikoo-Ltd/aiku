@@ -40,10 +40,12 @@ class ShopHydrateOffersData implements ShouldBeUnique
         $offersData = $shop->offers_data;
 
         data_set($offersData, 'gr.active', false);
+        data_set($offersData, 'gr.interval', null);
+
 
 
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)
-            ->where('status')
+            ->where('status',true)
             ->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->first();
         if ($offerCampaign) {
             data_set($offersData, 'gr.active', true);

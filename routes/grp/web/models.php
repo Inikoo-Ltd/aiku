@@ -1168,6 +1168,9 @@ require __DIR__.'/models/stock/stock.php';
 require __DIR__.'/models/accounting/invoice.php';
 require __DIR__.'/models/accounting/refund.php';
 require __DIR__.'/models/accounting/payment.php';
+require __DIR__.'/models/discounts/offer_campaign.php';
+require __DIR__.'/models/discounts/offer.php';
+
 
 require __DIR__.'/models/billables/billables.php';
 require __DIR__.'/models/billables/services.php';

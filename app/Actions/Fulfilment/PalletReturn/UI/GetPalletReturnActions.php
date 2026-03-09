@@ -215,7 +215,7 @@ class GetPalletReturnActions
                     'type'    => 'button',
                     'style'   => '',
                     'tooltip' => __('PDF'),
-                    'label'   => __('PDF'),
+                    'label'   => __('Pickings PDF'),
                     'key'     => 'pdf',
                     'icon'    => 'fal fa-file-pdf',
                     'route'   => [

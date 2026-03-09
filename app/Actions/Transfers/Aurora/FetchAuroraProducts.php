@@ -46,8 +46,8 @@ class FetchAuroraProducts extends FetchAuroraAction
         }
 
         /** @var Product $product */
-        if ($product = Product::withTrashed()->where('source_id', $productData['product']['source_id'])->first()) {
-            try {
+        if ($product) {
+       //     try {
                 if ($productData['family']) {
                     if ($product->shop->type != ShopTypeEnum::DROPSHIPPING) {
                         $productData['product']['family_id'] = $productData['family']->id;
@@ -56,7 +56,6 @@ class FetchAuroraProducts extends FetchAuroraAction
                     }
                 }
 
-
                 $product = UpdateProduct::make()->action(
                     product: $product,
                     modelData: $productData['product'],
@@ -64,13 +63,13 @@ class FetchAuroraProducts extends FetchAuroraAction
                     strict: false,
                     audit: false
                 );
-            } catch (Exception $e) {
-                $this->recordError($organisationSource, $e, $productData['product'], 'Product', 'update');
-
-                return null;
-            }
+//            } catch (Exception $e) {
+//                $this->recordError($organisationSource, $e, $productData['product'], 'Product', 'update');
+//
+//                return null;
+//            }
         } else {
-            try {
+          //  try {
                 $sourceData = explode(':', $productData['product']['source_id']);
                 $orgStocks  = $organisationSource->fetchProductHasOrgStock($sourceData[1])['org_stocks'];
 
@@ -102,11 +101,11 @@ class FetchAuroraProducts extends FetchAuroraAction
                 DB::connection('aurora')->table('Product Dimension')
                     ->where('Product ID', $sourceData[1])
                     ->update(['aiku_id' => $product->id]);
-            } catch (Exception|Throwable $e) {
-                $this->recordError($organisationSource, $e, $productData['product'], 'Product', 'store');
-
-                return null;
-            }
+//            } catch (Exception|Throwable $e) {
+//                $this->recordError($organisationSource, $e, $productData['product'], 'Product', 'store');
+//
+//                return null;
+//            }
         }
 
         $sourceData = explode(':', $product->source_id);

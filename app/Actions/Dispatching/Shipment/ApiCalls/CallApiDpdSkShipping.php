@@ -59,6 +59,7 @@ class CallApiDpdSkShipping extends OrgAction
         $params = $this->prepareShipmentParams($shipper, $parentResource, $parcels);
 
 
+
         $response = Http::withHeaders([
             "Content-Type" => "application/json"
         ])
@@ -97,10 +98,16 @@ class CallApiDpdSkShipping extends OrgAction
                 $errorMessage = Arr::get($apiResponse, 'result.result.0.messages.0', 'Unknown error');
             }
 
+            $element=null;
+            if(is_array($errorMessage) and Arr::has($errorMessage,'value')){
+                $errorMessage=Arr::get($errorMessage,'value');
+                $element=Arr::get($errorMessage,'element');
+            }
+
 
             if (Str::contains($errorMessage, 'Phone number')) {
                 $errorMessage = __('Invalid phone number');
-            } elseif (Str::contains($errorMessage, 'Invalid ZIP')) {
+            } elseif (Str::contains($errorMessage, 'Invalid ZIP') || $element == 'zip') {
                 $errorMessage = __('Invalid postal code');
             }
             $errorData['address'] = $errorMessage;
@@ -152,7 +159,12 @@ class CallApiDpdSkShipping extends OrgAction
             $nameDetail = '';
         }
 
-        $postcode = trim(Arr::get($parentResource, 'to_address.sorting_code').' '.Arr::get($parentResource, 'to_address.postal_code'));
+
+        if(Arr::get($parentResource, 'to_address.sorting_code')){
+            $nameDetail.=' '.Arr::get($parentResource, 'to_address.sorting_code');
+        }
+
+        $postcode = Arr::get($parentResource, 'to_address.postal_code');
 
 
         if (!in_array(

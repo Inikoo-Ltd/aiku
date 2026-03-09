@@ -8,7 +8,7 @@
 
 namespace App\Actions\Maintenance\Discounts;
 
-use App\Actions\Discounts\Offer\StoreVolumeGRDiscount;
+use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
