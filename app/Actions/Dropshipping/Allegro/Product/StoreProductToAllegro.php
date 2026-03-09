@@ -73,7 +73,7 @@ class StoreProductToAllegro extends RetinaAction
             } catch (\Exception $e) {
                 $res = Str::contains($e->getMessage(), ['Produkt z takimi danymi już istnieje. Skontaktuj się z autorem aplikacji.']);
 
-                if($res) {
+                if ($res) {
                     $proposedProduct = $allegroUser->searchProducts([
                         'phrase' => $portfolio->barcode,
                         'mode' => 'GTIN'
@@ -95,7 +95,8 @@ class StoreProductToAllegro extends RetinaAction
 
             $targetCurrency = Currency::where('code', 'PLN')->first();
             $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
-            $customerPrice = $portfolio->customer_price * $plnPriceExchange;;
+            $customerPrice = $portfolio->customer_price * $plnPriceExchange;
+            ;
 
             $offerData = [
                 'productSet' => [

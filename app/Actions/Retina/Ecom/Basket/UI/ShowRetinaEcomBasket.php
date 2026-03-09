@@ -77,7 +77,7 @@ class ShowRetinaEcomBasket extends RetinaAction
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
             if ($selectedGrGift) {
                 foreach ($grGifts as $key => $gift) {
-                    
+
                     $grGifts[$key]['id'] = $gift['id'];
                     $grGifts[$key]['name'] = $gift['name'];
                     if ($gift['id'] == $selectedGrGift) {
