@@ -91,6 +91,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferAllowance> $offerAllowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferCampaign> $offerCampaign
  * @property-read Order|null $order
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasOrgStock> $orgStockBridges
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read RecurringBillTransaction|null $recurringBillTransaction
  * @property-read \App\Models\Catalogue\Shop $shop
@@ -203,6 +204,11 @@ class InvoiceTransaction extends Model
     public function tradeUnitBridges(): HasMany
     {
         return $this->hasMany(InvoiceTransactionHasTradeUnit::class);
+    }
+
+    public function orgStockBridges(): HasMany
+    {
+        return $this->hasMany(InvoiceTransactionHasOrgStock::class);
     }
 
     public function taxCategory(): BelongsTo

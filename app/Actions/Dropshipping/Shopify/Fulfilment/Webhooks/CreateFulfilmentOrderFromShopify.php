@@ -28,6 +28,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $fulfillmentOrder): void
     {
+
         $shopifyUser->debugWebhooks()->create([
             'data' => $fulfillmentOrder
         ]);
@@ -44,7 +45,12 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
 
             foreach ($lineItems as $lineItemEdge) {
                 $lineItem = $lineItemEdge['node'];
-                $productId = $lineItem['lineItem']['product']['id'];
+
+                $productId = data_get($lineItem, 'lineItem.product.id');
+
+                if (empty($productId)) {
+                    continue;
+                }
 
                 $assignedLineItems[] = [
                     'id' => $lineItem['id'],
@@ -52,6 +58,10 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
                     'sku' => $lineItem['sku'],
                     'product_id' => $productId
                 ];
+            }
+
+            if (empty($assignedLineItems)) {
+                return;
             }
 
             data_set($fulfillmentOrder, 'line_items', $assignedLineItems);

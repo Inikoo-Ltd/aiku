@@ -39,6 +39,7 @@ const props = defineProps<{
     layout: any
     products: routeType
     families: any
+    type_shop : string
   }
   currency: {
     code: string
@@ -129,6 +130,7 @@ onMounted(() => {
 
 
 <template>
+
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
     <!-- Sidebar -->
     <div class="col-span-3 bg-white rounded-xl shadow-md py-4 overflow-y-auto border">
@@ -168,7 +170,7 @@ onMounted(() => {
             <component
               class="w-full pointer-events-none"
               :is="getComponent(props.data.layout.code, {
-                shop_type: parentLayout?.shopState?.type,
+                shop_type: data.type_shop ,
               })"
               :code="props.data.layout.code"
               :screenType="currentView"

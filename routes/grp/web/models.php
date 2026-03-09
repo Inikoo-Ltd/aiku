@@ -60,13 +60,13 @@ use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\PublishEmail;
+use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
-use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
@@ -177,6 +177,7 @@ use App\Actions\Fulfilment\PalletDelivery\StartBookingPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\SubmitAndConfirmPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\UpdatePalletDelivery;
 use App\Actions\Fulfilment\PalletReturn\AddAddressToPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\CancelPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DeleteDispatchedPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DeletePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DeletePalletReturnAddress;
@@ -651,6 +652,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('dispatch', DispatchPalletReturn::class)->name('dispatch');
     Route::patch('delete', DeletePalletReturn::class)->name('delete');
+    Route::patch('cancel', CancelPalletReturn::class)->name('cancel');
     Route::delete('dispatched-delete', DeleteDispatchedPalletReturn::class)->name('dispatched-delete');
 
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inPalletReturn'])->name('attachment.attach');
@@ -693,7 +695,7 @@ Route::name('pallet.')->prefix('pallet/{pallet:id}')->group(function () {
     Route::patch('undo-not-received', UndoNotReceivedPallet::class)->name('undo-not-received');
     Route::patch('undo-booked-in', UndoBookedInPallet::class)->name('undo_book_in');
 
-    
+
     Route::patch('return', ReturnPallet::class)->name('return');
     Route::patch('damaged', SetPalletAsDamaged::class)->name('damaged');
     Route::patch('lost', SetPalletAsLost::class)->name('lost');
@@ -793,7 +795,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('update', [UpdateOutbox::class, 'inShop'])->name('update')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
-        Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
+        Route::post('send/test', [SendTestEmail::class, 'asControllerOutbox'])->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/send', SendMailShotNow::class)->name('newsletter.send')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('newsletter.schedule')->withoutScopedBindings();
@@ -835,7 +837,7 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
         Route::patch('/', UpdateOutbox::class)->name('update')->withoutScopedBindings();
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
-        Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
+        Route::post('send/test', SendTestEmail::class)->name('send.test')->withoutScopedBindings();
     });
 });
 
@@ -1172,6 +1174,9 @@ require __DIR__.'/models/stock/stock.php';
 require __DIR__.'/models/accounting/invoice.php';
 require __DIR__.'/models/accounting/refund.php';
 require __DIR__.'/models/accounting/payment.php';
+require __DIR__.'/models/discounts/offer_campaign.php';
+require __DIR__.'/models/discounts/offer.php';
+
 
 require __DIR__.'/models/billables/billables.php';
 require __DIR__.'/models/billables/services.php';

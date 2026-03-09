@@ -131,16 +131,23 @@ class IndexSubDepartments extends OrgAction
                 foreignKey: 'product_category_id',
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'invoices'                    => 'invoices'
+                    'invoices'                    => 'invoices',
+                    'dropshippers'                => 'dropshippers',
+                    'listings'                    => 'listings',
+                    'sold'                        => 'sold',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
-                prefix: $prefix
+                prefix: $prefix,
+                includeLY: true
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+            $selects[] = $timeSeriesData['selectRaw']['listings'];
+            $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
 
         $queryBuilder->select($selects);
@@ -150,7 +157,7 @@ class IndexSubDepartments extends OrgAction
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products', 'sales_grp_currency_external', 'invoices'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products', 'sales_grp_currency_external', 'invoices', 'dropshippers', 'listings', 'sold'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -210,10 +217,12 @@ class IndexSubDepartments extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), sortable: true)
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), align: 'right');
+                    ->column(key: 'sold', label: __('Sold'), sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right');
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('Shop'), sortable: true);

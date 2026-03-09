@@ -49,6 +49,9 @@ class ShowOfferCampaign extends OrgAction
         return $this->handle($offerCampaign);
     }
 
+    /**
+     * @throws \Exception
+     */
     public function htmlResponse(OfferCampaign $offerCampaign, ActionRequest $request): Response
     {
         return match ($offerCampaign->type) {
@@ -59,7 +62,8 @@ class ShowOfferCampaign extends OrgAction
             OfferCampaignTypeEnum::CATEGORY_OFFERS => $this->getCategoryOffersHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::PRODUCT_OFFERS => $this->getProductOffersHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::DISCRETIONARY => $this->getDiscretionaryHtmlResponse($offerCampaign, $request),
-            OfferCampaignTypeEnum::SHIPPING => $this->getDiscountShippingHtmlResponse($offerCampaign, $request), // todo make its own action
+            OfferCampaignTypeEnum::SHIPPING => $this->getDiscountShippingHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::ORDER_RECURSION => throw new \Exception('To be implemented'), // todo make its own action
 
         };
     }

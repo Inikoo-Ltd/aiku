@@ -349,6 +349,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::TIKTOK => [
                             'name' => 'retina.models.portfolio.store_new_tiktok_product'
                         ],
+                        PlatformTypeEnum::ALLEGRO => [
+                            'name' => 'retina.models.portfolio.store_new_allegro_product'
+                        ],
                         default => false
                     },
                     'single_match' => match ($this->customerSalesChannel->platform->type) {

@@ -141,6 +141,11 @@ trait WithAllegroApiServices
         return $this->makeApiRequest('GET', '/sale/products', [], $params);
     }
 
+    public function proposeProduct(array $attributes = []): array
+    {
+        return $this->makeApiRequest('POST', '/sale/product-proposals', $attributes);
+    }
+
     public function getProduct(string $productId): array
     {
         return $this->makeApiRequest('GET', "/sale/products/$productId");
@@ -389,5 +394,12 @@ trait WithAllegroApiServices
     public function getCategoryParameters(string $categoryId): array
     {
         return $this->makeApiRequest('GET', "/sale/categories/$categoryId/parameters");
+    }
+
+    public function getRecommendedCategory(string $name): array
+    {
+        return $this->makeApiRequest('GET', "/sale/matching-categories", [], [
+            'name' => $name
+        ]);
     }
 }

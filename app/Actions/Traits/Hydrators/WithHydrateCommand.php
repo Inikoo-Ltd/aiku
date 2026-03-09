@@ -25,7 +25,7 @@ trait WithHydrateCommand
     use AsAction;
 
     private string $model;
-    private ?string $restriction = null;
+    protected ?string $restriction = null;
     private ?array $evadeState = null;
     protected bool $modelAsHandleArg = true;
 

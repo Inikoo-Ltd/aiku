@@ -164,7 +164,7 @@ const onOpenModalTrackingNumber = async () => {
 		)
 		optionShippingList.value = xxx?.data?.data || []
 		optionsCreateLabel.value = xxx?.data?.data?.filter((shipment) => shipment.api_shipper)
-
+		
 		if (optionShippingList.value?.filter((shipment) => shipment.api_shipper ).length < 1) {
 			selectedShipment.value	= 'other_options'
 		}
@@ -491,7 +491,7 @@ const onCopyDataCustomer = (field: string) => {
 								aria-hidden="true" />
 						</div>
 
-						<div v-else-if="shipment.tracking" class="text-gray-400 text-base">
+						<div v-if="shipment.tracking" class="text-gray-400 text-base">
 							{{ shipment.tracking }}
 						</div>
 						<div

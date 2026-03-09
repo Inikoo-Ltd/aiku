@@ -66,7 +66,7 @@ class TrackWebsiteVisitor
             'retina.webhooks',
         ];
 
-        return array_all($excludedRoutes, fn($excluded) => !str_starts_with($routeName, $excluded));
+        return array_all($excludedRoutes, fn ($excluded) => !str_starts_with($routeName, $excluded));
     }
 
     protected function isBot(Request $request): bool

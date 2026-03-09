@@ -294,12 +294,13 @@ class ShowPallet extends OrgAction
             $routeName = 'grp.org.fulfilments.show.crm.customers.show.pallets.edit';
         }
 
-        if(app()->isLocal() && $this->pallet->status == PalletStatusEnum::INCIDENT){
+        if ($this->pallet->status == PalletStatusEnum::INCIDENT) {
             $actions[] = [
                 'type'      => 'button',
                 'style'     => 'secondary',
                 'tooltip'   => __('Will put back pallet into storing state'),
-                'label'     => __('Set pallet usable again'),
+                'label'     => __('Set pallet as usable again'),
+                'key'       => 'set-pallet-usable',
                 'route'   => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.pallet.pallet.back-to-storing',

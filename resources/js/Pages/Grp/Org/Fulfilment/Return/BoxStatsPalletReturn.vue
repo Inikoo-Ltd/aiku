@@ -837,7 +837,6 @@ const base64HtmlToPdf = async (base64: string, index) => {
 			</section>
 		</BoxStatPallet>
 	</div>
-
 	<Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
 		<CustomerAddressManagementModal
       :addresses="boxStats.fulfilment_customer.address"

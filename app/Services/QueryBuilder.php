@@ -220,20 +220,6 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         );
     }
 
-    /**
-     * Add time series aggregation with optional date filtering and last year comparison
-     *
-     * @param string $timeSeriesTable The time series table name (e.g., 'product_category_time_series')
-     * @param string $timeSeriesRecordsTable The time series records table name (e.g., 'product_category_time_series_records')
-     * @param string $foreignKey The foreign key to join time series (e.g., 'product_category_id')
-     * @param array $aggregateColumns Columns to aggregate with their aliases (e.g., ['sales_grp_currency' => 'sales', 'invoices' => 'invoices'])
-     * @param string $frequency The time series frequency enum value (e.g., TimeSeriesFrequencyEnum::DAILY->value)
-     * @param string|null $prefix The prefix for request parameters
-     * @param bool $includeLY Whether to include last year data (default: true)
-     * @param string|null $localKey The local key column to join on (e.g., 'asset_id'). Defaults to 'id'
-     *
-     * @return array ['hasDateFilter' => bool, 'selectRaw' => array] Array containing filter status and SELECT raw statements
-     */
     public function withTimeSeriesAggregation(
         string $timeSeriesTable,
         string $timeSeriesRecordsTable,
@@ -243,13 +229,12 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         ?string $prefix = null,
         bool $includeLY = true,
         ?string $localKey = null,
-        array $additionalFilters = []
+        array $timeSeriesFilters = [],
+        array $recordsFilters = []
     ): array {
-        // Parse date filter from request
         $argumentName = ($prefix ? $prefix . '_' : '') . 'between';
         $filters = request()->input($argumentName, []);
 
-        // Fallback to non-prefixed parameter
         if (empty($filters) && $prefix) {
             $filters = request()->input('between', []);
         }
@@ -260,7 +245,6 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         $startDateLY = null;
         $endDateLY = null;
 
-        // Check for date filter
         $dateRange = $filters['from'] ?? $filters['date'] ?? null;
 
         if ($dateRange) {
@@ -290,29 +274,25 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             }
         }
 
-        // Create a unique alias for the subquery to prevent collisions
         $alias = 'agg_' . substr(md5($timeSeriesTable . $frequency . ($prefix ?? '')), 0, 6);
 
-        // Build the subquery
         $subQuery = DB::table($timeSeriesTable)
             ->join($timeSeriesRecordsTable, "$timeSeriesRecordsTable.{$timeSeriesTable}_id", '=', "$timeSeriesTable.id")
             ->where("$timeSeriesTable.frequency", $frequency)
             ->groupBy("$timeSeriesTable.$foreignKey")
             ->select("$timeSeriesTable.$foreignKey");
 
-        foreach ($additionalFilters as $column => $value) {
+        foreach ($timeSeriesFilters as $column => $value) {
+            $subQuery->where("{$timeSeriesTable}.{$column}", $value);
+        }
+
+        foreach ($recordsFilters as $column => $value) {
             $subQuery->where("{$timeSeriesRecordsTable}.{$column}", $value);
         }
 
-        // Build SELECT raw statements for aggregation (for the subquery)
-        // and prepare selectRaw return values (referencing the subquery alias)
         $selectRaw = [];
 
         foreach ($aggregateColumns as $column => $colAlias) {
-            // We use simple aliases inside the subquery to avoid long names, but we need to ensure uniqueness if multiple cols map to similar names?
-            // Actually $colAlias is usually 'sales' or 'invoices'. Let's use those.
-
-            // Current period aggregation
             if ($hasDateFilter) {
                 $subQuery->selectRaw(
                     "COALESCE(SUM(CASE WHEN {$timeSeriesRecordsTable}.from <= ? " .
@@ -324,10 +304,8 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                 $subQuery->selectRaw("COALESCE(SUM({$timeSeriesRecordsTable}.{$column}), 0) as {$colAlias}");
             }
 
-            // The main query just selects the column from the subquery alias
             $selectRaw[$colAlias] = DB::raw("COALESCE({$alias}.{$colAlias}, 0) as {$colAlias}");
 
-            // Last year aggregation
             if ($includeLY) {
                 $aliasLY = $colAlias . '_ly';
                 if ($hasDateFilter) {
@@ -340,13 +318,11 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 
                     $selectRaw[$aliasLY] = DB::raw("COALESCE({$alias}.{$aliasLY}, 0) as {$aliasLY}");
                 } else {
-                    // If no date filter, LY is 0 (or undefined logic, currently 0 in original code)
                     $selectRaw[$aliasLY] = DB::raw("0 as {$aliasLY}");
                 }
             }
         }
 
-        // Join the subquery to the main query
         $mainTable = $this->getModel()->getTable();
         $joinColumn = $localKey ? "$mainTable.$localKey" : "$mainTable.id";
 

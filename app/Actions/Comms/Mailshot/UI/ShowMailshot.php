@@ -12,7 +12,7 @@ use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Actions\UI\Marketing\MarketingHub;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
@@ -35,7 +35,7 @@ use App\Models\Web\Website;
  */
 class ShowMailshot extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithMarketingAuthorisation;
 
     public function handle(Mailshot $mailshot): Mailshot
     {

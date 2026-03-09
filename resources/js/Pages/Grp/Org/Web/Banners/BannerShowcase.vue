@@ -20,7 +20,6 @@ const props = defineProps<{
       [key: string]: any
     }
   }
-  ratio?: string
 }>()
 
 const filteredData = computed(() => {
@@ -47,7 +46,6 @@ const filteredData = computed(() => {
         filteredData.state !== 'switch_off'
       "
       :data="filteredData"
-      :ratio="ratio"
     />
 
     <EmptyState

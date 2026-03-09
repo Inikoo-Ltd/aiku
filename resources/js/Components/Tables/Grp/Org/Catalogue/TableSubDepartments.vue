@@ -226,6 +226,10 @@ const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
             </Link>
         </template>
 
+        <template #cell(sold)="{ item }">
+            <div class="inline" v-tooltip="'Number if outers sold'">{{ item.sold }}</div>
+        </template>
+
         <template #cell(sales_grp_currency_external)="{ item: SubDepartment }">
             <span class="tabular-nums">{{ locale.currencyFormat(SubDepartment.currency_code, SubDepartment.sales_grp_currency_external) }}</span>
         </template>
