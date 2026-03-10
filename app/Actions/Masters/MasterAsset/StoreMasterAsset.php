@@ -99,9 +99,12 @@ class StoreMasterAsset extends OrgAction
             $masterAsset->refresh();
 
             if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT  && count($shopProducts) > 0) {
+                $isForSale = data_get($modelData, 'is_for_sale', true);
                 StoreProductFromMasterProduct::make()->action($masterAsset, [
                     'shop_products'     => $shopProducts,
-                ]);
+                    'is_for_sale'       => $isForSale
+                ], 
+                ignoreCreateWebpage: !$isForSale); // if not for sale -> set ignoreCreateWebpage to true
             }
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
@@ -180,6 +183,7 @@ class StoreMasterAsset extends OrgAction
             'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'   => ['sometimes'],
             'is_minion_variant'      => ['sometimes', 'boolean'],
+            'is_for_sale'            => ['sometimes', 'boolean'],
 
         ];
 

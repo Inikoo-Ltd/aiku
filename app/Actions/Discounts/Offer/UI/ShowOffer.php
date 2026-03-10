@@ -81,7 +81,7 @@ class ShowOffer extends OrgAction
                         'id'      => $product->id,
                         'code'    => $product->code,
                         'name'    => $product->name,
-                        'web_images_main'       => $product->web_images['main'],
+                        'web_images_main'       => data_get($product->web_images, 'main'),
                         'default' => Arr::get($productData, 'default', false),
                     ];
                 }

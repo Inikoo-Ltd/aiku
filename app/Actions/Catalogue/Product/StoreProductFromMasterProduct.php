@@ -56,6 +56,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
 
                     $isMain = $masterAsset->is_main;
+
                     $data   = [
                         'code'              => $masterAsset->code,
                         'name'              => $masterAsset->name,
@@ -71,7 +72,7 @@ class StoreProductFromMasterProduct extends GrpAction
                         'state'             => ProductStateEnum::ACTIVE,
                         'status'            => ProductStatusEnum::FOR_SALE,
                         'is_main'           => $isMain,
-                        'is_for_sale'       => $masterAsset->status,
+                        'is_for_sale'       => data_get($modelData, 'is_for_sale', $masterAsset->status),
                         'is_minion_variant' => !$isMain,
                     ];
 
@@ -187,6 +188,7 @@ class StoreProductFromMasterProduct extends GrpAction
         return [
             'shop_products'     => ['sometimes', 'array'],
             'is_minion_variant' => ['sometimes', 'boolean'],
+            'is_for_sale'       => ['sometimes', 'boolean']
         ];
     }
 
