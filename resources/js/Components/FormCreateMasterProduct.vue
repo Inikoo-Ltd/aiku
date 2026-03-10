@@ -548,7 +548,7 @@ const successEditTradeUnit = (data) => {
                             <div>
 
                                 <label class="block text-xs font-medium text-gray-600 mb-1">
-                                    {{trans('Is for sale')}} 
+                                    {{trans('Is For Sale')}} 
                                     <FontAwesomeIcon
                                         :icon="faInfoCircle"
                                         class="text-xs text-gray-400 ml-1"
