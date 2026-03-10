@@ -392,7 +392,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                 <div class="flex items-center justify-end gap-2">
                     <div v-if="item.is_gift">
                         {{ locale.number(item.quantity_bonus) }}
-                        <span v-tooltip="ctrans('Quantity bonus')">
+                        <span v-tooltip="ctrans('Quantity of free gift')">
                             <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
                         </span>
                     </div>
@@ -446,8 +446,22 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                 </div>
             </template>
 
+            <!-- Section: Price -->
+            <template #cell(price)="{ item }">
+                <div v-if="item.is_gift">
+
+                </div>
+                <div v-else class="flex justify-end">
+                    {{ locale.currencyFormat(item.currency_code || "", item.price) }}
+                </div>
+            </template>
+
+            <!-- Section: Net Amount -->
             <template #cell(net_amount)="{ item }">
-                <div class="flex justify-end">
+                <div v-if="item.is_gift">
+
+                </div>
+                <div v-else class="flex justify-end">
                     <div v-if="editingIds.has(item.id)" class="">
                         <!-- Original price tag -->
                         <div

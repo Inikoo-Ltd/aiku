@@ -112,7 +112,7 @@ const debounceUpdateQuantity = debounce(
             <div class="flex items-center justify-end">
                 <div v-if="item.is_gift" >
                     {{ locale.number(item.quantity_bonus) }}
-                    <span v-tooltip="trans('Free gift')">
+                    <span v-tooltip="ctrans('Quantity of free gift')">
                         <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
                     </span>
                 </div>
