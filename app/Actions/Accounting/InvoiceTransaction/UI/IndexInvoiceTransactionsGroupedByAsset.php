@@ -51,6 +51,7 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
                 'invoice_transactions.in_process',
                 'invoice_transactions.is_tax_only',
                 'invoice_transactions.tax_amount',
+                'invoice_transactions.is_gift',
                 'invoice_transactions.data',
                 'historic_assets.code',
                 'historic_assets.name as name',
