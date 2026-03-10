@@ -38,6 +38,7 @@ import { create } from "lodash"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVariants.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
+import { faWarning } from "@fortawesome/free-solid-svg-icons"
 
 library.add(
     faFolder,
@@ -79,6 +80,8 @@ const props = defineProps<{
     mini_breadcrumbs?: any[]
     variants?:object
     isPerfectFamily: boolean
+    price_rrp_warning_ratio : number
+    mismatch_detected?: boolean
 }>()
 const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
@@ -105,7 +108,7 @@ const component = computed(() => {
 
 const showDialog = ref(false);
 
-
+console.log(props.price_rrp_warning_ratio)
 </script>
 
 <template>
@@ -119,12 +122,18 @@ const showDialog = ref(false);
 
         <template #afterTitle2>
            <div class="whitespace-nowrap">
-            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
-                <FontAwesomeIcon
-                    :icon="faOctopusDeploy"
-                    color="#4B0082"
+                <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+                    <FontAwesomeIcon
+                        :icon="faOctopusDeploy"
+                        color="#4B0082"
+                    />
+                </Link>
+                <FontAwesomeIcon 
+                    v-if="mismatch_detected" 
+                    :icon="faWarning" 
+                    class="text-red-500" 
+                    v-tooltip="trans('One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units')"
                 />
-            </Link>
             </div>
         </template>
 
@@ -152,11 +161,10 @@ const showDialog = ref(false);
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-
-     <div  class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
-     <Breadcrumb :model="mini_breadcrumbs">
+     <div  class="bg-white pt-2 w-full  border-gray-200 border-b overflow-x-auto">
+        <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
-                <div class="flex items-center gap-1 whitespace-nowrap">
+                <div class="flex items-center gap-1 whitespace-nowrap px-4 pb-2">
                     <!-- Breadcrumb link or text -->
                     <span v-if="!item.to">
                         {{ item.label || '-' }}
@@ -172,6 +180,13 @@ const showDialog = ref(false);
                 </div>
             </template>
         </Breadcrumb>
+        <Message v-if="mismatch_detected" :severity="'error'">
+            <FontAwesomeIcon 
+                :icon="faWarning" 
+                class="text-red-500 mr-1" 
+            />
+            {{ trans("One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units.") }}
+        </Message>
     </div>
 
     <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" />
@@ -184,6 +199,7 @@ const showDialog = ref(false);
         :shopsData="shopsData"
         :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
+        :price_rrp_warning_ratio="price_rrp_warning_ratio"
     />
 
 

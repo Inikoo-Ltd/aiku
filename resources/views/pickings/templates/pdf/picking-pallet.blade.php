@@ -44,7 +44,13 @@
         <td style="width: 50%;">
             <strong>To:</strong> <br>
             {{ $customer->name ?? 'Customer Name' }}<br>
-            {{ $deliveryAddress ?? 'Delivery Address' }}<br>
+            @if($palletReturn->is_collection)
+                <br> 
+                {{ __('Set for collection on Warehouse') }}: <br>
+                {{ $shop->address->formatted_address }}<br>
+            @else
+                {{ $deliveryAddress ?? 'Delivery Address' }}<br>
+            @endif
         </td>
     </tr>
 </table>
@@ -57,21 +63,70 @@
 </table>
 
 <!-- Items Section -->
-<table class="items">
+<table class="items" style="border-collapse: collapse;">
     <thead>
         <tr>
-            <td>Location</td>
-            <td>Pallet</td>
-            <td>Picked</td>
+            <td rowspan="2" class="text-align:left; width: fit-content; vertical-align:middle">
+                Location
+            </td>
+            <td rowspan="2" class="text-align:left; width: 30%; vertical-align:middle">
+                Pallet
+            </td>
+            <td colspan="2" class="text-align:left; vertical-align:middle">
+                SKU's
+            </td>
+            <td rowspan="2" class="text-align:left; vertical-align:middle">
+                Picked
+            </td>
+        </tr>
+        <tr>
+            <td class="text-align:left; vertical-align: middle">
+                SKU Reference
+            </td>
+            <td class="text-align:left; vertical-align: middle">
+                Quantity
+            </td>
         </tr>
     </thead>
     <tbody>
-        @foreach ($items as $item)
-        <tr>
-            <td>{{ $item->pallet->location?->code ?? 'n/a' }}</td>
-            <td>{{ $item->pallet->reference }} <small>({{ $item->pallet->customer_reference }})</small></td>
-            <td></td>
-        </tr>
+        @foreach ($pallets as $pallet)
+            @php
+                $rowSpan = $pallet->storedItems->count() + 1;
+            @endphp
+            <tr>
+                <td rowspan="{{ $rowSpan }}" class="text-align:left; width: fit-content; vertical-align:middle">
+                    {{ $pallet->location?->code ?? 'n/a' }}
+                </td>
+                <td rowspan="{{ $rowSpan }}" class="text-align:left; width: fit-content; vertical-align:middle">
+                    {{ $pallet->reference }} <small>({{ $pallet->customer_reference }})</small>
+                </td>
+                @if($pallet->storedItems->isEmpty())
+                    <td colspan="2">
+                        -
+                    </td>
+                    <td rowspan="{{ $rowSpan }}" class="text-align:left; width: fit-content; vertical-align:middle">
+                    </td>
+                @endif
+            </tr>
+            @foreach($pallet->storedItems as $storedItem)
+                <tr>
+                    <td style="width: 35%;">
+                       <div>
+                            {{ $storedItem->name }}
+                       </div>
+                       <div style="color: #555555">
+                            ({{ $storedItem->reference }})
+                       </div>
+                    </td>
+                    <td>
+                        {{ $storedItem->total_quantity }}
+                    </td>
+                    @if($loop->first)
+                        <td rowspan="{{ $rowSpan - 1}}" class="text-align:left; width: fit-content; vertical-align:middle">
+                        </td>
+                    @endif
+                </tr>
+            @endforeach
         @endforeach
     </tbody>
 </table>

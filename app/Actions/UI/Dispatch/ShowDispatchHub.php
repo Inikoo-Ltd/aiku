@@ -130,7 +130,15 @@ class ShowDispatchHub extends OrgAction
         return [
             'metrics'     => $metrics,
             'data'        => ['_global' => $dataGlobal],
-            'row_totals'  => ['_global' => ['value' => $total]],
+            'row_totals'  => [
+                '_global' => [
+                    'value'        => $total,
+                    'route_target' => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.index',
+                        'parameters' => $routeParams,
+                    ],
+                ],
+            ],
             'totals'      => $totals,
             'grand_total' => [
                 'value' => $total,

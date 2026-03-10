@@ -295,7 +295,7 @@ class IndexCustomers extends OrgAction
             }
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+                ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
 
             if ($isDropshipping) {
                 $table->column(

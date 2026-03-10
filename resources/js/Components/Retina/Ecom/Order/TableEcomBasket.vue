@@ -61,7 +61,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
                         set(listState.value, [idTransaction, "quantity"], null)
                     }, 3000)
             },
-            only: ["transactions", "summary", "total_to_pay", "balance", "iris"],
+            only: ["transactions", "summary", "total_to_pay", "balance", "iris", "gr_gifts"],
             preserveScroll: true
         }
     )
@@ -100,6 +100,7 @@ const debounceUpdateQuantity = debounce(
 
         <!-- Column: Name -->
         <template #cell(asset_name)="{ item }">
+          <!--  <pre> {{ item }}</pre> -->
             <div>
                 <a v-if="item.webpage_url" :href="item.webpage_url" class="primaryLink -ml-1 italic text-xs">
                     {{ item.asset_code }}

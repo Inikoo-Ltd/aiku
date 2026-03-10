@@ -60,13 +60,13 @@ use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\PublishEmail;
+use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
-use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
@@ -377,6 +377,7 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
+use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -473,6 +474,7 @@ Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(
 
 Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
     Route::patch('update', UpdateMasterAsset::class)->name('update');
+    Route::patch('repair-trade-units', RepairMasterAssetTradeUnitsToChildren::class)->name('repair_mismatch_trade_units');
     Route::patch('update-images', UpdateMasterProductImages::class)->name('update_images');
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
@@ -792,7 +794,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('update', [UpdateOutbox::class,'inShop'])->name('update')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
-        Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
+        Route::post('send/test', [SendTestEmail::class, 'asControllerOutbox'])->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/send', SendMailShotNow::class)->name('newsletter.send')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('newsletter.schedule')->withoutScopedBindings();
@@ -835,7 +837,7 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
         Route::patch('/', UpdateOutbox::class)->name('update')->withoutScopedBindings();
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
-        Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
+        Route::post('send/test', SendTestEmail::class)->name('send.test')->withoutScopedBindings();
     });
 });
 
@@ -1170,6 +1172,9 @@ require __DIR__.'/models/stock/stock.php';
 require __DIR__.'/models/accounting/invoice.php';
 require __DIR__.'/models/accounting/refund.php';
 require __DIR__.'/models/accounting/payment.php';
+require __DIR__.'/models/discounts/offer_campaign.php';
+require __DIR__.'/models/discounts/offer.php';
+
 
 require __DIR__.'/models/billables/billables.php';
 require __DIR__.'/models/billables/services.php';

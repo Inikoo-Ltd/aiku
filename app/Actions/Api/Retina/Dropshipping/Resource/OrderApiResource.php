@@ -32,6 +32,10 @@ class OrderApiResource extends JsonResource
 
         $estWeight = ($order->estimated_weight ?? 0) / 1000;
 
+        $shippingData = is_array($order->shipping_data ?? []) ? $order->shipping_data : [];
+
+        $firstShippingData = $shippingData[0] ?? [];
+
         return [
             'id'            => $order->id,
             'reference'     => $order->reference,
@@ -54,6 +58,12 @@ class OrderApiResource extends JsonResource
                     'pay_amount'   => $roundedDiff,
                 ],
                 'estimated_weight' => $estWeight
+            ],
+            'shipping_data' => [
+                'shipping_id'     => data_get($firstShippingData, 'shipping_id'),
+                'trackings'       => data_get($firstShippingData, 'trackings'),
+                'tracking_urls'   => data_get($firstShippingData, 'tracking_urls'),
+                'shipper_label'   => data_get($firstShippingData, 'shipper_label'),
             ],
             'transactions' => TransactionsApiResource::collection($order->transactions),
             'payments' => PaymentsApiResource::collection($order->payments),

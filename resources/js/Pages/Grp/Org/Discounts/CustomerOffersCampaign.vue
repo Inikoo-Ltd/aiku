@@ -21,6 +21,8 @@ import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentDollar, faInfoCircle, faUsers } from '@fal'
+import ModalCreateCustomerOffers from '@/Components/Offers/ModalCreateCustomerOffers.vue'
+
 library.add( faCommentDollar, faInfoCircle, faUsers )
 
 
@@ -35,6 +37,10 @@ const props = defineProps<{
     overview: {
         offerCampaign: {}
         stats: {}
+    }
+     shop_data: {
+        slug: string
+        currency_code: string
     }
 }>()
 
@@ -55,7 +61,13 @@ const component = computed(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #button-customer-create-offer>
+            <ModalCreateCustomerOffers
+                :shop_data="props.shop_data"
+            />
+        </template>
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>

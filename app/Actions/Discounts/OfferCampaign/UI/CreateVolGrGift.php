@@ -12,13 +12,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateVolGrGift extends OrgAction
 {
-    public function handle(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): Response
+    public function handle(OfferCampaign $offerCampaign): Response
     {
         return Inertia::render(
             'CreateModel',
             [
                 'title'       => __('Vol/GR Gift'),
-                'breadcrumbs' => $this->getBreadcrumbs(request()->route()->getName(), request()->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($offerCampaign, request()->route()->getName(), request()->route()->originalParameters()),
                 'pageHead'    => [
                     'title'   => __('Vol/GR Gift'),
                     'icon'    => [
@@ -31,7 +31,7 @@ class CreateVolGrGift extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => preg_replace('/vol_gr_gift$/', 'show', request()->route()->getName()),
+                                'name'       => preg_replace('/create_vol_gr_gift$/', 'show', request()->route()->getName()),
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ]
                         ]
@@ -50,7 +50,7 @@ class CreateVolGrGift extends OrgAction
                                     'required' => true,
                                     "bind"     => [
                                         'placeholder'   => 0,
-                                        'prefix'   => $shop->currency->symbol,
+                                        'prefix'   => $offerCampaign->shop->currency->symbol,
                                         'min'      => 0
                                     ],
                                     'value' => 0,
@@ -63,24 +63,22 @@ class CreateVolGrGift extends OrgAction
                                     'fetchRoute' => [
                                         'name'       => 'grp.json.shop.products_for_vol_gr_gift',
                                         'parameters' => [
-                                            'shop'         => $shop->id,
+                                            'shop'         => $offerCampaign->shop->id,
                                         ],
                                     ],
                                     "value" => [],
                                 ],
-                                'default'   => [
-                                    'hidden' => true,
-                                    'value' => null
-                                ]
+                                // 'default'   => [
+                                //     'hidden' => true,
+                                //     'value' => null
+                                // ]
                             ],
                         ],
                     ],
                     'route' => [
-                        'name'       => 'grp.org.shops.show.discounts.campaigns.store_vol_gr_gift',
+                        'name'       => 'grp.models.offer_campaign.store_vol_gr_gift',
                         'parameters' => [
-                            'organisation'   => $organisation->slug,
-                            'shop'           => $shop->slug,
-                            'offerCampaign'  => $offerCampaign->slug,
+                            'offerCampaign'  => $offerCampaign->id,
                         ],
                     ],
                 ],
@@ -93,23 +91,28 @@ class CreateVolGrGift extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($organisation, $shop, $offerCampaign, $request);
+        return $this->handle($offerCampaign);
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(OfferCampaign $offerCampaign, string $routeName, array $routeParameters): array
     {
-        return [
+
+        return array_merge(
+            ShowOfferCampaign::make()->getBreadcrumbs(
+                $offerCampaign,
+                routeName: preg_replace('/create_vol_gr_gift$/', 'show', $routeName),
+                routeParameters: $routeParameters,
+            ),
             [
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-gift',
-                    'label' => __('Vol/GR Gift'),
-                    'route' => [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
+                [
+                    'type'          => 'creatingModel',
+                    'creatingModel' => [
+                        'label' => __('Setting up Vol/GR Gift'),
                     ]
                 ]
-            ],
-        ];
+            ]
+        );
+
+
     }
 }

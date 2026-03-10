@@ -25,7 +25,10 @@ class CalculateOrderDiscounts
     private array $enabledOffers = [];
     private array $offerMeters = [];
     private bool $isLastInvoicedSet = false;
+    private bool $isGrAmnestyOfferIdSet = false;
     private int|null $daysSinceLastInvoiced = null;
+    private int|null $grAmnestyOfferId = null;
+
 
     private Order $order;
 
@@ -35,6 +38,7 @@ class CalculateOrderDiscounts
         $this->transactions = collect();
 
         $this->setEnabledOffers($order);
+
 
         if (!empty($this->enabledOffers) || !empty($order->discretionary_offers_data)) {
             $this->transactions = DB::table('transactions')
@@ -49,6 +53,7 @@ class CalculateOrderDiscounts
                     'department_id'
                 ])
                 ->where('order_id', $order->id)
+                ->where('quantity_ordered', '>', 0)
                 ->where('model_type', 'Product')
                 ->whereNull('deleted_at')
                 ->get()
@@ -58,11 +63,15 @@ class CalculateOrderDiscounts
         }
         $this->processDiscretionaryOffers($order);
 
-        DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->delete();
-        DB::table('transactions')->where('order_id', $order->id)->update([
-            'net_amount'  => DB::raw('gross_amount'),
-            'offers_data' => []
-        ]);
+        DB::table('transaction_has_offer_allowances')
+            ->where('is_gift', false)
+            ->where('order_id', $order->id)->delete();
+        DB::table('transactions')->where('order_id', $order->id)
+            ->where('quantity_ordered', '>', 0)
+            ->update([
+                'net_amount'  => DB::raw('gross_amount'),
+                'offers_data' => []
+            ]);
 
         foreach ($this->transactions as $transaction) {
             if (property_exists($transaction, 'with_offer')) {
@@ -74,13 +83,14 @@ class CalculateOrderDiscounts
                             'offers_data'  => [
                                 'v' => 1,
                                 'o' => [
-                                    'oc' => $transaction->offer_campaign_id,
-                                    'o'  => $transaction->offer_id,
-                                    'oa' => $transaction->offer_allowance_id,
-                                    't'  => $transaction->allowance_type,
-                                    'p'  => percentage($transaction->discounted_percentage, 1),
-                                    'l'  => $transaction->offer_label,
-                                    'st' => $transaction->sub_trigger
+                                    'oc'  => $transaction->offer_campaign_id,
+                                    'o'   => $transaction->offer_id,
+                                    'oa'  => $transaction->offer_allowance_id,
+                                    't'   => $transaction->allowance_type,
+                                    'p'   => percentage($transaction->discounted_percentage, 1),
+                                    'l'   => $transaction->offer_label,
+                                    'st'  => $transaction->sub_trigger,
+                                    'sto' => $transaction->sub_trigger_offer_id
 
                                 ]
                             ]
@@ -168,10 +178,23 @@ class CalculateOrderDiscounts
                 }
             } elseif ($offerData->type == 'Category Quantity Ordered Order Interval') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
+                    $amnestyOfferId = $this->getGrAmnestyOfferId($order);
+                    if ($amnestyOfferId) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'             => $offerData->id,
+                            'offer_label'          => $offerData->name,
+                            'sub_trigger'          => 'a',
+                            'sub_trigger_offer_id' => $amnestyOfferId,
+                        ];
+                        continue;
+                    }
+
+
                     $daysSinceLastInvoiced = $this->getDaysSinceLastInvoiced($order);
                     $triggerData           = json_decode($offerData->trigger_data, true);
 
-                    if ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($triggerData, 'interval')) {
+
+                    if ($daysSinceLastInvoiced <= Arr::get($triggerData, 'interval')) {
                         $enabledOffers[$offerData->allowance_signature] = [
                             'offer_id'    => $offerData->id,
                             'offer_label' => $offerData->name,
@@ -196,10 +219,26 @@ class CalculateOrderDiscounts
         $this->enabledOffers = $enabledOffers;
     }
 
-    public function getDaysSinceLastInvoiced(Order $order): null|int
+
+    public function getGrAmnestyOfferId(Order $order): null|int
+    {
+        if ($this->isGrAmnestyOfferIdSet) {
+            return $this->grAmnestyOfferId;
+        }
+
+        $isGrAmnestyOfferId          = Cache::remember("gr_amnesty_offer_id_$order->shop_id", now()->addHour(), function () use ($order) {
+            return Arr::get($order->shop->offers_data, "gr.amnesty_offer_id");
+        });
+        $this->isGrAmnestyOfferIdSet = true;
+        $this->grAmnestyOfferId      = $isGrAmnestyOfferId;
+
+        return $isGrAmnestyOfferId;
+    }
+
+    public function getDaysSinceLastInvoiced(Order $order): int
     {
         if ($this->isLastInvoicedSet) {
-            return $this->daysSinceLastInvoiced;
+            return $this->daysSinceLastInvoiced ?? 10000;
         }
 
         $lastInvoiced            = Cache::remember("customer_last_invoiced_at_$order->customer_id", now()->addDay(), function () use ($order) {
@@ -209,7 +248,7 @@ class CalculateOrderDiscounts
         // Explicitly cast to int to prevent PHP 8.4+ precision loss warnings
         $this->daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
 
-        return $this->daysSinceLastInvoiced;
+        return $this->daysSinceLastInvoiced ?? 10000;
     }
 
     public function checkAmountAndOrderNumber($order, $offerData): array
@@ -311,6 +350,7 @@ class CalculateOrderDiscounts
                 $transaction->offer_label           = $offerData['offer_label'];
                 $transaction->allowance_type        = 'percentage';
                 $transaction->sub_trigger           = Arr::get($offerData, 'sub_trigger');
+                $transaction->sub_trigger_offer_id  = Arr::get($offerData, 'sub_trigger_offer_id');
             }
         }
     }
@@ -329,6 +369,7 @@ class CalculateOrderDiscounts
         $transaction->offer_label           = $label;
         $transaction->allowance_type        = 'percentage';
         $transaction->sub_trigger           = null;
+        $transaction->sub_trigger_offer_id  = null;
     }
 
     public function processDiscretionaryOffers(Order $order): void

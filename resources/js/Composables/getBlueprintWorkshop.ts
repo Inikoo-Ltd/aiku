@@ -51,8 +51,7 @@ import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
 import CollectionDescription from '@/Components/CMS/Webpage/CollectionDescription/Blueprint'
 import DepartmentDescription from "@/Components/CMS/Webpage/DepartmentDescription/Blueprint"
 import SubDepartmentDesciption from "@/Components/CMS/Webpage/SubDepartmentDesciption/Blueprint"
-
-
+import { Mainbluprint } from '@/Components/CMS/Webpage/Product1/BlueprintWebpages'
 import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
 import Product1DSBlueprint from '@/Components/CMS/Webpage/Product1/Dropshipping/Blueprint'
 
@@ -99,7 +98,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"families-3": Families3Blueprint.blueprint,
 
 		// products list
-		"products-1": ProductsList1Blueprint.blueprint,
+		"products-1": data ? Mainbluprint.blueprint : ProductsList1Blueprint.blueprint,
 		"products-2": ProductsList2Blueprint.blueprint,
 
 		//BestSeller

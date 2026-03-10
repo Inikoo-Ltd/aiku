@@ -103,6 +103,7 @@ beforeEach(function () {
 
     if (!isset($this->employee)) {
         $employeeData                  = Employee::factory()->definition();
+        $employeeData['alias'] .= Str::random(6);
         $employeeData['worker_number'] .= Str::random(6);
 
         $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);

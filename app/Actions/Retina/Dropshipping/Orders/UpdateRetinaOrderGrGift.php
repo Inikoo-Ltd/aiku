@@ -13,12 +13,11 @@ use App\Actions\RetinaAction;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateRetinaOrderEligibleGift extends RetinaAction
+class UpdateRetinaOrderGrGift extends RetinaAction
 {
     public function handle(Order $order, array $modelData): void
     {
-        dd('eligible gift update action called', $modelData);
-        return;
+        UpdateOrderGrGift::run($order, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool

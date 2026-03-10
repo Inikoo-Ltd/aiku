@@ -85,4 +85,22 @@ trait WithRepairWebpages
         }
     }
 
+    protected function deleteWebBlocksByType(Webpage $webpage, WebBlockTemplateEnum $scope)
+    {
+        foreach ($scope->templateCodes() as $unusedWebBlockCode) {
+            $unusedWebBlock = $this->getWebpageBlocksByType($webpage, $unusedWebBlockCode);
+            if (count($unusedWebBlock) > 0) {
+                $webpage
+                    ->modelHasWebBlocks()
+                    ->whereIn('id', $unusedWebBlock->pluck('model_has_web_blocks_id'))
+                    ->delete();
+
+                $webpage
+                    ->webBlocks()
+                    ->whereIn('web_blocks.id', $unusedWebBlock->pluck('id'))
+                    ->delete();
+            }
+        }
+    }
+
 }

@@ -464,11 +464,14 @@ class UpdateProduct extends OrgAction
 
 
         if (!$this->strict) {
+            $rules['code']                      = ['sometimes', 'string'];
             $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
             $rules['description']               = ['sometimes', 'nullable', 'max:15000'];
+            $rules['price']                     = ['sometimes', 'nullable', 'numeric'];
+            $rules['unit_price']                = ['sometimes', 'nullable', 'numeric'];
 
 
             $rules = $this->noStrictUpdateRules($rules);

@@ -1873,7 +1873,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
                     <div v-if="props.external_shop?.engine_value === 'faire'">
                         <ButtonWithLink
-                            label="Refresh Data"
+                            :label="trans('Refresh Faire data')"
                             size="xs"
                             type="tertiary"
                             key="2"

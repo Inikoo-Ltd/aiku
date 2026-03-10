@@ -73,9 +73,31 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
                 {{ stockFamily["number_current_org_stocks"] }}
             </Link>
         </template>
+        <template #cell(number_out_of_stock_org_stocks)="{ item: stockFamily }">
+            <span class="tabular-nums">
+                {{ stockFamily["number_out_of_stock_org_stocks"] }}
+                <span class="text-gray-400">({{ stockFamily["number_current_org_stocks"] }})</span>
+            </span>
+        </template>
+
+        <template #cell(woc)="{ item }">
+            <span v-if="item.woc !== null" class="tabular-nums">{{ item.woc }}w</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(stock_value)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.stock_value) }}</span>
+        </template>
+
+        <template #cell(on_the_way_po_value)="{ item }">
+            <span class="tabular-nums">
+                {{ locale.currencyFormat(item.currency_code, item.on_the_way_po_value) }}
+                <span v-if="item.on_the_way_po_count > 0" class="text-gray-400">({{ item.on_the_way_po_count }})</span>
+            </span>
+        </template>
 
         <template #cell(sales_grp_currency_external)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat('GBP', item.sales_grp_currency_external) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_grp_currency_external) }}</span>
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">
