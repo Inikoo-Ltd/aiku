@@ -23,6 +23,7 @@ const props = defineProps<{
     data: {},
     dashboard?: {}
     customers: {}
+    tabs: { current: string, navigation: object }
     download_route: {
         xlsx: routeType
         csv: routeType
@@ -52,5 +53,5 @@ const downloadUrl = (type: string) => {
             </div>
         </template>
     </PageHeading>
-    <TableCustomers :data="customers" />
+    <TableCustomers :data="customers" :tab="tabs.current" />
 </template>

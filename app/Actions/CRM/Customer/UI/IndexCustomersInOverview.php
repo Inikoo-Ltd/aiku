@@ -41,7 +41,7 @@ class IndexCustomersInOverview extends OrgAction
         $this->parent = $organisation;
         $this->initialisation($organisation, $request)->withTab(CustomersTabsEnum::values());
 
-        return $this->handle($this->parent);
+        return $this->handle($this->parent, CustomersTabsEnum::CUSTOMERS->value);
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
@@ -49,7 +49,7 @@ class IndexCustomersInOverview extends OrgAction
         $this->parent = group();
         $this->initialisationFromGroup(group(), $request)->withTab(CustomersTabsEnum::values());
 
-        return $this->handle($this->parent);
+        return $this->handle($this->parent, CustomersTabsEnum::CUSTOMERS->value);
     }
 
     public function handle(Group|Organisation $parent, $prefix = null): LengthAwarePaginator
