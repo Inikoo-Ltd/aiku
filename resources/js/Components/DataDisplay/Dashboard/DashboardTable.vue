@@ -254,6 +254,11 @@ const updateTab = (value: string) => {
 :deep(.p-datatable-scrollable .p-datatable-frozen-column) {
     position: sticky;
     background: var(--p-datatable-header-cell-background);
+    z-index: 3;
+}
+
+:deep(.p-datatable-scrollable .p-datatable-tbody > tr > td) {
+    z-index: 1;
 }
 
 :deep(.p-datatable-footer){
