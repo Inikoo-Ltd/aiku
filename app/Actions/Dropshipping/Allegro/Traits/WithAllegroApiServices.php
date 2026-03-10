@@ -73,6 +73,14 @@ trait WithAllegroApiServices
         }
     }
 
+    public function sanitizeAllegroDescription(string $content): string
+    {
+        $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+        $content = str_replace(['<em>', '</em>'], ['<i>', '</i>'], $content);
+
+        return strip_tags($content, '<b><i><em><ul><ol><li><p><br>');
+    }
+
     // -------------------------------------------------------------------------
     // Offers
     // -------------------------------------------------------------------------

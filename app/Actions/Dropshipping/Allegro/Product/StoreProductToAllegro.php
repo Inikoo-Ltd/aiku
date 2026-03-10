@@ -147,7 +147,7 @@ class StoreProductToAllegro extends RetinaAction
                             'items' => [
                                 [
                                     'type' => 'TEXT',
-                                    'content' => $portfolio->customer_description ?? ''
+                                    'content' => $allegroUser->sanitizeAllegroDescription($portfolio->customer_description)
                                 ]
                             ]
                         ]
@@ -180,7 +180,6 @@ class StoreProductToAllegro extends RetinaAction
 
             return $portfolio;
         } catch (\Exception $e) {
-            dd($e);
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [
                     'message' => $e->getMessage()
@@ -196,12 +195,5 @@ class StoreProductToAllegro extends RetinaAction
 
             return $portfolio;
         }
-    }
-
-    public function asController(AllegroUser $allegroUser, Portfolio $portfolio, ActionRequest $request): void
-    {
-        $this->initialisation($request);
-
-        $this->handle($allegroUser, $portfolio);
     }
 }
