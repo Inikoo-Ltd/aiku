@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $discounted_percentage
  * @property string $free_items_value
  * @property string $number_of_free_items
+ * @property bool $is_gift
  * @property string|null $info
  * @property bool $is_pinned
  * @property string|null $precursor
@@ -51,6 +52,7 @@ class TransactionHasOfferAllowance extends Model
     protected $casts = [
         'data'            => 'array',
         'is_pinned'       => 'boolean',
+        'is_gift'         => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];

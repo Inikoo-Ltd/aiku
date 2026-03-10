@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
+use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -24,8 +25,13 @@ use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Models\Catalogue\Product;
+use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -44,7 +50,6 @@ class SubmitOrder extends OrgAction
      */
     public function handle(Order $order): Order
     {
-
         $oldState = $order->state;
 
         $modelData = [
@@ -56,6 +61,68 @@ class SubmitOrder extends OrgAction
 
         if ($order->state == OrderStateEnum::CREATING || $order->submitted_at == null) {
             data_set($modelData, 'submitted_at', $date);
+        }
+
+
+        $offersData = $order->shop->offers_data;
+
+        $grGiftOffer   = null;
+        $grGiftOfferId = Arr::get($offersData, 'gr.gifts_offer_id');
+        if ($grGiftOfferId) {
+            $grGiftOffer = Offer::find($grGiftOfferId);
+        }
+
+        if ($grGiftOffer) {
+            $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
+            if (!$selectedGrGift) {
+                $grGiftsData = Arr::get($offersData, 'gr.gifts_products');
+                if ($grGiftsData) {
+                    foreach ($grGiftsData as $gift) {
+                        if (Arr::get($gift, 'default', false)) {
+                            $selectedGrGift = $gift['id'];
+                            break;
+                        }
+                    }
+                }
+            }
+
+
+            if ($selectedGrGift) {
+                /** @var OfferAllowance $giftAllowance */
+                $giftAllowance = $grGiftOffer->offerAllowances()->first();
+                if ($giftAllowance) {
+                    $selectedGrGiftProduct = Product::where('shop_id', $order->shop_id)->where('id', $selectedGrGift)->first();
+                    if ($selectedGrGiftProduct) {
+                        $grGiftTransaction = StoreTransaction::make()->action(
+                            $order,
+                            $selectedGrGiftProduct->currentHistoricProduct,
+                            [
+                                'quantity_ordered' => 0,
+                                'quantity_bonus'   => 1,
+                            ]
+                        );
+
+                        DB::table('transaction_has_offer_allowances')->insert([
+                            'order_id'              => $order->id,
+                            'transaction_id'        => $grGiftTransaction->id,
+                            'model_type'            => $grGiftTransaction->model_type,
+                            'model_id'              => $grGiftTransaction->model_id,
+                            'offer_campaign_id'     => $grGiftOffer->offer_campaign_id,
+                            'offer_id'              => $grGiftOffer->id,
+                            'offer_allowance_id'    => $giftAllowance->id,
+                            'discounted_amount'     => 0,
+                            'discounted_percentage' => 0,
+                            'is_gift'               => true,
+                            'free_items_value'      => $selectedGrGiftProduct->price,
+                            'number_of_free_items'  => 1,
+                            'created_at'            => now(),
+                            'updated_at'            => now(),
+                            'data'                  => '{}'
+
+                        ]);
+                    }
+                }
+            }
         }
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
@@ -74,7 +141,6 @@ class SubmitOrder extends OrgAction
                 if ($transaction->asset) {
                     $transaction->asset->orderingStats()->update(['last_order_submitted_at' => $transaction->submitted_at]);
                 }
-
             }
         }
 
@@ -87,7 +153,6 @@ class SubmitOrder extends OrgAction
                 ]
             );
         }
-
 
 
         if ($order->customer_client_id) {
