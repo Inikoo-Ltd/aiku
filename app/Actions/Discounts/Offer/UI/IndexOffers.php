@@ -107,6 +107,7 @@ class IndexOffers extends OrgAction
             'offers.state',
             'offers.code',
             'offers.name',
+            'offers.type',
             'offer_campaigns.slug as offer_campaign_slug',
             'shops.slug as shop_slug',
             'shops.name as shop_name',

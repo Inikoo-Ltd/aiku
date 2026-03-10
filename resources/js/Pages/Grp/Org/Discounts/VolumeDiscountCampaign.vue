@@ -32,12 +32,13 @@ const props = defineProps<{
         navigation: {}
     }
     offers: {}
+    gr_gift: {}
+    gr_amnesty: {}
     overview: {
         offerCampaign: {}
         stats: {}
     }
-    gr_gift: {},
-    gr_amnesty: {}
+    data: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -54,12 +55,11 @@ const component = computed(() => {
     return components[currentTab.value]
 })
 
-
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component :is="component" :offerCampaign="props.data" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>
