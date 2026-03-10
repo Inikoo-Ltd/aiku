@@ -12,6 +12,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 trait WithAllegroApiServices
@@ -394,5 +395,51 @@ trait WithAllegroApiServices
     public function getCategoryParameters(string $categoryId): array
     {
         return $this->makeApiRequest('GET', "/sale/categories/$categoryId/parameters");
+    }
+
+    public function getRecommendedCategory(string $name): array
+    {
+        return $this->makeApiRequest('GET', "/sale/matching-categories", [], [
+            'name' => $name
+        ]);
+    }
+
+    public function createShippingRates(array $data): array
+    {
+        return $this->makeApiRequest('POST', '/sale/shipping-rates', [
+            'id' => Str::uuid(),
+            'name'  => Arr::get($data, 'name', 'Default shipping rates'),
+            'rates' => Arr::get($data, 'rates', []),
+        ]);
+    }
+
+    public function createReturnPolicy(array $data): array
+    {
+        $data = [
+            'name'             => Arr::get($data, 'name', 'Default return policy'),
+            'availability'     => [
+                'range' => 'FULL'
+            ],
+            'returnCost'       => [
+                'coveredBy' => Arr::get($data, 'return_cost_covered_by', 'SELLER'),
+            ],
+            'address'          => [
+                'name'        => Arr::get($data, 'address.name'),
+                'street'      => Arr::get($data, 'address.street'),
+                'city'        => Arr::get($data, 'address.city'),
+                'postCode'    => Arr::get($data, 'address.post_code'),
+                'countryCode' => Arr::get($data, 'address.country_code', 'PL'),
+            ],
+            'withdrawalPeriod' => "P14D",
+            'options' => [
+                'cashOnDeliveryNotAllowed' => true,
+                'freeAccessoriesReturnRequired' => false,
+                'refundLoweredByReceivedDiscount' => false,
+                'businessReturnAllowed' => false,
+                'collectBySellerOnly' => false
+            ]
+        ];
+
+        return $this->makeApiRequest('POST', '/after-sales-service-conditions/return-policies', $data);
     }
 }

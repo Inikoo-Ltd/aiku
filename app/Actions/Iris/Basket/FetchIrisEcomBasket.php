@@ -14,6 +14,7 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -45,18 +46,65 @@ class FetchIrisEcomBasket extends IrisAction
         }
 
         $orderArr['order_data'] = [
-            'id'                    => $order->id,
-            'reference'             => $order->reference,
-            'is_premium_dispatch'   => $order->is_premium_dispatch,
-            'has_extra_packing'     => $order->has_extra_packing,
-            'has_insurance'         => $order->has_insurance,
+            'id'                  => $order->id,
+            'reference'           => $order->reference,
+            'is_premium_dispatch' => $order->is_premium_dispatch,
+            'has_extra_packing'   => $order->has_extra_packing,
+            'has_insurance'       => $order->has_insurance,
         ];
 
-        $premiumDispatch = $order?->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $extraPacking    = $order?->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $insurance       = $order?->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $premiumDispatch = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $extraPacking    = $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $insurance       = $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
 
         $hasDiscounts = $order->goods_amount != $order->gross_amount;
+
+
+        $grGifts = [
+            'is_eligible' => false,
+            'gifts'    => []
+        ];
+        if ($order) {
+            $offersData = $order->shop->offers_data;
+
+            $grGifts = Arr::get($offersData, 'gr.gifts_products');
+
+            $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
+            if ($selectedGrGift) {
+                foreach ($grGifts as $key => $gift) {
+                    $product = Product::find($gift['id']);
+                    if ($product) {
+                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
+                    }
+
+                    $grGifts[$key]['id'] = $gift['id'];
+                    $grGifts[$key]['name'] = $gift['name'];
+
+                    if ($gift['id'] == $selectedGrGift) {
+                        $grGifts[$key]['selected'] = true;
+                    } else {
+                        $grGifts[$key]['selected'] = false;
+                    }
+                }
+            } else {
+                foreach ($grGifts as $key => $gift) {
+                    $product = Product::find($gift['id']);
+                    if ($product) {
+                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
+                    }
+                    
+                    $grGifts[$key]['id'] = $gift['id'];
+                    $grGifts[$key]['name'] = $gift['name'];
+                    $grGifts[$key]['selected'] = Arr::get($gift, 'default', false);
+                }
+            }
+
+            $grGifts = [
+                'is_eligible' => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
+                'gifts'    => $grGifts
+            ];
+        }
+
 
         if ($hasDiscounts) {
             $itemsData = [
@@ -175,7 +223,7 @@ class FetchIrisEcomBasket extends IrisAction
                 'offers_data'          => json_decode($productData->offers_data, 1),
                 'name'                 => $productData->name,
                 'code'                 => $productData->code,
-                'units'                => (int) $productData->units,
+                'units'                => (int)$productData->units,
                 'web_image_thumbnail'  => $webImageThumbnail,
 
             ];
@@ -185,75 +233,51 @@ class FetchIrisEcomBasket extends IrisAction
         $orderArr['products'] = $transactions;
 
         $orderArr['charges'] = [
-            'premium_dispatch'  => $premiumDispatch ? [
-                'id'                => $premiumDispatch->id,
-                'key_db'            => 'is_premium_dispatch',
-                'route_update'  => [
-                    'name'  => 'iris.models.order.update_premium_dispatch',
+            'premium_dispatch' => $premiumDispatch ? [
+                'id'           => $premiumDispatch->id,
+                'key_db'       => 'is_premium_dispatch',
+                'route_update' => [
+                    'name'       => 'iris.models.order.update_premium_dispatch',
                     'parameters' => [
                         'order' => $order->id
                     ]
                 ],
-                'description'       => $premiumDispatch->description,
-                'amount'            => Arr::get($premiumDispatch->settings, 'amount', 0),
-                'label'             => $premiumDispatch->label ?? $premiumDispatch->name,
-                'name'              => $premiumDispatch->name,
+                'description'  => $premiumDispatch->description,
+                'amount'       => Arr::get($premiumDispatch->settings, 'amount', 0),
+                'label'        => $premiumDispatch->label ?? $premiumDispatch->name,
+                'name'         => $premiumDispatch->name,
             ] : null,
-            'extra_packing'     => $extraPacking ? [
-                'id'                => $extraPacking->id,
-                'key_db'            => 'has_extra_packing',
-                'route_update'  => [
-                    'name'  => 'iris.models.order.update_extra_packing',
+            'extra_packing'    => $extraPacking ? [
+                'id'           => $extraPacking->id,
+                'key_db'       => 'has_extra_packing',
+                'route_update' => [
+                    'name'       => 'iris.models.order.update_extra_packing',
                     'parameters' => [
                         'order' => $order->id
                     ]
                 ],
-                'description'       => $extraPacking->description,
-                'amount'            => Arr::get($extraPacking->settings, 'amount', 0),
-                'label'             => $extraPacking->label ?? $extraPacking->name,
-                'name'              => $extraPacking->name,
+                'description'  => $extraPacking->description,
+                'amount'       => Arr::get($extraPacking->settings, 'amount', 0),
+                'label'        => $extraPacking->label ?? $extraPacking->name,
+                'name'         => $extraPacking->name,
             ] : null,
-            'insurance'         => $insurance ? [
-                'id'                => $insurance->id,
-                'key_db'            => 'has_insurance',
-                'route_update'  => [
-                    'name'  => 'iris.models.order.update_insurance',
+            'insurance'        => $insurance ? [
+                'id'           => $insurance->id,
+                'key_db'       => 'has_insurance',
+                'route_update' => [
+                    'name'       => 'iris.models.order.update_insurance',
                     'parameters' => [
                         'order' => $order->id
                     ]
                 ],
-                'description'       => $insurance->description,
-                'amount'            => Arr::get($insurance->settings, 'amount', 0),
-                'label'             => $insurance->label ?? $insurance->name,
-                'name'              => $insurance->name,
+                'description'  => $insurance->description,
+                'amount'       => Arr::get($insurance->settings, 'amount', 0),
+                'label'        => $insurance->label ?? $insurance->name,
+                'name'         => $insurance->name,
             ] : null,
         ];
 
-        $orderArr['eligible_gifts'] = [  // TODO: Raul INI-887
-            'is_customer_eligible_for_gift' => true,
-            'selected_gift' => [
-                'id'    => 123,
-                'label' => 'Rainbow bath bomb',
-                'value' => 'rainbow_bath_bomb'
-            ],
-            'available_gifts' => [
-                [
-                    'id'    => 123,
-                    'label' => 'Rainbow bath bomb',
-                    'value' => 'rainbow_bath_bomb'
-                ],
-                [
-                    'id'    => 234,
-                    'label' => 'Lavender bath bomb',
-                    'value' => 'lavender_bath_bomb'
-                ],
-                [
-                    'id'    => 456,
-                    'label' => 'Rose bath bomb',
-                    'value' => 'rose_bath_bomb'
-                ],
-            ],
-        ];
+        $orderArr['gr_gifts'] = $grGifts;
 
         return $orderArr;
     }

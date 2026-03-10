@@ -78,6 +78,7 @@ class MasterFamiliesResource extends JsonResource
             'dropshippers'               => $this->dropshippers ?? 0,
             'listings'                   => $this->listings ?? 0,
             'sold'                       => $this->sold ?? 0,
+            'mismatch_detected'          => $this->mismatch_detected
         ];
     }
 

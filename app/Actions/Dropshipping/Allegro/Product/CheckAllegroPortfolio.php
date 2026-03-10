@@ -9,10 +9,8 @@
 namespace App\Actions\Dropshipping\Allegro\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
-use App\Actions\Dropshipping\Tiktok\Product\CheckIfProductExistInTiktok;
-use App\Actions\Dropshipping\Tiktok\Product\CheckIfTiktokProductIDIsValid;
+use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -26,28 +24,28 @@ class CheckAllegroPortfolio
             return $portfolio;
         }
 
-        /** @var TiktokUser $tiktokUser */
-        $tiktokUser = $portfolio->customerSalesChannel->user;
+        /** @var AllegroUser $allegroUser */
+        $allegroUser = $portfolio->customerSalesChannel->user;
 
-        if (!$tiktokUser instanceof TiktokUser) {
+        if (!$allegroUser instanceof AllegroUser) {
             return $portfolio;
         }
 
-        $hasValidProductId      = CheckIfTiktokProductIDIsValid::run($portfolio->platform_product_id);
-        $productExistsInTiktok = false;
+        $hasValidProductId      = CheckIfAllegroProductIDIsValid::run($portfolio->platform_product_id);
+        $productExistsInAllegro = false;
         $hasVariantAtLocation   = false;
         if ($hasValidProductId) {
-            $result = CheckIfProductExistInTiktok::run($tiktokUser, $portfolio);
-            $productExistsInTiktok = ! blank(Arr::get($result, 'data'));
-            $hasVariantAtLocation   = Arr::get($result, 'data.status') === 'ACTIVATE';
+            $result = (bool) $portfolio->platform_product_id;
+            $productExistsInAllegro = $result;
+            $hasVariantAtLocation   = $result;
         }
 
         $numberMatches = 0;
         $matchesLabels = [];
         $matches       = [];
 
-        if (!$hasValidProductId || !$productExistsInTiktok || !$hasVariantAtLocation) {
-            $result = CheckIfProductExistInTiktok::run($tiktokUser, $portfolio);
+        if (!$hasValidProductId || !$productExistsInAllegro || !$hasVariantAtLocation) {
+            $result = CheckIfProductExistInAllegro::run($allegroUser, $portfolio);
 
             $matches       = Arr::get($result, 'data');
             $numberMatches = count($matches);
@@ -62,7 +60,7 @@ class CheckAllegroPortfolio
 
         $portfolio->update([
             'has_valid_platform_product_id'    => $hasValidProductId,
-            'exist_in_platform'                => $productExistsInTiktok,
+            'exist_in_platform'                => $productExistsInAllegro,
             'platform_status'                  => $hasVariantAtLocation,
             'platform_possible_matches'        => $matchData,
             'number_platform_possible_matches' => $numberMatches
@@ -70,7 +68,7 @@ class CheckAllegroPortfolio
 
         if ($hasVariantAtLocation) {
             $data = $portfolio->data;
-            data_set($data, 'tiktok_product', Arr::get($result, 'data'));
+            data_set($data, 'allegro_product', Arr::get($result, 'data'));
 
             $dataToUpdate = [
                 'data' => $data

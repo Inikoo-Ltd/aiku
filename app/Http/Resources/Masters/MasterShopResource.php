@@ -27,6 +27,44 @@ class MasterShopResource extends JsonResource
         /** @var MasterShop $masterShop */
         $masterShop = $this;
 
+        $additionalStats = [];
+
+        if ($masterShop->stats->number_mismatched_master_families) {
+            array_push(
+                $additionalStats,
+                [
+                    'label' => __('Master Families with Mismatch'),
+                    'is_negative'     => true,
+                    'route' => [
+                        'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.index',
+                        'parameters' => [$masterShop->slug]
+                    ],
+                    'icon'  => 'fal fa-folder',
+                    'backgroundColor' => "#e879f91d",
+                    "color" => "#df1c1cff",
+                    'value' => $masterShop->stats->number_mismatched_master_families,
+                ]
+            );
+        }
+
+        if ($masterShop->stats->number_mismatched_master_products) {
+            array_push(
+                $additionalStats,
+                [
+                   'label' => __('Master Products with Mismatch'),
+                   'is_negative'     => true,
+                   'route' => [
+                       'name'       => 'grp.masters.master_shops.show.master_products.mismatch_detected.index',
+                       'parameters' => [$masterShop->slug]
+                   ],
+                   'icon'            => 'fal fa-cube',
+                   'backgroundColor' => "#38bff81d",
+                   "color" => "#df1c1cff",
+                   'value' => $masterShop->stats->number_mismatched_master_products,
+                ]
+            );
+        }
+
         return [
             'slug'     => $this->slug,
             'code'     => $this->code,
@@ -96,6 +134,16 @@ class MasterShopResource extends JsonResource
                     'value' => $masterShop->stats->number_current_master_collections,
                 ],
                 [
+                    'label' => __('Pending Master Families'),
+                    'route' => [
+                        'name'       => 'grp.masters.master_shops.show.master_collections.index',
+                        'parameters' => [$masterShop->slug]
+                    ],
+                    'icon'  => 'fal fa-exclamation-triangle',
+                    "color" => "#df1c1cff",
+                    'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
+                ],
+                [
                     'label'           => __('Orphan Master Products'),
                     'is_negative'     => true,
                     'route'           => [
@@ -107,16 +155,7 @@ class MasterShopResource extends JsonResource
                     'color'           => '#df1c1cff',
                     'value'           => $masterShop->stats->number_master_products_no_master_family,
                 ],
-                [
-                    'label' => __('Pending Master Families'),
-                    'route' => [
-                        'name'       => 'grp.masters.master_shops.show.master_collections.index',
-                        'parameters' => [$masterShop->slug]
-                    ],
-                    'icon'  => 'fal fa-exclamation-triangle',
-                    "color" => "#df1c1cff",
-                    'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
-                ],
+                ...$additionalStats
             ]
         ];
     }

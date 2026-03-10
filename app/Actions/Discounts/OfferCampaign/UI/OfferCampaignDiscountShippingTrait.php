@@ -33,10 +33,10 @@ trait OfferCampaignDiscountShippingTrait
                 ],
                 'pageHead'                                           => [
                     'icon'  =>
-                        [
-                            'icon'  => ['fal', 'comment-dollar'],
-                            'title' => __('Offer campaign')
-                        ],
+                    [
+                        'icon'  => ['fal', 'comment-dollar'],
+                        'title' => __('Offer campaign')
+                    ],
                     'title'         => $offerCampaign->name,
                     'model'         => __('Offer Campaign'),
                     'iconRight'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
@@ -61,6 +61,12 @@ trait OfferCampaignDiscountShippingTrait
                 'shop_data' => [
                     'slug'          => $offerCampaign->shop->slug,
                     'currency_code' => $offerCampaign->shop->currency->code,
+
+
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                        'end'   => now()->addDays(7)->toDateString(),
+                    ],
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)
@@ -73,6 +79,6 @@ trait OfferCampaignDiscountShippingTrait
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]
         )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
-        ->table(IndexHistory::make()->tableStructure(prefix:OfferCampaignTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
     }
 }

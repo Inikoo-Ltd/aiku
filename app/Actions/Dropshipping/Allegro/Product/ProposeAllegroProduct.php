@@ -13,6 +13,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -30,7 +31,7 @@ class ProposeAllegroProduct
      * Returns the proposed product data including its ID, which is then
      * used when creating the offer via POST /sale/product-offers.
      */
-    public function handle(AllegroUser $allegroUser, Portfolio $portfolio): array
+    public function handle(AllegroUser $allegroUser, Portfolio $portfolio, $attributes = []): array
     {
         /** @var Product $product */
         $product = $portfolio->item;
@@ -46,16 +47,16 @@ class ProposeAllegroProduct
         $productData = [
             'name'     => Str::substr($portfolio->customer_product_name, 0, 75),
             'category' => [
-                'id' => $allegroUser->allegro_category_id ?? '257931'
+                'id' => Arr::get($attributes, 'category_id')
             ],
             'images'     => $productImages,
-            'parameters' => $this->buildParameters($product),
+            'parameters' => $this->buildParameters($portfolio, Arr::get($attributes, 'parameters', [])),
             'description' => [
                 'sections' => [
                     [
                         'items' => [
                             [
-                                'type' => 'TEXT',
+                                'type'    => 'TEXT',
                                 'content' => $portfolio->customer_description ?? ''
                             ]
                         ]
@@ -68,17 +69,182 @@ class ProposeAllegroProduct
         return $allegroUser->proposeProduct($productData);
     }
 
-    private function buildParameters(Product $product): array
+    private function buildParameters(Portfolio $portfolio, array $categoryParameters): array
     {
-        $parameters = [];
+        /** @var Product $product */
+        $product = $portfolio->item;
 
-        if ($product->barcode) {
-            $parameters[] = [
-                'id'     => '225694', // EAN/GTIN parameter ID in Allegro
-                'values' => [(string) $product->barcode]
-            ];
+        $parameters = [];
+        $matchedValueIds = [];
+
+        $productAttributeMap = $this->getProductAttributeMap($portfolio);
+        foreach (Arr::get($categoryParameters, 'parameters', []) as $param) {
+            $paramId       = $param['id'];
+            $paramName     = strtolower($param['name'] ?? '');
+            $paramType     = $param['type'] ?? 'STRING'; // STRING | INTEGER | FLOAT | DICTIONARY
+            $isRequired    = $param['required'] ?? false;
+            $restrictions  = $param['restrictions'] ?? [];
+
+            // 1. Always add EAN/GTIN if available
+            if (str_contains($paramName, 'ean') || str_contains($paramName, 'gtin') || $paramId === '225694') {
+                if ($product->barcode) {
+                    $parameters[] = [
+                        'id'     => $paramId,
+                        'values' => [(string) $product->barcode]
+                    ];
+                }
+                continue;
+            }
+
+            $value = $this->resolveProductValue($paramName, $productAttributeMap);
+
+            if ($value === null) {
+                if ($isRequired) {
+                    \Log::warning("Required Allegro parameter not mapped", [
+                        'param_id'   => $paramId,
+                        'param_name' => $param['name'],
+                        'product_id' => $product->id,
+                    ]);
+                }
+                continue;
+            }
+
+            $entry = ['id' => $paramId];
+
+            switch (Str::upper($paramType)) {
+                case 'DICTIONARY':
+                    $dictValues = collect($param['dictionary'] ?? [])
+                        ->filter(
+                            fn ($d) =>
+                            empty($d['dependsOnValueIds']) ||
+                            !empty(array_intersect($d['dependsOnValueIds'], $matchedValueIds))
+                        )
+                        ->values()
+                        ->toArray();
+
+                    $ambiguousValueId    = Arr::get($param, 'options.ambiguousValueId');
+                    $customValuesEnabled = Arr::get($param, 'options.customValuesEnabled', false);
+
+                    $matchedDictId = $this->matchDictionaryValue($value, $dictValues)
+                        ?? Arr::get($dictValues, '0.id');
+
+                    Log::info('Dictionary values: ' . $ambiguousValueId . '-' . $customValuesEnabled . '-' . $param['name'] . '-' . $matchedDictId);
+
+
+                    if (!$matchedDictId) {
+                        continue 2;
+                    }
+
+                    $entry['valuesIds'] = [$matchedDictId];
+
+                    if ($customValuesEnabled) {
+                        $entry['values'] = [$value];
+                    }
+
+                    if ($ambiguousValueId) {
+                        $entry['ambiguousValueId'] = $ambiguousValueId;
+                    }
+
+                    $matchedValueIds[] = $matchedDictId;
+                    break;
+                case 'INTEGER':
+                case 'FLOAT':
+                    $numericValue = is_numeric($value) ? $value : null;
+                    if ($numericValue === null) {
+                        continue 2;
+                    }
+                    $entry['values'] = [(string) $numericValue];
+
+                    if (!empty($restrictions['allowedUnits'])) {
+                        $entry['unit'] = $restrictions['allowedUnits'][0];
+                    }
+                    break;
+
+                case 'STRING':
+                default:
+                    $maxLength = Arr::get($restrictions, 'maxLength', 255);
+                    $entry['values'] = [Str::substr((string) $value, 0, $maxLength)];
+                    break;
+            }
+
+            $parameters[] = $entry;
         }
 
         return $parameters;
+    }
+
+    private function getProductAttributeMap(Portfolio $portfolio): array
+    {
+        /** @var Product $product */
+        $product = $portfolio->item;
+
+        $w = max(Arr::get($product->marketing_dimensions, 'w', 1), 20);
+        $h = max(Arr::get($product->marketing_dimensions, 'h', 1), 20);
+        $l = max(Arr::get($product->marketing_dimensions, 'l', 1), 80);
+
+        return [
+            'name'        => $portfolio->customer_product_name ?? null,
+            'brand'       => 'Ancient Wisdom' ?? null,
+            'type'        => $product->family?->name ?? null,
+            'color'       => $product->color ?? null,
+            'size'        => $product->size ?? null,
+            'weight'      => $w,
+            'width'       => $l,
+            'height'      => $h,
+            'depth'       => $product->depth ?? null,
+            'material'    => $product->material ?? null,
+            'model'       => $product->family?->name ?? null,
+            'mpn'         => $product->mpn ?? null,         // Manufacturer Part Number
+            'sku'         => $product->code ?? null,
+            'description' => $product->description ?? null,
+            'condition'   => 'NEW',
+        ];
+    }
+
+    private function resolveProductValue(string $paramName, array $attributeMap): mixed
+    {
+        $keywordMap = [
+            'brand' => ['brand', 'manufacturer', 'marka', 'producent'],
+            'type'     => ['type', 'rodzaj', 'typ'],
+            'size'     => ['size', 'rozmiar'],
+            'weight'   => ['weight', 'waga', 'masa'],
+            'width'    => ['width', 'szerokosc', 'szerokość'],
+            'height'   => ['height', 'wysokosc', 'wysokość'],
+            'depth'    => ['depth', 'glebokosc', 'głębokość', 'length', 'dlugosc'],
+            'material' => ['material', 'materiał'],
+            'model'    => ['model', 'nazwa handlowa'],
+            'mpn'      => ['mpn', 'part number', 'numer katalogowy'],
+            'sku'      => ['sku', 'code', 'reference'],
+            'condition' => ['stan'],
+        ];
+
+        foreach ($keywordMap as $attribute => $keywords) {
+            foreach ($keywords as $keyword) {
+                if (str_contains($paramName, $keyword)) {
+                    return $attributeMap[$attribute] ?? null;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function matchDictionaryValue(mixed $value, array $dictValues): ?string
+    {
+        $normalizedValue = strtolower(trim((string) $value));
+
+        foreach ($dictValues as $dictEntry) {
+            if (strtolower(trim($dictEntry['value'] ?? '')) === $normalizedValue) {
+                return (string) $dictEntry['id'];
+            }
+        }
+
+        foreach ($dictValues as $dictEntry) {
+            if (str_contains(strtolower($dictEntry['value'] ?? ''), $normalizedValue)) {
+                return (string) $dictEntry['id'];
+            }
+        }
+
+        return null;
     }
 }

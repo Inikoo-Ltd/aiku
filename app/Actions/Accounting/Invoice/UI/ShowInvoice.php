@@ -196,10 +196,10 @@ class ShowInvoice extends OrgAction
         ];
     }
 
-    public function getDownloadPdfColumns(ActionRequest $request): array
+    public function getDownloadPdfColumns(Invoice $invoice): array
     {
-        $userSettings = $request->user()->settings ?? [];
-        $savedColumns = Arr::get($userSettings, 'download_pdf_column', []);
+        $shopSettings = $invoice->shop->settings ?? [];
+        $savedColumns = Arr::get($shopSettings, 'invoicing.download_pdf_columns', []);
 
         $columns = [
             [
@@ -395,7 +395,7 @@ class ShowInvoice extends OrgAction
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
-                'download_pdf_column'    => $this->getDownloadPdfColumns($request),
+                'download_pdf_column'    => $this->getDownloadPdfColumns($invoice),
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
                     : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
