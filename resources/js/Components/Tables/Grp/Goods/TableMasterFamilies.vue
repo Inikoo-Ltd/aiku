@@ -61,7 +61,7 @@ function familyRoute(masterFamily: MasterFamily) {
                 masterDepartment: (route().params as RouteParams).masterDepartment,
                 masterFamily: masterFamily.slug
             });
-    } else if (route().current() == "grp.masters.master_shops.show.master_gr.index") {
+    } else if (route().current() == "grp.masters.master_shops.show.master_gr.index" || route().current() == 'grp.masters.master_shops.show.master_collections.show') {
         return route(
             "grp.masters.master_shops.show.master_families.show",
             {

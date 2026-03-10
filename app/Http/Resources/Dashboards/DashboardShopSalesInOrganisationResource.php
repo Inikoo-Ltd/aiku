@@ -68,16 +68,6 @@ class DashboardShopSalesInOrganisationResource extends JsonResource
                     'key_date_filter' => 'between[registered_at]',
                 ],
             ],
-            'inBasket' => [
-                'route_target' => [
-                    'name' => 'grp.org.shops.show.ordering.backlog',
-                    'parameters' => [
-                        'organisation' => $this->organisation_slug,
-                        'shop' => $this->slug,
-                    ],
-                    'key_date_filter' => 'between[date]',
-                ],
-            ],
             'shops' => [
                 'route_target' => $this->id ? [
                     'name' => 'grp.helpers.redirect_shops_from_dashboard',
@@ -104,10 +94,6 @@ class DashboardShopSalesInOrganisationResource extends JsonResource
                     ...$routeTargets['shops']
                 ]
             ],
-            $this->getDashboardTableColumn($this, 'baskets_created_shop_currency', $routeTargets['inBasket']),
-            $this->getDashboardTableColumn($this, 'baskets_created_shop_currency_minified', $routeTargets['inBasket']),
-            $this->getDashboardTableColumn($this, 'baskets_created_org_currency', $routeTargets['inBasket']),
-            $this->getDashboardTableColumn($this, 'baskets_created_org_currency_minified', $routeTargets['inBasket']),
             $this->getDashboardTableColumn($this, 'invoices', $routeTargets['invoices']),
             $this->getDashboardTableColumn($this, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($this, 'invoices_delta'),
