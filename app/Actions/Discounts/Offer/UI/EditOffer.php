@@ -198,7 +198,6 @@ class EditOffer extends OrgAction
 
     public function inGiftCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Response
     {
-        dd($request->route()->getName());
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($offer, $request);

@@ -65,11 +65,17 @@ class ShowOffer extends OrgAction
         $iconRight  = null;
 
         if ($this->parent instanceof Shop) {
+            $editRouteName = match ($request->route()->getName()) {
+                'grp.org.shops.show.discounts.campaigns.gift.show' => 'grp.org.shops.show.discounts.campaigns.gift.edit',
+                'grp.org.shops.show.discounts.campaigns.amnesty.show' => 'grp.org.shops.show.discounts.campaigns.amnesty.edit',
+                default => 'grp.org.shops.show.discounts.campaigns.offer.edit',
+            };
+
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
                 'route' => [
-                    'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit',
+                    'name'       => $editRouteName,
                     'parameters' => $request->route()->originalParameters()
                 ],
             ];
