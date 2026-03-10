@@ -34,6 +34,8 @@ Route::name("campaigns.")->prefix('campaigns')
             ->group(function () {
                 Route::get('{offer}', [ShowOffer::class, 'inOfferCampaign'])->name('show');
                 Route::get('{offer}/edit', [EditOffer::class, 'inOfferCampaign'])->name('edit');
+                Route::get('{offer}/edit-vol-gr-gift', [EditVolGrGift::class, 'inOffer'])->name('edit_vol_gr_gift');
+
             });
 
         Route::name('gift.')->prefix('{offerCampaign}/gift')
@@ -52,6 +54,8 @@ Route::name("campaigns.")->prefix('campaigns')
         Route::get('{offerCampaign}/create-vol-gr-gift', CreateVolGrGift::class)->name('create_vol_gr_gift');
         Route::get('{offerCampaign}/edit-vol-gr-gift', EditVolGrGift::class)->name('edit_vol_gr_gift')->withoutScopedBindings();
         Route::get('{offerCampaign}/create-gr-amnesty-offer', CreateGrAmnesty::class)->name('create_gr_amnesty_offer');
+
+       //todo
         Route::get('{offerCampaign}/edit-gr-amnesty', EditVolGrGift::class)->name('edit_current_gr_amnesty_offer')->withoutScopedBindings();
 
         Route::post(

@@ -38,21 +38,23 @@ class ShowOffer extends OrgAction
         $icon      = ['fal', 'fa-badge-percent'];
         $iconRight = null;
 
-        $editRouteName = match ($request->route()->getName()) {
-            'grp.org.shops.show.discounts.campaigns.gift.show' => 'grp.org.shops.show.discounts.campaigns.gift.edit',
-            'grp.org.shops.show.discounts.campaigns.amnesty.show' => 'grp.org.shops.show.discounts.campaigns.amnesty.edit',
-            'grp.org.shops.show.discounts.campaigns.offer.show' => 'grp.org.shops.show.discounts.campaigns.offer.edit',
-            default => 'grp.org.shops.show.discounts.offers.edit',
-        };
+        $editRoute=null;
+        $actions=[];
 
-        $actions[] = [
-            'type'  => 'button',
-            'style' => 'edit',
-            'route' => [
-                'name'       => $editRouteName,
-                'parameters' => $request->route()->originalParameters()
-            ],
-        ];
+        if($offer->type == "VolGr Gift") {
+            $editRoute = [
+                'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit_vol_gr_gift',
+                'parameters' => $request->route()->parameters()
+            ];
+        }
+
+        if($editRoute) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'route' => $editRoute
+            ];
+        }
 
 
         preg_match('/^all_products_in_product_category(?::(\d+))?:/', $offer->allowance_signature, $m);
@@ -102,7 +104,7 @@ class ShowOffer extends OrgAction
                     'model'     => __('Offer'),
                     'iconRight' => $iconRight,
                     'icon'      => $icon,
-                    'actions'   => app()->environment('local') ? $actions : [],
+                    'actions'   => $actions,
                 ],
                 'url_master'    => $productCategory && $offer->type === 'Category Quantity Ordered Order Interval' ? [
                     'name'       => 'grp.masters.master_shops.show.master_families.edit',
