@@ -9,26 +9,19 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -77,7 +70,7 @@ class IndexSubDepartmentsInMasterSubDepartment extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
-        
+
         $queryBuilder->where('product_categories.master_product_category_id', $parent->id);
         $queryBuilder->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
         $queryBuilder->where('shops.state', '!=', ShopStateEnum::CLOSED->value);
