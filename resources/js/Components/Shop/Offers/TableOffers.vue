@@ -40,7 +40,6 @@ function offerRoute(offer: Order) {
 }
 
 function returnRouteOffer(offer: any) {
-    console.log('offer type:', offer.type)
     switch (offer.type) {
         case 'VolGr Gift':
             return "grp.org.shops.show.discounts.campaigns.gift.show";
@@ -62,9 +61,6 @@ console.log("Curr Route", route().current())
             <Link :href="offerRoute(offer)" class="primaryLink">
                 {{ offer.name }}
             </Link>
-            <pre>
-                {{ offerCampaign }}
-            </pre>
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: collection }">
