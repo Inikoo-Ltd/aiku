@@ -29,7 +29,6 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
         $firstMasterShop = is_array($masterShops) ? ($masterShops[0] ?? []) : [];
 
         $fields = [
-            'baskets_created_grp_currency',
             'registrations',
             'registrations_with_orders',
             'registrations_without_orders',
@@ -76,8 +75,6 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
                     ...$routeTargets['group']
                 ]
             ],
-            $this->getDashboardTableColumnFromArray($summedData, 'baskets_created_grp_currency'),
-            $this->getDashboardTableColumnFromArray($summedData, 'baskets_created_grp_currency_minified'),
             $registrationsColumns,
             $this->getDashboardTableColumnFromArray($summedData, 'registrations_delta'),
             $this->getDashboardTableColumnFromArray($summedData, 'registrations_with_orders'),

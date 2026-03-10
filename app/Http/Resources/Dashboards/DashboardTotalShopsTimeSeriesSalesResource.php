@@ -33,9 +33,6 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
         $parentType = $firstModel['parent_type'] ?? 'Organisation';
 
         $fields = [
-            'baskets_created',
-            'baskets_created_org_currency',
-            'baskets_created_grp_currency',
             'invoices',
             'registrations',
             'registrations_with_orders',
@@ -65,15 +62,6 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
                     'key_date_filter' => 'between[date]',
                 ],
             ],
-            'inBasket' => [
-                'route_target' => [
-                    'name' => 'grp.org.overview.orders_in_basket.index',
-                    'parameters' => [
-                        'organisation' => $summedData['organisation_slug'] ?? 'unknown',
-                    ],
-                    'key_date_filter' => 'between[date]',
-                ],
-            ],
             'registrations' => [
                 'route_target' => [
                     'name' => 'grp.org.overview.customers.index',
@@ -89,11 +77,6 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
 
         if ($parentType === 'Organisation') {
             $columnsConfig = [
-                'baskets_created' => $routeTargets['inBasket'],
-                'baskets_created_minified' => $routeTargets['inBasket'],
-                'baskets_created_org_currency' => $routeTargets['inBasket'],
-                'baskets_created_org_currency_minified' => $routeTargets['inBasket'],
-
                 'registrations_delta',
 
                 'invoices' => $routeTargets['invoices'],
@@ -110,12 +93,6 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
             ];
         } else {
             $columnsConfig = [
-                'baskets_created_org_currency' => $routeTargets['inBasket'],
-                'baskets_created_org_currency_minified' => $routeTargets['inBasket'],
-
-                'baskets_created_grp_currency' => $routeTargets['inBasket'],
-                'baskets_created_grp_currency_minified' => $routeTargets['inBasket'],
-
                 'registrations_delta',
 
                 'invoices' => $routeTargets['invoices'],
@@ -171,14 +148,10 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
             $columns['sales_external'] = $columns['sales_org_currency_external'];
             $columns['sales_external_minified'] = $columns['sales_org_currency_external_minified'];
             $columns['sales_external_delta'] = $columns['sales_org_currency_external_delta'];
-            $columns['baskets_created'] = $columns['baskets_created_org_currency'];
-            $columns['baskets_created_minified'] = $columns['baskets_created_org_currency_minified'];
         } else {
             $columns['sales_org_currency_external'] = $columns['sales_grp_currency_external'];
             $columns['sales_org_currency_external_minified'] = $columns['sales_grp_currency_external_minified'];
             $columns['sales_org_currency_external_delta'] = $columns['sales_grp_currency_external_delta'];
-            $columns['baskets_created_org_currency'] = $columns['baskets_created_grp_currency'];
-            $columns['baskets_created_org_currency_minified'] = $columns['baskets_created_grp_currency_minified'];
         }
 
         return [
