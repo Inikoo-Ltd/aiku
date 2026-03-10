@@ -151,7 +151,7 @@ class IndexCustomersInOverview extends OrgAction
             }
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
 
             $table->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
                 ->column(key: 'number_invoices_type_invoice', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
