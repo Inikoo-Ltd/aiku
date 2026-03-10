@@ -40,7 +40,7 @@ class SaveShopDataAllegroChannel
                 data_set($data, 'taxId', Arr::get($userInfo, 'company.taxId'));
                 data_set($data, 'marketplace_id', Arr::get($userInfo, 'baseMarketplace.id'));
 
-                if(! Arr::get($allegroUser->settings, 'shipping.id')) {
+                if (! Arr::get($allegroUser->settings, 'shipping.id')) {
                     try {
                         $deliveryMethods = $allegroUser->getDeliveryMethods();
                         $deliveryMethod = collect(Arr::get($deliveryMethods, 'deliveryMethods'))->firstWhere('destinationCountry', 'GB');
@@ -71,7 +71,7 @@ class SaveShopDataAllegroChannel
                     data_set($data, 'shipping_id', Arr::get($shipping, 'id'));
                 }
 
-                if(! Arr::get($allegroUser->settings, 'policy.return_id')) {
+                if (! Arr::get($allegroUser->settings, 'policy.return_id')) {
                     try {
                         $return = $allegroUser->createReturnPolicy([
                             'address' => [

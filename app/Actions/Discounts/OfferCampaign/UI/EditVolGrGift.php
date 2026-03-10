@@ -46,10 +46,10 @@ class EditVolGrGift extends OrgAction
             $product = Product::find($product['id']);
             if ($product) {
                 $productOptions[] = [
-                    'id'=> $product->id,
-                    'code'=> $product->code,
-                    'name'=>$product->name,
-                    'default'=>Arr::get($product, 'default', false),
+                    'id' => $product->id,
+                    'code' => $product->code,
+                    'name' => $product->name,
+                    'default' => Arr::get($product, 'default', false),
                 ];
             }
         }

@@ -114,7 +114,8 @@ class ProposeAllegroProduct
             switch (Str::upper($paramType)) {
                 case 'DICTIONARY':
                     $dictValues = collect($param['dictionary'] ?? [])
-                        ->filter(fn($d) =>
+                        ->filter(
+                            fn ($d) =>
                             empty($d['dependsOnValueIds']) ||
                             !empty(array_intersect($d['dependsOnValueIds'], $matchedValueIds))
                         )
@@ -136,11 +137,11 @@ class ProposeAllegroProduct
 
                     $entry['valuesIds'] = [$matchedDictId];
 
-                    if($customValuesEnabled) {
+                    if ($customValuesEnabled) {
                         $entry['values'] = [$value];
                     }
 
-                    if($ambiguousValueId) {
+                    if ($ambiguousValueId) {
                         $entry['ambiguousValueId'] = $ambiguousValueId;
                     }
 
@@ -149,7 +150,9 @@ class ProposeAllegroProduct
                 case 'INTEGER':
                 case 'FLOAT':
                     $numericValue = is_numeric($value) ? $value : null;
-                    if ($numericValue === null) continue 2;
+                    if ($numericValue === null) {
+                        continue 2;
+                    }
                     $entry['values'] = [(string) $numericValue];
 
                     if (!empty($restrictions['allowedUnits'])) {
@@ -212,7 +215,7 @@ class ProposeAllegroProduct
             'model'    => ['model', 'nazwa handlowa'],
             'mpn'      => ['mpn', 'part number', 'numer katalogowy'],
             'sku'      => ['sku', 'code', 'reference'],
-            'condition'=> ['stan'],
+            'condition' => ['stan'],
         ];
 
         foreach ($keywordMap as $attribute => $keywords) {

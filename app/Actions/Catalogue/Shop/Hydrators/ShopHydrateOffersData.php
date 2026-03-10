@@ -95,8 +95,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
                                 'code'    => $product->code,
                                 'name'    => $product->name,
                                 'default' => Arr::get(
-                                    $productData
-                                    ,
+                                    $productData,
                                     'default',
                                     false
                                 ),

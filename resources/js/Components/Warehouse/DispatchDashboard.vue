@@ -60,10 +60,10 @@ interface DashboardData {
         }
     }
     row_totals: {
-        [rowKey: string]: { value: number }
+        [rowKey: string]: { value: number; route_target?: RouteTarget }
     }
     totals: {
-        [metricKey: string]: { value: number }
+        [metricKey: string]: { value: number; route_target?: RouteTarget }
     }
     grand_total: {
         value: number
@@ -166,10 +166,15 @@ const isWeakValue = (value: number | null | undefined) => {
                         </component>
                     </template>
 
-                    <div v-if="data?.dimension"
-                        class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
+                    <component v-if="data?.dimension"
+                        :is="getSafeRoute(data.totals[metric.key]?.route_target) ? Link : 'div'"
+                        :href="getSafeRoute(data.totals[metric.key]?.route_target) ?? undefined"
+                        :class="[
+                            'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
+                            getSafeRoute(data.totals[metric.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                        ]">
                         {{ data.totals[metric.key]?.value ?? '-' }}
-                    </div>
+                    </component>
                 </div>
 
                 <!-- GROUP METRIC -->
@@ -202,10 +207,15 @@ const isWeakValue = (value: number | null | undefined) => {
                             </component>
                         </template>
 
-                        <div v-if="data?.dimension"
-                            class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
+                        <component v-if="data?.dimension"
+                            :is="getSafeRoute(data.totals[item.key]?.route_target) ? Link : 'div'"
+                            :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
+                            :class="[
+                                'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
+                                getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                            ]">
                             {{ data.totals[item.key]?.value ?? '-' }}
-                        </div>
+                        </component>
                     </div>
                 </div>
             </template>
@@ -219,10 +229,16 @@ const isWeakValue = (value: number | null | undefined) => {
                     <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xs md:text-lg' />
                 </div>
 
-                <div v-for="row in rows" :key="row.key"
-                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                <component v-for="row in rows" :key="row.key"
+                    :is="getSafeRoute(data.row_totals[row.key]?.route_target) ? Link : 'div'"
+                    :href="getSafeRoute(data.row_totals[row.key]?.route_target) ?? undefined"
+                    :class="[
+                        'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
+                        isWeakValue(data.row_totals[row.key]?.value) ? 'opacity-40' : '',
+                        getSafeRoute(data.row_totals[row.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                    ]">
                     {{ data.row_totals[row.key]?.value ?? '-' }}
-                </div>
+                </component>
 
                 <div v-if="data?.dimension"
                     class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
