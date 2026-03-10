@@ -7,12 +7,18 @@ use App\Models\HumanResources\LeaveType;
 
 class LeaveTypeResolver
 {
-    public static function optionsForOrganisation(int $organisationId, bool $onlyActive = true): array
+    public static function optionsForOrganisation(int $organisationId, bool $onlyActive = true, ?string $regionCode = null): array
     {
         return LeaveType::query()
             ->where('organisation_id', $organisationId)
             ->when($onlyActive, function ($query) {
                 $query->where('is_active', true);
+            })
+            ->where(function ($query) use ($regionCode) {
+                $query->whereNull('region_code')
+                    ->when($regionCode, function ($query) use ($regionCode) {
+                        $query->orWhere('region_code', $regionCode);
+                    });
             })
             ->orderBy('name')
             ->get(['code', 'name', 'category'])

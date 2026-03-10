@@ -130,7 +130,7 @@ class IndexClockingEmployees extends OrgAction
                 ->withQueryString();
 
             $organisation = $this->employee->organisation;
-            $leaveTypeOptions = LeaveTypeResolver::optionsForOrganisation($organisation->id);
+            $leaveTypeOptions = LeaveTypeResolver::optionsForOrganisation($organisation->id, true, $organisation->country?->code);
             $leaveRequests = Leave::query()
                 ->where('employee_id', $this->employee->id)
                 ->whereYear('start_date', now()->year)

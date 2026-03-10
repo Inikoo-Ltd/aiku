@@ -83,7 +83,7 @@ class IndexLeavesAdmin extends OrgAction
                     'subNavigation' => $this->getLeaveSubNavigation($request),
                 ],
                 'leaves' => LeaveResource::collection($leaves),
-                'type_options' => LeaveTypeResolver::optionsForOrganisation($this->organisation->id, false),
+                'type_options' => LeaveTypeResolver::optionsForOrganisation($this->organisation->id, false, $this->organisation->country?->code),
                 'status_options' => LeaveStatusEnum::labels(),
             ]
         )->table($this->tableStructure());

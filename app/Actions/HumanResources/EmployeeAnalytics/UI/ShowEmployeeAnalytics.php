@@ -82,7 +82,7 @@ class ShowEmployeeAnalytics extends OrgAction
                     'end_date'   => $endDate->format('Y-m-d'),
                 ],
                 'analytics'      => $analytics,
-                'leaveTypes'     => LeaveTypeResolver::optionsForOrganisation($organisation->id, false),
+                'leaveTypes'     => LeaveTypeResolver::optionsForOrganisation($organisation->id, false, $organisation->country?->code),
             ]
         );
     }
