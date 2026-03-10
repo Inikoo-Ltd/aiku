@@ -30,7 +30,7 @@ enum OutboxMergeTagsEnum: string
     case PAYMENT_REASON = 'Payment Reason';
     case PAYMENT_TYPE = 'Payment Type';
     case RETINA_LOGIN_LINK = 'Retina Login Link';
-    case CUSTOMER_PASSWORD = 'Customer password';
+    case WEB_USER_PASSWORD = 'Web User Password';
     case WEB_USER_CONTACT_NAME = 'Web User Contact Name';
 
 
@@ -106,8 +106,8 @@ enum OutboxMergeTagsEnum: string
                 'value' => '[Retina Login Link]'
             ],
             [
-                'name' => __('Customer Password'),
-                'value' => '[Customer Password]'
+                'name' => __('Web User Password'),
+                'value' => '[Web User Password]'
             ],
             [
                 'name' => __('Web User Contact Name'),

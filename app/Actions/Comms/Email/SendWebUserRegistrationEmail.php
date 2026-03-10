@@ -36,7 +36,7 @@ class SendWebUserRegistrationEmail extends OrgAction
                 'web_user_contact_name' => $webUser->contact_name,
                 'customer_email' => $webUser->email,
                 'retina_login_link' => $webUser->website?->getUrl() . '/app/login',
-                'customer_password' => $password,
+                'web_user_password' => $password,
             ]
         );
     }
