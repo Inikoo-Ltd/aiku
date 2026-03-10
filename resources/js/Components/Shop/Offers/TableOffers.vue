@@ -25,8 +25,14 @@ const props = defineProps<{
 function offerRoute(offer: {}) {
     switch (route().current()) {
         case "grp.org.shops.show.discounts.offers.index":
-        case "grp.org.shops.show.discounts.campaigns.show":
         case "grp.org.shops.show.catalogue.families.show":
+            return route(
+                "grp.org.shops.show.discounts.offers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    offer.slug])
+        case "grp.org.shops.show.discounts.campaigns.show":
             return route(
                 returnRouteOffer(offer),
                 {
@@ -46,6 +52,8 @@ function returnRouteOffer(offer: any) {
             return "grp.org.shops.show.discounts.campaigns.gift.show";
         case 'GR Amnesty':
             return "grp.org.shops.show.discounts.campaigns.amnesty.show";
+        case 'Category Quantity Ordered':
+            return "grp.org.shops.show.discounts.campaigns.offer.show";
         default:
             return "grp.org.shops.show.discounts.campaigns.offer.show";
     }

@@ -57,7 +57,7 @@ class ProposeAllegroProduct
                         'items' => [
                             [
                                 'type'    => 'TEXT',
-                                'content' => $portfolio->customer_description ?? ''
+                                'content' => $allegroUser->sanitizeAllegroDescription($portfolio->customer_description)
                             ]
                         ]
                     ]

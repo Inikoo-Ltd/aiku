@@ -41,6 +41,8 @@ use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByCashOnDelivery;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
+use App\Actions\Retina\Allegro\CreateRetinaNewAllPortfoliosToAllegro;
+use App\Actions\Retina\Allegro\CreateRetinaNewBulkPortfoliosToAllegro;
 use App\Actions\Retina\CRM\DeleteRetinaBackInStockReminder;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\DeleteRetinaFavourite;
@@ -353,6 +355,9 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/tiktok-batch-all', CreateRetinaNewAllPortfoliosToTiktok::class)->name('tiktok.batch_all')->withoutScopedBindings();
+
+    Route::post('{customerSalesChannel:id}/allegro-batch-upload', CreateRetinaNewBulkPortfoliosToAllegro::class)->name('allegro.batch_upload')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/allegro-batch-all', CreateRetinaNewAllPortfoliosToAllegro::class)->name('allegro.batch_all')->withoutScopedBindings();
 
     Route::post('{amazonUser:id}/amazon-batch-upload', SyncronisePortfoliosToAmazon::class)->name('amazon.batch_upload')->withoutScopedBindings();
     Route::post('{amazonUser:id}/amazon-single-upload/{portfolio:id}', SyncronisePortfolioToAmazon::class)->name('amazon.single_upload')->withoutScopedBindings();

@@ -402,6 +402,7 @@ class IndexMasterProducts extends GrpAction
                 $subNavigation   = $this->getMasterDepartmentSubNavigation($this->parent);
                 $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
             } elseif ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+                // TODO FOLLOW THIS AND PLACE IT UNDER ALL X IN SHOPS
                 $familyId        = $this->parent->id;
                 $subNavigation   = $this->getMasterFamilySubNavigation($this->parent);
                 $title           = $this->parent->name;
@@ -434,7 +435,7 @@ class IndexMasterProducts extends GrpAction
                 'navigation'              => $modelNavigation,
                 'title'                   => $title,
                 'familyId'                => $familyId,
-                'currency'                => $this->parent->group->currency->code,
+                'currency'                => $this->parent instanceof Group ? $this->parent->currency->code : $this->parent->group->currency->code,
                 'storeProductRoute'       => $isFamily ? [
                     'name'       => 'grp.models.master_family.store-assets',
                     'parameters' => [

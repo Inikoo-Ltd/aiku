@@ -62,11 +62,13 @@ class GetMasterProductShowcase
             $dataTradeUnits = $this->getDataTradeUnit($masterAsset->tradeUnits);
         }
 
-
-        $product = $masterAsset->products()->select('products.id', 'products.slug', 'products.code', 'products.shop_id', 'products.organisation_id', 'products.is_for_sale')
-            ->with(['shop:id,code,slug'])
+        $product = $masterAsset
+            ->products()
+            ->select('products.id', 'products.slug', 'products.code', 'products.shop_id', 'products.organisation_id', 'products.is_for_sale')
+            ->with(['shop:id,code,slug,state'])
             ->with(['organisation:id,code,slug'])
-            ->get();
+            ->get()
+            ->filter(fn ($item) => $item->shop->state->value !== 'closed');
 
         $parentLink = null;
         if ($masterAsset->not_for_sale_from_trade_unit) {
@@ -91,6 +93,7 @@ class GetMasterProductShowcase
             ],
             'availability_status' => [
                 'is_for_sale'            => $masterAsset->is_for_sale,
+                'product'                => $product->toArray(),
                 'status'                 => $masterAsset->status,
                 'total_products'         => $masterAsset->stats->number_assets,
                 'total_product_for_sale' => $masterAsset->stats->number_current_assets,
