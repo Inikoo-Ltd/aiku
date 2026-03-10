@@ -21,7 +21,7 @@ enum MasterSubDepartmentTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case HISTORY  = 'history';
-    case SUB_DEPARTMENTS = 'sub_departments';
+    // case SUB_DEPARTMENTS = 'sub_departments';
     case SALES    = 'sales';
     case IMAGES    = 'images';
 
@@ -40,10 +40,10 @@ enum MasterSubDepartmentTabsEnum: string
                 'icon'  => 'fal fa-clock',
 
             ],
-            MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS => [
-                'title' => __('Sub departments in shop'),
-                'icon'  => 'fal fa-store',
-            ],
+            // MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS => [
+            //     'title' => __('Sub departments in shop'),
+            //     'icon'  => 'fal fa-store',
+            // ],
 
             MasterSubDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),

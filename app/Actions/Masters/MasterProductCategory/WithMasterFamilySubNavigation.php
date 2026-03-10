@@ -130,6 +130,7 @@ trait WithMasterFamilySubNavigation
             ],
             [
                 'label'    => __('Families in Shop'),
+                'number'   => $masterFamily->stats->number_current_families,
                 'route'     => $routeFamilies,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-store'],
