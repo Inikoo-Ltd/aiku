@@ -8,6 +8,7 @@
 
 namespace App\Actions\Discounts\Offer\VolGr;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Discounts\Offer\ActivateOffer;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\OrgAction;
@@ -79,7 +80,7 @@ class StoreVolGrGift extends OrgAction
         $offerCampaign->update(['data' => $data]);
         ActivateOffer::run($offer);
 
-
+        ShopHydrateOffersData::run($offer->shop_id);
 
         return $offer;
     }

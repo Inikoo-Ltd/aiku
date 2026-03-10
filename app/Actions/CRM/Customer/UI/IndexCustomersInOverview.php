@@ -175,29 +175,27 @@ class IndexCustomersInOverview extends OrgAction
         $subNavigation = [];
 
         return Inertia::render(
-            'Org/Shop/CRM/Customers',
+            'Overview/CRM/CustomersInOverview',
             [
-                'breadcrumbs'                       => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                             => __('customers'),
-                'pageHead'                          => array_filter([
-                    'title'         => __('customers'),
-                    'icon'          => [
+                'title'       => __('customers'),
+                'pageHead'    => [
+                    'title' => __('customers'),
+                    'icon'  => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('Customer')
                     ],
-                    'subNavigation' => $subNavigation,
-                ]),
-                'tabs'                              => [
+                ],
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
                 CustomersTabsEnum::CUSTOMERS->value => $this->tab == CustomersTabsEnum::CUSTOMERS->value ?
                     fn () => CustomersResource::collection($customers)
                     : Inertia::lazy(fn () => CustomersResource::collection($customers)),
-
             ]
         )->table($this->tableStructure($this->parent, CustomersTabsEnum::CUSTOMERS->value));
     }

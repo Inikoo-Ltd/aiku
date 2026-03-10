@@ -66,11 +66,12 @@ trait WithMasterProductSubNavigation
                 ]
             ],
             [
-                'label'    => __('Product in Shops'),
+                'label'    => __('Product in Shop'),
+                'number'   => $masterProduct->stats->number_current_assets,
                 'route'    => $productInShopRoute,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-store'],
-                    'tooltip' => __('')
+                    'tooltip' => __('Products in shop')
                 ]
             ],
         ];

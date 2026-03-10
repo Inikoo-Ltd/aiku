@@ -19,9 +19,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $id
  * @property mixed $in_process
  * @property mixed $asset_id
+ * @property mixed $is_gift
  */
 class InvoiceTransactionsResource extends JsonResource
 {
+
     public function toArray($request): array
     {
         return [
@@ -31,6 +33,7 @@ class InvoiceTransactionsResource extends JsonResource
             'net_amount'    => $this->net_amount,
             'currency_code' => $this->currency_code,
             'asset_id'      => $this->asset_id,
+            'is_gift'       => $this->is_gift
         ];
     }
 }
