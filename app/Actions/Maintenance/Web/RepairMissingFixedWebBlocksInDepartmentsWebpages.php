@@ -118,6 +118,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         $webpage->refresh();
         $this->setDescriptionWebBlockOnTop($webpage);
+        /* $this->setDescriptionWebBlockHidden($webpage); */
         $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
@@ -165,6 +166,13 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 ->where('id', $key)
                 ->update(['position' => $position]);
         }
+        UpdateWebpageContent::run($webpage);
+    }
+
+    public function setDescriptionWebBlockHidden(Webpage $webpage): void
+    {
+        $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first();
+        $departmentDescriptionWebBlock->update(['show' => false]);
         UpdateWebpageContent::run($webpage);
     }
 
