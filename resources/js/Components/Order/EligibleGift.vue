@@ -37,11 +37,11 @@ const compSelectedGift = computed(() => {
 const _popover = ref<InstanceType<typeof Popover> | null>(null)
 
 // Section: Charge Priority Dispatch
-const isLoadingChanged = ref(false)
+const isLoadingChanged = ref<number|null>(null)
 const onChangeGift = async (val: Gift) => {
 
     try {
-        isLoadingChanged.value = true
+        isLoadingChanged.value = val.id
 
         const response = await axios.patch(
             route(
@@ -70,7 +70,7 @@ const onChangeGift = async (val: Gift) => {
             type: 'error'
         })
     } finally {
-        isLoadingChanged.value = false
+        isLoadingChanged.value = null
     }
 }
 </script>
@@ -82,12 +82,17 @@ const onChangeGift = async (val: Gift) => {
             {{ trans("Select gift") }}
         </div>
         <div v-else class="relative text-right">
-            <span @click="_popover?.toggle" class="underline cursor-pointer">
+            <div @click="_popover?.toggle" class="relative underline cursor-pointer inline-block">
                 <span class="font-bold">
                     {{ compSelectedGift.code }}
                 </span>
                 {{ compSelectedGift.name }}
-            </span>
+                <div v-if="isLoadingChanged" class="absolute w-full h-[1.4em] top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                    <div class="skeleton w-full h-full">
+
+                    </div>
+                </div>
+            </div>
             <span @click="_popover?.toggle" class="ml-2 cursor-pointer text-blue-500 underline">{{ trans("change") }}</span>
             <span v-if="isLoadingChanged" class="absolute top-1/2 -translate-y-1/2 w-4 h-4 xtext-blue-600">
                 <LoadingIcon />
@@ -100,7 +105,7 @@ const onChangeGift = async (val: Gift) => {
                     v-for="gift in giftOptions"
                     :key="gift.id"
                     class="flex items-center gap-2 cursor-pointer"
-                    @click.prevent="() => (_popover?.hide(), onChangeGift(gift))"
+                    @click.prevent="() => ('_popover?.hide()', onChangeGift(gift))"
                 >
                     <!-- <input
                         type="radio"
@@ -112,6 +117,7 @@ const onChangeGift = async (val: Gift) => {
                     /> -->
                     <span>
                         <FontAwesomeIcon v-if="gift.id === compSelectedGift?.id" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
+                        <LoadingIcon v-else-if="isLoadingChanged === gift.id" class="" />
                         <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
                     </span>
                     <div class="w-14 aspect-square h-14 border border-gray-300">
