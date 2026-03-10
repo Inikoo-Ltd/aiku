@@ -136,6 +136,24 @@ class ShowOfferCampaign extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.shops.show.discounts.campaigns.amnesty.show' => 
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $offerCampaign,
+                    [
+                        'index' => [
+                            'name'       => preg_replace('/show$/', 'index', 'grp.org.shops.show.discounts.campaigns.show'),
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.discounts.campaigns.show',
+                            'parameters' => Arr::except($routeParameters, 'offer')
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             'grp.org.shops.show.discounts.campaigns.show' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
