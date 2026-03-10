@@ -33,6 +33,7 @@ enum OutboxCodeEnum: string
     case MARKETING = 'marketing';
     case NEWSLETTER = 'newsletter';
     case OOS_NOTIFICATION = 'oos_notification';
+    case OOS_IN_ORDER_NOTIFICATION = 'oos_in_order_notification';
     case ORDER_CONFIRMATION = 'order_confirmation';
     case PASSWORD_REMINDER = 'password_reminder';
     case REGISTRATION = 'registration';
@@ -72,6 +73,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::OOS_NOTIFICATION,
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
@@ -127,6 +129,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::MARKETING => 'Marketing',
             OutboxCodeEnum::NEWSLETTER => 'Newsletter',
             OutboxCodeEnum::OOS_NOTIFICATION => 'Out of stock notification',
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::PASSWORD_REMINDER => 'Password reminder',
             OutboxCodeEnum::REGISTRATION => 'Registration',
@@ -170,6 +173,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::MARKETING => 'Deals',
             OutboxCodeEnum::NEWSLETTER => 'Newsletter',
             OutboxCodeEnum::OOS_NOTIFICATION => 'Out of stock notification',
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::PASSWORD_REMINDER => 'Password reminder',
             OutboxCodeEnum::REGISTRATION => 'Registration',
@@ -259,6 +263,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION => ['b2b', 'b2c', 'dropshipping'],
             OutboxCodeEnum::OOS_NOTIFICATION => ['b2b', 'dropshipping'],
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => ['b2b', 'dropshipping'],
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::ABANDONED_CART,
             OutboxCodeEnum::REORDER_REMINDER,
@@ -345,6 +350,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::INVITE,
             OutboxCodeEnum::ABANDONED_CART,
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             => 'Mailshot',
 
             default => null
@@ -384,6 +390,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
@@ -410,6 +417,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::OOS_NOTIFICATION,
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,

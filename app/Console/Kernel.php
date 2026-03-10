@@ -17,6 +17,7 @@ use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\SendReorderRemainderEmails;
 use App\Actions\Comms\Outbox\RunBasketLowStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
@@ -453,6 +454,15 @@ class Kernel extends ConsoleKernel
         //         monitorSlug: 'RunBasketLowStockEmailBulkRuns',
         //     ),
         //     name: 'RunBasketLowStockEmailBulkRuns',
+        //     type: 'job',
+        //     scheduledAt: now()->format('H:i')
+        // );
+
+        // $this->logSchedule(
+        //     $schedule->job(RunOutOfStockInOrderEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+        //         monitorSlug: 'RunOutOfStockInOrderEmailBulkRuns',
+        //     ),
+        //     name: 'RunOutOfStockInOrderEmailBulkRuns',
         //     type: 'job',
         //     scheduledAt: now()->format('H:i')
         // );
