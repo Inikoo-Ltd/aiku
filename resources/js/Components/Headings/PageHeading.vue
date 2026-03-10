@@ -22,7 +22,8 @@ import {
 	faChartLine,
 	faBoxes,
     faPause,
-    faPlay
+    faPlay,
+	faStore
 } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MetaLabel from "@/Components/Headings/MetaLabel.vue"
@@ -62,7 +63,8 @@ library.add(
 	faChartLine,
 	faBoxes,
     faPause,
-    faPlay
+    faPlay,
+	faStore
 )
 
 const props = defineProps<{
