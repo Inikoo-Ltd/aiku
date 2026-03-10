@@ -10,6 +10,7 @@ import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
+import Multiselect from "@vueform/multiselect"
 
 const props = defineProps<{
     shop_data: {
@@ -19,38 +20,30 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', {})
+const currentParams = layout?.currentParams ?? {}
 const isOpenModal = ref(false)
-
-const offerLabel = ref('')
-const typeOffer = ref('quantity')
-const offerQtyItems = ref<number | null>(null)
-const offerAmount = ref<number | null>(0)
-const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref(null)
-
 const isLoadingSubmit = ref(false)
 
-const currentParams = layout?.currentParams ?? {}
+const offerAmount = ref<number | null>(0)
+const discountPercentage = ref<number | null>(null)
 
 const organisation = currentParams.organisation
 const shopCode = currentParams.shop
 const offerCampaign = currentParams.offerCampaign
 
-
+const selectedFilters = ref<number[]>([])
+const selectedShops = ref([])
+const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
 const categoryFilters = ref<number[]>([])
 const collectionFilters = ref<number[]>([])
 const productFilters = ref<number[]>([])
 
 const target = reactive({
-    shop: true,
+    shop: false,
     category: false,
     collection: false,
     product: false
 })
-
-const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
-
-const selectedFilters = ref<number[]>([])
 
 const shopId = layout?.group?.id
 const shopSlug = props.shop_data.slug
@@ -128,12 +121,16 @@ const submitCategoryOffer = () => {
 }
 
 const resetForm = () => {
-    offerLabel.value = ''
-    typeOffer.value = 'quantity'
-    offerQtyItems.value = null
     offerAmount.value = null
     discountPercentage.value = null
-    offerCategoryId.value = null
+    categoryType.value = null
+    categoryFilters.value = []
+    collectionFilters.value = []
+    productFilters.value = []
+    target.category = false
+    target.collection = false
+    target.shop = false
+    target.product = false
 }
 
 const isFormInvalid = computed(() => {
@@ -203,6 +200,14 @@ watch(() => target.category, (val) => {
     }
 
 })
+
+const authorisedShops =
+    layout.organisations.data
+        .find((o: any) => o.slug === organisation)
+        ?.authorised_shops ?? []
+
+console.log("authorisedShops", authorisedShops)
+console.log("layout create", layout.organisations.data)
 </script>
 
 <template>
@@ -212,27 +217,6 @@ watch(() => target.category, (val) => {
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Customer Offer') }}</h2>
-
-                <div class="bg-gray-50 border rounded-lg p-3 text-sm">
-                    <div class="flex gap-4 flex-wrap">
-
-                        <div>
-                            <span class="font-medium">Organisation:</span>
-                            {{ organisation }}
-                        </div>
-
-                        <div>
-                            <span class="font-medium">Shop:</span>
-                            {{ shopCode }}
-                        </div>
-
-                        <div>
-                            <span class="font-medium">Campaign:</span>
-                            {{ offerCampaign }}
-                        </div>
-
-                    </div>
-                </div>
 
                 <div class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
@@ -313,6 +297,25 @@ watch(() => target.category, (val) => {
                     <PureMultiselectInfiniteScroll :key="categoryType" v-model="categoryFilters" mode="multiple"
                         :fetchRoute="activeCategoryRoute" valueProp="id" labelProp="name"
                         :placeholder="trans('Select items')" />
+
+                </div>
+
+                <div v-if="target.shop">
+
+                    <label class="font-medium">
+                        {{ trans('Select Shop') }}
+                    </label>
+                    <Multiselect v-model="selectedShops" :options="authorisedShops" valueProp="slug" label="label"
+                        mode="multiple" :closeOnSelect="false" :searchable="true" placeholder="Select shops">
+
+                        <template #option="{ option }">
+                            <div class="flex justify-between w-full">
+                                <span>{{ option.label }}</span>
+                                <span class="text-gray-400 text-sm">{{ option.code }}</span>
+                            </div>
+                        </template>
+
+                    </Multiselect>
 
                 </div>
 
