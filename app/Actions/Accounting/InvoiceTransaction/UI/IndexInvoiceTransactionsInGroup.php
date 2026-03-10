@@ -47,6 +47,7 @@ class IndexInvoiceTransactionsInGroup extends OrgAction
                 'invoice_transactions.invoice_id',
                 'invoice_transactions.model_type',
                 'invoice_transactions.in_process',
+                'invoice_transactions.is_gift',
                 'invoice_transactions.data',
                 'historic_assets.code',
                 'historic_assets.name',
