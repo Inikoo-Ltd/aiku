@@ -111,7 +111,7 @@ class CloneProductCategoryParentsFromMaster
 
     public function asCommand(Command $command): int
     {
-        $productCategory=ProductCategory::where('slug',$command->argument('slug'))->firstOrFail();
+        $productCategory=ProductCategory::where('slug',$command->argument('product_category'))->firstOrFail();
         $command->info('Updating parents of '.$productCategory->name);
         $this->handle($productCategory,$command);
 
