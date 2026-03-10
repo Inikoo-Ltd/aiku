@@ -13,11 +13,14 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\OrgAction;
 use App\Http\Resources\Catalogue\OfferResource;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -62,7 +65,27 @@ class ShowOffer extends OrgAction
         };
 
 
-        $data = OfferResource::make($offer);
+        $data['offer'] = OfferResource::make($offer);
+
+        if ($offer->type == "VolGr Gift") {
+            /** @var OfferAllowance $giftAllowance */
+            $giftAllowance  = $offer->offerAllowances()->first();
+            $productOptions = [];
+
+            foreach (Arr::get($giftAllowance->data, 'products', []) as $productData) {
+                $product = Product::find($productData['id']);
+                if ($product) {
+                    $productOptions[] = [
+                        'id'      => $product->id,
+                        'code'    => $product->code,
+                        'name'    => $product->name,
+                        'default' => Arr::get($productData, 'default', false),
+                    ];
+                }
+            }
+            $data['products'] = $productOptions;
+        }
+
 
         return Inertia::render(
             $vueComponent,
@@ -101,7 +124,7 @@ class ShowOffer extends OrgAction
         return $this->handle($offer);
     }
 
-
+    /** @noinspection PhpUnusedParameterInspection */
     public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
     {
         $this->initialisationFromShop($shop, $request);
@@ -109,6 +132,7 @@ class ShowOffer extends OrgAction
         return $this->handle($offer);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inGiftCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
     {
         if ($offer->type != "VolGr Gift") {
@@ -120,6 +144,7 @@ class ShowOffer extends OrgAction
         return $this->handle($offer);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inAmnestyCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
     {
         if ($offer->type != "GR Amnesty") {
