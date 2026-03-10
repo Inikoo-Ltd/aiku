@@ -73,9 +73,9 @@ class SetTradeUnitsForFaireShops
             return 1;
         }
 
-        $countQuery= Product::where('shop_id', $faireShop->id);
+        $countQuery = Product::where('shop_id', $faireShop->id);
         if ($command->option('in_process')) {
-            $countQuery->where('state',ProductStateEnum::IN_PROCESS);
+            $countQuery->where('state', ProductStateEnum::IN_PROCESS);
         }
 
         $count = $countQuery->count();
@@ -90,7 +90,7 @@ class SetTradeUnitsForFaireShops
 
         $query = Product::where('shop_id', $faireShop->id);
         if ($command->option('in_process')) {
-            $query->where('state',ProductStateEnum::IN_PROCESS);
+            $query->where('state', ProductStateEnum::IN_PROCESS);
         }
 
         $query->orderBy('id')

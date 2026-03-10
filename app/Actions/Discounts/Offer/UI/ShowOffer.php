@@ -38,17 +38,17 @@ class ShowOffer extends OrgAction
         $icon      = ['fal', 'fa-badge-percent'];
         $iconRight = null;
 
-        $editRoute=null;
-        $actions=[];
+        $editRoute = null;
+        $actions = [];
 
-        if($offer->type == "VolGr Gift") {
+        if ($offer->type == "VolGr Gift") {
             $editRoute = [
                 'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit_vol_gr_gift',
                 'parameters' => $request->route()->parameters()
             ];
         }
 
-        if($editRoute) {
+        if ($editRoute) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'edit',

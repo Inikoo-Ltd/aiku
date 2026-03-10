@@ -25,9 +25,9 @@ class EditVolGrGift extends OrgAction
     public function handle(Offer $offer): Response
     {
 
-        $offerCampaign=$offer->offerCampaign;
+        $offerCampaign = $offer->offerCampaign;
 
-        $giftOffer=$offer;
+        $giftOffer = $offer;
         /** @var OfferAllowance $giftAllowance */
         $giftAllowance = $giftOffer->offerAllowances()->first();
 
@@ -146,7 +146,7 @@ class EditVolGrGift extends OrgAction
         return $this->handle($giftOffer);
     }
 
-    public function inOffer(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer,ActionRequest $request): Response
+    public function inOffer(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Response
     {
         $this->initialisationFromShop($shop, $request);
 

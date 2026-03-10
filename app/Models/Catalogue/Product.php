@@ -175,8 +175,8 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_minion_variant
  * @property bool $has_live_webpage
  * @property string|null $marketplace_id
- * @property string|null $marketplace_second_id
  * @property string|null $margin
+ * @property string|null $marketplace_second_id
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
