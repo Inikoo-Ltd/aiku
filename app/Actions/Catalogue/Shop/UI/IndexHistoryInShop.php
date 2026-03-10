@@ -50,12 +50,14 @@ class IndexHistoryInShop extends OrgAction
 
         });
 
-        if ($shop->address_id) {
-            $queryBuilder->orWhere(function ($query) use ($shop) {
-                $query->where('auditable_type', (new Address)->getMorphClass())
-                    ->where('auditable_id', $shop->address_id);
-            });
-        }
+        
+
+        // if ($shop->address_id) {
+        //     $queryBuilder->orWhere(function ($query) use ($shop) {
+        //         $query->where('auditable_type', (new Address)->getMorphClass())
+        //             ->where('auditable_id', $shop->address_id);
+        //     });
+        // }
 
         $queryBuilder->orderBy('id', 'DESC');
 
