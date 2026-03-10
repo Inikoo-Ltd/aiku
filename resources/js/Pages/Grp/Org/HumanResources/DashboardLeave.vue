@@ -1091,17 +1091,14 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
 							trans("Status")
 						}}</label>
-						<select
+						<Select
 							v-model="exportForm.status"
-							class="w-full border border-gray-300 rounded-lg px-3 py-2">
-							<option value="">{{ trans("All Statuses") }}</option>
-							<option
-								v-for="(label, value) in status_options"
-								:key="value"
-								:value="value">
-								{{ label }}
-							</option>
-						</select>
+							:options="parsedStatusOptions"
+							optionLabel="label"
+							optionValue="value"
+							:placeholder="trans('All Statuses')"
+							showClear
+							class="w-full" />
 					</div>
 				</div>
 
@@ -1110,114 +1107,56 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
 							trans("Department")
 						}}</label>
-						<input
+						<Select
 							v-model="exportForm.department"
-							type="text"
-							class="w-full border border-gray-300 rounded-lg px-3 py-2"
-							:placeholder="trans('Filter by Department')" />
+							:options="parsedDepartmentOptions"
+							optionLabel="label"
+							optionValue="value"
+							:placeholder="trans('All Departments')"
+							showClear
+							class="w-full" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("Team")
+							trans("Format")
 						}}</label>
+						<Select
+							v-model="exportForm.format"
+							:options="[
+								{ label: 'Excel (XLSX)', value: 'xlsx' },
+								{ label: 'CSV', value: 'csv' },
+							]"
+							optionLabel="label"
+							optionValue="value"
+							class="w-full" />
+					</div>
+				</div>
+
+				<div>
+					<label class="flex items-center space-x-2">
 						<input
-							v-model="exportForm.team"
-							type="text"
-							class="w-full border border-gray-300 rounded-lg px-3 py-2"
-							:placeholder="trans('Filter by Team')" />
-					</div>
+							type="checkbox"
+							v-model="exportForm.include_summary"
+							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+						<span class="text-sm">{{ trans("Include Summary") }}</span>
+					</label>
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">{{
-						trans("Employee")
-					}}</label>
-					<input
-						v-model.number="exportForm.employee_id"
-						type="number"
-						class="w-full border border-gray-300 rounded-lg px-3 py-2"
-						:placeholder="trans('Filter by employee ID')" />
+					<label class="flex items-center space-x-2">
+						<input
+							type="checkbox"
+							v-model="exportForm.print_view"
+							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+						<span class="text-sm">{{ trans("Print View") }}</span>
+					</label>
 				</div>
-
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">{{
-						trans("Export Type")
-					}}</label>
-					<div class="space-y-2">
-						<div class="flex gap-4">
-							<label class="flex items-center gap-2 cursor-pointer">
-								<input
-									v-model="exportForm.export_type"
-									type="radio"
-									value="report"
-									class="text-blue-600 focus:ring-blue-500" />
-								<span class="text-sm">{{ trans("Leave Report") }}</span>
-							</label>
-							<label class="flex items-center gap-2 cursor-pointer">
-								<input
-									v-model="exportForm.export_type"
-									type="radio"
-									value="calendar"
-									class="text-blue-600 focus:ring-blue-500" />
-								<span class="text-sm">{{ trans("Calendar View") }}</span>
-							</label>
-						</div>
-					</div>
-				</div>
-
-				<div v-if="exportForm.export_type === 'report'">
-					<label class="block text-sm font-medium text-gray-700 mb-2">{{
-						trans("Export Format")
-					}}</label>
-					<div class="flex gap-4">
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								v-model="exportForm.format"
-								type="radio"
-								value="xlsx"
-								class="text-blue-600 focus:ring-blue-500" />
-							<span class="text-sm">{{ trans("Excel (XLSX)") }}</span>
-						</label>
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								v-model="exportForm.format"
-								type="radio"
-								value="csv"
-								class="text-blue-600 focus:ring-blue-500" />
-							<span class="text-sm">{{ trans("CSV") }}</span>
-						</label>
-					</div>
-				</div>
-
-				<div v-if="exportForm.export_type === 'calendar'">
-					<label class="block text-sm font-medium text-gray-700 mb-2">{{
-						trans("Export Format")
-					}}</label>
-					<div class="flex gap-4">
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								v-model="exportForm.format"
-								type="radio"
-								value="xlsx"
-								class="text-blue-600 focus:ring-blue-500" />
-							<span class="text-sm">{{ trans("Excel Calendar") }}</span>
-						</label>
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								v-model="exportForm.format"
-								type="radio"
-								value="print"
-								class="text-blue-600 focus:ring-blue-500" />
-							<span class="text-sm">{{ trans("Print View") }}</span>
-						</label>
-					</div>
-				</div>
-
-				<ExportModalActions
-					:loading="isExporting"
-					:export-icon="exportForm.format === 'xlsx' ? faFileExcel : faFileCsv"
-					@cancel="closeExportModal" />
 			</form>
+			<ExportModalActions
+				:loading="isExporting"
+				:export-icon="exportForm.format === 'xlsx' ? faFileExcel : faFileCsv"
+				@cancel="closeExportModal"
+				@export="submitExport" />
 		</div>
 	</Modal>
 </template>
