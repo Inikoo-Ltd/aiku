@@ -68,7 +68,8 @@ class ShowOffer extends OrgAction
             $editRouteName = match ($request->route()->getName()) {
                 'grp.org.shops.show.discounts.campaigns.gift.show' => 'grp.org.shops.show.discounts.campaigns.gift.edit',
                 'grp.org.shops.show.discounts.campaigns.amnesty.show' => 'grp.org.shops.show.discounts.campaigns.amnesty.edit',
-                default => 'grp.org.shops.show.discounts.campaigns.offer.edit',
+                'grp.org.shops.show.discounts.campaigns.offer.show' => 'grp.org.shops.show.discounts.campaigns.offer.edit',
+                default => 'grp.org.shops.show.discounts.offers.edit',
             };
 
             $actions[] = [
@@ -178,7 +179,7 @@ class ShowOffer extends OrgAction
         return match ($routeName) {
             'grp.org.shops.show.discounts.campaigns.amnesty.show'  => 
             array_merge(
-                ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters, $suffix),
+                ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters),
                 [
                     [
                         'type'           => 'modelWithIndex',
@@ -186,7 +187,10 @@ class ShowOffer extends OrgAction
                             'index' => [
                                 'route' => [
                                     'name'       => 'grp.org.shops.show.discounts.campaigns.show',
-                                    'parameters' => $routeParameters
+                                    'parameters' => [
+                                        'tab'   => 'gr_amnesty',
+                                        ...$routeParameters
+                                    ]
                                 ],
                                 'label' => __('Offers'),
                                 'icon'  => 'fal fa-bars'
@@ -205,7 +209,7 @@ class ShowOffer extends OrgAction
             ),
             'grp.org.shops.show.discounts.campaigns.gift.show'  => 
             array_merge(
-                ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters, $suffix),
+                ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters),
                 [
                     [
                         'type'           => 'modelWithIndex',
@@ -213,7 +217,10 @@ class ShowOffer extends OrgAction
                             'index' => [
                                 'route' => [
                                     'name'       => 'grp.org.shops.show.discounts.campaigns.show',
-                                    'parameters' => $routeParameters
+                                    'parameters' => [
+                                        'tab'   => 'gr_gift',
+                                        ...$routeParameters
+                                    ]
                                 ],
                                 'label' => __('Offers'),
                                 'icon'  => 'fal fa-bars'
@@ -232,7 +239,7 @@ class ShowOffer extends OrgAction
             ),
             'grp.org.shops.show.discounts.campaigns.offer.show'  => 
             array_merge(
-                ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters, $suffix),
+                ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters),
                 [
                     [
                         'type'           => 'modelWithIndex',
@@ -240,7 +247,10 @@ class ShowOffer extends OrgAction
                             'index' => [
                                 'route' => [
                                     'name'       => 'grp.org.shops.show.discounts.campaigns.show',
-                                    'parameters' => $routeParameters
+                                    'parameters' => [
+                                        'tab'   => 'offers',
+                                        ...$routeParameters
+                                    ]
                                 ],
                                 'label' => __('Offers'),
                                 'icon'  => 'fal fa-bars'
