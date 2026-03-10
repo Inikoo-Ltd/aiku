@@ -186,15 +186,23 @@ class StoreLeave extends OrgAction
         }
 
         if ($isHalfDay) {
-            $existingSession = Leave::where('employee_id', $this->employee->id)
-                ->whereDate('start_date', $startDate)
-                ->where('is_half_day', true)
+            $conflictingLeave = Leave::where('employee_id', $this->employee->id)
                 ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
-                ->where('session', $session)
+                ->whereDate('start_date', $startDate)
+                ->where(function ($query) use ($session) {
+                    $query->where('is_half_day', false)
+                        ->orWhere(function ($q) use ($session) {
+                            $q->where('is_half_day', true)
+                                ->where('session', $session);
+                        });
+                })
                 ->exists();
 
-            if ($existingSession) {
-                $validator->errors()->add('session', __('You already have a :session half-day leave on this date.', ['session' => $session]));
+            if ($conflictingLeave) {
+                $message = $session === 'Full'
+                    ? __('You already have a leave request on this date.')
+                    : __('You already have a :session half-day leave on this date.', ['session' => $session]);
+                $validator->errors()->add('session', $message);
                 return;
             }
         }
@@ -202,13 +210,10 @@ class StoreLeave extends OrgAction
         $existingLeave = Leave::where('employee_id', $this->employee->id)
             ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
             ->where(function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('start_date', [$startDate, $endDate])
-                    ->orWhereBetween('end_date', [$startDate, $endDate])
-                    ->orWhere(function ($q) use ($startDate, $endDate) {
-                        $q->where('start_date', '<=', $startDate)
-                            ->where('end_date', '>=', $endDate);
-                    });
-            })->exists();
+                $query->where('start_date', '<=', $endDate)
+                    ->where('end_date', '>=', $startDate);
+            })
+            ->exists();
 
         if ($existingLeave) {
             $validator->errors()->add('start_date', __('You already have a leave request overlapping with these dates.'));
