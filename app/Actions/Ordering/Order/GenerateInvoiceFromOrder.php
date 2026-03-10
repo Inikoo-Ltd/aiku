@@ -215,10 +215,10 @@ class GenerateInvoiceFromOrder extends OrgAction
         }
         if (empty($pickings)) {
             //todo: check this or I will reget
-            $quantityPicked = $transaction->quantity_ordered;
+            $quantityPicked = $transaction->quantity_ordered + $transaction->quantity_bonus;
         } else {
             $sumOfPickings  = array_sum($pickings) / count($pickings);
-            $quantityPicked = $transaction->quantity_ordered * $sumOfPickings;
+            $quantityPicked = ($transaction->quantity_ordered + $transaction->quantity_bonus) * $sumOfPickings;
         }
 
         $discountsRatio = 1;
