@@ -64,10 +64,8 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
             ],
             'registrations' => [
                 'route_target' => [
-                    'name' => 'grp.org.overview.customers.index',
-                    'parameters' => [
-                        'organisation' => $summedData['organisation_slug'] ?? 'unknown',
-                    ],
+                    'name' => 'grp.overview.crm.customers.index',
+                    'parameters' => [],
                     'key_date_filter' => 'between[registered_at]',
                 ],
             ],
