@@ -54,7 +54,7 @@ class ShowRetinaEcomBasket extends RetinaAction
         $isOrder = $order instanceof Order;
 
 
-        $charges = $this->getBasketCharges($order);
+        $charges         = $this->getBasketCharges($order);
         $premiumDispatch = $charges['premium_dispatch'];
         $extraPacking    = $charges['extra_packing'];
         $insurance       = $charges['insurance'];
@@ -73,7 +73,6 @@ class ShowRetinaEcomBasket extends RetinaAction
         if ($order) {
             $grGifts = $this->getGrGifts($order);
         }
-
 
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
