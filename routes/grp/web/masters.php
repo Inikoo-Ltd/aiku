@@ -10,6 +10,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoicesInProduct;
 use App\Actions\Catalogue\Shop\StoreShopFromMaster;
 use App\Actions\Masters\MasterAsset\Json\GetSelectedMasterProductDetails;
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
+use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInMasterDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInMasterFamilies;
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartmentsInMasterSubDepartment;
 use App\Actions\Catalogue\Shop\UI\CreateShopFromMaster;
@@ -63,6 +64,7 @@ Route::delete('/master-departments/{masterProductCategory}/delete', DeleteMaster
 
 Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.show')->group(function () {
     Route::get('', [ShowMasterDepartment::class, 'inGroup'])->name('');
+    Route::get('/departments', [IndexDepartmentsInMasterDepartment::class, 'inGroup'])->name('.departments');
 
     Route::prefix('master-families')->as('.master_families.')->group(function () {
         Route::get('', [IndexMasterFamilies::class, 'inMasterDepartment'])->name('index');
@@ -133,7 +135,7 @@ Route::name("master_shops")->prefix('master-shops')
 
                 Route::prefix('{masterDepartment}')->name('show')->group(function () {
                     Route::get('', ShowMasterDepartment::class);
-
+                    Route::get('/departments', IndexDepartmentsInMasterDepartment::class)->name('.departments');
 
                     Route::prefix('master-families')->as('.master_families.')->group(function () {
                         Route::get('', [IndexMasterFamilies::class, 'inMasterDepartmentInMasterShop'])->name('index');
