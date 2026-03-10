@@ -9,6 +9,7 @@
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInProduct;
 use App\Actions\Catalogue\Shop\StoreShopFromMaster;
 use App\Actions\Masters\MasterAsset\Json\GetSelectedMasterProductDetails;
+use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
 use App\Actions\Catalogue\Shop\UI\CreateShopFromMaster;
 use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
@@ -143,6 +144,7 @@ Route::name("master_shops")->prefix('master-shops')
                             Route::get('master-products/create', [CreateMasterProduct::class, 'inMasterFamilyInMasterDepartmentInMasterShop'])->name('show.master_products.create');
                             Route::get('master-products/{masterProduct}', [ShowMasterProduct::class, 'inMasterFamilyInMasterDepartmentInMasterShop'])->name('show.master_products.show');
                             Route::get('master-products/{masterProduct}/edit', [EditMasterProduct::class, 'inMasterFamilyInMasterDepartmentInMasterShop'])->name('show.master_products.edit');
+                            Route::get('master-products/{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMasterFamilyInMasterDepartmentInMasterShop'])->name('show.master_products.products');
                         });
                     });
 
@@ -167,6 +169,7 @@ Route::name("master_shops")->prefix('master-shops')
                                 Route::get('create', [CreateMasterProduct::class, 'inMasterFamilyInMasterSubDepartmentInMasterDepartmentInMasterShop'])->name('create');
                                 Route::get('{masterProduct}', [ShowMasterProduct::class, 'inMasterFamilyInMasterDepartment'])->name('show');
                                 Route::get('{masterProduct}/edit', [EditMasterProduct::class, 'inMasterFamilyInMasterDepartment'])->name('edit');
+                                Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMasterFamilyInMasterDepartment'])->name('products');
                             });
                         });
                     });
@@ -175,6 +178,7 @@ Route::name("master_shops")->prefix('master-shops')
                         Route::get('', [IndexMasterProducts::class, 'inMasterDepartmentInMasterShop'])->name('index');
                         Route::get('{masterProduct}', [ShowMasterProduct::class, 'inMasterDepartmentInMasterShop'])->name('show');
                         Route::get('{masterProduct}/edit', [EditMasterProduct::class, 'inMasterDepartmentInMasterShop'])->name('edit');
+                        Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMasterDepartmentInMasterShop'])->name('products');
                     });
 
                     Route::prefix('master-collections')->as('.master_collections.')->group(function () {
@@ -207,6 +211,7 @@ Route::name("master_shops")->prefix('master-shops')
                     Route::get('create', [CreateMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('create');
                     Route::get('{masterProduct}', [ShowMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('show');
                     Route::get('{masterProduct}/edit', [EditMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('edit');
+                    Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMasterFamilyInMasterShop'])->name('products');
                 });
             });
 
@@ -252,6 +257,7 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('{masterProduct}', ShowMasterProduct::class)->name('show');
                 Route::get('{masterProduct}/edit', EditMasterProduct::class)->name('edit');
                 Route::get('{masterProduct}/invoices', [IndexInvoicesInProduct::class, 'inMaster'])->name('invoices');
+                Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMaster'])->name('products');
 
             });
 
@@ -266,6 +272,7 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('/', IndexMasterProductsWithMismatch::class)->name('index');
                 Route::get('{masterProduct}', ShowMasterProduct::class)->name('show');
                 Route::get('{masterProduct}/edit', EditMasterProduct::class)->name('edit');
+                Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMasterProductMismatch'])->name('products');
             });
 
             Route::get('/master-products-orphan', [IndexMasterProductsWithNoFamily::class, 'inMasterShop'])->name('.master_products_orphan');
