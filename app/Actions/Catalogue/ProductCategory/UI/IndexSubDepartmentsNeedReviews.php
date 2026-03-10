@@ -200,7 +200,7 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);
-    
+
             if ($parent instanceof MasterProductCategory) {
                 $table
                     ->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);

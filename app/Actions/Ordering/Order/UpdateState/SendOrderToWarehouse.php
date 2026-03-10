@@ -105,7 +105,7 @@ class SendOrderToWarehouse extends OrgAction
 
 
                 foreach ($product->orgStocks as $orgStock) {
-                    $quantity             = $orgStock->pivot->quantity * ($transaction->quantity_ordered+$transaction->quantity_bonus);
+                    $quantity             = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
                     $deliveryNoteItemData = [
                         'org_stock_id'               => $orgStock->id,
                         'transaction_id'             => $transaction->id,

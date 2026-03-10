@@ -10,9 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
-use App\Models\Masters\MasterShop;
 
 trait WithMasterSubDepartmentSubNavigation
 {
