@@ -8,7 +8,7 @@
 import { trans } from "laravel-vue-i18n"
 import { useRemoveHttps } from '@/Composables/useRemoveHttps'
 
-const props = defineProps<{
+defineProps<{
     data: {
         text?: string
         target: string
