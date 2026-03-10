@@ -226,7 +226,7 @@ class DashboardTotalShopsTimeSeriesSalesResource extends JsonResource
                         $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
 
                         $columns[$columnKey][$interval]['tooltip'] = sprintf(
-                            'With orders: %s | Without orders: %s',
+                            'With basket: %s | Without basket: %s',
                             number_format($withOrders),
                             number_format($withoutOrders)
                         );
