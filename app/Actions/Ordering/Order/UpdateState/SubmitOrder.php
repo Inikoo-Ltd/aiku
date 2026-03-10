@@ -63,68 +63,7 @@ class SubmitOrder extends OrgAction
             data_set($modelData, 'submitted_at', $date);
         }
 
-
-        $offersData = $order->shop->offers_data;
-
-        $grGiftOffer   = null;
-        $grGiftOfferId = Arr::get($offersData, 'gr.gifts_offer_id');
-        if ($grGiftOfferId) {
-            $grGiftOffer = Offer::find($grGiftOfferId);
-        }
-
-        if ($grGiftOffer) {
-            $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
-            if (!$selectedGrGift) {
-                $grGiftsData = Arr::get($offersData, 'gr.gifts_products');
-                if ($grGiftsData) {
-                    foreach ($grGiftsData as $gift) {
-                        if (Arr::get($gift, 'default', false)) {
-                            $selectedGrGift = $gift['id'];
-                            break;
-                        }
-                    }
-                }
-            }
-
-
-            if ($selectedGrGift) {
-                /** @var OfferAllowance $giftAllowance */
-                $giftAllowance = $grGiftOffer->offerAllowances()->first();
-                if ($giftAllowance) {
-                    $selectedGrGiftProduct = Product::where('shop_id', $order->shop_id)->where('id', $selectedGrGift)->first();
-                    if ($selectedGrGiftProduct) {
-                        $grGiftTransaction = StoreTransaction::make()->action(
-                            $order,
-                            $selectedGrGiftProduct->currentHistoricProduct,
-                            [
-                                'quantity_ordered' => 0,
-                                'quantity_bonus'   => 1,
-                                'is_gift'          => true,
-                            ]
-                        );
-
-                        DB::table('transaction_has_offer_allowances')->insert([
-                            'order_id'              => $order->id,
-                            'transaction_id'        => $grGiftTransaction->id,
-                            'model_type'            => $grGiftTransaction->model_type,
-                            'model_id'              => $grGiftTransaction->model_id,
-                            'offer_campaign_id'     => $grGiftOffer->offer_campaign_id,
-                            'offer_id'              => $grGiftOffer->id,
-                            'offer_allowance_id'    => $giftAllowance->id,
-                            'discounted_amount'     => 0,
-                            'discounted_percentage' => 0,
-                            'is_gift'               => true,
-                            'free_items_value'      => $selectedGrGiftProduct->price,
-                            'number_of_free_items'  => 1,
-                            'created_at'            => now(),
-                            'updated_at'            => now(),
-                            'data'                  => '{}'
-
-                        ]);
-                    }
-                }
-            }
-        }
+        $this->processGrGift($order);
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
@@ -183,6 +122,89 @@ class SubmitOrder extends OrgAction
         return $order;
     }
 
+
+    public function processGrGift(Order $order): Order
+    {
+        $offersData = $order->shop->offers_data;
+
+        $grGiftOffer   = null;
+        $grGiftOfferId = Arr::get($offersData, 'gr.gifts_offer_id');
+        if ($grGiftOfferId) {
+            $grGiftOffer = Offer::find($grGiftOfferId);
+        }
+
+        if ($grGiftOffer) {
+            $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
+            if (!$selectedGrGift) {
+                $grGiftsData = Arr::get($offersData, 'gr.gifts_products');
+                if ($grGiftsData) {
+                    foreach ($grGiftsData as $gift) {
+                        if (Arr::get($gift, 'default', false)) {
+                            $selectedGrGift = $gift['id'];
+                            break;
+                        }
+                    }
+                }
+            }
+
+
+            if ($selectedGrGift) {
+                /** @var OfferAllowance $giftAllowance */
+                $giftAllowance = $grGiftOffer->offerAllowances()->first();
+                if ($giftAllowance) {
+                    $selectedGrGiftProduct = Product::where('shop_id', $order->shop_id)->where('id', $selectedGrGift)->first();
+                    if ($selectedGrGiftProduct) {
+                        $grGiftTransaction = StoreTransaction::make()->action(
+                            $order,
+                            $selectedGrGiftProduct->currentHistoricProduct,
+                            [
+                                'quantity_ordered' => 0,
+                                'quantity_bonus'   => 1,
+                                'is_gift'          => true,
+                            ]
+                        );
+
+
+                        $grGiftTransaction->update([
+                            'offers_data' => [
+                                'v' => 1,
+                                'o' => [
+                                    'oc' => $grGiftOffer->offer_campaign_id,
+                                    'o'  => $grGiftOffer->id,
+                                    'oa' => $giftAllowance->id,
+                                    't'  => 'gift',
+                                    'p'  => 0,
+                                    'l'  => $grGiftOffer->name,
+                                ]
+                            ]
+                        ]);
+
+
+                        DB::table('transaction_has_offer_allowances')->insert([
+                            'order_id'              => $order->id,
+                            'transaction_id'        => $grGiftTransaction->id,
+                            'model_type'            => $grGiftTransaction->model_type,
+                            'model_id'              => $grGiftTransaction->model_id,
+                            'offer_campaign_id'     => $grGiftOffer->offer_campaign_id,
+                            'offer_id'              => $grGiftOffer->id,
+                            'offer_allowance_id'    => $giftAllowance->id,
+                            'discounted_amount'     => 0,
+                            'discounted_percentage' => 0,
+                            'is_gift'               => true,
+                            'free_items_value'      => $selectedGrGiftProduct->price,
+                            'number_of_free_items'  => 1,
+                            'created_at'            => now(),
+                            'updated_at'            => now(),
+                            'data'                  => '{}'
+
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return $order;
+    }
 
     public function afterValidator(Validator $validator): void
     {
