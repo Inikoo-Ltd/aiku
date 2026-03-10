@@ -133,16 +133,16 @@ class ShowMasterFamily extends GrpAction
                         fn () => GetMasterProductCategoryShowcase::run($masterFamily)
                     ),
 
-            MasterFamilyTabsEnum::FAMILIES->value =>
-                $this->tab === MasterFamilyTabsEnum::FAMILIES->value
-                    ? fn () => FamiliesResource::collection(
-                        IndexFamilies::run($masterFamily)
-                    )
-                    : Inertia::lazy(
-                        fn () => FamiliesResource::collection(
-                            IndexFamilies::run($masterFamily)
-                        )
-                    ),
+            // MasterFamilyTabsEnum::FAMILIES->value =>
+            //     $this->tab === MasterFamilyTabsEnum::FAMILIES->value
+            //         ? fn () => FamiliesResource::collection(
+            //             IndexFamilies::run($masterFamily)
+            //         )
+            //         : Inertia::lazy(
+            //             fn () => FamiliesResource::collection(
+            //                 IndexFamilies::run($masterFamily)
+            //             )
+            //         ),
 
             MasterFamilyTabsEnum::IMAGES->value =>
                 $this->tab === MasterFamilyTabsEnum::IMAGES->value
@@ -320,7 +320,7 @@ class ShowMasterFamily extends GrpAction
             ]
         )
             ->table(IndexMailshots::make()->tableStructure(parent: $masterFamily))
-            ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
+            // ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
             ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterFamilyTabsEnum::SALES->value))
             ->table(IndexMasterVariant::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value));
