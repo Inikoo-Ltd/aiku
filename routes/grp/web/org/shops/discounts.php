@@ -22,6 +22,7 @@ use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
+use App\Actions\Discounts\OfferCampaign\StoreGiftsOffer;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
@@ -62,6 +63,11 @@ Route::name("campaigns.")->prefix('campaigns')
             '{offerCampaign}/customer',
             StoreCustomerOffers::class
         )->name('campaigns.store_customer');
+
+        Route::post(
+            '{offerCampaign}/gift',
+            StoreGiftsOffer::class
+        )->name('campaigns.store_gift');
     });
 
 Route::name("offers.")->prefix('offers')
