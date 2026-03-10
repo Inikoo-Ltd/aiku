@@ -196,7 +196,34 @@ class UpdateShop extends OrgAction
             }
         }
         if ($hasChannelUpdates) {
+            $oldChannels = [];
+            $newChannels = [];
+            $allChannelIds = SalesChannel::pluck('name', 'id')->toArray();
+
+            foreach($allChannelIds as $id => $name){
+                $wasActive = in_array($id, $shop->salesChannels()->allRelatedIds()->toArray());
+                $isActive = in_array($id, $currentChannelIds);
+
+                if($wasActive !== $isActive){
+                    $oldChannels[$name] = $wasActive ? 'True' : 'False';
+                    $newChannels[$name] = $isActive ? 'True' : 'False'; 
+                }
+            }
+            
             $shop->salesChannels()->sync(array_values($currentChannelIds));
+
+            if(!empty($oldChannels)){
+                $shop->audits()->create([
+                    'event' => 'updated',
+                    'old_values' => $oldChannels,
+                    'new_values' => $newChannels,
+                    'url' => request()->fullUrl(),
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                    'user_type' => get_class(request()->user()),
+                    'user_id' => request()->user()->id,
+                ]);
+            };
         }
 
         if (Arr::exists($modelData, 'collection_address')) {
@@ -273,19 +300,32 @@ class UpdateShop extends OrgAction
             ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
 
-        $invoiceSerialReference->updateQuietly(
+        $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
+            ->where('container_type', 'Shop')
+            ->where('container_id', $shop->id)->first();
+
+        $oldValues = [
+            'invoice_format' => $invoiceSerialReference->format,
+            'invoice_serial' => $invoiceSerialReference->serial,
+            'refund_format' => $refundSerialReference->format,
+            'refund_serial' => $refundSerialReference->serial,
+        ];
+
+        $newValues = [
+            'invoice_format' => $modelData['stand_alone_invoice_numbers_format'],
+            'invoice_serial' => $modelData['stand_alone_invoice_numbers_serial'],
+            'refund_format' => $modelData['stand_alone_refund_numbers_format'],
+            'refund_serial' => $modelData['stand_alone_refund_numbers_serial'],
+        ];
+        
+        $invoiceSerialReference->update(
             [
                 'format' => $modelData['stand_alone_invoice_numbers_format'],
                 'serial' => $modelData['stand_alone_invoice_numbers_serial'],
             ]
         );
 
-
-        $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
-            ->where('container_type', 'Shop')
-            ->where('container_id', $shop->id)->first();
-
-        $refundSerialReference->updateQuietly(
+        $refundSerialReference->update(
             [
                 'format' => $modelData['stand_alone_refund_numbers_format'],
                 'serial' => $modelData['stand_alone_refund_numbers_serial'],
@@ -296,9 +336,12 @@ class UpdateShop extends OrgAction
         data_set($settings, 'invoicing.stand_alone_invoice_numbers', $modelData['stand_alone_invoice_numbers']);
         data_set($settings, 'invoicing.stand_alone_refund_numbers', $modelData['stand_alone_refund_numbers']);
 
-        $shop->updateQuietly([
+        $shop->update([
             'settings' => $settings,
         ]);
+
+        $this->auditInvoiceSerialReferences($shop, $oldValues, $newValues);
+
         $shop->refresh();
 
         return $shop;
@@ -458,16 +501,12 @@ class UpdateShop extends OrgAction
             $newValue = Arr::get($newAddress, $item, 'Empty');
 
             if ($oldValue != $newValue) {
-                if(Arr::has($oldAddress, 'country_id')) {
+                if($item === 'country_id') {
                     $oldValue = Country::find($oldValue)?->name ?? 'Empty';
                     $newValue = Country::find($newValue)?->name ?? 'Empty';
-
-                    // TODO change $item ($attribute) -> Country_id to country_name
-                    $oldAddress['country_name'] = $oldValue;
-                    $newAddress['country_name'] = $newValue;
-                    
-                    unset($oldAddress['country_id'], $newAddress['country_id']);
+                    $item = 'country_name';
                 }
+
                 $shop->audits()->create([
                     'event' => 'updated',
                     'old_values' => [
@@ -484,5 +523,35 @@ class UpdateShop extends OrgAction
                 ]);
             }
         }
+    }
+
+    public function auditInvoiceSerialReferences(Shop $shop, array $oldValues, array $newValues): void
+    {
+        $changedOldValues = [];
+        $changedNewValues = [];
+
+        foreach ($newValues as $key => $newValue) {
+            $oldValue = Arr::get($oldValues, $key);
+
+            if ($oldValue !== $newValue) {
+                $changedOldValues[$key] = $oldValue;
+                $changedNewValues[$key] = $newValue;
+            }
+        }
+
+        if ($changedOldValues === []) {
+            return;
+        }
+
+        $shop->audits()->create([
+            'event' => 'updated',
+            'old_values' => $changedOldValues,
+            'new_values' => $changedNewValues,
+            'url' => request()->fullUrl(),
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'user_type' => get_class(request()->user()),
+            'user_id' => request()->user()->id,
+        ]);
     }
 }

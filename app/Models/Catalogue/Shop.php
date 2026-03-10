@@ -336,11 +336,13 @@ class Shop extends Model implements HasMedia, Auditable
         'timezone_id',
         'company_name',
         'contact_name',
+        'sales_channels',
         'invoice_footer',
         'price_rrp_ratio',
         'cost_price_ratio',
         'collection_address_id',
         'identity_document_number',
+        'forbidden_dispatch_countries',
         'product_price_currency_exchange'
     ];
 
@@ -357,6 +359,11 @@ class Shop extends Model implements HasMedia, Auditable
             $data['old_values']['settings'] = $this->getOriginal('settings');
             $data['new_values']['settings'] = $this->getAttribute('settings');
         }
+
+        // if (array_key_exists('forbidden_dispatch_countries', $dirty)) {
+        //     $data['old_values']['forbidden_dispatch_countries'] = $this->getOriginal('forbidden_dispatch_countries');
+        //     $data['new_values']['forbidden_dispatch_countries'] = $this->getAttribute('forbidden_dispatch_countries');
+        // }
 
         return AuditShopTransformer::transform($data);
     }
