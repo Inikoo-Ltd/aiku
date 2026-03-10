@@ -54,10 +54,18 @@ class ShowRetinaEcomBasket extends RetinaAction
         $isOrder = $order instanceof Order;
 
 
-        $charges         = $this->getBasketCharges($order);
-        $premiumDispatch = $charges['premium_dispatch'];
-        $extraPacking    = $charges['extra_packing'];
-        $insurance       = $charges['insurance'];
+        if($order){
+            $charges         = $this->getBasketCharges($order);
+            $premiumDispatch = $charges['premium_dispatch'];
+            $extraPacking    = $charges['extra_packing'];
+            $insurance       = $charges['insurance'];
+        }else{
+            $premiumDispatch = null;
+            $extraPacking    = null;
+            $insurance       = null;
+        }
+
+
 
         $isUnableDispatch = false;
 
