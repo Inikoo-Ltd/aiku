@@ -20,6 +20,8 @@ use Illuminate\Support\Arr;
 
 class StoreProductFromMasterProduct extends GrpAction
 {
+    public string $jobQueue = 'urgent';
+
     /**
      * @throws \Throwable
      */
