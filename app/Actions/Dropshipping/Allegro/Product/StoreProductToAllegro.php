@@ -95,7 +95,7 @@ class StoreProductToAllegro extends RetinaAction
 
             $targetCurrency = Currency::where('code', 'PLN')->first();
             $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
-            $customerPrice = $portfolio->customer_price * $plnPriceExchange;;
+            $customerPrice = $portfolio->customer_price * $plnPriceExchange;
 
             $offerData = [
                 'productSet' => [
