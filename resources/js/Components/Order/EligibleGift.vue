@@ -9,12 +9,19 @@ import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import Image from '../Image.vue'
+import { Image as ImageTS } from '@/types/Image'
 library.add(faCircle)
 
 interface Gift {
     id: number
     name: string
+    code: string
     selected: boolean
+    web_images_main: {
+        main: ImageTS
+        thumbnail: ImageTS
+    }
 }
 
 const props = defineProps<{
@@ -74,8 +81,8 @@ const onChangeGift = async (val: Gift) => {
         <div v-if="!compSelectedGift" @click="_popover?.toggle" class="cursor-pointer text-blue-600 underline">
             {{ trans("Select gift") }}
         </div>
-        <div v-else class="relative">
-            <span class="underline">
+        <div v-else class="relative text-right">
+            <span @click="_popover?.toggle" class="underline cursor-pointer">
                 <span class="font-bold">
                     {{ compSelectedGift.code }}
                 </span>
@@ -88,7 +95,7 @@ const onChangeGift = async (val: Gift) => {
         </div>
 
         <Popover ref="_popover">
-            <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-2 w-96">
                 <div
                     v-for="gift in giftOptions"
                     :key="gift.id"
@@ -103,11 +110,17 @@ const onChangeGift = async (val: Gift) => {
                         class=" text-[var(--theme-color-0)] cursor-pointer"
                         name="gift_input"
                     /> -->
-                    <FontAwesomeIcon v-if="gift.id === compSelectedGift?.id" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
+                    <span>
+                        <FontAwesomeIcon v-if="gift.id === compSelectedGift?.id" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
+                    </span>
+                    <div class="w-14 aspect-square h-14 border border-gray-300">
+                        <Image :src="gift.web_images_main?.thumbnail" :alt="gift.name" class="object-contain w-full h-full" />
+                    </div>
                     <label :for="gift.id.toString()" class="cursor-pointer">
-                        <span class="font-bold">{{ gift.code }}</span>
-                        {{ gift.name }}
+                        <span class="font-bold text-sm">{{ gift.code }}</span>
+                        <br />
+                        <span class="text-xs leading-4 inline-block opacity-80">{{ gift.name }}</span>
                     </label>
                 </div>
             </div>

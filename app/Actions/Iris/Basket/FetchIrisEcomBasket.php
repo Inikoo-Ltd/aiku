@@ -14,6 +14,7 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -71,6 +72,10 @@ class FetchIrisEcomBasket extends IrisAction
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
             if ($selectedGrGift) {
                 foreach ($grGifts as $key => $gift) {
+                    $product = Product::find($gift['id']);
+                    if ($product) {
+                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
+                    }
 
                     $grGifts[$key]['id'] = $gift['id'];
                     $grGifts[$key]['name'] = $gift['name'];
@@ -83,6 +88,11 @@ class FetchIrisEcomBasket extends IrisAction
                 }
             } else {
                 foreach ($grGifts as $key => $gift) {
+                    $product = Product::find($gift['id']);
+                    if ($product) {
+                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
+                    }
+                    
                     $grGifts[$key]['id'] = $gift['id'];
                     $grGifts[$key]['name'] = $gift['name'];
                     $grGifts[$key]['selected'] = Arr::get($gift, 'default', false);

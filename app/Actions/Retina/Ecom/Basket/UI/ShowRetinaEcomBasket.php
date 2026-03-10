@@ -22,6 +22,7 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Http\Resources\Sales\OrderResource;
+use App\Models\Catalogue\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -77,6 +78,10 @@ class ShowRetinaEcomBasket extends RetinaAction
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
             if ($selectedGrGift) {
                 foreach ($grGifts as $key => $gift) {
+                    $product = Product::find($gift['id']);
+                    if ($product) {
+                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
+                    }
 
                     $grGifts[$key]['id'] = $gift['id'];
                     $grGifts[$key]['name'] = $gift['name'];
@@ -88,6 +93,11 @@ class ShowRetinaEcomBasket extends RetinaAction
                 }
             } else {
                 foreach ($grGifts as $key => $gift) {
+                    $product = Product::find($gift['id']);
+                    if ($product) {
+                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
+                    }
+
                     $grGifts[$key]['id'] = $gift['id'];
                     $grGifts[$key]['name'] = $gift['name'];
                     $grGifts[$key]['selected'] = Arr::get($gift, 'default', false);
