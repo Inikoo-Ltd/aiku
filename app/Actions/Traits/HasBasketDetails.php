@@ -46,6 +46,7 @@ trait HasBasketDetails
 
                 $grGiftsData[$key]['id'] = $gift['id'];
                 $grGiftsData[$key]['name'] = $gift['name'];
+
                 if ($selectedGrGift) {
                     $grGiftsData[$key]['selected'] = $gift['id'] == $selectedGrGift;
                 } else {

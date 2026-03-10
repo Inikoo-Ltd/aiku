@@ -85,8 +85,6 @@ class ShopHydrateOffersData implements ShouldBeUnique
                     /** @var OfferAllowance $giftAllowance */
                     $giftAllowance  = $grGiftOffer->offerAllowances()->first();
                     $productOptions = [];
-
-
                     foreach (Arr::get($giftAllowance->data, 'products', []) as $productData) {
                         $product = Product::find($productData['id']);
                         if ($product) {
@@ -113,7 +111,6 @@ class ShopHydrateOffersData implements ShouldBeUnique
         }
 
         Cache::put("gr_amnesty_offer_id_$shop->id", Arr::get($offersData, "gr.amnesty_offer_id"), now()->addHour());
-
         $shop->updateQuietly(['offers_data' => $offersData]);
         $shop->refresh();
     }
