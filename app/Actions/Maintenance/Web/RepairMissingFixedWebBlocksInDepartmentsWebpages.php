@@ -108,7 +108,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
+        // $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
 
         $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
         if (count($countDepartmentDescriptionBlock) == 0) {
