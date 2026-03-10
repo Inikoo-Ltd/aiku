@@ -62,6 +62,10 @@ class OfferResource extends JsonResource
                 ] : null
             ],
         ];
+        
+        if ($offer->type === 'VolGr Gift') {
+            // pass products Free Gift list
+        }
 
         return array_merge($customOfferData, $basicOfferData ?? []);
     }

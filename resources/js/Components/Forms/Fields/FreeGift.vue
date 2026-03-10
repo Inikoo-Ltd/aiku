@@ -23,7 +23,6 @@ library.add(faCircle, faCheckCircle, faTimes, faBoxUp)
 const props = defineProps<{
     form: any
     fieldName: any
-    options: string[] | { label?: string, value: string }[]
     fieldData: {
         fetchRoute: routeType
     }

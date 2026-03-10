@@ -14,7 +14,7 @@ library.add(faBadgeDollar)
 
 const props = defineProps<{
     offer: {
-        type: 'Amount AND Order Number' | 'Category Ordered' | 'Category Quantity Ordered'
+        type: 'Amount AND Order Number' | 'Category Ordered' | 'Category Quantity Ordered' | 'GR Amnesty'
         name: string
         label?: string
         state: string
@@ -58,7 +58,8 @@ const isOfferExpired = (endAt: string) => {
                 </span>
             </template>
             <span v-else>
-                <FontAwesomeIcon icon="fad fa-badge-dollar" class="text-4xl" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="offer.type === 'GR Amnesty'" v-tooltip="ctrans('GR Amnesty')" icon="fas fa-candle-holder" class="text-4xl" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else icon="fad fa-badge-dollar" class="text-4xl" fixed-width aria-hidden="true" />
             </span>
         </div>
 

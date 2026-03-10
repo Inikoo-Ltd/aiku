@@ -22,20 +22,27 @@ const props = defineProps<{
     offerCampaign?: {}
 }>()
 
-function offerRoute(offer: Order) {
+function offerRoute(offer: {}) {
     switch (route().current()) {
         case "grp.org.shops.show.discounts.offers.index":
-        case "grp.org.shops.show.discounts.campaigns.show":
         case "grp.org.shops.show.catalogue.families.show":
             return route(
-                returnRouteOffer(offer),
+                "grp.org.shops.show.discounts.offers.show",
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
-                    props.offerCampaign?.slug,
                     offer.slug])
+        case "grp.org.shops.show.discounts.campaigns.show":
+            return route(
+                returnRouteOffer(offer),
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: (route().params as RouteParams).shop,
+                    offerCampaign: props.offerCampaign?.slug ?? offer.offer_campaign_slug,
+                    offer: offer.slug
+                })
         default:
-            return ""
+            return "#"
     }
 }
 
@@ -45,6 +52,8 @@ function returnRouteOffer(offer: any) {
             return "grp.org.shops.show.discounts.campaigns.gift.show";
         case 'GR Amnesty':
             return "grp.org.shops.show.discounts.campaigns.amnesty.show";
+        case 'Category Quantity Ordered':
+            return "grp.org.shops.show.discounts.campaigns.offer.show";
         default:
             return "grp.org.shops.show.discounts.campaigns.offer.show";
     }
