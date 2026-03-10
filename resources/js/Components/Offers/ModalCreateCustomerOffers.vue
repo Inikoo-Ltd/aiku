@@ -2,7 +2,7 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, reactive, inject } from 'vue'
+import { ref, reactive, inject, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -19,7 +19,6 @@ const props = defineProps<{
         currency_code: string
     }
 }>()
-console.log("[props]", props)
 
 const layout = inject('layout', {})
 console.log("layout", layout)
@@ -36,19 +35,47 @@ const departmentId = ref<number | null>(null)
 const subDepartmentId = ref<number | null>(null)
 const familyId = ref<number | null>(null)
 const collectionId = ref<number | null>(null)
+const filterType = ref<'department' | 'subdepartment' | 'family' | 'collection' | null>(null)
+const selectedFilters = ref<number[]>([])
+const isLoadingSubmit = ref(false)
+
+const shopId = layout?.group?.id
+const shopSlug = props.shop_data.slug
+
+const entityRoutes = {
+    department: {
+        name: 'grp.json.shop.departments',
+        parameters: { shop: shopSlug }
+    },
+    subdepartment: {
+        name: 'grp.json.shop.sub_departments',
+        parameters: { shop: shopId }
+    },
+    family: {
+        name: 'grp.json.shop.families',
+        parameters: { shop: shopId }
+    },
+    collection: {
+        name: 'grp.org.shops.show.catalogue.collections.active.index',
+        parameters: {
+            organisation: 'se',
+            shop: shopId
+        }
+    }
+}
 
 function getEntityFetchRoute(key: string) {
     if (key === 'by_family') {
         return {
             name: 'grp.json.shop.families',
-            parameters: { shop: layout.group.id }
+            parameters: { shop: layout.group?.id }
         }
     }
 
     if (key === 'by_subdepartment') {
         return {
             name: 'grp.json.shop.sub_departments',
-            parameters: { shop: layout.group.id }
+            parameters: { shop: layout.group?.id }
         }
     }
 
@@ -61,15 +88,31 @@ function getEntityFetchRoute(key: string) {
 
 
     if (key === 'by_collection') {
-        return {
-            name: 'grp.json.shop.collection.webpages',
-            parameters: { shop: layout.group.id }
+        const routeConfig = {
+            name: 'grp.org.shops.show.catalogue.collections.active.index',
+            parameters: { organisation: 'se', shop: layout.group?.id }
         }
+
+        console.log('collection route:', route(routeConfig.name, routeConfig.parameters))
+
+        return routeConfig
     }
 
 
 
     return null
+}
+
+const activeFilterRoute = computed(() => {
+    if (!filterType.value) return null
+    return entityRoutes[filterType.value]
+})
+
+const productFetchRoute = {
+    name: 'grp.json.shop.products_for_website_workshop',
+    parameters: {
+        shop: (route().params as any).shop
+    }
 }
 
 const preloadedEntities = reactive<Record<string, any[]>>({})
@@ -94,8 +137,11 @@ const preloadEntityOptions = async (key: string, ids: number[]) => {
         },
 
         by_collection: {
-            name: 'grp.json.shop.collection.webpages',
-            param: layout.group.id
+            name: 'grp.org.shops.show.catalogue.collections.active.index',
+            param: {
+                organisation: 'se',
+                shop: layout.group.id
+            }
         }
     }
 
@@ -114,11 +160,10 @@ const preloadEntityOptions = async (key: string, ids: number[]) => {
     }
 }
 
-const isLoadingSubmit = ref(false)
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.offers.campaigns.store', {
+        route('grp.org.shops.show.discounts.campaigns.campaigns.store_customer', {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se',
@@ -178,12 +223,17 @@ const resetForm = () => {
     subDepartmentId.value = null
     familyId.value = null
 }
-const productFetchRoute = {
-    name: 'grp.json.shop.products_for_website_workshop',
-    parameters: {
-        shop: (route().params as any).shop
-    }
-}
+
+const isFormInvalid = computed(() => {
+    if (!offerCategoryId.value) return true
+    if (!discountPercentage.value) return true
+    return false
+})
+
+watch(filterType, () => {
+    selectedFilters.value = []
+    offerCategoryId.value = null
+})
 </script>
 
 <template>
@@ -191,115 +241,76 @@ const productFetchRoute = {
         <Button :label="trans('Create Customer Offer')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
-            <div class="px-6">
-                <h2 class="text-2xl font-bold mxb-4 text-center">{{ trans('Create Customer Offer') }}</h2>
-                <div class="mt-8 space-y-8">
-                    <!-- <div>
-                        <label class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk" class="text-xs text-red-400" />
-                            {{ trans('Offer name') }}
-                        </label>
+            <div class="p-1 space-y-3">
+                <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Customer Offer') }}</h2>
+                <div class="space-y-3">
 
-                        <PureInput v-model="offerLabel" :placeholder="trans('Enter offer name')" />
-                    </div> -->
+                    <label class="font-semibold">
+                        {{ trans('Apply Discount To') }}
+                    </label>
 
-                    <!-- Product Filters -->
-                    <div class="space-y-4">
+                    <div class="flex flex-wrap gap-4">
 
-                        <div class="font-semibold text-gray-700 border-b pb-2">
-                            <FontAwesomeIcon icon="fas fa-asterisk" class="text-xs text-red-400" />
-                            {{ trans('Filters') }}
-                        </div>
+                        <div v-for="type in ['department', 'subdepartment', 'family', 'collection']" :key="type"
+                            class="flex items-center gap-2">
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <RadioButton v-model="filterType" :value="type" :inputId="type" />
 
-                            <!-- Department -->
-                            <div>
-                                <label class="block font-medium mb-2">
-                                    {{ trans('Department') }}
-                                </label>
-
-                                <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('by_departments')"
-                                    mode="single" v-model="departmentId"
-                                    :initOptions="preloadedEntities.by_departments || []"
-                                    :fetchRoute="getEntityFetchRoute('by_departments')!" valueProp="id" labelProp="name"
-                                    :placeholder="trans('Select department')" />
-                            </div>
-
-                            <!-- Sub Department -->
-                            <div>
-                                <label class="block font-medium mb-2">
-                                    {{ trans('Sub Department') }}
-                                </label>
-
-                                <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('by_subdepartment')"
-                                    mode="single" v-model="subDepartmentId"
-                                    :initOptions="preloadedEntities.by_subdepartment || []"
-                                    :fetchRoute="getEntityFetchRoute('by_subdepartment')!" valueProp="id"
-                                    labelProp="name" :placeholder="trans('Select sub department')" />
-                            </div>
-
-                            <!-- Family -->
-                            <div>
-                                <label class="block font-medium mb-2">
-                                    {{ trans('Family') }}
-                                </label>
-
-                                <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('by_family')" mode="single"
-                                    v-model="familyId" :fetchRoute="getEntityFetchRoute('by_family')!" valueProp="id"
-                                    :initOptions="preloadedEntities.by_family || []" labelProp="name"
-                                    :placeholder="trans('Select family')" />
-                            </div>
-
-
-                            <div>
-                                <label class="block font-medium mb-2">
-                                    {{ trans('Collection') }}
-                                </label>
-
-                                <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('by_collection')" mode="single"
-                                    v-model="collectionId" :initOptions="preloadedEntities.by_collection || []"
-                                    :fetchRoute="getEntityFetchRoute('by_collection')!" valueProp="id" labelProp="name"
-                                    :placeholder="trans('Select Collection')" />
-                            </div>
-
-                            <!-- product filter -->
-                            <div>
-                                <label class="block font-medium mb-2">
-                                    {{ trans('Select Product') }}
-                                </label>
-
-                                <PureMultiselectInfiniteScroll v-model="offerCategoryId" :fetchRoute="productFetchRoute"
-                                    valueProp="id" labelProp="name" :required="true"
-                                    :placeholder="trans('Select product')" />
-                            </div>
-
+                            <label :for="type" class="cursor-pointer">
+                                {{ trans(type) }}
+                            </label>
 
                         </div>
-                    </div>
 
-                    <!-- Discount -->
-                    <div>
-                        <label class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk" class="text-xs text-red-400" />
-                            {{ trans('Percentage Discount') }}
-                        </label>
-
-                        <InputNumber v-model="discountPercentage" inputId="offer_discount" suffix="%" :min="0"
-                            :max="100" class="w-full" :placeholder="trans('Enter percentage')" />
                     </div>
 
                 </div>
+                <div v-if="activeFilterRoute" class="space-y-2">
 
-                <div class="pl-4 mt-8 flex justify-end gap-x-4">
+                    <label class="block font-medium mb-2">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Select ' + filterType) }}
+                    </label>
+
+                    <PureMultiselectInfiniteScroll :key="filterType" v-model="selectedFilters" mode="multiple"
+                        :fetchRoute="activeFilterRoute" valueProp="id" labelProp="name"
+                        :placeholder="trans('Select items')" />
+
+                </div>
+                <div class="space-y-2">
+                    <label class="font-medium">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Select Product') }}
+                    </label>
+
+                    <PureMultiselectInfiniteScroll v-model="offerCategoryId" :fetchRoute="productFetchRoute"
+                        valueProp="id" labelProp="name" :required="true" :placeholder="trans('Select product')" />
+                </div>
+                <div class="space-y-2">
+                    <label class="font-medium flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Minimum purchase amount') }}:
+                    </label>
+                    <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
+                        :currency="props.shop_data.currency_code" locale="en-US"
+                        :placeholder="trans('Enter minimum amount')" />
+                </div>
+                <!-- DISCOUNT -->
+                <div class="space-y-2">
+
+                    <label class="font-medium flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="text-xs text-red-400" />
+                        {{ trans('Percentage Discount') }}
+                    </label>
+
+                    <InputNumber v-model="discountPercentage" inputId="offer_discount" suffix="%" :min="0" :max="100"
+                        class="w-full" :placeholder="trans('Enter percentage')" />
+                </div>
+
+                <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit" :disabled="!offerCategoryId ||
-                            !offerLabel ||
-                            discountPercentage === null ||
-                            (typeOffer === 'quantity' && offerQtyItems === null) ||
-                            (typeOffer === 'amount' && offerAmount === null)
-                            ">
+                    <Button full icon=" fad fa-save" :label="trans('Save')" @click="submitCategoryOffer" class="w-full"
+                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid">
                     </Button>
                 </div>
             </div>
