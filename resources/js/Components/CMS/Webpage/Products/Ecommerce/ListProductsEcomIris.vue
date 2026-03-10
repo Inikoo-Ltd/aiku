@@ -19,6 +19,7 @@ import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
 import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
+import Image from "@/Components/Image.vue"
 
 
 const props = defineProps<{
@@ -536,7 +537,7 @@ watch(
 
 
 
-                    <template v-else-if="products.length">
+                    <template v-else-if="products.length" >
                       <div
                             v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
@@ -555,6 +556,21 @@ watch(
                                 :bestSeller="fieldValue.bestseller" 
                                 :screenType
                             />
+                        </div>
+
+                        <div v-if="fieldValue?.cards" v-for="card in fieldValue?.cards.filter((item) => item.visible)"
+                            class="relative rounded-2xl overflow-hidden min-h-80">
+                            <Image :src="card.image.source" class="absolute inset-0 w-full h-full object-cover" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                            </div>
+                            <!-- Center Content -->
+                            <div
+                                class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
+                                <div v-html="card.text"></div>
+                                <Button class="mt-4"
+                                    :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
+                                    :label="card?.button?.text" />
+                            </div>
                         </div>
                     </template>
 

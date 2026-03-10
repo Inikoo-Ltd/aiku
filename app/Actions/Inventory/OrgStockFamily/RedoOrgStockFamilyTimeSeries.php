@@ -37,8 +37,16 @@ class RedoOrgStockFamilyTimeSeries implements ShouldBeUnique
     public function handle(OrgStockFamily $orgStockFamily, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoice_transaction_has_org_stocks')->where('org_stock_family_id', $orgStockFamily->id)->min('date');
-            $lastInvoicedDate  = DB::table('invoice_transaction_has_org_stocks')->where('org_stock_family_id', $orgStockFamily->id)->max('date');
+            $firstInvoicedDate = DB::table('invoice_transactions')
+                ->join('invoice_transaction_has_org_stocks', 'invoice_transaction_has_org_stocks.invoice_transaction_id', '=', 'invoice_transactions.id')
+                ->where('invoice_transaction_has_org_stocks.org_stock_family_id', $orgStockFamily->id)
+                ->whereNull('invoice_transactions.deleted_at')
+                ->min('invoice_transactions.date');
+            $lastInvoicedDate = DB::table('invoice_transactions')
+                ->join('invoice_transaction_has_org_stocks', 'invoice_transaction_has_org_stocks.invoice_transaction_id', '=', 'invoice_transactions.id')
+                ->where('invoice_transaction_has_org_stocks.org_stock_family_id', $orgStockFamily->id)
+                ->whereNull('invoice_transactions.deleted_at')
+                ->max('invoice_transactions.date');
 
             if (!$firstInvoicedDate) {
                 return;

@@ -270,6 +270,8 @@ class IndexMasterProducts extends GrpAction
             $queryBuilder->where('master_assets.is_main', true);
         }
 
+        $queryBuilder->addSelect('master_assets.mismatch_detected');
+
         return $queryBuilder
             ->defaultSort('master_assets.code')
             ->allowedSorts(['code', 'name', 'used_in', 'sales_grp_currency_external', 'invoices', 'dropshippers', 'listings', 'sold', 'variant_slug'])
@@ -511,6 +513,17 @@ class IndexMasterProducts extends GrpAction
                     [
                         'name'       => $routeName,
                         'parameters' => Arr::only($routeParameters, ['masterShop']),
+                    ],
+                    $suffix
+                ),
+            ),
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index'   =>
+            array_merge(
+                ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters,
                     ],
                     $suffix
                 ),

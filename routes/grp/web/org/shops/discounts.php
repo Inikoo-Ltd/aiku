@@ -20,6 +20,7 @@ use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\Discounts\UI\ShowDiscountsDashboard;
 use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
@@ -31,6 +32,11 @@ Route::name("campaigns.")->prefix('campaigns')
         Route::get('{offerCampaign}/edit-vol-gr-gift', EditVolGrGift::class)->name('edit_vol_gr_gift')->withoutScopedBindings();
         Route::get('{offerCampaign}/create-gr-amnesty-offer', CreateGrAmnesty::class)->name('create_gr_amnesty_offer');
         Route::get('{offerCampaign}/edit-gr-amnesty', EditVolGrGift::class)->name('edit_current_gr_amnesty_offer')->withoutScopedBindings();
+
+        Route::post(
+            '{offerCampaign}/shipping',
+            StoreDiscountShipping::class
+        )->name('campaigns.store_shipping');
     });
 
 Route::name("offers.")->prefix('offers')

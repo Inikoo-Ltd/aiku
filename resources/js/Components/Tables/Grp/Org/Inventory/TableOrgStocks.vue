@@ -149,7 +149,7 @@ function stockFamilyRoute(stock: Stock) {
         </template>
 
         <template #cell(value)="{ item: stock }">
-            {{ locale.currencyFormat(layout.group.currency.code, stock.value) }}
+            {{ locale.currencyFormat(stock.currency_code, stock.value) }}
         </template>
 
         <template #cell(dropshipping_pipe)="{ item: stock }">
@@ -166,8 +166,28 @@ function stockFamilyRoute(stock: Stock) {
             {{ stock.notes ?? "" }}
         </template>
 
+        <template #cell(woc)="{ item }">
+            <span v-if="item.woc !== null" class="tabular-nums">{{ item.woc }}w</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(unit_cost)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.unit_cost) }}</span>
+        </template>
+
+        <template #cell(on_the_way_po_value)="{ item }">
+            <span class="tabular-nums">
+                {{ locale.currencyFormat(item.currency_code, item.on_the_way_po_value) }}
+                <span v-if="item.on_the_way_po_count > 0" class="text-gray-400">({{ item.on_the_way_po_count }})</span>
+            </span>
+        </template>
+
+         <template #cell(stock_value)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.stock_value) }}</span>
+        </template>
+
         <template #cell(sales_grp_currency_external)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat('GBP', item.sales_grp_currency_external) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_grp_currency_external) }}</span>
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">
@@ -217,5 +237,3 @@ function stockFamilyRoute(stock: Stock) {
         </template>
     </Table>
 </template>
-
-
