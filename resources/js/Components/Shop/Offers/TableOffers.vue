@@ -22,20 +22,21 @@ const props = defineProps<{
     offerCampaign?: {}
 }>()
 
-function offerRoute(offer: Order) {
+function offerRoute(offer: {}) {
     switch (route().current()) {
         case "grp.org.shops.show.discounts.offers.index":
         case "grp.org.shops.show.discounts.campaigns.show":
         case "grp.org.shops.show.catalogue.families.show":
             return route(
                 returnRouteOffer(offer),
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    props.offerCampaign?.slug,
-                    offer.slug])
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: (route().params as RouteParams).shop,
+                    offerCampaign: props.offerCampaign?.slug ?? offer.offer_campaign_slug,
+                    offer: offer.slug
+                })
         default:
-            return ""
+            return "#"
     }
 }
 
