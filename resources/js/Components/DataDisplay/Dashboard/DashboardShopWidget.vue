@@ -99,7 +99,7 @@ const registrationsRatio = computed(() => {
 
             <div v-if="registrationsRatio.with_orders > 0" class="flex items-center gap-4 min-h-32 p-4 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105">
                 <div class="text-sm w-full">
-                    <p class="text-lg font-bold mb-1">{{ trans('Registrations with Basket') }}</p>
+                    <p class="text-lg font-bold mb-1">{{ trans('Registrations with product in Basket') }}</p>
                     <p class="flex flex-col">
                         <span class="text-2xl font-bold">
                             {{ data.interval_data.registrations_with_orders?.[interval]?.formatted_value || 0 }}
@@ -117,7 +117,7 @@ const registrationsRatio = computed(() => {
 
             <div v-if="registrationsRatio.without_orders > 0" class="flex items-center gap-4 min-h-32 p-4 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105">
                 <div class="text-sm w-full">
-                    <p class="text-lg font-bold mb-1">{{ trans('Registrations without Basket') }}</p>
+                    <p class="text-lg font-bold mb-1">{{ trans('Registrations with empty Basket') }}</p>
                     <p class="flex flex-col">
                         <span class="text-2xl font-bold">
                             {{ data.interval_data.registrations_without_orders?.[interval]?.formatted_value || 0 }}
