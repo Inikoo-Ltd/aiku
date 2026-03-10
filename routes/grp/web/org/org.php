@@ -68,6 +68,10 @@ Route::prefix("crm")
     ->name("crm.")
     ->group(__DIR__ . "/agents.php");
 
+Route::prefix("crm")
+    ->name("crm.")
+    ->group(__DIR__ . "/chat.php");
+
 Route::get('/show', ShowOrganisation::class)->name('show');
 
 Route::fallback(function () {
