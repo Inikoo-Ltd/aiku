@@ -23,7 +23,6 @@ class GetSnsNotification
 
     public function asController(ServerRequestInterface $request): string
     {
-        Sentry::captureMessage("AWS SNS Notification received");
 
         $message   = Message::fromPsrRequest($request);
         $validator = new MessageValidator();
@@ -46,7 +45,6 @@ class GetSnsNotification
                             'data'      => $messageData
                         ]
                     );
-                    Sentry::captureMessage("AWS SNS Notification processed with message ID: " . $messageId);
 
                     ProcessSesNotification::dispatch($sesNotification);
 

@@ -54,8 +54,6 @@ class DashboardMasterShopSalesInGroupResource extends JsonResource
         $columns = array_merge(
             $columns,
             $this->getDashboardColumnsFromArray($data, [
-                'baskets_created_grp_currency',
-                'baskets_created_grp_currency_minified',
                 'invoices',
                 'invoices_minified',
                 'invoices_delta',

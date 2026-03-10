@@ -42,17 +42,19 @@ class EditVolGrGift extends OrgAction
         }
 
         $productOptions = [];
-        foreach (Arr::get($giftAllowance->data, 'products', []) as $product) {
-            $product = Product::find($product['id']);
+
+        foreach (Arr::get($giftAllowance->data, 'products', []) as $productData) {
+            $product = Product::find($productData['id']);
             if ($product) {
                 $productOptions[] = [
                     'id' => $product->id,
                     'code' => $product->code,
                     'name' => $product->name,
-                    'default' => Arr::get($product, 'default', false),
+                    'default' => Arr::get($productData, 'default', false),
                 ];
             }
         }
+
 
 
         return Inertia::render(
