@@ -19,6 +19,7 @@ use Exception;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Discounts\OfferCampaign;
 
 class EditOffer extends OrgAction
 {
@@ -182,6 +183,27 @@ class EditOffer extends OrgAction
      * @throws Exception
      */
     public function asController(Organisation $organisation, Shop $shop, Offer $offer, ActionRequest $request): Response
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($offer, $request);
+    }
+
+    public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Response
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($offer, $request);
+    }
+
+    public function inGiftCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Response
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($offer, $request);
+    }
+
+    public function inAmnestyCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Response
     {
         $this->initialisationFromShop($shop, $request);
 

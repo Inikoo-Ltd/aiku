@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -105,6 +106,7 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
                 'product_categories.created_at',
                 'product_categories.image_id',
                 'product_categories.updated_at',
+                'product_categories.web_images',
                 'product_categories.is_name_reviewed',
                 'product_categories.is_description_title_reviewed',
                 'product_categories.is_description_reviewed',
@@ -137,6 +139,7 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+            ->where('shops.state', '!=', ShopStateEnum::CLOSED->value)
             ->allowedSorts([
                 'code',
                 'name',
@@ -158,13 +161,13 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
                             $query->orderBy(
                                 DB::raw(
                                     "(
-                                SELECT json_agg(c.name)
-                                FROM collection_has_models chm
-                                JOIN collections c ON chm.collection_id = c.id
-                                WHERE chm.model_id = product_categories.id
-                                AND chm.model_type = 'ProductCategory'
-                                AND c.deleted_at IS NULL
-                            )::text"
+                                        SELECT json_agg(c.name)
+                                        FROM collection_has_models chm
+                                        JOIN collections c ON chm.collection_id = c.id
+                                        WHERE chm.model_id = product_categories.id
+                                        AND chm.model_type = 'ProductCategory'
+                                        AND c.deleted_at IS NULL
+                                    )::text"
                                 ),
                                 $direction
                             );
@@ -200,7 +203,14 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);
 
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+            if ($parent instanceof MasterProductCategory) {
+                $table
+                    ->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+            $table
+                ->column(key: 'image_thumbnail', label: '', type: 'avatar')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'webpage_state', label:['fal', 'fa-browser'], type: 'icon', canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'is_name_reviewed', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'is_description_title_reviewed', label: __('Description Title'), canBeHidden: false, sortable: true, searchable: true)

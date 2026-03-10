@@ -70,6 +70,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $not_for_sale_since
  * @property array<array-key, mixed>|null $web_images
  * @property bool $has_gr_vol_discount
+ * @property bool $mismatch_detected One of master products under it has a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group

@@ -117,6 +117,7 @@ class MasterProductsResource extends JsonResource
             'variant_slug'           => $this->variant_slug,
             'is_variant_leader'      => $this->is_variant_leader,
             'variant_code'           => $this->variant_code,
+            'mismatch_detected'      => $this->mismatch_detected,
             ...$extraField
         ];
     }

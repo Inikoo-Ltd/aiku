@@ -42,20 +42,23 @@ class EditVolGrGift extends OrgAction
         }
 
         $productOptions = [];
-        foreach (Arr::get($giftAllowance->data, 'products', []) as $productID) {
-            $product = Product::find($productID);
+
+        foreach (Arr::get($giftAllowance->data, 'products', []) as $productData) {
+            $product = Product::find($productData['id']);
             if ($product) {
                 $productOptions[] = [
-                    'id'=> $product->id,
-                    'name'=>$product->name,
-                    'default'=>Arr::get($giftAllowance->data, 'default') == $product->id,
+                    'id' => $product->id,
+                    'code' => $product->code,
+                    'name' => $product->name,
+                    'default' => Arr::get($productData, 'default', false),
                 ];
             }
         }
 
 
+
         return Inertia::render(
-            'CreateModel',
+            'EditModel',
             [
                 'title'       => __('Edit Vol/GR Gift'),
                 'breadcrumbs' => $this->getBreadcrumbs($offerCampaign, request()->route()->getName(), request()->route()->originalParameters()),
@@ -65,6 +68,7 @@ class EditVolGrGift extends OrgAction
                         'icon'  => ['fal', 'fa-gift'],
                         'title' => __('Edit Vol/GR Gift')
                     ],
+                    'model'     => __('Offer'),
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -108,19 +112,22 @@ class EditVolGrGift extends OrgAction
                                     ],
                                     "value"      => $productOptions,
                                 ],
-                                'default'  => [
-                                    'hidden' => true,
-                                    'value'  => null
-                                ]
+                                // 'default'  => [
+                                //     'hidden' => true,
+                                //     'value'  => Arr::get($giftAllowance->data, 'default')
+                                // ]
                             ],
                         ],
                     ],
-                    'route'      => [
-                        'name'       => 'grp.models.offer.update_vol_gr_gift',
-                        'parameters' => [
-                            'offer' => $giftOffer->id,
+                    'args'  => [
+                        'updateRoute'      => [
+                            'method'    => 'patch',
+                            'name'       => 'grp.models.offer.update_vol_gr_gift',
+                            'parameters' => [
+                                'offer' => $giftOffer->id,
+                            ],
                         ],
-                    ],
+                    ]
                 ],
 
             ]

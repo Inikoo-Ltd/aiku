@@ -61,7 +61,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
                         set(listState.value, [idTransaction, "quantity"], null)
                     }, 3000)
             },
-            only: ["transactions", "summary", "total_to_pay", "balance", "iris"],
+            only: ["transactions", "summary", "total_to_pay", "balance", "iris", "gr_gifts"],
             preserveScroll: true
         }
     )

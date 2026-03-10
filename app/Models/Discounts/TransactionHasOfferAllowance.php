@@ -35,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $source_alt_id
+ * @property bool $is_gift
  * @property-read \App\Models\Discounts\Offer $offer
  * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
  * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
@@ -51,6 +52,7 @@ class TransactionHasOfferAllowance extends Model
     protected $casts = [
         'data'            => 'array',
         'is_pinned'       => 'boolean',
+        'is_gift'         => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];

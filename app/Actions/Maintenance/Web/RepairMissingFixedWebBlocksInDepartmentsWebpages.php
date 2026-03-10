@@ -108,7 +108,8 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
+        // $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
+        $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
 
         $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
         if (count($countDepartmentDescriptionBlock) == 0) {
@@ -117,6 +118,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         $webpage->refresh();
         $this->setDescriptionWebBlockOnTop($webpage);
+        /* $this->setDescriptionWebBlockHidden($webpage); */
         $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
@@ -164,6 +166,13 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 ->where('id', $key)
                 ->update(['position' => $position]);
         }
+        UpdateWebpageContent::run($webpage);
+    }
+
+    public function setDescriptionWebBlockHidden(Webpage $webpage): void
+    {
+        $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first();
+        $departmentDescriptionWebBlock->update(['show' => false]);
         UpdateWebpageContent::run($webpage);
     }
 

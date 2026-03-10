@@ -15,6 +15,7 @@ use Aws\Sns\MessageValidator;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Psr\Http\Message\ServerRequestInterface;
+use Sentry;
 
 class GetSnsNotification
 {
@@ -22,6 +23,7 @@ class GetSnsNotification
 
     public function asController(ServerRequestInterface $request): string
     {
+
         $message   = Message::fromPsrRequest($request);
         $validator = new MessageValidator();
         if ($validator->isValid($message)) {

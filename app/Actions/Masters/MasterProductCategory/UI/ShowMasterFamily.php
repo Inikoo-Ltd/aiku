@@ -133,16 +133,16 @@ class ShowMasterFamily extends GrpAction
                         fn () => GetMasterProductCategoryShowcase::run($masterFamily)
                     ),
 
-            MasterFamilyTabsEnum::FAMILIES->value =>
-                $this->tab === MasterFamilyTabsEnum::FAMILIES->value
-                    ? fn () => FamiliesResource::collection(
-                        IndexFamilies::run($masterFamily)
-                    )
-                    : Inertia::lazy(
-                        fn () => FamiliesResource::collection(
-                            IndexFamilies::run($masterFamily)
-                        )
-                    ),
+            // MasterFamilyTabsEnum::FAMILIES->value =>
+            //     $this->tab === MasterFamilyTabsEnum::FAMILIES->value
+            //         ? fn () => FamiliesResource::collection(
+            //             IndexFamilies::run($masterFamily)
+            //         )
+            //         : Inertia::lazy(
+            //             fn () => FamiliesResource::collection(
+            //                 IndexFamilies::run($masterFamily)
+            //             )
+            //         ),
 
             MasterFamilyTabsEnum::IMAGES->value =>
                 $this->tab === MasterFamilyTabsEnum::IMAGES->value
@@ -206,6 +206,7 @@ class ShowMasterFamily extends GrpAction
             'Masters/MasterFamily',
             [
                 'title'                   => __('Master family').': '.$masterFamily->code,
+                'mismatch_detected'       => $masterFamily->mismatch_detected,
                 'breadcrumbs'             => $this->getBreadcrumbs(
                     $masterFamily,
                     $request->route()->getName(),
@@ -319,7 +320,7 @@ class ShowMasterFamily extends GrpAction
             ]
         )
             ->table(IndexMailshots::make()->tableStructure(parent: $masterFamily))
-            ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
+            // ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false))
             ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterFamilyTabsEnum::SALES->value))
             ->table(IndexMasterVariant::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::VARIANTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value));
@@ -355,7 +356,6 @@ class ShowMasterFamily extends GrpAction
 
             ];
         };
-
 
         return match ($routeName) {
             'grp.masters.master_shops.show.master_families.show',
@@ -395,6 +395,25 @@ class ShowMasterFamily extends GrpAction
                             'parameters' => $routeParameters
 
 
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_family.mismatch_detected.show',
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index'   =>
+            array_merge(
+                ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop),
+                $headCrumb(
+                    $masterFamily,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_family.mismatch_detected.show',
+                            'parameters' => $routeParameters
                         ]
                     ],
                     $suffix

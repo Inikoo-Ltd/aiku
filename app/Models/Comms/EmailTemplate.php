@@ -17,6 +17,7 @@ use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -44,6 +45,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $organisation_id
  * @property int|null $shop_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
@@ -123,4 +125,29 @@ class EmailTemplate extends Model implements HasMedia, Auditable
         return $this->belongsTo(Media::class, 'screenshot_id');
     }
 
+    // use when testing send email
+    public function dispatchedEmails(): MorphMany
+    {
+        return $this->morphMany(DispatchedEmail::class, 'parent');
+    }
+
+    public function sender(): string
+    {
+        if (app()->environment('production')) {
+            /** @var Shop $parent */
+            $parent = $this->shop;
+            //todo we need to set up sender and very SES etc
+            //   $sender = $parent->senderEmail->email_address;
+            $sender = $parent?->email;
+        } else {
+            $sender = config('app.email_address_in_non_production_env');
+        }
+
+        return $sender;
+    }
+
+    public function senderName(): string
+    {
+        return $this->shop?->name ?? '';
+    }
 }

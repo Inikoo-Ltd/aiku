@@ -28,6 +28,25 @@ const timelineData = computed(() => ({
     hasNextOrder: props.data?.next_order_timeline_position !== null && props.data?.next_order_timeline_position <= 100
 }))
 
+const isClvReasonable = computed(() => {
+    const historic = parseFloat(props.data?.historic_clv_amount || '0')
+    const predicted = parseFloat(props.data?.predicted_clv_amount || '0')
+    const numberOfOrders = props.data?.number_orders || 0
+
+    if (!historic || !predicted || numberOfOrders < 3) {
+        return false
+    }
+
+    if (props.data?.first_order_date) {
+        const daysSinceFirstOrder = (Date.now() - new Date(props.data.first_order_date).getTime()) / (1000 * 60 * 60 * 24)
+        if (daysSinceFirstOrder < 60) {
+            return false
+        }
+    }
+
+    return predicted / historic <= 10
+})
+
 // Tooltips
 const historicTooltip = computed(() => {
     const amount = locale.currencyFormat(props.currencyCode?.code, props.data?.historic_clv_amount || 0)
@@ -85,15 +104,15 @@ const oneYearFromNow = computed(() => {
 </script>
 
 <template>
-    <div :class="['border rounded-lg p-4', { 'hidden': !data?.total_clv_amount }]">
+    <div v-if="data?.number_orders > 0" class="border rounded-lg p-4">
         <div class="flex flex-col gap-2">
-            <div class="box-border">
-                <h3 class="text-lg font-bold">{{ locale.currencyFormat(currencyCode?.code, data?.total_clv_amount || 0) }}
-                </h3>
+            <!-- CLV Header: only shown when data is reasonable -->
+            <div v-if="isClvReasonable" class="box-border">
+                <h3 class="text-lg font-bold">{{ locale.currencyFormat(currencyCode?.code, data?.total_clv_amount || 0) }}</h3>
                 <span class="text-sm">{{ trans('Customer Lifetime Value') }} (CLV)</span>
             </div>
 
-            <!-- Timeline Progress Bar -->
+            <!-- Timeline Progress Bar: always shown -->
             <div class="mb-2">
                 <div class="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
                     <!-- Historic Timeline -->
@@ -138,7 +157,7 @@ const oneYearFromNow = computed(() => {
                         </template>
                     </Tooltip>
 
-                    <!-- Next Order Indicator -->
+                    <!-- Next Order Indicator: always shown when available -->
                     <Tooltip placement="top" v-if="timelineData.hasNextOrder && timelineData.nextOrderPosition">
                         <div
                             class="absolute -top-1 -ml-2 w-4 h-4 bg-red-500 rotate-45 transform z-20 border border-white"
@@ -171,8 +190,8 @@ const oneYearFromNow = computed(() => {
                     </div>
                 </div>
 
-                <!-- CLV Values -->
-                <div class="flex justify-between text-xs mt-2">
+                <!-- CLV Values: only shown when data is reasonable -->
+                <div v-if="isClvReasonable" class="flex justify-between text-xs mt-2">
                     <div class="text-left">
                         <div class="font-semibold text-blue-600">
                             {{ locale.currencyFormat(currencyCode?.code, data?.historic_clv_amount || 0) }}
@@ -195,9 +214,9 @@ const oneYearFromNow = computed(() => {
                 </div>
             </div>
 
-            <!-- Additional Metrics -->
+            <!-- Additional Metrics: always shown -->
             <div class="space-y-2">
-                <div v-if="data?.churn_risk_prediction !== undefined" class="flex justify-between text-xs">
+                <div v-if="isClvReasonable && data?.churn_risk_prediction !== undefined" class="flex justify-between text-xs">
                     <span class="font-semibold">{{ trans('Churn Risk Prediction') }}</span>
                     <span :class="{
                         'text-green-600': data.churn_risk_prediction < 0.3,

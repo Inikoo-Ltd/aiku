@@ -29,7 +29,7 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
             $order = StoreEcomOrder::make()->action($customer);
         }
 
-        $itemInBasket = $order->transactions->where('model_type', 'Product')->where('model_id', $product->id)->first();
+        $itemInBasket = $order->transactions->where('model_type', 'Product')->where('model_id', $product->id)->where('is_gift', false)->first();
         if ($itemInBasket) {
             return RetinaEcomUpdateTransaction::make()->action($itemInBasket, $customer, [
                 'quantity_ordered' => data_get($modelData, 'quantity')

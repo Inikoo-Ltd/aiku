@@ -160,6 +160,7 @@ class StoreInvoiceTransaction extends OrgAction
             'handle_date'                   => ['sometimes'],
             'data'                          => ['sometimes', 'array'],
             'recurring_bill_transaction_id' => ['sometimes'],
+            'is_gift'                       => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {
