@@ -34,23 +34,25 @@ trait WithMasterProductSubNavigation
             ]
         ];
 
+        $isProductRoute = preg_match('/products$/', $currentRoute);
+        $lastStringCheck = $isProductRoute ? 'products' : 'show';
+
         if (in_array($currentRoute, [
-            'grp.masters.master_shops.show.master_products.mismatch_detected.show',
-            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.show',
-            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.show',
-            'grp.masters.master_shops.show.master_departments.show.master_products.show',
-            'grp.masters.master_shops.show.master_families.master_products.show'
+            "grp.masters.master_shops.show.master_products.mismatch_detected.{$lastStringCheck}",
+            "grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.{$lastStringCheck}",
+            "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.{$lastStringCheck}",
+            "grp.masters.master_shops.show.master_departments.show.master_products.{$lastStringCheck}",
+            "grp.masters.master_shops.show.master_families.master_products.{$lastStringCheck}"
         ])) {
             $masterProductRoute = [
-                'name'          => $currentRoute,
+                'name'          => $this->getMasterProductRoute($isProductRoute, $currentRoute),
                 'parameters'    => request()->route()->originalParameters()
             ];
 
             $productInShopRoute = [
-                'name'       => preg_replace('/show$/', 'products', $currentRoute),
+                'name'          => $this->getProductInShopRoute($isProductRoute, $currentRoute),
                 'parameters'    => request()->route()->originalParameters()
             ];
-
         }
 
         return [
@@ -72,5 +74,15 @@ trait WithMasterProductSubNavigation
                 ]
             ],
         ];
+    }
+
+    private function getMasterProductRoute(bool $isProductRoute, string $currentRoute)
+    {
+        return !$isProductRoute ? $currentRoute : preg_replace("/products$/", "show", $currentRoute);
+    }
+
+    private function getProductInShopRoute(bool $isProductRoute, string $currentRoute)
+    {
+        return $isProductRoute ? $currentRoute : preg_replace("/show$/", "products", $currentRoute);
     }
 }
