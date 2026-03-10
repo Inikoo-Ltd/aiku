@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 10 Mar 2026 11:35:17 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 10 Mar 2026 11:53:46 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('transaction_has_offer_allowances', function (Blueprint $table) {
+        Schema::table('transactions', function (Blueprint $table) {
             $table->boolean('is_gift')->default(false)->index();
         });
     }
@@ -21,7 +21,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('transaction_has_offer_allowances', function (Blueprint $table) {
+        Schema::table('transactions', function (Blueprint $table) {
             $table->dropColumn('is_gift');
         });
     }

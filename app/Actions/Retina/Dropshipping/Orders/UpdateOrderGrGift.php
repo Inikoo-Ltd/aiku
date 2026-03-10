@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 10 Mar 2026 10:12:20 Malaysia Time, Kuala Lumpur, Malaysia
@@ -30,7 +31,7 @@ class UpdateOrderGrGift extends OrgAction
 
     public function asController(Order $order, ActionRequest $request): void
     {
-        $this->initialisationFromShop($order->shop,$request);
+        $this->initialisationFromShop($order->shop, $request);
 
         $this->handle($order, $this->validatedData);
     }

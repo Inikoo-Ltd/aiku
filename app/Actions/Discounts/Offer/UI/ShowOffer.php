@@ -128,7 +128,7 @@ class ShowOffer extends OrgAction
 
     public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
     {
-        if($offer->type != "Category Quantity Ordered") {
+        if ($offer->type != "Category Quantity Ordered") {
             abort(404);
         }
 
@@ -140,7 +140,7 @@ class ShowOffer extends OrgAction
 
     public function inGiftCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
     {
-        if($offer->type != "VolGr Gift") {
+        if ($offer->type != "VolGr Gift") {
             abort(404);
         }
 
@@ -150,8 +150,9 @@ class ShowOffer extends OrgAction
         return $this->handle($shop, $offer);
     }
 
-    public function inAmnestyCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer{
-        if($offer->type != "GR Amnesty"){
+    public function inAmnestyCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
+    {
+        if ($offer->type != "GR Amnesty") {
             abort(404);
         }
 
@@ -159,7 +160,7 @@ class ShowOffer extends OrgAction
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $offer);
-    } 
+    }
 
     public function getBreadcrumbs(Offer $offer, string $routeName, array $routeParameters, string|null $suffix = null): array
     {
@@ -177,7 +178,7 @@ class ShowOffer extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.discounts.campaigns.amnesty.show'  => 
+            'grp.org.shops.show.discounts.campaigns.amnesty.show'  =>
             array_merge(
                 ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters),
                 [
@@ -207,7 +208,7 @@ class ShowOffer extends OrgAction
                     ],
                 ]
             ),
-            'grp.org.shops.show.discounts.campaigns.gift.show'  => 
+            'grp.org.shops.show.discounts.campaigns.gift.show'  =>
             array_merge(
                 ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters),
                 [
@@ -237,7 +238,7 @@ class ShowOffer extends OrgAction
                     ],
                 ]
             ),
-            'grp.org.shops.show.discounts.campaigns.offer.show'  => 
+            'grp.org.shops.show.discounts.campaigns.offer.show'  =>
             array_merge(
                 ShowOfferCampaign::make()->getBreadcrumbs($offer->offerCampaign, $routeName, $routeParameters),
                 [

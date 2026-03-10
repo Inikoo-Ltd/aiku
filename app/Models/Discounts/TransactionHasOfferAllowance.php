@@ -25,7 +25,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $discounted_percentage
  * @property string $free_items_value
  * @property string $number_of_free_items
- * @property bool $is_gift
  * @property string|null $info
  * @property bool $is_pinned
  * @property string|null $precursor
@@ -36,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property string|null $source_alt_id
+ * @property bool $is_gift
  * @property-read \App\Models\Discounts\Offer $offer
  * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
  * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign

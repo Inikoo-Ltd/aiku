@@ -99,6 +99,7 @@ class SubmitOrder extends OrgAction
                             [
                                 'quantity_ordered' => 0,
                                 'quantity_bonus'   => 1,
+                                'is_gift'          => true,
                             ]
                         );
 

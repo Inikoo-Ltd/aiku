@@ -97,6 +97,7 @@ class TransactionsResource extends JsonResource
             'transaction_label'         => $this->transaction_label,
             'product_units'             => $this->product_units,
             'is_cut_view'               => $this->is_cut_view,
+            'is_gift'                   => $this->is_gift,
 
 
             'deleteRoute' => $request->user() instanceof User

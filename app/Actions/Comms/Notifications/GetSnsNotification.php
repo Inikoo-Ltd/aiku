@@ -47,7 +47,7 @@ class GetSnsNotification
                         ]
                     );
                     Sentry::captureMessage("AWS SNS Notification processed with message ID: " . $messageId);
-                    
+
                     ProcessSesNotification::dispatch($sesNotification);
 
                 }

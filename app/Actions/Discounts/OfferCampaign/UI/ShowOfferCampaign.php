@@ -100,7 +100,7 @@ class ShowOfferCampaign extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.discounts.campaigns.gift.show' => 
+            'grp.org.shops.show.discounts.campaigns.gift.show' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
@@ -136,7 +136,7 @@ class ShowOfferCampaign extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.discounts.campaigns.amnesty.show' => 
+            'grp.org.shops.show.discounts.campaigns.amnesty.show' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(

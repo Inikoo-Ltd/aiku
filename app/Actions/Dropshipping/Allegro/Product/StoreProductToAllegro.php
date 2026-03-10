@@ -25,7 +25,6 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Currency;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -73,7 +72,7 @@ class StoreProductToAllegro extends RetinaAction
             } catch (\Exception $e) {
                 $res = Str::contains($e->getMessage(), ['Produkt z takimi danymi już istnieje. Skontaktuj się z autorem aplikacji.']);
 
-                if($res) {
+                if ($res) {
                     $proposedProduct = $allegroUser->searchProducts([
                         'phrase' => $portfolio->barcode,
                         'mode' => 'GTIN'
