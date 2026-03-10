@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -138,6 +139,7 @@ class IndexSubDepartmentsNeedReviews extends OrgAction
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+            ->where('shops.state', '!=', ShopStateEnum::CLOSED->value)
             ->allowedSorts([
                 'code',
                 'name',
