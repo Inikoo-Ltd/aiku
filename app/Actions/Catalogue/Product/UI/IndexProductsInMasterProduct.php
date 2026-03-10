@@ -126,7 +126,7 @@ class IndexProductsInMasterProduct extends OrgAction
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'actions', label: __(''), canBeHidden: false);
+                ->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 
