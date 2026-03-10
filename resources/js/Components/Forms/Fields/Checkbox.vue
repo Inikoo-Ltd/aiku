@@ -17,10 +17,10 @@ const props = defineProps<{
         <thead>
             <tr class="text-gray-600 bg-gray-200">
                 <th scope="col" class="py-3.5 pl-4 pr-3 text-left font-semibold tracking-wide">
-                    Label
+                    {{ ctrans("Label") }}
                 </th>
                 <th scope="col" class="px-3 py-3.5 font-semibold tracking-wide text-center">
-                    Value
+                    {{ ctrans("Value") }}
                 </th>
             </tr>
         </thead>
@@ -32,11 +32,13 @@ const props = defineProps<{
                         {{ option.label }}
                     </label>
                 </td>
-                <td class="whitespace-nowrap px-3 text-sm text-gray-500 text-center">
-                    <input v-model="option.value" :id="`item-${index}`"
-                        :name="`item-${index}`" type="checkbox"
-                        :titles="`I'm Interested in ${option.label}`"
-                        class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-gray-500 text-gray-600 focus:ring-gray-600" />
+                <td class="whitespace-nowrap px-3 text-sm text-center">
+                    <input v-model="option.value"
+                        :id="`item-${index}`"
+                        :name="`item-${index}`"
+                        type="checkbox"
+                        xtitles="`I'm Interested in ${option.label}`"
+                        class="h-6 w-6 rounded cursor-pointer border-gray-300 hover:border-[--theme-color-0] text-[--theme-color-0] focus:ring-[--theme-color-0]" />
                 </td>
             </tr>
         </tbody>
