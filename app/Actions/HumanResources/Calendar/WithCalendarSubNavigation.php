@@ -49,7 +49,7 @@ trait WithCalendarSubNavigation
                     'parameters' => $request->route()->originalParameters(),
                 ],
                 'leftIcon' => [
-                    'icon' => ['fal', 'fa-calendar-alt'],
+                    'icon' => ['fal', 'fa-ban'],
                     'tooltip' => __('Restricted Periods'),
                 ],
             ]
