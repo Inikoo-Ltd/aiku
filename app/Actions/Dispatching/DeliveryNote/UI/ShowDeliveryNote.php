@@ -878,33 +878,33 @@ class ShowDeliveryNote extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Delivery Instructions"),
+                    "label"       => __("Shipping label message") . ' ('  . __("Customer") . ')',
                     "note"        => $deliveryNote->shipping_notes ?? '',
-                    "information" => __("This note will be printed in the shipping label. Both customer and staff can edit this note."),
+                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
                     "editable"    => true,
                     "bgColor"     => "#38bdf8",
                     "field"       => "shipping_notes"
                 ],
                 [
-                    "label"       => __("Customer"),
+                    "label"       => __("Customer's note"),
                     "note"        => $deliveryNote->customer_notes ?? '',
                     "information" => __("This note is from customer in the platform. Not editable."),
                     "editable"    => false,
                     "bgColor"     => "#FF7DBD",
                     "field"       => "customer_notes"
                 ],
+                // [
+                //     "label"       => __("Public"),
+                //     "note"        => $deliveryNote->public_notes ?? '',
+                //     "information" => __("This note will be visible to public, both staff and the customer can see."),
+                //     "editable"    => true,
+                //     "bgColor"     => "#94DB84",
+                //     "field"       => "public_notes"
+                // ],
                 [
-                    "label"       => __("Public"),
-                    "note"        => $deliveryNote->public_notes ?? '',
-                    "information" => __("This note will be visible to public, both staff and the customer can see."),
-                    "editable"    => true,
-                    "bgColor"     => "#94DB84",
-                    "field"       => "public_notes"
-                ],
-                [
-                    "label"       => __("Private"),
+                    "label"       => __("Order private note"),
                     "note"        => $deliveryNote->internal_notes ?? '',
-                    "information" => __("This note is only visible to staff members. You can communicate each other about this delivery note."),
+                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
                     "editable"    => true,
                     "bgColor"     => "#FCF4A3",
                     "field"       => "internal_notes"

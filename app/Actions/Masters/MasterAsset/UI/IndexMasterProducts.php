@@ -274,7 +274,21 @@ class IndexMasterProducts extends GrpAction
 
         return $queryBuilder
             ->defaultSort('master_assets.code')
-            ->allowedSorts(['code', 'name', 'used_in', 'sales_grp_currency_external', 'invoices', 'dropshippers', 'listings', 'sold', 'variant_slug'])
+            ->allowedSorts([
+                'code',
+                'name',
+                'used_in',
+                'sales_grp_currency_external',
+                'invoices',
+                'dropshippers',
+                'listings',
+                'sold',
+                'variant_slug',
+                'master_department_code',
+                'master_sub_department_code',
+                'master_family_code',
+                'used_in'
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -345,7 +359,7 @@ class IndexMasterProducts extends GrpAction
                     ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), sortable: true)
                     ->column(key: 'master_family_code', label: __('M. Family'), sortable: true)
                     ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), sortable: true)
-                    ->column(key: 'actions', label: __('Actions'), sortable: true)
+                    ->column(key: 'actions', label: __('Actions'), sortable: false)
                     ->defaultSort('code');
             }
         };
@@ -368,6 +382,7 @@ class IndexMasterProducts extends GrpAction
         $familyId        = null;
         $shopsData       = null;
         $modelNavigation = [];
+        $hideBulkEdit    = false;
         if ($this->parent instanceof Group) {
             $model      = '';
             $icon       = [
@@ -398,9 +413,22 @@ class IndexMasterProducts extends GrpAction
             $shopsData     = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         } elseif ($this->parent instanceof MasterProductCategory) {
             $masterShop = $this->parent->masterShop;
+            $hideBulkEdit = true;
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $subNavigation   = $this->getMasterDepartmentSubNavigation($this->parent);
                 $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
+
+                $title           = $this->parent->name;
+                $icon            = [
+                    'icon'  => ['fal', 'fa-folder-tree'],
+                    'title' => __('Master Department')
+                ];
+                $afterTitle      = [
+                    'label' => __('Master Products')
+                ];
+                $iconRight       = [
+                    'icon' => 'fal fa-cube',
+                ];
             } elseif ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 // TODO FOLLOW THIS AND PLACE IT UNDER ALL X IN SHOPS
                 $familyId        = $this->parent->id;
@@ -408,8 +436,8 @@ class IndexMasterProducts extends GrpAction
                 $title           = $this->parent->name;
                 $model           = '';
                 $icon            = [
-                    'icon'  => ['fal', 'fa-store-alt'],
-                    'title' => __('Master shop')
+                    'icon'  => ['fal', 'fa-folder'],
+                    'title' => __('Master family')
                 ];
                 $afterTitle      = [
                     'label' => __('Master Products')
@@ -462,6 +490,7 @@ class IndexMasterProducts extends GrpAction
                 'masterProductCategoryId' => $this->parent->id,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
+                'hide_bulk_edit'          => $hideBulkEdit,
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => MasterProductsTabsEnum::navigation(),

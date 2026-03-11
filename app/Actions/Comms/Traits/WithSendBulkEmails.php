@@ -129,6 +129,7 @@ trait WithSendBulkEmails
             'payment-note' => Arr::get($additionalData, 'payment_note'),
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
             'preview-amount' => Arr::get($additionalData, 'preview_amount'),
+            'invoice-date-change-blade' => Arr::get($additionalData, 'invoice_date_change_blade'),
 
             default => $originalPlaceholder,
         };

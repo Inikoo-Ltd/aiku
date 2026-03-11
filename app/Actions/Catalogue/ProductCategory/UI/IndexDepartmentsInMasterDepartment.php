@@ -18,9 +18,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Services\QueryBuilder;
@@ -140,7 +138,10 @@ class IndexDepartmentsInMasterDepartment extends OrgAction
                 ->withLabelRecord([__('department'),__('departments')])
                 ->withGlobalSearch()
                 ->withEmptyState(
-
+                    [
+                        'title' => __("No departments found under this master department"),
+                        'count' => $parent->stats->number_departments,
+                    ]
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 

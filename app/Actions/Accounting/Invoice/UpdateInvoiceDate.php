@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
+use App\Actions\Comms\Email\SendInvoiceDateChangedNotification;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
@@ -78,8 +79,8 @@ class UpdateInvoiceDate extends OrgAction
                 InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             }
 
-            $oldDateString     = Carbon::parse($oldDate)->toDateString();
-            $newDateString     = Carbon::parse($invoice->date)->toDateString();
+            $oldDateString = Carbon::parse($oldDate)->toDateString();
+            $newDateString = Carbon::parse($invoice->date)->toDateString();
 
             RedoOrganisationTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
             RedoOrganisationTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
@@ -107,12 +108,14 @@ class UpdateInvoiceDate extends OrgAction
                 RedoPlatformTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
             }
 
-            // Todo: Uncomment if needed
-            // foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
-            //     ProcessInvoiceTransactionTimeSeries::run($invoiceTransaction);
-            // }
+            foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $oldDateString)->delay($this->hydratorsDelay);
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $newDateString)->delay($this->hydratorsDelay);
+            }
 
             InvoiceRecordSearch::dispatch($invoice);
+
+            SendInvoiceDateChangedNotification::dispatch($invoice, $oldDate);
         }
 
         return $invoice;

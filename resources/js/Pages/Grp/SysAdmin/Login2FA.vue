@@ -41,7 +41,8 @@ const submit = () => {
 const _inputOneTimePassword = ref(null)
 
 onMounted(async () => {
-    _inputOneTimePassword.value?.focus()
+    if (_inputOneTimePassword.value)
+        _inputOneTimePassword.value?.focus()
 })
 
 const layout = inject("layout", layoutStructure)
@@ -49,27 +50,26 @@ const layout = inject("layout", layoutStructure)
 const isLoadingLogout = ref(false);
 
 const onLogoutAuth = () => {
-	useLogoutAuth(layout.user, {
-		onStart: () => (isLoadingLogout.value = true),
-		onError: () => (isLoadingLogout.value = false),
-	})
+    useLogoutAuth(layout.user, {
+        onStart: () => (isLoadingLogout.value = true),
+        onError: () => (isLoadingLogout.value = false),
+    })
 }
 </script>
 
 <template>
-
     <Head title="Two Factor Authentication" />
-    <form class="space-y-6" @submit.prevent="submit">
+    <form class="relative z-10 space-y-6" @submit.prevent="submit">
         <div>
-            <label for="login" class="block text-sm font-medium text-gray-700">{{ trans('Enter OTP from your Authenticator App') }}</label>
-            <div class="mt-1">
-                <input v-model="form.one_time_password" ref="_inputOneTimePassword" id="one_time_password" name="one_time_password" :autofocus="true"
-                    required
-                    @keydown.enter="submit"
-                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-            </div>
+            <label class="block text-sm font-medium text-gray-700">
+                {{ trans('Enter OTP from your Authenticator App') }}
+            </label>
+
+            <input v-model="form.one_time_password" ref="_inputOneTimePassword" id="one_time_password" required
+                class="mt-1 block w-full px-3 py-2 border rounded-md" />
         </div>
-        <div class="space-y-2 flex">
+
+        <div class="flex space-x-2">
             <Button full @click.prevent="submit"  label="Enter" type="indigo"/>
             <Button :type="'red-r-outline'" :injectStyle="['margin-top:unset', 'margin-left:8px']" @click="onLogoutAuth()">
                 <FontAwesomeIcon :icon="faSignOutAlt" />
@@ -77,7 +77,5 @@ const onLogoutAuth = () => {
             </Button>
         </div>
     </form>
-
     <ValidationErrors />
-
 </template>

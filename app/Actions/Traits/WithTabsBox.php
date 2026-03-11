@@ -8,7 +8,9 @@
 
 namespace App\Actions\Traits;
 
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -22,10 +24,17 @@ trait WithTabsBox
 
         if ($parent instanceof Group) {
             $currency = "_grp_currency";
-        }
-
-        if ($parent instanceof Organisation) {
+            $parent->loadMissing(['organisations' => fn ($q) => $q->where('type', OrganisationTypeEnum::SHOP)->with(['orderHandlingStats', 'currency'])]);
+            $children            = $parent->organisations->where('type', OrganisationTypeEnum::SHOP)->values();
+            $childCurrencySuffix = "_org_currency";
+        } elseif ($parent instanceof Organisation) {
             $currency = "_org_currency";
+            $parent->loadMissing(['shops' => fn ($q) => $q->where('state', ShopStateEnum::OPEN)->with(['orderHandlingStats', 'currency'])]);
+            $children            = $parent->shops->where('state', ShopStateEnum::OPEN)->values();
+            $childCurrencySuffix = "";
+        } else {
+            $children            = collect();
+            $childCurrencySuffix = "";
         }
 
         return [
@@ -38,7 +47,7 @@ trait WithTabsBox
                         'label'       => __('In basket'),
                         'value'       => $parent->orderHandlingStats?->number_orders_state_creating ?? 0,
                         'type'        => 'number',
-                        'icon_data'        => [
+                        'icon_data'   => [
                             'icon'    => 'fal fa-shopping-basket',
                             'tooltip' => __('In Basket'),
                         ],
@@ -47,7 +56,23 @@ trait WithTabsBox
                             'label' => $parent->orderHandlingStats?->{"orders_state_creating_amount$currency"} ?? 0,
                         ]
                     ]
-                ]
+                ],
+                'children'      => $children->map(fn ($child) => [
+                    'label'         => $child->name,
+                    'slug'          => $child->slug,
+                    'currency_code' => $child->currency?->code ?? $currencyCode,
+                    'tabs'          => [
+                        [
+                            'tab_slug'    => 'in_basket',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_creating ?? 0,
+                            'type'        => 'number',
+                            'information' => [
+                                'type'  => 'currency',
+                                'label' => $child->orderHandlingStats?->{"orders_state_creating_amount$childCurrencySuffix"} ?? 0,
+                            ],
+                        ]
+                    ]
+                ])->values()->toArray(),
             ],
             [
                 'label'         => __('Submitted'),
@@ -58,17 +83,16 @@ trait WithTabsBox
                         'label'       => __('Submitted Unpaid'),
                         'value'       => $parent->orderHandlingStats?->number_orders_state_submitted_not_paid ?? 0,
                         'type'        => 'number',
-                        'icon_data'   =>
-                            [
-                                'tooltip' => __('Submitted Unpaid'),
-                                'icon'    => 'fal fa-circle',
-                                'class'   => 'text-gray-500',
-                                'color'   => 'gray',
-                                'app'     => [
-                                    'name' => 'circle',
-                                    'type' => 'font-awesome-5'
-                                ]
-                            ],
+                        'icon_data'   => [
+                            'tooltip' => __('Submitted Unpaid'),
+                            'icon'    => 'fal fa-circle',
+                            'class'   => 'text-gray-500',
+                            'color'   => 'gray',
+                            'app'     => [
+                                'name' => 'circle',
+                                'type' => 'font-awesome-5'
+                            ]
+                        ],
                         'information' => [
                             'label' => $parent->orderHandlingStats?->{"orders_state_submitted_not_paid_amount$currency"} ?? 0,
                             'type'  => 'currency'
@@ -94,7 +118,32 @@ trait WithTabsBox
                             'type'  => 'currency'
                         ]
                     ],
-                ]
+                ],
+                'children'      => $children->map(fn ($child) => [
+                    'label'         => $child->name,
+                    'slug'          => $child->slug,
+                    'currency_code' => $child->currency?->code ?? $currencyCode,
+                    'tabs'          => [
+                        [
+                            'tab_slug'    => 'submitted_unpaid',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_submitted_not_paid ?? 0,
+                            'type'        => 'number',
+                            'information' => [
+                                'type'  => 'currency',
+                                'label' => $child->orderHandlingStats?->{"orders_state_submitted_not_paid_amount$childCurrencySuffix"} ?? 0,
+                            ],
+                        ],
+                        [
+                            'tab_slug'    => 'submitted_paid',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_submitted_paid ?? 0,
+                            'type'        => 'number',
+                            'information' => [
+                                'type'  => 'currency',
+                                'label' => $child->orderHandlingStats?->{"orders_state_submitted_paid_amount$childCurrencySuffix"} ?? 0,
+                            ],
+                        ],
+                    ]
+                ])->values()->toArray(),
             ],
             [
                 'label'         => __('Warehouse'),
@@ -166,7 +215,47 @@ trait WithTabsBox
                             'type'  => 'currency'
                         ]
                     ],
-                ]
+                ],
+                'children'      => $children->map(fn ($child) => [
+                    'label'         => $child->name,
+                    'slug'          => $child->slug,
+                    'currency_code' => $child->currency?->code ?? $currencyCode,
+                    'tabs'          => [
+                        [
+                            'tab_slug'    => 'in_warehouse',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_in_warehouse ?? 0,
+                            'type'        => 'number',
+                            'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_in_warehouse_amount$childCurrencySuffix"} ?? 0],
+                        ],
+                        [
+                            'tab_slug'    => 'handling',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_handling ?? 0,
+                            'type'        => 'number',
+                            'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_handling_amount$childCurrencySuffix"} ?? 0],
+                        ],
+                        [
+                            'tab_slug'    => 'handling_blocked',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_handling_blocked ?? 0,
+                            'type'        => 'number',
+                            'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_handling_blocked_amount$childCurrencySuffix"} ?? 0],
+                        ],
+                        [
+                            'tab_slug'    => 'picked',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_picked ?? 0,
+                            'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_picked_amount$childCurrencySuffix"} ?? 0],
+                        ],
+                        [
+                            'tab_slug'    => 'packing',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_packing ?? 0,
+                            'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_packing_amount$childCurrencySuffix"} ?? 0],
+                        ],
+                        [
+                            'tab_slug'    => 'packed',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_packed ?? 0,
+                            'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_packed_amount$childCurrencySuffix"} ?? 0],
+                        ],
+                    ]
+                ])->values()->toArray(),
             ],
             [
                 'label'         => __('Waiting for dispatch'),
@@ -185,7 +274,19 @@ trait WithTabsBox
                             'type'  => 'currency'
                         ]
                     ],
-                ]
+                ],
+                'children'      => $children->map(fn ($child) => [
+                    'label'         => $child->name,
+                    'slug'          => $child->slug,
+                    'currency_code' => $child->currency?->code ?? $currencyCode,
+                    'tabs'          => [
+                        [
+                            'tab_slug'    => 'finalised',
+                            'value'       => $child->orderHandlingStats?->number_orders_state_finalised ?? 0,
+                            'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_state_finalised_amount$childCurrencySuffix"} ?? 0],
+                        ],
+                    ]
+                ])->values()->toArray(),
             ],
             [
                 'label'         => __('Dispatched Today'),
@@ -202,7 +303,20 @@ trait WithTabsBox
                             'type'  => 'currency'
                         ]
                     ],
-                ]
+                ],
+                'children'      => $children->map(fn ($child) => [
+                    'label'         => $child->name,
+                    'slug'          => $child->slug,
+                    'currency_code' => $child->currency?->code ?? $currencyCode,
+                    'tabs'          => [
+                        [
+                            'tab_slug'    => 'dispatched_today',
+                            'value'       => $child->orderHandlingStats?->number_orders_dispatched_today ?? 0,
+                            'type'        => 'number',
+                            'information' => ['type' => 'currency', 'label' => $child->orderHandlingStats?->{"orders_dispatched_today_amount$childCurrencySuffix"} ?? 0],
+                        ],
+                    ]
+                ])->values()->toArray(),
             ]
         ];
     }

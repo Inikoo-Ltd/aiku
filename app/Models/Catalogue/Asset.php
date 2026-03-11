@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Enums\Catalogue\Asset\AssetHealthRankEnum;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
@@ -47,6 +48,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $model_id
  * @property int|null $current_historic_asset_id
  * @property AssetStateEnum $state
+ * @property AssetHealthRankEnum|null $health_rank
  * @property bool $status
  * @property string $code mirror of the asset model
  * @property string|null $name mirror of the asset model
@@ -110,6 +112,7 @@ class Asset extends Model implements HasMedia
         'status'                 => 'boolean',
         'type'                   => AssetTypeEnum::class,
         'state'                  => AssetStateEnum::class,
+        'health_rank'            => AssetHealthRankEnum::class,
         'unit_relationship_type' => ProductUnitRelationshipType::class,
         'offers_data'            => 'array',
         'tax_category'           => 'array'

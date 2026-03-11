@@ -4,7 +4,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ref, reactive, inject, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
-import { InputNumber, RadioButton, Checkbox } from 'primevue'
+import { InputNumber, RadioButton, Checkbox, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
@@ -37,6 +37,9 @@ const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
 const categoryFilters = ref<number[]>([])
 const collectionFilters = ref<number[]>([])
 const productFilters = ref<number[]>([])
+const dateType = ref<'permanent' | 'interval'>('permanent')
+const startDate = ref<Date | null>(null)
+const endDate = ref<Date | null>(null)
 
 const target = reactive({
     shop: false,
@@ -76,9 +79,22 @@ const productFetchRoute = {
 }
 
 const submitCategoryOffer = () => {
-    // Section: Submit
+
+    const payload = {
+        target,
+        category_type: categoryType.value,
+        category_ids: categoryFilters.value,
+        collection_ids: collectionFilters.value,
+        product_ids: productFilters.value,
+        offer_amount: offerAmount.value,
+        discount_percentage: discountPercentage.value,
+        shops: selectedShops.value
+    }
+
+    console.log("SUBMIT PAYLOAD:", payload)
+    // return
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.campaigns.store_customer', {
+        route('grp.org.shops.show.discounts.campaigns.store_customer', {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se',
@@ -90,7 +106,10 @@ const submitCategoryOffer = () => {
             collection_ids: collectionFilters.value,
             product_ids: productFilters.value,
             offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value
+            discount_percentage: discountPercentage.value,
+            date_type: dateType.value,
+            start_date: startDate.value,
+            end_date: endDate.value
         },
         {
             preserveScroll: true,
@@ -131,6 +150,9 @@ const resetForm = () => {
     target.collection = false
     target.shop = false
     target.product = false
+    dateType.value = 'permanent'
+    startDate.value = null
+    endDate.value = null
 }
 
 const isFormInvalid = computed(() => {
@@ -141,6 +163,15 @@ const isFormInvalid = computed(() => {
         return true
     }
 
+    if (target.product) {
+        if (!productFilters.value.length) return true
+        return false
+    }
+
+    if (target.shop && !selectedShops.value.length) {
+        return true
+    }
+
     if (target.category) {
 
         if (!categoryType.value) return true
@@ -148,16 +179,13 @@ const isFormInvalid = computed(() => {
         if (!categoryFilters.value.length) return true
     }
 
-    if (target.collection) {
-
-        if (!collectionFilters.value.length) return true
+    if (target.collection && !collectionFilters.value.length) {
+        return true
     }
 
-    if (target.product) {
+    if (!startDate.value) return true
 
-        if (!productFilters.value.length) return true
-    }
-
+    if (dateType.value === 'interval' && !endDate.value) return true
     return false
 })
 
@@ -354,6 +382,57 @@ console.log("layout create", layout.organisations.data)
                     <InputNumber v-model="discountPercentage" inputId="offer_discount" suffix="%" :min="0" :max="100"
                         class="w-full" :placeholder="trans('Enter percentage')" />
                 </div>
+
+                <!-- Section: Offer Duration -->
+                <div class="space-y-3">
+
+                    <div class="font-medium flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Offer Duration') }}:
+                    </div>
+
+                    <div class="flex gap-x-4">
+                        <div class="flex items-center gap-x-2">
+                            <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
+                            <label for="permanent">{{ trans('Permanent') }}</label>
+                        </div>
+
+                        <div class="flex items-center gap-x-2">
+                            <RadioButton v-model="dateType" inputId="interval" value="interval" />
+                            <label for="interval">{{ trans('Interval') }}</label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Start Date -->
+                        <div class="space-y-2">
+                            <label class="font-medium mb-2 block">
+                                <FontAwesomeIcon icon="fas fa-asterisk"
+                                    class="font-light text-xs text-red-400 align-middle" />
+                                {{ trans('Start Date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
+                            </label>
+
+                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                                :placeholder="trans('Select start date')" />
+                        </div>
+
+                        <!-- End Date (Only for Interval) -->
+                        <div v-if="dateType === 'interval'" class="space-y-2">
+                            <label class="font-medium mb-2 block">
+                                {{ trans('End Date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
+                            </label>
+
+                            <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                                :minDate="startDate" :placeholder="trans('Select end date')" />
+                        </div>
+                    </div>
+
+                </div>
+
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />

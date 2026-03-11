@@ -134,30 +134,30 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
 
     protected function getOrganisationPeriodMetrics(int $organisationId, Carbon $periodFrom, Carbon $periodTo): array
     {
-        $basketsCreated = DB::table('orders')
-            ->where('organisation_id', $organisationId)
-            ->where('state', OrderStateEnum::CREATING)
-            ->where('created_at', '>=', $periodFrom)
-            ->where('created_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->selectRaw('sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
-            ->first();
+        // $basketsCreated = DB::table('orders')
+        //     ->where('organisation_id', $organisationId)
+        //     ->where('state', OrderStateEnum::CREATING)
+        //     ->where('created_at', '>=', $periodFrom)
+        //     ->where('created_at', '<=', $periodTo)
+        //     ->whereNull('deleted_at')
+        //     ->selectRaw('sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
+        //     ->first();
 
-        $basketsUpdated = DB::table('orders')
-            ->where('organisation_id', $organisationId)
-            ->where('state', OrderStateEnum::CREATING)
-            ->where('updated_at', '>=', $periodFrom)
-            ->where('updated_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->selectRaw('sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
-            ->first();
+        // $basketsUpdated = DB::table('orders')
+        //     ->where('organisation_id', $organisationId)
+        //     ->where('state', OrderStateEnum::CREATING)
+        //     ->where('updated_at', '>=', $periodFrom)
+        //     ->where('updated_at', '<=', $periodTo)
+        //     ->whereNull('deleted_at')
+        //     ->selectRaw('sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
+        //     ->first();
 
-        $deliveryNotes = DB::table('delivery_notes')
-            ->where('organisation_id', $organisationId)
-            ->where('date', '>=', $periodFrom)
-            ->where('date', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->count();
+        // $deliveryNotes = DB::table('delivery_notes')
+        //     ->where('organisation_id', $organisationId)
+        //     ->where('date', '>=', $periodFrom)
+        //     ->where('date', '<=', $periodTo)
+        //     ->whereNull('deleted_at')
+        //     ->count();
 
         $registrationsBase = DB::table('customers')
             ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
@@ -170,11 +170,11 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
         $registrationsWithoutOrders = (clone $registrationsBase)->where('customer_stats.number_orders', '=', 0)->count();
 
         return [
-            'baskets_created_org_currency' => $basketsCreated->org_net_amount,
-            'baskets_created_grp_currency' => $basketsCreated->grp_net_amount,
-            'baskets_updated_org_currency' => $basketsUpdated->org_net_amount,
-            'baskets_updated_grp_currency' => $basketsUpdated->grp_net_amount,
-            'delivery_notes'               => $deliveryNotes,
+            'baskets_created_org_currency' => 0,
+            'baskets_created_grp_currency' => 0,
+            'baskets_updated_org_currency' => 0,
+            'baskets_updated_grp_currency' => 0,
+            'delivery_notes'               => 0,
             'registrations_with_orders'    => $registrationsWithOrders,
             'registrations_without_orders' => $registrationsWithoutOrders,
         ];

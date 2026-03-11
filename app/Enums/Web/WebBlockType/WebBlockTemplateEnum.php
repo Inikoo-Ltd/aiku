@@ -18,6 +18,7 @@ enum WebBlockTemplateEnum: string
     // DO NOT CHANGE. THIS IS USED ON REPAIR FILES. VALUE MUST BE THE SAME AS FUNCTION CALL ON WEBSITE ['live{Value}Snapshot', 'unpublished{Value}Snapshot']
     case SUB_DEPARTMENTS  = 'SubDepartment';
     case LIST_PRODUCTS  = 'Products';
+    case PRODUCT    = 'Product';
     case FAMILIES  = 'Family';
 
     // ONLY CHANGE ARRAY LIST UNDER TEMPLATE CODES PLEASE :)
@@ -39,6 +40,11 @@ enum WebBlockTemplateEnum: string
                 'products-1',
                 'products-2',
             ],
+
+            self::PRODUCT => [
+                'product-1',
+                'product-2'
+            ]
         };
     }
 }

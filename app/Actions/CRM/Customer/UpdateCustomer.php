@@ -9,7 +9,10 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
+use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
@@ -214,6 +217,8 @@ class UpdateCustomer extends OrgAction
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
         UpdateCustomerComms::run($customer->comms, $emailSubscriptionsData);
 
+        $oldRegisteredAt = $customer->registered_at;
+
         $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
 
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -266,6 +271,24 @@ class UpdateCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
+        $registeredAtDate = $customer->registered_at ? \Carbon\Carbon::parse($customer->registered_at)->toDateString() : null;
+
+        if (Arr::has($changes, 'registered_at') && $oldRegisteredAt) {
+            $oldRegisteredAtDate = \Carbon\Carbon::parse($oldRegisteredAt)->toDateString();
+            RedoShopTimeSeries::dispatch($oldRegisteredAtDate, $oldRegisteredAtDate)->delay($this->hydratorsDelay);
+            RedoOrganisationTimeSeries::dispatch($oldRegisteredAtDate, $oldRegisteredAtDate)->delay($this->hydratorsDelay);
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch($oldRegisteredAtDate, $oldRegisteredAtDate)->delay($this->hydratorsDelay);
+            }
+        }
+
+        if ($registeredAtDate) {
+            RedoShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            RedoOrganisationTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            }
+        }
 
         return $customer;
     }
