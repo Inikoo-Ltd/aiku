@@ -10,7 +10,9 @@ use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveType;
 use App\Models\HumanResources\Timesheet;
+use App\Services\HumanResources\LeaveConcurrencyService;
 use App\Services\HumanResources\LeaveTypeResolver;
+use App\Services\HumanResources\RestrictedPeriodService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
@@ -207,16 +209,18 @@ class StoreLeave extends OrgAction
             }
         }
 
-        $existingLeave = Leave::where('employee_id', $this->employee->id)
-            ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
-            ->where(function ($query) use ($startDate, $endDate) {
-                $query->where('start_date', '<=', $endDate)
-                    ->where('end_date', '>=', $startDate);
-            })
-            ->exists();
+        $concurrencyService = new LeaveConcurrencyService();
+        $concurrencyConflicts = $concurrencyService->checkOverlap(
+            $this->employee,
+            $type,
+            $startDate,
+            $endDate,
+            $this->selectedLeaveType
+        );
 
-        if ($existingLeave) {
-            $validator->errors()->add('start_date', __('You already have a leave request overlapping with these dates.'));
+        foreach ($concurrencyConflicts as $conflict) {
+            $validator->errors()->add('start_date', $conflict['message']);
+            break;
         }
 
         $hasTimesheet = Timesheet::where('subject_type', 'Employee')
@@ -246,6 +250,21 @@ class StoreLeave extends OrgAction
                     'to'    => $holidayOverlap->to->format('Y-m-d'),
                 ])
             );
+        }
+
+        $restrictedPeriodService = new RestrictedPeriodService();
+        $restrictedPeriodViolation = $restrictedPeriodService->checkRestrictedPeriod(
+            $this->employee,
+            $type,
+            $startDate,
+            $endDate,
+            $this->selectedLeaveType
+        );
+
+        if ($restrictedPeriodViolation) {
+            if ($restrictedPeriodViolation['strictness'] === 'block') {
+                $validator->errors()->add('start_date', $restrictedPeriodViolation['message']);
+            }
         }
 
         $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);

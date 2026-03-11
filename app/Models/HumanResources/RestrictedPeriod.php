@@ -3,6 +3,7 @@
 namespace App\Models\HumanResources;
 
 use App\Models\SysAdmin\Organisation;
+use DateTimeInterface;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,11 +14,16 @@ class RestrictedPeriod extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'start_date'              => 'date',
-        'end_date'                => 'date',
+        'start_date'              => 'date:Y-m-d',
+        'end_date'                => 'date:Y-m-d',
         'is_active'               => 'boolean',
         'allow_superuser_override' => 'boolean',
     ];
+
+    protected function serializeDate(DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d');
+    }
 
     public function organisation(): BelongsTo
     {

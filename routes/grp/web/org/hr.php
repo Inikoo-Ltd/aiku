@@ -195,6 +195,25 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::post('{leave}', UpdateLeave::class)->name('update');
 });
 
+Route::prefix('restricted-periods')->as('restricted_periods.')->group(function () {
+    Route::get('', \App\Actions\HumanResources\RestrictedPeriods\IndexRestrictedPeriods::class)->name('index');
+    Route::post('', \App\Actions\HumanResources\RestrictedPeriods\StoreRestrictedPeriod::class)->name('store');
+    Route::patch('{restrictedPeriod}', \App\Actions\HumanResources\RestrictedPeriods\UpdateRestrictedPeriod::class)->name('update');
+    Route::delete('{restrictedPeriod}', \App\Actions\HumanResources\RestrictedPeriods\DeleteRestrictedPeriod::class)->name('delete');
+    Route::post('{restrictedPeriod}/targets', \App\Actions\HumanResources\RestrictedPeriods\StoreRestrictedPeriodTarget::class)->name('targets.store');
+    Route::delete('{restrictedPeriod}/targets/{restrictedPeriodTarget}', \App\Actions\HumanResources\RestrictedPeriods\DeleteRestrictedPeriodTarget::class)->name('targets.delete');
+    Route::post('exceptions', \App\Actions\HumanResources\RestrictedPeriods\StoreRestrictedException::class)->name('exceptions.store');
+});
+
+Route::prefix('leave-concurrency-rules')->as('leave_concurrency_rules.')->group(function () {
+    Route::get('', \App\Actions\HumanResources\Concurrency\IndexLeaveConcurrencyRules::class)->name('index');
+    Route::post('', \App\Actions\HumanResources\Concurrency\StoreLeaveConcurrencyRule::class)->name('store');
+    Route::patch('{leaveConcurrencyRule}', \App\Actions\HumanResources\Concurrency\UpdateLeaveConcurrencyRule::class)->name('update');
+    Route::delete('{leaveConcurrencyRule}', \App\Actions\HumanResources\Concurrency\DeleteLeaveConcurrencyRule::class)->name('delete');
+    Route::post('{leaveConcurrencyRule}/targets', \App\Actions\HumanResources\Concurrency\StoreLeaveConcurrencyTarget::class)->name('targets.store');
+    Route::delete('{leaveConcurrencyRule}/targets/{leaveConcurrencyTarget}', \App\Actions\HumanResources\Concurrency\DeleteLeaveConcurrencyTarget::class)->name('targets.delete');
+});
+
 Route::prefix('adjustments')->as('adjustments.')->group(function () {
     Route::get('dashboard', \App\Actions\HumanResources\AttendanceAdjustment\UI\DashboardAdjustments::class)->name('dashboard');
     Route::get('', IndexAttendanceAdjustmentsAdmin::class)->name('index');
