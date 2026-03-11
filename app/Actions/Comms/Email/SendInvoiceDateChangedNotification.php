@@ -35,6 +35,10 @@ class SendInvoiceDateChangedNotification extends OrgAction
         /** @var Outbox $outbox */
         $outbox = $invoice->shop->outboxes()->where('code', OutboxCodeEnum::INVOICE_DATE_CHANGED->value)->first();
 
+        if (!$outbox) {
+            return;
+        }
+
         $customer = $invoice->customer;
 
         $previousDate = Carbon::parse($previousDate)->format('Y-m-d');
