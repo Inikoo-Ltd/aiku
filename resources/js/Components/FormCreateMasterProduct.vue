@@ -96,6 +96,7 @@ const form = useForm({
     trade_units: [
 
     ],
+    is_for_sale : true,
     is_minion_variant: false,
     image: null,
     shop_products: null,
@@ -525,22 +526,45 @@ const successEditTradeUnit = (data) => {
                                 {{ form.errors.code.join(", ") }}
                             </small>
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">
-                                {{trans('Is Follower')}} 
-                                <FontAwesomeIcon
-                                    :icon="faInfoCircle"
-                                    class="text-xs text-gray-400 ml-1"
-                                    v-tooltip="trans(
-                                        'Is Follower indicates that this product is a follower item and will not generate its own webpage.'
-                                    )"
-                                />
-                            </label>
-                            <Toggle v-model="form.is_minion_variant" />
-                            <small v-if="form.errors.is_minion_variant" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
-                                {{ form.errors.is_minion_variant.join(", ") }}
-                            </small>
+                        <div class="flex gap-16">
+                            <div>
+                                
+                                <label class="block text-xs font-medium text-gray-600 mb-1">
+                                    {{trans('Is Follower')}} 
+                                    <FontAwesomeIcon
+                                        :icon="faInfoCircle"
+                                        class="text-xs text-gray-400 ml-1"
+                                        v-tooltip="trans(
+                                            'Is Follower indicates that this product is a follower item and will not generate its own webpage.'
+                                        )"
+                                    />
+                                </label>
+                                <Toggle v-model="form.is_minion_variant" />
+                                <small v-if="form.errors.is_minion_variant" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                    <FontAwesomeIcon :icon="faCircleExclamation" />
+                                    {{ form.errors.is_minion_variant.join(", ") }}
+                                </small>
+                            </div>
+                            <div>
+
+                                <label class="block text-xs font-medium text-gray-600 mb-1">
+                                    {{trans('Is For Sale')}} 
+                                    <FontAwesomeIcon
+                                        :icon="faInfoCircle"
+                                        class="text-xs text-gray-400 ml-1"
+                                        v-tooltip="trans(
+                                            'Is Follower indicates that this product is a follower item and will not generate its own webpage.'
+                                        )"
+                                    />
+                                </label>
+                                <Toggle v-model="form.is_for_sale" />
+                                <small v-if="form.errors.is_for_sale" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                    <FontAwesomeIcon :icon="faCircleExclamation" />
+                                    {{ form.errors.is_for_sale.join(", ") }}
+                                </small>
+                            </div>
+
+
                         </div>
 
                         <div>

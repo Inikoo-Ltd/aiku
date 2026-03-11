@@ -107,6 +107,7 @@ class IndexOffers extends OrgAction
             'offers.state',
             'offers.code',
             'offers.name',
+            'offers.type',
             'offer_campaigns.slug as offer_campaign_slug',
             'shops.slug as shop_slug',
             'shops.name as shop_name',
@@ -142,7 +143,7 @@ class IndexOffers extends OrgAction
 
         return $query->defaultSort('offers.id')
             ->select($selects)
-            ->allowedSorts(['id','code', 'name', 'orders', 'invoices', 'sales_grp_currency_external'])
+            ->allowedSorts(['id','code', 'created_at', 'name', 'orders', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

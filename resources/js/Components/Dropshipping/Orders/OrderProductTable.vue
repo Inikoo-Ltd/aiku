@@ -390,8 +390,15 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             <template #cell(quantity_ordered)="{ item, proxyItem }">
 
                 <div class="flex items-center justify-end gap-2">
+                    <div v-if="item.is_gift">
+                        {{ locale.number(item.quantity_bonus) }}
+                        <span v-tooltip="ctrans('Quantity of free gift')">
+                            <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
+                        </span>
+                    </div>
+
                     <!-- Editable when creating and not in edit mode -->
-                    <div v-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id) && !is_shop_external"
+                    <div v-else-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id) && !is_shop_external"
                         class="w-fit flex gap-x-2">
                         <NumberWithButtonSave
                             :modelValue="Number(item.quantity_ordered)"
@@ -439,8 +446,22 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                 </div>
             </template>
 
+            <!-- Section: Price -->
+            <template #cell(price)="{ item }">
+                <div v-if="item.is_gift">
+
+                </div>
+                <div v-else class="flex justify-end">
+                    {{ locale.currencyFormat(item.currency_code || "", item.price) }}
+                </div>
+            </template>
+
+            <!-- Section: Net Amount -->
             <template #cell(net_amount)="{ item }">
-                <div class="flex justify-end">
+                <div v-if="item.is_gift">
+
+                </div>
+                <div v-else class="flex justify-end">
                     <div v-if="editingIds.has(item.id)" class="">
                         <!-- Original price tag -->
                         <div
@@ -461,7 +482,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
                             <Button
-                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external"
+                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift"
                                 @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
                                 v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
                                 :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400" />

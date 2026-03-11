@@ -114,7 +114,8 @@ const resetForm = () => {
 
                         <div class="pl-4">
                             <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
-                                currency="SEK" locale="en-US" :placeholder="trans('Enter minimum amount')" />
+                                :currency="props.shop_data.currency_code" locale="en-US"
+                                :placeholder="trans('Enter minimum amount')" />
                         </div>
                     </div>
 
@@ -137,7 +138,9 @@ const resetForm = () => {
                     <div class="grid grid-cols-2 gap-x-6 ">
                         <div>
                             <label class="font-medium mb-2 flex items-center gap-x-1">
-                                {{ trans('Start date') }} <InformationIcon :information="trans('If start date is empty, will start immediately')" />:
+                                {{ trans('Start date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
                             </label>
                             <div class="pl-4">
                                 <DatePicker v-model="startDate" showButtonBar showIcon />
@@ -146,7 +149,9 @@ const resetForm = () => {
 
                         <div>
                             <label class="font-medium mb-2 flex items-center gap-x-1">
-                                {{ trans('End date') }} <InformationIcon :information="trans('If end date is empty, will treat as permanent')" />:
+                                {{ trans('End date') }}
+                                <InformationIcon
+                                    :information="trans('If end date is empty, will treat as permanent')" />:
                             </label>
                             <div class="pl-4">
                                 <DatePicker v-model="endDate" showButtonBar showIcon />
@@ -154,7 +159,7 @@ const resetForm = () => {
                         </div>
                     </div>
 
-                    
+
                     <!-- Discount -->
                     <div>
                         <label class="font-medium mb-2 flex items-center gap-x-1">
@@ -171,13 +176,10 @@ const resetForm = () => {
                 <div class="pl-4 mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
                     <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit"
-                        :disabled="
-                            !offerLabel
+                        :isLoading="isLoadingSubmit" :disabled="!offerLabel
                             || !discountPercentage
                             || (!offerAmount)
-                        "
-                    />
+                            " />
                 </div>
 
             </div>

@@ -22,6 +22,7 @@ class GetSnsNotification
 
     public function asController(ServerRequestInterface $request): string
     {
+
         $message   = Message::fromPsrRequest($request);
         $validator = new MessageValidator();
         if ($validator->isValid($message)) {

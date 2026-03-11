@@ -46,6 +46,7 @@ const model = defineModel()
                     required
                     :noToday
                     :min-date="new Date()"
+                    :timePicker="true"
                 />
             </div>
         </div>

@@ -12,6 +12,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 trait WithAllegroApiServices
@@ -70,6 +71,17 @@ trait WithAllegroApiServices
             Log::error('Allegro API Request failed: ' . $e->getMessage());
             throw ValidationException::withMessages(['message' => $e->getMessage()]);
         }
+    }
+
+    public function sanitizeAllegroDescription(?string $content): string
+    {
+        if (!$content) {
+            return "<p>".__("No description available")."</p>";
+        }
+
+        $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+
+        return strip_tags($content, '<b><p><br>');
     }
 
     // -------------------------------------------------------------------------
@@ -401,5 +413,44 @@ trait WithAllegroApiServices
         return $this->makeApiRequest('GET', "/sale/matching-categories", [], [
             'name' => $name
         ]);
+    }
+
+    public function createShippingRates(array $data): array
+    {
+        return $this->makeApiRequest('POST', '/sale/shipping-rates', [
+            'id' => Str::uuid(),
+            'name'  => Arr::get($data, 'name', 'Default shipping rates'),
+            'rates' => Arr::get($data, 'rates', []),
+        ]);
+    }
+
+    public function createReturnPolicy(array $data): array
+    {
+        $data = [
+            'name'             => Arr::get($data, 'name', 'Default return policy'),
+            'availability'     => [
+                'range' => 'FULL'
+            ],
+            'returnCost'       => [
+                'coveredBy' => Arr::get($data, 'return_cost_covered_by', 'SELLER'),
+            ],
+            'address'          => [
+                'name'        => Arr::get($data, 'address.name'),
+                'street'      => Arr::get($data, 'address.street'),
+                'city'        => Arr::get($data, 'address.city'),
+                'postCode'    => Arr::get($data, 'address.post_code'),
+                'countryCode' => Arr::get($data, 'address.country_code', 'PL'),
+            ],
+            'withdrawalPeriod' => "P14D",
+            'options' => [
+                'cashOnDeliveryNotAllowed' => true,
+                'freeAccessoriesReturnRequired' => false,
+                'refundLoweredByReceivedDiscount' => false,
+                'businessReturnAllowed' => false,
+                'collectBySellerOnly' => false
+            ]
+        ];
+
+        return $this->makeApiRequest('POST', '/after-sales-service-conditions/return-policies', $data);
     }
 }

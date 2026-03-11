@@ -57,7 +57,7 @@ class ProposeAllegroProduct
                         'items' => [
                             [
                                 'type'    => 'TEXT',
-                                'content' => $portfolio->customer_description ?? ''
+                                'content' => $allegroUser->sanitizeAllegroDescription($portfolio->customer_description)
                             ]
                         ]
                     ]
@@ -114,7 +114,8 @@ class ProposeAllegroProduct
             switch (Str::upper($paramType)) {
                 case 'DICTIONARY':
                     $dictValues = collect($param['dictionary'] ?? [])
-                        ->filter(fn($d) =>
+                        ->filter(
+                            fn ($d) =>
                             empty($d['dependsOnValueIds']) ||
                             !empty(array_intersect($d['dependsOnValueIds'], $matchedValueIds))
                         )
@@ -136,11 +137,11 @@ class ProposeAllegroProduct
 
                     $entry['valuesIds'] = [$matchedDictId];
 
-                    if($customValuesEnabled) {
+                    if ($customValuesEnabled) {
                         $entry['values'] = [$value];
                     }
 
-                    if($ambiguousValueId) {
+                    if ($ambiguousValueId) {
                         $entry['ambiguousValueId'] = $ambiguousValueId;
                     }
 
@@ -149,7 +150,9 @@ class ProposeAllegroProduct
                 case 'INTEGER':
                 case 'FLOAT':
                     $numericValue = is_numeric($value) ? $value : null;
-                    if ($numericValue === null) continue 2;
+                    if ($numericValue === null) {
+                        continue 2;
+                    }
                     $entry['values'] = [(string) $numericValue];
 
                     if (!empty($restrictions['allowedUnits'])) {
@@ -189,7 +192,7 @@ class ProposeAllegroProduct
             'width'       => $l,
             'height'      => $h,
             'depth'       => $product->depth ?? null,
-            'material'    => $product->material ?? null,
+            'material'    => 'Mix',
             'model'       => $product->family?->name ?? null,
             'mpn'         => $product->mpn ?? null,         // Manufacturer Part Number
             'sku'         => $product->code ?? null,
@@ -208,11 +211,11 @@ class ProposeAllegroProduct
             'width'    => ['width', 'szerokosc', 'szerokość'],
             'height'   => ['height', 'wysokosc', 'wysokość'],
             'depth'    => ['depth', 'glebokosc', 'głębokość', 'length', 'dlugosc'],
-            'material' => ['material', 'materiał'],
+            'material'   => ['material', 'materiał', 'skład', 'sklad', 'composition', 'ingredients'],
             'model'    => ['model', 'nazwa handlowa'],
             'mpn'      => ['mpn', 'part number', 'numer katalogowy'],
             'sku'      => ['sku', 'code', 'reference'],
-            'condition'=> ['stan'],
+            'condition' => ['stan'],
         ];
 
         foreach ($keywordMap as $attribute => $keywords) {

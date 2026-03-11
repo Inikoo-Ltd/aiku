@@ -172,8 +172,7 @@ const onScroll = () => {
     <div id="product-render" class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
-                :screenType />
+            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screenType />
 
             <!-- Product Image -->
             <component :is="product.canonical_url || product.url ? LinkIris : 'div'"

@@ -142,43 +142,52 @@ watch(
                     </LinkIris>!
                 </span>
 
-                <!-- Section: GR Amnesty (all users have GR) -->
-                <span v-if="layout.offer_data.amnesty" class="text-yellow-300 text-xs inline-flex items-center gap-x-1">
-                    <span class="">{{ ctrans('Gold Reward Amnesty') }}</span>
-                    <FontAwesomeIcon icon="fas fa-candle-holder" class="" fixed-width aria-hidden="true" />
-                    <span class="text-xs">({{ ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout.offer_data.amnesty_until, { formatTime: 'MMM do' }) }) }})</span>
-                </span>
+                <div  v-if="layout.retina?.type !== 'b2b'">
+                    <!-- Section: GR Amnesty (all users have GR) -->
+                    <span v-if="layout.offer_data.amnesty"
+                        class="text-yellow-300 text-xs inline-flex items-center gap-x-1">
+                        <span class="">{{ ctrans('Gold Reward Amnesty') }}</span>
+                        <FontAwesomeIcon icon="fas fa-candle-holder" class="" fixed-width aria-hidden="true" />
+                        <span class="text-xs">({{ ctrans('Until :amnestyUntil', {
+                            amnestyUntil:
+                                useFormatTime(layout.offer_data.amnesty_until, { formatTime: 'MMM do' }) }) }})</span>
+                    </span>
 
-                <!-- Section: GR status -->
-                <span v-else-if="layout.offer_data?.type === 'gr'" class="text-yellow-500 inline-flex items-center gap-x-1">
-                    {{ layout.offer_data?.label }}
-                    <GoldReward>
-                        <template #default>
-                            <div>
-                                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width aria-hidden="true" />
-                                <div class="ml-1 inline-block align-middle w-20 text-xxs rounded-sm h-3 mt-1.5 bg-gray-200 relative overflow-hidden mb-2">
-                                    <div class="absolute  left-0   top-0 h-full transition-all duration-1000 ease-in-out"
-                                        :class="true ? 'xshimmer bg-green-500' : 'bg-green-500'"
-                                        :style="{
-                                            width: true ? layout.offer_data?.meter?.[0]/layout.offer_data?.meter?.[1] * 100 + '%' : '100%'
-                                        }"
-                                    />
-                                    
-                                    <div class="absolute inset-0 flex items-center justify-center text-xxs font-medium text-black">
-                                        {{ Number(layout.offer_data?.meter?.[0]).toFixed(0) }} / {{ Number(layout.offer_data?.meter?.[1]).toFixed(0) }} days
+                    <!-- Section: GR status -->
+                    <span v-else-if="layout.offer_data?.type === 'gr'"
+                        class="text-yellow-500 inline-flex items-center gap-x-1">
+                        {{ layout.offer_data?.label }}
+                        <GoldReward>
+                            <template #default>
+                                <div>
+                                    <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
+                                        aria-hidden="true" />
+                                    <div
+                                        class="ml-1 inline-block align-middle w-20 text-xxs rounded-sm h-3 mt-1.5 bg-gray-200 relative overflow-hidden mb-2">
+                                        <div class="absolute  left-0   top-0 h-full transition-all duration-1000 ease-in-out"
+                                            :class="true ? 'xshimmer bg-green-500' : 'bg-green-500'" :style="{
+                                                width: true ? layout.offer_data?.meter?.[0] / layout.offer_data?.meter?.[1] * 100 + '%' : '100%'
+                                            }" />
+
+                                        <div
+                                            class="absolute inset-0 flex items-center justify-center text-xxs font-medium text-black">
+                                            {{ Number(layout.offer_data?.meter?.[0]).toFixed(0) }} / {{
+                                                Number(layout.offer_data?.meter?.[1]).toFixed(0) }} days
+                                        </div>
+
                                     </div>
-                                    
                                 </div>
-                            </div>
-                        </template>
-                    </GoldReward>
-                </span>
+                            </template>
+                        </GoldReward>
+                    </span>
 
-                <span v-if="layout.offer_data?.type === 'fob'" class="text-yellow-500">
-                    {{ layout.offer_data?.label }}
-                    <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
-                </span>
+                    <span v-if="layout.offer_data?.type === 'fob'" class="text-yellow-500">
+                        {{ layout.offer_data?.label }}
+                        <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
+                    </span>
 
+
+                </div>
                 
             </div>
             <div v-else-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"

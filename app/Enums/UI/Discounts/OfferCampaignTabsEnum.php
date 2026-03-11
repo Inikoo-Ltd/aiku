@@ -20,6 +20,8 @@ enum OfferCampaignTabsEnum: string
     case OVERVIEW            = 'overview';
     case OFFERS              = 'offers';
     case HISTORY             = 'history';
+    case GR_GIFT             = 'gr_gift';
+    case GR_AMNESTY          = 'gr_amnesty';
 
     public function blueprint(): array
     {
@@ -37,6 +39,14 @@ enum OfferCampaignTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon-only',
                 'align' => 'right',
+            ],
+            OfferCampaignTabsEnum::GR_GIFT => [
+                'title' => __('Vol/GR_Gift'),
+                'icon'  => 'fal fa-gift',
+            ],
+            OfferCampaignTabsEnum::GR_AMNESTY => [
+                'title' => __('GR Amnesty'),
+                'icon'  => 'fal fa-candle-holder',
             ],
         };
     }

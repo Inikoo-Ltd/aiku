@@ -32,10 +32,13 @@ const props = defineProps<{
         navigation: {}
     }
     offers: {}
+    gr_gift: {}
+    gr_amnesty: {}
     overview: {
         offerCampaign: {}
         stats: {}
     }
+    data: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -44,12 +47,13 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         overview: CampaignOverview,
-        offers: TableOffers
+        offers: TableOffers,
+        gr_gift: TableOffers,
+        gr_amnesty: TableOffers
     }
 
     return components[currentTab.value]
 })
-
 
 </script>
 
@@ -57,5 +61,5 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component :is="component" :offerCampaign="props.data" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>

@@ -72,10 +72,6 @@ const getCategoryLink = (productCategory: {}) => {
         <FamilyOfferLabelDiscount v-if="data.type == 'Category Quantity Ordered Order Interval'" :offer="data" />
         <Coupon v-else :offer="data" :currency_code="currency_code" />
     </div>
-    
-
-    
-    
     <div class="flex justify-between gap-8 mx-8">
         <!-- Trigger -->
         <div class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
@@ -108,7 +104,7 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
         </div>
 
-        <!-- Trigger -->
+        <!-- Section: Trigger -->
         <div class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
             <div class="bg-amber-100 font-bold border-b border-gray-200 text-amber-700 text-center mb-1 py-1">
                 Trigger
@@ -171,7 +167,7 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
         </div>
 
-        <!-- Discount -->
+        <!-- Section: Discount -->
         <div class="ml-4 max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
             <div class="bg-green-100 font-bold border-b border-gray-200 text-green-700 text-center mb-1 py-1">
                 Discounts
@@ -195,8 +191,6 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
         </div>
     </div>
-
-        <!-- <pre>{{ data }}</pre> -->
 
 </template>
 

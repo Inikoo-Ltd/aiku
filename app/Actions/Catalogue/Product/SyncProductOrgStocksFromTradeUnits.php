@@ -43,9 +43,9 @@ class SyncProductOrgStocksFromTradeUnits
                     }
 
                     $orgStock = StoreOrgStock::make()->action($parent, $stock, [
-                        'state' => OrgStockStateEnum::ACTIVE,
-                        'quantity_status' => OrgStockQuantityStatusEnum::OUT_OF_STOCK
-
+                        'state'           => OrgStockStateEnum::ACTIVE,
+                        'quantity_status' => OrgStockQuantityStatusEnum::OUT_OF_STOCK,
+                        'packed_in'       => $stock->packed_in ?? 1,
                     ]);
                 }
 

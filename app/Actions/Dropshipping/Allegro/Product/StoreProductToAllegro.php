@@ -11,16 +11,20 @@ namespace App\Actions\Dropshipping\Allegro\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Dropshipping\AllegroUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Helpers\Currency;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -32,8 +36,17 @@ class StoreProductToAllegro extends RetinaAction
 
     public function handle(Portfolio $portfolio): Portfolio
     {
+        /** @var CustomerSalesChannel $customerSalesChannel */
+        $customerSalesChannel = $portfolio->customerSalesChannel;
+
         /** @var AllegroUser $allegroUser */
-        $allegroUser = $portfolio->customerSalesChannel->user;
+        $allegroUser = $customerSalesChannel->user;
+
+        /** @var Customer $customer */
+        $customer = $customerSalesChannel->customer;
+
+        /** @var Shop $shop */
+        $shop = $customer->shop;
 
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
@@ -46,19 +59,43 @@ class StoreProductToAllegro extends RetinaAction
             $getRecommendedCategory = $allegroUser->getRecommendedCategory($product->family->name);
             $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id');
 
-            // $getParameters = $allegroUser->getCategoryParameters($categoryId);
+            $getParameters = $allegroUser->getCategoryParameters($categoryId);
 
-            /*$proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
-                'category_id' => $categoryId,
-                'parameters' => $getParameters
-            ]);
-            $allegroProductId = Arr::get($proposedProduct, 'id');*/
+            $allegroProductId = null;
+            try {
+                $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
+                    'category_id' => $categoryId,
+                    'parameters' => $getParameters
+                ]);
 
-            $allegroProductId = "28c49b7b-0d8f-4aff-bd94-e8f2b4922395";
+                $allegroProductId = Arr::get($proposedProduct, 'id');
+            } catch (\Exception $e) {
+                dd($e);
+                $res = Str::contains($e->getMessage(), ['Produkt z takimi danymi już istnieje. Skontaktuj się z autorem aplikacji.']);
+
+                if ($res) {
+                    $proposedProduct = $allegroUser->searchProducts([
+                        'phrase' => $portfolio->barcode,
+                        'mode' => 'GTIN'
+                    ]);
+
+                    $allegroProductId = Arr::get($proposedProduct, 'products.0.id');
+                }
+            }
 
             if (!$allegroProductId) {
                 throw new \Exception('Failed to propose product to Allegro: no product ID returned.');
             }
+
+            $availableQuantity = $product->available_quantity;
+
+            if ($customerSalesChannel->max_quantity_advertise > 0) {
+                $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
+            }
+
+            $targetCurrency = Currency::where('code', 'PLN')->first();
+            $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
+            $customerPrice = $portfolio->customer_price * $plnPriceExchange;
 
             $offerData = [
                 'productSet' => [
@@ -67,7 +104,7 @@ class StoreProductToAllegro extends RetinaAction
                             'id' => $allegroProductId
                         ],
                         'quantity' => [
-                            'value' => 1
+                            'value' => $availableQuantity
                         ]
                     ]
                 ],
@@ -78,29 +115,28 @@ class StoreProductToAllegro extends RetinaAction
                 'sellingMode' => [
                     'format' => 'BUY_NOW',
                     'price'  => [
-                        'amount'   => number_format((float) $portfolio->customer_price, 2, '.', ''),
-                        'currency' => $allegroUser->customer->shop->currency->code ?? 'PLN'
+                        'amount'   => number_format((float) $customerPrice, 2, '.', ''),
+                        'currency' => 'PLN'
                     ]
                 ],
                 'stock' => [
-                    'available' => $product->available_quantity,
+                    'available' => $availableQuantity,
                     'unit'      => 'UNIT'
                 ],
                 'delivery' => [
                     'handlingTime'  => 'PT24H',
                     'shippingRates' => [
-                        'id' => "98b6ff13-91ec-488d-8a39-155118fe581c"
+                        'id' => Arr::get($allegroUser->settings, 'shipping.id')
+                    ]
+                ],
+                'afterSalesServices' => [
+                    'returnPolicy' => [
+                        'id' => Arr::get($allegroUser->settings, 'policy.return_id')
                     ]
                 ],
                 'publication' => [
                     'status'    => 'ACTIVE',
                     'republish' => true
-                ],
-                'location' => [
-                    'city'        => $allegroUser->city ?? 'Warszawa',
-                    'countryCode' => $allegroUser->country_code ?? 'PL',
-                    'postCode'    => $allegroUser->post_code ?? '00-001',
-                    'province'    => $allegroUser->province ?? 'MAZOWIECKIE'
                 ],
                 'external' => [
                     'id' => (string) $portfolio->id
@@ -111,7 +147,7 @@ class StoreProductToAllegro extends RetinaAction
                             'items' => [
                                 [
                                     'type' => 'TEXT',
-                                    'content' => $portfolio->customer_description ?? ''
+                                    'content' => $allegroUser->sanitizeAllegroDescription($portfolio->customer_description)
                                 ]
                             ]
                         ]
@@ -144,7 +180,6 @@ class StoreProductToAllegro extends RetinaAction
 
             return $portfolio;
         } catch (\Exception $e) {
-            dd($e);
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [
                     'message' => $e->getMessage()
@@ -160,12 +195,5 @@ class StoreProductToAllegro extends RetinaAction
 
             return $portfolio;
         }
-    }
-
-    public function asController(AllegroUser $allegroUser, Portfolio $portfolio, ActionRequest $request): void
-    {
-        $this->initialisation($request);
-
-        $this->handle($allegroUser, $portfolio);
     }
 }

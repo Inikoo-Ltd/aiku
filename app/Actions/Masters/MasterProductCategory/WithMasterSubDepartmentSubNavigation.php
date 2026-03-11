@@ -10,9 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
-use App\Models\Masters\MasterShop;
 
 trait WithMasterSubDepartmentSubNavigation
 {
@@ -20,6 +18,11 @@ trait WithMasterSubDepartmentSubNavigation
     {
         $subRoute = [
             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+            'parameters' => request()->route()->originalParameters()
+        ];
+
+        $routeSubDepartmentsInShop = [
+            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.sub_departments',
             'parameters' => request()->route()->originalParameters()
         ];
 
@@ -33,10 +36,15 @@ trait WithMasterSubDepartmentSubNavigation
              'parameters' => request()->route()->originalParameters()
         ];
 
-        if ($this->parent instanceof MasterShop || ($this->parent instanceof MasterProductCategory && $this->parent->type === MasterProductCategoryTypeEnum::SUB_DEPARTMENT)) {
+        if (in_array(request()->route()->getName(), ['grp.masters.master_shops.show.master_sub_departments.show', 'grp.masters.master_shops.show.master_sub_departments.sub_departments', 'grp.masters.master_shops.show.master_sub_departments.master_families.index', 'grp.masters.master_shops.show.master_sub_departments.master_collections.index'])) {
             $subRoute = [
                 'name'       => 'grp.masters.master_shops.show.master_sub_departments.show',
                 'parameters' => request()->route()->originalParameters(),
+            ];
+
+            $routeSubDepartmentsInShop = [
+                'name'       => 'grp.masters.master_shops.show.master_sub_departments.sub_departments',
+                'parameters' => request()->route()->originalParameters()
             ];
 
             $routeFamilies = [
@@ -58,6 +66,15 @@ trait WithMasterSubDepartmentSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
                     'tooltip' => __('Sub-department')
+                ]
+            ],
+            [
+                'label'    => __('Sub-Departments in Shop'),
+                'number'   => $masterSubDepartment->stats->number_current_sub_departments,
+                'route'     => $routeSubDepartmentsInShop,
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-store'],
+                    'tooltip' => __('Sub-Departments in shop')
                 ]
             ],
             [

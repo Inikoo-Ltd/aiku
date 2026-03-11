@@ -215,10 +215,10 @@ class GenerateInvoiceFromOrder extends OrgAction
         }
         if (empty($pickings)) {
             //todo: check this or I will reget
-            $quantityPicked = $transaction->quantity_ordered;
+            $quantityPicked = $transaction->quantity_ordered + $transaction->quantity_bonus;
         } else {
             $sumOfPickings  = array_sum($pickings) / count($pickings);
-            $quantityPicked = $transaction->quantity_ordered * $sumOfPickings;
+            $quantityPicked = ($transaction->quantity_ordered + $transaction->quantity_bonus) * $sumOfPickings;
         }
 
         $discountsRatio = 1;
@@ -230,6 +230,12 @@ class GenerateInvoiceFromOrder extends OrgAction
         $gross = $historicAsset->price * $quantityPicked;
         $net   = $historicAsset->price * $discountsRatio * $quantityPicked;
 
+
+        if ($transaction->is_gift) {
+            $gross = 0;
+            $net   = 0;
+        }
+
         return [
             'tax_category_id' => $transaction->order->tax_category_id,
             'quantity'        => $quantityPicked,
@@ -237,6 +243,7 @@ class GenerateInvoiceFromOrder extends OrgAction
             'net_amount'      => $net,
             'org_net_amount'  => $net * $transaction->org_exchange,
             'grp_net_amount'  => $net * $transaction->grp_exchange,
+            'is_gift'         => $transaction->is_gift ?? false,
         ];
     }
 

@@ -41,7 +41,7 @@ class IndexCustomersInOverview extends OrgAction
         $this->parent = $organisation;
         $this->initialisation($organisation, $request)->withTab(CustomersTabsEnum::values());
 
-        return $this->handle($this->parent);
+        return $this->handle($this->parent, CustomersTabsEnum::CUSTOMERS->value);
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
@@ -49,7 +49,7 @@ class IndexCustomersInOverview extends OrgAction
         $this->parent = group();
         $this->initialisationFromGroup(group(), $request)->withTab(CustomersTabsEnum::values());
 
-        return $this->handle($this->parent);
+        return $this->handle($this->parent, CustomersTabsEnum::CUSTOMERS->value);
     }
 
     public function handle(Group|Organisation $parent, $prefix = null): LengthAwarePaginator
@@ -151,7 +151,7 @@ class IndexCustomersInOverview extends OrgAction
             }
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
 
             $table->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
                 ->column(key: 'number_invoices_type_invoice', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
@@ -175,29 +175,27 @@ class IndexCustomersInOverview extends OrgAction
         $subNavigation = [];
 
         return Inertia::render(
-            'Org/Shop/CRM/Customers',
+            'Overview/CRM/CustomersInOverview',
             [
-                'breadcrumbs'                       => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                             => __('customers'),
-                'pageHead'                          => array_filter([
-                    'title'         => __('customers'),
-                    'icon'          => [
+                'title'       => __('customers'),
+                'pageHead'    => [
+                    'title' => __('customers'),
+                    'icon'  => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('Customer')
                     ],
-                    'subNavigation' => $subNavigation,
-                ]),
-                'tabs'                              => [
+                ],
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
                 CustomersTabsEnum::CUSTOMERS->value => $this->tab == CustomersTabsEnum::CUSTOMERS->value ?
                     fn () => CustomersResource::collection($customers)
                     : Inertia::lazy(fn () => CustomersResource::collection($customers)),
-
             ]
         )->table($this->tableStructure($this->parent, CustomersTabsEnum::CUSTOMERS->value));
     }
