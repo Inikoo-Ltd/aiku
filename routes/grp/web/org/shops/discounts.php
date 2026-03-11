@@ -23,7 +23,6 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
 use App\Actions\Discounts\OfferCampaign\StoreGiftsOffers;
-use App\Actions\Discounts\OfferCampaign\StoreShopOffers;
 use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
 use App\Actions\Discounts\OfferCampaign\StoreCategoryOffers;
 use App\Actions\Discounts\OfferCampaign\StoreProductOffers;

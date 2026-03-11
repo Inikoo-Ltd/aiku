@@ -69,7 +69,7 @@ class CloneProductParentsFromMaster
                 $product = Product::where('slug', $command->argument('slug'))
                     ->firstOrFail();
 
-                $this->handle($product,$command);
+                $this->handle($product, $command);
 
 
                 return 0;
@@ -91,7 +91,7 @@ class CloneProductParentsFromMaster
 
         $query->chunk(100, function ($products) use ($command) {
             foreach ($products as $product) {
-                $this->handle($product,$command);
+                $this->handle($product, $command);
                 $command->getOutput()->progressAdvance();
             }
         });
