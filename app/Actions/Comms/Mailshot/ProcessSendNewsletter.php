@@ -34,7 +34,7 @@ class ProcessSendNewsletter
     public function handle(Mailshot $mailshot): void
     {
 
-        $chunckSize = 250;
+        $chunkSize = 100;
         // NOTE: Ensure no second wave exists when the parent mailshot has second wave disabled
         if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
             DeleteMailshotSecondWave::run($mailshot->secondWave);
@@ -49,7 +49,7 @@ class ProcessSendNewsletter
 
         $outbox = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->first();
         // Process recipients in chunks of 250
-        $queryBuilder->chunk($chunckSize, function ($recipients) use ($mailshot, $outbox) {
+        $queryBuilder->chunk($chunkSize, function ($recipients) use ($mailshot, $outbox) {
 
             $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
