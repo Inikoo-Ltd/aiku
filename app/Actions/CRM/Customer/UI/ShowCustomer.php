@@ -255,7 +255,7 @@ class ShowCustomer extends OrgAction
                 [
                     "label"       => __("Sticky Note For Delivery Notes") . ' (' . __("Private") . ')',
                     "note"        => $customer->warehouse_internal_notes ?? '',
-                    // "information" => __("Warehouse private notes. Only staff can see."),
+                    "information" => __("Will be put as Order private note everytime the Order submitted. Visible only to customer service and warehouse's staff."),
                     "editable"    => true,
                     "bgColor"     => "#FCF4A3",
                     "field"       => "warehouse_internal_notes"

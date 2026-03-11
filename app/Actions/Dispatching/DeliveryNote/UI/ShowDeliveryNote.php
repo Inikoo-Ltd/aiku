@@ -904,7 +904,7 @@ class ShowDeliveryNote extends OrgAction
                 [
                     "label"       => __("Order private note"),
                     "note"        => $deliveryNote->internal_notes ?? '',
-                    "information" => __("This note is created by customer service"),
+                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
                     "editable"    => true,
                     "bgColor"     => "#FCF4A3",
                     "field"       => "internal_notes"

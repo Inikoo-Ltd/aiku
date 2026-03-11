@@ -4,6 +4,7 @@ import { inject, ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPencil, faStickyNote, faTrash, faLock } from '@fas'
 import { faTimes, faSyncAlt } from '@fal'
+import { faExclamationTriangle } from '@fad'
 import { faPlus } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -17,7 +18,7 @@ import { PDRNotes } from '@/types/Pallet'
 import { useBasicColor } from '@/Composables/useColors'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
-library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes, faSyncAlt)
+library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes, faSyncAlt, faExclamationTriangle)
 
 // const layout = inject('layout', layoutStructure)
 
@@ -103,6 +104,9 @@ const fallbackColor = '#374151'  // Color
                     <FontAwesomeIcon icon='fas fa-sticky-note' class='' fixed-width aria-hidden='true' />
                     {{ noteData.label }}
                     <InformationIcon v-if="noteData.information" :information="noteData.information" />
+                    <span v-if="noteData.warning" v-tooltip="noteData.warning">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-yellow-500" fixed-width aria-hidden="true" />
+                    </span>
                     
                     <!-- Button: fetch notes from Order -->
                     <!-- <span 
