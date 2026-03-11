@@ -103,7 +103,7 @@ const productFetchRoute = {
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.store', {
+        route('grp.org.shops.show.discounts.campaigns.store_voucher', {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se',
@@ -311,7 +311,8 @@ const isFormInvalid = computed(() => {
                                     :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
-                            <DatePicker v-model="startDate" showButtonBar showIcon />
+                            <DatePicker v-model="startDate" showButtonBar showIcon
+                                :placeholder="trans('Select start date')" />
 
                         </div>
 
@@ -322,7 +323,8 @@ const isFormInvalid = computed(() => {
                                     :information="trans('If end date is empty, will treat as permanent')" />:
                             </label>
 
-                            <DatePicker v-model="endDate" showButtonBar showIcon :minDate="startDate" />
+                            <DatePicker v-model="endDate" showButtonBar showIcon :minDate="startDate"
+                                :placeholder="trans('Select end date')" />
 
                         </div>
                     </div>
