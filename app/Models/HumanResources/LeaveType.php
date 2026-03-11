@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property numeric|null $max_days_per_year
  * @property array<array-key, mixed>|null $settings
  * @property bool $is_active
+ * @property bool $ignore_concurrency_leave_rules
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\SysAdmin\Group $group
@@ -37,11 +38,12 @@ class LeaveType extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'category'           => LeaveCategoryEnum::class,
-        'requires_approval'  => 'boolean',
-        'max_days_per_year'  => 'decimal:2',
-        'settings'           => 'array',
-        'is_active'          => 'boolean',
+        'category'                        => LeaveCategoryEnum::class,
+        'requires_approval'               => 'boolean',
+        'max_days_per_year'               => 'decimal:2',
+        'settings'                        => 'array',
+        'is_active'                       => 'boolean',
+        'ignore_concurrency_leave_rules'  => 'boolean',
     ];
 
     public function leaves(): HasMany

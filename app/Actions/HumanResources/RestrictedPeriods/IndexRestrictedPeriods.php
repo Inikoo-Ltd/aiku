@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\RestrictedPeriods;
 
+use App\Actions\HumanResources\Calendar\WithCalendarSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
@@ -21,6 +22,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexRestrictedPeriods extends OrgAction
 {
     use WithHumanResourcesAuthorisation;
+    use WithCalendarSubNavigation;
 
     private Organisation $parent;
 
@@ -112,6 +114,7 @@ class IndexRestrictedPeriods extends OrgAction
                 'pageHead'    => [
                     'icon'           => ['fal', 'fa-ban'],
                     'title'          => __('Restricted Periods'),
+                    'subNavigation'  => $this->getCalendarSubNavigation(),
                     'actions'        => [
                         [
                             'type'  => 'button',

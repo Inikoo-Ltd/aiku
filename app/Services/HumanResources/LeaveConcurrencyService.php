@@ -19,6 +19,10 @@ class LeaveConcurrencyService
         Carbon $endDate,
         ?LeaveType $leaveType = null
     ): array {
+        if ($leaveType && $leaveType->ignore_concurrency_leave_rules) {
+            return [];
+        }
+
         $conflicts = [];
 
         $activeRules = LeaveConcurrencyRule::query()

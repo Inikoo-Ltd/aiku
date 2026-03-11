@@ -15,7 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
@@ -80,47 +80,44 @@ class EditEmployee extends OrgAction
                     'label' => __('Work email'),
                     'value' => $employee->work_email ?? ''
                 ],
-                'cluster' => [
-                    'type' => 'employeeState',
-                    'mode' => 'card',
-                    'label' => 'Employee status',
+                'state' => [
+                    'type' => 'select',
+                    'label' => 'Employee Status',
                     'required' => true,
                     'options' => [
-                        [
-                            'title' => __('Hired'),
-                            'description' => __('Will start in future date'),
-                            'value' => EmployeeStateEnum::HIRED->value
-                        ],
-                        [
-                            'title' => __('Working'),
-                            'description' => __('Employee already working'),
-                            'value' => EmployeeStateEnum::WORKING->value
-                        ],
-                        [
-                            'title' => __('Leaving'),
-                            'description' => __('Employee will leave'),
-                            'value' => EmployeeStateEnum::LEAVING->value
-                        ],
-                        [
-                            'title' => __('Left'),
-                            'description' => __('Employee already left the office'),
-                            'value' => EmployeeStateEnum::LEFT->value
-                        ],
+                        ['value' => 'hired', 'label' => __('Hired'), 'description' => __('Employee has been hired and awaiting onboarding')],
+                        ['value' => 'working', 'label' => __('Working'), 'description' => __('Employee is actively working')],
+                        ['value' => 'leaving', 'label' => __('Leaving'), 'description' => __('Employee has resigned and is in notice period')],
+                        ['value' => 'left', 'label' => __('Left'), 'description' => __('Employee has left the organization')],
                     ],
-                    'value' => [
-                        'state' => $employee->state,
-                        'employment_start_at' => $employee->contract_start_date ?? $employee->employment_start_at ?? '',
-                        'employment_end_at' => $employee->employment_end_at ?? '',
-                    ]
+                    'value' => $employee->state?->value ?? 'working',
                 ],
+
                 'job_title' => [
                     'type' => 'input',
-                    'label' => __('Job title'),
-                    'placeholder' => __('Job title'),
+                    'label' => __('Job Title'),
+                    'placeholder' => __('Job Title'),
                     'searchable' => true,
                     'value' => $employee->job_title,
                     'required' => true
                 ],
+
+                'type' => [
+                    'type' => 'select',
+                    'label' => __('Employment Type'),
+                    'required' => true,
+                    'options' => [
+                        ['value' => EmployeeTypeEnum::EMPLOYEE->value, 'label' => __('Employee')],
+                        ['value' => EmployeeTypeEnum::PARTTIME->value, 'label' => __('Part Time')],
+                        ['value' => EmployeeTypeEnum::FULLTIME->value, 'label' => __('Full Time')],
+                        ['value' => EmployeeTypeEnum::INTERNSHIP->value, 'label' => __('Internship')],
+                        ['value' => EmployeeTypeEnum::VOLUNTEER->value, 'label' => __('Volunteer')],
+                        ['value' => EmployeeTypeEnum::TEMPORAL_WORKER->value, 'label' => __('Temporal Worker')],
+                        ['value' => EmployeeTypeEnum::WORK_EXPERIENCE->value, 'label' => __('Work Experience')],
+                    ],
+                    'value' => $employee->type?->value ?? EmployeeTypeEnum::EMPLOYEE->value,
+                ],
+
                 'probation_period_days' => [
                     'type' => 'input',
                     'label' => __('Probation Period (Days)'),

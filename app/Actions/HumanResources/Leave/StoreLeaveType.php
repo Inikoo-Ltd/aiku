@@ -43,10 +43,11 @@ class StoreLeaveType extends OrgAction
             'color'               => ['sometimes', 'nullable', 'string', 'max:128'],
             'description'         => ['sometimes', 'nullable', 'string'],
             'category'            => ['required', Rule::enum(LeaveCategoryEnum::class)],
-            'requires_approval'   => ['sometimes', 'boolean'],
-            'max_days_per_year'   => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'settings'            => ['sometimes', 'nullable', 'array'],
-            'is_active'           => ['sometimes', 'boolean'],
+            'requires_approval'              => ['sometimes', 'boolean'],
+            'max_days_per_year'              => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'settings'                       => ['sometimes', 'nullable', 'array'],
+            'is_active'                      => ['sometimes', 'boolean'],
+            'ignore_concurrency_leave_rules' => ['sometimes', 'boolean'],
         ];
     }
 

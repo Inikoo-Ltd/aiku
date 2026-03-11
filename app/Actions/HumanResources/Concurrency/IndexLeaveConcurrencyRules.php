@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\Concurrency;
 
+use App\Actions\HumanResources\Leave\UI\WithLeaveSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
@@ -23,6 +24,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexLeaveConcurrencyRules extends OrgAction
 {
     use WithHumanResourcesAuthorisation;
+    use WithLeaveSubNavigation;
 
     private Organisation $parent;
 
@@ -112,6 +114,7 @@ class IndexLeaveConcurrencyRules extends OrgAction
                 'pageHead'    => [
                     'icon'           => ['fal', 'fa-project-diagram'],
                     'title'          => __('Leave Concurrency Rules'),
+                    'subNavigation'  => $this->getLeaveSubNavigation($request),
                     'actions'        => [
                         [
                             'type'  => 'button',
