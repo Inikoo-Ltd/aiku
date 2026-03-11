@@ -8,7 +8,11 @@
 
 namespace App\Actions\UI\Dispatch;
 
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Models\Fulfilment\PalletReturn;
 use App\Models\Inventory\Warehouse;
+use Illuminate\Support\Facades\Route;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetDispatchHubFulfilmentWidget
@@ -18,50 +22,88 @@ class GetDispatchHubFulfilmentWidget
     public function handle(Warehouse $warehouse): array
     {
         return [
-            'slug'     => 'fulfilment',
-            'label'    => __('Fulfilment'),
-            'tooltip'  => __('Fulfilment Delivery Notes'),
-            'total_route' => [
-                'name'       => 'grp.org.warehouses.show.dispatching.pallet-returns.index',
-                'parameters' => request()->route()->originalParameters()
-            ],
-            'cases'    => [
-                'todo'    => [
-                    'route' => [
-                        'name'       => match (class_basename($warehouse)) {
-                            'Fulfilment' => 'grp.org.fulfilments.show.operations.pallet-returns.new.index',
-                            'Warehouse'  => 'grp.org.warehouses.show.dispatching.pallet-returns.confirmed.index'
-                        },
-                        'parameters' => match (class_basename($warehouse)) {
-                            'Fulfilment' => array_merge(request()->route()->originalParameters(), ['returns_elements[state]' => 'confirmed']),
-                            'Warehouse'  => request()->route()->originalParameters()
-                        }
+            $this->buildWidget($warehouse, PalletReturnTypeEnum::PALLET, __('Fulfilment Pallet'), 'fulfilment_pallet'),
+            $this->buildWidget($warehouse, PalletReturnTypeEnum::STORED_ITEM, __('Fulfilment DS'), 'fulfilment_ds'),
+        ];
+    }
 
-                    ],
+    private function buildWidget(Warehouse $warehouse, PalletReturnTypeEnum $type, string $label, string $slug): array
+    {
+        $routeParameters = request()->route()?->originalParameters() ?? [
+            'organisation' => $warehouse->organisation->slug,
+            'warehouse'    => $warehouse->slug,
+        ];
+
+        $typeFilter = ['filter[type]' => $type->value];
+
+        $isFulfilmentContext = array_key_exists('fulfilment', $routeParameters)
+            || str_contains((string) request()->route()?->getName(), 'fulfilments.');
+
+        $counts = PalletReturn::query()
+            ->where('warehouse_id', $warehouse->id)
+            ->where('type', $type->value)
+            ->whereIn('state', [
+                PalletReturnStateEnum::CONFIRMED->value,
+                PalletReturnStateEnum::PICKING->value,
+                PalletReturnStateEnum::PICKED->value,
+            ])
+            ->selectRaw('state, COUNT(*) as aggregate')
+            ->groupBy('state')
+            ->pluck('aggregate', 'state');
+
+        $todo = (int) ($counts[PalletReturnStateEnum::CONFIRMED->value] ?? 0);
+        $handling = (int) ($counts[PalletReturnStateEnum::PICKING->value] ?? 0);
+        $picked = (int) ($counts[PalletReturnStateEnum::PICKED->value] ?? 0);
+
+        $routeIndex = 'grp.org.warehouses.show.dispatching.pallet-returns.index';
+        $routeConfirmed = $isFulfilmentContext
+            ? 'grp.org.fulfilments.show.operations.pallet-returns.new.index'
+            : 'grp.org.warehouses.show.dispatching.pallet-returns.confirmed.index';
+        $routePicking = $isFulfilmentContext
+            ? 'grp.org.fulfilments.show.operations.pallet-returns.picking.index'
+            : 'grp.org.warehouses.show.dispatching.pallet-returns.picking.index';
+        $routePicked = $isFulfilmentContext
+            ? 'grp.org.fulfilments.show.operations.pallet-returns.picked.index'
+            : 'grp.org.warehouses.show.dispatching.pallet-returns.picked.index';
+
+        $totalRoute = Route::has($routeIndex) ? [
+            'name'       => $routeIndex,
+            'parameters' => array_merge($routeParameters, $typeFilter),
+        ] : null;
+
+        $todoRouteParameters = $isFulfilmentContext
+            ? array_merge($routeParameters, ['returns_elements[state]' => 'confirmed'], $typeFilter)
+            : array_merge($routeParameters, $typeFilter);
+
+        return [
+            'slug'        => $slug,
+            'label'       => $label,
+            'tooltip'     => $label,
+            'total_route' => $totalRoute,
+            'cases'       => [
+                'todo'    => [
+                    'route' => Route::has($routeConfirmed) ? [
+                        'name'       => $routeConfirmed,
+                        'parameters' => $todoRouteParameters,
+                    ] : null,
                 ],
                 'handling' => [
-                    'route' => [
-                        'name'       => match (class_basename($warehouse)) {
-                            'Fulfilment' => 'grp.org.fulfilments.show.operations.pallet-returns.picking.index',
-                            'Warehouse'  => 'grp.org.warehouses.show.dispatching.pallet-returns.picking.index'
-                        },
-                        'parameters' => request()->route()->originalParameters()
-                    ],
+                    'route' => Route::has($routePicking) ? [
+                        'name'       => $routePicking,
+                        'parameters' => array_merge($routeParameters, $typeFilter),
+                    ] : null,
                 ],
                 'picked'  => [
-                    'route' => [
-                        'name'       => match (class_basename($warehouse)) {
-                            'Fulfilment' => 'grp.org.fulfilments.show.operations.pallet-returns.picked.index',
-                            'Warehouse'  => 'grp.org.warehouses.show.dispatching.pallet-returns.picked.index'
-                        },
-                        'parameters' => request()->route()->originalParameters()
-                    ],
+                    'route' => Route::has($routePicked) ? [
+                        'name'       => $routePicked,
+                        'parameters' => array_merge($routeParameters, $typeFilter),
+                    ] : null,
                 ],
             ],
-            'todo'     => $warehouse->stats->number_pallet_returns_state_confirmed,
-            'handling' => $warehouse->stats->number_pallet_returns_state_picking,
-            'picked'   => $warehouse->stats->number_pallet_returns_state_picked,
-            'total'    => $warehouse->stats->number_pallet_returns_state_confirmed + $warehouse->stats->number_pallet_returns_state_picking + $warehouse->stats->number_pallet_returns_state_picked
+            'todo'        => $todo,
+            'handling'    => $handling,
+            'picked'      => $picked,
+            'total'       => $todo + $handling + $picked,
         ];
     }
 }

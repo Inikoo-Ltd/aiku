@@ -19,7 +19,7 @@ class GetDispatchHubShowcase
     public function handle(Warehouse $warehouse): array
     {
         return [
-            GetDispatchHubFulfilmentWidget::run($warehouse),
+            ...GetDispatchHubFulfilmentWidget::run($warehouse),
             GetDispatchHubB2BWidget::run($warehouse),
             GetDispatchHubExternalWidget::run($warehouse),
             GetDispatchHubB2CWidget::run($warehouse),
