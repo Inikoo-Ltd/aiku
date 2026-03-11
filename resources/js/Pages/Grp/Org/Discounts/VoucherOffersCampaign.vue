@@ -21,7 +21,7 @@ import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentDollar, faInfoCircle, faStore } from '@fal'
-import ModalCreateStoreOffers from '@/Components/Offers/ModalCreateStoreOffers.vue'
+import ModalCreateVoucherOffers from '@/Components/Offers/ModalCreateVoucherOffers.vue'
 
 library.add(faCommentDollar, faInfoCircle, faStore)
 
@@ -61,8 +61,8 @@ const component = computed(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other>
-            <!-- <ModalCreateStoreOffers  :shop_data="props.shop_data" /> -->
+        <template #button-voucher-create-discount>
+            <ModalCreateVoucherOffers :shop_data="props.shop_data" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />

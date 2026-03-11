@@ -115,7 +115,7 @@ enum OfferCampaignTypeEnum: string
                 'class'   => '',
             ],
             'vouchers'        => [
-                'icon'    => 'fal fa-ticket',
+                'icon'    => 'fal fa-badge-percent',
                 'tooltip' => self::from('vouchers')->labels()['vouchers'] ?? 'Unknown',
                 'class'   => '',
             ]
