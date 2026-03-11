@@ -38,7 +38,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         }
     }
 
-
     protected function processDepartmentWebpages(Webpage $webpage, Command $command): void
     {
         /** @var ProductCategory $department */
@@ -119,7 +118,9 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         $webpage->refresh();
         $this->setDescriptionWebBlockOnTop($webpage);
-        /* $this->setDescriptionWebBlockHidden($webpage); */
+        if ($command->option('hide-description')) {
+            $this->setDescriptionWebBlockHidden($webpage);
+        }
         $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
@@ -177,8 +178,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         UpdateWebpageContent::run($webpage);
     }
 
-
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {website?}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {website?} {--hide-description}';
 
     public function asCommand(Command $command): void
     {
