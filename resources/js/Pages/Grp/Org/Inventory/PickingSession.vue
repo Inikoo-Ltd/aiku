@@ -12,6 +12,8 @@ import { useTabChange } from "@/Composables/tab-change"
 import { ref, computed, watch } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableDeliveryNoteItemInPickingSessions from "@/Components/Warehouse/PickingSessions/TableDeliveryNoteItemInPickingSessions.vue"
+import TablePalletReturnInPickingSessions from "@/Components/Warehouse/PickingSessions/TablePalletReturnInPickingSessions.vue"
+import TableFulfilmentPickingSessionStoredItems from "@/Components/Warehouse/PickingSessions/TableFulfilmentPickingSessionStoredItems.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 
 
@@ -22,6 +24,8 @@ const props = defineProps<{
     items: object
     itemized: object
     grouped: object
+    returnType?: string
+    dispatchableReturns?: any[]
     timelines: {
         [key: string]: TSTimeline
     }
@@ -36,14 +40,21 @@ let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
+    const isFulfilment = props.data?.data?.type === "fulfilment"
+    const isFulfilmentStoredItems = isFulfilment && props.returnType === 'stored_item'
+    const componentMap = isFulfilment
+        ? {
+            items: isFulfilmentStoredItems ? TableFulfilmentPickingSessionStoredItems : TablePalletReturnInPickingSessions,
+            itemized: isFulfilmentStoredItems ? TableFulfilmentPickingSessionStoredItems : TablePalletReturnInPickingSessions,
+            grouped: isFulfilmentStoredItems ? TableFulfilmentPickingSessionStoredItems : TablePalletReturnInPickingSessions
+        }
+        : {
+            items: TableDeliveryNoteItemInPickingSessions,
+            itemized: TableDeliveryNoteItemInPickingSessions,
+            grouped: TableDeliveryNoteItemInPickingSessions
+        }
 
-    const components = {
-        items: TableDeliveryNoteItemInPickingSessions,
-        itemized: TableDeliveryNoteItemInPickingSessions,
-        grouped: TableDeliveryNoteItemInPickingSessions
-    }
-    return components[currentTab.value]
-
+    return componentMap[currentTab.value]
 })
 
 watch(() => props.tabs.current, (newTab) => {
@@ -62,6 +73,13 @@ watch(() => props.tabs.current, (newTab) => {
     </div>
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="pb-12">
-        <component :is="component" :data="props[currentTab]" :tab="currentTab" :pickingSession="data.data" :key="`${currentTab}${props.data.state}`" />
+        <component
+            :is="component"
+            :data="props[currentTab]"
+            :tab="currentTab"
+            :pickingSession="data.data"
+            :dispatchableReturns="dispatchableReturns"
+            :key="`${currentTab}${props.data.state}`"
+        />
     </div>
 </template>
