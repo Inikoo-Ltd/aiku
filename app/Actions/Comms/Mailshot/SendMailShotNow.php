@@ -29,8 +29,11 @@ class SendMailShotNow extends OrgAction
     {
 
         // NOTE: For testing purposes, only available for Ukraine
-        if ($mailshot->shop_id !== 44) {
-            throw new \Exception('Action only available for Ukraine');
+        if (!in_array($mailshot->shop_id, [
+            44, // Ukraine
+            // 42,// Bulgaria
+        ])) {
+            throw new \Exception('Action only available for specific shops');
         }
 
         if ($mailshot->is_second_wave) {

@@ -29,6 +29,13 @@ class RunMailshotScheduled
         $mailshotQuery = QueryBuilder::for(Mailshot::class);
         $mailshotQuery->where('type', MailshotTypeEnum::MARKETING);
         $mailshotQuery->where('state', MailshotStateEnum::SCHEDULED);
+
+        // NOTE: For testing purposes, only available for Ukraine
+        $mailshotQuery->whereIn('shop_id', [
+            44, // Ukraine
+            // 42,// Bulgaria
+        ]);
+
         $mailshotQuery->whereNull('deleted_at');
         $mailshotQuery->whereNull('cancelled_at');
         $mailshotQuery->whereNull('stopped_at');

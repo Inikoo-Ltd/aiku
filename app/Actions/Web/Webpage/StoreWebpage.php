@@ -17,6 +17,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -125,6 +126,15 @@ class StoreWebpage extends OrgAction
                 ]);
             }
 
+            $templates = [];
+            foreach(WebBlockTemplateEnum::values() as $scope){
+                $liveWebBlockSnapshot = $this->website->{"live{$scope}Snapshot"};
+                $unpublishedWebBlockSnapshot = $this->website->{"unpublished{$scope}Snapshot"};
+
+                $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', data_get($unpublishedWebBlockSnapshot?->layout, 'code', null));
+
+                data_set($templates, $scope, $usedWebBlockTemplateCodes);
+            }
 
             if ($this->strict) {
                 if ($model instanceof Product) {
@@ -134,21 +144,21 @@ class StoreWebpage extends OrgAction
                     $this->createWebBlock($webpage, 'luigi-last-seen-1');
                 } elseif ($model instanceof Collection) {
                     $this->createWebBlock($webpage, 'collection-description-1');
-                    $this->createWebBlock($webpage, 'families-1');
-                    $this->createWebBlock($webpage, 'products-1');
+                    $this->createWebBlock($webpage, data_get($templates, 'Family'));
+                    $this->createWebBlock($webpage, data_get($templates, 'Products'));
                 } elseif ($model instanceof ProductCategory) {
                     if ($model->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                         $this->createWebBlock($webpage, 'sub-department-description-1');
-                        $this->createWebBlock($webpage, 'families-1');
-                        $this->createWebBlock($webpage, 'products-1');
+                        $this->createWebBlock($webpage, data_get($templates, 'Family'));
+                        $this->createWebBlock($webpage, data_get($templates, 'Products'));
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
                         $this->createWebBlock($webpage, 'department-description-1');
-                        $this->createWebBlock($webpage, 'sub-departments-1');
-                        $this->createWebBlock($webpage, 'products-1');
-                        $this->createWebBlock($webpage, 'families-1');
+                        $this->createWebBlock($webpage, data_get($templates, 'SubDepartment'));
+                        $this->createWebBlock($webpage, data_get($templates, 'Family'));
+                        $this->createWebBlock($webpage, data_get($templates, 'Products'));
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
                         $this->createWebBlock($webpage, 'family-1');
-                        $this->createWebBlock($webpage, 'products-1');
+                        $this->createWebBlock($webpage, data_get($templates, 'Products'));
                         $this->createWebBlock($webpage, 'luigi-trends-1');
                         $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
                         $this->createWebBlock($webpage, 'luigi-last-seen-1');
