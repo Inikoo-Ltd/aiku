@@ -9,6 +9,8 @@
 
 namespace App\Actions\Fulfilment\PalletReturnItem;
 
+use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\Fulfilment\PalletStoredItem\SetPalletStoredItemStateToReturned;
@@ -50,6 +52,14 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
 
             SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
             AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturnItem->palletReturn);
+
+            if ($palletReturnItem->picking_session_id) {
+                $pickingSession = $palletReturnItem->pickingSession;
+                if ($pickingSession) {
+                    (new CalculateFulfilmentPickingSessionPicks())->action($pickingSession);
+                    (new AutoFinishPickingFulfilmentPickingSession())->action($pickingSession);
+                }
+            }
 
             return $palletReturnItem;
         });

@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\PalletReturn;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
+use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
 use App\Actions\Fulfilment\Pallet\ReturnPallet;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -92,6 +93,11 @@ class DispatchPalletReturn extends OrgAction
         FulfilmentHydratePalletReturns::dispatch($palletReturn->fulfilment);
         SendPalletReturnNotification::run($palletReturn);
         PalletReturnRecordSearch::dispatch($palletReturn);
+
+        $pickingSessions = $palletReturn->pickingSessions()->get();
+        foreach ($pickingSessions as $pickingSession) {
+            (new AutoFinishPackingFulfilmentPickingSession())->action($pickingSession);
+        }
 
         return $palletReturn;
     }

@@ -9,6 +9,8 @@
 
 namespace App\Actions\Fulfilment\PalletReturnItem;
 
+use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\Fulfilment\PalletStoredItem\RunPalletStoredItemQuantity;
 use App\Actions\OrgAction;
@@ -38,6 +40,11 @@ class UndoStoredItemPick extends OrgAction
 
         SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
         RunPalletStoredItemQuantity::run($palletReturnItem->palletStoredItem);
+
+        if ($palletReturnItem->picking_session_id && $palletReturnItem->pickingSession) {
+            (new CalculateFulfilmentPickingSessionPicks())->action($palletReturnItem->pickingSession);
+            (new AutoFinishPickingFulfilmentPickingSession())->action($palletReturnItem->pickingSession);
+        }
 
         return $palletReturnItem;
     }
