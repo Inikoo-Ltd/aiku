@@ -152,6 +152,7 @@ class Employee extends Model implements HasMedia, Auditable
         'contract_start_date' => 'date',
         'contract_end_date' => 'date',
         'religion' => 'string',
+        'emergency_contact' => 'array',
     ];
     //ss
 
@@ -160,7 +161,8 @@ class Employee extends Model implements HasMedia, Auditable
         'errors' => '{}',
         'salary' => '{}',
         'working_hours' => '{}',
-        'migration_data' => '{}'
+        'migration_data' => '{}',
+        'emergency_contact' => '{}'
     ];
 
     protected $guarded = [];
@@ -347,6 +349,12 @@ class Employee extends Model implements HasMedia, Auditable
 
     public function getJobTitleAttribute(): ?string
     {
+        $dbValue = $this->getAttributes()['job_title'] ?? null;
+
+        if ($dbValue) {
+            return $dbValue;
+        }
+
         return $this->getCurrentJobTitle();
     }
 

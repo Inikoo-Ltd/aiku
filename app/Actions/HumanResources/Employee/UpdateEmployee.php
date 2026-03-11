@@ -103,13 +103,13 @@ class UpdateEmployee extends OrgAction
             $leaveBalance = EmployeeLeaveBalance::firstOrCreate(
                 [
                     'employee_id' => $employee->id,
-                    'year'        => now()->year,
+                    'year' => now()->year,
                 ],
                 [
-                    'annual_days'   => $employee->organisation->getDefaultAnnualLeaveDays(),
-                    'annual_used'   => 0,
-                    'unpaid_days'   => 0,
-                    'unpaid_used'   => 0,
+                    'annual_days' => $employee->organisation->getDefaultAnnualLeaveDays(),
+                    'annual_used' => 0,
+                    'unpaid_days' => 0,
+                    'unpaid_used' => 0,
                 ]
             );
 
@@ -155,7 +155,7 @@ class UpdateEmployee extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'worker_number'                             => [
+            'worker_number' => [
                 'sometimes',
                 'max:64',
                 'alpha_dash',
@@ -164,21 +164,21 @@ class UpdateEmployee extends OrgAction
                     extraConditions: [
                         [
                             'column' => 'organisation_id',
-                            'value'  => $this->organisation->id
+                            'value' => $this->organisation->id
                         ],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->employee->id
+                            'value' => $this->employee->id
                         ],
                     ]
                 ),
 
             ],
-            'state'                                     => ['sometimes', 'required', new Enum(EmployeeStateEnum::class)],
-            'employment_start_at'                       => ['sometimes', 'nullable', 'date'],
-            'employment_end_at'                         => ['sometimes', 'nullable', 'date'],
-            'work_email'                                => [
+            'state' => ['sometimes', 'required', new Enum(EmployeeStateEnum::class)],
+            'employment_start_at' => ['sometimes', 'nullable', 'date'],
+            'employment_end_at' => ['sometimes', 'nullable', 'date'],
+            'work_email' => [
                 'sometimes',
                 'nullable',
                 'email',
@@ -187,14 +187,14 @@ class UpdateEmployee extends OrgAction
                     extraConditions: [
 
                         [
-                            'column'   => 'group_id',
+                            'column' => 'group_id',
                             'operator' => '=',
-                            'value'    => $this->employee->group_id
+                            'value' => $this->employee->group_id
                         ],
                     ]
                 ),
             ],
-            'alias'                                     => [
+            'alias' => [
                 'sometimes',
                 'string',
                 $this->strict ? 'max:24' : 'max:255',
@@ -203,39 +203,43 @@ class UpdateEmployee extends OrgAction
                     extraConditions: [
                         ['column' => 'organisation_id', 'value' => $this->organisation->id],
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $this->employee->id
+                            'value' => $this->employee->id
                         ],
                     ]
                 ),
             ],
-            'pin'                                       => ['sometimes', new PinRule($this->employee->organisation_id)],
-            'contact_name'                              => ['sometimes', 'string', 'max:256'],
-            'date_of_birth'                             => ['sometimes', 'nullable', 'date', 'before_or_equal:today'],
-            'job_title'                                 => ['sometimes', 'nullable', 'string', 'max:256'],
-            'job_positions'                             => ['sometimes', 'array'],
-            'job_positions.*.slug'                      => ['sometimes', 'string'],
-            'job_positions.*.scopes'                    => ['sometimes', 'array'],
-            'job_positions.*.scopes.warehouses.slug.*'  => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
+            'pin' => ['sometimes', new PinRule($this->employee->organisation_id)],
+            'contact_name' => ['sometimes', 'string', 'max:256'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before_or_equal:today'],
+            'job_title' => ['sometimes', 'nullable', 'string', 'max:256'],
+            'job_positions' => ['sometimes', 'array'],
+            'job_positions.*.slug' => ['sometimes', 'string'],
+            'job_positions.*.scopes' => ['sometimes', 'array'],
+            'job_positions.*.scopes.warehouses.slug.*' => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
             'job_positions.*.scopes.fulfilments.slug.*' => ['sometimes', Rule::exists('fulfilments', 'slug')->where('organisation_id', $this->organisation->id)],
-            'job_positions.*.scopes.shops.slug.*'       => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
-            'email'                                     => ['sometimes', 'nullable', 'email'],
-            'emergency_contact'                         => ['sometimes', 'nullable', 'string', 'max:1024'],
-            'type'                                      => ['sometimes', Rule::enum(EmployeeTypeEnum::class)],
-            'contact_address'                           => ['sometimes', 'nullable', new ValidAddress()],
-            'notes'                                     => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'identity_document_type'                    => ['sometimes', 'nullable', 'string', 'max:256'],
-            'identity_document_number'                  => ['sometimes', 'nullable', 'string', 'max:256'],
-            'contract_start_date'                       => ['sometimes', 'nullable', 'date'],
-            'contract_end_date'                         => ['sometimes', 'nullable', 'date', 'after_or_equal:contract_start_date'],
-            'religion'                                  => ['sometimes', 'nullable', 'string', 'max:50'],
-            'bank_account_number'                       => ['sometimes', 'nullable', 'string', 'max:50'],
-            'bank_account_name'                         => ['sometimes', 'nullable', 'string', 'max:100'],
-            'insurance_number'                          => ['sometimes', 'nullable', 'string', 'max:50'],
-            'annual_days'                               => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
-            'gender'                                    => ['sometimes', 'nullable', 'string', 'max:20'],
-            'probation_period_days'                     => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
+            'job_positions.*.scopes.shops.slug.*' => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
+            'email' => ['sometimes', 'nullable', 'email'],
+            'emergency_contact' => ['sometimes', 'nullable', 'array'],
+            'emergency_contact.contact' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'emergency_contact.phone_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'emergency_contact.address' => ['sometimes', 'nullable', 'string', 'max:512'],
+            'emergency_contact.status' => ['sometimes', 'nullable', 'string', 'max:512'],
+            'type' => ['sometimes', Rule::enum(EmployeeTypeEnum::class)],
+            'contact_address' => ['sometimes', 'nullable', new ValidAddress()],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'identity_document_type' => ['sometimes', 'nullable', 'string', 'max:256'],
+            'identity_document_number' => ['sometimes', 'nullable', 'string', 'max:256'],
+            'contract_start_date' => ['sometimes', 'nullable', 'date'],
+            'contract_end_date' => ['sometimes', 'nullable', 'date', 'after_or_equal:contract_start_date'],
+            'religion' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'bank_account_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'bank_account_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'insurance_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'annual_days' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
+            'gender' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'probation_period_days' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365'],
 
         ];
 
@@ -244,7 +248,7 @@ class UpdateEmployee extends OrgAction
         }
 
         if ($user = $this->employee->getUser()) {
-            $rules['username']          = [
+            $rules['username'] = [
                 'sometimes',
                 'required',
                 'lowercase',
@@ -256,16 +260,16 @@ class UpdateEmployee extends OrgAction
                     extraConditions: [
 
                         [
-                            'column'   => 'id',
+                            'column' => 'id',
                             'operator' => '!=',
-                            'value'    => $user->id
+                            'value' => $user->id
                         ],
                     ]
                 ),
 
 
             ];
-            $rules['password']          = ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)];
+            $rules['password'] = ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)];
             $rules['user_model_status'] = ['sometimes', 'boolean'];
         }
 
@@ -279,8 +283,8 @@ class UpdateEmployee extends OrgAction
         if (!$audit) {
             Employee::disableAuditing();
         }
-        $this->asAction       = true;
-        $this->employee       = $employee;
+        $this->asAction = true;
+        $this->employee = $employee;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($employee->organisation, $modelData);
 

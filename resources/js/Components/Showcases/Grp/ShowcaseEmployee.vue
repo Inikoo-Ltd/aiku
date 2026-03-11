@@ -31,6 +31,17 @@ function toggleShowPins() {
 }
 
 const isVisitClockingMachine = ref(false)
+
+const formatEmergencyContact = (value: any): string => {
+	if (!value) {
+		return "-"
+	}
+	if (typeof value === "string") {
+		return value || "-"
+	}
+	const parts = [value.contact, value.phone_number, value.address, value.status].filter(Boolean)
+	return parts.length ? parts.join(" | ") : "-"
+}
 </script>
 
 <template>
@@ -111,7 +122,7 @@ const isVisitClockingMachine = ref(false)
 							{{ trans("Emergency Contact") }}
 						</div>
 						<div class="xl:col-span-2 font-medium text-right lg:text-left">
-							{{ data?.employee?.data.emergency_contact || "-" }}
+							{{ formatEmergencyContact(data?.employee?.data.emergency_contact) }}
 						</div>
 					</div>
 
@@ -138,7 +149,7 @@ const isVisitClockingMachine = ref(false)
                             {{ trans("Job Position") }}
                         </div>
                         <div class="xl:col-span-2 font-medium text-right lg:text-left">
-                            {{ data?.employee?.data.job_positions?.length }} 
+                            {{ data?.employee?.data.job_positions?.length }}
                         </div>
                     </div> -->
 				</div>
