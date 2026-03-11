@@ -15,7 +15,6 @@ use Aws\Sns\MessageValidator;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Psr\Http\Message\ServerRequestInterface;
-use Sentry;
 
 class GetSnsNotification
 {

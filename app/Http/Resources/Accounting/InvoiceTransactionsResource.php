@@ -23,7 +23,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class InvoiceTransactionsResource extends JsonResource
 {
-
     public function toArray($request): array
     {
         return [

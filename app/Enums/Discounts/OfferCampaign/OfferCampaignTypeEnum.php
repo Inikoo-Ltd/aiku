@@ -30,7 +30,7 @@ enum OfferCampaignTypeEnum: string
     {
         return [
             'order-recursion' => __('Order recursion'),
-            'volume-discount' => __('Volume discount'),
+            'volume-discount' => __('Volume/GR discount'),
             'first-order'     => __('First order'),
             'customer-offers' => __('Customer offers'),
             'shop-offers'     => __('Shop offers'),

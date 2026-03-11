@@ -17,6 +17,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentDollar, faInfoCircle, faGift } from '@fal'
+import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
 
 library.add(faCommentDollar, faInfoCircle, faGift)
 
@@ -31,6 +32,10 @@ const props = defineProps<{
     overview: {
         offerCampaign: {}
         stats: {}
+    }
+    shop_data: {
+        slug: string
+        currency_code: string
     }
 }>()
 
@@ -48,8 +53,13 @@ const component = computed(() => {
 </script>
 
 <template>
+
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #button-gift-create-discount>
+            <ModalCreateGiftOffers :shop_data="props.shop_data" />
+        </template>
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
 </template>

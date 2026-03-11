@@ -35,7 +35,7 @@ class OfferCampaignsResource extends JsonResource
             'slug'                        => $this->slug,
             'type'                        => OfferCampaignTypeEnum::from($this->type->value)->icons()[$this->type->value],
             'code'                        => $this->code,
-            'name'                        => $this->name,
+            'name'                        => OfferCampaignTypeEnum::from($this->type->value)->labels()[$this->type->value],
             'number_current_offers'       => $this->number_current_offers,
             'status'                      => $this->status,
             'status_icon'                 => $this->status
