@@ -10,12 +10,16 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\Dropshipping\CustomerClient\DeleteCustomerClient;
+use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\Ordering\Order\DeleteOrder;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationArgument;
 use App\Models\CRM\Customer;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Console\Command;
 
@@ -41,6 +45,9 @@ class DeleteCustomer
 
     public function handle(Customer $customer, array $deletedData = [], bool $skipHydrate = false): Customer
     {
+        $registeredAt = $customer->registered_at;
+        $masterShopId = $customer->master_shop_id;
+
         $this->deletedDependants = [
             'clients'          => $customer->clients()->count(),
             'webUsers'         => $customer->webUsers()->count(),
@@ -91,6 +98,15 @@ class DeleteCustomer
 
         if (!$skipHydrate) {
             ShopHydrateCustomers::dispatch($customer->shop);
+
+            if ($registeredAt) {
+                $registeredAtDate = Carbon::parse($registeredAt)->toDateString();
+                RedoShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate);
+                RedoOrganisationTimeSeries::dispatch($registeredAtDate, $registeredAtDate);
+                if ($masterShopId) {
+                    RedoMasterShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate);
+                }
+            }
         }
 
         return $customer;

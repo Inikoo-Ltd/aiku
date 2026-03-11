@@ -78,8 +78,8 @@ class UpdateInvoiceDate extends OrgAction
                 InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             }
 
-            $oldDateString     = Carbon::parse($oldDate)->toDateString();
-            $newDateString     = Carbon::parse($invoice->date)->toDateString();
+            $oldDateString = Carbon::parse($oldDate)->toDateString();
+            $newDateString = Carbon::parse($invoice->date)->toDateString();
 
             RedoOrganisationTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
             RedoOrganisationTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
@@ -107,10 +107,10 @@ class UpdateInvoiceDate extends OrgAction
                 RedoPlatformTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
             }
 
-            // Todo: Uncomment if needed
-            // foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
-            //     ProcessInvoiceTransactionTimeSeries::run($invoiceTransaction);
-            // }
+            foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $oldDateString)->delay($this->hydratorsDelay);
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $newDateString)->delay($this->hydratorsDelay);
+            }
 
             InvoiceRecordSearch::dispatch($invoice);
         }
