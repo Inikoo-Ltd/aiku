@@ -63,6 +63,7 @@ class ShowOffer extends OrgAction
 
         $vueComponent = match ($offer->type) {
             'VolGr Gift' => 'Org/Discounts/OfferVolGrGift',
+            'Amount AND Order Number' => 'Org/Discounts/OfferAmountOrder',
             default => 'Org/Discounts/Offer'
         };
 
@@ -79,6 +80,7 @@ class ShowOffer extends OrgAction
                 if ($product) {
                     $productOptions[] = [
                         'id'      => $product->id,
+                        'slug'    => $product->slug,
                         'code'    => $product->code,
                         'name'    => $product->name,
                         'web_images_main'       => data_get($product->web_images, 'main'),

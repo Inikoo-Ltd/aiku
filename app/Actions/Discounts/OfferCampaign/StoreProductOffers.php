@@ -5,7 +5,7 @@ namespace App\Actions\Discounts\OfferCampaign;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Http\Request;
 
-class StoreGiftsOffer
+class StoreProductOffers
 {
     use AsAction;
 

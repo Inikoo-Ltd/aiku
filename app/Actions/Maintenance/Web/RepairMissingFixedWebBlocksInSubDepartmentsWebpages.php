@@ -115,10 +115,10 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         UpdateWebpageContent::run($webpage);
     }
 
-   public function setDescriptionWebBlockHidden(Webpage $webpage): void
+    public function setDescriptionWebBlockHidden(Webpage $webpage): void
     {
         $subDepartmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'sub-department-description-1')->first();
-        
+
         if ($subDepartmentDescriptionWebBlock) {
             DB::table('model_has_web_blocks')
                 ->where('id', $subDepartmentDescriptionWebBlock->model_has_web_blocks_id)

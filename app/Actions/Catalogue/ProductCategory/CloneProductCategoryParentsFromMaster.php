@@ -18,7 +18,7 @@ class CloneProductCategoryParentsFromMaster
 {
     use asAction;
 
-    public function handle(ProductCategory $productCategory, Command|null $command=null): ProductCategory
+    public function handle(ProductCategory $productCategory, Command|null $command = null): ProductCategory
     {
         $masterCategory = $productCategory->masterProductCategory;
         if (!$masterCategory || $productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -26,7 +26,7 @@ class CloneProductCategoryParentsFromMaster
         }
 
         if ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            return $this->cloneSubDepartmentParentsFromMaster($productCategory,$command);
+            return $this->cloneSubDepartmentParentsFromMaster($productCategory, $command);
         }
 
         if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
@@ -36,7 +36,7 @@ class CloneProductCategoryParentsFromMaster
         return $productCategory;
     }
 
-    public function cloneSubDepartmentParentsFromMaster(ProductCategory $productCategory, Command|null $command=null): ProductCategory
+    public function cloneSubDepartmentParentsFromMaster(ProductCategory $productCategory, Command|null $command = null): ProductCategory
     {
         $masterCategory = $productCategory->masterProductCategory;
         $masterDepartment = $masterCategory->masterDepartment;
@@ -57,7 +57,7 @@ class CloneProductCategoryParentsFromMaster
                     'department_id' => $department->id,
                 ]
             );
-        }else{
+        } else {
             $command?->error('department not found');
         }
 
@@ -111,9 +111,9 @@ class CloneProductCategoryParentsFromMaster
 
     public function asCommand(Command $command): int
     {
-        $productCategory=ProductCategory::where('slug',$command->argument('product_category'))->firstOrFail();
+        $productCategory = ProductCategory::where('slug', $command->argument('product_category'))->firstOrFail();
         $command->info('Updating parents of '.$productCategory->name);
-        $this->handle($productCategory,$command);
+        $this->handle($productCategory, $command);
 
         return 0;
     }

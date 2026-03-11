@@ -21,6 +21,10 @@ class GetIrisBasketTransactions extends IrisAction
     {
         $basket = $customer->orderInBasket;
 
+        if ($basket === null) {
+            return [];
+        }
+
         $query = DB::table('transactions')
             ->where('transactions.order_id', $basket->id)
             ->where('transactions.model_type', class_basename(Product::class))

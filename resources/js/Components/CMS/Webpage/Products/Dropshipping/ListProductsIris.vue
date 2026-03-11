@@ -21,6 +21,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import RenderProductDropshiping from "./RenderProductDropshiping.vue";
+import Image from "@/Components/Image.vue"
 
 library.add(faFileDownload)
 

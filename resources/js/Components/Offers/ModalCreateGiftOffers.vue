@@ -33,7 +33,7 @@ const isLoadingSubmit = ref(false)
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.campaigns.store_gift', {
+        route('grp.org.shops.show.discounts.campaigns.store_gift', {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se',
@@ -185,6 +185,8 @@ const isFormInvalid = computed(() => {
                                 <FontAwesomeIcon icon="fas fa-asterisk"
                                     class="font-light text-xs text-red-400 align-middle" />
                                 {{ trans('Start Date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
                             <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
@@ -195,6 +197,8 @@ const isFormInvalid = computed(() => {
                         <div v-if="dateType === 'interval'" class="space-y-2">
                             <label class="font-medium mb-2 block">
                                 {{ trans('End Date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"

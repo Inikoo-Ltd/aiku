@@ -24,6 +24,7 @@ enum OfferCampaignTypeEnum: string
     case DISCRETIONARY = 'discretionary';
     case SHIPPING = 'shipping';
     case GIFT = 'gift';
+    case VOUCHERS = 'vouchers';
 
 
     public function labels(): array
@@ -38,7 +39,8 @@ enum OfferCampaignTypeEnum: string
             'product-offers'  => __('Product offers'),
             'discretionary'   => __('Discretionary discounts'),
             'shipping'        => __('Shipping discount'),
-            'gift'            => __('Gifts')
+            'gift'            => __('Gifts'),
+            'vouchers'        => __('Vouchers'),
         ];
     }
 
@@ -54,7 +56,8 @@ enum OfferCampaignTypeEnum: string
             'product-offers'  => 'PO',
             'discretionary'   => 'DI',
             'shipping'        => 'SH',
-            'gift'            => 'GI'
+            'gift'            => 'GI',
+            'vouchers'        => 'VR',
         ];
     }
 
@@ -109,6 +112,11 @@ enum OfferCampaignTypeEnum: string
             'gift'            => [
                 'icon'    => 'fal fa-gift',
                 'tooltip' => self::from('gift')->labels()['gift'] ?? 'Unknown',
+                'class'   => '',
+            ],
+            'vouchers'        => [
+                'icon'    => 'fal fa-badge-percent',
+                'tooltip' => self::from('vouchers')->labels()['vouchers'] ?? 'Unknown',
                 'class'   => '',
             ]
         ];

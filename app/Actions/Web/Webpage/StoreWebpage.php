@@ -21,7 +21,6 @@ use App\Actions\Web\Website\Layouts\FetchUsedFamiliesWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedSubDepartmentsWebBlock;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;

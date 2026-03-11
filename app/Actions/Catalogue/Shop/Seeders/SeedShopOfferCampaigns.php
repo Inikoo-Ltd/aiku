@@ -106,7 +106,7 @@ class SeedShopOfferCampaigns extends GrpAction
     public function asCommand(Command $command): int
     {
         $command->info("Seeding shop offer campaigns");
-        foreach (Shop::all() as $shop) {
+        foreach (Shop::where('type', ShopTypeEnum::B2B)->get() as $shop) {
             $this->handle($shop);
         }
 
