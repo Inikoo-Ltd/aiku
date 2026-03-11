@@ -14,7 +14,7 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 
-//  This function can be using by mailshot and newsletter
+//NOTE: This function can be using by mailshot and newsletter
 class AddRecipientsToMailshot extends OrgAction
 {
     public function handle(Mailshot $mailshot, $recipients, $emailDeliveryChannel, Outbox $outbox): void
