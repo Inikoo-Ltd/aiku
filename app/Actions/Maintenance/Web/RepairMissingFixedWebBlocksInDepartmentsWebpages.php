@@ -174,7 +174,13 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
     public function setDescriptionWebBlockHidden(Webpage $webpage): void
     {
         $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first();
-        $departmentDescriptionWebBlock->update(['show' => false]);
+
+        if ($departmentDescriptionWebBlock) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $departmentDescriptionWebBlock->model_has_web_blocks_id)
+                ->update(['show' => false]);
+        }
+
         UpdateWebpageContent::run($webpage);
     }
 
