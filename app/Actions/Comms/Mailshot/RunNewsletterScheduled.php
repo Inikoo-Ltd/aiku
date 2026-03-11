@@ -29,6 +29,12 @@ class RunNewsletterScheduled
         $newsletterQuery = QueryBuilder::for(Mailshot::class);
         $newsletterQuery->where('type', MailshotTypeEnum::NEWSLETTER);
         $newsletterQuery->where('state', MailshotStateEnum::SCHEDULED);
+
+        // NOTE: For testing purposes, only available for Ukraine
+        $newsletterQuery->whereIn('shop_id', [
+            44, // Ukraine
+            // 42,// Bulgaria
+        ]);
         $newsletterQuery->whereNull('deleted_at');
         $newsletterQuery->whereNull('cancelled_at');
         $newsletterQuery->whereNull('stopped_at');
