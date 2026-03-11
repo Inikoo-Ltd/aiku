@@ -201,7 +201,7 @@ const onSelectParent = (parentType: string, parentId: any) => {
 
 
 
-<style scoped>
+<style scoped lang="scss">
 /* Base table */
 /* Reset semua border */
 :deep(.iris-catalouge table) {
