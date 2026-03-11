@@ -321,7 +321,7 @@ const modalTitle = computed(() =>
 					<select
 						v-model="targetForm.target_type"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
-						<option value="">
+						<option value="" disabled>
 							{{ trans("Select target type") }}
 						</option>
 						<option
@@ -344,7 +344,7 @@ const modalTitle = computed(() =>
 						v-if="targetForm.target_type === 'Employee'"
 						v-model.number="targetForm.target_id"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
-						<option value="">
+						<option value="" disabled>
 							{{ trans("Select employee") }}
 						</option>
 						<option
@@ -429,10 +429,18 @@ const modalTitle = computed(() =>
 					<div>
 						<span class="font-medium text-gray-700">{{ target.target_type }}</span>
 						<span v-if="target.target_type === 'Employee'" class="ml-2 text-gray-500">
-							{{ props.employees.find((e) => e.value === target.target_id)?.label ?? target.target_id }}
+							{{
+								props.employees.find((e) => e.value === target.target_id)?.label ??
+								target.target_id
+							}}
 						</span>
-						<span v-else-if="target.target_type === 'LeaveType'" class="ml-2 text-gray-500">
-							{{ props.leaveTypes.find((l) => l.value === target.target_id)?.label ?? target.target_id }}
+						<span
+							v-else-if="target.target_type === 'LeaveType'"
+							class="ml-2 text-gray-500">
+							{{
+								props.leaveTypes.find((l) => l.value === target.target_id)?.label ??
+								target.target_id
+							}}
 						</span>
 						<span v-else class="ml-2 text-gray-500">ID: {{ target.target_id }}</span>
 						<span
