@@ -12,6 +12,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
@@ -19,6 +21,7 @@ use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationIntervals;
+use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
@@ -172,6 +175,15 @@ class StoreCustomer extends OrgAction
         GroupHydrateRegistrationIntervals::dispatch($customer->group_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         if ($customer->master_shop_id) {
             MasterShopHydrateRegistrationIntervals::dispatch($customer->master_shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        }
+
+        if ($customer->registered_at) {
+            $registeredAtDate = \Carbon\Carbon::parse($customer->registered_at)->toDateString();
+            RedoShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            RedoOrganisationTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            }
         }
 
         CustomerRecordSearch::dispatch($customer);
