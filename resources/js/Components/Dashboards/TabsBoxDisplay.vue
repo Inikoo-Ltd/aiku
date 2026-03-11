@@ -132,6 +132,11 @@ const getRoute = (tabSlug) => {
                   borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit'
                 }"
             >
+                <div class="text-center mb-2 text-xs">
+                    <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="" fixed-width aria-hidden="true" />
+                    {{ box.label }}
+                </div>
+
                 <div class="flex gap-x-4">
                     <div
                         v-for="tab in box.tabs"
