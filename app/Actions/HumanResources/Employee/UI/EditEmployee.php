@@ -18,6 +18,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Http\Resources\Helpers\EmergencyFormFieldsResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Http\Resources\Inventory\WarehouseResource;
 use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
@@ -80,6 +81,7 @@ class EditEmployee extends OrgAction
                     'label' => __('Work email'),
                     'value' => $employee->work_email ?? ''
                 ],
+
                 'state' => [
                     'type' => 'select',
                     'label' => 'Employee Status',
@@ -94,11 +96,20 @@ class EditEmployee extends OrgAction
                 ],
 
                 'job_title' => [
-                    'type' => 'input',
+                    'type' => 'select',
                     'label' => __('Job Title'),
                     'placeholder' => __('Job Title'),
                     'searchable' => true,
-                    'value' => $employee->job_title,
+                    'options' => [
+                        ['label' => 'Developer - Front End', 'value' => 'developer-front-end'],
+                        ['label' => 'Developer - Back End', 'value' => 'developer-back-end'],
+                        ['label' => 'Developer - Full Stack', 'value' => 'developer-full-stack'],
+                        ['label' => 'Marketing - Social Media Specialist', 'value' => 'marketing-social-media-specialist'],
+                        ['label' => 'Marketing - PPC', 'value' => 'marketing-ppc'],
+                        ['label' => 'Marketing - SEO', 'value' => 'marketing-seo'],
+                        ['label' => 'Managerial - Manager Officer', 'value' => 'managerial-manager-officer'],
+                        ['label' => 'Managerial - Finance & Accounting', 'value' => 'managerial-finance-and-accounting'],
+                    ],
                     'required' => true
                 ],
 
@@ -302,9 +313,12 @@ class EditEmployee extends OrgAction
                     ],
                 ],
                 'emergency_contact' => [
-                    'type' => 'textarea',
+                    'type' => 'emergency_contact',
                     'label' => __('Emergency Contact'),
-                    'value' => $employee->emergency_contact
+                    'value' => EmergencyFormFieldsResource::make($employee->emergency_contact)->getArray(),
+                    'options' => [
+                        //
+                    ],
                 ],
                 'identity_document_type' => [
                     'type' => 'input',
