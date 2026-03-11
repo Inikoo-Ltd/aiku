@@ -80,7 +80,7 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
 
             <!-- Trigger: Item Quantity -->
-            <div v-if="data.data_allowance_signature.product_category" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <div v-if="data.data_allowance_signature?.product_category" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>Product category</span>
@@ -110,7 +110,7 @@ const getCategoryLink = (productCategory: {}) => {
                 Trigger
             </div>
             <!-- Trigger: Item Quantity -->
-            <div v-if="(typeof data.trigger_data.item_quantity !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <div v-if="(typeof data.trigger_data?.item_quantity !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>Item quantity</span>
@@ -129,7 +129,7 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
 
             <!-- Trigger: Item Quantity -->
-            <div v-if="(typeof data.trigger_data.min_amount !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <div v-if="(typeof data.trigger_data?.min_amount !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>Order amount</span>
@@ -148,7 +148,7 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
 
             <!-- Trigger: Item Quantity -->
-            <div v-if="(typeof data.trigger_data.order_number !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <div v-if="(typeof data.trigger_data?.order_number !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>Minimum order</span>
