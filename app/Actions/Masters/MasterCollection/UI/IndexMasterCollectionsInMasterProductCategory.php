@@ -182,7 +182,9 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
 
         $title = $masterProductCategory->name;
-        $iconRight = [];
+        $iconRight       = [
+            'icon' => 'fal fa-album-collection',
+        ];
 
         $afterTitle = [
             'label' => __('Master Collections')
@@ -196,7 +198,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
             $subNavigation = $this->getMasterDepartmentSubNavigation($masterProductCategory);
         } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $icon = [
-                'icon'  => ['fal', 'fa-dot-circle'],
+                'icon'  => ['fal', 'fa-folder-download'],
                 'title' => __('Master sub department')
             ];
             $subNavigation = $this->getMasterSubDepartmentSubNavigation($masterProductCategory);

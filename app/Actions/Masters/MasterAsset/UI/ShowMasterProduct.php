@@ -220,17 +220,6 @@ class ShowMasterProduct extends GrpAction
                             'key'   => 'edit',
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('Edit'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ],
-                        [
-                            'key'   => 'assign',
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Add to Other Shop'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -244,7 +233,17 @@ class ShowMasterProduct extends GrpAction
                                 'name'       => 'shops.show.assets.remove',
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false
+                        ] : false,
+                        [
+                            'key'   => 'assign',
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('Add to Other Shop'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ],
                     ],
                     'subNavigation'        => $this->getMasterProductsSubNavigation($masterAsset),
                 ],
@@ -261,6 +260,7 @@ class ShowMasterProduct extends GrpAction
                 'masterVariant'        => $masterAsset->masterVariant,
                 'is_variant_leader'    => $masterAsset->is_variant_leader,
                 'mismatch_detected'    => $masterAsset->mismatch_detected,
+                'products'             => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset)),
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductShowcase::run($masterAsset)

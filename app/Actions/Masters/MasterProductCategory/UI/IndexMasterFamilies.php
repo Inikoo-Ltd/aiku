@@ -377,11 +377,11 @@ class IndexMasterFamilies extends OrgAction
             'icon'  => ['fal', 'fa-store-alt'],
             'title' => __('Master shop')
         ];
+        $iconRight       = [
+            'icon' => 'fal fa-folder',
+        ];
         $afterTitle      = [
             'label' => __('Master Families')
-        ];
-        $iconRight       = [
-            'icon' => 'fal fa-folder-tree',
         ];
         $parentType      = 'department';
 
@@ -411,7 +411,7 @@ class IndexMasterFamilies extends OrgAction
             } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $parentType      = 'sub_department';
                 $icon            = [
-                    'icon'  => ['fal', 'fa-folder'],
+                    'icon'  => ['fal', 'fa-folder-download'],
                     'title' => __('Master sub-department')
                 ];
                 $subNavigation   = $this->getMasterSubDepartmentSubNavigation($this->parent);

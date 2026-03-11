@@ -9,7 +9,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { routeType } from "@/types/route"
 import Icon from "@/Components/Icon.vue"
-import { faTrash, faEdit,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faFolders, faFolderTree, faFolderDownload, faMinus } from "@fal"
+import { faTrash, faEdit,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faFolders, faFolderTree, faFolderDownload, faMinus, faUnlink, faTimes } from "@fal"
 import { faPlay,faTimesCircle, faCheckCircle  as fasCheckCircle, faTriangle, faEquals} from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -20,6 +20,9 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import axios from "axios"
+import { remove as loRemove } from 'lodash-es'
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(fasCheckCircle,faTimesCircle,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree, faTrash, faEdit, faTriangle, faEquals, faMinus)
 
@@ -33,6 +36,7 @@ const props = defineProps<{
         detach: routeType
     }
     website_domain?: string
+    hideDelete?: boolean
 }>()
 
 const inMasterCollection = route().current() === 'grp.masters.master_shops.show.master_collections.index';
@@ -42,8 +46,10 @@ function collectionRoute(collection: { slug: string }) {
   const currentRoute = route().current();
 
   switch (currentRoute) {
+    case "grp.masters.master_shops.show.master_collections.show":
     case "grp.masters.master_shops.show.master_collections.index":
     case 'grp.masters.master_shops.show.master_departments.show.master_collections.index':
+    default:
       return route(
         "grp.masters.master_shops.show.master_collections.show",
         [
@@ -51,9 +57,6 @@ function collectionRoute(collection: { slug: string }) {
           collection.slug
         ]
       );
-
-    default:
-      return null;
   }
 }
 
@@ -135,6 +138,34 @@ const getIntervalStateColor = (isPositive: boolean) => {
 }
 
 console.log('ssss',props)
+
+// const detachCollection = async (model) => {
+//     isLoadingDetach.value = true;
+//     await axios.delete(route(props.routes.detach.name, props.routes.detach.parameters), 
+//     {
+//         data: {
+//             collection: model.id
+//         }
+//     })
+//     .then((res) => {
+//         notify({
+//             title: trans('Success'),
+//             text: trans(`Successfully detached collection`),
+//             type: 'success',
+//         })
+//     })
+//     .catch((res) => {
+//         console.error("Error Response:", res);
+//         notify({
+//             title: trans('Error'),
+//             text: trans(`Failed to detach collection`),
+//             type: 'error',
+//         })
+//     })
+//     .finally(() => {
+//         isLoadingDetach.value = false;
+//     });
+// }
 </script>
 
 <template>
@@ -286,33 +317,40 @@ console.log('ssss',props)
 
          <template #cell(actions)="{ item }">
             <div class="flex items-center gap-2">
-            <ModalConfirmationDelete
-                :routeDelete="item.delete_route"
-                :title="trans('Are you sure you want to delete this master collection?')"
-                :description="trans('Doing so would delete all of the collections and permanently delete their webpages in every single shop under this master collection 😥 .This action cannot be undone.')"
-                isFullLoading
-                :noLabel="trans('Delete')"
-                :noIcon="'fal fa-store-alt-slash'"
-            >
-                <template #beforeTitle>
-                    <div class="text-center font-semibold text-xl mb-4">
-                        {{ trans('Deleting master collection :_masterCollection', {_masterCollection: item.name}) }} <br>
-                        {{ `(${item.code})` }}
-                    </div>
-                </template>
+                <ModalConfirmationDelete
+                    v-if="!hideDelete"
+                    :routeDelete="item.delete_route"
+                    :title="trans('Are you sure you want to delete this master collection?')"
+                    :description="trans('Doing so would delete all of the collections and permanently delete their webpages in every single shop under this master collection 😥 .This action cannot be undone.')"
+                    isFullLoading
+                    :noLabel="trans('Delete')"
+                    :noIcon="'fal fa-store-alt-slash'"
+                >
+                    <template #beforeTitle>
+                        <div class="text-center font-semibold text-xl mb-4">
+                            {{ trans('Deleting master collection :_masterCollection', {_masterCollection: item.name}) }} <br>
+                            {{ `(${item.code})` }}
+                        </div>
+                    </template>
 
-                <template #default="{ isOpenModal, changeModel }">
-                    <Button
-                        v-tooltip="trans('Delete master collection')"
-                        @click="changeModel()"
-                        :type="'negative'"
-                        icon="fal fa-trash"
-                        size="s"
-                        :key="1"
-                    />
-                </template>
-            </ModalConfirmationDelete>
-
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button
+                            v-tooltip="trans('Delete master collection')"
+                            @click="changeModel()"
+                            :type="'negative'"
+                            icon="fal fa-trash"
+                            size="s"
+                            :key="1"
+                        />
+                    </template>
+                </ModalConfirmationDelete>
+                <Link v-if="routes?.detach?.name" as="button"
+                    :href="route(routes.detach.name, { ...routes.detach.parameters, collection: item.id })"
+                    :method="routes.detach.method" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                    @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+                    <Button icon="fal fa-times" type="negative" size="xs"
+                        :loading="isLoadingDetach.includes('detach' + item.id)" />
+                </Link>
             </div>
         </template>
     </Table>

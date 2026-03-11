@@ -138,7 +138,10 @@ class IndexDepartmentsInMasterDepartment extends OrgAction
                 ->withLabelRecord([__('department'),__('departments')])
                 ->withGlobalSearch()
                 ->withEmptyState(
-
+                    [
+                        'title' => __("No departments found under this master department"),
+                        'count' => $parent->stats->number_departments,
+                    ]
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
 
