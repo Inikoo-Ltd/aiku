@@ -195,13 +195,7 @@ class IndexMasterSubDepartments extends GrpAction
 
         $subNavigation = null;
         $modelNavigation = [];
-        if ($this->parent instanceof MasterShop) {
-            $subNavigation = $this->getMasterShopNavigation($this->parent);
-        } elseif ($this->parent instanceof MasterProductCategory) {
-            $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
-            $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
 
-        }
         $title      = $this->parent->name;
         $model      = '';
         $icon       = [
@@ -214,6 +208,18 @@ class IndexMasterSubDepartments extends GrpAction
         $iconRight  = [
             'icon' => 'fal fa-folder-download',
         ];
+
+        if ($this->parent instanceof MasterShop) {
+            $subNavigation = $this->getMasterShopNavigation($this->parent);
+        } elseif ($this->parent instanceof MasterProductCategory) {
+            $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
+            $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
+
+            $icon = [
+                'icon'  => ['fal', 'fa-folder-tree'],
+                'title' => __('Master Department')
+            ];
+        }
 
         return Inertia::render(
             'Masters/MasterSubDepartments',
