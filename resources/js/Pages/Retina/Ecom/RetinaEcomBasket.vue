@@ -690,6 +690,7 @@ const onChangeInsurance = async (val: boolean) => {
                             :loading="isLoadingNote.includes('shipping_notes')"
                             :isSuccess="recentlySuccessNote.includes('shipping_notes')"
                             :isError="recentlyErrorNote"
+                            :maxlength="35"
                         />
                     </div>
                     <!-- Input text: Other instructions -->
