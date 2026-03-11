@@ -25,7 +25,6 @@ use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
 use App\Actions\Discounts\OfferCampaign\StoreGiftsOffer;
 use App\Actions\Discounts\OfferCampaign\StoreShopOffer;
 
-
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
     ->group(function () {

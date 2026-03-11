@@ -200,7 +200,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             ->where('sub_type', 'department')
             ->when(
                 !empty($websiteId),
-                fn($q) => $q->where('website_id', $websiteId)
+                fn ($q) => $q->where('website_id', $websiteId)
             )
             ->get();
 

@@ -170,7 +170,7 @@ class UpdateOrder extends OrgAction
             }
 
             if (Arr::has($changedFields, 'internal_notes')) {
-                foreach($order->deliveryNotes()->whereNotIn('delivery_notes.state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])->get() as $deliveryNote) {
+                foreach ($order->deliveryNotes()->whereNotIn('delivery_notes.state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])->get() as $deliveryNote) {
                     UpdateDeliveryNote::run($deliveryNote, ['internal_notes' => $order->internal_notes]);
                 }
             }

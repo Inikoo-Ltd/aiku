@@ -117,6 +117,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Snapshot|null $liveFamilySnapshot
+ * @property-read Snapshot|null $liveProductSnapshot
  * @property-read Snapshot|null $liveProductsSnapshot
  * @property-read Snapshot|null $liveSnapshot
  * @property-read Snapshot|null $liveSubDepartmentSnapshot
