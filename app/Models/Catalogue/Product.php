@@ -177,6 +177,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $marketplace_id
  * @property string|null $margin
  * @property string|null $marketplace_second_id
+ * @property bool $is_bundle
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

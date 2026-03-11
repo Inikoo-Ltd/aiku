@@ -48,7 +48,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $model_id
  * @property int|null $current_historic_asset_id
  * @property AssetStateEnum $state
- * @property AssetHealthRankEnum|null $health_rank
  * @property bool $status
  * @property string $code mirror of the asset model
  * @property string|null $name mirror of the asset model
@@ -63,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $follow_master
  * @property array<array-key, mixed>|null $offers_data
  * @property array<array-key, mixed> $tax_category
+ * @property AssetHealthRankEnum|null $health_rank
  * @property ProductUnitRelationshipType $unit_relationship_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Barcode> $barcode
  * @property-read Charge|null $charge
