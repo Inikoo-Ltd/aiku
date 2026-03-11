@@ -63,6 +63,7 @@ export interface PageHeadingTypes {
     titleRight?: string
     title: string,
     subNavigation?: any
+    subNavigation2?: any
     wrapped_actions: Action[]
     parentTag?: ParentTag[]
     iconLinks?: {
