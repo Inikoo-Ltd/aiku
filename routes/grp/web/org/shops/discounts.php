@@ -22,8 +22,11 @@ use App\Stubs\UIDummies\EditDummy;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Discounts\OfferCampaign\StoreDiscountShipping;
 use App\Actions\Discounts\OfferCampaign\StoreCustomerOffers;
-use App\Actions\Discounts\OfferCampaign\StoreGiftsOffer;
-use App\Actions\Discounts\OfferCampaign\StoreShopOffer;
+use App\Actions\Discounts\OfferCampaign\StoreGiftsOffers;
+use App\Actions\Discounts\OfferCampaign\StoreShopOffers;
+use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
+use App\Actions\Discounts\OfferCampaign\StoreCategoryOffers;
+use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
@@ -59,9 +62,9 @@ Route::name("campaigns.")->prefix('campaigns')
         Route::get('{offerCampaign}/edit-gr-amnesty', EditVolGrGift::class)->name('edit_current_gr_amnesty_offer')->withoutScopedBindings();
 
         Route::post(
-            '{offerCampaign}/shop',
-            StoreShopOffer::class
-        )->name('store');
+            '{offerCampaign}/voucher',
+            StoreVoucherOffers::class
+        )->name('store_voucher');
 
         Route::post(
             '{offerCampaign}/shipping',
@@ -75,8 +78,18 @@ Route::name("campaigns.")->prefix('campaigns')
 
         Route::post(
             '{offerCampaign}/gift',
-            StoreGiftsOffer::class
+            StoreGiftsOffers::class
         )->name('store_gift');
+
+        Route::post(
+            '{offerCampaign}/category',
+            StoreCategoryOffers::class
+        )->name('store_category');
+
+        Route::post(
+            '{offerCampaign}/product',
+            StoreProductOffers::class
+        )->name('store_product');
     });
 
 Route::name("offers.")->prefix('offers')
