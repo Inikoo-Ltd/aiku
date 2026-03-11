@@ -54,6 +54,7 @@ use Illuminate\Support\Arr;
  * @property mixed $variant_code
  * @property mixed $webpage
  * @property mixed $is_for_sale
+ * @property mixed $discontinued_at
  *
  * @method imageSources(int $int, int $int1)
  */
@@ -81,6 +82,8 @@ class ProductsResource extends JsonResource
         if ($product->relationLoaded('orgStocks')) {
             data_set($extraField, 'org_stocks', $this->getDataPickingFactor($product->orgStocks));
         }
+
+
 
         return [
             'id'                        => $this->id,
@@ -135,9 +138,14 @@ class ProductsResource extends JsonResource
 
     private function getDataPickingFactor($orgStocks): ?array
     {
+
+
         return $orgStocks->map(function ($orgStock) {
+
+
+
             return [
-                'pick_fractional'   => ($orgStock->pivot->quantity && $orgStock->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)), $orgStock->packed_in) : [],
+                'pick_fractional'   => ($orgStock->pivot->quantity && $orgStock->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)), $orgStock->packed_in) : null,
             ];
         })->toArray();
     }

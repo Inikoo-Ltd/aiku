@@ -31,6 +31,11 @@ class IndexProductsInMasterProduct extends OrgAction
 {
     use WithMasterProductSubNavigation;
 
+    /**
+     * @var \App\Models\Masters\MasterAsset
+     */
+    private MasterAsset $parent;
+
     public function handle(MasterAsset $masterAsset, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -135,7 +140,7 @@ class IndexProductsInMasterProduct extends OrgAction
         return ProductsResource::collection($products);
     }
 
-    public function htmlResponse(LengthAwarePaginator $products)
+    public function htmlResponse(LengthAwarePaginator $products): \Illuminate\Http\Response|\Inertia\Response
     {
         $subNavigation   = $this->getMasterProductsSubNavigation($this->parent);
         $title           = $this->parent->name;
@@ -240,7 +245,7 @@ class IndexProductsInMasterProduct extends OrgAction
         return $this->handle($masterProduct, ProductsTabsEnum::INDEX->value);
     }
 
-    public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterAsset $masterProduct, ActionRequest $request)
+    public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterAsset $masterProduct, ActionRequest $request)
     {
         $this->initialisationFromGroup($masterProduct->group, $request)->withTab(ProductsTabsEnum::valuesExcept([ProductsTabsEnum::SALES]));
         $this->parent = $masterProduct;

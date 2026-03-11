@@ -38,17 +38,17 @@ class ShowOffer extends OrgAction
         $icon      = ['fal', 'fa-badge-percent'];
         $iconRight = null;
 
-        $editRoute=null;
-        $actions=[];
+        $editRoute = null;
+        $actions = [];
 
-        if($offer->type == "VolGr Gift") {
+        if ($offer->type == "VolGr Gift") {
             $editRoute = [
                 'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit_vol_gr_gift',
                 'parameters' => $request->route()->parameters()
             ];
         }
 
-        if($editRoute) {
+        if ($editRoute) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
@@ -81,7 +81,7 @@ class ShowOffer extends OrgAction
                         'id'      => $product->id,
                         'code'    => $product->code,
                         'name'    => $product->name,
-                        'web_images_main'       => $product->web_images['main'],
+                        'web_images_main'       => data_get($product->web_images, 'main'),
                         'default' => Arr::get($productData, 'default', false),
                     ];
                 }
