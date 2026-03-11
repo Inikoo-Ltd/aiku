@@ -230,11 +230,18 @@ class DeliveryNote extends Model implements Auditable
     protected array $auditInclude = [
         'reference',
         'type',
+        'state',
         'net_amount',
         'currency_id',
         'grp_exchange',
         'org_exchange',
         'total_amount',
+        'internal_notes',
+        'public_notes',
+        'customer_notes',
+        'shipping_notes',
+        'number_items',
+        'number_stocks',
     ];
 
     public function getSlugOptions(): SlugOptions

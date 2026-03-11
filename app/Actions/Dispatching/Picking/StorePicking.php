@@ -23,17 +23,20 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Actions\Traits\WithDeliveryNoteAudit;
 
 class StorePicking extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+    use WithDeliveryNoteAudit;
 
     protected DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): Picking
     {
+        $oldQuantity = $deliveryNoteItem->quantity_picked;
         data_forget($modelData, 'location_org_stock_id');
 
         data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
@@ -71,6 +74,17 @@ class StorePicking extends OrgAction
         );
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+
+        $deliveryNoteItem->refresh();
+
+        $this->auditDeliveryNoteItem($deliveryNoteItem, 'updated',
+            ['quantity_picked' => $oldQuantity],
+            [
+                'quantity_picked' => $deliveryNoteItem->quantity_picked,
+                'item_name'       => $deliveryNoteItem->orgStock->name
+            ]
+        );
+
 
         return $picking;
     }

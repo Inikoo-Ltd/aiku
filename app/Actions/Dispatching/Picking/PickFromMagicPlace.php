@@ -22,18 +22,22 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Actions\Traits\WithDeliveryNoteAudit;
 
 class PickFromMagicPlace extends OrgAction
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithDeliveryNoteAudit;
 
     private DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking|null
     {
+        $oldQuantity = $deliveryNoteItem->quantity_picked;    
+
         $toPickQuantity = $deliveryNoteItem->quantity_required - $deliveryNoteItem->quantity_picked - $deliveryNoteItem->quantity_not_picked;
 
         if (Arr::has($modelData, 'quantity')) {
@@ -62,9 +66,20 @@ class PickFromMagicPlace extends OrgAction
         /** @var Picking $picking */
         $picking = $deliveryNoteItem->pickings()->create($modelData);
         $picking->refresh();
-
-
+        
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+
+        $deliveryNoteItem->refresh();
+
+        $this->auditDeliveryNoteItem($deliveryNoteItem, 'updated', 
+            [
+                'quantity_picked'  => $oldQuantity
+            ],
+            [
+                'quantity_picked'  => $deliveryNoteItem->quantity_picked,
+                'item_name'     => $deliveryNoteItem->orgStock->name
+            ]
+        );
 
         return $picking;
     }

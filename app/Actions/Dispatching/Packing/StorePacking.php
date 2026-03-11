@@ -19,17 +19,21 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Actions\Traits\WithDeliveryNoteAudit;
 
 class StorePacking extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+    use WithDeliveryNoteAudit;
 
     protected DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Packing
     {
+        $oldQuantity = $deliveryNoteItem->quantity_packed;
+
         data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
         data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
         data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
@@ -41,6 +45,16 @@ class StorePacking extends OrgAction
         CalculateDeliveryNoteItemTotalPacked::make()->action($deliveryNoteItem);
 
         $packing->refresh();
+        $deliveryNoteItem->refresh();
+        
+        $this->auditDeliveryNoteItem($deliveryNoteItem, 'updated',
+        [
+            'quantity_packed' => $oldQuantity
+        ],
+        [
+            'quantity_packed' => $deliveryNoteItem->quantity_packed,
+            'item_name'       => $deliveryNoteItem->orgStock->name
+        ]);
 
         return $packing;
     }

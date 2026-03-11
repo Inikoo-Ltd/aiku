@@ -25,7 +25,38 @@ class UpdateDeliveryNoteItem extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
+        $oldValues = [
+            'quantity_picked' => $deliveryNoteItem->quantity_picked,
+            'quantity_packed' => $deliveryNoteItem->quantity_packed,
+            'state'           => $deliveryNoteItem->state?->value
+        ];
+
         $deliveryNoteItem = $this->update($deliveryNoteItem, $modelData, ['data']);
+        
+        $changeOld = [];
+        $changeNew = [];
+
+        foreach($oldValues as $key => $oldValue){
+            $newValue = $deliveryNoteItem->$key instanceof \BackedEnum ? $deliveryNoteItem->$key->value : $deliveryNoteItem->$key;
+            dd($key, $oldValue, $newValue, $oldValue != $newValue);
+            if($oldValue != $newValue){
+                $changeOld[$key] = $oldValue;
+                $changeNew[$key] = $newValue;
+            }
+        }
+
+        if(!empty($changeOld)){
+            $deliveryNoteItem->deliveryNote->audits()->create([
+                'event'         => 'updated',
+                'old_values'    => array_merge(['item' => $deliveryNoteItem->slug ?? $deliveryNoteItem->id], $changeOld),
+                'new_values'    => array_merge(['item' => $deliveryNoteItem->slug ?? $deliveryNoteItem->id], $changeNew),
+                'url'           => request()->fullUrl(),
+                'ip_address'    => request()->ip(),
+                'user_agent'    => request()->userAgent(),
+                'user_type'     => get_class(request()->user()),
+                'user_id'       => request()->user()?->id
+            ]);
+        }
 
         if ($this->strict) {
             if ($deliveryNoteItem->wasChanged('quantity_picked') && $deliveryNoteItem->quantity_picked === $deliveryNoteItem->quantity_required) {

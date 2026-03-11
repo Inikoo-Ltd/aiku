@@ -360,11 +360,6 @@ class Shop extends Model implements HasMedia, Auditable
             $data['new_values']['settings'] = $this->getAttribute('settings');
         }
 
-        // if (array_key_exists('forbidden_dispatch_countries', $dirty)) {
-        //     $data['old_values']['forbidden_dispatch_countries'] = $this->getOriginal('forbidden_dispatch_countries');
-        //     $data['new_values']['forbidden_dispatch_countries'] = $this->getAttribute('forbidden_dispatch_countries');
-        // }
-
         return AuditShopTransformer::transform($data);
     }
 
