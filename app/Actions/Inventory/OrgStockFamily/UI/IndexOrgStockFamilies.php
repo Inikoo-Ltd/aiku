@@ -251,13 +251,13 @@ class IndexOrgStockFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date'])
+                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
             } else {
                 $table
-                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
                     ->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
                     ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKU)'), canBeHidden: false)

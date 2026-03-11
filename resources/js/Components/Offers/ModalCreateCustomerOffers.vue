@@ -78,7 +78,7 @@ const productFetchRoute = {
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.campaigns.store_customer', {
+        route('grp.org.shops.show.discounts.campaigns.store_customer', {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se',
@@ -141,6 +141,15 @@ const isFormInvalid = computed(() => {
         return true
     }
 
+    if (target.product) {
+        if (!productFilters.value.length) return true
+        return false
+    }
+
+    if (target.shop && !selectedShops.value.length) {
+        return true
+    }
+
     if (target.category) {
 
         if (!categoryType.value) return true
@@ -148,14 +157,8 @@ const isFormInvalid = computed(() => {
         if (!categoryFilters.value.length) return true
     }
 
-    if (target.collection) {
-
-        if (!collectionFilters.value.length) return true
-    }
-
-    if (target.product) {
-
-        if (!productFilters.value.length) return true
+    if (target.collection && !collectionFilters.value.length) {
+        return true
     }
 
     return false
