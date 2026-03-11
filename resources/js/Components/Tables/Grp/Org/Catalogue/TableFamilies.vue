@@ -87,6 +87,7 @@ function familyRoute(family: Family) {
         case 'grp.masters.master_shops.show.master_sub_departments.master_families.show':
         case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show':
         case "grp.masters.master_shops.show.master_families.families":
+        case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.families':
             return route(
                 'grp.org.shops.show.catalogue.families.show',
                 [family.organisation_slug, family.shop_slug, family.slug])
@@ -99,6 +100,10 @@ function shopRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.dashboard",
                 [(route().params as RouteParams).organisation, family.shop_slug])
+        case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.families':
+            return route(
+              "grp.org.shops.show.catalogue.families.show",
+              [family.organisation_slug, family.shop_slug, family.slug])
         default:
             return route(
                 "grp.org.shops.show.catalogue.dashboard",
@@ -130,6 +135,7 @@ function departmentRoute(family: Family) {
                 "grp.org.shops.show.catalogue.departments.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug])
         case 'grp.masters.master_shops.show.master_families.show':
+        case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.families':
             return route(
                 "grp.org.shops.show.catalogue.departments.show",
                 [family.organisation_slug, family.shop_slug, family.department_slug])
@@ -159,18 +165,33 @@ function collectionRoute(organisation_slug: string, shop_slug: string, collectio
 }
 
 function subDepartmentRoute(family: Family) {
-    switch (route().current()) {
+    const current = route().current()
+    const params = route().params as RouteParams
+
+    switch (current) {
         case 'grp.org.shops.show.catalogue.families.index':
-            return route(
-                'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
-                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug, family.sub_department_slug])
         case 'grp.org.shops.show.catalogue.departments.show.families.index':
             return route(
                 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
-                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug, family.sub_department_slug])
+                [
+                    params.organisation,
+                    params.shop,
+                    family.department_slug,
+                    family.sub_department_slug
+                ]
+            )
+
+        case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.families':
+            return route(
+                'grp.org.shops.show.catalogue.sub_departments.show',
+                [
+                    family.organisation_slug,
+                    family.shop_slug,
+                    family.sub_department_slug
+                ]
+            )
     }
 }
-
 function masterFamilyRoute(family: Family) {
     if (!family.master_product_category_id) {
         return '';
