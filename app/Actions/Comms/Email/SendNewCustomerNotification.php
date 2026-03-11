@@ -11,6 +11,7 @@
 namespace App\Actions\Comms\Email;
 
 use App\Actions\Comms\Traits\WithSendSubscribersOutboxEmail;
+use App\Actions\Helpers\Address\GetFormattedAddress;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -32,6 +33,8 @@ class SendNewCustomerNotification extends OrgAction
         /** @var Outbox $outbox */
         $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::NEW_CUSTOMER->value)->first();
 
+        $formatedAddress = GetFormattedAddress::run($customer->address);
+
         $this->sendOutboxEmailToSubscribers(
             $outbox,
             additionalData: [
@@ -48,7 +51,8 @@ class SendNewCustomerNotification extends OrgAction
                     $customer->shop->slug,
                     $customer->slug
                 ]),
-                'customer_register_date' => $customer->created_at->format('F jS, Y')
+                'customer_register_date' => $customer->created_at->format('F jS, Y'),
+                'customer_address' => $formatedAddress
             ]
         );
     }

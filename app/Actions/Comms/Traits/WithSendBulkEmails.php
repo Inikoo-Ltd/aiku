@@ -84,6 +84,7 @@ trait WithSendBulkEmails
             'customer-email' => Arr::get($additionalData, 'customer_email'),
             'customer-url' => Arr::get($additionalData, 'customer_url'),
             'customer-register-date' => Arr::get($additionalData, 'customer_register_date'),
+            'customer-address' => Arr::get($additionalData, 'customer_address'),
 
             'order-link' => Arr::get($additionalData, 'order_link'),
             'order-reference' => Arr::get($additionalData, 'order_reference'),
@@ -164,9 +165,9 @@ trait WithSendBulkEmails
             // Find and modify color values within the style attribute
             $style = preg_replace_callback('/color\s*:\s*([^;]+);/i', function ($colorMatch) {
                 $colorValue    = $colorMatch[1];
-                $modifiedColor = $colorValue.' !important';
+                $modifiedColor = $colorValue . ' !important';
 
-                return 'color: '.$modifiedColor.';';
+                return 'color: ' . $modifiedColor . ';';
             }, $style);
 
             // Update the style attribute in the HTML tag

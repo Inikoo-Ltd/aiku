@@ -113,7 +113,10 @@
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    New customer [Customer Name] 
+                    <strong>New customer:</strong> [Customer Name] <br />
+                    <strong>Email:</strong> [Customer Email]<br />
+                    <strong>Registration Date:</strong> [Customer Register Date]<br />
+                    <strong>Address:</strong> [Customer Address]
                   </td>
                 </tr>
 
