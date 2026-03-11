@@ -33,7 +33,7 @@ const isLoadingSubmit = ref(false)
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.campaigns.store_shipping', {
+        route('grp.org.shops.show.discounts.campaigns.store_shipping', {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se'

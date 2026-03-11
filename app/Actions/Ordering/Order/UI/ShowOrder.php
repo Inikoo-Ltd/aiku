@@ -169,7 +169,7 @@ class ShowOrder extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Delivery Instructions"),
+                    "label"       => __("Shipping label message") . ' ('  . __("Customer") . ')',
                     "note"        => $order->shipping_notes ?? '',
                     "information" => __("This note is from the customer. Will be printed in the shipping label."),
                     "editable"    => true,
@@ -189,11 +189,12 @@ class ShowOrder extends OrgAction
                     "note"        => $order->public_notes ?? '',
                     "information" => __("This note will be visible to public, both staff and the customer can see."),
                     "editable"    => true,
+                    "warning"     => __('Customer can see this note'),
                     "bgColor"     => "#94DB84",
                     "field"       => "public_notes"
                 ],
                 [
-                    "label"       => __("Private"),
+                    "label"       => __("Order private note"),
                     "note"        => $order->internal_notes ?? '',
                     "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
                     "editable"    => true,

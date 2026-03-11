@@ -38,6 +38,19 @@ const getCategoryLink = (productCategory: {}) => {
     }
     return '#'
 }
+
+const routeProduct = (gift: { id: string }) => {
+    switch (route().current()) {
+        case 'grp.org.shops.show.discounts.campaigns.gift.show':
+            return route('grp.org.shops.show.catalogue.products.current_products.show', {
+                organisation: route().params.organisation,
+                shop: route().params.shop,
+                product: gift.slug
+            })
+        default:
+            return '#'
+    }
+}
 </script>
 
 <template>
@@ -141,7 +154,7 @@ const getCategoryLink = (productCategory: {}) => {
                             <Image :src="gift.web_images_main?.thumbnail" :alt="gift.name" class="object-contain w-full h-full" />
                         </div>
                         <label :for="gift.id.toString()" class="">
-                            <span class="font-bold text-sm">{{ gift.code }}</span>
+                            <Link :href="routeProduct(gift)" class="secondaryLink font-bold text-sm">{{ gift.code }}</Link>
                             <span v-if="gift.default" v-tooltip="ctrans(`This product will auto selected in Customer's order`)" class="ml-2 bg-pink-500 text-white text-xs rounded-sm px-1">Default</span>
                             <br />
                             <span class="text-xs leading-4 inline-block opacity-80">{{ gift.name }}</span>

@@ -1,12 +1,10 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 08-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: Wednesday, 4 Mar 2026 09:46:14 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
+ */
 
 namespace App\Actions\Comms\Email;
 
@@ -18,8 +16,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Comms\Outbox;
+use Illuminate\Support\Carbon;
 
-class SendInvoiceDeletedNotification extends OrgAction
+class SendInvoiceDateChangedNotification extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -27,10 +26,14 @@ class SendInvoiceDeletedNotification extends OrgAction
     use WithSendSubscribersOutboxEmail;
 
 
-    public function handle(Invoice $invoice): void
+    public function handle(Invoice $invoice, ?string $previousDate): void
     {
+        if (!$previousDate || !$invoice->date) {
+            return;
+        }
+
         /** @var Outbox $outbox */
-        $outbox = $invoice->shop->outboxes()->where('code', OutboxCodeEnum::INVOICE_DELETED->value)->first();
+        $outbox = $invoice->shop->outboxes()->where('code', OutboxCodeEnum::INVOICE_DATE_CHANGED->value)->first();
 
         if (!$outbox) {
             return;
@@ -38,13 +41,16 @@ class SendInvoiceDeletedNotification extends OrgAction
 
         $customer = $invoice->customer;
 
+        $previousDate = Carbon::parse($previousDate)->format('Y-m-d');
+        $invoiceDate = Carbon::parse($invoice->date)->format('Y-m-d');
+
         $this->sendOutboxEmailToSubscribers(
             $outbox,
             additionalData: [
                 'customer_name' => $customer->name,
                 'invoice_reference' => $invoice->reference,
-                'date' => $invoice->deleted_at->format('F jS, Y'),
-                'invoice_link' => route('grp.org.accounting.deleted_invoices.show', [
+                'invoice_date_change_blade' => '<strong>New Date:</strong> ' . $invoiceDate . '<br/><strong>Previous Date:</strong> ' .   $previousDate,
+                'invoice_link' => route('grp.org.accounting.invoices.show', [
                     $invoice->organisation->slug,
                     $invoice->slug
                 ]),
@@ -62,6 +68,4 @@ class SendInvoiceDeletedNotification extends OrgAction
             ]
         );
     }
-
-
 }
