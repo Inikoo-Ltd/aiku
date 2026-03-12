@@ -97,8 +97,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         }
 
 
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
-        if (count($countFamilyWebBlock) == 0) {
+        $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
+        if (count($countFamilyDescriptionBlock) == 0) {
             $this->createWebBlock($webpage, 'family-1');
         }
 
@@ -123,7 +123,13 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $webpage->refresh();
 
 
-        $this->setFamilyWebBlockOnTop($webpage);
+        if(count($countFamilyDescriptionBlock) == 0) {
+            $this->setFamilyWebBlockOnTop($webpage);
+        }
+
+        if ($command->option('hide-description')) {
+            $this->setDescriptionWebBlockHidden($webpage);
+        }
         $webpage->refresh();
         UpdateWebpageContent::run($webpage);
 
@@ -147,7 +153,19 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             }
         }
     }
+    
+    public function setDescriptionWebBlockHidden(Webpage $webpage): void
+    {
+        $familyDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first();
 
+        if ($familyDescriptionWebBlock) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $familyDescriptionWebBlock->model_has_web_blocks_id)
+                ->update(['show' => false]);
+        }
+
+        UpdateWebpageContent::run($webpage);
+    }
 
     public function setFamilyWebBlockOnTop(Webpage $webpage): void
     {
@@ -194,7 +212,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {--website_id=} {--webpage_id=}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {--website_id=} {--webpage_id=} {--hide-description}';
 
     public function asCommand(Command $command): void
     {

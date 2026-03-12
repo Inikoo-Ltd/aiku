@@ -40,9 +40,19 @@ const submit = () => {
 
 const _inputOneTimePassword = ref(null)
 
-onMounted(async () => {
-    if (_inputOneTimePassword.value)
-        _inputOneTimePassword.value?.focus()
+const hasFocused = ref(false)
+
+onMounted(() => {
+    if (!hasFocused.value && _inputOneTimePassword.value) {
+        _inputOneTimePassword.value.focus()
+        hasFocused.value = true
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            _inputOneTimePassword.value?.blur()
+        }
+    })
 })
 
 const layout = inject("layout", layoutStructure)
