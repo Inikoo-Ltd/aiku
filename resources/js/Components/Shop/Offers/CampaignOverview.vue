@@ -10,6 +10,12 @@ import Icon from '@/Components/Icon.vue'
 import { Link } from '@inertiajs/vue3'
 import { Message } from 'primevue'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { faPlus, faChevronDown, faTimes, faPencil, faSparkles } from "@fas"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
+
+library.add(faPlus, faChevronDown, faTimes, faPencil)
 
 const props = defineProps<{
     data: {
@@ -30,12 +36,15 @@ const props = defineProps<{
 
         }[]
         currency_code: string
+        edit_amnesty_route: any
+        show_amnesty_route: any
     }
 }>()
-const injectedCampaign = inject('campaign', null)
+const campaignContext = inject<any>('campaign')
+
 const locale = inject('locale', aikuLocaleStructure)
 
-const campaign = computed(() => unref(injectedCampaign))
+const campaign = computed(() => unref(campaignContext))
 
 const toDate = (val?: string | Date | null) => {
     if (!val) return null
@@ -93,40 +102,61 @@ const severity = computed(() => {
         default: return 'info'
     }
 })
+console.log("data", props.data)
 </script>
 
 <template>
     <div class="bg-white px-2 sm:px-3 md:px-4 pb-4">
-        <Message :severity="severity" class="mb-3 mt-3" v-if="campaign">
-            <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm w-full">
+        <Message :severity="severity"
+            class="mb-3 mt-3 [&_.p-message-text]:w-full [&_.p-message-text]:flex !bg-black !text-yellow-300"
+            v-if="campaign">
+            <!-- !bg-black !text-yellow-300 -->
+            <div class="!w-full flex flex-col md:flex-row md:items-center gap-2">
 
-                <span>
-                    <b>Type:</b> {{ campaign.type }}
-                </span>
+                <!-- LEFT -->
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm flex-1">
 
-                <span>
-                    <b>Start:</b>
-                    {{ useFormatTime(campaign.start_at, { formatTime: 'PPP' }) }}
-                </span>
+                    <span>
+                        <FontAwesomeIcon icon="fal fa-candle-holder" class="" aria-hidden="true" />
+                        Gold Reward Amnesty
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <span>
+                            {{ useFormatTime(campaign.start_at, { formatTime: 'PPP' }) }}
+                        </span>
 
-                <span>
-                    <b>End:</b>
-                    {{ useFormatTime(campaign.end_at, { formatTime: 'PPP' }) }}
-                </span>
+                        <FontAwesomeIcon icon="fas fa-arrow-right" class="" aria-hidden="true" />
 
-                <span>
-                    <b>Duration:</b>
-                    {{ durationDays }} days
-                </span>
+                        <span>
+                            {{ useFormatTime(campaign.end_at, { formatTime: 'PPP' }) }}
+                        </span>
+                    </div>
 
-                <span v-if="campaignStatus !== 'expired'" class="font-medium">
-                    Ends in {{ remainingDays }} days
-                </span>
+                    <span>
+                        <b>Duration:</b>
+                        {{ durationDays }} days
+                    </span>
 
-                <span v-else class="text-gray-500">
-                    Campaign expired
-                </span>
+                    <span v-if="campaignStatus !== 'expired'" class="font-medium">
+                        Ends in {{ remainingDays }} days
+                    </span>
 
+                    <span v-else class="text-yellow-400">
+                        Campaign expired
+                    </span>
+
+                </div>
+
+                <!-- RIGHT -->
+                <div class="flex gap-2 ml-auto">
+
+                    <ButtonWithLink type="yellow" label="Edit Amnesty Offer" size="lg"
+                        :bindToLink="{ preserveScroll: true }" :routeTarget="data.edit_amnesty_route" />
+
+                    <ButtonWithLink type="yellow" label="Edit ongoing GR Amnesty" size="lg"
+                        :bindToLink="{ preserveScroll: true }" :routeTarget="data.show_amnesty_route" />
+
+                </div>
             </div>
         </Message>
         <div class="flex flex-wrap gap-2 md:gap-4 w-full pt-3">
@@ -167,3 +197,9 @@ const severity = computed(() => {
 
     </div>
 </template>
+<style scoped>
+.p-message .p-message-text {
+    width: 100%;
+    display: flex;
+}
+</style>
