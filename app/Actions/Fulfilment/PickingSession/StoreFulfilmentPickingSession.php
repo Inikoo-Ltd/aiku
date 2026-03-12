@@ -33,26 +33,33 @@ class StoreFulfilmentPickingSession extends OrgAction
     public function handle(Warehouse $warehouse, array $modelData): PickingSession
     {
         return DB::transaction(function () use ($warehouse, $modelData) {
-            $palletReturnIds      = Arr::pull($modelData, 'pallet_returns');
+            $palletReturnIds = Arr::wrap(Arr::pull($modelData, 'pallet_returns', []));
+            $palletReturnIds = array_values(array_unique($palletReturnIds));
 
-            // Validate Pallet Returns
-            $validPalletReturnIds = PalletReturn::whereIn('id', $palletReturnIds)
-                ->get()
-                ->filter(function ($palletReturn) {
-                    return $palletReturn->pickingSessions->isEmpty()
-                        && in_array($palletReturn->state, [
-                            PalletReturnStateEnum::CONFIRMED,
-                            PalletReturnStateEnum::SUBMITTED
-                        ]);
-                })
+            $validPalletReturnIds = PalletReturn::query()
+                ->whereIn('id', $palletReturnIds)
+                ->whereIn('state', [
+                    PalletReturnStateEnum::CONFIRMED,
+                    PalletReturnStateEnum::SUBMITTED
+                ])
+                ->whereDoesntHave('pickingSessions')
                 ->pluck('id')
-                ->toArray();
+                ->all();
 
-            if (empty($validPalletReturnIds)) {
+            $invalidIds = array_values(array_diff($palletReturnIds, $validPalletReturnIds));
+
+            if (count($invalidIds) > 0) {
+                $invalidReferences = PalletReturn::query()
+                    ->whereIn('id', $invalidIds)
+                    ->pluck('reference')
+                    ->all();
+
                 throw ValidationException::withMessages(
                     [
                         'message' => [
-                            'pallet_returns' => 'All selected pallet returns are already in a picking session or invalid state.',
+                            'pallet_returns' => __('Some selected pallet returns are already in a picking session or invalid: :refs', [
+                                'refs' => implode(', ', $invalidReferences),
+                            ]),
                         ]
                     ]
                 );
@@ -139,7 +146,7 @@ class StoreFulfilmentPickingSession extends OrgAction
 
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): RedirectResponse
     {
-        return Redirect::route('grp.org.warehouses.show.fulfilment.picking_sessions.show', [
+        return Redirect::route('grp.org.warehouses.show.dispatching.picking_sessions.fulfilment.show', [
             'organisation'   => $pickingSession->organisation->slug,
             'warehouse'      => $pickingSession->warehouse->slug,
             'pickingSession' => $pickingSession->slug,
