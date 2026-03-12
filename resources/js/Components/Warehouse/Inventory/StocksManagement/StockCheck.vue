@@ -85,7 +85,7 @@ watch(() => props.locations, (newValue) => {
                     {{ location.code }}
                 </div>
 
-                <div v-tooltip="trans('Last audit :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 text-right">
+                <div v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 text-right">
                     {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
                     <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
