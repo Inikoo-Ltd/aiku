@@ -444,7 +444,13 @@ watch(
             <!-- Sidebar Filters for Desktop -->
             <transition v-if="!props.fieldValue?.settings?.is_hide_filter" name="slide-fade">
                 <aside v-show="!isMobile && isShowAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
-                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
+                    <FilterProducts 
+                        v-model="filter" 
+                        :productCategory="props.fieldValue.model_id" 
+                        :search="q" 
+                        @handleSearch="handleSearch" 
+                        @update:search="(e)=> q = e"
+                    />
                 </aside>
             </transition>
 
@@ -454,17 +460,32 @@ watch(
                 <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
                         <template v-if="!props.fieldValue?.settings?.is_hide_filter">
-                            <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-3 !w-auto"
+                            <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-2 !w-auto"
                                 aria-label="Open Filters"
                                 :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             <!-- Sidebar Toggle for Desktop -->
                             <div v-else class="py-4">
-                                <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-3 !w-auto"
+                                <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-2 !w-auto"
                                     aria-label="Open Filters"
                                     :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             </div>
                         </template>
-                        <div class=" w-full" >
+                        <div
+                            class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+                            <span class="font-medium">
+                                {{ trans("Showing") }}
+                                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                    {{ products.length }}
+                                </span>
+                                {{ trans("of") }}
+                                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                    {{ totalProducts }}
+                                </span>
+                                {{ products.length === 1 ? trans("product") : trans("products") }}
+                            </span>
+                        </div>
+                        
+                       <!--  <div class=" w-full" >
                             <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
                                 :placeholder="trans('Search products...')" :clear="true" :isLoading="isLoadingInitial"
                                 :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
@@ -475,12 +496,11 @@ watch(
                                     </div>
                                 </template>
                             </PureInput>
-                        </div>
-
+                        </div> -->
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex xspace-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
+                    <div class="flex space-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
                         <!-- <button @click="toggleNewArrivals"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
                             isNewArrivals
@@ -491,7 +511,7 @@ watch(
                         </button> -->
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                            class="pb-2 px-4 text-sm font-medium whitespace-nowrap flex items-center border-b-2 gap-1 sort-button"
+                            class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
                             :class="[
                                 sortKey === option.value
                                     ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
@@ -503,7 +523,7 @@ watch(
                 </div>
 
                 <!-- Section: Results  -->
-                <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
+                <!-- <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
                         <span class="font-medium">
@@ -521,7 +541,7 @@ watch(
 
                     <div>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Product Grid -->
                <div :class="responsiveGridClass" class="grid gap-x-6 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 gap-y-10 p-3"
@@ -596,7 +616,13 @@ watch(
             <Drawer v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"
                 :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
-                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
+                    <FilterProducts  
+                        v-model="filter" 
+                        :productCategory="props.fieldValue.model_id" 
+                        :search="q" 
+                        @handleSearch="handleSearch" 
+                        @update:search="(e)=> q = e" 
+                    />
                 </div>
             </Drawer>
         </div>
@@ -628,7 +654,7 @@ aside {
 .sort-button{
    color: v-bind('search_sort_class?.color || null') !important;
    font-family: v-bind('search_sort_class?.fontFamily || null') !important;
-   font-size: v-bind('search_sort_class?.fontSize || null') !important;
+   font-size: v-bind('search_sort_class?.fontSize || "14px"') !important;
    font-style: v-bind('search_sort_class?.fontStyle || null') !important;
 }
 
