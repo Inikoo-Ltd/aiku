@@ -34,7 +34,6 @@ const props = defineProps<{
     offers: {}
     gr_gift: {}
     gr_amnesty: {}
-    amnesty_offer: any
     overview: {
         offerCampaign: {}
         stats: {}
@@ -55,8 +54,6 @@ const component = computed(() => {
 
     return components[currentTab.value]
 })
-
-provide('campaign', props.amnesty_offer)
 </script>
 
 <template>

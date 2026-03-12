@@ -15,7 +15,7 @@ class GetVolGRCampaignOverview
 {
     use AsObject;
 
-    public function handle(OfferCampaign $offerCampaign, $showAmnestyRoute, $editAmnestyRoute): array
+    public function handle(OfferCampaign $offerCampaign, $showAmnestyRoute, $editAmnestyRoute, $amnestyOffer): array
     {
         $stats = $offerCampaign->stats;
 
@@ -24,6 +24,7 @@ class GetVolGRCampaignOverview
             'currency_code'      => $offerCampaign->shop->currency->code,
             'edit_amnesty_route' => $editAmnestyRoute,
             'show_amnesty_route' => $showAmnestyRoute,
+            'amnesty_offer'      => $amnestyOffer,
             'stats'              => [
                 [
                     "label"        => "Offers",

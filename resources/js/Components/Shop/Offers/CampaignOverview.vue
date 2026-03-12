@@ -10,7 +10,6 @@ import Icon from '@/Components/Icon.vue'
 import { Link } from '@inertiajs/vue3'
 import { Message } from 'primevue'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faPlus, faChevronDown, faTimes, faPencil, faSparkles } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -37,15 +36,15 @@ const props = defineProps<{
 
         }[]
         currency_code: string
+        amnesty_offer: string
         edit_amnesty_route: routeType
         show_amnesty_route: routeType
     }
 }>()
-const campaignContext = inject<any>('campaign')
 
 const locale = inject('locale', aikuLocaleStructure)
 
-const campaign = computed(() => unref(campaignContext))
+const campaign = computed(() => unref(props.data?.amnesty_offer))
 
 const toDate = (val?: string | Date | null) => {
     if (!val) return null
@@ -103,7 +102,6 @@ const severity = computed(() => {
         default: return 'info'
     }
 })
-console.log("data", props.data)
 </script>
 
 <template>
