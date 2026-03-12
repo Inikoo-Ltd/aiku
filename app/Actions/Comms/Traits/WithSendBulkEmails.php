@@ -96,9 +96,10 @@ trait WithSendBulkEmails
             'pallet-link' => Arr::get($additionalData, 'pallet_link'),
             'blade-new-order-transactions' => Arr::get($additionalData, 'blade_new_order_transactions'),
             'tracking' => Arr::get($additionalData, 'tracking'),
-            'deletion-date',
-            'delivered-date',
-            'returned-date',
+            'deletion-date' => Arr::get($additionalData, 'deletion_date'),
+            'delivered-date' => Arr::get($additionalData, 'delivered_date'),
+            'dispatched-date' => Arr::get($additionalData, 'dispatched_date'),
+            'returned-date' => Arr::get($additionalData, 'returned_date'),
             'order-date' => Arr::get($additionalData, 'date'),
             'tracking-url' => Arr::get($additionalData, 'tracking_url'),
             'currency' => Arr::get($additionalData, 'currency'),
@@ -131,6 +132,8 @@ trait WithSendBulkEmails
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
             'preview-amount' => Arr::get($additionalData, 'preview_amount'),
             'invoice-date-change-blade' => Arr::get($additionalData, 'invoice_date_change_blade'),
+            'delivery-note-link' => Arr::get($additionalData, 'delivery_note_link'),
+            'delivery-note-reference' => Arr::get($additionalData, 'delivery_note_reference'),
 
             default => $originalPlaceholder,
         };
