@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import Tag from "@/Components/Tag.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
@@ -11,6 +11,7 @@ import { get, set } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faArrowDown } from "@fal"
+import { ref, computed } from "vue"
 
 library.add(faArrowDown)
 
@@ -20,6 +21,28 @@ const props = defineProps<{
     pickingSession: anys
     dispatchableReturns?: any[]
 }>()
+
+const isLoadingUndoPick = ref<Record<number, boolean>>({})
+
+const onUndoPick = (undoRoute: any, palletStoredItem: any) => {
+    const id = palletStoredItem?.id
+    if (!id || !undoRoute?.name) {
+        return
+    }
+
+    isLoadingUndoPick.value[id] = true
+
+    router.patch(
+        route(undoRoute.name, undoRoute.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                isLoadingUndoPick.value[id] = false
+            },
+        }
+    )
+}
 
 const returnRoute = (item: any) => {
     if (!item?.pallet_return_slug) {
@@ -60,6 +83,11 @@ const palletRoute = (palletStoredItem: any) => {
 
 const isRowPicking = (item: any) => item?.pallet_return_state === 'picking'
 const canRowDispatch = (item: any) => !!getDispatchableReturn(item)?.canDispatch
+const isPickingFinished = () => props.pickingSession?.state === 'picking_finished'
+const groupMode = computed<'by_item' | 'by_return'>(() => {
+    if (props?.tab === 'grouped') return 'by_return'
+    return 'by_item'
+})
 
 const getDispatchableReturn = (item: any) => {
     if (!props.dispatchableReturns?.length) {
@@ -73,6 +101,35 @@ const getDispatchableReturn = (item: any) => {
 
     return props.dispatchableReturns.find(r => r.reference === item?.pallet_return_reference) ?? null
 }
+
+const collapsedGroups = ref<Record<number, boolean>>({})
+const isGroupCollapsed = (item: any) => {
+    const id = item?.pallet_return_id ?? item?.data?.pallet_return_id
+    return !!collapsedGroups.value[id]
+}
+const toggleGroup = (item: any) => {
+    const id = item?.pallet_return_id ?? item?.data?.pallet_return_id
+    if (!id) return
+    collapsedGroups.value[id] = !collapsedGroups.value[id]
+}
+
+const isFirstReturnRow = (item: any) => {
+    const rawIndex = item?.rowIndex ?? item?.data?.rowIndex
+    const index = typeof rawIndex === 'string' ? Number.parseInt(rawIndex, 10) : rawIndex
+    const data = (props.data as any)?.data
+    const palletReturnId = item?.pallet_return_id ?? item?.data?.pallet_return_id
+
+    if (typeof index !== 'number' || !Number.isFinite(index) || index < 0 || !Array.isArray(data)) {
+        return true
+    }
+
+    if (index === 0) {
+        return true
+    }
+
+    return data[index - 1]?.pallet_return_id !== palletReturnId
+}
+
 const getRequestedPallets = (storedItem: any) => {
     const items = storedItem?.pallet_stored_items || []
     return items.filter((ps: any) => (ps?.selected_quantity ?? 0) > 0 || (ps?.available_to_pick_quantity ?? 0) > 0)
@@ -86,12 +143,19 @@ const getHiddenPallets = (storedItem: any) => {
 <template>
     <Table :resource="data" :name="tab ?? ''" class="mt-5">
         <template #cell(pallet_return_reference)="{ item }">
-            <Link v-if="returnRoute(item)" :href="returnRoute(item)" class="primaryLink">
-                {{ item.pallet_return_reference }}
-            </Link>
-            <div v-else>
-                {{ item.pallet_return_reference || "-" }}
-            </div>
+            <template v-if="isFirstReturnRow(item)">
+                <Link v-if="returnRoute(item)" :href="returnRoute(item)" class="primaryLink">
+                    {{ item.pallet_return_reference }}
+                </Link>
+                <div v-else>
+                    {{ item.pallet_return_reference || "-" }}
+                </div>
+            </template>
+            <template v-else>
+                <div class="-mt-px pt-px">
+                    <span class="invisible">-</span>
+                </div>
+            </template>
         </template>
 
         <template #cell(reference)="{ item }">
@@ -128,7 +192,23 @@ const getHiddenPallets = (storedItem: any) => {
                     </div>
 
                     <div v-if="isRowPicking(storedItem)" class="shrink-0">
+                        <div v-if="palletStoredItem.state === 'picked'" class="flex items-center gap-x-2 tabular-nums">
+                            <Button
+                                @click="() => onUndoPick(palletStoredItem.undoRoute, palletStoredItem)"
+                                icon="fal fa-undo-alt"
+                                :label="trans('Undo pick')"
+                                size="xs"
+                                type="tertiary"
+                                :loading="get(isLoadingUndoPick, palletStoredItem.id, false)"
+                                class="py-0"
+                            />
+                            <span class="text-gray-500">
+                                {{ palletStoredItem.picked_quantity ?? 0 }}/{{ palletStoredItem.selected_quantity ?? 0 }}
+                            </span>
+                        </div>
+
                         <NumberWithButtonSave
+                            v-else
                             noUndoButton
                             :modelValue="palletStoredItem.selected_quantity ?? 0"
                             saveOnForm
@@ -208,7 +288,7 @@ const getHiddenPallets = (storedItem: any) => {
         </template>
 
         <template #cell(actions)="{ item }">
-            <div class="flex justify-end">
+            <div v-if="isFirstReturnRow(item) && isPickingFinished()" class="flex justify-end">
                 <Link
                     v-if="canRowDispatch(item)"
                     as="div"
@@ -219,6 +299,7 @@ const getHiddenPallets = (storedItem: any) => {
                     <Button icon="fal fa-save" label="Set as dispatched" type="secondary" size="xs" class="py-0" />
                 </Link>
             </div>
+            <div v-else class="-mt-px pt-px"></div>
         </template>
     </Table>
 </template>

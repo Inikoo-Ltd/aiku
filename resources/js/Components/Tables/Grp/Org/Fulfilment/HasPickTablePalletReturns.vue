@@ -160,6 +160,31 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
             return ''
     }
 }
+
+function pickingSessionRoute(palletReturn: any) {
+    if (!palletReturn?.picking_session_slug) {
+        return null
+    }
+
+    switch (route().current()) {
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.confirmed.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.picking.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.picked.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.dispatched.index':
+        case 'grp.org.warehouses.show.dispatching.pallet-returns.cancelled.index':
+            return route(
+                'grp.org.warehouses.show.dispatching.picking_sessions.fulfilment.show',
+                [
+                    route().params['organisation'],
+                    route().params['warehouse'],
+                    palletReturn.picking_session_slug
+                ]
+            )
+        default:
+            return null
+    }
+}
 </script>
 
 <template>
@@ -196,17 +221,29 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
         </template>
 
         <template #cell(reference)="{ item: palletReturn }">
-            <Link v-if="palletReturn.type === 'pallet'" :href="palletReturnRoute(palletReturn)" class="primaryLink">
-                {{ palletReturn['reference'] }}
-            </Link>
+            <div class="flex gap-2 flex-wrap items-center">
+                <Link v-if="palletReturn.type === 'pallet'" :href="palletReturnRoute(palletReturn)" class="primaryLink">
+                    {{ palletReturn["reference"] }}
+                </Link>
 
-            <Link v-else-if="palletReturn.type === 'stored_item'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
-                {{ palletReturn['reference'] }}
-            </Link>
+                <Link v-else-if="palletReturn.type === 'stored_item'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
+                    {{ palletReturn["reference"] }}
+                </Link>
 
-            <div v-else>
-                {{ palletReturn.reference }}
+                <div v-else>
+                    {{ palletReturn.reference }}
+                </div>
             </div>
+
+            <template v-if="pickingSessionRoute(palletReturn)">
+                <Link
+                    :href="pickingSessionRoute(palletReturn)"
+                    class="secondaryLink"
+                    v-tooltip="`Picking session: ${palletReturn.picking_session_slug}`"
+                >
+                    <FontAwesomeIcon icon="fab fa-stack-overflow" class="text-yellow-500" fixed-width aria-hidden="true" />
+                </Link>
+            </template>
         </template>
 
         <template #cell(customer_reference)="{ item: palletReturn }">
@@ -293,4 +330,3 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
         </template>
     </Table>
 </template>
-
