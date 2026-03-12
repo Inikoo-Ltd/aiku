@@ -14,6 +14,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faPlus, faChevronDown, faTimes, faPencil, faSparkles } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
+import { routeType } from '@/types/route'
 
 library.add(faPlus, faChevronDown, faTimes, faPencil)
 
@@ -36,8 +37,8 @@ const props = defineProps<{
 
         }[]
         currency_code: string
-        edit_amnesty_route: any
-        show_amnesty_route: any
+        edit_amnesty_route: routeType
+        show_amnesty_route: routeType
     }
 }>()
 const campaignContext = inject<any>('campaign')
@@ -150,10 +151,10 @@ console.log("data", props.data)
                 <!-- RIGHT -->
                 <div class="flex gap-2 ml-auto">
 
-                    <ButtonWithLink type="yellow" label="Edit Amnesty Offer" size="lg"
+                    <ButtonWithLink type="yellow" label="Edit Amnesty Offer" size="md"
                         :bindToLink="{ preserveScroll: true }" :routeTarget="data.edit_amnesty_route" />
 
-                    <ButtonWithLink type="yellow" label="Edit ongoing GR Amnesty" size="lg"
+                    <ButtonWithLink type="yellow" label="Show ongoing GR Amnesty" size="md"
                         :bindToLink="{ preserveScroll: true }" :routeTarget="data.show_amnesty_route" />
 
                 </div>
