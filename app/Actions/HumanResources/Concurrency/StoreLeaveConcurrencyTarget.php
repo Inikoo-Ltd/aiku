@@ -11,27 +11,28 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreLeaveConcurrencyTarget extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
 
+    private bool $alreadyExists = false;
+
     public function handle(LeaveConcurrencyRule $leaveConcurrencyRule, array $modelData): LeaveConcurrencyTarget
     {
         $modelData['leave_concurrency_rule_id'] = $leaveConcurrencyRule->id;
 
-        $targetType = $modelData['target_type'];
-        $targetId = $modelData['target_id'];
+        $existingTarget = LeaveConcurrencyTarget::query()
+            ->where('leave_concurrency_rule_id', $leaveConcurrencyRule->id)
+            ->where('target_type', $modelData['target_type'])
+            ->where('target_id', $modelData['target_id'])
+            ->first();
 
-        $modelClass = match ($targetType) {
-            'Employee'  => \App\Models\HumanResources\Employee::class,
-            'LeaveType' => \App\Models\HumanResources\LeaveType::class,
-            default     => null,
-        };
-
-        if (!$modelClass || !$modelClass::where('id', $targetId)->exists()) {
-            abort(422, __('Target not found.'));
+        if ($existingTarget) {
+            $this->alreadyExists = true;
+            return $existingTarget;
         }
 
         return LeaveConcurrencyTarget::query()->create($modelData);
@@ -41,9 +42,30 @@ class StoreLeaveConcurrencyTarget extends OrgAction
     {
         return [
             'target_type' => ['required', 'string', Rule::in(['Employee', 'LeaveType'])],
-            'target_id'   => ['required', 'numeric'],
-            'role'        => ['sometimes', 'nullable', 'string', Rule::enum(LeaveConcurrencyTargetRoleEnum::class)],
+            'target_id' => ['required', 'numeric'],
+            'role' => ['sometimes', 'nullable', 'string', Rule::enum(LeaveConcurrencyTargetRoleEnum::class)],
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $targetType = request()->input('target_type');
+        $targetId = request()->input('target_id');
+
+        $modelClass = match ($targetType) {
+            'Employee' => \App\Models\HumanResources\Employee::class,
+            'LeaveType' => \App\Models\HumanResources\LeaveType::class,
+            default => null,
+        };
+
+        if (!$modelClass) {
+            $validator->errors()->add('target_type', __('Invalid target type.'));
+            return;
+        }
+
+        if (!$modelClass::where('id', $targetId)->exists()) {
+            $validator->errors()->add('target_id', __('Target not found.'));
+        }
     }
 
     public function asController(Organisation $organisation, LeaveConcurrencyRule $leaveConcurrencyRule, ActionRequest $request): LeaveConcurrencyTarget
@@ -63,9 +85,19 @@ class StoreLeaveConcurrencyTarget extends OrgAction
 
     public function htmlResponse(LeaveConcurrencyTarget $leaveConcurrencyTarget): RedirectResponse
     {
+        if ($this->alreadyExists) {
+            request()->session()->flash('notification', [
+                'status' => 'warning',
+                'title' => __('Already exists'),
+                'description' => __('Target already exists in this leave concurrency rule.'),
+            ]);
+
+            return Redirect::back();
+        }
+
         request()->session()->flash('notification', [
-            'status'      => 'success',
-            'title'       => __('Success!'),
+            'status' => 'success',
+            'title' => __('Success!'),
             'description' => __('Target successfully added to leave concurrency rule.'),
         ]);
 
