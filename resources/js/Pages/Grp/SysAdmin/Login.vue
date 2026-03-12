@@ -40,12 +40,23 @@ const submit = () => {
 
 const _inputUsername = ref(null)
 
-onMounted(async () => {
-    _inputUsername.value?.focus()
+const hasFocused = ref(false)
+
+onMounted(() => {
+    if (!hasFocused.value && _inputUsername.value) {
+        _inputUsername.value.focus()
+        hasFocused.value = true
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            _inputUsername.value?.blur()
+        }
+    })
 })
 
 
-</script>
+</script> 
 
 <template>
 

@@ -18,4 +18,13 @@ trait HasTabsWithIndicator
             return  [$case->value => $case->blueprint($parent)];
         })->all();
     }
+
+    public static function navigationExcept(DeliveryNote $parent, array $excludes): array
+    {
+        return collect(self::cases())
+        ->filter(fn ($case) => !in_array($case, $excludes))
+        ->mapWithKeys(function ($case) use ($parent) {
+            return  [$case->value => $case->blueprint($parent)];
+        })->all();
+    }
 }

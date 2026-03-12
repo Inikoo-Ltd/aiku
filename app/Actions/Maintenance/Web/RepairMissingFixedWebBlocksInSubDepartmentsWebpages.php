@@ -65,7 +65,10 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         }
 
         $webpage->refresh();
-        $this->setDescriptionWebBlockOnTop($webpage);
+        if (count($countCollectionDescriptionBlock) == 0) {
+            $this->setDescriptionWebBlockOnTop($webpage);
+        }
+
         if ($command->option('hide-description')) {
             $this->setDescriptionWebBlockHidden($webpage);
         }
