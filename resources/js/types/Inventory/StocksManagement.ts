@@ -40,6 +40,8 @@ export interface StockLocation {
     data: []
     settings: {
         min_stock: number
+        max_stock: number
+        replenishment_stock: number
     },
     created_at: string
     updated_at: string
