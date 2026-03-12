@@ -13,10 +13,10 @@ use Illuminate\Support\Carbon;
 class LeaveConcurrencyService
 {
     public function checkOverlap(
-        Employee $employee,
-        string $leaveTypeCode,
-        Carbon $startDate,
-        Carbon $endDate,
+        Employee   $employee,
+        string     $leaveTypeCode,
+        Carbon     $startDate,
+        Carbon     $endDate,
         ?LeaveType $leaveType = null
     ): array {
         if ($leaveType && $leaveType->ignore_concurrency_leave_rules) {
@@ -57,8 +57,8 @@ class LeaveConcurrencyService
 
     private function isTargetedByRule(
         LeaveConcurrencyRule $rule,
-        Employee $employee,
-        string $leaveTypeCode
+        Employee             $employee,
+        string               $leaveTypeCode
     ): bool {
         foreach ($rule->targets as $target) {
             $matches = false;
@@ -83,13 +83,49 @@ class LeaveConcurrencyService
         return false;
     }
 
+    private function checkBidirectionalConflict(
+        LeaveConcurrencyRule $rule,
+        Employee             $employee,
+        string               $leaveTypeCode,
+        Carbon               $startDate,
+        Carbon               $endDate
+    ): ?array {
+        $allTargets = $rule->targets;
+        foreach ($allTargets as $target) {
+            $partnerEmployees = $this->getEmployeesByTarget($target, $employee->organisation_id);
+            foreach ($partnerEmployees as $partnerEmployee) {
+                if ($partnerEmployee->id === $employee->id) {
+                    continue;
+                }
+
+                $hasApprovedLeave = Leave::query()
+                    ->where('employee_id', $partnerEmployee->id)
+                    ->where('status', 'approved')
+                    ->where(function ($query) use ($startDate, $endDate) {
+                        $query->where('start_date', '<=', $endDate)
+                            ->where('end_date', '>=', $startDate);
+                    })
+                    ->exists();
+                if ($hasApprovedLeave) {
+                    $partnerName = $partnerEmployee->contact_name ?? __('Employee #' . $partnerEmployee->id);
+                    return [
+                        'rule_name' => $rule->name,
+                        'type' => 'bidirectional_block',
+                        'message' => __('Cannot take leave while :name is on approved leave', ['name' => $partnerName]),
+                    ];
+                }
+            }
+        }
+        return null;
+    }
+
     private function checkRuleConflict(
         LeaveConcurrencyRule $rule,
-        Employee $employee,
-        string $leaveTypeCode,
-        Carbon $startDate,
-        Carbon $endDate,
-        ?LeaveType $leaveType = null
+        Employee             $employee,
+        string               $leaveTypeCode,
+        Carbon               $startDate,
+        Carbon               $endDate,
+        ?LeaveType           $leaveType = null
     ): ?array {
         $ruleType = $rule->rule_type->value;
 
@@ -101,15 +137,19 @@ class LeaveConcurrencyService
             return $this->checkDependencyConflict($rule, $employee, $leaveTypeCode, $startDate, $endDate);
         }
 
+        if ($ruleType === LeaveConcurrencyRuleTypeEnum::BIDIRECTIONAL->value) {
+            return $this->checkBidirectionalConflict($rule, $employee, $leaveTypeCode, $startDate, $endDate);
+        }
+
         return null;
     }
 
     private function checkQuotaConflict(
         LeaveConcurrencyRule $rule,
-        Employee $employee,
-        string $leaveTypeCode,
-        Carbon $startDate,
-        Carbon $endDate
+        Employee             $employee,
+        string               $leaveTypeCode,
+        Carbon               $startDate,
+        Carbon               $endDate
     ): ?array {
         $limit = $rule->limit ?? 1;
         $maxOverlapDays = $rule->max_overlap_days ?? 0;
@@ -126,10 +166,10 @@ class LeaveConcurrencyService
         if ($overlappingLeaves->count() >= $limit) {
             return [
                 'rule_name' => $rule->name,
-                'type'      => 'quota_exceeded',
-                'message'   => __('You already have :count overlapping leave request(s). Maximum allowed: :max.', [
+                'type' => 'quota_exceeded',
+                'message' => __('You already have :count overlapping leave request(s). Maximum allowed: :max.', [
                     'count' => $overlappingLeaves->count(),
-                    'max'   => $limit,
+                    'max' => $limit,
                 ]),
             ];
         }
@@ -143,8 +183,8 @@ class LeaveConcurrencyService
                 if ($overlapDays > $maxOverlapDays) {
                     return [
                         'rule_name' => $rule->name,
-                        'type'      => 'max_overlap_exceeded',
-                        'message'   => __('Overlap with existing leave exceeds maximum allowed days (:max days).', [
+                        'type' => 'max_overlap_exceeded',
+                        'message' => __('Overlap with existing leave exceeds maximum allowed days (:max days).', [
                             'max' => $maxOverlapDays,
                         ]),
                     ];
@@ -157,10 +197,10 @@ class LeaveConcurrencyService
 
     private function checkDependencyConflict(
         LeaveConcurrencyRule $rule,
-        Employee $employee,
-        string $leaveTypeCode,
-        Carbon $startDate,
-        Carbon $endDate
+        Employee             $employee,
+        string               $leaveTypeCode,
+        Carbon               $startDate,
+        Carbon               $endDate
     ): ?array {
         $subjectTargets = $rule->targets->where('role', LeaveConcurrencyTargetRoleEnum::SUBJECT->value);
 
@@ -178,11 +218,11 @@ class LeaveConcurrencyService
                     ->exists();
 
                 if ($hasSubjectLeave) {
-                    $subjectName = $subjectEmployee->contact_name ?? __('Employee #'.$subjectEmployee->id);
+                    $subjectName = $subjectEmployee->contact_name ?? __('Employee #' . $subjectEmployee->id);
                     return [
                         'rule_name' => $rule->name,
-                        'type'      => 'dependency_block',
-                        'message'   => __('Cannot take leave while :name is on leave.', [
+                        'type' => 'dependency_block',
+                        'message' => __('Cannot take leave while :name is on leave.', [
                             'name' => $subjectName,
                         ]),
                     ];

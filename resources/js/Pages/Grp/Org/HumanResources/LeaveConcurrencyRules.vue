@@ -11,6 +11,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash, faProjectDiagram } from "@fal"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faTrash, faProjectDiagram)
 
@@ -137,6 +138,18 @@ const submitTarget = () => {
 				preserveScroll: true,
 				onSuccess: () => {
 					resetTargetForm()
+				},
+				onError: (errors) => {
+					const firstError = Object.values(errors)[0]
+					const message = Array.isArray(firstError)
+						? firstError[0]
+						: firstError ?? trans("Target not found.")
+
+					notify({
+						title: trans("Failed"),
+						text: String(message),
+						type: "error",
+					})
 				},
 			}
 		)
