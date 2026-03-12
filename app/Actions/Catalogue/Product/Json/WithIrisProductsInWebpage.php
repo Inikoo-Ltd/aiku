@@ -22,7 +22,10 @@ trait WithIrisProductsInWebpage
         return AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value);
+                    ->orWhere(function ($q2) use ($value) {
+                        $q2->whereStartWith('products.code', $value)
+                            ->orWhereEndWith('products.code', $value);
+                    });
             });
         });
     }
