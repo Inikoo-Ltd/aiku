@@ -116,14 +116,12 @@ trait OfferCampaignVolumeDiscountTrait
                     ],
                 ],
                 'data'        => $offerCampaign,
-
-                'amnesty_offer'                          => $amnestyOffer,
                 'tabs'                                   => [
                     'current'    => $this->tab,
                     'navigation' => OfferCampaignTabsEnum::navigation()
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value   => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
-                    fn() => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute)
+                    fn() => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute, $amnestyOffer)
                     : Inertia::lazy(fn() => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute)),
                 OfferCampaignTabsEnum::OFFERS->value     => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
                     fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))
