@@ -20,6 +20,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteItemPacking extends OrgAction
@@ -42,6 +43,13 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
 
         $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => $item->packings->count() == 0);
         if ($oldState != DeliveryNoteStateEnum::PACKED && $hasUnfinishedPackings->count() == 0) {
+
+            foreach ($deliveryNote->trolleys as $trolley) {
+                DB::table('delivery_note_has_trolleys')
+                    ->where('delivery_note_id', $deliveryNote->id)->where('trolley_id', $trolley->id)->delete();
+                $trolley->update(['current_delivery_note_id' => null]);
+            }
+
             UpdateDeliveryNote::make()->action($deliveryNote, [
                 'packed_at' => now(),
                 'packer_user_id' => $this->user->id,
