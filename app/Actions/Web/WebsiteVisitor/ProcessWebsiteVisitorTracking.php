@@ -25,11 +25,6 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
     public int $jobTimeout = 1;
     public int $jobTries = 1;
 
-    public function getJobUniqueId(string $sessionId, Website $website): string
-    {
-        return "{$sessionId}:{$website->id}";
-    }
-
     public function handle(
         string $sessionId,
         Website $website,
