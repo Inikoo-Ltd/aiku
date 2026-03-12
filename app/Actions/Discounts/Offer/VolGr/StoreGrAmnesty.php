@@ -29,10 +29,13 @@ class StoreGrAmnesty extends OrgAction
 
     public function handle(OfferCampaign $offerCampaign, $modelData): Offer
     {
+        $startAt = Carbon::parse($modelData['start_at'])->format('Y-m-d');
+        $endAt   = Carbon::parse($modelData['start_at'])->format('Y-m-d');
+
         $offerData = [];
         data_set($offerData, 'duration', OfferDurationEnum::INTERVAL);
-        data_set($offerData, 'start_at', Carbon::parse($modelData['start_at'].' 00:00:00'));
-        data_set($offerData, 'end_at', Carbon::parse($modelData['end_at'].'23:59:59'));
+        data_set($offerData, 'start_at', $startAt.' 00:00:00');
+        data_set($offerData, 'end_at', $endAt.' 23:59:59');
         data_set($offerData, 'status', false);
         data_set($offerData, 'state', OfferStateEnum::IN_PROCESS);
 
@@ -40,7 +43,6 @@ class StoreGrAmnesty extends OrgAction
         data_set($offerData, 'code', 'gr-amnesty-'.$offerCampaign->shop->slug);
         data_set($offerData, 'name', 'GR Amnesty');
         data_set($offerData, 'trigger_type', 'Customer');
-
 
         data_set(
             $offerData,
