@@ -20,6 +20,7 @@ use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -49,9 +50,9 @@ class StoreGrAmnesty extends OrgAction
             'allowances',
             [
                 [
-                    'class' => OfferAllowanceClass::GR_Amnesty,
+                    'class'       => OfferAllowanceClass::GR_Amnesty,
                     'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
-                    'type' => OfferAllowanceType::GIFT->value,
+                    'type'        => OfferAllowanceType::GIFT->value,
                 ]
             ]
         );
@@ -82,8 +83,13 @@ class StoreGrAmnesty extends OrgAction
         return $this->handle($offerCampaign, $this->validatedData);
     }
 
-    public function htmlResponse(): RedirectResponse
+    public function htmlResponse(Offer $offer): RedirectResponse
     {
-        return back();
+        return Redirect::route('grp.org.shops.show.discounts.campaigns.amnesty.show', [
+            'organisation'  => $this->organisation,
+            'shop'          => $this->shop,
+            'offerCampaign' => $offer->offerCampaign->slug,
+            'offer'         => $offer->slug
+        ]);
     }
 }
