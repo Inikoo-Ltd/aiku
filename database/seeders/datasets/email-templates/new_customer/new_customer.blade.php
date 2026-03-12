@@ -116,7 +116,8 @@
                     <strong>New customer:</strong> [Customer Name] <br />
                     <strong>Email:</strong> [Customer Email]<br />
                     <strong>Registration Date:</strong> [Customer Register Date]<br />
-                    <strong>Address:</strong> [Customer Address]
+                    <strong>Address:</strong> <br />
+                    <div style="margin: 0;">[Customer Address]</div>
                   </td>
                 </tr>
 

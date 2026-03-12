@@ -34,6 +34,7 @@ class SendNewCustomerNotification extends OrgAction
         $outbox = $customer->shop->outboxes()->where('code', OutboxCodeEnum::NEW_CUSTOMER->value)->first();
 
         $formatedAddress = GetFormattedAddress::run($customer->address);
+        $formatedAddress = preg_replace('/<\/?p[^>]*>/', '', $formatedAddress);
 
         $this->sendOutboxEmailToSubscribers(
             $outbox,
