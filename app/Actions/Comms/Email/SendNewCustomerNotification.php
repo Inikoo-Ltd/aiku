@@ -25,6 +25,8 @@ class SendNewCustomerNotification extends OrgAction
     use WithNoStrictRules;
     use WithSendSubscribersOutboxEmail;
 
+    public string $jobQueue = 'ses';
+
     private Email $email;
 
     public function handle(Customer $customer): void

@@ -25,6 +25,7 @@ class SendInvoiceDateChangedNotification extends OrgAction
     use WithSendBulkEmails;
     use WithSendSubscribersOutboxEmail;
 
+    public string $jobQueue = 'ses';
 
     public function handle(Invoice $invoice, ?string $previousDate): void
     {

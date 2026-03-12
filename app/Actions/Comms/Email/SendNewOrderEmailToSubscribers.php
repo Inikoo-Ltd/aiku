@@ -28,6 +28,8 @@ class SendNewOrderEmailToSubscribers extends OrgAction
     use WithNoStrictRules;
     use WithSendSubscribersOutboxEmail;
 
+    public string $jobQueue = 'ses';
+
     public function handle(int $orderID): void
     {
         $order = Order::find($orderID);

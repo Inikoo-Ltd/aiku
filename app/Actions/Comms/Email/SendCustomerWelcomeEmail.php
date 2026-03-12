@@ -22,6 +22,7 @@ class SendCustomerWelcomeEmail extends OrgAction
     use WithNoStrictRules;
     use WithSendCustomerOutboxEmail;
 
+    public string $jobQueue = 'ses';
 
     public function handle(Customer $customer): DispatchedEmail
     {

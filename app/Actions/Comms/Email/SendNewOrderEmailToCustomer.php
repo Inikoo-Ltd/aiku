@@ -28,6 +28,8 @@ class SendNewOrderEmailToCustomer extends OrgAction
     use WithSendBulkEmails;
     use WithOrderingCustomerNotification;
 
+    public string $jobQueue = 'ses';
+
     private Email $email;
 
     public function handle(int $orderID): ?DispatchedEmail

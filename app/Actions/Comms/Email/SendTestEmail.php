@@ -26,6 +26,8 @@ class SendTestEmail extends OrgAction
 {
     use WithSendBulkEmails;
 
+    public string $jobQueue = 'ses';
+
     public function handle(Mailshot|Outbox|EmailTemplate $entity, array $modelData): ?DispatchedEmail
     {
         if ($entity instanceof Mailshot) {

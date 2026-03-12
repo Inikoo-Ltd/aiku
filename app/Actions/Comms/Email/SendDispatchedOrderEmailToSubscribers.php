@@ -26,6 +26,8 @@ class SendDispatchedOrderEmailToSubscribers extends OrgAction
     use WithSendBulkEmails;
     use WithSendSubscribersOutboxEmail;
 
+    public string $jobQueue = 'ses';
+
     public function handle(Order $order): void
     {
         if ($order->shop->type === ShopTypeEnum::EXTERNAL) {
