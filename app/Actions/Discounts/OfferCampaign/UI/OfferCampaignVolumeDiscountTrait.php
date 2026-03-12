@@ -89,20 +89,11 @@ trait OfferCampaignVolumeDiscountTrait
                             ]
                         ],
                         $amnestyOffer
-                            ? [
-                            'type'  => 'button',
-                            'icon'  => 'fal fa-candle-holder',
-                            'label' => __('Edit ongoing GR Amnesty'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit_current_gr_amnesty_offer', request()->route()->getName()),
-                                'parameters' => array_values(request()->route()->originalParameters())
-
-                            ]
-                        ]
+                            ? null
                             : [
                             'type'  => 'button',
                             'icon'  => 'fal fa-candle-holder',
-                            'label' => __('Set up GR Amnesty'),
+                            'label' => __('New GR Amnesty'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'create_gr_amnesty_offer', request()->route()->getName()),
                                 'parameters' => array_values(request()->route()->originalParameters())
