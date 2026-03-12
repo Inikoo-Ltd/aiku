@@ -164,33 +164,33 @@ function customerRoute(deliveryNote: DeliveryNote) {
                 [route().params["organisation"], deliveryNote.shop_slug, deliveryNote.customer_slug])
     }
 }
+
+const warehouseDaysClass = (days?: number | null) => {
+    if (days == null) return 'text-gray-400'
+
+    if (days <= 3) return 'text-gray-900'
+    if (days <= 6) return 'text-amber-500 font-semibold'
+    return 'text-red-600 font-bold'
+}
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true" @onCheckedAll="(data) => onCheckedAll(data)" checkboxKey='id'>
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true" @onCheckedAll="(data) => onCheckedAll(data)"
+        checkboxKey='id'>
         <template #checkbox="data">
             <div v-if="data?.data?.picking_sessions_count > 0">
                 <span class="text-gray-400 text-center block">—</span>
             </div>
 
             <template v-else>
-                <FontAwesomeIcon
-                    v-if="selectedDeliveryNotes.includes(data.data.id)"
-                    icon="fas fa-check-square"
-                    class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
-                    fixed-width
-                    aria-hidden="true"
-                    @click="() => emits('update:selectedDeliveryNotes', selectedDeliveryNotes.filter(id => id !== data.data.id))"
-                    />
+                <FontAwesomeIcon v-if="selectedDeliveryNotes.includes(data.data.id)" icon="fas fa-check-square"
+                    class="text-green-500 p-2 cursor-pointer text-lg mx-auto block" fixed-width aria-hidden="true"
+                    @click="() => emits('update:selectedDeliveryNotes', selectedDeliveryNotes.filter(id => id !== data.data.id))" />
 
-                <FontAwesomeIcon
-                    v-else
-                    icon="fal fa-square"
-                    class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
-                    fixed-width
+                <FontAwesomeIcon v-else icon="fal fa-square"
+                    class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block" fixed-width
                     aria-hidden="true"
-                    @click="() => emits('update:selectedDeliveryNotes', [...selectedDeliveryNotes, data.data.id])"
-                    />
+                    @click="() => emits('update:selectedDeliveryNotes', [...selectedDeliveryNotes, data.data.id])" />
             </template>
         </template>
 
@@ -209,36 +209,40 @@ function customerRoute(deliveryNote: DeliveryNote) {
 
         <template #cell(reference)="{ item: deliveryNote }">
             <div class="flex gap-2 flex-wrap items-center">
-                    <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
+                <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
                     {{ deliveryNote["reference"] }}
-                    </Link>
-                    <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
-                        icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')"
-                        icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
-                    <NotesDisplay :item="deliveryNote" reference-field="reference" />
+                </Link>
+                <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
+                    icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')"
+                    icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
+                <NotesDisplay :item="deliveryNote" reference-field="reference" />
             </div>
 
             <template v-if="deliveryNote.picking_sessions_count > 0 && deliveryNote.picking_session_ids">
                 <Link v-for="id in deliveryNote.picking_session_ids.split(',')" :key="id"
                     :href="pickingSessionRoute(id)" class="secondaryLink">
-                <FontAwesomeIcon icon="fab fa-stack-overflow" class="text-yellow-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fab fa-stack-overflow" class="text-yellow-500" fixed-width
+                        aria-hidden="true" />
                 </Link>
             </template>
         </template>
 
         <template #cell(date)="{ item }">
-            {{ useFormatTime(item.date) }}
+            {{ useFormatTime(item.date, { formatTime: 'short-datetime' }) }}
+
+            <span v-tooltip.top="item.number_of_days_in_warehouse + ' days in warehouse'" :class="[
+                'inline-block w-8 text-right tabular-nums',
+                warehouseDaysClass(item.number_of_days_in_warehouse)
+            ]">
+                [{{ item.number_of_days_in_warehouse }}]
+            </span>
         </template>
 
         <template #cell(customer_name)="{ item: deliveryNote }">
             <Link :href="customerRoute(deliveryNote)" class="secondaryLink">
-            {{ deliveryNote["customer_name"] }}
+                {{ deliveryNote["customer_name"] }}
             </Link>
-        </template>
-
-         <template #cell(number_of_days_in_warehouse)="{ item: deliveryNote }">
-            {{ deliveryNote.number_of_days_in_warehouse }} {{ trans("Days") }}
         </template>
 
         <template #cell(action)="{ item: deliveryNote }">
@@ -256,7 +260,7 @@ function customerRoute(deliveryNote: DeliveryNote) {
                 <div class="mt-2">
                     <p class="text-sm text-gray-500">
                         {{ trans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference
-                            }}</strong>
+                        }}</strong>
                         {{ trans('with') }} {{ isModalPick?.number_items }} {{ trans('items') }}
                     </p>
                 </div>

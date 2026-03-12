@@ -117,7 +117,9 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         }
 
         $webpage->refresh();
-        $this->setDescriptionWebBlockOnTop($webpage);
+        if (count($countDepartmentDescriptionBlock) == 0) {
+            $this->setDescriptionWebBlockOnTop($webpage);
+        }
         if ($command->option('hide-description')) {
             $this->setDescriptionWebBlockHidden($webpage);
         }
@@ -151,7 +153,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first()->model_has_web_blocks_id;
         $webBlocks                     = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
-
          $runningPosition = 2;
          foreach ($webBlocks as $key => $position) {
              if ($key == $departmentDescriptionWebBlock) {
@@ -161,9 +162,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                  $runningPosition++;
              }
          }
-
-
-
 
         foreach ($webBlocks as $key => $position) {
             DB::table('model_has_web_blocks')
