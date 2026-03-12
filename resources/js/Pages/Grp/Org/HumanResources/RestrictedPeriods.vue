@@ -68,6 +68,11 @@ const resetTargetForm = () => {
 	editingRestrictedPeriodIdForTargets.value = null
 }
 
+const resetTargetFields = () => {
+	targetForm.reset()
+	targetForm.clearErrors()
+}
+
 const openModal = () => {
 	resetForm()
 	showCreateModal.value = true
@@ -90,7 +95,7 @@ const openEdit = (row: any) => {
 }
 
 const openTargetModal = (row: any) => {
-	resetTargetForm()
+	resetTargetFields()
 	editingRestrictedPeriodIdForTargets.value = row.id ?? null
 	showTargetModal.value = true
 }
@@ -136,7 +141,7 @@ const submitTarget = () => {
 			{
 				preserveScroll: true,
 				onSuccess: () => {
-					resetTargetForm()
+					resetTargetFields()
 				},
 			}
 		)
@@ -394,7 +399,7 @@ const modalTitle = computed(() =>
 
 			<div class="mt-6 flex justify-end gap-2">
 				<Button type="tertiary" @click="resetTargetForm">
-					{{ trans("Cancel") }}
+					{{ trans("Finish") }}
 				</Button>
 				<Button type="save" :loading="targetForm.processing" @click="submitTarget">
 					{{ trans("Add Target") }}
