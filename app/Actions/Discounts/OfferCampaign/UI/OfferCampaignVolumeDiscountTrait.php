@@ -39,11 +39,24 @@ trait OfferCampaignVolumeDiscountTrait
             $amnestyOffer     = Offer::find($amnestyOfferId);
             $editAmnestyRoute = [
                 'name'       => 'grp.org.shops.show.discounts.campaigns.edit_current_gr_amnesty_offer',
-                'parameters' => array_values($request->route()->originalParameters())
+                'parameters' => [
+                    'organisation'  => $this->organisation,
+                    'shop'          => $this->shop,
+                    'offerCampaign' => $amnestyOffer->offerCampaign->slug,
+                    'offer'         => $amnestyOffer->slug
+
+                ]
             ];
+
             $showAmnestyRoute = [
                 'name'       => 'grp.org.shops.show.discounts.campaigns.amnesty.show',
-                'parameters' => array_values($request->route()->originalParameters())
+                'parameters' => [
+                    'organisation'  => $this->organisation,
+                    'shop'          => $this->shop,
+                    'offerCampaign' => $amnestyOffer->offerCampaign->slug,
+                    'offer'         => $amnestyOffer->slug
+
+                ]
             ];
         }
 
