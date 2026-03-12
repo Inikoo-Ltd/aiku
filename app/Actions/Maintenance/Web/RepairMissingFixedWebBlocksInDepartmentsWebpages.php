@@ -152,15 +152,17 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $webBlocks                     = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
 
-        $runningPosition = 2;
-        foreach ($webBlocks as $key => $position) {
-            if ($key == $departmentDescriptionWebBlock) {
-                $webBlocks[$key] = 1;
-            } else {
-                $webBlocks[$key] = $runningPosition;
-                $runningPosition++;
-            }
-        }
+         $runningPosition = 2;
+         foreach ($webBlocks as $key => $position) {
+             if ($key == $departmentDescriptionWebBlock) {
+                 $webBlocks[$key] = 1;
+             } else {
+                 $webBlocks[$key] = $runningPosition;
+                 $runningPosition++;
+             }
+         }
+
+
 
 
         foreach ($webBlocks as $key => $position) {
@@ -188,6 +190,8 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
     public function asCommand(Command $command): void
     {
+        dd('Can not use until follow arya advice');
+
         $websiteId = false;
         if ($command->argument('website')) {
             $website   = Website::where('slug', $command->argument('website'))->first();
