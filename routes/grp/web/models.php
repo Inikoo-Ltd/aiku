@@ -1151,7 +1151,7 @@ Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->n
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
 Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');
-Route::delete('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
+Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
 
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
     Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
