@@ -16,7 +16,8 @@ import {
     faCameraRetro,
     faPaperclip,
     faCube,
-    faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign
+    faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign,
+    faExclamationCircle
 } from "@fal"
 import {
 faCloudRainbow
@@ -38,6 +39,8 @@ import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
+import { faWarning } from "@fortawesome/free-solid-svg-icons"
+import { Message } from "primevue"
 
 library.add(
     faInventory,
@@ -114,7 +117,15 @@ const component = computed(() => {
 
         </template>
     </PageHeading>
-
+    <div>
+        <Message :severity="'warn'">
+            <FontAwesomeIcon 
+                :icon="faExclamationCircle" 
+                class="text-yellow-500 mr-1"
+            />
+            {{ trans("Stock location changes for this Org SKU may be overwritten during Aurora imports.") }}
+        </Message>
+    </div>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 </template>
