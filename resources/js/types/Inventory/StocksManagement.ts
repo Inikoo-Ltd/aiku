@@ -64,5 +64,11 @@ export interface StocksManagementTS {
             value: number
         }
     }
+    stock_cost : {
+        cost_stock_price_per_unit : number
+        cost_stock_price_outer : number
+        cost_current_price_per_unit : number
+        cost_current_price_outer : number
+    }
     locations: StockLocation[]
 }

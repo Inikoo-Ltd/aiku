@@ -188,7 +188,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
     public function asCommand(Command $command): void
     {
-        dd('Can not use until follow arya advice');
 
         $websiteId = false;
         if ($command->argument('website')) {
