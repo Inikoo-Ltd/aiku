@@ -24,6 +24,7 @@ import { Icon } from "@/types/Utils/Icon"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
+import axios from "axios"
 library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
@@ -89,15 +90,11 @@ const displayedStats = computed(() => {
     return showAllStats.value ? filtered : filtered.slice(0, 6)
 })
 
-
 // watch(images, (newVal) => {
 //     if (!newVal?.length || selectedImage.value > newVal.length - 1) {
 //         selectedImage.value = 0
 //     }
 // }, { immediate: true })
-
-
-
 
 const selectedTradeUnit = ref(props.data.trade_units?.length > 0 ? props.data.trade_units[0].tradeUnit.code : null)
 const compSelectedTradeUnit = computed(() => {
