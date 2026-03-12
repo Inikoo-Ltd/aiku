@@ -35,7 +35,7 @@ class StoreEbayProduct extends RetinaAction
     public function handle(EbayUser $ebayUser, Portfolio $portfolio): Portfolio
     {
         $logs = StorePlatformPortfolioLog::run($portfolio, [
-            'type'   => PlatformPortfolioLogsTypeEnum::UPLOAD
+            'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
         ]);
 
         try {
@@ -85,7 +85,7 @@ class StoreEbayProduct extends RetinaAction
                         ]
                     ]);
 
-                    if (! blank($params)) {
+                    if (!blank($params)) {
                         throw ValidationException::withMessages(['title' => $displayError]);
                     }
 
@@ -109,24 +109,24 @@ class StoreEbayProduct extends RetinaAction
             ];
 
             $descriptions = mb_substr($portfolio->customer_description, 0, 4000);
-            //            $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
-            //            $decoded = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            //            $noTags = strip_tags($decoded);
-            //            $clean = preg_replace('/[^A-Za-z0-9.,;\'"!? \n-]/', ' ', $noTags);
-            //            $clean = preg_replace('/\s+/', ' ', trim($clean));
-            //            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));
+            /* $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
+            $decoded = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $noTags = strip_tags($decoded);
+            $clean = preg_replace('/[^A-Za-z0-9.,;\'"!? \n-]/', ' ', $noTags);
+            $clean = preg_replace('/\s+/', ' ', trim($clean));
+            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));*/
 
             if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
             }
 
-            $categories = $ebayUser->getCategorySuggestions($product->department->name);
+            $categories = $ebayUser->getCategorySuggestions($product->family->name);
 
             $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
             $categoryName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
 
-            if (! $categoryId) {
-                $categories = $ebayUser->searchAvailableProducts($product->department->name);
+            if (!$categoryId) {
+                $categories = $ebayUser->searchAvailableProducts($product->family->name);
 
                 if ($handleError($categories)) {
                     return $portfolio;
@@ -173,11 +173,11 @@ class StoreEbayProduct extends RetinaAction
                 'availability' => [
                     'shipToLocationAvailability' => [
                         'availabilityDistributions' => [
-                                [
-                                    'merchantLocationKey' => $ebayUser->location_key,
-                                    'quantity' => $availableQuantity
-                                ]
-                            ],
+                            [
+                                'merchantLocationKey' => $ebayUser->location_key,
+                                'quantity' => $availableQuantity
+                            ]
+                        ],
                         'quantity' => $availableQuantity
                     ]
                 ],
