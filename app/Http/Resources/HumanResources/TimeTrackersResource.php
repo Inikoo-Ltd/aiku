@@ -22,10 +22,18 @@ class TimeTrackersResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $startsAt = $this->starts_at;
+        $endsAt = $this->ends_at;
+
+        if (($this->organisation_code ?? null) === 'SK') {
+            $startsAt = $startsAt?->copy()->subHour();
+            $endsAt = $endsAt?->copy()->subHour();
+        }
+
         return [
             'id'        => $this->id,
-            'starts_at' => $this->starts_at,
-            'ends_at'   => $this->ends_at,
+            'starts_at' => $startsAt,
+            'ends_at'   => $endsAt,
             'duration'  => $this->duration,
             'status'    => $this->status->statusIcon()[$this->status->value],
             'action'    => match (true) {

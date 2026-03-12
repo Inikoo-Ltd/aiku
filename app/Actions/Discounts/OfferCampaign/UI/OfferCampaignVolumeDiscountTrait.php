@@ -31,10 +31,33 @@ trait OfferCampaignVolumeDiscountTrait
             $giftOffer = Offer::find($giftOfferId);
         }
 
-        $amnestyOffer   = null;
-        $amnestyOfferId = Arr::get($offerCampaign->data, 'gr_amnesty_offer_id');
+        $amnestyOffer     = null;
+        $editAmnestyRoute = null;
+        $showAmnestyRoute = null;
+        $amnestyOfferId   = Arr::get($offerCampaign->data, 'gr_amnesty_offer_id');
         if ($amnestyOfferId) {
-            $amnestyOffer = Offer::find($amnestyOfferId);
+            $amnestyOffer     = Offer::find($amnestyOfferId);
+            $editAmnestyRoute = [
+                'name'       => 'grp.org.shops.show.discounts.campaigns.edit_current_gr_amnesty_offer',
+                'parameters' => [
+                    'organisation'  => $this->organisation,
+                    'shop'          => $this->shop,
+                    'offerCampaign' => $amnestyOffer->offerCampaign->slug,
+                    'offer'         => $amnestyOffer->slug
+
+                ]
+            ];
+
+            $showAmnestyRoute = [
+                'name'       => 'grp.org.shops.show.discounts.campaigns.amnesty.show',
+                'parameters' => [
+                    'organisation'  => $this->organisation,
+                    'shop'          => $this->shop,
+                    'offerCampaign' => $amnestyOffer->offerCampaign->slug,
+                    'offer'         => $amnestyOffer->slug
+
+                ]
+            ];
         }
 
 
@@ -79,20 +102,11 @@ trait OfferCampaignVolumeDiscountTrait
                             ]
                         ],
                         $amnestyOffer
-                            ? [
-                            'type'  => 'button',
-                            'icon'  => 'fal fa-candle-holder',
-                            'label' => __('Edit ongoing GR Amnesty'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit_current_gr_amnesty_offer', request()->route()->getName()),
-                                'parameters' => array_values(request()->route()->originalParameters())
-
-                            ]
-                        ]
+                            ? null
                             : [
                             'type'  => 'button',
                             'icon'  => 'fal fa-candle-holder',
-                            'label' => __('Set up GR Amnesty'),
+                            'label' => __('New GR Amnesty'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'create_gr_amnesty_offer', request()->route()->getName()),
                                 'parameters' => array_values(request()->route()->originalParameters())
@@ -109,14 +123,11 @@ trait OfferCampaignVolumeDiscountTrait
                     'navigation' => OfferCampaignTabsEnum::navigation()
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value   => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
-                    fn() => GetOfferCampaignOverview::run($offerCampaign)
-                    : Inertia::lazy(fn() => GetOfferCampaignOverview::run($offerCampaign)),
+                    fn() => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute)
+                    : Inertia::lazy(fn() => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute)),
                 OfferCampaignTabsEnum::OFFERS->value     => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
                     fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))
                     : Inertia::lazy(fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))),
-                OfferCampaignTabsEnum::GR_GIFT->value    => $this->tab == OfferCampaignTabsEnum::GR_GIFT->value ?
-                    fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'VolGr Gift'))
-                    : Inertia::lazy(fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'VolGr Gift'))),
                 OfferCampaignTabsEnum::GR_AMNESTY->value => $this->tab == OfferCampaignTabsEnum::GR_AMNESTY->value ?
                     fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'GR Amnesty'))
                     : Inertia::lazy(fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'GR Amnesty'))),
@@ -126,7 +137,6 @@ trait OfferCampaignVolumeDiscountTrait
             ]
         )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value))
-            ->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::GR_GIFT->value))
             ->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::GR_AMNESTY->value));
     }
 }

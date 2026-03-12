@@ -104,10 +104,11 @@ class StoreVolGrGift extends OrgAction
 
     public function htmlResponse(Offer $offer): RedirectResponse
     {
-        return Redirect::route('grp.org.shops.show.discounts.offers.show', [
-            'organisation' => $this->organisation,
-            'shop'         => $this->shop,
-            'offer'        => $offer->slug
+        return Redirect::route('grp.org.shops.show.discounts.campaigns.gift.show', [
+            'organisation'  => $this->organisation,
+            'shop'          => $this->shop,
+            'offerCampaign' => $offer->offerCampaign->slug,
+            'offer'         => $offer->slug
         ]);
     }
 }
