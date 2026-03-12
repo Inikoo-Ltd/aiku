@@ -40,6 +40,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
     protected function processFamilyWebpages(Webpage $webpage, Command $command): void
     {
+        $shop = $webpage->shop;
+
         /** @var ProductCategory $family */
         $family = $webpage->model;
 
@@ -81,7 +83,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 }
                 $description = trim($description);
 
-                if ($description) {
+                if ($description && !$shop->is_aiku) {
                     $command->line('F: '.$family->id.' Family description updated');
                     $family->update(['description' => $description]);
                 }

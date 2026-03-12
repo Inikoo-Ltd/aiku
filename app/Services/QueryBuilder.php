@@ -283,7 +283,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             ->select("$timeSeriesTable.$foreignKey");
 
         foreach ($timeSeriesFilters as $column => $value) {
-            $subQuery->where("{$timeSeriesTable}.{$column}", $value);
+            $subQuery->where("{$timeSeriesRecordsTable}.{$column}", $value);
         }
 
         foreach ($recordsFilters as $column => $value) {

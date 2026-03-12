@@ -58,7 +58,6 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
                 data_set($modelData, 'parcels', $defaultParcel);
             }
 
-
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
             }
