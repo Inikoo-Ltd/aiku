@@ -38,7 +38,7 @@ trait OfferCampaignVolumeDiscountTrait
         if ($amnestyOfferId) {
             $amnestyOffer     = Offer::find($amnestyOfferId);
             $editAmnestyRoute = [
-                'name'       => 'grp.org.shops.show.discounts.campaigns.edit_current_gr_amnesty_offer',
+                'name'       => 'grp.org.shops.show.discounts.campaigns.amnesty.edit',
                 'parameters' => [
                     'organisation'  => $this->organisation,
                     'shop'          => $this->shop,
