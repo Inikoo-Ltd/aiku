@@ -334,6 +334,15 @@ class IndexWarehousePalletReturns extends OrgAction
                 'platforms.type as platform_type',
                 'currencies.code as currency_code',
             ])
+            ->selectSub(function ($subQuery) {
+                $subQuery
+                    ->from('picking_session_has_pallet_returns as pshr')
+                    ->join('picking_sessions as ps', 'ps.id', '=', 'pshr.picking_session_id')
+                    ->whereColumn('pshr.pallet_return_id', 'pallet_returns.id')
+                    ->orderByDesc('ps.id')
+                    ->limit(1)
+                    ->select('ps.slug');
+            }, 'picking_session_slug')
             ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state'])
             ->allowedFilters([$globalSearch, 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
