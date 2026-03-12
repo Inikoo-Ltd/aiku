@@ -7,10 +7,9 @@
  * copyright 2026
 */
 
-namespace App\Actions\Maintenance\Catalogue;
+namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
-use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
@@ -19,7 +18,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 
-class ShowProductsWithMismatchTradeUnits
+class MasterProductFixProductsTradeUnits
 {
     use WithActionUpdate;
 

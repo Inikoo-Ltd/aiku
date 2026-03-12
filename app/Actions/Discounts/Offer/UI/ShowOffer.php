@@ -63,6 +63,7 @@ class ShowOffer extends OrgAction
 
         $vueComponent = match ($offer->type) {
             'VolGr Gift' => 'Org/Discounts/OfferVolGrGift',
+            'Amount AND Order Number' => 'Org/Discounts/OfferAmountOrder',
             default => 'Org/Discounts/Offer'
         };
 

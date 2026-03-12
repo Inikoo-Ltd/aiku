@@ -85,6 +85,7 @@ class DeliveryNotesResource extends JsonResource
             'public_notes'           => $this->public_notes,
             'shipping_notes'         => $this->shipping_notes,
             'shipping_data'          => $this->shipping_data,
+            'number_of_days_in_warehouse'   => round(\Carbon\Carbon::parse($this->in_warehouse_at)->diffInDays(now())),
             'employee_pick_route'    => [
                 'name'       => 'grp.models.delivery_note.employee.pick',
                 'parameters' => [

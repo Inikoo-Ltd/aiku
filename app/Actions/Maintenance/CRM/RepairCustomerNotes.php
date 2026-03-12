@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 11 Mar 2026 13:39:15 Malaysia Time, Kuala Lumpur, Malaysia
@@ -7,7 +8,6 @@
 
 namespace App\Actions\Maintenance\CRM;
 
-use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
@@ -33,9 +33,9 @@ class RepairCustomerNotes
         }
 
         $internalNotes = $customer->warehouse_internal_notes;
-        if($internalNotes!=''){
+        if ($internalNotes != '') {
             $internalNotes .= '; '.$customer->warehouse_public_notes;
-        }else{
+        } else {
             $internalNotes = $customer->warehouse_public_notes;
         }
 

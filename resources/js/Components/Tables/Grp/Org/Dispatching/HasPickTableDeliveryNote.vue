@@ -204,7 +204,7 @@ function customerRoute(deliveryNote: DeliveryNote) {
         </template>
 
         <template #cell(effective_weight)="{ item: deliveryNote }">
-            {{ deliveryNote.effective_weight }} g
+            {{ deliveryNote.effective_weight }}
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
@@ -235,6 +235,10 @@ function customerRoute(deliveryNote: DeliveryNote) {
             <Link :href="customerRoute(deliveryNote)" class="secondaryLink">
             {{ deliveryNote["customer_name"] }}
             </Link>
+        </template>
+
+         <template #cell(number_of_days_in_warehouse)="{ item: deliveryNote }">
+            {{ deliveryNote.number_of_days_in_warehouse }} {{ trans("Days") }}
         </template>
 
         <template #cell(action)="{ item: deliveryNote }">
