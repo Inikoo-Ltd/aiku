@@ -17,9 +17,17 @@ class GetTimesheetShowcase
 
     public function handle(Timesheet $timesheet): array
     {
+        $workStartAt = $timesheet->start_at;
+        $workEndAt = $timesheet->end_at;
+
+        if ($timesheet->organisation?->code === 'SK') {
+            $workStartAt = $workStartAt?->copy()->subHour();
+            $workEndAt = $workEndAt?->copy()->subHour();
+        }
+
         return [
-            'work_start_at'      => $timesheet->start_at,
-            'work_end_at'        => $timesheet->end_at,
+            'work_start_at'      => $workStartAt,
+            'work_end_at'        => $workEndAt,
             'work_duration'      => $timesheet->working_duration,
             'breaks_duration'    => $timesheet->breaks_duration,
             'total_duration'     => $timesheet->total_duration,
