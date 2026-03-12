@@ -151,11 +151,11 @@ console.log("data", props.data)
                 <!-- RIGHT -->
                 <div class="flex gap-2 ml-auto">
 
-                    <ButtonWithLink type="yellow" label="Edit Amnesty Offer" size="md"
-                        :bindToLink="{ preserveScroll: true }" :routeTarget="data.edit_amnesty_route" />
 
-                    <ButtonWithLink type="yellow" label="Show ongoing GR Amnesty" size="md"
-                        :bindToLink="{ preserveScroll: true }" :routeTarget="data.show_amnesty_route" />
+                    <ButtonWithLink type="yellow" label="Show" size="md" :bindToLink="{ preserveScroll: true }"
+                        :routeTarget="data.show_amnesty_route" />
+                    <ButtonWithLink type="yellow" label="Edit" size="md" :bindToLink="{ preserveScroll: true }"
+                        :routeTarget="data.edit_amnesty_route" />
 
                 </div>
             </div>
