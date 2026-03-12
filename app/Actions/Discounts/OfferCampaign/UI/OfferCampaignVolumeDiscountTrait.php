@@ -114,8 +114,8 @@ trait OfferCampaignVolumeDiscountTrait
                 'data'        => $offerCampaign,
 
                 'amnesty_offer'                          => $amnestyOffer,
-                'edit_Amnesty_route'                     => $editAmnestyRoute,
-                'showAmnestyRoute'                       => $showAmnestyRoute,
+                'edit_amnesty_route'                     => $editAmnestyRoute,
+                'show_amnesty_route'                     => $showAmnestyRoute,
                 'tabs'                                   => [
                     'current'    => $this->tab,
                     'navigation' => OfferCampaignTabsEnum::navigation()
