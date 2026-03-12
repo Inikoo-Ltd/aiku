@@ -12,12 +12,22 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use App\Models\Web\WebsitePageView;
 use App\Models\Web\WebsiteVisitor;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class StoreWebsitePageView
+class StoreWebsitePageView implements ShouldBeUnique
 {
     use AsAction;
+
+    public string $jobQueue = 'analytics';
+    public int $jobTimeout = 1;
+    public int $jobTries = 1;
+
+    public function getJobUniqueId(WebsiteVisitor $visitor, Website $website, string $url): string
+    {
+        return "{$visitor->id}:{$website->id}:{$url}";
+    }
 
     public function handle(
         WebsiteVisitor $visitor,

@@ -13,16 +13,22 @@ use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteVisitor;
 use hisorange\BrowserDetect\Parser as Browser;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessWebsiteVisitorTracking
+class ProcessWebsiteVisitorTracking implements ShouldBeUnique
 {
     use AsAction;
 
     public string $jobQueue = 'analytics';
     public int $jobTimeout = 1;
     public int $jobTries = 1;
+
+    public function getJobUniqueId(string $sessionId, Website $website): string
+    {
+        return "{$sessionId}:{$website->id}";
+    }
 
     public function handle(
         string $sessionId,
@@ -62,6 +68,6 @@ class ProcessWebsiteVisitorTracking
             );
         }
 
-        StoreWebsitePageView::run($visitor, $website, $currentUrl);
+        StoreWebsitePageView::dispatch($visitor, $website, $currentUrl);
     }
 }
