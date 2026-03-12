@@ -489,6 +489,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'platform_user_id'         => $platformUser?->id,
                 'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
+                'bundles'                  => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data
