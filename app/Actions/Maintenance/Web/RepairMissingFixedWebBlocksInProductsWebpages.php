@@ -34,6 +34,9 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
     protected function processProductWebpages(Webpage $webpage, Command $command): void
     {
+
+        $shop = $webpage->shop;
+
         $webBlocksDataOldComponent = $this->getWebpageBlocksByType($webpage, 'product');
         $oldWebBlocksCount         = count($webBlocksDataOldComponent);
 
@@ -48,7 +51,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         }
 
 
-        if ($oldWebBlocksCount > 0) {
+        if ($oldWebBlocksCount > 0 && !$shop->is_aiku) {
             if ($webpage->allow_fetch) {
                 $layout      = json_decode($webBlocksDataOldComponent[0]->layout, true);
                 $description = Arr::get($layout, 'data.fieldValue.value.text');
