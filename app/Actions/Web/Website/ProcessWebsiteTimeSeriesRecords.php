@@ -23,6 +23,8 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsAggregatedTimeSeriesQuery;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $websiteId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$websiteId:$frequency->value:$from:$to";
