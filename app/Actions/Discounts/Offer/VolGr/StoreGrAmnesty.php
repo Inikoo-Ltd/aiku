@@ -31,7 +31,7 @@ class StoreGrAmnesty extends OrgAction
     public function handle(OfferCampaign $offerCampaign, $modelData): Offer
     {
         $startAt = Carbon::parse($modelData['start_at'])->format('Y-m-d');
-        $endAt   = Carbon::parse($modelData['start_at'])->format('Y-m-d');
+        $endAt   = Carbon::parse($modelData['end_at'])->format('Y-m-d');
 
         $offerData = [];
         data_set($offerData, 'duration', OfferDurationEnum::INTERVAL);
