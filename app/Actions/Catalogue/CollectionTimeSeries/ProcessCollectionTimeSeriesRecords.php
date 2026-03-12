@@ -32,7 +32,7 @@ class ProcessCollectionTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $collectionId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        return;
+
         $from .= ' 00:00:00';
         $to   .= ' 23:59:59';
 
