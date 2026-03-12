@@ -6,7 +6,7 @@ import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle } from "@fal"
-import { faShoppingBasket, faStickyNote, faShoppingCart } from "@fas"
+import { faShoppingBasket, faStickyNote, faShoppingCart, faPlusCircle, faBox } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -282,18 +282,17 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
         <!-- Header Section -->
         <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold flex items-center gap-2">
-                <i class="fas fa-box"></i> Active
+                <FontAwesomeIcon :icon="faBox"></FontAwesomeIcon> Active
             </h2>
             <button class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-plus-circle text-xl"></i>
+                <FontAwesomeIcon :icon="faPlusCircle" class="text-xl"></FontAwesomeIcon>
             </button>
         </div>
         <!-- Section: Summary Stats -->
         <div class="grid grid-cols-4 gap-2 text-center">
-            <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded">
+            <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded" v-tooltip="item.icon_state.tooltip">
                 <span>
-                    <!-- <FontAwesomeIcon :icon="item.icon_state" class="text-gray-500" fixed-width aria-hidden="true" /> -->
-                    <Icon :data="item.icon_state" />
+                    <Icon :data="{...item.icon_state, tooltip : null}" />
                 </span>
                 <span class="ml-2 text-lg font-bold">
                     {{ locale.number(item.value ?? 0) }}
@@ -312,21 +311,22 @@ const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
                 <div class="col-span-2 font-semibold text-gray-600">Stock value:</div>
                 <div class="col-span-3 text-right">
                     <!-- 4720000 -->
-                    -
+                        {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_stock_price_outer || 0) }} <span>total</span>
                 </div>
                 <div class="col-span-2 text-right">
                     <!-- 8000 /SKO -->
-                    -
+                     {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_stock_price_per_unit || 0) }} / SKO
                 </div>
             </div>
             <div class="grid grid-cols-7 gap-x-3">
                 <div class="col-span-2 font-semibold text-gray-600">Current cost:</div>
                 <div class="col-span-3 text-right">
                     <!-- 4720000 -->
+                      {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_current_price_outer || 0) }} <span>total</span>
                 </div>
                 <div class="col-span-2 text-right">
                     <!-- 8000 /Unit -->
-                    -
+                      {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_current_price_per_unit || 0) }} / Unit
                 </div>
             </div>
         </div>
