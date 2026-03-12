@@ -66,7 +66,7 @@ const onLogoutAuth = () => {
             </label>
 
             <input v-model="form.one_time_password" ref="_inputOneTimePassword" id="one_time_password" required
-                class="mt-1 block w-full px-3 py-2 border rounded-md" />
+                class="mt-1 block w-full px-3 py-2 border rounded-md"   :type="'text'" />
         </div>
 
         <div class="flex space-x-2">
