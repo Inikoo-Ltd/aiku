@@ -99,7 +99,6 @@ const component = computed(() => {
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #afterTitle>
@@ -114,7 +113,6 @@ const component = computed(() => {
                     fixed-width
                 />
             </Link>
-
         </template>
     </PageHeading>
     <div>

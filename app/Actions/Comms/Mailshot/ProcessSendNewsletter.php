@@ -55,14 +55,7 @@ class ProcessSendNewsletter
 
             AddRecipientsToMailshot::run($mailshot, $recipients, $emailDeliveryChannel, $outbox);
 
-            // After processing the chunk, update and dispatch the delivery channel
-            UpdateEmailDeliveryChannel::run(
-                $emailDeliveryChannel,
-                [
-                    'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
-                ]
-            );
-            SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
+
         });
 
         UpdateMailshot::run(

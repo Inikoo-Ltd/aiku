@@ -38,12 +38,25 @@ trait OfferCampaignVolumeDiscountTrait
         if ($amnestyOfferId) {
             $amnestyOffer     = Offer::find($amnestyOfferId);
             $editAmnestyRoute = [
-                'name'       => 'grp.org.shops.show.discounts.campaigns.edit_current_gr_amnesty_offer',
-                'parameters' => array_values($request->route()->originalParameters())
+                'name'       => 'grp.org.shops.show.discounts.campaigns.amnesty.edit',
+                'parameters' => [
+                    'organisation'  => $this->organisation,
+                    'shop'          => $this->shop,
+                    'offerCampaign' => $amnestyOffer->offerCampaign->slug,
+                    'offer'         => $amnestyOffer->slug
+
+                ]
             ];
+
             $showAmnestyRoute = [
                 'name'       => 'grp.org.shops.show.discounts.campaigns.amnesty.show',
-                'parameters' => array_values($request->route()->originalParameters())
+                'parameters' => [
+                    'organisation'  => $this->organisation,
+                    'shop'          => $this->shop,
+                    'offerCampaign' => $amnestyOffer->offerCampaign->slug,
+                    'offer'         => $amnestyOffer->slug
+
+                ]
             ];
         }
 
@@ -103,17 +116,13 @@ trait OfferCampaignVolumeDiscountTrait
                     ],
                 ],
                 'data'        => $offerCampaign,
-
-                'amnesty_offer'                          => $amnestyOffer,
-                'edit_amnesty_route'                     => $editAmnestyRoute,
-                'show_amnesty_route'                     => $showAmnestyRoute,
                 'tabs'                                   => [
                     'current'    => $this->tab,
                     'navigation' => OfferCampaignTabsEnum::navigation()
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value   => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
-                    fn() => GetOfferCampaignOverview::run($offerCampaign)
-                    : Inertia::lazy(fn() => GetOfferCampaignOverview::run($offerCampaign)),
+                    fn() => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute, $amnestyOffer)
+                    : Inertia::lazy(fn() => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute)),
                 OfferCampaignTabsEnum::OFFERS->value     => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
                     fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))
                     : Inertia::lazy(fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))),

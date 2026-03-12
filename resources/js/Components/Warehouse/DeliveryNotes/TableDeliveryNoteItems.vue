@@ -17,7 +17,7 @@ import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -739,11 +739,10 @@ const submitTransactionAsWaiting = () => {
         </template>
 
          <template #cell(action)="{ item: item }">
-                <template class="" v-if="state === 'packing' && layout.app.environment === 'local' && props.shop_type !== 'dropshipping'" && !item.is_done_packing>
+                <template class="" v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping'" && !item.is_done_packing>
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
                         type="secondary"
-                        v-tooltip="trans('Click to packing the item')"
                         :label="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :key="screenType"
@@ -759,8 +758,6 @@ const submitTransactionAsWaiting = () => {
                     <ButtonWithLink
                         v-else
                         type="negative"
-                        v-tooltip="trans('Unpack the item')"
-                        :label="ctrans('Unpack')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :bindToLink="{preserveScroll: true}"
                         :routeTarget="{
@@ -770,6 +767,7 @@ const submitTransactionAsWaiting = () => {
                                 deliveryNoteItem: item.id
                             }
                         }"
+                        :icon="faUndo"
                     />
                 </template>
         </template>

@@ -9,6 +9,8 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
+use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
+use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\OrgAction;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Models\Comms\Mailshot;
@@ -49,5 +51,14 @@ class AddRecipientsToMailshot extends OrgAction
                 );
             }
         }
+
+        // After processing the chunk, update and dispatch the delivery channel
+        UpdateEmailDeliveryChannel::run(
+            $emailDeliveryChannel,
+            [
+                'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
+            ]
+        );
+        SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
     }
 }
