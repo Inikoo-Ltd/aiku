@@ -48,7 +48,6 @@ class GetMailshotRecipientsQueryBuilder
         }
 
         return null;
-
     }
 
     /**
@@ -96,7 +95,7 @@ class GetMailshotRecipientsQueryBuilder
         }
         $query->whereNotNull('email');
 
-        $query->select('customers.id', 'customers.shop_id', 'customers.name', 'customers.email', 'customers.slug');
+        $query->select('customers.id');
 
         $filters = $mailshot->recipients_recipe;
 

@@ -8,9 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
-use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
@@ -51,6 +49,7 @@ class ProcessSendNewsletter
         // Process recipients in chunks of 250
         $queryBuilder->chunk($chunkSize, function ($recipients) use ($mailshot, $outbox) {
 
+            ProcessSendMailshot::dispatch($mailshot->id, $recipients->pluck('id')->toArray(), $outbox);
             $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
             AddRecipientsToMailshot::run($mailshot, $recipients, $emailDeliveryChannel, $outbox);
