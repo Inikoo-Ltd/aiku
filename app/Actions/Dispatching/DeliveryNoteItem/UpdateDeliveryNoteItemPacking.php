@@ -50,11 +50,21 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
                 $trolley->update(['current_delivery_note_id' => null]);
             }
 
+            $defaultParcel = count($deliveryNote->parcels) == 0 ? [
+                [
+                    'weight'     => $deliveryNote->effective_weight / 1000,
+                    'dimensions' => [5, 5, 5]
+                ]
+            ] : $deliveryNote->parcels;
+
             UpdateDeliveryNote::make()->action($deliveryNote, [
                 'packed_at' => now(),
                 'packer_user_id' => $this->user->id,
                 'state' => DeliveryNoteStateEnum::PACKED->value,
+                'parcels'   => $defaultParcel
             ]);
+
+
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
             }
