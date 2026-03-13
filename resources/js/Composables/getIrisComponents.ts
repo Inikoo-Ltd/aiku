@@ -50,6 +50,7 @@ import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Ir
 import SeeAlso1Iris from "@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue"
 
 import family1Iris from "@/Components/CMS/Webpage/Family-1/family1Iris.vue"
+import family2Iris from "@/Components/CMS/Webpage/Family2/family2Iris.vue"
 import FamiliesIris1 from "@/Components/CMS/Webpage/Families1/FamiliesIris1.vue"
 import FamiliesIris2 from "@/Components/CMS/Webpage/Families2/FamiliesIris2.vue"
 import FamiliesIris3 from "@/Components/CMS/Webpage/Families3/FamiliesIris3.vue"
@@ -130,6 +131,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'department-description-1' : DepartmentDescriptionIris,
 		'sub-department-description-1' : SubDepartmentDesciptionIris,
 		'family-1': family1Iris,
+		'family-2': family2Iris,
 
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,

@@ -32,6 +32,7 @@ import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
 import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Workshop.vue'
+import FamilyIris2 from '@/Components/CMS/Webpage/Family2/family2Workshop.vue'
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
 import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Dropshipping/Product1Workshop.vue'
@@ -97,6 +98,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'department-description-1' : DepartmentDescriptionWorkshop,
         'sub-department-description-1' : SubDepartmentDesciptionWorkshop,
         'family-1': FamilyIris1,
+        'family-2': FamilyIris2,
 
         //sub-department
         'sub-departments-1' : SubDepartmentWorkshop1,
@@ -158,6 +160,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'carousel-image-background' : CarouselImageBackground,
         'step-2' : TimelineWorkshop2,
         'slider-1' : Slider1Workshop,
+
 
     }
 }
