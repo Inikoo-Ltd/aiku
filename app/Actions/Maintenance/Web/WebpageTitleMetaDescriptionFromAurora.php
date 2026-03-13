@@ -58,7 +58,7 @@ class WebpageTitleMetaDescriptionFromAurora
                         if ($auData->{'Webpage Meta Description'} != '') {
                             $webpage->update(
                                 [
-                                    'meta_description' => $auData->{'Webpage Meta Description'}
+                                    'description' => $auData->{'Webpage Meta Description'}
                                 ]
                             );
                         }
