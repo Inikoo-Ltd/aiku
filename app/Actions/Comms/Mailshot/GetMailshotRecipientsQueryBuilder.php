@@ -9,8 +9,6 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Comms\Mailshot\Filters\FilterByDepartment;
-use App\Actions\Comms\Mailshot\Filters\FilterByFamily;
-use Illuminate\Support\Arr;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\Helpers\Query;
@@ -29,7 +27,10 @@ use App\Actions\Comms\Mailshot\Filters\FilterRegisteredNeverOrdered;
 use App\Actions\Comms\Mailshot\Filters\FilterByShowroomOrders;
 use App\Actions\Comms\Mailshot\Filters\FilterByInterest;
 use App\Actions\Comms\Mailshot\Filters\FilterOrdersCollection;
+use App\Actions\Comms\Mailshot\Filters\FilterByFamily;
 use App\Actions\Comms\Mailshot\Filters\FilterByLocation;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class GetMailshotRecipientsQueryBuilder
 {
@@ -40,7 +41,7 @@ class GetMailshotRecipientsQueryBuilder
     /**
      * @throws \Exception
      */
-    public function handle(Mailshot $mailshot): ?QueryBuilder
+    public function handle(Mailshot $mailshot): ?Builder
     {
 
         if (!empty($mailshot->recipients_recipe)) {
@@ -78,22 +79,20 @@ class GetMailshotRecipientsQueryBuilder
     /**
      * @throws \Exception
      */
-    private function getRecipientsFromCustomQuery(Mailshot $mailshot): QueryBuilder
+    private function getRecipientsFromCustomQuery(Mailshot $mailshot): Builder
     {
-        $modelClass = Customer::class;
-
-        $query = QueryBuilder::for($modelClass);
+        $query = DB::table('customers');
 
         // Check if customer is subscribed to marketing
         $query->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
             ->where('customer_comms.is_subscribed_to_marketing', true);
 
         if ($mailshot->shop_id) {
-            $query->where('shop_id', $mailshot->shop_id);
+            $query->where('customers.shop_id', $mailshot->shop_id);
         } else {
             $query->whereRaw('1 = 0');
         }
-        $query->whereNotNull('email');
+        $query->whereNotNull('customers.email');
 
         $query->select('customers.id');
 

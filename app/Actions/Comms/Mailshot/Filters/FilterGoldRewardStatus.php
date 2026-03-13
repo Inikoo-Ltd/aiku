@@ -11,9 +11,9 @@ class FilterGoldRewardStatus
     /**
      * Apply the Gold Reward Status filter.
      *
-     * @param Builder $query
+     * @param Builder|\Illuminate\Database\Query\Builder $query
      * @param string $status 'gold' or 'non_gold'
-     * @return Builder
+     * @return Builder|\Illuminate\Database\Query\Builder
      */
     public function apply($query, array $filters)
     {

@@ -4,7 +4,6 @@ namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
 use Illuminate\Support\Arr;
 
 class FilterByFamilyNeverOrdered
@@ -12,9 +11,9 @@ class FilterByFamilyNeverOrdered
     /**
      * Apply the "By Family Never Ordered" filter to the query.
      *
-     * @param Builder|SpatieQueryBuilder $query
+     * @param Builder|\Illuminate\Database\Query\Builder $query
      * @param int|string $familyId
-     * @return Builder|SpatieQueryBuilder
+     * @return Builder|\Illuminate\Database\Query\Builder
      */
     public function apply($query, array $filters)
     {

@@ -2,9 +2,9 @@
 
 namespace App\Actions\Comms\Mailshot\Filters;
 
-use Illuminate\Database\Eloquent\Builder;
-use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class FilterRegisteredNeverOrdered
 {
@@ -15,7 +15,7 @@ class FilterRegisteredNeverOrdered
      * @param array $options
      * @return Builder|QueryBuilder
      */
-    public function apply($query, array $filters): Builder|QueryBuilder
+    public function apply($query, array $filters): Builder
     {
 
         $regNeverOrdered = Arr::get($filters, 'registered_never_ordered');
@@ -39,7 +39,13 @@ class FilterRegisteredNeverOrdered
                 }
             }
 
-            $query->whereDoesntHave('orders');
+            // Use raw subquery to check for customers who have no orders
+            $query->whereNotExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('orders')
+                    ->whereRaw('orders.customer_id = customers.id')
+                    ->whereNull('orders.deleted_at');
+            });
 
             if ($dateRange = Arr::get($options, 'date_range')) {
                 $startDate = Arr::get($dateRange, 'start');
