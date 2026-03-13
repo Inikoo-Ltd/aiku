@@ -33,7 +33,7 @@ return new class () extends Migration {
             $table->string('slug')->unique()->collation('und_ns');
             $table->string('code')->index()->collation('und_ns');
             $table->string('url')->index()->collation('und_ns');
-            $table->string('title')->index();
+            $table->string('title',1000)->index();
             $table->text('description')->nullable();
 
             $table->unsignedSmallInteger('level')->index();
