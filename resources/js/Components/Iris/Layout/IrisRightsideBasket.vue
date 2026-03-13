@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, watch } from 'vue'
+import { inject, ref, watch, onMounted, onUnmounted } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { debounce, get, set } from 'lodash-es'
@@ -251,25 +251,56 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
 }
 
 const idxProductLoading = ref<number | null>(null)
+
+
+const basketContainer = ref<HTMLElement | null>(null)
+
+const topPosition = ref(360)
+const dragging = ref(false)
+const offsetY = ref(0)
+
+const startDrag = (e: MouseEvent) => {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  offsetY.value = e.clientY - rect.top
+  dragging.value = true
+}
+
+const onDrag = (e: MouseEvent) => {
+  if (!dragging.value) return
+  topPosition.value = e.clientY - offsetY.value
+}
+
+const stopDrag = () => {
+  dragging.value = false
+}
+
+onMounted(() => {
+  window.addEventListener('mousemove', onDrag)
+  window.addEventListener('mouseup', stopDrag)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', onDrag)
+  window.removeEventListener('mouseup', stopDrag)
+})
 </script>
 
 <template>
     <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
         <!-- Toggle: collapse-expand right basket -->
-        <div @click="handleToggleLeftBar"
-            class="absolute z-10 top-2/4 -translate-y-full hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)] bg-[var(--theme-color-0)] w-8 lg:w-8 aspect-square xborder xborder-gray-300 rounded-full flex justify-center items-center cursor-pointer"
-            :class="layout.rightbasket?.show ? 'left-0 -translate-x-1/2' : '-left-12'"
-            v-tooltip="layout.rightbasket?.show ? trans('Collapse the bar') : trans('Expand the bar')"
-            :style="{
-                'color': layout.app.theme[1]
+        <div @mousedown="startDrag" @click="handleToggleLeftBar" class="fixed z-[60] hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)] 
+         bg-[var(--theme-color-0)] w-8 aspect-square rounded-full 
+         flex justify-center items-center cursor-pointer"
+            :class="layout.rightbasket?.show ? 'right-[20rem]' : 'right-2'" :style="{
+                top: topPosition + 'px',
+                color: layout.app.theme[1]
             }"
-        >
+>
             <div class="flex items-center justify-center transition-all duration-300 ease-in-out">
-                <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" aria-hidden="true" fixed-width />
-                <FontAwesomeIcon v-else icon="fal fa-shopping-cart" class="" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" fixed-width />
+                <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width />
             </div>
         </div>
-
 
         <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
             <div class="flex items-start justify-between mb-1">
