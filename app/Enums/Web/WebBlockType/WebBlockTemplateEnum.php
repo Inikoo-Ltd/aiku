@@ -11,6 +11,8 @@ namespace App\Enums\Web\WebBlockType;
 
 use App\Enums\EnumHelperTrait;
 
+use function Deployer\Support\array_flatten;
+
 enum WebBlockTemplateEnum: string
 {
     use EnumHelperTrait;
@@ -46,5 +48,12 @@ enum WebBlockTemplateEnum: string
                 'product-2'
             ]
         };
+    }
+
+    public static function allTemplateCodes(): array
+    {
+        return array_merge(
+            ...array_map(fn ($item) => $item->templateCodes(), self::cases())
+        );
     }
 }

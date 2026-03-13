@@ -105,7 +105,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         }
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
         if (count($countFamilyWebBlock) == 0) {
