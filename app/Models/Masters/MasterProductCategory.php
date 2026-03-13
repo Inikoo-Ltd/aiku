@@ -12,6 +12,7 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -255,5 +256,35 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
 
+    
+    public function descArt1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art1');
+    }
+
+    public function descArt2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art2');
+    }
+
+    public function descArt3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art3');
+    }
+
+    public function descArt4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art4');
+    }
+
+    public function descArt5Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art5');
+    }
+
+    public function extraDescArt1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
+    }
 
 }
