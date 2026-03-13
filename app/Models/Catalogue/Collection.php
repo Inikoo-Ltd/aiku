@@ -10,6 +10,7 @@ namespace App\Models\Catalogue;
 
 use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Models\Masters\MasterCollection;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -47,6 +48,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property CollectionStateEnum $state
+ * @property HealthRankEnum|null $health_rank
  * @property string|null $source_id
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
@@ -109,6 +111,7 @@ class Collection extends Model implements Auditable, HasMedia
         'data'            => 'array',
         'web_images'      => 'array',
         'state'           => CollectionStateEnum::class,
+        'health_rank'     => HealthRankEnum::class,
         'products_status' => CollectionProductsStatusEnum::class,
         'offers_data'     => 'array',
         'inactivated_at'  => 'datetime',

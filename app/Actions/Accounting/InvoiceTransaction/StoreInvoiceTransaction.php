@@ -97,6 +97,7 @@ class StoreInvoiceTransaction extends OrgAction
 
         SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id);
         SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id);
+        SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id);
 
         if ($invoiceTransaction->order_id && $invoiceTransaction->transaction_id) {
             $invoiceTransaction->transaction->update([
@@ -160,6 +161,7 @@ class StoreInvoiceTransaction extends OrgAction
             'handle_date'                   => ['sometimes'],
             'data'                          => ['sometimes', 'array'],
             'recurring_bill_transaction_id' => ['sometimes'],
+            'is_gift'                       => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

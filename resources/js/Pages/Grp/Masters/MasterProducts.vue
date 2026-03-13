@@ -30,6 +30,8 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import TableMasterProductsEdit from "@/Components/Tables/TableMasterProductsEdit.vue"
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
+import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
+
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus)
 
@@ -52,7 +54,8 @@ const props = defineProps<{
     shopsData?: any
     masterProductCategoryId?: number
     currency?: any
-    variantSlugs?: Record<string, string>;
+    variantSlugs?: Record<string, string>
+    hide_bulk_edit?: boolean
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
@@ -77,6 +80,17 @@ const component = computed(() => {
 const showDialog = ref(false)
 // Selected products logic
 const selectedProductsId = ref<Record<string, boolean>>({})
+// Selected products to link to a collection
+const selectedProductsForAttachId = ref<number[]>([])
+
+const isLoading = ref<string | boolean>(false)
+const errorMessage = ref<string>('')
+
+
+const isModalOpen = {
+    products: ref(false),
+}
+
 const compSelectedProductsId = computed(() =>
     Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key])
 )
@@ -98,6 +112,56 @@ const onVisit = () => {
         },
     })
 }
+
+const onSubmitAttach = async ({
+    closeModal,
+    scope,
+    routeToSubmit,
+    selectedIds,
+    resetSelection
+}: {
+    closeModal: () => void,
+    scope: 'products' | 'families',
+    routeToSubmit: routeType,
+    selectedIds: any[],
+    resetSelection: () => void
+}) => {
+
+    const ids = selectedIds.map(item => typeof item === 'object' ? item.id : item)
+
+    if (!ids.length) return
+    isLoading.value = 'submitAttach'
+
+    router.post(route(routeToSubmit.name, routeToSubmit.parameters), {
+        [scope]: ids
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeModal()
+            notify({
+                title: trans('Success'),
+                text: trans(`Successfully attach :tscope.`, { tscope: scope }),
+                type: 'success',
+            })
+            resetSelection()
+        },
+        onError: (errors: any) => {
+            errorMessage.value = errors
+            notify({
+                title: trans('Something went wrong.'),
+                text: trans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
+                type: 'error',
+            })
+        },
+        onFinish: () => {
+            isLoading.value = false
+        }
+    })
+}
+
+const resetSelectionByScope = {
+    products: () => (selectedProductsForAttachId.value = []),
+}
 </script>
 
 <template>
@@ -116,6 +180,7 @@ const onVisit = () => {
 
         <template #other>
             <Button
+                v-if="!hide_bulk_edit"
                 @click="() => onVisit()"
                 :label="trans('Bulk edit products') + ` (${compSelectedProductsId?.length})`"
                 :disabled="!compSelectedProductsId.length"
@@ -123,6 +188,36 @@ const onVisit = () => {
                 icon="fal fa-pencil"
                 :loading="isLoadingVisit"
             />
+            <div v-if="routes?.dataList">
+                <Button
+                    type="secondary"
+                    label="Attach Products"
+                    icon="fal fa-plus"
+                    @click="isModalOpen.products.value = true"
+                    :tooltip="trans('Attach products to this collections')"
+                />
+                <!-- Modal: Product -->
+                <Modal
+                    :isOpen="isModalOpen.products.value"
+                    @onClose="isModalOpen.products.value = false"
+                    width="w-full max-w-6xl"
+                >
+                    <ListSelector
+                        :headLabel="`${trans('Add products to collection')}`"
+                        :routeFetch="routes.dataList"
+                        :isLoadingSubmit="isLoading"
+                        @submit="(ids) =>
+                            onSubmitAttach({
+                                closeModal: () => (isModalOpen.products.value = false),
+                                scope: 'products',
+                                routeToSubmit: routes.submitAttach,
+                                selectedIds: ids,
+                                resetSelection: resetSelectionByScope.products,
+                            })
+                        "
+                    />
+                </Modal>
+            </div>
         </template>
     </PageHeading>
 
@@ -135,7 +230,8 @@ const onVisit = () => {
         :tab="currentTab"
         :data="currentData"
         :variant-slugs="variantSlugs"
-        isCheckBox
+        :isCheckBox="!hide_bulk_edit"
+        :routes="routes"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"
     ></component>
 
@@ -147,8 +243,6 @@ const onVisit = () => {
         :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
     />
-
-
 
     <Dialog :header="trans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"
         :closable="true" :style="{ width: '500px' }">

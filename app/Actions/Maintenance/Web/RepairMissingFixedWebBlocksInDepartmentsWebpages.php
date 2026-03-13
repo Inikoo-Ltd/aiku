@@ -16,6 +16,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +37,6 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             }
         }
     }
-
 
     protected function processDepartmentWebpages(Webpage $webpage, Command $command): void
     {
@@ -76,7 +76,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         if (count($countFamilyWebBlock) > 0) {
             foreach ($countFamilyWebBlock as $webBlockData) {
-                $layout = json_decode($webBlockData->layout, true);
+                $layout       = json_decode($webBlockData->layout, true);
                 $descriptions = Arr::get($layout, 'data.fieldValue.texts.values');
 
                 $description = '';
@@ -109,6 +109,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
+        // $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
 
         $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
         if (count($countDepartmentDescriptionBlock) == 0) {
@@ -116,7 +117,12 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         }
 
         $webpage->refresh();
-        $this->setDescriptionWebBlockOnTop($webpage);
+        if (count($countDepartmentDescriptionBlock) == 0) {
+            $this->setDescriptionWebBlockOnTop($webpage);
+        }
+        if ($command->option('hide-description')) {
+            $this->setDescriptionWebBlockHidden($webpage);
+        }
         $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
@@ -145,19 +151,17 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
     public function setDescriptionWebBlockOnTop(Webpage $webpage): void
     {
         $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first()->model_has_web_blocks_id;
-        $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
+        $webBlocks                     = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
-
-        $runningPosition = 2;
-        foreach ($webBlocks as $key => $position) {
-            if ($key == $departmentDescriptionWebBlock) {
-                $webBlocks[$key] = 1;
-            } else {
-                $webBlocks[$key] = $runningPosition;
-                $runningPosition++;
-            }
-        }
-
+         $runningPosition = 2;
+         foreach ($webBlocks as $key => $position) {
+             if ($key == $departmentDescriptionWebBlock) {
+                 $webBlocks[$key] = 1;
+             } else {
+                 $webBlocks[$key] = $runningPosition;
+                 $runningPosition++;
+             }
+         }
 
         foreach ($webBlocks as $key => $position) {
             DB::table('model_has_web_blocks')
@@ -167,12 +171,31 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         UpdateWebpageContent::run($webpage);
     }
 
+    public function setDescriptionWebBlockHidden(Webpage $webpage): void
+    {
+        $departmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1')->first();
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {--website_id=}';
+        if ($departmentDescriptionWebBlock) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $departmentDescriptionWebBlock->model_has_web_blocks_id)
+                ->update(['show' => false]);
+        }
+
+        UpdateWebpageContent::run($webpage);
+    }
+
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_departments_webpages {website?} {--hide-description}';
 
     public function asCommand(Command $command): void
     {
-        $websiteId       = $command->option('website_id');
+
+        $websiteId = false;
+        if ($command->argument('website')) {
+            $website   = Website::where('slug', $command->argument('website'))->first();
+            $websiteId = $website->id;
+        }
+
+
         $webpagesID = DB::table('webpages')
             ->select('id')
             ->where('sub_type', 'department')

@@ -8,6 +8,7 @@
 
 namespace App\Models\Masters;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetProductsStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetStocksStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -45,6 +46,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $master_sub_department_id
  * @property int|null $master_department_id
  * @property MasterAssetTypeEnum $type
+ * @property HealthRankEnum|null $health_rank
  * @property bool $is_main
  * @property bool $status
  * @property string $slug
@@ -207,6 +209,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'type'                 => MasterAssetTypeEnum::class,
+        'health_rank'          => HealthRankEnum::class,
         'marketing_dimensions' => 'array',
         'variant_ratio'        => 'decimal:3',
         'price'                => 'decimal:2',

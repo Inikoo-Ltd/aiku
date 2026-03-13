@@ -81,6 +81,7 @@ class IndexMasterCollections extends OrgAction
             'master_shops.slug as master_shop_slug',
             'master_shops.code as master_shop_code',
             'master_shops.name as master_shop_name',
+            'master_collections.health_rank',
         ];
 
         if ($prefix === MasterCollectionsTabsEnum::SALES->value) {
@@ -179,7 +180,8 @@ class IndexMasterCollections extends OrgAction
                 'number_current_master_products',
                 'number_current_master_collections',
                 'sales_grp_currency_external',
-                'invoices'
+                'invoices',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -225,6 +227,7 @@ class IndexMasterCollections extends OrgAction
                 $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
                 $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);
                 $table->column(key: 'number_current_master_collections', label: __('Collections'), canBeHidden: false, sortable: true);
+                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
                 $table->column(key: 'actions', label: __('Action'));
             }
         };

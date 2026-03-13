@@ -23,6 +23,8 @@ import {
     faFilePdf,
     faBoxOpen,
     faExclamationTriangle,
+	faClipboardCheck,
+	faClipboardListCheck,
 } from "@fal";
 import { faArrowRight, faCheck, faEye, faStar, faTimes } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -62,13 +64,15 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonSelectBaysAndWaiting from "@/Components/DeliveryNote/ButtonSelectBaysAndWaiting.vue"
 
 
-library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes);
+library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
     items?: {}
+    pending_items?: {}
+    done_items?: {}
     pickings?: {}
     warning?: {
         text: string
@@ -146,6 +150,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
+        pending_items: TableDeliveryNoteItems,
+        done_items: TableDeliveryNoteItems,
 		history: TableHistories,
         pickings: TablePickings
     };
@@ -527,7 +533,7 @@ onMounted(() => {
 		<Transition name="headlessui">
 			<div
 				xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-				class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+				class="p-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
 				<BoxNote
 					v-for="(note, index) in notes.note_list"
 					:key="index + note.label"

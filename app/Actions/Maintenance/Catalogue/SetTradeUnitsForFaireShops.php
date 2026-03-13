@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
@@ -60,7 +61,7 @@ class SetTradeUnitsForFaireShops
     }
 
 
-    public string $commandSignature = 'repair:set_trade_units_for_faire_shops {faire_shop}';
+    public string $commandSignature = 'repair:set_trade_units_for_faire_shops {faire_shop} {--in_process=false}';
 
     public function asCommand(Command $command): int
     {
@@ -72,7 +73,12 @@ class SetTradeUnitsForFaireShops
             return 1;
         }
 
-        $count = Product::where('shop_id', $faireShop->id)->count();
+        $countQuery = Product::where('shop_id', $faireShop->id);
+        if ($command->option('in_process')) {
+            $countQuery->where('state', ProductStateEnum::IN_PROCESS);
+        }
+
+        $count = $countQuery->count();
 
         ProgressBar::setFormatDefinition(
             'aiku_eta',
@@ -82,8 +88,12 @@ class SetTradeUnitsForFaireShops
         $bar->setFormat('aiku_eta');
         $bar->start();
 
-        Product::where('shop_id', $faireShop->id)
-            ->orderBy('id')
+        $query = Product::where('shop_id', $faireShop->id);
+        if ($command->option('in_process')) {
+            $query->where('state', ProductStateEnum::IN_PROCESS);
+        }
+
+        $query->orderBy('id')
             ->chunk(100, function (Collection $products) use ($bar, $command) {
                 foreach ($products as $product) {
                     $this->handle($product, $command);

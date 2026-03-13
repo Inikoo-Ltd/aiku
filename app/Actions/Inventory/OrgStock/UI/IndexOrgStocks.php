@@ -234,6 +234,7 @@ class IndexOrgStocks extends OrgAction
             'number_locations',
             'quantity_in_locations',
             'org_stocks.discontinued_in_organisation_at',
+            'org_stocks.health_rank',
             'org_stock_families.slug as family_slug',
             'org_stock_families.code as family_code',
             'organisations.name as organisation_name',
@@ -294,7 +295,7 @@ class IndexOrgStocks extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value'];
+        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'woc'];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -351,6 +352,7 @@ class IndexOrgStocks extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date'])
+                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
@@ -359,7 +361,6 @@ class IndexOrgStocks extends OrgAction
                 if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
                     $table
                         ->column(key: 'unit_cost', label: __('Cost Value'), canBeHidden: false, sortable: true, type: 'currency')
-                        ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
                         // ->column(key: 'value_in_locations', label: __('Stock value'), canBeHidden: false, sortable: true, type: 'currency') // Todo: fix value_In_locations because mostly 0 or null
                         ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
@@ -371,6 +372,8 @@ class IndexOrgStocks extends OrgAction
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
                     $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
                 }
+
+                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }

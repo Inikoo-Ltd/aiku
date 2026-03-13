@@ -107,6 +107,8 @@ use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\Dispatching\Box\StoreBox;
 use App\Actions\Dispatching\Box\UpdateBox;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemUnpack;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
@@ -1148,6 +1150,8 @@ Route::post('master-product-category/{masterProductCategory:id}/master-variant',
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
+Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');
+Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
 
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
     Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');

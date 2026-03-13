@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStockResource;
 use App\Models\Inventory\LocationOrgStock;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -27,6 +28,31 @@ class UpdateLocationOrgStock extends OrgAction
 
     public function handle(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
     {
+        if (Arr::has($modelData, 'set_as_priority')) {
+            unset($modelData['set_as_priority']);
+            data_set($modelData, 'picking_priority', 1);
+
+            $runningPosition = 2;
+            $locationOrgStock->orgStock->locationOrgStocks()->whereNot('location_org_stocks.id', $locationOrgStock->id)->each(function ($location) use ($runningPosition) {
+                $location->updateQuietly(['picking_priority' => $runningPosition]);
+                $runningPosition++;
+            });
+        }
+
+        $settingKeys = ['min_stock', 'max_stock', 'replenishment_stock'];
+
+        if (Arr::hasAny($modelData, $settingKeys)) {
+            $currSettings = $locationOrgStock->settings ?? [];
+            $newSettings = [];
+
+            foreach ($settingKeys as $key) {
+                $value = Arr::pull($modelData, $key, data_get($currSettings, $key));
+                if (!is_null($value)) $newSettings[$key] = $value;
+            }
+
+            data_set($modelData, 'settings', $newSettings);
+        }
+
         $locationOrgStock = $this->update($locationOrgStock, $modelData, ['data']);
 
         if ($locationOrgStock->wasChanged('quantity')) {
@@ -62,12 +88,16 @@ class UpdateLocationOrgStock extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'quantity'         => ['sometimes', 'numeric'],
-            'data'             => ['sometimes', 'array'],
-            'settings'         => ['sometimes', 'array'],
-            'notes'            => ['sometimes', 'nullable', 'string', 'max:255'],
-            'picking_priority' => ['sometimes', 'integer'],
-            'type'             => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
+            'quantity'                   => ['sometimes', 'numeric'],
+            'data'                       => ['sometimes', 'array'],
+            'settings'                   => ['sometimes', 'array'],
+            'notes'                      => ['sometimes', 'nullable', 'string', 'max:255'],
+            'picking_priority'           => ['sometimes', 'integer'],
+            'type'                       => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
+            'min_stock'               => ['sometimes', 'numeric', 'nullable', 'min:0'],
+            'max_stock'               => ['sometimes', 'numeric', 'nullable', 'min:0'],
+            'replenishment_stock'     => ['sometimes', 'numeric', 'nullable', 'min:0'],
+            'set_as_priority'            => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

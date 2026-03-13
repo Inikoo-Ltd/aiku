@@ -164,6 +164,7 @@ class StoreTransaction extends OrgAction
             'data'                    => ['sometimes', 'array'],
             'label'                   => ['sometimes', 'string', 'max:255'],
             'commission_amount'       => ['sometimes', 'numeric'],
+            'is_gift'                 => ['sometimes', 'boolean'],
             'marketplace_id'          => [
                 'sometimes',
                 Rule::unique('transactions', 'marketplace_id')->where(function ($query) {

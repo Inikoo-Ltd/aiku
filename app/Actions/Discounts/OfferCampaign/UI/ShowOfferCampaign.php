@@ -17,6 +17,7 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Arr;
 
 class ShowOfferCampaign extends OrgAction
 {
@@ -31,6 +32,7 @@ class ShowOfferCampaign extends OrgAction
     use OfferCampaignDiscountShippingTrait;
     use OfferCampaignGiftTrait;
     use OfferCampaignOrderRecursionTrait;
+    use OfferCampaignVoucherOffersTrait;
 
     public function handle(OfferCampaign $offerCampaign): OfferCampaign
     {
@@ -51,7 +53,6 @@ class ShowOfferCampaign extends OrgAction
 
         if ($offerCampaign->type !== OfferCampaignTypeEnum::VOLUME_DISCOUNT) {
             $tabs = OfferCampaignTabsEnum::valuesExcept([
-                OfferCampaignTabsEnum::GR_GIFT,
                 OfferCampaignTabsEnum::GR_AMNESTY
             ]);
         }
@@ -74,6 +75,7 @@ class ShowOfferCampaign extends OrgAction
             OfferCampaignTypeEnum::SHIPPING         => $this->getDiscountShippingHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::GIFT             => $this->getGiftHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::ORDER_RECURSION  => $this->getOrderRecursionHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::VOUCHERS         => $this->getVoucherHtmlResponse($offerCampaign, $request),
         };
     }
 
@@ -99,6 +101,60 @@ class ShowOfferCampaign extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.discounts.campaigns.gift.show' =>
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $offerCampaign,
+                    [
+                        'index' => [
+                            'name'       => preg_replace('/show$/', 'index', 'grp.org.shops.show.discounts.campaigns.show'),
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.discounts.campaigns.show',
+                            'parameters' => Arr::except($routeParameters, 'offer')
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.discounts.campaigns.offer.show' =>
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $offerCampaign,
+                    [
+                        'index' => [
+                            'name'       => preg_replace('/show$/', 'index', 'grp.org.shops.show.discounts.campaigns.show'),
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.discounts.campaigns.show',
+                            'parameters' => Arr::except($routeParameters, 'offer')
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.discounts.campaigns.amnesty.show' =>
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $offerCampaign,
+                    [
+                        'index' => [
+                            'name'       => preg_replace('/show$/', 'index', 'grp.org.shops.show.discounts.campaigns.show'),
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.discounts.campaigns.show',
+                            'parameters' => Arr::except($routeParameters, 'offer')
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             'grp.org.shops.show.discounts.campaigns.show' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),

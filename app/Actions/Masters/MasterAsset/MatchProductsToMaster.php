@@ -11,8 +11,11 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterAsset;
 use Exception;
 use Illuminate\Console\Command;
@@ -57,7 +60,7 @@ class MatchProductsToMaster extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'products:match_to_master';
+        return 'products:match_to_master {shop}';
     }
 
     public function asCommand(Command $command): int
@@ -68,14 +71,27 @@ class MatchProductsToMaster extends OrgAction
         $count = 0;
         $matchedCount = 0;
 
-        $totalCount = Product::whereNull('master_product_id')->count();
+
+        if($command->argument('shop')){
+            $shopId = Shop::where('slug', $command->argument('shop'))->first()->id;
+            $shopsIds = [$shopId];
+        }else{
+            $shopsIds = Shop::where('state', ShopStateEnum::OPEN)->where('type',ShopTypeEnum::B2B)->pluck('id')->toArray();
+        }
+
+
+        $totalCount = Product::whereNull('master_product_id')
+            ->whereIn('shop_id',$shopsIds)
+            ->count();
 
         $bar = $command->getOutput()->createProgressBar($totalCount);
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
 
-        Product::whereNull('master_product_id')->chunk(
+        Product::whereNull('master_product_id')
+            ->whereIn('shop_id',$shopsIds)
+            ->chunk(
             $chunkSize,
             function ($products) use (&$count, &$matchedCount, $bar, $command) {
                 foreach ($products as $product) {

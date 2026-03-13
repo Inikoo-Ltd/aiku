@@ -84,9 +84,13 @@ class IndexClockingEmployees extends OrgAction
             $query = QueryBuilder::for(Timesheet::class)
                 ->where('subject_type', 'Employee')
                 ->where('subject_id', $this->employee->id)
-                ->with(['subject.jobPositions']);
+                ->with(['subject.jobPositions', 'organisation']);
 
-            $timezone = $this->employee->organisation->timezone->name ?? 'UTC';
+            if ($this->employee->organisation->code === "SK") {
+                $timezone = 'UTC';
+            } else {
+                $timezone = $this->employee->organisation->timezone->name ?? 'UTC';
+            }
 
             [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Discounts\Offer\VolGr;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Discounts\Offer\ActivateOffer;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\OrgAction;
@@ -79,7 +80,7 @@ class StoreVolGrGift extends OrgAction
         $offerCampaign->update(['data' => $data]);
         ActivateOffer::run($offer);
 
-
+        ShopHydrateOffersData::run($offer->shop_id);
 
         return $offer;
     }
@@ -103,10 +104,11 @@ class StoreVolGrGift extends OrgAction
 
     public function htmlResponse(Offer $offer): RedirectResponse
     {
-        return Redirect::route('grp.org.shops.show.discounts.offers.show', [
-            'organisation' => $this->organisation,
-            'shop'         => $this->shop,
-            'offer'        => $offer->slug
+        return Redirect::route('grp.org.shops.show.discounts.campaigns.gift.show', [
+            'organisation'  => $this->organisation,
+            'shop'          => $this->shop,
+            'offerCampaign' => $offer->offerCampaign->slug,
+            'offer'         => $offer->slug
         ]);
     }
 }

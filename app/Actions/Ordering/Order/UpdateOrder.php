@@ -168,6 +168,12 @@ class UpdateOrder extends OrgAction
                 $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
                 UpdateDeliveryNote::run($deliveryNote, ['is_shipping_by_external' => $order->is_shipping_by_external]);
             }
+
+            if (Arr::has($changedFields, 'internal_notes')) {
+                foreach ($order->deliveryNotes()->whereNotIn('delivery_notes.state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])->get() as $deliveryNote) {
+                    UpdateDeliveryNote::run($deliveryNote, ['internal_notes' => $order->internal_notes]);
+                }
+            }
         }
 
         return $order;

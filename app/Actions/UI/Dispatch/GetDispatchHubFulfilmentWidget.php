@@ -21,6 +21,10 @@ class GetDispatchHubFulfilmentWidget
             'slug'     => 'fulfilment',
             'label'    => __('Fulfilment'),
             'tooltip'  => __('Fulfilment Delivery Notes'),
+            'total_route' => [
+                'name'       => 'grp.org.warehouses.show.dispatching.pallet-returns.index',
+                'parameters' => request()->route()->originalParameters()
+            ],
             'cases'    => [
                 'todo'    => [
                     'route' => [

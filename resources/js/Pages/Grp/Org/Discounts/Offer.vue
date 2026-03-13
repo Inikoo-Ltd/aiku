@@ -72,10 +72,6 @@ const getCategoryLink = (productCategory: {}) => {
         <FamilyOfferLabelDiscount v-if="data.type == 'Category Quantity Ordered Order Interval'" :offer="data" />
         <Coupon v-else :offer="data" :currency_code="currency_code" />
     </div>
-    
-
-    
-    
     <div class="flex justify-between gap-8 mx-8">
         <!-- Trigger -->
         <div class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
@@ -84,7 +80,7 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
 
             <!-- Trigger: Item Quantity -->
-            <div v-if="data.data_allowance_signature.product_category" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <div v-if="data.data_allowance_signature?.product_category" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>Product category</span>
@@ -108,13 +104,13 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
         </div>
 
-        <!-- Trigger -->
+        <!-- Section: Trigger -->
         <div class="max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
             <div class="bg-amber-100 font-bold border-b border-gray-200 text-amber-700 text-center mb-1 py-1">
                 Trigger
             </div>
             <!-- Trigger: Item Quantity -->
-            <div v-if="(typeof data.trigger_data.item_quantity !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <div v-if="(typeof data.trigger_data?.item_quantity !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>Item quantity</span>
@@ -133,7 +129,7 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
 
             <!-- Trigger: Item Quantity -->
-            <div v-if="(typeof data.trigger_data.min_amount !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <div v-if="(typeof data.trigger_data?.min_amount !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>Order amount</span>
@@ -152,7 +148,7 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
 
             <!-- Trigger: Item Quantity -->
-            <div v-if="(typeof data.trigger_data.order_number !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
+            <div v-if="(typeof data.trigger_data?.order_number !== 'undefined')" class="mb-2 grid grid-cols-7 gap-x-4 items-center justify-between">
                 <dt class="col-span-4 flex flex-col">
                     <div class="flex items-center leading-none">
                         <span>Minimum order</span>
@@ -171,7 +167,7 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
         </div>
 
-        <!-- Discount -->
+        <!-- Section: Discount -->
         <div class="ml-4 max-w-lg first:pt-0 pr-2 flex flex-col first:border-t-0 gap-y-1 pt-1 pb-1.5">
             <div class="bg-green-100 font-bold border-b border-gray-200 text-green-700 text-center mb-1 py-1">
                 Discounts
@@ -195,8 +191,6 @@ const getCategoryLink = (productCategory: {}) => {
             </div>
         </div>
     </div>
-
-        <!-- <pre>{{ data }}</pre> -->
 
 </template>
 

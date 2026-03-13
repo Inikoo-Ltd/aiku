@@ -393,7 +393,8 @@ class EditShop extends OrgAction
                     'fields' => [
                         'download_pdf_columns' => [
                             'type'  => 'checkbox',
-                            'label' => __('Default columns to include in invoice PDF'),
+                            'label' => __('Data to display in PDF'),
+                            'information' => __('Default data to include in invoice PDF'),
                             'value' => (function () use ($shop): array {
                                 $savedColumns = Arr::get($shop->settings, 'invoicing.download_pdf_columns', []);
                                 $columns      = [

@@ -8,6 +8,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Models\Goods\StockFamily;
 use App\Models\SysAdmin\Group;
@@ -33,6 +34,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $code
  * @property string|null $name
  * @property OrgStockFamilyStateEnum $state
+ * @property HealthRankEnum|null $health_rank
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -67,7 +69,8 @@ class OrgStockFamily extends Model
 
     protected $casts = [
         'data'  => 'array',
-        'state' => OrgStockFamilyStateEnum::class
+        'state'       => OrgStockFamilyStateEnum::class,
+        'health_rank' => HealthRankEnum::class
 
     ];
 

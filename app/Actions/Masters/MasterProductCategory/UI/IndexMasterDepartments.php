@@ -86,6 +86,7 @@ class IndexMasterDepartments extends OrgAction
             'master_product_category_stats.number_current_master_product_categories_type_sub_department as sub_departments',
             'master_product_category_stats.number_collections_state_active as collections',
             'currencies.code as currency_code',
+            'master_product_categories.health_rank',
         ];
 
         if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
@@ -144,12 +145,19 @@ class IndexMasterDepartments extends OrgAction
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
             ->allowedSorts([
-                'code', 'name', 'used_in', 'sub_departments', 'collections', 'families', 'products',
+                'code',
+                'name',
+                'used_in',
+                'sub_departments',
+                'collections',
+                'families',
+                'products',
                 'sales_grp_currency_external',
                 'invoices',
                 'dropshippers',
                 'listings',
                 'sold',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -202,7 +210,8 @@ class IndexMasterDepartments extends OrgAction
                     ->column(key: 'sub_departments', label: __('M. Sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'collections', label: __('M. Collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'families', label: __('M. Families'), tooltip: __('current master families'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'products', label: __('M. Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'products', label: __('M. Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }

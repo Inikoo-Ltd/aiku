@@ -16,6 +16,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 class RepairOrderAmountsAfterMigrationAfterInvoicing
 {
@@ -35,20 +36,34 @@ class RepairOrderAmountsAfterMigrationAfterInvoicing
             /** @var \App\Models\Catalogue\Product $product */
             $product = $transaction->model;
 
+            $offersData     = $product->offers_data;
+            $discountFactor = 1;
+
+            $bestOffer = Arr::get($offersData, 'best_percentage_off.percentage_off');
+            if ($bestOffer) {
+                $discountFactor = 1 - $bestOffer;
+            }
+
 
             $newHistoricAssetId = $product->current_historic_asset_id;
             $transaction->update([
                 'historic_asset_id' => $newHistoricAssetId,
                 'gross_amount'      => $product->currentHistoricProduct->price * $transaction->quantity_ordered,
-                'net_amount'        => $product->currentHistoricProduct->price * $transaction->quantity_ordered,
+                'net_amount'        => $product->currentHistoricProduct->price * $transaction->quantity_ordered * $discountFactor,
             ]);
 
             $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)->first();
 
 
             if ($invoiceTransaction) {
-                $updateInvoice                     = true;
-                $dataToUpdate                      = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction);
+                $updateInvoice = true;
+                $dataToUpdate  = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction);
+
+                $transaction->update([
+                    'gross_amount' => $dataToUpdate['gross_amount'],
+                    'net_amount'   => $dataToUpdate['net_amount'],
+                ]);
+
                 $dataToUpdate['historic_asset_id'] = $newHistoricAssetId;
                 $invoiceTransaction->update($dataToUpdate);
             }
@@ -61,7 +76,7 @@ class RepairOrderAmountsAfterMigrationAfterInvoicing
     }
 
 
-    public string $commandSignature = 'orders:repair_order_amounts_after_invoice {order}';
+    public string $commandSignature = 'orders:repair_order_amounts_after_invoice {order} ';
 
     public function asCommand(Command $command): void
     {

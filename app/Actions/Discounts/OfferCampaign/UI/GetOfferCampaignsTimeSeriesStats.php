@@ -61,9 +61,9 @@ class GetOfferCampaignsTimeSeriesStats
             $stats = $allStats[$timeSeriesId] ?? [];
 
             // Skip if no stats generated or all stats are zero
-            if (empty($stats) || collect($stats)->every(fn ($value) => $value == 0)) {
-                continue;
-            }
+            // if (empty($stats) || collect($stats)->every(fn ($value) => $value == 0)) {
+            //     continue;
+            // }
 
             // Merge offer campaign attributes with stats
             $results[] = array_merge($offerCampaign->toArray(), $stats, [

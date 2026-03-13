@@ -25,7 +25,6 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Currency;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -71,6 +70,7 @@ class StoreProductToAllegro extends RetinaAction
 
                 $allegroProductId = Arr::get($proposedProduct, 'id');
             } catch (\Exception $e) {
+                dd($e);
                 $res = Str::contains($e->getMessage(), ['Produkt z takimi danymi już istnieje. Skontaktuj się z autorem aplikacji.']);
 
                 if ($res) {
@@ -96,7 +96,6 @@ class StoreProductToAllegro extends RetinaAction
             $targetCurrency = Currency::where('code', 'PLN')->first();
             $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
             $customerPrice = $portfolio->customer_price * $plnPriceExchange;
-            ;
 
             $offerData = [
                 'productSet' => [
@@ -148,7 +147,7 @@ class StoreProductToAllegro extends RetinaAction
                             'items' => [
                                 [
                                     'type' => 'TEXT',
-                                    'content' => $portfolio->customer_description ?? ''
+                                    'content' => $allegroUser->sanitizeAllegroDescription($portfolio->customer_description)
                                 ]
                             ]
                         ]
@@ -181,7 +180,6 @@ class StoreProductToAllegro extends RetinaAction
 
             return $portfolio;
         } catch (\Exception $e) {
-            dd($e);
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [
                     'message' => $e->getMessage()
@@ -197,12 +195,5 @@ class StoreProductToAllegro extends RetinaAction
 
             return $portfolio;
         }
-    }
-
-    public function asController(AllegroUser $allegroUser, Portfolio $portfolio, ActionRequest $request): void
-    {
-        $this->initialisation($request);
-
-        $this->handle($allegroUser, $portfolio);
     }
 }

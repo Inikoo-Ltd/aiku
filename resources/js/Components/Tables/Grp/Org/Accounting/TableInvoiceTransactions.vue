@@ -48,6 +48,17 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
 
 
             </template>
+
+            <!-- Section: quantity -->
+            <template #cell(quantity)="{ item }">
+                <div>
+                    {{ locale.number(item.quantity) }}
+                    <span v-if="item.is_gift" v-tooltip="ctrans('Quantity of free gift')">
+                        <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
+                    </span>
+                </div>
+            </template>
+
             <template #cell(net_amount)="{ item }">
                 <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
                     {{ locale.currencyFormat(item.currency_code, item.net_amount) }}

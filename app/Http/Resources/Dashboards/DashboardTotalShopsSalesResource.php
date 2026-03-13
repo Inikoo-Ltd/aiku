@@ -50,15 +50,6 @@ class DashboardTotalShopsSalesResource extends JsonResource
                     'key_date_filter' => 'between[date]',
                 ],
             ],
-            'inBasket' => [
-                'route_target' => [
-                    'name' => 'grp.org.overview.orders_in_basket.index',
-                    'parameters' => [
-                        'organisation' => $this->slug,
-                    ],
-                    'key_date_filter' => 'between[date]',
-                ],
-            ],
             'registrations' => [
                 'route_target' => [
                     'name' => 'grp.org.overview.customers.index',
@@ -76,21 +67,6 @@ class DashboardTotalShopsSalesResource extends JsonResource
                     ],
                 ],
             ],
-        ];
-
-        $baskets_created_org_currency = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_org_currency', $routeTargets['inBasket']);
-        $baskets_created_org_currency_delta = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_org_currency_delta');
-
-        $baskets_created_shop_currency = [
-            'baskets_created_shop_currency' => $baskets_created_org_currency['baskets_created_org_currency']
-        ];
-        $baskets_created_shop_currency_delta = [
-            'baskets_created_shop_currency_delta' => $baskets_created_org_currency_delta['baskets_created_org_currency_delta']
-        ];
-
-        $baskets_created_org_currency_minified = $this->getDashboardTableColumn($salesIntervals, 'baskets_created_org_currency_minified', $routeTargets['inBasket']);
-        $baskets_created_shop_currency_minified = [
-            'baskets_created_shop_currency_minified' => $baskets_created_org_currency_minified['baskets_created_org_currency_minified']
         ];
 
         $sales_org_currency = $this->getDashboardTableColumn($salesIntervals, 'sales_org_currency');
@@ -127,12 +103,6 @@ class DashboardTotalShopsSalesResource extends JsonResource
                     ...$routeTargets['organisation'],
                 ]
             ],
-            $baskets_created_shop_currency,
-            $baskets_created_shop_currency_minified,
-            $baskets_created_shop_currency_delta,
-            $baskets_created_org_currency,
-            $baskets_created_org_currency_minified,
-            $baskets_created_org_currency_delta,
             $this->getDashboardTableColumn($orderingIntervals, 'registrations', $routeTargets['registrations']),
             $this->getDashboardTableColumn($orderingIntervals, 'registrations_minified', $routeTargets['registrations']),
             $this->getDashboardTableColumn($orderingIntervals, 'registrations_delta'),
@@ -160,16 +130,12 @@ class DashboardTotalShopsSalesResource extends JsonResource
     private function aggregateShopsData(array $shopsData): array
     {
         $aggregated = [
-            'baskets_created_grp_currency_ctm' => 0,
-            'baskets_created_org_currency_ctm' => 0,
             'registrations_ctm' => 0,
             'registrations_with_orders_ctm' => 0,
             'registrations_without_orders_ctm' => 0,
             'sales_grp_currency_ctm' => 0,
             'sales_org_currency_ctm' => 0,
             'invoices_ctm' => 0,
-            'baskets_created_grp_currency_ctm_ly' => 0,
-            'baskets_created_org_currency_ctm_ly' => 0,
             'registrations_ctm_ly' => 0,
             'registrations_with_orders_ctm_ly' => 0,
             'registrations_without_orders_ctm_ly' => 0,
@@ -198,7 +164,7 @@ class DashboardTotalShopsSalesResource extends JsonResource
         }
 
         foreach ($customData as $key => $value) {
-            if ($type === 'sales' && (str_starts_with($key, 'baskets_created_') || str_starts_with($key, 'sales_'))) {
+            if ($type === 'sales' && str_starts_with($key, 'sales_')) {
                 $intervalsData[$key] = $value;
             } elseif ($type === 'ordering' && (str_starts_with($key, 'registrations_') || str_starts_with($key, 'invoices_'))) {
                 $intervalsData[$key] = $value;

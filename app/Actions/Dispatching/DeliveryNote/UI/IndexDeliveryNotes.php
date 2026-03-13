@@ -325,6 +325,27 @@ class IndexDeliveryNotes extends OrgAction
         return $this->handle(parent: $warehouse, bucket: $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inWarehouse(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'inWarehouse';
+        $this->shopType = 'all';
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inWarehouseShopTypes(Organisation $organisation, Warehouse $warehouse, string $shopType, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $warehouse;
+        $this->bucket = 'inWarehouse';
+        $this->shopType = $shopType;
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNotesTabsEnum::values());
+
+        return $this->handle(parent: $warehouse, bucket: $this->bucket, shopType: $shopType);
+    }
+
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {

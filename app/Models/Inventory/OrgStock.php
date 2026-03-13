@@ -8,6 +8,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
@@ -49,6 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_sellable_in_organisation
  * @property bool $is_raw_material_in_organisation
  * @property OrgStockStateEnum $state
+ * @property HealthRankEnum|null $health_rank
  * @property OrgStockQuantityStatusEnum|null $quantity_status
  * @property numeric|null $quantity_in_locations stock quantity in units
  * @property string $value_in_locations
@@ -115,6 +117,7 @@ class OrgStock extends Model implements Auditable
         'discontinuing_in_organisation_at' => 'datetime',
         'discontinued_in_organisation_at'  => 'datetime',
         'state'                            => OrgStockStateEnum::class,
+        'health_rank'                      => HealthRankEnum::class,
         'quantity_status'                  => OrgStockQuantityStatusEnum::class,
         'fetched_at'                       => 'datetime',
         'last_fetched_at'                  => 'datetime',

@@ -101,13 +101,34 @@ class DashboardDispatchHubDashboardResource extends JsonResource
 
         $rowTotals = [];
         foreach ($widgets as $widget) {
-            $rowKey                = $widget['slug'] ?? str($widget['label'])->slug()->toString();
+            $rowKey            = $widget['slug'] ?? str($widget['label'])->slug()->toString();
             $rowTotals[$rowKey] = ['value' => $widget['total'] ?? 0];
+
+            if (isset($widget['total_route'])) {
+                $rowTotals[$rowKey]['route_target'] = [
+                    'name'       => $widget['total_route']['name'],
+                    'parameters' => $widget['total_route']['parameters'] ?? [],
+                ];
+            }
         }
+
+        $deliveryNotesWidget = $widgets->first(function ($widget) {
+            $route = $widget['cases']['todo']['route']['name'] ?? '';
+
+            return str_contains($route, 'delivery-notes');
+        });
 
         $totals = [];
         foreach ($allCaseKeysForTotals as $caseKey) {
             $totals[$caseKey] = ['value' => $widgets->sum($caseKey)];
+
+            if ($deliveryNotesWidget && isset($deliveryNotesWidget['cases'][$caseKey]['route'])) {
+                $caseRoute                      = $deliveryNotesWidget['cases'][$caseKey]['route'];
+                $totals[$caseKey]['route_target'] = [
+                    'name'       => str_replace('.shop', '', $caseRoute['name']),
+                    'parameters' => array_slice($caseRoute['parameters'], 0, -1),
+                ];
+            }
         }
 
         $grandTotal = $widgets->sum('total');

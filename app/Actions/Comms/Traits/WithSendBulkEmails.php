@@ -84,6 +84,7 @@ trait WithSendBulkEmails
             'customer-email' => Arr::get($additionalData, 'customer_email'),
             'customer-url' => Arr::get($additionalData, 'customer_url'),
             'customer-register-date' => Arr::get($additionalData, 'customer_register_date'),
+            'customer-address' => Arr::get($additionalData, 'customer_address'),
 
             'order-link' => Arr::get($additionalData, 'order_link'),
             'order-reference' => Arr::get($additionalData, 'order_reference'),
@@ -95,9 +96,11 @@ trait WithSendBulkEmails
             'pallet-link' => Arr::get($additionalData, 'pallet_link'),
             'blade-new-order-transactions' => Arr::get($additionalData, 'blade_new_order_transactions'),
             'tracking' => Arr::get($additionalData, 'tracking'),
-            'deletion-date',
-            'delivered-date',
-            'returned-date',
+            'deletion-date' => Arr::get($additionalData, 'deletion_date'),
+            'delivered-date' => Arr::get($additionalData, 'delivered_date'),
+            'returned-date' => Arr::get($additionalData, 'returned_date'),
+            'dispatched-date' => Arr::get($additionalData, 'dispatched_date'),
+            'undispatched-date' => Arr::get($additionalData, 'undispatched_date'),
             'order-date' => Arr::get($additionalData, 'date'),
             'tracking-url' => Arr::get($additionalData, 'tracking_url'),
             'currency' => Arr::get($additionalData, 'currency'),
@@ -129,6 +132,9 @@ trait WithSendBulkEmails
             'payment-note' => Arr::get($additionalData, 'payment_note'),
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
             'preview-amount' => Arr::get($additionalData, 'preview_amount'),
+            'invoice-date-change-blade' => Arr::get($additionalData, 'invoice_date_change_blade'),
+            'delivery-note-link' => Arr::get($additionalData, 'delivery_note_link'),
+            'delivery-note-reference' => Arr::get($additionalData, 'delivery_note_reference'),
             'web-user-password' => Arr::get($additionalData, 'web_user_password'),
             'retina-login-link' => Arr::get($additionalData, 'retina_login_link'),
             'web-user-contact-name' => Arr::get($additionalData, 'web_user_contact_name'),
@@ -166,9 +172,9 @@ trait WithSendBulkEmails
             // Find and modify color values within the style attribute
             $style = preg_replace_callback('/color\s*:\s*([^;]+);/i', function ($colorMatch) {
                 $colorValue    = $colorMatch[1];
-                $modifiedColor = $colorValue.' !important';
+                $modifiedColor = $colorValue . ' !important';
 
-                return 'color: '.$modifiedColor.';';
+                return 'color: ' . $modifiedColor . ';';
             }, $style);
 
             // Update the style attribute in the HTML tag

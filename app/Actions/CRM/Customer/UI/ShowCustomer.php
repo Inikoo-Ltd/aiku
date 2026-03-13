@@ -244,19 +244,19 @@ class ShowCustomer extends OrgAction
                     "bgColor"     => "#FF7DBD",
                     "field"       => "internal_notes"
                 ],
+                // [
+                //     "label"       => __("Public") . ' (' . __("Will be deleted") . ')',
+                //     "note"        => $customer->warehouse_public_notes ?? '',
+                //     "information" => __("This note will be visible to public, both staff and the customer can see."),
+                //     "editable"    => true,
+                //     "bgColor"     => "#94DB84",
+                //     "field"       => "warehouse_public_notes"
+                // ],
                 [
-                    "label"       => __("Warehouse Public"),
-                    "note"        => $customer->warehouse_public_notes ?? '',
-                    "information" => __("This note will be visible to public, both staff and the customer can see."),
-                    "editable"    => true,
-                    "bgColor"     => "#94DB84",
-                    "field"       => "warehouse_public_notes"
-                ],
-                [
-                    "label"       => __("Warehouse internal"),
+                    "label"       => __("Sticky Note For Delivery Notes") . ' (' . __("Private") . ')',
                     "note"        => $customer->warehouse_internal_notes ?? '',
-                    "information" => __("Warehouse internal notes"),
-                    "editable"    => false,
+                    "information" => __("Will be put as Order private note everytime the Order submitted. Visible only to customer service and warehouse's staff."),
+                    "editable"    => true,
                     "bgColor"     => "#FCF4A3",
                     "field"       => "warehouse_internal_notes"
                 ]

@@ -55,7 +55,7 @@ trait HasStockLocationsFetch
                 $settings['max_stock'] = $modelData->{'Maximum Quantity'};
             }
             if ($modelData->{'Moving Quantity'}) {
-                $settings['max_stock'] = $modelData->{'Moving Quantity'};
+                $settings['replenishment_stock'] = $modelData->{'Moving Quantity'};
             }
 
 

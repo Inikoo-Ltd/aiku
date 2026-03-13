@@ -185,6 +185,7 @@ class IndexOrgStockFamilies extends OrgAction
                 WHERE ithos.org_stock_family_id = org_stock_families.id
                 AND it.deleted_at IS NULL
             ) as woc"),
+            'org_stock_families.health_rank',
         ];
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
@@ -207,7 +208,7 @@ class IndexOrgStockFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'on_the_way_po_value'];
+        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'on_the_way_po_value', 'health_rank'];
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -251,17 +252,18 @@ class IndexOrgStockFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date'])
+                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
             } else {
                 $table
-                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
                     ->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
                     ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKU)'), canBeHidden: false)
                     ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon')
                     ->defaultSort('code');
             }
         };
