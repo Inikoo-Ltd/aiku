@@ -56,6 +56,9 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
 use App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken;
 use App\Actions\Retina\Dropshipping\Basket\DeleteRetinaBasket;
+use App\Actions\Retina\Dropshipping\Bundle\GetRetinaProductBundleDescription;
+use App\Actions\Retina\Dropshipping\Bundle\GetRetinaProductBundleTitle;
+use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ImportBulkCustomerSalesChannelPortfolios;
@@ -332,6 +335,15 @@ Route::delete('{token}/access-token', DeleteCustomerAccessToken::class)->name('a
 
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
+    Route::prefix('bundles')->name('bundles.')->group(function () {
+        Route::get('title-generator', GetRetinaProductBundleTitle::class)->name('title.generate');
+        Route::get('description-generator', GetRetinaProductBundleDescription::class)->name('description.generate');
+    });
+
+    Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
+        Route::post('/', StoreRetinaBundle::class)->name('store');
+    });
+
     Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink');
 
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
