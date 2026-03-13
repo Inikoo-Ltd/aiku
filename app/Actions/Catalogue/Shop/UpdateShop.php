@@ -386,6 +386,7 @@ class UpdateShop extends OrgAction
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
+            'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

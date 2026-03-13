@@ -223,7 +223,8 @@ class IndexSubDepartments extends OrgAction
                     ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('Shop'), sortable: true);
@@ -237,8 +238,7 @@ class IndexSubDepartments extends OrgAction
                 $table->column(key: 'code', label: __('Code'), sortable: true)
                     ->column(key: 'name', label: __('Name'), sortable: true)
                     ->column(key: 'number_families', label: __('Families'), sortable: true)
-                    ->column(key: 'number_products', label: __('Products'), sortable: true)
-                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
+                    ->column(key: 'number_products', label: __('Products'), sortable: true);
             }
         };
     }
