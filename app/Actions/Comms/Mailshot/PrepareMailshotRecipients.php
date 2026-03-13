@@ -41,18 +41,14 @@ class PrepareMailshotRecipients
 
         $mailshotId = $mailshot->id;
 
-        // Process recipients in chunks of 250
-        $queryBuilder->chunk($chunkSize, function ($customers) use ($mailshotId, $outboxId) {
-            ProcessSendMailshot::dispatch($mailshotId, $customers, $outboxId);
-        });
+        $cloneQuery = $queryBuilder->clone();
+        $totalCustomers = $cloneQuery->count();
 
-        //  make hydrator later
-        // UpdateMailshot::run(
-        //     $mailshot,
-        //     [
-        //         'recipients_stored_at' => now()
-        //     ]
-        // );
+        // Process recipients in chunks of 250
+        $queryBuilder->chunk($chunkSize, function ($customers) use ($mailshotId, $outboxId, $totalCustomers) {
+            $customerIds = $customers->pluck('id');
+            ProcessSendMailshot::dispatch($mailshotId, $customerIds, $outboxId, $totalCustomers);
+        });
 
         // // TODO: check another hydrator
         // MailshotHydrateDispatchedEmails::run($mailshot);
