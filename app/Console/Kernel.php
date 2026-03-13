@@ -365,6 +365,14 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+        $this->logSchedule(
+            $schedule->command('art hydrate:mismatch_detected')->weeklyOn(1, '03:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateMismatchDetected',
+            ),
+            name: 'HydrateMismatchDetected',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
 
 
         $this->logSchedule(

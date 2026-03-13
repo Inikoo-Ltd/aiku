@@ -22,6 +22,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
@@ -139,7 +140,52 @@ class IndexOrgStockFamilies extends OrgAction
             'number_current_org_stocks',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
+            'currencies.code as currency_code',
             'warehouses.slug as warehouse_slug',
+            DB::raw("(
+                SELECT COALESCE(SUM(COALESCE(os.unit_cost, 0) * COALESCE(os.quantity_available, 0)), 0)
+                FROM org_stocks os
+                WHERE os.org_stock_family_id = org_stock_families.id
+            ) as stock_value"),
+            DB::raw("(
+                SELECT COALESCE(SUM(pot.org_net_amount), 0)
+                FROM purchase_order_transactions pot
+                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
+                INNER JOIN org_stocks os ON pot.org_stock_id = os.id
+                WHERE os.org_stock_family_id = org_stock_families.id
+                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
+                AND po.state NOT IN ('cancelled', 'not_received')
+            ) as on_the_way_po_value"),
+            DB::raw("(
+                SELECT COUNT(DISTINCT po.id)
+                FROM purchase_order_transactions pot
+                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
+                INNER JOIN org_stocks os ON pot.org_stock_id = os.id
+                WHERE os.org_stock_family_id = org_stock_families.id
+                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
+                AND po.state NOT IN ('cancelled', 'not_received')
+            ) as on_the_way_po_count"),
+            DB::raw("(
+                SELECT COUNT(*)
+                FROM org_stocks os
+                WHERE os.org_stock_family_id = org_stock_families.id
+                AND os.quantity_status = 'out-of-stock'
+            ) as number_out_of_stock_org_stocks"),
+            DB::raw("(
+                SELECT
+                    CASE
+                        WHEN SUM(it.quantity) > 0 THEN
+                            (SELECT COALESCE(SUM(os.quantity_available), 0) FROM org_stocks os WHERE os.org_stock_family_id = org_stock_families.id)
+                            * EXTRACT(EPOCH FROM (NOW() - MIN(it.date))) / (7.0 * 86400)
+                            / SUM(it.quantity)
+                        ELSE NULL
+                    END
+                FROM invoice_transactions it
+                INNER JOIN invoice_transaction_has_org_stocks ithos ON ithos.invoice_transaction_id = it.id
+                WHERE ithos.org_stock_family_id = org_stock_families.id
+                AND it.deleted_at IS NULL
+            ) as woc"),
+            'org_stock_families.health_rank',
         ];
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
@@ -162,7 +208,7 @@ class IndexOrgStockFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'number_current_org_stocks'];
+        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'on_the_way_po_value', 'health_rank'];
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -173,6 +219,7 @@ class IndexOrgStockFamilies extends OrgAction
             ->defaultSort('code')
             ->select($selects)
             ->leftJoin('organisations', 'org_stock_families.organisation_id', 'organisations.id')
+            ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
             ->leftJoin('warehouses', 'warehouses.organisation_id', 'organisations.id')
             ->leftJoin('org_stock_family_stats', 'org_stock_family_stats.org_stock_family_id', 'org_stock_families.id')
             ->allowedSorts($allowedSorts)
@@ -205,12 +252,18 @@ class IndexOrgStockFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date'])
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
             } else {
-                $table->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
+                $table
+                    ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
+                    ->column(key: 'number_current_org_stocks', label: 'SKUs', canBeHidden: false, sortable: true)
+                    ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKU)'), canBeHidden: false)
+                    ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon')
                     ->defaultSort('code');
             }
         };

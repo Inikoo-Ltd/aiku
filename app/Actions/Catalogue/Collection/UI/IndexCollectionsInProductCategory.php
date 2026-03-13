@@ -90,6 +90,7 @@ class IndexCollectionsInProductCategory extends OrgAction
             'collection_stats.number_products',
             'collection_stats.number_parents',
             'collections.master_collection_id',
+            'collections.health_rank',
             'webpages.id as webpage_id',
             'webpages.state as webpage_state',
             'webpages.url as webpage_url',
@@ -131,6 +132,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                 'number_products',
                 'sales_grp_currency_external',
                 'invoices',
+                'health_rank',
             ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -171,6 +173,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                 $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
                 $table->column(key: 'number_families', label: __('Families'), canBeHidden: false);
                 $table->column(key: 'number_products', label: __('Products'), canBeHidden: false);
+                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
                 $table->column(key: 'actions', label: '', searchable: true);
             }
         };

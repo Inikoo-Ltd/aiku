@@ -29,6 +29,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
@@ -227,18 +228,51 @@ class IndexOrgStocks extends OrgAction
             'org_stocks.slug',
             'org_stocks.state',
             'org_stocks.unit_value',
+            'org_stocks.unit_cost',
             'org_stocks.quantity_available',
             'org_stocks.value_in_locations',
             'number_locations',
             'quantity_in_locations',
             'org_stocks.discontinued_in_organisation_at',
+            'org_stocks.health_rank',
             'org_stock_families.slug as family_slug',
             'org_stock_families.code as family_code',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
+            'currencies.code as currency_code',
             'warehouses.slug as warehouse_slug',
             'org_stock_intervals.dispatched_ytd as dispatched',
             'org_stock_sales_intervals.revenue_org_currency_ytd as revenue',
+            DB::raw("(
+                SELECT COALESCE(SUM(pot.org_net_amount), 0)
+                FROM purchase_order_transactions pot
+                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
+                WHERE pot.org_stock_id = org_stocks.id
+                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
+                AND po.state NOT IN ('cancelled', 'not_received')
+            ) as on_the_way_po_value"),
+            DB::raw("(
+                SELECT COUNT(DISTINCT po.id)
+                FROM purchase_order_transactions pot
+                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
+                WHERE pot.org_stock_id = org_stocks.id
+                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
+                AND po.state NOT IN ('cancelled', 'not_received')
+            ) as on_the_way_po_count"),
+            DB::raw("(
+                SELECT
+                    CASE
+                        WHEN SUM(it.quantity) > 0 THEN
+                            org_stocks.quantity_available
+                            * EXTRACT(EPOCH FROM (NOW() - MIN(it.date))) / (7.0 * 86400)
+                            / SUM(it.quantity)
+                        ELSE NULL
+                    END
+                FROM invoice_transactions it
+                INNER JOIN invoice_transaction_has_org_stocks ithos ON ithos.invoice_transaction_id = it.id
+                WHERE ithos.org_stock_id = org_stocks.id
+                AND it.deleted_at IS NULL
+            ) as woc"),
         ];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
@@ -261,7 +295,7 @@ class IndexOrgStocks extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available'];
+        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'woc'];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -272,6 +306,7 @@ class IndexOrgStocks extends OrgAction
             ->defaultSort('org_stocks.code')
             ->select($selects)
             ->leftJoin('organisations', 'org_stocks.organisation_id', 'organisations.id')
+            ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
             ->leftJoin('warehouses', 'warehouses.organisation_id', 'organisations.id')
             ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
@@ -317,14 +352,19 @@ class IndexOrgStocks extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date'])
-                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
             } else {
                 if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
-                    $table->column(key: 'value_in_locations', label: __('Stock value'), canBeHidden: false, sortable: true, type: 'currency')
+                    $table
+                        ->column(key: 'unit_cost', label: __('Cost Value'), canBeHidden: false, sortable: true, type: 'currency')
+                        // ->column(key: 'value_in_locations', label: __('Stock value'), canBeHidden: false, sortable: true, type: 'currency') // Todo: fix value_In_locations because mostly 0 or null
                         ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true)
+                        ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
+                        ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                         ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency')
                         ->column(key: 'dispatched', label: __('Dispatched'), sortable: true);
                 }
@@ -332,6 +372,8 @@ class IndexOrgStocks extends OrgAction
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
                     $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
                 }
+
+                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }

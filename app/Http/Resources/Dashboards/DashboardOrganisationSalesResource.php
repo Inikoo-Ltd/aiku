@@ -29,15 +29,6 @@ class DashboardOrganisationSalesResource extends JsonResource
                     'key_date_filter' => 'between[date]',
                 ],
             ],
-            'inBasket' => [
-                'route_target' => [
-                    'name' => 'grp.org.overview.orders_in_basket.index',
-                    'parameters' => [
-                        'organisation' => $data['slug'] ?? 'unknown',
-                    ],
-                    'key_date_filter' => 'between[date]',
-                ],
-            ],
             'registrations' => [
                 'route_target' => [
                     'name' => 'grp.org.overview.customers.index',
@@ -80,12 +71,6 @@ class DashboardOrganisationSalesResource extends JsonResource
                     ...$routeTargets['organisations']
                 ]
             ],
-            $this->getDashboardColumnsFromArray($data, [
-                'baskets_created_org_currency' => $routeTargets['inBasket'],
-                'baskets_created_org_currency_minified' => $routeTargets['inBasket'],
-                'baskets_created_grp_currency' => $routeTargets['inBasket'],
-                'baskets_created_grp_currency_minified' => $routeTargets['inBasket'],
-            ]),
             $registrationsColumns,
             $this->getDashboardColumnsFromArray($data, [
                 'registrations_delta',
@@ -123,7 +108,7 @@ class DashboardOrganisationSalesResource extends JsonResource
                         $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
 
                         $columns[$columnKey][$interval]['tooltip'] = sprintf(
-                            'With orders: %s | Without orders: %s',
+                            'With product in basket: %s | With empty basket: %s',
                             number_format($withOrders),
                             number_format($withoutOrders)
                         );

@@ -24,6 +24,10 @@ class GetDispatchHubB2CWidget
             'slug'             => 'b2c',
             'label'            => __('B2C'),
             'tooltip'          => __('B2C Delivery Notes'),
+            'total_route'      => [
+                'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.shop',
+                'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2C->value]
+            ],
             'cases'            => [
                 'todo'             => [
                     'route' => [

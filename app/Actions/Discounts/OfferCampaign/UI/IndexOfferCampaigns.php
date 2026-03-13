@@ -118,8 +118,7 @@ class IndexOfferCampaigns extends OrgAction
             $table->withModelOperations($modelOperations);
 
             $table->column(key: 'type', label: '', type: 'icon');
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Campaign'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);

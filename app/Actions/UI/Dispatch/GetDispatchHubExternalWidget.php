@@ -24,6 +24,10 @@ class GetDispatchHubExternalWidget
             'slug'             => 'marketplaces',
             'label'            => __('Marketplaces'),
             'tooltip'          => __('Marketplaces Delivery Notes'),
+            'total_route'      => [
+                'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.shop',
+                'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::EXTERNAL->value]
+            ],
             'cases'            => [
                 'todo'             => [
                     'route' => [

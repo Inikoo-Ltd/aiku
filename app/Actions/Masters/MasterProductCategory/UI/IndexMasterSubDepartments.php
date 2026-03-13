@@ -90,9 +90,11 @@ class IndexMasterSubDepartments extends GrpAction
             'master_product_categories.created_at',
             'master_product_categories.updated_at',
             'master_product_categories.web_images',
+            'master_product_category_stats.number_current_sub_departments as used_in',
             'master_product_category_stats.number_current_master_product_categories_type_family as number_families',
             'master_product_category_stats.number_current_master_assets_type_product as number_products',
             'currencies.code as currency_code',
+            'master_product_categories.health_rank',
         ];
 
         if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
@@ -129,6 +131,7 @@ class IndexMasterSubDepartments extends GrpAction
             ->allowedSorts([
                 'code',
                 'name',
+                'used_in',
                 'number_families',
                 'number_products',
                 'sales_grp_currency_external',
@@ -136,6 +139,7 @@ class IndexMasterSubDepartments extends GrpAction
                 'dropshippers',
                 'listings',
                 'sold',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -178,8 +182,10 @@ class IndexMasterSubDepartments extends GrpAction
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                     ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
+                    ->column(key: 'used_in', label: __('Used In'), sortable: true)
                     ->column(key: 'number_families', label: __('M. Families'), sortable: true)
-                    ->column(key: 'number_products', label: __('M. Products'), sortable: true);
+                    ->column(key: 'number_products', label: __('M. Products'), sortable: true)
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }
@@ -195,13 +201,7 @@ class IndexMasterSubDepartments extends GrpAction
 
         $subNavigation = null;
         $modelNavigation = [];
-        if ($this->parent instanceof MasterShop) {
-            $subNavigation = $this->getMasterShopNavigation($this->parent);
-        } elseif ($this->parent instanceof MasterProductCategory) {
-            $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
-            $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
 
-        }
         $title      = $this->parent->name;
         $model      = '';
         $icon       = [
@@ -214,6 +214,18 @@ class IndexMasterSubDepartments extends GrpAction
         $iconRight  = [
             'icon' => 'fal fa-folder-download',
         ];
+
+        if ($this->parent instanceof MasterShop) {
+            $subNavigation = $this->getMasterShopNavigation($this->parent);
+        } elseif ($this->parent instanceof MasterProductCategory) {
+            $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
+            $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
+
+            $icon = [
+                'icon'  => ['fal', 'fa-folder-tree'],
+                'title' => __('Master Department')
+            ];
+        }
 
         return Inertia::render(
             'Masters/MasterSubDepartments',

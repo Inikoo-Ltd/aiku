@@ -35,7 +35,6 @@ class ShowMasterSubDepartment extends GrpAction
     use WithMastersAuthorisation;
     use WithMasterSubDepartmentNavigation;
 
-
     private MasterShop|MasterProductCategory $parent;
 
     public function handle(MasterProductCategory $masterSubDepartment): MasterProductCategory
@@ -193,9 +192,9 @@ class ShowMasterSubDepartment extends GrpAction
                     fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)),
 
-                MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value => $this->tab == MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value ?
-                    fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))
-                    : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))),
+                // MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value => $this->tab == MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value ?
+                //     fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))
+                //     : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))),
 
                 'salesData' => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryTimeSeriesData::run($masterSubDepartment)
@@ -216,7 +215,7 @@ class ShowMasterSubDepartment extends GrpAction
 
             ]
         )
-            ->table(IndexSubDepartments::make()->tableStructure(parent: $masterSubDepartment, prefix: MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value))
+            // ->table(IndexSubDepartments::make()->tableStructure(parent: $masterSubDepartment, prefix: MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value))
             ->table(IndexMasterProductCategoryTimeSeries::make()->tableStructure(MasterSubDepartmentTabsEnum::SALES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterSubDepartmentTabsEnum::HISTORY->value));
     }

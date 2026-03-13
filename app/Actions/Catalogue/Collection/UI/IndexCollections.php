@@ -139,6 +139,7 @@ class IndexCollections extends OrgAction
             'webpages.slug as webpage_slug',
             'websites.slug as website_slug',
             'currencies.code as currency_code',
+            'collections.health_rank',
         ];
 
         if ($prefix === CollectionsTabsEnum::SALES->value) {
@@ -186,6 +187,7 @@ class IndexCollections extends OrgAction
                 'number_products',
                 'sales_grp_currency_external',
                 'invoices',
+                'health_rank',
             ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -240,6 +242,7 @@ class IndexCollections extends OrgAction
                 $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
                 $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
                 $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
+                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
                 $table->column(key: 'actions', label: '', searchable: true);
             }
         };

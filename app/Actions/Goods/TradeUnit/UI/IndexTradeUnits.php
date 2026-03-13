@@ -111,6 +111,7 @@ class IndexTradeUnits extends GrpAction
             'trade_unit_stats.number_current_stocks',
             'trade_unit_stats.number_current_products',
             'trade_units.id',
+            'trade_units.health_rank',
         ];
 
         if ($prefix === TradeUnitsTabsEnum::SALES->value) {
@@ -133,7 +134,7 @@ class IndexTradeUnits extends GrpAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products', 'marketing_weight'];
+        $allowedSorts = ['code', 'type', 'name', 'number_current_stocks', 'number_current_products', 'marketing_weight', 'health_rank'];
 
         if ($prefix === TradeUnitsTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -186,6 +187,7 @@ class IndexTradeUnits extends GrpAction
                 }
 
                 $this->addColumnMarketingWeight($table);
+                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }

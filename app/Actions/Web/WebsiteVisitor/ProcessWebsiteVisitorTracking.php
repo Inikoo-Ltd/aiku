@@ -13,10 +13,11 @@ use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteVisitor;
 use hisorange\BrowserDetect\Parser as Browser;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessWebsiteVisitorTracking
+class ProcessWebsiteVisitorTracking implements ShouldBeUnique
 {
     use AsAction;
 
@@ -62,6 +63,6 @@ class ProcessWebsiteVisitorTracking
             );
         }
 
-        StoreWebsitePageView::run($visitor, $website, $currentUrl);
+        StoreWebsitePageView::dispatch($visitor, $website, $currentUrl);
     }
 }

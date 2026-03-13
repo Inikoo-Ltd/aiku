@@ -32,6 +32,10 @@ class SendInvoiceDeletedNotification extends OrgAction
         /** @var Outbox $outbox */
         $outbox = $invoice->shop->outboxes()->where('code', OutboxCodeEnum::INVOICE_DELETED->value)->first();
 
+        if (!$outbox) {
+            return;
+        }
+
         $customer = $invoice->customer;
 
         $this->sendOutboxEmailToSubscribers(

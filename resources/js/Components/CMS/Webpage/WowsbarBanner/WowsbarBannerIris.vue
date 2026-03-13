@@ -127,8 +127,9 @@ onMounted(() => {
 
     <section v-else-if="data" class="relative mx-auto" :style="bannerDimensionStyle">
       <div :style="{
+        ...(screenType === 'mobile' ? { height: '300px', width: '100%' } : {}),
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(fieldValue.container?.properties, screenType)
+        ...getStyles(fieldValue.container?.properties, screenType),
       }">
 
         <div v-if="data?.compiled_layout?.type === 'landscape'" :class="[

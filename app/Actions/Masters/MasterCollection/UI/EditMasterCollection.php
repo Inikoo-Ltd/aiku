@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditMasterCollection extends OrgAction
 {
+    use WithMastersAuthorisation;
     use WithMasterCollectionNavigation;
 
     public function asController(MasterShop $masterShop, MasterCollection $masterCollection, ActionRequest $request): Response

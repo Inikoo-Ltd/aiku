@@ -47,11 +47,15 @@ class GetFaireOrdersInShop extends OrgAction
 
 
         foreach (Arr::get($orders, 'orders', []) as $faireOrder) {
+            // try {
             $externalId             = Arr::get($faireOrder, 'id');
             $retailerId             = Arr::get($faireOrder, 'retailer_id');
             $retailer               = GetFaireRetailers::run($shop, $retailerId);
             $transactionCommissions = Arr::get($faireOrder, 'payout_costs.commission_bps', 0) / 10000;
             $orderCommission        = Arr::get($faireOrder, 'payout_costs.commission.amount_minor', 0) / 100;
+
+            $command?->info('Processing order '.Arr::get($faireOrder, 'display_id'));
+
 
             $orderExists = Order::where('shop_id', $shop->id)->where('external_id', $externalId)->exists();
 
@@ -126,14 +130,6 @@ class GetFaireOrdersInShop extends OrgAction
                         ->where('marketplace_id', $item['variant_id'])
                         ->first();
 
-                    $product = UpdateProduct::run(
-                        $product,
-                        [
-                            'price' => $product->units * Arr::get($item, 'price.amount_minor') / 100,
-                        ]
-                    );
-
-
                     if (!$product) {
                         $errors[] = [
                             'product_code'           => Arr::get($item, 'sku', 'NO SKU'),
@@ -143,6 +139,16 @@ class GetFaireOrdersInShop extends OrgAction
                         ];
                         continue;
                     }
+
+                    $product = UpdateProduct::run(
+                        $product,
+                        [
+                            'price' => $product->units * Arr::get($item, 'price.amount_minor') / 100,
+                        ]
+                    );
+
+
+
 
 
                     $historicAsset = $product->currentHistoricProduct;
@@ -225,6 +231,9 @@ class GetFaireOrdersInShop extends OrgAction
                     print_r($errors);
                 }
             }
+            //            } catch (\Throwable $e) {
+            //                $command?->error('Error processing order '.Arr::get($faireOrder, 'display_id').' - '.$e->getMessage());
+            //            }
         }
     }
 

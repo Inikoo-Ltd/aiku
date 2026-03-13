@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
+use App\Actions\Comms\Email\SendInvoiceDateChangedNotification;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
@@ -43,6 +44,8 @@ class UpdateInvoiceDate extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
+        $oldDate = $invoice->date;
+
         $invoice = $this->update($invoice, $modelData);
 
         $changes = $invoice->getChanges();
@@ -76,33 +79,43 @@ class UpdateInvoiceDate extends OrgAction
                 InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             }
 
-            $invoiceDate = Carbon::parse($invoice->date);
+            $oldDateString = Carbon::parse($oldDate)->toDateString();
+            $newDateString = Carbon::parse($invoice->date)->toDateString();
 
-            RedoOrganisationTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-            RedoShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            RedoOrganisationTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+            RedoOrganisationTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
+
+            RedoShopTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+            RedoShopTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
 
             if ($invoice->master_shop_id) {
-                RedoMasterShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+                RedoMasterShopTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+                RedoMasterShopTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
             }
 
             if ($invoice->invoiceCategory) {
-                RedoInvoiceCategoryTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+                RedoInvoiceCategoryTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+                RedoInvoiceCategoryTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
             }
 
             if ($invoice->sales_channel_id) {
-                RedoSalesChannelTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+                RedoSalesChannelTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+                RedoSalesChannelTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
             }
 
             if ($invoice->platform_id) {
-                RedoPlatformTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+                RedoPlatformTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
+                RedoPlatformTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
             }
 
-            // Todo: Uncomment if needed
-            // foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
-            //     ProcessInvoiceTransactionTimeSeries::run($invoiceTransaction);
-            // }
+            foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $oldDateString)->delay($this->hydratorsDelay);
+                ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, $newDateString)->delay($this->hydratorsDelay);
+            }
 
             InvoiceRecordSearch::dispatch($invoice);
+
+            SendInvoiceDateChangedNotification::dispatch($invoice, $oldDate);
         }
 
         return $invoice;

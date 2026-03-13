@@ -15,6 +15,10 @@ const props = defineProps<{
     shop_data: {
         slug: string
         currency_code: string
+        default_dates: {
+            start: string
+            end: string
+        }
     }
 }>()
 
@@ -22,17 +26,17 @@ const isOpenModal = ref(false)
 
 const offerLabel = ref('')
 const offerAmount = ref<number | null>(0)
-const startDate = ref(null)
-const endDate = ref(null)
+// const startDate = ref(null)
+// const endDate = ref(null)
 
 const isLoadingSubmit = ref(false)
 const submitCategoryOffer = () => {
     // Section: Submit
     router.post(
-        route('grp.org.shops.show.discounts.offers.campaigns.store', {
+        route('grp.org.shops.show.discounts.campaigns.store_shipping', {
             organisation: 'sk',
             shop: 'se',
-            offerCampaign: 'co-se',
+            offerCampaign: 'co-se'
         }),
         {
             name: offerLabel.value,
@@ -69,6 +73,18 @@ const submitCategoryOffer = () => {
     )
 }
 
+const startDate = ref<Date | null>(
+    props.shop_data.default_dates?.start
+        ? new Date(props.shop_data.default_dates.start)
+        : null
+)
+
+const endDate = ref<Date | null>(
+    props.shop_data.default_dates?.end
+        ? new Date(props.shop_data.default_dates.end)
+        : null
+)
+
 const resetForm = () => {
     offerLabel.value = ''
     offerAmount.value = null
@@ -76,9 +92,15 @@ const resetForm = () => {
     endDate.value = null
 }
 
+const openModal = () => {
+    startDate.value = new Date(props.shop_data.default_dates.start)
+    endDate.value = new Date(props.shop_data.default_dates.end)
+    isOpenModal.value = true
+}
+
 const isFormInvalid = computed(() => {
     if (!offerLabel.value) return true
-    if (!offerAmount.value || offerAmount.value <= 0) return true
+    // if (!offerAmount.value || offerAmount.value <= 0) return true
     if (!endDate.value) return true
     if (startDate.value && endDate.value < startDate.value) return true
     return false
@@ -87,7 +109,7 @@ const isFormInvalid = computed(() => {
 
 <template>
     <div>
-        <Button :label="trans('Create Discount Shipping')" @click="isOpenModal = true" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Discount Shipping')" @click="openModal" icon="fas fa-badge-percent" />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="px-6">
@@ -118,7 +140,8 @@ const isFormInvalid = computed(() => {
 
                         <div class="pl-4">
                             <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
-                                currency="SEK" locale="en-US" :placeholder="trans('Enter minimum amount')" />
+                                :currency="props.shop_data.currency_code" locale="en-US"
+                                :placeholder="trans('Enter minimum amount')" />
                         </div>
                     </div>
 
@@ -126,7 +149,11 @@ const isFormInvalid = computed(() => {
                     <div class="grid grid-cols-2 gap-x-6 ">
                         <div>
                             <label class="font-medium mb-2 flex items-center gap-x-1">
-                                {{ trans('Start date') }} <InformationIcon :information="trans('If start date is empty, will start immediately')" />:
+                                <FontAwesomeIcon icon="fas fa-asterisk"
+                                    class="font-light text-xs text-red-400 align-middle" />
+                                {{ trans('Start date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
                             </label>
                             <div class="pl-4">
                                 <DatePicker v-model="startDate" showButtonBar showIcon />
@@ -135,7 +162,11 @@ const isFormInvalid = computed(() => {
 
                         <div>
                             <label class="font-medium mb-2 flex items-center gap-x-1">
-                                {{ trans('End date') }} <InformationIcon :information="trans('If end date is empty, will treat as permanent')" />:
+                                <FontAwesomeIcon icon="fas fa-asterisk"
+                                    class="font-light text-xs text-red-400 align-middle" />
+                                {{ trans('End date') }}
+                                <InformationIcon
+                                    :information="trans('If end date is empty, will treat as permanent')" />:
                             </label>
                             <div class="pl-4">
                                 <DatePicker v-model="endDate" showButtonBar showIcon />
@@ -151,9 +182,7 @@ const isFormInvalid = computed(() => {
                 <div class="pl-4 mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
                     <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
-                        :isLoading="isLoadingSubmit"
-                        :disabled="isFormInvalid"
-                    />
+                        :isLoading="isLoadingSubmit" :disabled="isFormInvalid" />
                 </div>
 
             </div>

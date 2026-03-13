@@ -460,7 +460,7 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                         </dl>
 
                         <ChangePickedBays
-                            v-if="['picked', 'packing'].includes(deliveryNote.state)"
+                            v-if="['picked'].includes(deliveryNote.state)"
                             :warehouse="warehouse"
                             :deliveryNote="deliveryNote"
                             :pickedBays="boxStats?.picked_bays"

@@ -43,7 +43,9 @@ trait OfferCampaignFirstOrderTrait
                 ],
                 'tabs'                                               => [
                     'current'    => $this->tab,
-                    'navigation' => OfferCampaignTabsEnum::navigation()
+                    'navigation' => OfferCampaignTabsEnum::navigationExcept([
+                        OfferCampaignTabsEnum::GR_AMNESTY
+                    ])
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)

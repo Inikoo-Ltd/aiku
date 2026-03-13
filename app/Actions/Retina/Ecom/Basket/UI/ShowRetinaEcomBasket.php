@@ -12,10 +12,9 @@ namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
+use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\InteractsWithOrderInBasket;
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Charge\ChargeStateEnum;
-use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Helpers\AddressResource;
@@ -31,16 +30,15 @@ class ShowRetinaEcomBasket extends RetinaAction
 {
     use IsOrder;
     use InteractsWithOrderInBasket;
+    use HasBasketDetails;
 
     public function handle(Customer $customer): Order|null
     {
-
         if (!$customer->current_order_in_basket_id) {
             return null;
         }
 
         return $this->getOrderInBasket($customer);
-
     }
 
 
@@ -56,9 +54,18 @@ class ShowRetinaEcomBasket extends RetinaAction
         $isOrder = $order instanceof Order;
 
 
-        $premiumDispatch = $order?->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $extraPacking    = $order?->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $insurance       = $order?->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
+        if ($order) {
+            $charges         = $this->getBasketCharges($order);
+            $premiumDispatch = $charges['premium_dispatch'];
+            $extraPacking    = $charges['extra_packing'];
+            $insurance       = $charges['insurance'];
+        } else {
+            $premiumDispatch = null;
+            $extraPacking    = null;
+            $insurance       = null;
+        }
+
+
 
         $isUnableDispatch = false;
 
@@ -66,6 +73,14 @@ class ShowRetinaEcomBasket extends RetinaAction
             $isUnableDispatch = in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? []));
         }
 
+        $grGifts = [
+            'status'      => false,
+            'is_eligible' => false,
+            'gifts'       => []
+        ];
+        if ($order) {
+            $grGifts = $this->getGrGifts($order);
+        }
 
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
@@ -168,31 +183,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'total_to_pay'       => $order ? max(0, $order->total_amount - $order->customer->balance) : 0,
                 'total_products'     => $order ? $order->transactions->whereIn('model_type', ['Product', 'Service'])->count() : 0,
                 'transactions'       => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
-                'eligible_gifts'      => [  // TODO: Raul INI-887
-                    'is_customer_eligible_for_gift' => true,
-                    'selected_gift' => [
-                        'id'    => 123,
-                        'label' => 'Rainbow bath bomb',
-                        'value' => 'rainbow_bath_bomb'
-                    ],
-                    'available_gifts' => [
-                        [
-                            'id'    => 123,
-                            'label' => 'Rainbow bath bomb',
-                            'value' => 'rainbow_bath_bomb'
-                        ],
-                        [
-                            'id'    => 234,
-                            'label' => 'Lavender bath bomb',
-                            'value' => 'lavender_bath_bomb'
-                        ],
-                        [
-                            'id'    => 456,
-                            'label' => 'Rose bath bomb',
-                            'value' => 'rose_bath_bomb'
-                        ],
-                    ],
-                ],
+                'gr_gifts'           => $grGifts
             ]
         )->table(
             IndexBasketTransactions::make()->tableStructure()

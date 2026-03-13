@@ -36,16 +36,6 @@ class DashboardShopSalesResource extends JsonResource
                     'key_date_filter' => 'between[registered_at]',
                 ],
             ],
-            'inBasket' => [
-                'route_target' => [
-                    'name' => 'grp.org.shops.show.ordering.backlog',
-                    'parameters' => [
-                        'organisation' => $data['organisation_slug'] ?? 'unknown',
-                        'shop' => $data['slug'] ?? 'unknown',
-                    ],
-                    'key_date_filter' => 'between[date]',
-                ],
-            ],
             'shops' => [
                 'route_target' => isset($data['id']) ? [
                     'name' => 'grp.helpers.redirect_shops_from_dashboard',
@@ -80,12 +70,6 @@ class DashboardShopSalesResource extends JsonResource
         $columns = array_merge(
             $columns,
             $this->getDashboardColumnsFromArray($data, [
-                'baskets_created' => $routeTargets['inBasket'],
-                'baskets_created_minified' => $routeTargets['inBasket'],
-                'baskets_created_org_currency' => $routeTargets['inBasket'],
-                'baskets_created_org_currency_minified' => $routeTargets['inBasket'],
-                'baskets_created_grp_currency' => $routeTargets['inBasket'],
-                'baskets_created_grp_currency_minified' => $routeTargets['inBasket'],
                 'invoices' => $routeTargets['invoices'],
                 'invoices_minified' => $routeTargets['invoices'],
                 'invoices_delta',
@@ -125,7 +109,7 @@ class DashboardShopSalesResource extends JsonResource
                         $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
 
                         $columns[$columnKey][$interval]['tooltip'] = sprintf(
-                            'With orders: %s | Without orders: %s',
+                            'With product in basket: %s | With empty basket: %s',
                             number_format($withOrders),
                             number_format($withoutOrders)
                         );

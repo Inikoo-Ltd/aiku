@@ -36,8 +36,16 @@ class RedoTradeUnitTimeSeries implements ShouldBeUnique
     public function handle(TradeUnit $tradeUnit, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::table('invoice_transaction_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->min('date');
-            $lastInvoicedDate  = DB::table('invoice_transaction_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->max('date');
+            $firstInvoicedDate = DB::table('invoice_transactions')
+                ->join('invoice_transaction_has_trade_units', 'invoice_transaction_has_trade_units.invoice_transaction_id', '=', 'invoice_transactions.id')
+                ->where('invoice_transaction_has_trade_units.trade_unit_id', $tradeUnit->id)
+                ->whereNull('invoice_transactions.deleted_at')
+                ->min('invoice_transactions.date');
+            $lastInvoicedDate = DB::table('invoice_transactions')
+                ->join('invoice_transaction_has_trade_units', 'invoice_transaction_has_trade_units.invoice_transaction_id', '=', 'invoice_transactions.id')
+                ->where('invoice_transaction_has_trade_units.trade_unit_id', $tradeUnit->id)
+                ->whereNull('invoice_transactions.deleted_at')
+                ->max('invoice_transactions.date');
 
             if (!$firstInvoicedDate) {
                 return;

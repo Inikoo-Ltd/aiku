@@ -37,6 +37,7 @@ use Illuminate\Support\Arr;
  * @property mixed $rrp
  * @property mixed $price
  * @property mixed $status
+ * @property mixed $health_rank
  */
 class MasterProductsResource extends JsonResource
 {
@@ -117,6 +118,8 @@ class MasterProductsResource extends JsonResource
             'variant_slug'           => $this->variant_slug,
             'is_variant_leader'      => $this->is_variant_leader,
             'variant_code'           => $this->variant_code,
+            'mismatch_detected'      => $this->mismatch_detected,
+            'health_rank'       => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
             ...$extraField
         ];
     }

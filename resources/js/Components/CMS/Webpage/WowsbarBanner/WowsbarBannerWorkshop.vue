@@ -149,6 +149,7 @@ console.log('banner', props)
 
 		<section v-else-if="data && activeSlug" class="relative mx-auto" :style="bannerDimensionStyle">
 			<div v-if="data.state !== 'switch_off'" class="pointer-events-none select-none" :style="{
+				...(screenType === 'mobile' ? { height: '300px', width: '100%' } : {}),
 				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 				...getStyles(modelValue.container?.properties, screenType)
 			}">

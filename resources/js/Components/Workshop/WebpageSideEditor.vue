@@ -285,6 +285,24 @@ const cancelRename = () => {
 	editingIndex.value = null
 	renameValue.value = ""
 }
+
+
+const blockNotEditableVisible = [
+	    "sub-departments-1",
+		"sub-departments-2",
+	/* 	'collection-description-1' ,
+		'department-description-1' ,
+		'sub-department-description-1' ,
+		'family-1', */
+		"families-1",
+		"families-2",
+		"families-3",
+		"products-1",
+		"products-2",
+		"product-1",
+		"product-2",
+
+]
 </script>
 
 <template>
@@ -407,7 +425,7 @@ const cancelRename = () => {
 															{{element.web_block.layout.data.fieldValue.blocks.name}}
 														</template>
 														<template v-else>
-															{{ element.name }}
+															{{ element.type }}
 														</template>
 													</span>
 												</div>
@@ -424,7 +442,7 @@ const cancelRename = () => {
 													v-if="
 														getEditPermissions(
 															element.web_block.layout.data
-														)
+														) && !blockNotEditableVisible.includes(element.type)
 													"
 													v-tooltip="trans('Duplicate this block')"
 													@click.stop.prevent="duplicateBlock(element)"
@@ -436,7 +454,7 @@ const cancelRename = () => {
 													v-if="
 														getHiddenPermissions(
 															element.web_block.layout.data
-														)
+														) && !blockNotEditableVisible.includes(element.type)
 													"
 													v-tooltip="
 														trans(
@@ -460,7 +478,7 @@ const cancelRename = () => {
 													v-if="
 														getDeletePermissions(
 															element.web_block.layout.data
-														)
+														) && !blockNotEditableVisible.includes(element.type)
 													"
 													@click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
 													class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
@@ -500,6 +518,7 @@ const cancelRename = () => {
 								<div class="p-2 space-y-2">
 									<VisibleCheckmark
 										:disabled="!editable"
+										v-if="!blockNotEditableVisible.includes(webpage.layout.web_blocks?.[openedBlockSideEditor]?.type)"
 										v-model="
 											webpage.layout.web_blocks[openedBlockSideEditor]
 												.visibility

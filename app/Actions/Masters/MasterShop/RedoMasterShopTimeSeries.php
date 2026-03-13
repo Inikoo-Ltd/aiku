@@ -38,14 +38,14 @@ class RedoMasterShopTimeSeries implements ShouldBeUnique
         if (!$from || !$to) {
             $dates = collect([
                 DB::table('invoices')->where('master_shop_id', $masterShop->id)->whereNull('deleted_at')->selectRaw('MIN(date) as min_date, MAX(date) as max_date')->first(),
-                DB::table('orders')->where('master_shop_id', $masterShop->id)->whereNull('deleted_at')->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
-                DB::table('delivery_notes')
-                    ->join('delivery_note_order', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
-                    ->join('orders', 'delivery_note_order.order_id', '=', 'orders.id')
-                    ->where('orders.master_shop_id', $masterShop->id)
-                    ->whereNull('delivery_notes.deleted_at')
-                    ->selectRaw('MIN(delivery_notes.date) as min_date, MAX(delivery_notes.date) as max_date')
-                    ->first(),
+                // DB::table('orders')->where('master_shop_id', $masterShop->id)->whereNull('deleted_at')->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')->first(),
+                // DB::table('delivery_notes')
+                //     ->join('delivery_note_order', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
+                //     ->join('orders', 'delivery_note_order.order_id', '=', 'orders.id')
+                //     ->where('orders.master_shop_id', $masterShop->id)
+                //     ->whereNull('delivery_notes.deleted_at')
+                //     ->selectRaw('MIN(delivery_notes.date) as min_date, MAX(delivery_notes.date) as max_date')
+                //     ->first(),
                 DB::table('customers')->where('master_shop_id', $masterShop->id)->whereNull('deleted_at')->selectRaw('MIN(registered_at) as min_date, MAX(registered_at) as max_date')->first(),
             ]);
 

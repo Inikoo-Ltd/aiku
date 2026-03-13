@@ -23,6 +23,8 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $orgStockFamilyId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$orgStockFamilyId:$frequency->value:$from:$to";

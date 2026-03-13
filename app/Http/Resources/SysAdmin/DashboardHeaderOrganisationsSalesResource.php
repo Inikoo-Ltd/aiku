@@ -21,8 +21,6 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
         /** @var Organisation $organisation */
         $organisation = $this;
 
-        $inBasketLabel = __('In basket');
-
         $labelDelta = __('Change versus 1 Year ago');
 
         $columns = array_merge(
@@ -40,42 +38,6 @@ class DashboardHeaderOrganisationsSalesResource extends JsonResource
                     'align'             => 'left',
                     'currency_type'     => 'always',
                     'data_display_type' => 'minified',
-                ]
-            ],
-            [
-                'baskets_created_org_currency' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'org',
-                    'data_display_type' => 'full',
-                    'sortable'          => true,
-                    'scope'             => 'baskets_created_org_currency',
-                ]
-            ],
-            [
-                'baskets_created_org_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'org',
-                    'data_display_type' => 'minified',
-                    'sortable'          => true,
-                    'scope'             => 'baskets_created_org_currency',
-                ]
-            ],
-            [
-                'baskets_created_grp_currency' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'grp',
-                    'data_display_type' => 'full',
-                    'sortable'          => true,
-                    'scope'             => 'baskets_created_grp_currency',
-                ]
-            ],
-            [
-                'baskets_created_grp_currency_minified' => [
-                    'formatted_value'   => $inBasketLabel,
-                    'currency_type'     => 'grp',
-                    'data_display_type' => 'minified',
-                    'sortable'          => true,
-                    'scope'             => 'baskets_created_grp_currency',
                 ]
             ],
             [

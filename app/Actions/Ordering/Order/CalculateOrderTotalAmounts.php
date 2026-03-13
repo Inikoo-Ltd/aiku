@@ -20,6 +20,8 @@ class CalculateOrderTotalAmounts extends OrgAction
 {
     use WithOrganisationsArgument;
 
+    public string $jobQueue = 'urgent';
+
     public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
     {
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');

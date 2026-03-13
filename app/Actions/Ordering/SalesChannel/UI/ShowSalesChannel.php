@@ -21,9 +21,9 @@ class ShowSalesChannel extends OrgAction
             'Devel/Dummy',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($salesChannel),
-                'title'       => __("$salesChannel->name"),
+                'title'       => $salesChannel->name,
                 'pageHead'    => [
-                    'title'   =>  __("$salesChannel->name"),
+                    'title'   =>  $salesChannel->name,
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -58,7 +58,7 @@ class ShowSalesChannel extends OrgAction
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'label' => __("$salesChannel->name"),
+                        'label' => $salesChannel->name,
                         'route' => [
                             'name'       => 'grp.sales_channels.show',
                             'parameters' => [

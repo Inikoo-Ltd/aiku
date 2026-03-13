@@ -36,12 +36,23 @@ class TimesheetsResource extends JsonResource
             $jobPosition = $this->subject->job_title ?? null;
         }
 
+        $organisationCode = $this->organisation_code
+            ?? ($this->resource->relationLoaded('organisation') ? $this->organisation?->code : null);
+
+        $startAt = $this->start_at;
+        $endAt = $this->end_at;
+
+        if ($organisationCode === 'SK') {
+            $startAt = $startAt?->copy()->subHour();
+            $endAt = $endAt?->copy()->subHour();
+        }
+
         return [
             'id'                        => $this->id,
             'date'                      => $this->date,
             'subject_name'              => $this->subject_name,
-            'start_at'                  => $this->start_at,
-            'end_at'                    => $this->end_at,
+            'start_at'                  => $startAt,
+            'end_at'                    => $endAt,
             'working_duration'          => $this->working_duration,
             'breaks_duration'           => $this->breaks_duration,
             'number_time_trackers'      => $this->number_time_trackers,

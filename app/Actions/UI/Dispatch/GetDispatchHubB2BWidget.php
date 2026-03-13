@@ -24,6 +24,10 @@ class GetDispatchHubB2BWidget
             'slug'             => 'wholesale',
             'label'            => __('Wholesale'),
             'tooltip'          => __('Wholesale Delivery Notes'),
+            'total_route'      => [
+                'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.shop',
+                'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2B->value]
+            ],
             'cases'            => [
                 'todo'             => [
                     'route' => [

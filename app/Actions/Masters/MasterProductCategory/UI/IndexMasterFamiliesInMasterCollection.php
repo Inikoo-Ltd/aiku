@@ -9,16 +9,31 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
+use App\Actions\Masters\MasterCollection\UI\WithMasterCollectionNavigation;
+use App\Actions\Masters\MasterCollection\UI\WithMasterCollectionSubNavigation;
+use App\Enums\UI\Catalogue\MasterCollectionsTabsEnum;
+use App\Enums\UI\Catalogue\MasterProductCategoryTabsEnum;
+use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMasterFamiliesInMasterCollection extends GrpAction
 {
+    use WithMasterCollectionNavigation;
+    use WithMasterCollectionSubNavigation;
+
+    private MasterCollection $parent;
+
     public function handle(MasterCollection $masterCollection, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -33,9 +48,6 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
 
-
-
-
         $queryBuilder->join('master_collection_has_models', function ($join) {
             $join->on('master_product_categories.id', '=', 'master_collection_has_models.model_id')
                 ->where('master_collection_has_models.model_type', '=', 'MasterProductCategory');
@@ -45,8 +57,6 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
         $queryBuilder->leftJoin('master_product_category_sales_intervals', 'master_product_category_sales_intervals.master_product_category_id', 'master_product_categories.id');
         $queryBuilder->leftJoin('master_product_category_ordering_intervals', 'master_product_category_ordering_intervals.master_product_category_id', 'master_product_categories.id');
         $queryBuilder->leftJoin('master_product_category_stats', 'master_product_categories.id', 'master_product_category_stats.master_product_category_id');
-
-
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
@@ -77,7 +87,6 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                     ->pageName($prefix.'Page');
             }
 
-
             $table
                 ->defaultSort('code')
                 ->withEmptyState(
@@ -88,16 +97,167 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                 )
                 ->withGlobalSearch();
 
-
-            $table->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
+            $table
+                ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            if ($action) {
-                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
-            }
-
-
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
         };
+    }
+
+    public function htmlResponse(LengthAwarePaginator $masterFamilies, ActionRequest $request): Response
+    {
+        $navigation      = MasterProductCategoryTabsEnum::navigationExcept([MasterProductCategoryTabsEnum::SALES]);
+        $masterShop      = null;
+        $subNavigation   = $this->getMasterCollectionSubNavigation($this->parent);
+        $modelNavigation = [];
+        $title           = $this->parent->name;
+        $model           = '';
+        $icon            = [
+            'icon'  => ['fal', 'fa-album-collection'],
+            'title' => __('Master Collections')
+        ];
+        $afterTitle      = [
+            'label' => __('Master Families')
+        ];
+        $iconRight       = [
+            'icon' => 'fal fa-folder-tree',
+        ];
+
+        $baseData = [
+            'breadcrumbs' => $this->getBreadcrumbs(
+                $this->parent,
+                $request->route()->getName(),
+                $request->route()->originalParameters()
+            ),
+            'navigation'  => $modelNavigation,
+            'title'       => __('Master Families'),
+            'pageHead'    => [
+                'title'         => $title,
+                'icon'          => $icon,
+                'model'         => $model,
+                'afterTitle'    => $afterTitle,
+                'iconRight'     => $iconRight,
+                'subNavigation' => $subNavigation,
+            ],
+            'hideCheckbox'             => true,
+            'accessedFromCollection'   => true,
+            'routes'      => [
+                'dataList'     => [
+                    'name'       => 'grp.json.master_shop.master_families_not_attached_to_master_collection',
+                    'parameters' => [
+                        'masterShop'  => $this->parent->masterShop->slug,
+                        'scope' => $this->parent->slug
+                    ]
+                ],
+                'submitAttach' => [
+                    'name'       => 'grp.models.master_collection.attach-models',
+                    'parameters' => [
+                        'masterCollection' => $this->parent->id
+                    ]
+                ],
+                'detach'       => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.master_collection.detach-models',
+                    'parameters' => [
+                        'masterCollection' => $this->parent->id
+                    ]
+                ]
+            ],
+        ];
+
+        $baseData['tabs'] = [
+            'current'    => $this->tab,
+            'navigation' => $navigation,
+        ];
+
+        $baseData[MasterProductCategoryTabsEnum::INDEX->value] = $this->tab == MasterProductCategoryTabsEnum::INDEX->value ?
+            fn () => MasterFamiliesResource::collection($masterFamilies)
+            : Inertia::lazy(fn () => MasterFamiliesResource::collection($masterFamilies));
+
+        return Inertia::render(
+            'Masters/MasterFamilies',
+            $baseData
+        )
+        ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value));
+    }
+
+    public function getBreadcrumbs(MasterCollection $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
+    {
+        $headCrumb = function (array $routeParameters, ?string $suffix) {
+            return [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => $routeParameters,
+                        'label' => __('Master families'),
+                        'icon'  => 'fal fa-bars'
+                    ],
+                    'suffix' => $suffix
+                ]
+            ];
+        };
+
+        return match ($routeName) {
+            'grp.masters.master_shops.show.master_sub_departments.master_collections.families',
+            'grp.masters.master_shops.show.master_departments.show.master_collections.families',
+            'grp.masters.master_departments.show.master_collections.families',
+            'grp.masters.master_shops.show.master_collections.families' =>
+            array_merge(
+                ShowMasterCollection::make()->getBreadcrumbs($this->parent, preg_replace('/families$/', 'show', $routeName), $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+            default => []
+        };
+    }
+
+    public function asController(MasterShop $masterShop, MasterCollection $masterCollection, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterCollection;
+        $group = group();
+
+        $this->initialisation($group, $request)->withTab(MasterCollectionsTabsEnum::valuesExcept([MasterCollectionsTabsEnum::SALES]));
+
+        return $this->handle($masterCollection, MasterCollectionsTabsEnum::INDEX->value);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterCollection $masterCollection, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterCollection;
+        $group = group();
+
+        $this->initialisation($group, $request)->withTab(MasterCollectionsTabsEnum::valuesExcept([MasterCollectionsTabsEnum::SALES]));
+
+        return $this->handle($masterCollection, MasterCollectionsTabsEnum::INDEX->value);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterCollection $masterCollection, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterCollection;
+        $group = group();
+
+        $this->initialisation($group, $request)->withTab(MasterCollectionsTabsEnum::valuesExcept([MasterCollectionsTabsEnum::SALES]));
+
+        return $this->handle($masterCollection, MasterCollectionsTabsEnum::INDEX->value);
+    }
+
+
+    public function inGroup(MasterCollection $masterCollection, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterCollection;
+        $group        = group();
+
+        $this->initialisation($group, $request)->withTab(MasterCollectionsTabsEnum::valuesExcept([MasterCollectionsTabsEnum::SALES]));
+
+        return $this->handle($masterCollection, MasterCollectionsTabsEnum::INDEX->value);
     }
 }

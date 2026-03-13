@@ -32,7 +32,7 @@ const isLoadingMetaRight = ref(false)
     <component :is="stat.route?.name ? Link : 'div'"
         :href="stat.route?.name ? route(stat.route.name, stat.route.parameters) : ''" :style="{
             color: stat.color,
-            xbackgroundColor: stat.backgroundColor
+            backgroundColor: stat.backgroundColor,
         }" class="block isolate relative overflow-hidden rounded-lg  border px-4 py-5 shadow-sm sm:p-6 sm:pb-3" :class="[
             stat.is_negative ? 'bg-red-100 hover:bg-red-200 border-red-200 hover:border-red-300 text-red-500' : 'bg-white hover:bg-gray-50 border-gray-200',
             stat.route?.name ? 'cursor-pointer' : ''

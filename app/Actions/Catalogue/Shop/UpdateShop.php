@@ -222,6 +222,14 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.invoicing.stand_alone_invoice_numbers", Arr::pull($modelData, 'stand_alone_invoice_numbers'));
         }
 
+        if (Arr::exists($modelData, 'download_pdf_columns')) {
+            $columnsMap = [];
+            foreach (Arr::pull($modelData, 'download_pdf_columns') as $col) {
+                $columnsMap[$col['key']] = (bool) $col['value'];
+            }
+            data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
+        }
+
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
         $shop->refresh();
@@ -360,6 +368,7 @@ class UpdateShop extends OrgAction
             'marketing_opt_in_default'                                => ['sometimes', 'boolean'],
             'marketing_opt_in_label'                                  => ['sometimes', 'string'],
             'invoice_footer'                                          => ['sometimes', 'string', 'max:10000'],
+            'download_pdf_columns'                                    => ['sometimes', 'array'],
             'cost_price_ratio'                                        => ['sometimes', 'numeric', 'min:0'],
             'price_rrp_ratio'                                         => ['sometimes', 'numeric', 'min:0'],
             'extra_languages'                                         => ['sometimes', 'array', 'nullable'],
