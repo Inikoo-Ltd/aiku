@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, onUnmounted } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -108,6 +108,7 @@ const getAnnouncements = async () => {
 
 provide('screenType', screenType)
 
+
 onMounted(() => {
     CustomerIdCollector(layout.iris_variables?.customer_id?.toString())  // Luigi: to set customer_id
 
@@ -127,6 +128,8 @@ onMounted(() => {
         fetchHasInBasket()
     }
 })
+
+
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
