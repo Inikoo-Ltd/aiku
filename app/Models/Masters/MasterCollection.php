@@ -47,7 +47,6 @@ use Spatie\Translatable\HasTranslations;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property int|null $image_id
  * @property MasterCollectionStateEnum $state
- * @property HealthRankEnum|null $health_rank
  * @property MasterCollectionProductStatusEnum $products_status
  * @property bool $status
  * @property array<array-key, mixed>|null $offers_data
@@ -59,6 +58,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property HealthRankEnum|null $health_rank
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, Collection> $childrenCollections
  * @property-read Group $group

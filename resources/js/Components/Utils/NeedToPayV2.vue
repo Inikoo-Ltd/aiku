@@ -81,12 +81,11 @@ const onPayWithBalance = () => {
     <dd class="relative w-full flex flex-col xpy-3">
         <!-- Section: Balance (pay with balance) -->
         <div v-if="Number(payAmount) > 0" class="mt-2 text-xs text-gray-500 font-light whitespace-nowrap px-2.5 mb-1.5">
-            {{ trans('Balance') }}: {{ locale.currencyFormat(currencyCode, Number(balance)) }}
+            <div class="mb-1">{{ trans('Balance') }}: {{ locale.currencyFormat(currencyCode, Number(balance)) }}</div>
             <Button
-                v-if="Number(balance) >= Number(payAmount) && Number(payAmount) > 0"
+                v-if="Number(balance) > 0  && Number(payAmount) > 0"
                 size="xxs"
                 :label="trans('Pay with balance')"
-                xtype="secondary"
                 @click="() => onPayWithBalance()"
                 :loading="isLoadingPayWithBalance"
             />

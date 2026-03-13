@@ -125,7 +125,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $webpage->refresh();
 
 
-        if(count($countFamilyDescriptionBlock) == 0) {
+        if (count($countFamilyDescriptionBlock) == 0) {
             $this->setFamilyWebBlockOnTop($webpage);
         }
 
@@ -155,7 +155,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             }
         }
     }
-    
+
     public function setDescriptionWebBlockHidden(Webpage $webpage): void
     {
         $familyDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first();

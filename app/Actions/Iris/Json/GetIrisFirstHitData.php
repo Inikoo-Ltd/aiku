@@ -50,6 +50,7 @@ class GetIrisFirstHitData extends IrisAction
             Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
             return $this->getIrisUserData();
         } else {
+            Cookie::queue(Cookie::forget('iris_vua'));
             return [
                 'is_logged_in' => false,
                 'traffic_source_cookies' => CaptureTrafficSource::run(),

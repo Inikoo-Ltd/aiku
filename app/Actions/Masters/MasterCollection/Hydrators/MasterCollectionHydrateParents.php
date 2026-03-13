@@ -34,8 +34,6 @@ class MasterCollectionHydrateParents implements ShouldBeUnique
         $collectionStats = $masterCollection->stats;
 
         $collectionStats->update($stats);
-
-
     }
 
 }

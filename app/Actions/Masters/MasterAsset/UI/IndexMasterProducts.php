@@ -343,7 +343,8 @@ class IndexMasterProducts extends GrpAction
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')
@@ -363,7 +364,6 @@ class IndexMasterProducts extends GrpAction
                     ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), sortable: true)
                     ->column(key: 'master_family_code', label: __('M. Family'), sortable: true)
                     ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), sortable: true)
-                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon')
                     ->column(key: 'actions', label: __('Actions'), sortable: false)
                     ->defaultSort('code');
             }

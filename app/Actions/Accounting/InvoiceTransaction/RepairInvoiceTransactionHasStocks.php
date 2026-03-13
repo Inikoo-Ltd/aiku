@@ -16,16 +16,20 @@ class RepairInvoiceTransactionHasStocks
 {
     use AsAction;
 
+    private const int CHUNK_SIZE = 2000;
+
     public string $commandSignature = 'accounting:repair-invoice-transaction-has-stocks';
     public string $commandDescription = 'Populate invoice_transaction_has_stocks from existing invoice_transactions';
 
     public function handle(Command $command): void
     {
-        $query = InvoiceTransaction::where('model_type', 'Product')
+        $query = InvoiceTransaction::query()
+            ->select('id')
+            ->where('model_type', 'Product')
             ->whereNotNull('model_id')
             ->whereNull('deleted_at');
 
-        $total = $query->count();
+        $total = (clone $query)->count('id');
 
         if ($total === 0) {
             $command->info('No invoice transactions to repair.');
@@ -39,19 +43,16 @@ class RepairInvoiceTransactionHasStocks
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
-        $dispatched = 0;
-
-        $query->chunkById(500, function ($invoiceTransactions) use ($bar, &$dispatched) {
+        $query->chunkById(self::CHUNK_SIZE, function ($invoiceTransactions) use ($bar) {
             foreach ($invoiceTransactions as $invoiceTransaction) {
                 SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id);
-                $dispatched++;
                 $bar->advance();
             }
         });
 
         $bar->finish();
         $command->newLine();
-        $command->info("Repair completed. Dispatched: {$dispatched} jobs.");
+        $command->info('Repair completed.');
     }
 
     public function asCommand(Command $command): void

@@ -51,7 +51,6 @@ class ShowAccountingDashboard extends OrgAction
                         'title' => __('Accounting')
                     ],
                     'title'     => __('Accounting'),
-
                 ],
 
 
@@ -119,6 +118,21 @@ class ShowAccountingDashboard extends OrgAction
                             'index'        => [
                                 'number' => $organisation->orderingStats->number_invoices
                             ],
+                        ],
+                    ],
+                    [
+                        [
+                            'name'  => __('Credit Transactions'),
+                            'icon'  => ['fal', 'fa-piggy-bank'],
+                            'route' => [
+                                'name'       => 'grp.org.accounting.credit_transactions.index',
+                                'parameters' => $parameters
+                            ],
+                            'index' => [
+                                'number' => $organisation->accountingStats->number_credit_transactions
+                            ]
+
+
                         ],
                     ]
                 ]
