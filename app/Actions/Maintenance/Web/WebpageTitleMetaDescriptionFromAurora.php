@@ -48,22 +48,19 @@ class WebpageTitleMetaDescriptionFromAurora
 
                     if ($auData) {
                         if ($auData->{'browser_title'} != '') {
-                            $command->info('Updating '.$webpage->slug.' '.$auData->{'browser_title'});
-
-                            //                            $webpage->update(
-                            //                                [
-                            //                                    'title' => $auData->{'Webpage Browser Title'}
-                            //                                ]
-                            //                            );
+                            $webpage->update(
+                                [
+                                    'title' => $auData->{'Webpage Browser Title'}
+                                ]
+                            );
                         }
 
                         if ($auData->{'Webpage Meta Description'} != '') {
-                            $command->info('Updating '.$webpage->slug.' meta  '.$sourceData[1]);
-                            //                            $webpage->update(
-                            //                                [
-                            //                                    'meta_description' => $auData->{'Webpage Meta Description'}
-                            //                                ]
-                            //                            );
+                            $webpage->update(
+                                [
+                                    'meta_description' => $auData->{'Webpage Meta Description'}
+                                ]
+                            );
                         }
                     }
                 }
