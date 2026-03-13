@@ -23,13 +23,12 @@ class ProcessSendMailshot
 
     public string $jobQueue = 'ses';
 
-    public function handle($mailshotId, $customers, $outboxId)
+    public function handle($mailshotId, $customerIds, $outboxId)
     {
-
         $mailshot = Mailshot::find($mailshotId);
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
-        foreach ($customers as $customerId) {
+        foreach ($customerIds as $customerId) {
 
             $customer = Customer::find($customerId);
 
@@ -62,6 +61,7 @@ class ProcessSendMailshot
             }
         }
 
+
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
@@ -69,8 +69,7 @@ class ProcessSendMailshot
             ]
         );
 
-        // think about this one later
-
+        // TODO: think about this one later
         // UpdateMailshot::run(
         //     $mailshot,
         //     [
