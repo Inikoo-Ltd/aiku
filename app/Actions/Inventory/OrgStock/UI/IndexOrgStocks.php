@@ -244,6 +244,17 @@ class IndexOrgStocks extends OrgAction
             'org_stock_intervals.dispatched_ytd as dispatched',
             'org_stock_sales_intervals.revenue_org_currency_ytd as revenue',
             DB::raw("(
+                SELECT COALESCE(SUM(os2.quantity_in_locations), 0)
+                FROM org_stocks os2
+                INNER JOIN model_has_trade_units mhtu2 ON mhtu2.model_id = os2.id AND mhtu2.model_type = 'OrgStock'
+                WHERE mhtu2.trade_unit_id IN (
+                    SELECT mhtu.trade_unit_id
+                    FROM model_has_trade_units mhtu
+                    WHERE mhtu.model_id = org_stocks.id
+                    AND mhtu.model_type = 'OrgStock'
+                )
+            ) as stock_value"),
+            DB::raw("(
                 SELECT COALESCE(SUM(pot.org_net_amount), 0)
                 FROM purchase_order_transactions pot
                 INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id

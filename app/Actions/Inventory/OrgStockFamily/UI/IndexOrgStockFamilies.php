@@ -143,9 +143,15 @@ class IndexOrgStockFamilies extends OrgAction
             'currencies.code as currency_code',
             'warehouses.slug as warehouse_slug',
             DB::raw("(
-                SELECT COALESCE(SUM(COALESCE(os.unit_cost, 0) * COALESCE(os.quantity_available, 0)), 0)
-                FROM org_stocks os
-                WHERE os.org_stock_family_id = org_stock_families.id
+                SELECT COALESCE(SUM(os2.quantity_in_locations), 0)
+                FROM org_stocks os2
+                INNER JOIN model_has_trade_units mhtu2 ON mhtu2.model_id = os2.id AND mhtu2.model_type = 'OrgStock'
+                WHERE mhtu2.trade_unit_id IN (
+                    SELECT mhtu.trade_unit_id
+                    FROM model_has_trade_units mhtu
+                    INNER JOIN org_stocks os ON mhtu.model_id = os.id AND mhtu.model_type = 'OrgStock'
+                    WHERE os.org_stock_family_id = org_stock_families.id
+                )
             ) as stock_value"),
             DB::raw("(
                 SELECT COALESCE(SUM(pot.org_net_amount), 0)
