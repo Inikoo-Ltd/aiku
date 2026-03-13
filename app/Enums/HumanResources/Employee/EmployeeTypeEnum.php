@@ -20,7 +20,7 @@ enum EmployeeTypeEnum: string
     case INTERNSHIP = 'internship';
     case VOLUNTEER = 'volunteer';
     case TEMPORAL_WORKER = 'temporal-worker';
-    case WORK_EXPERIENCE = 'work-experience';
+    case FREELANCE = 'freelance';
 
     public static function labels(): array
     {
@@ -28,10 +28,10 @@ enum EmployeeTypeEnum: string
             'employee' => __('Employee'),
             'volunteer' => __('Volunteer'),
             'temporal-worker' => __('Temporal Worker'),
-            'work-experience' => __('Work Experience'),
             'internship' => __('Internship'),
             'full-time' => __('Full Time'),
             'part-time' => __('Part Time'),
+            'freelance' => __('Freelance'),
         ];
     }
 
