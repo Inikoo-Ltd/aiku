@@ -97,7 +97,7 @@
                             <td class="alert alert-warning"
                                 style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color:#E74C3C; margin: 0; padding: 20px;"
                                 align="center" bgcolor="#E74C3C" valign="top">
-                                The following Order [Order Reference] has been Undispatched
+                                The following Delivery Note [Delivery Note Reference] has been Undispatched
                             </td>
                         </tr>
                         <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
@@ -108,11 +108,10 @@
                                             valign="top">
                                             <strong>Customer Name:</strong> <a href="[Customer Link]">[Customer Name]</a>
                                             <br>
-                                            <strong>Order Reference:</strong> <a href="[Order Link]">[Order Reference]</a>
+                                            <strong>Delivery Note Reference:</strong> <a href="[Delivery Note Link]">[Delivery Note Reference]</a>
                                             <br>
                                             <strong>Undispatched Date:</strong> [Undispatched Date]
-                                            <br>
-                                            <strong>Invoice Reference:</strong> <a href="[Invoice Link]">[Invoice Reference]</a>
+
                                         </td>
                                     </tr>
 
@@ -127,18 +126,6 @@
                             </td>
                         </tr>
                     </table>
-                    <div class="footer" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; width: 100%; clear: both; color: #999; margin: 0; padding: 20px;">
-                        <table width="100%" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                            <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                                <td class="aligncenter content-block"
-                                    style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 12px; vertical-align: top; color: #999; text-align: center; margin: 0; padding: 0 0 20px;"
-                                    align="center" valign="top">
-                                    [Organisation]<br />[Undispatched Date]
-                                </td>
-                            </tr>
-
-                        </table>
-                    </div>
                 </div>
             </td>
             <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0;" valign="top"></td>
