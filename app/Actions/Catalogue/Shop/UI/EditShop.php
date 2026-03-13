@@ -575,6 +575,17 @@ class EditShop extends OrgAction
                     'label'  => __('Sales Channels'),
                     'icon'   => 'fal fa-shopping-cart',
                     'fields' => $salesChannelFields,
+                ],
+                [
+                    'label'  => __('Bundle Discount'),
+                    'icon'   => 'fal fa-shopping-cart',
+                    'fields' => [
+                        'bundle_discount_percentage' => [
+                            'type'  => 'input',
+                            'label' => __('Bundle Discount Percentage'),
+                            'value' => Arr::get($shop->settings, 'shopify.bundle_discount_percentage', ''),
+                        ],
+                    ],
                 ]
             ],
             'args' => [

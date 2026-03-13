@@ -122,12 +122,14 @@ class UpdateShop extends OrgAction
                     'wix_access_token' => 'settings.wix.access_token',
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
+                    'bundle_discount_percentage' => 'settings.discount.bundle_discount_percentage',
                     default => $key
                 },
                 $value
             );
         }
 
+        data_forget($modelData, 'bundle_discount_percentage');
         data_forget($modelData, 'shopify_shop_name');
         data_forget($modelData, 'shopify_api_key');
         data_forget($modelData, 'shopify_api_secret');
@@ -386,6 +388,7 @@ class UpdateShop extends OrgAction
             'family_follow_master'                                    => ['sometimes', 'boolean'],
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
+            'bundle_discount_percentage'                              => ['sometimes', 'numeric', 'min:0', 'max:100']
         ];
 
         $channelIds = SalesChannel::pluck('id');
