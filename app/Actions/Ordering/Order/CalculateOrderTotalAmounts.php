@@ -111,11 +111,13 @@ class CalculateOrderTotalAmounts extends OrgAction
 
         if (in_array($order->state, [
             OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::HANDLING,
+            OrderStateEnum::HANDLING_BLOCKED,
             OrderStateEnum::PICKED,
             OrderStateEnum::PACKING,
             OrderStateEnum::PACKED,
         ])) {
-            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged || $forceRecalculate) {
+            if ($collectionChanged || $forceRecalculate) {
                 CalculateOrderShipping::run($order);
             }
 
