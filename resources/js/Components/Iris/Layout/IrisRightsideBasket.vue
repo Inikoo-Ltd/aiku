@@ -267,41 +267,64 @@ const startDrag = (e: MouseEvent) => {
 
 const onDrag = (e: MouseEvent) => {
   if (!dragging.value) return
-  topPosition.value = e.clientY - offsetY.value
+
+  const newTop = e.clientY - offsetY.value
+
+  const min = 0
+  const max = window.innerHeight - 40 // tinggi tombol ±40px
+
+  topPosition.value = Math.min(Math.max(newTop, min), max)
 }
 
 const stopDrag = () => {
   dragging.value = false
 }
 
+const basketRef = ref<HTMLElement | null>(null)
+
+const handleClickOutside = (e: MouseEvent) => {
+  if (!layout.rightbasket?.show) return
+
+  const target = e.target as Node
+
+  if (basketRef.value && !basketRef.value.contains(target)) {
+    layout.rightbasket.show = false
+  }
+}
+
+
 onMounted(() => {
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
+  document.addEventListener('mousedown', handleClickOutside)
 })
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', onDrag)
   window.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('mousedown', handleClickOutside)
 })
+
+
 </script>
 
 <template>
-    <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
+    <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl" ref="basketRef">
         <!-- Toggle: collapse-expand right basket -->
-        <div @mousedown="startDrag" @click="handleToggleLeftBar" class="fixed z-[60] hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)] 
-         bg-[var(--theme-color-0)] w-8 aspect-square rounded-full 
-         flex justify-center items-center cursor-pointer"
-            :class="layout.rightbasket?.show ? 'right-[20rem]' : 'right-2'" :style="{
-                top: topPosition + 'px',
-                color: layout.app.theme[1]
-            }"
->
-            <div class="flex items-center justify-center transition-all duration-300 ease-in-out">
-                <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" fixed-width />
-                <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width />
-            </div>
-        </div>
+        <div @click="handleToggleLeftBar" class="z-[60] w-8 aspect-square rounded-full
+         flex items-center justify-center cursor-pointer
+         hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)]
+         bg-[var(--theme-color-0)]" :class="layout.rightbasket?.show
+            ? 'absolute -left-4'
+            : 'fixed right-4'" :style="{
+        top: layout.rightbasket?.show ? '50%' : topPosition + 'px',
+        color: layout.app.theme[1]
+    }">
+            <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" fixed-width />
 
+            <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width class="cursor-grab"
+                @mousedown.stop="startDrag" />
+        </div>
         <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
