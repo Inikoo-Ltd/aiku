@@ -101,10 +101,6 @@ trait IsDeliveryNotesIndex
             abort(419);
         }
 
-//        // Todo: this hacks has to be deleted after we migrate from aurora
-//        if ($shopType != 'all') {
-//            $query->where('shops.is_aiku', true);
-//        }
 
         $query->where('shops.is_aiku', true);
 
@@ -253,7 +249,6 @@ trait IsDeliveryNotesIndex
 
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            // $table->column(key: 'number_of_days_in_warehouse', label: __('Days'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if (!$parent instanceof Customer) {
                 $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }

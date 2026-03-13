@@ -57,5 +57,18 @@ class TaxCategory extends Model
             ->saveSlugsTo('slug');
     }
 
+    public function getLocalizedName(): string
+    {
+        return match ($this->name) {
+            'Outside the scope of Tax' => __('Outside the scope of Tax'),
+            'EU with valid tax number' => __('EU with valid tax number'),
+            'Exempt from tax' => __('Exempt from tax'),
+            'Standard rate' => __('Standard rate'),
+            'Value Added Tax' => __('Value Added Tax'),
+            'No Tax' => __('No Tax'),
+            default => $this->name,
+        };
+    }
+
 
 }

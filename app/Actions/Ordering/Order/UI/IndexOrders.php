@@ -217,7 +217,7 @@ class IndexOrders extends OrgAction
                 $shipmentsSelect,
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status']) // Ensure `id` is the first sort column
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -404,7 +404,7 @@ class IndexOrders extends OrgAction
                 ),
                 'title'          => __('orders'),
                 'sales_channels' => GetSalesChannelOptions::make()->getOptions($shop),
-                'can_add_order'  => $shop?->type  == ShopTypeEnum::B2B,
+                'can_add_order'  => $shop?->type == ShopTypeEnum::B2B,
                 'pageHead'       => [
                     'title'         => $title,
                     'icon'          => $icon,

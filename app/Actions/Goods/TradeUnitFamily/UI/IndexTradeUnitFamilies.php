@@ -145,13 +145,13 @@ class IndexTradeUnitFamilies extends GrpAction
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
                     ->column(key: 'number_trade_units_status_active', label: __('Active'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'number_trade_units_status_discontinued', label: __('Discontinued'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'number_trade_units_status_anomality', label: __('Anomality'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
+                    ->column(key: 'number_trade_units_status_anomality', label: __('Anomality'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
     }

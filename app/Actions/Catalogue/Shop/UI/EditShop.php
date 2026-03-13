@@ -376,6 +376,18 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
+                    'label'  => __('Proforma footer'),
+                    'icon'   => 'fa-light fa-shoe-prints',
+                    'fields' => [
+                        'proforma_footer' => [
+                            'type'  => 'textEditor',
+                            'label' => __('Proforma footer'),
+                            'full'  => true,
+                            'value' => $shop->proforma_footer
+                        ],
+                    ],
+                ],
+                                [
                     'label'  => __('Invoices footer'),
                     'icon'   => 'fa-light fa-shoe-prints',
                     'fields' => [

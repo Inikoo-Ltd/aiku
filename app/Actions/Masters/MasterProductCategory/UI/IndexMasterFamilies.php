@@ -347,7 +347,8 @@ class IndexMasterFamilies extends OrgAction
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
                     ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
@@ -357,8 +358,7 @@ class IndexMasterFamilies extends OrgAction
                     ->column(key: 'master_department_code', label: __('M. Department'), canBeHidden: false, sortable: true, searchable: false)
                     ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false)
                     ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'products', label: __('Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
+                    ->column(key: 'products', label: __('Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
     }

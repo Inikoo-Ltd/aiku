@@ -36,7 +36,6 @@ use Spatie\Translatable\HasTranslations;
  * @property int $group_id
  * @property int $master_shop_id
  * @property MasterProductCategoryTypeEnum $type
- * @property HealthRankEnum|null $health_rank
  * @property bool $status
  * @property int|null $master_department_id
  * @property int|null $master_sub_department_id
@@ -74,6 +73,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $web_images
  * @property bool $has_gr_vol_discount
  * @property bool $mismatch_detected One of master products under it has a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
+ * @property HealthRankEnum|null $health_rank
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group

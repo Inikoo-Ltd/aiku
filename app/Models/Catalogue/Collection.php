@@ -48,7 +48,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
  * @property CollectionStateEnum $state
- * @property HealthRankEnum|null $health_rank
  * @property string|null $source_id
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
@@ -65,6 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $description_i8n
  * @property string|null $description_title_i8n
  * @property string|null $description_extra_i8n
+ * @property HealthRankEnum|null $health_rank
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families

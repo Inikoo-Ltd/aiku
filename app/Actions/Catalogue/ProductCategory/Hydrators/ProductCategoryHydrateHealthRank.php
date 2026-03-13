@@ -39,50 +39,43 @@ class ProductCategoryHydrateHealthRank implements ShouldBeUnique
                 SELECT
                     {$fkColumn} AS category_id,
                     MAX(date) AS last_sale_date,
-                    SUM(CASE WHEN date >= NOW() - INTERVAL '365 days' THEN quantity ELSE 0 END) AS qty_12m,
-                    SUM(CASE WHEN date >= NOW() - INTERVAL '365 days' THEN COALESCE(grp_net_amount, 0) ELSE 0 END) AS revenue_12m
+                    SUM(CASE WHEN date >= NOW() - INTERVAL '90 days' THEN COALESCE(grp_net_amount, 0) ELSE 0 END) AS revenue_3m
                 FROM invoice_transactions
                 WHERE in_process = false
                   AND deleted_at IS NULL
                   AND {$fkColumn} IS NOT NULL
                 GROUP BY {$fkColumn}
             ),
-            max_values AS (
-                SELECT
-                    GREATEST(MAX(qty_12m), 1)     AS max_qty,
-                    GREATEST(MAX(revenue_12m), 1) AS max_revenue
+            active AS (
+                SELECT category_id, revenue_3m
                 FROM stats
-                WHERE last_sale_date >= NOW() - INTERVAL '365 days'
+                WHERE last_sale_date >= NOW() - INTERVAL '90 days'
             ),
-            active_scored AS (
-                SELECT
-                    s.category_id,
-                    (s.qty_12m / m.max_qty + s.revenue_12m / m.max_revenue) / 2 AS score
-                FROM stats s
-                CROSS JOIN max_values m
-                WHERE s.last_sale_date >= NOW() - INTERVAL '365 days'
+            total AS (
+                SELECT GREATEST(SUM(revenue_3m), 1) AS total_revenue FROM active
             ),
-            ranked AS (
+            cumulative AS (
                 SELECT
-                    category_id,
-                    PERCENT_RANK() OVER (ORDER BY score) AS pct_rank
-                FROM active_scored
+                    a.category_id,
+                    SUM(a.revenue_3m) OVER (ORDER BY a.revenue_3m DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) / t.total_revenue AS cum_pct
+                FROM active a
+                CROSS JOIN total t
             ),
             final_ranks AS (
                 SELECT category_id, 'D' AS health_rank
                 FROM stats
-                WHERE last_sale_date IS NULL OR last_sale_date < NOW() - INTERVAL '365 days'
+                WHERE last_sale_date IS NULL OR last_sale_date < NOW() - INTERVAL '90 days'
 
                 UNION ALL
 
                 SELECT
                     category_id,
                     CASE
-                        WHEN pct_rank >= 0.85 THEN 'A'
-                        WHEN pct_rank >= 0.50 THEN 'B'
+                        WHEN cum_pct <= 0.15 THEN 'A'
+                        WHEN cum_pct <= 0.50 THEN 'B'
                         ELSE 'C'
                     END AS health_rank
-                FROM ranked
+                FROM cumulative
             )
             UPDATE product_categories
             SET health_rank = fr.health_rank

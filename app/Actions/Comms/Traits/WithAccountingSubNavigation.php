@@ -122,6 +122,18 @@ trait WithAccountingSubNavigation
                 ],
             ],
             [
+                "label"    => __("Credit Transactions"),
+                'number'   => $shop->accountingStats->number_credit_transactions ?? 0,
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.payments.accounting.credit_transactions.index",
+                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-piggy-bank"],
+                    "tooltip" => __("Credit Transactions"),
+                ],
+            ],
+            [
                 "label"    => __("Customers Balance"),
                 'number'   => $shop->accountingStats->number_customers_with_balances ?? 0,
                 "route"    => [

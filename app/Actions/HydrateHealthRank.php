@@ -35,15 +35,15 @@ class HydrateHealthRank
 
     public function handle(): void
     {
-        AssetHydrateHealthRank::dispatch();
-        CollectionHydrateHealthRank::dispatch();
-        ProductCategoryHydrateHealthRank::dispatch();
-        TradeUnitHydrateHealthRank::dispatch();
-        TradeUnitFamilyHydrateHealthRank::dispatch();
-        OrgStockHydrateHealthRank::dispatch();
-        OrgStockFamilyHydrateHealthRank::dispatch();
-        MasterAssetHydrateHealthRank::dispatch();
-        MasterCollectionHydrateHealthRank::dispatch();
-        MasterProductCategoryHydrateHealthRank::dispatch();
+        AssetHydrateHealthRank::run();
+        CollectionHydrateHealthRank::run();
+        ProductCategoryHydrateHealthRank::run();
+        TradeUnitHydrateHealthRank::run();
+        TradeUnitFamilyHydrateHealthRank::run();
+        OrgStockHydrateHealthRank::run();
+        OrgStockFamilyHydrateHealthRank::run();
+        MasterAssetHydrateHealthRank::run();
+        MasterCollectionHydrateHealthRank::run();
+        MasterProductCategoryHydrateHealthRank::run();
     }
 }

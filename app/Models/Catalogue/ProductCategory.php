@@ -47,7 +47,6 @@ use Spatie\Translatable\HasTranslations;
  * @property int $id
  * @property ProductCategoryTypeEnum $type
  * @property ProductCategoryStateEnum $state
- * @property HealthRankEnum|null $health_rank
  * @property int $group_id
  * @property int $organisation_id
  * @property int|null $shop_id
@@ -94,6 +93,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property HealthRankEnum|null $health_rank
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections

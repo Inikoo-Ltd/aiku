@@ -300,7 +300,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'price_total' => $order->net_amount
                     ],
                     [
-                        'label'       => $taxCategory->name,
+                        'label'       => $taxCategory->getLocalizedName(),
                         'information' => '',
                         'price_total' => $order->tax_amount
                     ]
