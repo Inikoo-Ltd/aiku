@@ -4,6 +4,7 @@ import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
@@ -407,33 +408,53 @@ const formatDate = (date: string) => {
 					<label class="block text-sm font-medium text-gray-700">{{
 						trans("Department")
 					}}</label>
-					<input
+					<select
 						v-model="exportForm.department"
-						type="text"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-						:placeholder="trans('Filter by department')" />
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+						<option value="">{{ trans("All Departments") }}</option>
+						<option
+							v-for="(label, value) in parsedDepartmentOptions"
+							:key="value"
+							:value="value">
+							{{ label }}
+						</option>
+					</select>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
 						trans("Team")
 					}}</label>
-					<input
+					<select
 						v-model="exportForm.team"
-						type="text"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-						:placeholder="trans('Filter by team')" />
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+						<option value="">{{ trans("All Teams") }}</option>
+						<option
+							v-for="(label, value) in parsedTeamOptions"
+							:key="value"
+							:value="value">
+							{{ label }}
+						</option>
+					</select>
 				</div>
 			</div>
 
-			<div>
-				<label class="block text-sm font-medium text-gray-700">{{
-					trans("Employee")
-				}}</label>
-				<input
-					v-model.number="exportForm.employee_id"
-					type="number"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-					:placeholder="trans('Filter by employee ID')" />
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<label class="block text-sm font-medium text-gray-700">{{
+						trans("Employee")
+					}}</label>
+					<select
+						v-model="exportForm.employee_id"
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+						<option value="">{{ trans("All Employees") }}</option>
+						<option
+							v-for="(label, value) in parsedEmployeeOptions"
+							:key="value"
+							:value="value">
+							{{ label }}
+						</option>
+					</select>
+				</div>
 			</div>
 
 			<div>
@@ -461,16 +482,12 @@ const formatDate = (date: string) => {
 					</label>
 				</div>
 			</div>
-
-			<div class="mt-6 flex justify-end gap-2">
-				<Button @click="closeExportModal" :label="trans('Cancel')" type="tertiary" />
-				<Button
-					type="save"
-					nativeType="submit"
-					:label="trans('Export')"
-					:loading="isExporting"
-					icon="fal fa-download" />
-			</div>
 		</form>
+		<ExportModalActions
+			class-name="mt-6 flex justify-end gap-2"
+			:loading="isExporting"
+			export-icon="fal fa-download"
+			@cancel="closeExportModal"
+			@export="submitExport" />
 	</Modal>
 </template>

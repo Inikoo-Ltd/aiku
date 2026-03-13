@@ -88,11 +88,20 @@ class UpdateOrganisation extends OrgAction
             data_forget($modelData, 'working_hours');
         }
 
+        if (Arr::has($modelData, 'hr_annual_leave_days')) {
+            data_set($modelData, "settings.hr.leave_quota.annual_leave_days", Arr::pull($modelData, 'hr_annual_leave_days'));
+        }
+
+        if (Arr::has($modelData, 'hr_probation_period_days')) {
+            data_set($modelData, "settings.hr.probation_period_days", Arr::pull($modelData, 'hr_probation_period_days'));
+        }
+
 
         $organisation = $this->update($organisation, $modelData, ['data', 'settings']);
 
         $organisation->refresh();
 
+        $this->updateEmployeeLeaveBalances($organisation);
 
         return $organisation;
     }
@@ -138,6 +147,8 @@ class UpdateOrganisation extends OrgAction
             ],
             'colour'                       => ['sometimes', 'string'],
             'working_hours'                => ['sometimes', 'array'],
+            'hr_annual_leave_days'         => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
+            'hr_probation_period_days'     => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
 
         ];
 
@@ -149,6 +160,21 @@ class UpdateOrganisation extends OrgAction
         return $rules;
     }
 
+    protected function updateEmployeeLeaveBalances(Organisation $organisation): void
+    {
+        $newAnnualDays = $organisation->getDefaultAnnualLeaveDays();
+
+        $organisation->employees()->each(function ($employee) use ($newAnnualDays) {
+            $balance = \App\Models\HumanResources\EmployeeLeaveBalance::where('employee_id', $employee->id)
+                ->where('year', now()->year)
+                ->first();
+
+            if ($balance && $balance->annual_days != $newAnnualDays) {
+                $balance->annual_days = $newAnnualDays;
+                $balance->saveQuietly();
+            }
+        });
+    }
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {

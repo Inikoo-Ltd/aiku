@@ -4,13 +4,15 @@ namespace App\Actions\HumanResources\Leave;
 
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Employee;
-use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\Leave;
+use App\Models\HumanResources\LeaveType;
 use App\Models\HumanResources\Timesheet;
+use App\Services\HumanResources\LeaveConcurrencyService;
+use App\Services\HumanResources\LeaveTypeResolver;
+use App\Services\HumanResources\RestrictedPeriodService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
@@ -24,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreLeave extends OrgAction
 {
     private ?Employee $employee = null;
+    private ?LeaveType $selectedLeaveType = null;
 
     private function resolveEmployee(Request $request): ?Employee
     {
@@ -64,7 +67,9 @@ class StoreLeave extends OrgAction
     {
         $startDate = Carbon::parse($modelData['start_date']);
         $endDate = Carbon::parse($modelData['end_date']);
-        $durationDays = $this->calculateDurationDays($startDate, $endDate, $employee);
+        $isHalfDay = (bool) ($modelData['is_half_day'] ?? false);
+        $session = $modelData['session'] ?? 'Full';
+        $durationDays = $isHalfDay ? 1 : $this->calculateDurationDays($startDate, $endDate, $employee);
 
         $leave = Leave::create([
             'group_id'        => $employee->group_id,
@@ -72,9 +77,12 @@ class StoreLeave extends OrgAction
             'employee_id'     => $employee->id,
             'employee_name'   => $employee->contact_name,
             'type'            => $modelData['type'],
+            'leave_type_id'   => $this->selectedLeaveType?->id,
             'start_date'      => $startDate,
             'end_date'        => $endDate,
             'duration_days'   => $durationDays,
+            'is_half_day'     => $isHalfDay,
+            'session'         => $session,
             'reason'          => $modelData['reason'] ?? null,
             'status'          => LeaveStatusEnum::PENDING,
         ]);
@@ -112,13 +120,24 @@ class StoreLeave extends OrgAction
     public function rules(): array
     {
         $this->employee = $this->resolveEmployee(request());
-        $leaveTypes = array_column(LeaveTypeEnum::cases(), 'value');
+
+        $typeRules = ['required', 'string'];
+        if ($this->employee) {
+            $typeRules[] = Rule::exists('leave_types', 'code')
+                ->where(function ($query) {
+                    $query
+                        ->where('organisation_id', $this->employee->organisation_id)
+                        ->where('is_active', true);
+                });
+        }
 
         return [
             'organisation' => ['nullable', 'string'],
-            'type'         => ['required', Rule::in($leaveTypes)],
+            'type'         => $typeRules,
             'start_date'   => ['required', 'date', 'after_or_equal:today'],
             'end_date'     => ['required', 'date', 'after_or_equal:start_date'],
+            'is_half_day'  => ['sometimes', 'boolean'],
+            'session'      => ['sometimes', Rule::in(['Morning', 'Afternoon', 'Full'])],
             'reason'       => ['required', 'string', 'max:1000'],
             'attachments'  => ['nullable', 'array', 'max:3'],
             'attachments.*' => ['nullable', File::types(['pdf', 'jpg', 'jpeg', 'png'])->max(5 * 1024)],
@@ -137,24 +156,71 @@ class StoreLeave extends OrgAction
 
         $startDate = Carbon::parse(request()->input('start_date'));
         $endDate = Carbon::parse(request()->input('end_date'));
+        $type = request()->input('type');
+
+        $this->selectedLeaveType = null;
+        if ($type) {
+            $this->selectedLeaveType = LeaveTypeResolver::findForOrganisationByCode(
+                organisationId: $this->employee->organisation_id,
+                code: (string) $type,
+                onlyActive: true
+            );
+        }
+
+        if (!$this->selectedLeaveType) {
+            $validator->errors()->add('type', __('The selected leave type is invalid.'));
+            return;
+        }
 
         if ($endDate->lt($startDate)) {
             return;
         }
 
-        $existingLeave = Leave::where('employee_id', $this->employee->id)
-            ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
-            ->where(function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('start_date', [$startDate, $endDate])
-                    ->orWhereBetween('end_date', [$startDate, $endDate])
-                    ->orWhere(function ($q) use ($startDate, $endDate) {
-                        $q->where('start_date', '<=', $startDate)
-                            ->where('end_date', '>=', $endDate);
-                    });
-            })->exists();
+        $isHalfDay = (bool) request()->boolean('is_half_day');
+        $session = request()->input('session', 'Full');
+        if ($isHalfDay && !$startDate->isSameDay($endDate)) {
+            $validator->errors()->add('end_date', __('Half day leave must be a single date.'));
+            return;
+        }
+        if ($isHalfDay && !in_array($session, ['Morning', 'Afternoon'], true)) {
+            $validator->errors()->add('session', __('Please select Morning or Afternoon for half day leave.'));
+            return;
+        }
 
-        if ($existingLeave) {
-            $validator->errors()->add('start_date', __('You already have a leave request overlapping with these dates.'));
+        if ($isHalfDay) {
+            $conflictingLeave = Leave::where('employee_id', $this->employee->id)
+                ->where('status', '!=', LeaveStatusEnum::REJECTED->value)
+                ->whereDate('start_date', $startDate)
+                ->where(function ($query) use ($session) {
+                    $query->where('is_half_day', false)
+                        ->orWhere(function ($q) use ($session) {
+                            $q->where('is_half_day', true)
+                                ->where('session', $session);
+                        });
+                })
+                ->exists();
+
+            if ($conflictingLeave) {
+                $message = $session === 'Full'
+                    ? __('You already have a leave request on this date.')
+                    : __('You already have a :session half-day leave on this date.', ['session' => $session]);
+                $validator->errors()->add('session', $message);
+                return;
+            }
+        }
+
+        $concurrencyService = new LeaveConcurrencyService();
+        $concurrencyConflicts = $concurrencyService->checkOverlap(
+            $this->employee,
+            $type,
+            $startDate,
+            $endDate,
+            $this->selectedLeaveType
+        );
+
+        foreach ($concurrencyConflicts as $conflict) {
+            $validator->errors()->add('start_date', $conflict['message']);
+            break;
         }
 
         $hasTimesheet = Timesheet::where('subject_type', 'Employee')
@@ -186,30 +252,48 @@ class StoreLeave extends OrgAction
             );
         }
 
-        $type = request()->input('type');
-        $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
-        $balanceYear = $startDate->year;
-
-        $balance = EmployeeLeaveBalance::firstOrCreate(
-            [
-                'employee_id' => $this->employee->id,
-                'year'        => $balanceYear,
-            ],
-            [
-                'annual_days'  => 14,
-                'medical_days' => 14,
-                'unpaid_days'  => 0,
-            ]
+        $restrictedPeriodService = new RestrictedPeriodService();
+        $restrictedPeriodViolation = $restrictedPeriodService->checkRestrictedPeriod(
+            $this->employee,
+            $type,
+            $startDate,
+            $endDate,
+            $this->selectedLeaveType
         );
 
-        $remainingField = match ($type) {
-            LeaveTypeEnum::ANNUAL->value => 'annual_remaining',
-            LeaveTypeEnum::MEDICAL->value => 'medical_remaining',
-            default => null,
-        };
+        if ($restrictedPeriodViolation) {
+            if ($restrictedPeriodViolation['strictness'] === 'block') {
+                $validator->errors()->add('start_date', $restrictedPeriodViolation['message']);
+            }
+        }
 
-        if ($remainingField && $balance->$remainingField < $durationDays) {
-            $validator->errors()->add('duration_days', __('Insufficient leave balance.'));
+        $durationDays = $this->calculateDurationDays($startDate, $endDate, $this->employee);
+        $requestedDays = $isHalfDay ? 0.5 : (float) $durationDays;
+        $balanceYear = $startDate->year;
+
+        if (LeaveTypeResolver::bucketFromLeaveType($this->selectedLeaveType, (string) $type) === 'annual') {
+            $annualSubmittedDays = Leave::query()
+                ->where('employee_id', $this->employee->id)
+                ->whereYear('start_date', $balanceYear)
+                ->with('leaveType')
+                ->get()
+                ->filter(function (Leave $leave) {
+                    return $leave->status?->value !== LeaveStatusEnum::REJECTED->value;
+                })
+                ->sum(function (Leave $leave) {
+                    if (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type) !== 'annual') {
+                        return 0;
+                    }
+
+                    return $leave->is_half_day ? 0.5 : (float) $leave->duration_days;
+                });
+
+            $annualAllowance = (float) $this->employee->organisation->getDefaultAnnualLeaveDays();
+            $annualRemaining = max(0, $annualAllowance - (float) $annualSubmittedDays);
+
+            if ($annualRemaining < $requestedDays) {
+                $validator->errors()->add('duration_days', __('Insufficient leave balance.'));
+            }
         }
     }
 
@@ -222,6 +306,17 @@ class StoreLeave extends OrgAction
         }
 
         $this->initialisation($this->employee->organisation, $request);
+
+        if (!$this->selectedLeaveType) {
+            $type = (string) ($this->validatedData['type'] ?? '');
+            if ($type !== '') {
+                $this->selectedLeaveType = LeaveTypeResolver::findForOrganisationByCode(
+                    organisationId: $this->employee->organisation_id,
+                    code: $type,
+                    onlyActive: true
+                );
+            }
+        }
 
         return $this->handle($this->employee, $this->validatedData);
     }

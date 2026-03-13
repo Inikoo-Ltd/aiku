@@ -22,6 +22,9 @@ use App\Actions\HumanResources\Employee\DownloadEmployeesTemplate;
 use App\Actions\HumanResources\Employee\ExportEmployees;
 use App\Actions\HumanResources\Employee\ExportEmployeeTimesheets;
 use App\Actions\HumanResources\Employee\GeneratePinEmployee;
+use App\Actions\HumanResources\Employee\GetEmployeesByBirthMonth;
+use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
+use App\Actions\HumanResources\Employee\GetEmployeeContract;
 use App\Actions\HumanResources\Employee\UI\CreateEmployee;
 use App\Actions\HumanResources\Employee\UI\EditEmployee;
 use App\Actions\HumanResources\Employee\UI\IndexEmployees;
@@ -46,7 +49,9 @@ use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Actions\HumanResources\Leave\ApproveLeave;
+use App\Actions\HumanResources\Leave\ExportCalendar;
 use App\Actions\HumanResources\Leave\ExportLeaveReport;
+use App\Actions\HumanResources\Leave\PrintCalendar;
 use App\Actions\HumanResources\Overtime\ExportOvertimeReport;
 use App\Actions\HumanResources\Leave\RejectLeave;
 use App\Actions\HumanResources\Leave\UpdateLeave;
@@ -65,6 +70,10 @@ use App\Actions\HumanResources\Holiday\UpdateHoliday;
 use App\Actions\HumanResources\Holiday\DeleteHoliday;
 use App\Actions\HumanResources\Holiday\GenerateNextYearHolidays;
 use App\Actions\HumanResources\Holiday\ExportHolidays;
+use App\Actions\HumanResources\HolidayYear\UI\IndexHolidayYears;
+use App\Actions\HumanResources\HolidayYear\StoreHolidayYear;
+use App\Actions\HumanResources\HolidayYear\UpdateHolidayYear;
+use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 
@@ -107,6 +116,11 @@ Route::post('/holidays', StoreHoliday::class)->name('holidays.store');
 Route::post('/holidays/generate', GenerateNextYearHolidays::class)->name('holidays.generate');
 Route::patch('/holidays/{holiday}', UpdateHoliday::class)->name('holidays.update');
 Route::delete('/holidays/{holiday}', DeleteHoliday::class)->name('holidays.delete');
+
+Route::get('/holiday-years', IndexHolidayYears::class)->name('holiday_years.index');
+Route::post('/holiday-years', StoreHolidayYear::class)->name('holiday_years.store');
+Route::patch('/holiday-years/{holidayYear}', UpdateHolidayYear::class)->name('holiday_years.update');
+Route::patch('/holiday-years/{holidayYear}/activate', ActivateHolidayYear::class)->name('holiday_years.activate');
 
 Route::get('/timesheets', IndexTimesheets::class)->name('timesheets.index');
 Route::get('/timesheets-export', PdfTimesheets::class)->name('timesheets.export');
@@ -169,10 +183,35 @@ Route::delete('/overtime-types/{overtimeType}', DeleteOvertimeType::class)->name
 Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('dashboard', \App\Actions\HumanResources\Leave\UI\DashboardLeave::class)->name('dashboard');
     Route::get('', \App\Actions\HumanResources\Leave\UI\IndexLeavesAdmin::class)->name('index');
+    Route::get('types', \App\Actions\HumanResources\Leave\UI\IndexLeaveTypes::class)->name('types.index');
+    Route::post('types/store', \App\Actions\HumanResources\Leave\StoreLeaveType::class)->name('types.store');
+    Route::patch('types/{leaveType}', \App\Actions\HumanResources\Leave\UpdateLeaveType::class)->name('types.update');
+    Route::delete('types/{leaveType}', \App\Actions\HumanResources\Leave\DeleteLeaveType::class)->name('types.delete');
     Route::get('export', [ExportLeaveReport::class, 'asController'])->name('export');
+    Route::get('export/calendar', [ExportCalendar::class, 'asController'])->name('export.calendar');
+    Route::get('print', [PrintCalendar::class, 'asController'])->name('print');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
     Route::post('{leave}', UpdateLeave::class)->name('update');
+});
+
+Route::prefix('restricted-periods')->as('restricted_periods.')->group(function () {
+    Route::get('', \App\Actions\HumanResources\RestrictedPeriods\IndexRestrictedPeriods::class)->name('index');
+    Route::post('', \App\Actions\HumanResources\RestrictedPeriods\StoreRestrictedPeriod::class)->name('store');
+    Route::patch('{restrictedPeriod}', \App\Actions\HumanResources\RestrictedPeriods\UpdateRestrictedPeriod::class)->name('update');
+    Route::delete('{restrictedPeriod}', \App\Actions\HumanResources\RestrictedPeriods\DeleteRestrictedPeriod::class)->name('delete');
+    Route::post('{restrictedPeriod}/targets', \App\Actions\HumanResources\RestrictedPeriods\StoreRestrictedPeriodTarget::class)->name('targets.store');
+    Route::delete('{restrictedPeriod}/targets/{restrictedPeriodTarget}', \App\Actions\HumanResources\RestrictedPeriods\DeleteRestrictedPeriodTarget::class)->name('targets.delete');
+    Route::post('exceptions', \App\Actions\HumanResources\RestrictedPeriods\StoreRestrictedException::class)->name('exceptions.store');
+});
+
+Route::prefix('leave-concurrency-rules')->as('leave_concurrency_rules.')->group(function () {
+    Route::get('', \App\Actions\HumanResources\Concurrency\IndexLeaveConcurrencyRules::class)->name('index');
+    Route::post('', \App\Actions\HumanResources\Concurrency\StoreLeaveConcurrencyRule::class)->name('store');
+    Route::patch('{leaveConcurrencyRule}', \App\Actions\HumanResources\Concurrency\UpdateLeaveConcurrencyRule::class)->name('update');
+    Route::delete('{leaveConcurrencyRule}', \App\Actions\HumanResources\Concurrency\DeleteLeaveConcurrencyRule::class)->name('delete');
+    Route::post('{leaveConcurrencyRule}/targets', \App\Actions\HumanResources\Concurrency\StoreLeaveConcurrencyTarget::class)->name('targets.store');
+    Route::delete('{leaveConcurrencyRule}/targets/{leaveConcurrencyTarget}', \App\Actions\HumanResources\Concurrency\DeleteLeaveConcurrencyTarget::class)->name('targets.delete');
 });
 
 Route::prefix('adjustments')->as('adjustments.')->group(function () {
@@ -185,4 +224,10 @@ Route::prefix('adjustments')->as('adjustments.')->group(function () {
 Route::prefix('analytics')->as('analytics.')->group(function () {
     Route::get('', \App\Actions\HumanResources\EmployeeAnalytics\UI\IndexEmployeeAnalytics::class)->name('index');
     Route::get('employees/{employee}', \App\Actions\HumanResources\EmployeeAnalytics\UI\ShowEmployeeAnalytics::class)->name('show');
+});
+
+Route::prefix('employees')->as('employees.')->group(function () {
+    Route::get('birthdays', GetEmployeesByBirthMonth::class)->name('birthdays');
+    Route::patch('{employee}/adjust-leave', AdjustEmployeeLeaveBalance::class)->name('adjust-leave');
+    Route::get('{employee}/contract', GetEmployeeContract::class)->name('contract');
 });

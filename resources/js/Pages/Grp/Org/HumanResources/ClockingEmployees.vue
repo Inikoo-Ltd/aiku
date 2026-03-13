@@ -156,6 +156,11 @@ const component = computed(() => {
 		"
 		:statistics="timesheets?.statistics"
 		:balance="leaves?.balance"
+		:typeOptions="leaves?.type_options"
+		:annualSubmittedDays="leaves?.annual_submitted_days"
+		:annualRemainingAfterSubmission="leaves?.annual_remaining_after_submission"
+		:medicalRequestCount="leaves?.medical_request_count"
+		:unpaidRequestCount="leaves?.unpaid_request_count"
 		:organisation="
 			currentTab === 'leaves'
 				? leaves?.organisation

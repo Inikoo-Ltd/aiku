@@ -67,4 +67,33 @@ class Holiday extends Model implements Auditable
 
     ];
 
+    /**
+     * Scope to get holidays for a specific date range
+     */
+    public function scopeForDateRange($query, $startDate, $endDate)
+    {
+        return $query->where(function ($q) use ($startDate, $endDate) {
+            $q->whereDate('from', '<=', $endDate)
+              ->whereDate('to', '>=', $startDate);
+        });
+    }
+
+    /**
+     * Scope to get holidays for a specific year
+     */
+    public function scopeForYear($query, $year)
+    {
+        return $query->where('year', $year);
+    }
+
+    /**
+     * Check if a given date is a holiday
+     */
+    public function isHolidayForDate($date)
+    {
+        $carbonDate = \Carbon\Carbon::parse($date);
+        return $this->whereDate('from', '<=', $carbonDate)
+                   ->whereDate('to', '>=', $carbonDate)
+                   ->exists();
+    }
 }

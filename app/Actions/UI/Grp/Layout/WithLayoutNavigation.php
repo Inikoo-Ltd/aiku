@@ -181,15 +181,6 @@ trait WithLayoutNavigation
                             ],
                         ],
 
-                         [
-                            'tooltip' => __('Calendar'),
-                            'icon'  => ['fal', 'fa-calendar'],
-                            'root'  => 'grp.org.hr.calendars.',
-                            'route' => [
-                                'name'       => 'grp.org.hr.calendars.index',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
                         [
                             'label' => __('Holidays'),
                             'icon'  => ['fal', 'fa-umbrella'],
@@ -209,8 +200,6 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
-
-
 
                         [
                             'label' => __('Clocking machines'),

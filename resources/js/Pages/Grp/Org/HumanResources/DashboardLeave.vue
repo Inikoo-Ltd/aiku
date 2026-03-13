@@ -3,12 +3,15 @@ import { Head, router, useForm } from "@inertiajs/vue3"
 import { computed, ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import ExportModalActions from "@/Components/HumanResources/ExportModalActions.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Select from "primevue/select"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv } from "@fal"
+import { faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv, faPrint } from "@fal"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faChevronLeft, faChevronRight, faDownload, faFileExcel, faFileCsv)
 
@@ -58,39 +61,58 @@ type LeaveSegment = {
 }
 
 const props = defineProps<{
-	pageHead: PageHeadingTypes
 	title: string
+	pageHead: any
+	breadcrumbs: any
 	filters: {
 		year: number
 		month: number
 		employee_id?: number | null
 		type?: string | null
-		view?: "month" | "week"
-		week_start?: string | null
+		view: string
+		week_start?: string
+		department?: string | null
+		search?: string | null
+		sort_by?: string | null
 	}
 	calendarData: EmployeeCalendarRow[]
-	daysInMonth: number
-	monthName: string
-	weeks: CalendarWeek[]
+	weeks: any[]
 	visibleRange: {
 		start: string
 		end: string
 	}
+	daysInMonth: number
+	monthName: string
 	employeeOptions: { value: number; label: string }[]
 	typeOptions: { value: string; label: string }[]
 	type_options?: Record<string, string>
 	status_options?: Record<string, string>
+	departmentOptions?: { value: string; label: string }[]
+	holidays?: Array<{
+		id: number
+		label: string
+		from: string
+		to: string
+		type: string
+	}>
 }>()
 
 const showModal = ref(false)
 const selectedLeave = ref<LeaveItem | null>(null)
 const isExportModalOpen = ref(false)
 const isExporting = ref(false)
+const exportError = ref(false)
+const exportMessage = ref("")
+let exportController: AbortController | null = null
+let exportTimeoutId: NodeJS.Timeout | null = null
 
 const selectedYear = ref<number>(props.filters.year)
 const selectedMonth = ref<number>(props.filters.month)
 const selectedEmployeeId = ref<number | null>(props.filters.employee_id ?? null)
 const selectedType = ref<string | null>(props.filters.type ?? null)
+const selectedDepartment = ref<string | null>(props.filters.department ?? null)
+const searchQuery = ref<string>(props.filters.search ?? "")
+const selectedSortBy = ref<string>(props.filters.sort_by ?? "name")
 const selectedView = ref<"month" | "week">(props.filters.view ?? "month")
 const selectedWeekStart = ref<string>(props.filters.week_start ?? props.visibleRange.start)
 
@@ -102,6 +124,7 @@ const exportForm = useForm({
 	department: "",
 	team: "",
 	employee_id: null as number | null,
+	export_type: "report",
 	format: "xlsx",
 })
 
@@ -125,7 +148,15 @@ const yearOptions = computed(() => {
 	})
 })
 
-const weekdayLabels = [trans("Mo"), trans("Tu"), trans("We"), trans("Th"), trans("Fr"), trans("Sa"), trans("Su")]
+const weekdayLabels = [
+	trans("Mo"),
+	trans("Tu"),
+	trans("We"),
+	trans("Th"),
+	trans("Fr"),
+	trans("Sa"),
+	trans("Su"),
+]
 
 const parseDateKey = (value: string): Date => {
 	const [year, month, day] = value.split("-").map(Number)
@@ -191,6 +222,37 @@ const displayPeriodLabel = computed(() => {
 	return `${formatRangeDate(week.start)} - ${formatRangeDate(week.end)}`
 })
 
+const parsedTypeOptions = computed(() => {
+	if (!props.type_options) return []
+
+	if (Array.isArray(props.type_options)) {
+		return props.type_options
+	}
+
+	if (typeof props.type_options === "object") {
+		return Object.entries(props.type_options).map(([value, label]) => ({
+			value,
+			label: typeof label === "string" ? label : label.label || value,
+		}))
+	}
+
+	// If it's a JSON string, parse it
+	if (typeof props.type_options === "string") {
+		try {
+			const parsed = JSON.parse(props.type_options)
+			return Object.entries(parsed).map(([value, label]) => ({
+				value,
+				label: typeof label === "string" ? label : label.label || value,
+			}))
+		} catch (e) {
+			console.error("Failed to parse type_options:", e)
+			return []
+		}
+	}
+
+	return []
+})
+
 const openModal = (leave: LeaveItem) => {
 	selectedLeave.value = leave
 	showModal.value = true
@@ -207,9 +269,23 @@ const buildRequestData = (): Record<string, any> => {
 		month: selectedMonth.value,
 		employee_id: selectedEmployeeId.value ?? undefined,
 		type: selectedType.value ?? undefined,
+		department: selectedDepartment.value ?? undefined,
+		search: searchQuery.value || undefined,
+		sort_by: selectedSortBy.value,
 		view: selectedView.value,
 		week_start: selectedView.value === "week" ? selectedWeekStart.value : undefined,
 	}
+}
+
+let searchTimeout: NodeJS.Timeout | null = null
+const debouncedSearch = () => {
+	if (searchTimeout) {
+		clearTimeout(searchTimeout)
+	}
+
+	searchTimeout = setTimeout(() => {
+		updateFilter()
+	}, 300) // 300ms delay
 }
 
 const updateFilter = () => {
@@ -279,16 +355,77 @@ const nextRange = () => {
 	updateFilter()
 }
 
+const isHoliday = (date: string): boolean => {
+	if (!props.holidays) return false
+	return props.holidays.some((holiday) => {
+		const holidayStart = new Date(holiday.from)
+		const holidayEnd = new Date(holiday.to)
+		const checkDate = new Date(date)
+		return checkDate >= holidayStart && checkDate <= holidayEnd
+	})
+}
+
+const getHolidayLabel = (date: string): string => {
+	if (!props.holidays) return ""
+	const holiday = props.holidays.find((holiday) => {
+		const holidayStart = new Date(holiday.from)
+		const holidayEnd = new Date(holiday.to)
+		const checkDate = new Date(date)
+		return checkDate >= holidayStart && checkDate <= holidayEnd
+	})
+	return holiday ? holiday.label : ""
+}
+
 const getLeaveColor = (type: string): string => {
 	switch (type) {
 		case "annual":
-			return "#2563EB"
+			return "#16A34A" // Green
 		case "medical":
-			return "#F97316"
+			return "#EA580C" // Orange
 		case "unpaid":
-			return "#DC2626"
+			return "#000000" // Black
+		case "halfday-morning":
+		case "halfday-afternoon":
+			return "#16A34A" // Green
+		case "training":
+			return "#9333EA" // Purple
+		case "leave-of-absence":
+			return "#EA580C" // Orange
+		case "compassionate":
+			return "#DB2777" // Pink
+		case "parental":
+			return "#0891B2" // Cyan
+		case "sabbatical":
+			return "#4F46E5" // Indigo
 		default:
-			return "#4F46E5"
+			return "#4F46E5" // Indigo
+	}
+}
+
+const getLeaveShortCode = (type: string): string => {
+	switch (type) {
+		case "annual":
+			return "H"
+		case "medical":
+			return "S"
+		case "unpaid":
+			return "U"
+		case "halfday-morning":
+			return "HM"
+		case "halfday-afternoon":
+			return "HA"
+		case "training":
+			return "T"
+		case "leave-of-absence":
+			return "LA"
+		case "compassionate":
+			return "C"
+		case "parental":
+			return "P"
+		case "sabbatical":
+			return "SA"
+		default:
+			return "H"
 	}
 }
 
@@ -394,7 +531,10 @@ const employeeLaneData = computed(() => {
 	})
 })
 
-const getLanesForWeek = (employee: { lanesByWeek: Record<number, LeaveSegment[][]> }, weekIndex: number) => {
+const getLanesForWeek = (
+	employee: { lanesByWeek: Record<number, LeaveSegment[][]> },
+	weekIndex: number
+) => {
 	return employee.lanesByWeek[weekIndex] ?? []
 }
 
@@ -426,28 +566,50 @@ const getLeaveTooltip = (segment: LeaveSegment): string => {
 
 const openExportModal = () => {
 	exportForm.reset()
+	exportForm.export_type = "calendar"
+	exportError.value = false
+	exportMessage.value = ""
+	isExporting.value = false
 	isExportModalOpen.value = true
 }
 
 const closeExportModal = () => {
+	// Cancel any pending export
+	if (exportController) {
+		exportController.abort()
+		exportController = null
+	}
+
+	// Clear any pending timeout
+	if (exportTimeoutId) {
+		clearTimeout(exportTimeoutId)
+		exportTimeoutId = null
+	}
+
 	isExportModalOpen.value = false
 	exportForm.reset()
+	isExporting.value = false
 }
 
 const submitExport = () => {
-	const orgId = route().params.organisation
-	if (!orgId) {
-		alert("Error: Cannot find organisation ID")
-		return
-	}
-
+	exportError.value = false
+	exportMessage.value = ""
 	isExporting.value = true
 
+	// Create new abort controller for this export
+	exportController = new AbortController()
+
+	// Build export parameters FIRST
 	const exportParams: Record<string, any> = {
-		organisation: orgId,
-		format: exportForm.format,
+		year: selectedYear.value,
+		month: selectedMonth.value,
+		employee_id: selectedEmployeeId.value,
+		type: selectedType.value,
+		department: selectedDepartment.value,
+		search: searchQuery.value,
 	}
 
+	// Add form filters
 	if (exportForm.from) exportParams.from = exportForm.from
 	if (exportForm.to) exportParams.to = exportForm.to
 	if (exportForm.type) exportParams.type = exportForm.type
@@ -456,12 +618,68 @@ const submitExport = () => {
 	if (exportForm.team) exportParams.team = exportForm.team
 	if (exportForm.employee_id) exportParams.employee_id = exportForm.employee_id
 
-	isExportModalOpen.value = false
-	window.location.href = route("grp.org.hr.leaves.export", exportParams)
+	// Set up timeout for long exports with stored ID
+	exportTimeoutId = setTimeout(() => {
+		if (exportController) {
+			// Check if not cancelled
+			isExporting.value = false
+			notify({
+				title: "Export taking longer than expected",
+				text: "The Export is taking longer than expected",
+				type: "warning",
+			})
+		}
+	}, 30000)
 
-	setTimeout(() => {
+	try {
+		if (exportController?.signal.aborted) {
+			return
+		}
+
+		isExportModalOpen.value = false
+
+		if (exportForm.export_type === "calendar" && exportForm.format === "print") {
+			// Handle print export
+			const printUrl = route("grp.org.hr.leaves.print", {
+				...route().params,
+				...exportParams,
+			})
+			window.open(printUrl, "_blank")
+
+			setTimeout(() => {
+				if (exportController && !exportController.signal.aborted) {
+					isExporting.value = false
+				}
+			}, 1000)
+		} else {
+			// Handle file export
+			exportParams.format = exportForm.format
+			const exportRoute =
+				exportForm.export_type === "calendar"
+					? "grp.org.hr.leaves.export.calendar"
+					: "grp.org.hr.leaves.export"
+
+			window.location.href = route(exportRoute, { ...route().params, ...exportParams })
+			setTimeout(() => {
+				if (exportController && !exportController.signal.aborted) {
+					isExporting.value = false
+				}
+			}, 1500)
+		}
+
+		clearTimeout(exportTimeoutId)
+	} catch (error) {
+		clearTimeout(exportTimeoutId)
 		isExporting.value = false
-	}, 1500)
+		exportError.value = true
+		exportMessage.value = "Export failed. Please try again."
+		console.error("Export failed:", error)
+		notify({
+			title: "Export Failed",
+			text: "Unable to export calendar. Please try again.",
+			type: "error",
+		})
+	}
 }
 </script>
 
@@ -489,18 +707,50 @@ const submitExport = () => {
 			</div>
 
 			<div class="flex gap-2 items-center flex-wrap">
-				<div class="inline-flex rounded-md shadow-sm overflow-hidden border border-gray-200">
+				<div class="relative">
+					<input
+						v-model="searchQuery"
+						@input="debouncedSearch"
+						type="text"
+						:placeholder="trans('Search employees...')"
+						class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm pl-8 pr-3 py-2" />
+					<div
+						class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+						<svg
+							class="h-4 w-4 text-gray-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+						</svg>
+					</div>
+				</div>
+
+				<div
+					class="inline-flex rounded-md shadow-sm overflow-hidden border border-gray-200">
 					<button
 						type="button"
 						class="px-3 py-2 text-sm"
-						:class="selectedView === 'month' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+						:class="
+							selectedView === 'month'
+								? 'bg-indigo-600 text-white'
+								: 'bg-white text-gray-700 hover:bg-gray-50'
+						"
 						@click="changeView('month')">
 						{{ trans("Month") }}
 					</button>
 					<button
 						type="button"
 						class="px-3 py-2 text-sm border-l border-gray-200"
-						:class="selectedView === 'week' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+						:class="
+							selectedView === 'week'
+								? 'bg-indigo-600 text-white'
+								: 'bg-white text-gray-700 hover:bg-gray-50'
+						"
 						@click="changeView('week')">
 						{{ trans("Week") }}
 					</button>
@@ -519,13 +769,23 @@ const submitExport = () => {
 					</option>
 				</select>
 
-				<select
+				<Select
 					v-model="selectedType"
 					@change="updateFilter"
+					:options="typeOptions"
+					optionLabel="label"
+					optionValue="value"
+					:placeholder="trans('All Types')"
+					showClear
+					class="w-full md:w-48" />
+
+				<select
+					v-model="selectedDepartment"
+					@change="updateFilter"
 					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-					<option :value="null">{{ trans("All Types") }}</option>
-					<option v-for="type in typeOptions" :key="type.value" :value="type.value">
-						{{ type.label }}
+					<option :value="null">{{ trans("All Departments") }}</option>
+					<option v-for="dept in departmentOptions" :key="dept.value" :value="dept.value">
+						{{ dept.label }}
 					</option>
 				</select>
 
@@ -536,6 +796,16 @@ const submitExport = () => {
 					<option v-for="year in yearOptions" :key="year.value" :value="year.value">
 						{{ year.label }}
 					</option>
+				</select>
+
+				<select
+					v-model="selectedSortBy"
+					@change="updateFilter"
+					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					<option value="name">{{ trans("Name") }}</option>
+					<option value="last_name">{{ trans("Last Name") }}</option>
+					<option value="first_name">{{ trans("First Name") }}</option>
+					<option value="department">{{ trans("Department") }}</option>
 				</select>
 
 				<select
@@ -551,8 +821,10 @@ const submitExport = () => {
 
 		<div class="overflow-x-auto">
 			<div class="min-w-[56rem]">
-				<div class="grid grid-cols-[12rem_minmax(0,1fr)] border border-gray-200 rounded-t-lg overflow-hidden">
-					<div class="bg-gray-50 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-10 border-r border-gray-200">
+				<div
+					class="grid grid-cols-[12rem_minmax(0,1fr)] border border-gray-200 rounded-t-lg overflow-hidden">
+					<div
+						class="bg-gray-50 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-10 border-r border-gray-200">
 						{{ trans("Employee") }}
 					</div>
 					<div class="grid grid-cols-7 bg-gray-50">
@@ -561,7 +833,9 @@ const submitExport = () => {
 							:key="day.date"
 							class="px-2 py-1 text-center border-r border-gray-200 last:border-r-0"
 							:class="{ 'bg-gray-100': day.is_weekend }">
-							<div class="text-xs font-semibold text-gray-700">{{ weekdayLabels[index] }}</div>
+							<div class="text-xs font-semibold text-gray-700">
+								{{ weekdayLabels[index] }}
+							</div>
 							<div v-if="selectedView === 'week'" class="text-[10px] text-gray-500">
 								{{ day.day_of_month }}
 							</div>
@@ -569,7 +843,9 @@ const submitExport = () => {
 					</div>
 				</div>
 
-				<div v-if="employeeLaneData.length === 0" class="border-x border-b border-gray-200 p-8 text-center text-gray-500 rounded-b-lg">
+				<div
+					v-if="employeeLaneData.length === 0"
+					class="border-x border-b border-gray-200 p-8 text-center text-gray-500 rounded-b-lg">
 					{{ trans("No employees found.") }}
 				</div>
 
@@ -577,8 +853,33 @@ const submitExport = () => {
 					v-for="employee in employeeLaneData"
 					:key="employee.id"
 					class="grid grid-cols-[12rem_minmax(0,1fr)] border-x border-b border-gray-200 bg-white">
-					<div class="px-3 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 sticky left-0 z-10 bg-white">
-						{{ employee.name }}
+					<div
+						class="px-3 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 sticky left-0 z-10 bg-white">
+						<div class="flex items-center gap-2">
+							<div
+								class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-600">
+								{{
+									employee.name
+										.split(" ")
+										.map((n) => n[0])
+										.join("")
+										.substring(0, 2)
+										.toUpperCase()
+								}}
+							</div>
+							<div>
+								<div class="font-medium text-gray-900">{{ employee.name }}</div>
+								<div class="text-xs text-gray-500">
+									<span v-if="employee.job_title">{{ employee.job_title }}</span>
+									<span v-if="employee.job_title && employee.department">
+										•
+									</span>
+									<span v-if="employee.department">{{
+										employee.department
+									}}</span>
+								</div>
+							</div>
+						</div>
 					</div>
 
 					<div class="p-2 space-y-2">
@@ -586,7 +887,11 @@ const submitExport = () => {
 							v-for="week in visibleWeeks"
 							:key="`${employee.id}-${week.week_index}`"
 							class="relative border border-gray-100 rounded overflow-hidden"
-							:style="{ minHeight: getWeekContainerHeight(getLanesForWeek(employee, week.week_index).length) }">
+							:style="{
+								minHeight: getWeekContainerHeight(
+									getLanesForWeek(employee, week.week_index).length
+								),
+							}">
 							<div class="absolute inset-0 grid grid-cols-7">
 								<div
 									v-for="day in week.days"
@@ -594,17 +899,30 @@ const submitExport = () => {
 									class="relative border-r border-gray-100 last:border-r-0"
 									:class="{
 										'bg-gray-50': day.is_weekend,
-										'bg-gray-100/50': selectedView === 'month' && !day.is_current_month,
+										'bg-gray-100/50':
+											selectedView === 'month' && !day.is_current_month,
+										'bg-red-50 border-red-200':
+											isHoliday(day.date) && !day.is_weekend,
+										'bg-red-100': isHoliday(day.date) && day.is_weekend,
 									}">
 									<div class="absolute top-1 right-1 text-[10px] text-gray-400">
 										{{ day.day_of_month }}
+									</div>
+									<div
+										v-if="isHoliday(day.date)"
+										class="absolute bottom-1 left-1 right-1 text-[8px] text-red-600 font-medium truncate"
+										:title="getHolidayLabel(day.date)">
+										{{ getHolidayLabel(day.date) }}
 									</div>
 								</div>
 							</div>
 
 							<div class="relative p-1 space-y-1">
 								<div
-									v-for="(lane, laneIndex) in getLanesForWeek(employee, week.week_index)"
+									v-for="(lane, laneIndex) in getLanesForWeek(
+										employee,
+										week.week_index
+									)"
 									:key="`${employee.id}-${week.week_index}-${laneIndex}`"
 									class="grid grid-cols-7 gap-1 h-6">
 									<button
@@ -615,7 +933,9 @@ const submitExport = () => {
 										:style="getLeaveSegmentStyle(segment)"
 										:title="getLeaveTooltip(segment)"
 										@click="openModal(segment.leave)">
-										<span class="truncate block">{{ segment.leave.type_label }}</span>
+										<span class="truncate block">{{
+											getLeaveShortCode(segment.leave.type)
+										}}</span>
 									</button>
 								</div>
 							</div>
@@ -650,7 +970,9 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-500">{{
 							trans("Employee")
 						}}</label>
-						<div class="mt-1 text-sm text-gray-900">{{ selectedLeave.employee_name }}</div>
+						<div class="mt-1 text-sm text-gray-900">
+							{{ selectedLeave.employee_name }}
+						</div>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
@@ -686,8 +1008,10 @@ const submitExport = () => {
 							<span
 								class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
 								:class="{
-									'bg-green-100 text-green-800': selectedLeave.status === 'approved',
-									'bg-yellow-100 text-yellow-800': selectedLeave.status === 'pending',
+									'bg-green-100 text-green-800':
+										selectedLeave.status === 'approved',
+									'bg-yellow-100 text-yellow-800':
+										selectedLeave.status === 'pending',
 									'bg-red-100 text-red-800': selectedLeave.status === 'rejected',
 								}">
 								{{ capitalize(selectedLeave.status) }}
@@ -723,6 +1047,9 @@ const submitExport = () => {
 			<p class="text-sm text-gray-600 mb-4">
 				{{ trans("Select filters and export format for your leave report.") }}
 			</p>
+			<div v-if="exportError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+				<p class="text-sm text-red-800">{{ exportMessage }}</p>
+			</div>
 
 			<form @submit.prevent="submitExport" class="space-y-4">
 				<div class="grid grid-cols-2 gap-4">
@@ -751,33 +1078,27 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
 							trans("Leave Type")
 						}}</label>
-						<select
+						<Select
 							v-model="exportForm.type"
-							class="w-full border border-gray-300 rounded-lg px-3 py-2">
-							<option value="">{{ trans("All Types") }}</option>
-							<option
-								v-for="(label, value) in type_options"
-								:key="value"
-								:value="value">
-								{{ label }}
-							</option>
-						</select>
+							:options="parsedTypeOptions"
+							optionLabel="label"
+							optionValue="value"
+							:placeholder="trans('All Types')"
+							showClear
+							class="w-full" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
 							trans("Status")
 						}}</label>
-						<select
+						<Select
 							v-model="exportForm.status"
-							class="w-full border border-gray-300 rounded-lg px-3 py-2">
-							<option value="">{{ trans("All Statuses") }}</option>
-							<option
-								v-for="(label, value) in status_options"
-								:key="value"
-								:value="value">
-								{{ label }}
-							</option>
-						</select>
+							:options="parsedStatusOptions"
+							optionLabel="label"
+							optionValue="value"
+							:placeholder="trans('All Statuses')"
+							showClear
+							class="w-full" />
 					</div>
 				</div>
 
@@ -786,69 +1107,56 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
 							trans("Department")
 						}}</label>
-						<input
+						<Select
 							v-model="exportForm.department"
-							type="text"
-							class="w-full border border-gray-300 rounded-lg px-3 py-2"
-							:placeholder="trans('Filter by department')" />
+							:options="parsedDepartmentOptions"
+							optionLabel="label"
+							optionValue="value"
+							:placeholder="trans('All Departments')"
+							showClear
+							class="w-full" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							trans("Team")
+							trans("Format")
 						}}</label>
+						<Select
+							v-model="exportForm.format"
+							:options="[
+								{ label: 'Excel (XLSX)', value: 'xlsx' },
+								{ label: 'CSV', value: 'csv' },
+							]"
+							optionLabel="label"
+							optionValue="value"
+							class="w-full" />
+					</div>
+				</div>
+
+				<div>
+					<label class="flex items-center space-x-2">
 						<input
-							v-model="exportForm.team"
-							type="text"
-							class="w-full border border-gray-300 rounded-lg px-3 py-2"
-							:placeholder="trans('Filter by team')" />
-					</div>
+							type="checkbox"
+							v-model="exportForm.include_summary"
+							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+						<span class="text-sm">{{ trans("Include Summary") }}</span>
+					</label>
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">{{
-						trans("Employee")
-					}}</label>
-					<input
-						v-model.number="exportForm.employee_id"
-						type="number"
-						class="w-full border border-gray-300 rounded-lg px-3 py-2"
-						:placeholder="trans('Filter by employee ID')" />
-				</div>
-
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">{{
-						trans("Export Format")
-					}}</label>
-					<div class="flex gap-4">
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								v-model="exportForm.format"
-								type="radio"
-								value="xlsx"
-								class="text-blue-600 focus:ring-blue-500" />
-							<span class="text-sm">{{ trans("Excel (XLSX)") }}</span>
-						</label>
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								v-model="exportForm.format"
-								type="radio"
-								value="csv"
-								class="text-blue-600 focus:ring-blue-500" />
-							<span class="text-sm">{{ trans("CSV") }}</span>
-						</label>
-					</div>
-				</div>
-
-				<div class="flex justify-end gap-3 pt-4">
-					<Button @click="closeExportModal" :label="trans('Cancel')" type="tertiary" />
-					<Button
-						type="primary"
-						nativeType="submit"
-						:label="trans('Export')"
-						:loading="isExporting"
-						:icon="exportForm.format === 'xlsx' ? faFileExcel : faFileCsv" />
+					<label class="flex items-center space-x-2">
+						<input
+							type="checkbox"
+							v-model="exportForm.print_view"
+							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+						<span class="text-sm">{{ trans("Print View") }}</span>
+					</label>
 				</div>
 			</form>
+			<ExportModalActions
+				:loading="isExporting"
+				:export-icon="exportForm.format === 'xlsx' ? faFileExcel : faFileCsv"
+				@cancel="closeExportModal"
+				@export="submitExport" />
 		</div>
 	</Modal>
 </template>

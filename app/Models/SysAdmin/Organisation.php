@@ -68,6 +68,7 @@ use App\Models\Helpers\Upload;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
+use App\Models\HumanResources\HolidayYear;
 use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\Workplace;
 use App\Models\Inventory\Location;
@@ -911,6 +912,11 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(Holiday::class);
     }
 
+    public function holidayYears(): HasMany
+    {
+        return $this->hasMany(HolidayYear::class);
+    }
+
     public function trolleys(): HasMany
     {
         return $this->hasMany(Trolley::class);
@@ -924,5 +930,23 @@ class Organisation extends Model implements HasMedia, Auditable
     public function workSchedules(): MorphMany
     {
         return $this->morphMany(WorkSchedule::class, 'schedulable');
+    }
+
+    public function getDefaultAnnualLeaveDays(): int
+    {
+        return $this->settings['hr']['leave_quota']['annual_leave_days'] ?? 10;
+    }
+
+    public function getDefaultProbationDays(): int
+    {
+        return $this->settings['hr']['probation_period_days'] ?? 90;
+    }
+
+    public function setDefaultLeaveQuota(array $quota): void
+    {
+        $settings = $this->settings ?? [];
+        $settings['hr']['leave_quota'] = $quota;
+        $this->settings = $settings;
+        $this->save();
     }
 }

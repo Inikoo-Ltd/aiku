@@ -91,7 +91,10 @@ class StoreClocking extends OrgAction
         }
         data_set($modelData, 'clocked_at', now(), overwrite: false);
 
-        $timesheet = GetTimesheet::run($subject, $modelData['clocked_at']);
+        $clockedAt = Carbon::parse($modelData['clocked_at']);
+        $timezone = $parent->organisation->timezone->name ?? 'UTC';
+        $localDate = $clockedAt->copy()->setTimezone($timezone);
+        $timesheet = GetTimesheet::run($subject, $localDate);
         data_set($modelData, 'timesheet_id', $timesheet->id);
 
 
