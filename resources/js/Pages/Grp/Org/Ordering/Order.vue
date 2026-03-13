@@ -1677,7 +1677,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     </p>
 
                                     <ButtonWithLink
-                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
+                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name && layout.app?.environment === 'local'"
                                         :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
                                         xicon="far fa-plus"
                                         :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
