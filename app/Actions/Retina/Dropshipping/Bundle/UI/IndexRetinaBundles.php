@@ -192,7 +192,7 @@ class IndexRetinaBundles extends RetinaAction
                 ],
                 'bundles' => DropshippingPortfoliosResource::collection($portfolios)
             ]
-        )->table($this->tableStructure(prefix: 'bundles'));
+        )->table($this->tableStructure($this->customerSalesChannel, prefix: 'bundles'));
     }
 
     public function tableStructure(CustomerSalesChannel $parent, ?array $modelOperations = null, $prefix = null): \Closure
