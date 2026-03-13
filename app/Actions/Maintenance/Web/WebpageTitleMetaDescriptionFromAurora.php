@@ -47,8 +47,8 @@ class WebpageTitleMetaDescriptionFromAurora
                         ->first();
 
                     if ($auData) {
-                        if ($auData->{'Webpage Browser Title'} != '') {
-                            //  $command->info('Updating '.$webpage->slug.' '.$auData->{'Webpage Browser Title'});
+                        if ($auData->{'browser_title'} != '') {
+                            $command->info('Updating '.$webpage->slug.' '.$auData->{'browser_title'});
 
                             //                            $webpage->update(
                             //                                [
