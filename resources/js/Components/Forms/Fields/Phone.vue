@@ -41,10 +41,14 @@ const phone = ref(props.form[props['fieldName']])
                 'ring-1 ring-gray-300 focus-within:shadow-none focus-within:ring-2 focus-within:ring-gray-500 rounded-md'
             ]"
             :inputOptions="{
+                showDialCode: true,
                 placeholder: fieldData.placeholder || trans('Enter a phone number'),
                 styleClasses: 'placeholder:text-gray-400 rounded-r-lg qwezxc focus:border-none focus:ring-0'
             }"
+            mode="international"
             :defaultCountry="defaultCountry"
+            :autoFormat="true"
+            :validCharactersOnly="true"
         />
 
         <div v-if="form.errors[fieldName] || form.recentlySuccessful " class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
