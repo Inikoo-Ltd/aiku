@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
+use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBundles;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -17,6 +18,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
+use App\Http\Resources\Dropshipping\DropshippingBundlesResource;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
 use App\Http\Resources\Dropshipping\EbayOverseasWarehousePolicy;
 use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
@@ -489,7 +491,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'platform_user_id'         => $platformUser?->id,
                 'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
-                'bundles'                  => DropshippingPortfoliosResource::collection($portfolios),
+                'bundles'                  => DropshippingBundlesResource::collection(IndexRetinaBundles::run($this->customerSalesChannel, 'bundles')),
                 'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data
@@ -502,7 +504,8 @@ class IndexRetinaPortfolios extends RetinaAction
             ]
         )
         ->table($this->tableStructure(prefix: 'products'))
-        ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
+        ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'))
+            ->table(IndexRetinaBundles::make()->tableStructure($this->customerSalesChannel, null, 'bundles'));
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): \Closure

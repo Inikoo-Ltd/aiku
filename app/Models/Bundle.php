@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Bundle extends Model
 {
@@ -17,4 +18,9 @@ class Bundle extends Model
         'data' => '{}',
         'settings' => '{}'
     ];
+
+    public function bundleable(): MorphTo
+    {
+        return $this->morphTo();
+    }
 }
