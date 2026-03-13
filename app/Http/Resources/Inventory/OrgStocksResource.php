@@ -61,7 +61,7 @@ class OrgStocksResource extends JsonResource
             'unit_value'                      => $this->unit_value,
             'unit_cost'                       => $this->unit_cost,
             'currency_code'                   => $this->currency_code,
-            'stock_value'                     => $this->unit_cost * $this->quantity_available,
+            'stock_value'                     => $this->stock_value,
             'number_locations'                => $this->number_location,
             'quantity_locations'              => $this->quantity_in_locations,
             'family_slug'                     => $this->family_slug,
