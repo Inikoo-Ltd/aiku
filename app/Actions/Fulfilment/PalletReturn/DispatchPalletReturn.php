@@ -23,6 +23,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletReturns;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletReturns;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -48,7 +49,9 @@ class DispatchPalletReturn extends OrgAction
 
         /** @var Pallet $pallet */
         $pallets = $palletReturn->pallets()
-            ->whereNot('status', PalletStatusEnum::INCIDENT->value)
+            ->where('pallets.pallet_return_id', $palletReturn->id)
+            ->whereNot('pallets.status', PalletStatusEnum::INCIDENT->value)
+            ->wherePivot('state', '!=', PalletReturnItemStateEnum::CANCEL->value)
             ->get();
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {

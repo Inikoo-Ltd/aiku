@@ -8,6 +8,8 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
+use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\Pallet\PickWholePalletInPalletReturn;
@@ -47,16 +49,20 @@ class PickedPalletReturn extends OrgAction
         if ($palletReturn->type != PalletReturnTypeEnum::PALLET) {
             abort(419);
         }
-        $unpickedPallets = $palletReturn->pallets->filter(
-            fn ($pallet) =>
-        $pallet->pivot->state !== PalletReturnItemStateEnum::PICKED->value &&
-        $pallet->pivot->state !== PalletReturnItemStateEnum::NOT_PICKED->value
+        $pendingPallets = $palletReturn->pallets->filter(
+            fn ($pallet) => $pallet->pivot->state === PalletReturnItemStateEnum::PICKING->value
         );
-        foreach ($unpickedPallets as $pallet) {
+        foreach ($pendingPallets as $pallet) {
             $palletReturnItem = PalletReturnItem::find($pallet->pivot->id);
             PickWholePalletInPalletReturn::make()->action($palletReturnItem, []);
         }
         AutomaticallySetPalletReturnAsPickedIfAllItemsPicked::run($palletReturn);
+
+        $pickingSessions = $palletReturn->pickingSessions()->get();
+        foreach ($pickingSessions as $pickingSession) {
+            (new CalculateFulfilmentPickingSessionPicks())->action($pickingSession);
+            (new AutoFinishPickingFulfilmentPickingSession())->action($pickingSession);
+        }
 
         GroupHydratePalletReturns::dispatch($palletReturn->group);
         OrganisationHydratePalletReturns::dispatch($palletReturn->organisation);
