@@ -114,6 +114,7 @@ class IndexDepartments extends OrgAction
             'currencies.code as currency_code',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
+            'product_categories.health_rank',
         ];
 
         if ($prefix === ProductCategoryTabsEnum::SALES->value) {
@@ -162,6 +163,7 @@ class IndexDepartments extends OrgAction
                 'dropshippers',
                 'listings',
                 'sold',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -247,6 +249,8 @@ class IndexDepartments extends OrgAction
                 if (class_basename($parent) == 'Collection') {
                     $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
                 }
+
+                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }

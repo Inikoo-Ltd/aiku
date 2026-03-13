@@ -151,7 +151,7 @@ const checkNumber = (event: KeyboardEvent) => {
                 "
                 :class="[
                     caret ? '' : '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
-                    clear && modelValue.length ? 'pl-3 pr-7' : 'px-3',
+                    clear && modelValue?.length ? 'pl-3 pr-7' : 'px-3',
                     align == 'right' ? 'text-right' : ''
                 ]"
                 :style="styleInput"
@@ -177,7 +177,7 @@ const checkNumber = (event: KeyboardEvent) => {
             </slot>
 
 
-            <div v-if="clear && modelValue.length"
+            <div v-if="clear && modelValue?.length"
                 class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100"
                 @click="clearValue()"
             >

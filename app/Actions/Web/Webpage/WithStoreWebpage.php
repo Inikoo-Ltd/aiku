@@ -25,6 +25,7 @@ trait WithStoreWebpage
         }
 
         $newLayout = [];
+        // TODO Create a new function to apply styling from master. Jesus christ
         data_set($newLayout, 'data.fieldValue', Arr::get($webBlockType->data, 'fieldValue', []));
 
         $models = [];

@@ -168,12 +168,12 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             'shop_products.*.price'  => [
                 'required',
                 'numeric',
-                'min:0'
+                'min:0.01'
             ],
             'shop_products.*.rrp'    => [
                 'required',
                 'numeric',
-                'min:0'
+                'min:0.01'
             ],
             'shop_products.*.create_in_shop'    => [
                 'required',

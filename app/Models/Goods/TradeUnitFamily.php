@@ -8,6 +8,7 @@
 
 namespace App\Models\Goods;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasUniversalSearch;
@@ -28,6 +29,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $code
  * @property string|null $name
+ * @property HealthRankEnum|null $health_rank
  * @property string|null $description
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -62,7 +64,8 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
     protected $table = 'trade_unit_families';
 
     protected $casts = [
-        'data'                        => 'array',
+        'data'        => 'array',
+        'health_rank' => HealthRankEnum::class,
     ];
 
     protected $attributes = [

@@ -27,6 +27,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
+    public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $organisationId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {

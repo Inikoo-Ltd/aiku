@@ -60,6 +60,7 @@ class IndexProducts extends OrgAction
             'products.created_at',
             'products.updated_at',
             'products.slug',
+            'assets.health_rank',
         ];
 
         if ($prefix === 'sales') {
@@ -119,7 +120,8 @@ class IndexProducts extends OrgAction
         $queryBuilder
             ->defaultSort('products.code')
             ->select($selects)
-            ->selectRaw("'{$shop->currency->code}' as currency_code");
+            ->selectRaw("'{$shop->currency->code}' as currency_code")
+            ->leftJoin('assets', 'products.asset_id', 'assets.id');
 
         $allowedSorts = [
             'code',
@@ -133,6 +135,7 @@ class IndexProducts extends OrgAction
             'dropshippers',
             'listings',
             'sold',
+            'health_rank',
         ];
 
         return $queryBuilder->allowedSorts($allowedSorts)

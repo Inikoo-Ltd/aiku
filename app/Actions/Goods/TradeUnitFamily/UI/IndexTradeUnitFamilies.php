@@ -68,6 +68,7 @@ class IndexTradeUnitFamilies extends GrpAction
             'trade_unit_family_stats.number_trade_units_status_active',
             'trade_unit_family_stats.number_trade_units_status_discontinued',
             'trade_unit_family_stats.number_trade_units_status_anomality',
+            'trade_unit_families.health_rank',
         ];
 
         if ($prefix === TradeUnitFamiliesTabsEnum::SALES->value) {
@@ -97,6 +98,7 @@ class IndexTradeUnitFamilies extends GrpAction
             'number_trade_units_status_active',
             'number_trade_units_status_discontinued',
             'number_trade_units_status_anomality',
+            'health_rank',
         ];
 
         if ($prefix === TradeUnitFamiliesTabsEnum::SALES->value) {
@@ -148,7 +150,8 @@ class IndexTradeUnitFamilies extends GrpAction
                 $table
                     ->column(key: 'number_trade_units_status_active', label: __('Active'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'number_trade_units_status_discontinued', label: __('Discontinued'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'number_trade_units_status_anomality', label: __('Anomality'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'number_trade_units_status_anomality', label: __('Anomality'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }

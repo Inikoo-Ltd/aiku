@@ -100,43 +100,45 @@ class IndexMasterProducts extends GrpAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $isSalesTab = $prefix === MasterProductsTabsEnum::SALES->value;
+
         $queryBuilder = QueryBuilder::for(MasterAsset::class)
-            // stats
             ->leftJoin(
                 'master_asset_stats',
                 'master_assets.id',
                 '=',
                 'master_asset_stats.master_asset_id'
             )
-            // group & currency
             ->leftJoin('groups', 'master_assets.group_id', '=', 'groups.id')
-            ->leftJoin('currencies', 'groups.currency_id', '=', 'currencies.id')
+            ->leftJoin('currencies', 'groups.currency_id', '=', 'currencies.id');
 
-            // categories (ALWAYS JOIN)
-            ->leftJoin(
-                'master_product_categories as departments',
-                'departments.id',
-                '=',
-                'master_assets.master_department_id'
-            )
-            ->leftJoin(
-                'master_product_categories as sub_departments',
-                'sub_departments.id',
-                '=',
-                'master_assets.master_sub_department_id'
-            )
-            ->leftJoin(
-                'master_product_categories as families',
-                'families.id',
-                '=',
-                'master_assets.master_family_id'
-            )
-            ->leftJoin(
-                'master_variants as master_variant',
-                'master_variant.id',
-                '=',
-                'master_assets.master_variant_id'
-            );
+        if (!$isSalesTab) {
+            $queryBuilder
+                ->leftJoin(
+                    'master_product_categories as departments',
+                    'departments.id',
+                    '=',
+                    'master_assets.master_department_id'
+                )
+                ->leftJoin(
+                    'master_product_categories as sub_departments',
+                    'sub_departments.id',
+                    '=',
+                    'master_assets.master_sub_department_id'
+                )
+                ->leftJoin(
+                    'master_product_categories as families',
+                    'families.id',
+                    '=',
+                    'master_assets.master_family_id'
+                )
+                ->leftJoin(
+                    'master_variants as master_variant',
+                    'master_variant.id',
+                    '=',
+                    'master_assets.master_variant_id'
+                );
+        }
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -158,30 +160,28 @@ class IndexMasterProducts extends GrpAction
             'master_assets.units',
             'master_assets.rrp',
             'master_assets.web_images',
-
             'master_asset_stats.number_current_assets as used_in',
             'currencies.code as currency_code',
-
-            // department
-            'departments.slug as master_department_slug',
-            'departments.code as master_department_code',
-            'departments.name as master_department_name',
-
-            // sub department
-            'sub_departments.slug as master_sub_department_slug',
-            'sub_departments.code as master_sub_department_code',
-            'sub_departments.name as master_sub_department_name',
-
-            // family
-            'families.slug as master_family_slug',
-            'families.code as master_family_code',
-            'families.name as master_family_name',
-
-            //variants
-            'master_variant.slug as variant_slug',
-            'master_variant.slug as variant_code',
-            'master_assets.is_variant_leader as is_variant_leader',
+            'master_assets.health_rank',
         ];
+
+        if (!$isSalesTab) {
+            array_push(
+                $selects,
+                'departments.slug as master_department_slug',
+                'departments.code as master_department_code',
+                'departments.name as master_department_name',
+                'sub_departments.slug as master_sub_department_slug',
+                'sub_departments.code as master_sub_department_code',
+                'sub_departments.name as master_sub_department_name',
+                'families.slug as master_family_slug',
+                'families.code as master_family_code',
+                'families.name as master_family_name',
+                'master_variant.slug as variant_slug',
+                'master_variant.slug as variant_code',
+                'master_assets.is_variant_leader as is_variant_leader',
+            );
+        }
 
         if ($prefix === MasterProductsTabsEnum::SALES->value) {
             // Use reusable time series aggregation method
@@ -208,10 +208,13 @@ class IndexMasterProducts extends GrpAction
             $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
             $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
-        } else {
-            $queryBuilder
-                ->with('tradeUnits.stocks');
         }
+
+        // comment label sku
+        // else {
+        //     $queryBuilder
+        //        ->with('tradeUnits.stocks');
+        // }
 
         $queryBuilder->select($selects);
 
@@ -287,7 +290,8 @@ class IndexMasterProducts extends GrpAction
                 'master_department_code',
                 'master_sub_department_code',
                 'master_family_code',
-                'used_in'
+                'used_in',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -359,6 +363,7 @@ class IndexMasterProducts extends GrpAction
                     ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), sortable: true)
                     ->column(key: 'master_family_code', label: __('M. Family'), sortable: true)
                     ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), sortable: true)
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon')
                     ->column(key: 'actions', label: __('Actions'), sortable: false)
                     ->defaultSort('code');
             }
