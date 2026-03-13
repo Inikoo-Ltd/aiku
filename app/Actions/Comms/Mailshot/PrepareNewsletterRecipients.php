@@ -39,26 +39,25 @@ class PrepareNewsletterRecipients
 
         $outboxId = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->value('id');
 
-        DB::table('customers')
+        $baseQuery = DB::table('customers')
             ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
             ->where('customers.shop_id', $mailshot->shop_id)
             ->where('customer_comms.is_subscribed_to_newsletter', true)
             ->whereNotNull('customers.email')
-            ->select('customers.id')
-            ->orderBy('customers.id')
-            ->chunk($chunkSize, function ($customers) use ($mailshot, $outboxId) {
+            // TODO: make sure this email filter
+            ->whereRaw("customers.email COLLATE \"C\" ~* '^[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,}$'"); // to replace FILTER_VALIDATE_EMAIL in the model level
+
+        // \Log::info($baseQuery->toRawSql());
+        // Clone the query and get last
+        $totalCustomer = $baseQuery->count('customers.id');
+
+        $baseQuery->select('customers.id')->orderBy('customers.id')
+            ->chunk($chunkSize, function ($customers) use ($mailshot, $outboxId, $totalCustomer) {
                 $customerIds = $customers->pluck('id');
-                ProcessSendMailshot::dispatch($mailshot->id, $customerIds, $outboxId);
+                ProcessSendMailshot::dispatch($mailshot->id, $customerIds, $outboxId, $totalCustomer);
             });
 
-        // UpdateMailshot::run(
-        //     $mailshot,
-        //     [
-        //         'recipients_stored_at' => now()
-        //     ]
-        // );
-
-        // // TODO: check another hydrator
+        // TODO: check another hydrator
         // MailshotHydrateDispatchedEmails::run($mailshot);
     }
 

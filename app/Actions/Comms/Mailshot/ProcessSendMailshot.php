@@ -23,7 +23,7 @@ class ProcessSendMailshot
 
     public string $jobQueue = 'ses';
 
-    public function handle($mailshotId, $customerIds, $outboxId)
+    public function handle($mailshotId, $customerIds, $outboxId, $totalCustomer)
     {
         $mailshot = Mailshot::find($mailshotId);
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
@@ -37,7 +37,7 @@ class ProcessSendMailshot
                 ->where('recipient_type', class_basename($customer))
                 ->exists();
 
-            if (!$recipientExists && filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
+            if (!$recipientExists) {
                 $dispatchedEmail = StoreDispatchedEmail::run(
                     $mailshot,
                     $customer,
@@ -61,7 +61,6 @@ class ProcessSendMailshot
             }
         }
 
-
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
@@ -69,13 +68,7 @@ class ProcessSendMailshot
             ]
         );
 
-        // TODO: think about this one later
-        // UpdateMailshot::run(
-        //     $mailshot,
-        //     [
-        //         'recipients_stored_at' => now()
-        //     ]
-        // );
+        UpdateMailshotRecipientsStoredAt::run($mailshot, $totalCustomer);
 
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
     }
