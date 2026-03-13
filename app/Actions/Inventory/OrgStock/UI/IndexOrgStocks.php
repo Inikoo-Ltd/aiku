@@ -234,6 +234,7 @@ class IndexOrgStocks extends OrgAction
             'number_locations',
             'quantity_in_locations',
             'org_stocks.discontinued_in_organisation_at',
+            'org_stocks.health_rank',
             'org_stock_families.slug as family_slug',
             'org_stock_families.code as family_code',
             'organisations.name as organisation_name',
@@ -294,7 +295,7 @@ class IndexOrgStocks extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value'];
+        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'woc'];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -371,6 +372,8 @@ class IndexOrgStocks extends OrgAction
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
                     $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
                 }
+
+                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }

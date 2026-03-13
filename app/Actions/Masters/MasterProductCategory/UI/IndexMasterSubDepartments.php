@@ -94,6 +94,7 @@ class IndexMasterSubDepartments extends GrpAction
             'master_product_category_stats.number_current_master_product_categories_type_family as number_families',
             'master_product_category_stats.number_current_master_assets_type_product as number_products',
             'currencies.code as currency_code',
+            'master_product_categories.health_rank',
         ];
 
         if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
@@ -138,6 +139,7 @@ class IndexMasterSubDepartments extends GrpAction
                 'dropshippers',
                 'listings',
                 'sold',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -182,7 +184,8 @@ class IndexMasterSubDepartments extends GrpAction
                     ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                     ->column(key: 'used_in', label: __('Used In'), sortable: true)
                     ->column(key: 'number_families', label: __('M. Families'), sortable: true)
-                    ->column(key: 'number_products', label: __('M. Products'), sortable: true);
+                    ->column(key: 'number_products', label: __('M. Products'), sortable: true)
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }

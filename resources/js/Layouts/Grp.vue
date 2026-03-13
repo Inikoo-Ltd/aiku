@@ -73,7 +73,11 @@ import {
 	faCheckDouble,
 	faSmile,
 	faMailBulk, faEllipsisV,
-	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument,faUnlink, faBoxOpen, faArrowRight as falArrowRight
+	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument,faUnlink, faBoxOpen, faArrowRight as falArrowRight,
+	faStar as faStarLight,
+	faArrowUp as faArrowUpLight,
+	faMinus as faMinusLight,
+	faTimesCircle as faTimesCircleLight,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -171,7 +175,8 @@ library.add(
 	faMailBulk, faEllipsisV,
 	faShare, faUndoAlt,faRobot,faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses,
 	faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
-	faBadgePercent
+	faBadgePercent,
+	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
 )
 
 provide("layout", useLayoutStore())

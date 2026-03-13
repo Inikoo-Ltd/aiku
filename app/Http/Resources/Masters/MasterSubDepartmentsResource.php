@@ -38,6 +38,7 @@ use Illuminate\Support\Arr;
  * @property mixed $sales_ly
  * @property mixed $invoices
  * @property mixed $invoices_ly
+ * @property mixed $health_rank
  */
 class MasterSubDepartmentsResource extends JsonResource
 {
@@ -78,6 +79,7 @@ class MasterSubDepartmentsResource extends JsonResource
             'dropshippers'     => $this->dropshippers ?? 0,
             'listings'         => $this->listings ?? 0,
             'sold'             => $this->sold ?? 0,
+            'health_rank' => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 
