@@ -400,9 +400,9 @@
 <br>
 <br>
 
-@if($shop->invoice_footer)
+@if($shop->proforma_footer)
     <div style="text-align:center;font-size:10pt;">
-        {!! $shop->invoice_footer !!}
+        {!! $shop->proforma_footer !!}
     </div>
 @endif
 
