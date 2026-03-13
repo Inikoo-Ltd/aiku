@@ -266,7 +266,6 @@ class IndexProductsInCatalogue extends OrgAction
                 $table->column(key: 'discontinued_at', label: __('Discontinued At'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
             }
 
-            $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
         };
     }
 
