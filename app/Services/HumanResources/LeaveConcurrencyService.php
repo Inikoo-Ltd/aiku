@@ -18,8 +18,15 @@ class LeaveConcurrencyService
         Carbon     $startDate,
         Carbon     $endDate,
         ?LeaveType $leaveType = null
-    ): array {
+    ): array
+    {
+        $exemptLeaveTypes = ['sick-leave', 'meeting', 'late-for-work'];
+
         if ($leaveType && $leaveType->ignore_concurrency_leave_rules) {
+            return [];
+        }
+
+        if (in_array($leaveTypeCode, $exemptLeaveTypes, true)) {
             return [];
         }
 
@@ -59,7 +66,8 @@ class LeaveConcurrencyService
         LeaveConcurrencyRule $rule,
         Employee             $employee,
         string               $leaveTypeCode
-    ): bool {
+    ): bool
+    {
         foreach ($rule->targets as $target) {
             $matches = false;
 
@@ -89,7 +97,8 @@ class LeaveConcurrencyService
         string               $leaveTypeCode,
         Carbon               $startDate,
         Carbon               $endDate
-    ): ?array {
+    ): ?array
+    {
         $allTargets = $rule->targets;
         foreach ($allTargets as $target) {
             $partnerEmployees = $this->getEmployeesByTarget($target, $employee->organisation_id);
@@ -126,7 +135,8 @@ class LeaveConcurrencyService
         Carbon               $startDate,
         Carbon               $endDate,
         ?LeaveType           $leaveType = null
-    ): ?array {
+    ): ?array
+    {
         $ruleType = $rule->rule_type->value;
 
         if ($ruleType === LeaveConcurrencyRuleTypeEnum::QUOTA->value) {
@@ -150,41 +160,67 @@ class LeaveConcurrencyService
         string               $leaveTypeCode,
         Carbon               $startDate,
         Carbon               $endDate
-    ): ?array {
+    ): ?array
+    {
         $limit = $rule->limit ?? 1;
         $maxOverlapDays = $rule->max_overlap_days ?? 0;
 
+        $scopedEmployeeIds = $this->getScopedEmployeeIds($rule, $employee->organisation_id);
+
+        if ($scopedEmployeeIds->isEmpty()) {
+            return null;
+        }
+
+        $leaveTypeIds = $this->getTargetLeaveTypeIds($rule, $employee->organisation_id);
+
         $overlappingLeaves = Leave::query()
-            ->where('employee_id', $employee->id)
+            ->whereIn('employee_id', $scopedEmployeeIds)
             ->where('status', '!=', 'rejected')
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->where('start_date', '<=', $endDate)
                     ->where('end_date', '>=', $startDate);
-            })
-            ->get();
+            });
 
-        if ($overlappingLeaves->count() >= $limit) {
+        if ($leaveTypeIds->isNotEmpty()) {
+            $overlappingLeaves->whereIn('leave_type_id', $leaveTypeIds);
+        }
+
+        $overlappingLeaves = $overlappingLeaves->get();
+
+        $count = $overlappingLeaves
+            ->pluck('employee_id')
+            ->unique()
+            ->count();
+
+        if ($count >= $limit) {
             return [
                 'rule_name' => $rule->name,
                 'type' => 'quota_exceeded',
-                'message' => __('You already have :count overlapping leave request(s). Maximum allowed: :max.', [
-                    'count' => $overlappingLeaves->count(),
+                'message' => __('The quota for concurrent leave has been reached. :count employees already have leave on these dates. Maximum allowed: :max.', [
+                    'count' => $count,
                     'max' => $limit,
                 ]),
             ];
         }
 
         if ($maxOverlapDays > 0) {
-            foreach ($overlappingLeaves as $existingLeave) {
+            $otherEmployeeLeaves = $overlappingLeaves
+                ->where('employee_id', '!=', $employee->id);
+
+            foreach ($otherEmployeeLeaves as $existingLeave) {
                 $overlapStart = max($startDate, $existingLeave->start_date);
                 $overlapEnd = min($endDate, $existingLeave->end_date);
                 $overlapDays = $overlapStart->diffInDays($overlapEnd) + 1;
 
                 if ($overlapDays > $maxOverlapDays) {
+                    $otherEmployeeName = $existingLeave->employee->contact_name ?? __('Employee #' . $existingLeave->employee_id);
+
                     return [
                         'rule_name' => $rule->name,
                         'type' => 'max_overlap_exceeded',
-                        'message' => __('Overlap with existing leave exceeds maximum allowed days (:max days).', [
+                        'message' => __('Leave overlaps with :name for :count days. Maximum allowed: :max days.', [
+                            'name' => $otherEmployeeName,
+                            'count' => $overlapDays,
                             'max' => $maxOverlapDays,
                         ]),
                     ];
@@ -195,13 +231,50 @@ class LeaveConcurrencyService
         return null;
     }
 
+    private function getScopedEmployeeIds(LeaveConcurrencyRule $rule, int $organisationId): \Illuminate\Support\Collection
+    {
+        $employeeIds = collect();
+
+        foreach ($rule->targets as $target) {
+            if ($target->target_type === 'Employee') {
+                $employeeIds->push($target->target_id);
+            } elseif ($target->target_type === 'Department') {
+                $departmentEmployeeIds = Employee::where('department_id', $target->target_id)
+                    ->where('organisation_id', $organisationId)
+                    ->pluck('id');
+                $employeeIds = $employeeIds->merge($departmentEmployeeIds);
+            }
+        }
+
+        return $employeeIds->unique();
+    }
+
+    private function getTargetLeaveTypeIds(LeaveConcurrencyRule $rule, int $organisationId): \Illuminate\Support\Collection
+    {
+        $leaveTypeCodes = collect();
+
+        foreach ($rule->targets as $target) {
+            if ($target->target_type === 'LeaveType') {
+                $leaveType = LeaveType::where('id', $target->target_id)
+                    ->where('organisation_id', $organisationId)
+                    ->first();
+                if ($leaveType) {
+                    $leaveTypeCodes->push($leaveType->id);
+                }
+            }
+        }
+
+        return $leaveTypeCodes;
+    }
+
     private function checkDependencyConflict(
         LeaveConcurrencyRule $rule,
         Employee             $employee,
         string               $leaveTypeCode,
         Carbon               $startDate,
         Carbon               $endDate
-    ): ?array {
+    ): ?array
+    {
         $subjectTargets = $rule->targets->where('role', LeaveConcurrencyTargetRoleEnum::SUBJECT->value);
 
         foreach ($subjectTargets as $target) {

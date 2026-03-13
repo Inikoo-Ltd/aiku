@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Select from "@/Components/Forms/Fields/Select.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
@@ -20,7 +21,8 @@ const props = defineProps<{
 	title: string
 	data: any
 	employees: { value: number; label: string }[]
-	leaveTypes: { value: number; label: string }[]
+	jobPositions: { value: number; label: string }[]
+	jobPositionEmployees: Record<number, string[]>
 	ruleTypeOptions: { value: string; label: string }[]
 	targetTypeOptions: { value: string; label: string }[]
 	roleOptions: { value: string; label: string }[]
@@ -48,11 +50,11 @@ const form = useForm<{
 
 const targetForm = useForm<{
 	target_type: string
-	target_id: number
+	target_id: number | null
 	role: string | null
 }>({
-	target_type: "",
-	target_id: 0,
+	target_type: "Employee",
+	target_id: null,
 	role: null,
 })
 
@@ -100,6 +102,14 @@ const openTargetModal = (row: any) => {
 	editingLeaveConcurrencyRuleIdForTargets.value = row.id ?? null
 	showTargetModal.value = true
 }
+
+watch(
+	() => targetForm.target_type,
+	() => {
+		targetForm.target_id = null
+		targetForm.clearErrors("target_id")
+	}
+)
 
 const closeModal = () => {
 	showCreateModal.value = false
@@ -358,42 +368,24 @@ const modalTitle = computed(() =>
 					<label class="block text-sm font-medium text-gray-700">
 						{{ trans("Target") }}
 					</label>
-					<select
+					<Select
 						v-if="targetForm.target_type === 'Employee'"
-						v-model.number="targetForm.target_id"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
-						<option value="" disabled>
-							{{ trans("Select employee") }}
-						</option>
-						<option
-							v-for="option in props.employees"
-							:key="option.value"
-							:value="option.value">
-							{{ option.label }}
-						</option>
-					</select>
-					<select
-						v-else-if="targetForm.target_type === 'LeaveType'"
-						v-model.number="targetForm.target_id"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
-						<option value="">
-							{{ trans("Select leave type") }}
-						</option>
-						<option
-							v-for="option in props.leaveTypes"
-							:key="option.value"
-							:value="option.value">
-							{{ option.label }}
-						</option>
-					</select>
-					<input
-						v-else
-						v-model.number="targetForm.target_id"
-						type="number"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
-					<div v-if="targetForm.errors.target_id" class="mt-1 text-sm text-red-600">
-						{{ targetForm.errors.target_id }}
-					</div>
+						:form="targetForm"
+						fieldName="target_id"
+						:options="props.employees"
+						:fieldData="{
+							placeholder: trans('Select employee'),
+							searchable: true
+						}" />
+					<Select
+						v-else-if="targetForm.target_type === 'JobPosition'"
+						:form="targetForm"
+						fieldName="target_id"
+						:options="props.jobPositions"
+						:fieldData="{
+							placeholder: trans('Select job position'),
+							searchable: true
+						}" />
 				</div>
 			</div>
 
@@ -452,13 +444,16 @@ const modalTitle = computed(() =>
 								target.target_id
 							}}
 						</span>
-						<span
-							v-else-if="target.target_type === 'LeaveType'"
-							class="ml-2 text-gray-500">
+						<span v-else-if="target.target_type === 'JobPosition'" class="ml-2 text-gray-500">
 							{{
-								props.leaveTypes.find((l) => l.value === target.target_id)?.label ??
+								props.jobPositions.find((j) => j.value === target.target_id)?.label ??
 								target.target_id
 							}}
+							<span
+								v-if="props.jobPositionEmployees[target.target_id]"
+								class="text-gray-400">
+								({{ props.jobPositionEmployees[target.target_id].join(", ") }})
+							</span>
 						</span>
 						<span v-else class="ml-2 text-gray-500">ID: {{ target.target_id }}</span>
 						<span

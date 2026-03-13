@@ -10,8 +10,8 @@ use App\Enums\HumanResources\Concurrency\LeaveConcurrencyRuleTypeEnum;
 use App\Enums\HumanResources\Concurrency\LeaveConcurrencyTargetRoleEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\JobPosition;
 use App\Models\HumanResources\LeaveConcurrencyRule;
-use App\Models\HumanResources\LeaveType;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -93,15 +93,26 @@ class IndexLeaveConcurrencyRules extends OrgAction
             ])
             ->values();
 
-        $leaveTypes = LeaveType::where('organisation_id', $this->parent->id)
-            ->where('is_active', true)
-            ->select(['id', 'name', 'code'])
+        $jobPositions = JobPosition::where('organisation_id', $this->parent->id)
+            ->select(['id', 'name'])
             ->get()
-            ->map(fn ($leaveType) => [
-                'value' => $leaveType->id,
-                'label' => $leaveType->name,
+            ->map(fn ($position) => [
+                'value' => $position->id,
+                'label' => $position->name,
             ])
             ->values();
+
+        $jobPositionEmployees = Employee::where('organisation_id', $this->parent->id)
+            ->where('state', 'working')
+            ->with('jobPositions')
+            ->get()
+            ->flatMap(fn ($employee) => $employee->jobPositions->map(fn ($position) => [
+                'jobPositionId' => $position->id,
+                'employeeName' => $employee->contact_name,
+            ]))
+            ->groupBy('jobPositionId')
+            ->map(fn ($employees) => $employees->pluck('employeeName')->sort()->values())
+            ->toArray();
 
         return Inertia::render(
             'Org/HumanResources/LeaveConcurrencyRules',
@@ -125,10 +136,11 @@ class IndexLeaveConcurrencyRules extends OrgAction
                         ],
                     ],
                 ],
-                'data'               => $leaveConcurrencyRules,
-                'employees'          => $employees,
-                'leaveTypes'         => $leaveTypes,
-                'ruleTypeOptions'   => collect(LeaveConcurrencyRuleTypeEnum::cases())
+                'data'                   => $leaveConcurrencyRules,
+                'employees'              => $employees,
+                'jobPositions'           => $jobPositions,
+                'jobPositionEmployees'   => $jobPositionEmployees,
+                'ruleTypeOptions'       => collect(LeaveConcurrencyRuleTypeEnum::cases())
                     ->map(fn ($case) => [
                         'value' => $case->value,
                         'label' => $case->label(),
@@ -136,7 +148,7 @@ class IndexLeaveConcurrencyRules extends OrgAction
                     ->values(),
                 'targetTypeOptions' => [
                     ['value' => 'Employee', 'label' => __('Employee')],
-                    ['value' => 'LeaveType', 'label' => __('Leave Type')],
+                    ['value' => 'JobPosition', 'label' => __('Job Position')],
                 ],
                 'roleOptions'       => collect(LeaveConcurrencyTargetRoleEnum::cases())
                     ->map(fn ($case) => [
