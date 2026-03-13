@@ -140,6 +140,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customer_sales_channels_platform_type_amazon
  * @property int $number_customer_sales_channels_platform_type_magento
  * @property int $number_customer_sales_channels_platform_type_wix
+ * @property int $number_customer_sales_channels_platform_type_allegro
  * @property string|null $historic_clv_amount
  * @property string|null $historic_clv_amount_org_currency
  * @property string|null $historic_clv_amount_grp_currency
