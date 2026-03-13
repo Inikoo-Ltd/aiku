@@ -90,4 +90,7 @@ return [
     'google_maps' => [
         'api_key' => env('GOOGLE_MAPS_API_KEY'),
     ],
+    'openai' => [
+        'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY')
+    ]
 ];

@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Bundle;
 
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Helpers\AI\GetGeneratedImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Bundle;
