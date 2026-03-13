@@ -67,7 +67,7 @@ trait WithMasterDepartmentSubNavigation
             ],
             [
                 'label'    => __('Master Products'),
-                'number'   => $masterDepartment->stats->number_current_products,
+                'number'   => $masterDepartment->stats->number_current_master_assets,
                 'route'     => [
                     'name'       => 'grp.masters.master_shops.show.master_departments.show.master_products.index',
                     'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
@@ -79,7 +79,7 @@ trait WithMasterDepartmentSubNavigation
             ],
             [
                 'label'    => __('Master Collections'),
-                'number'   => 0,
+                'number'   => $masterDepartment->stats->number_master_collections,
                 'route'     => [
                     'name'       => 'grp.masters.master_shops.show.master_departments.show.master_collections.index',
                     'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
