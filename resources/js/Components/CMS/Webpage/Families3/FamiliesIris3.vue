@@ -199,7 +199,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
     <FontAwesomeIcon :icon="['fas','chevron-circle-left']" class="text-4xl" />
   </button>
 
-      <div class="swiper-mask">
+      <div class="swiper-mask px-8">
         <Swiper
           @swiper="(s:any)=> { swiperInstance = s; updateEdges(s) }"
           @slideChange="updateEdges"
