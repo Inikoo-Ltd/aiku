@@ -50,7 +50,7 @@ class WebpageTitleMetaDescriptionFromAurora
                         if ($auData->{'browser_title'} != '') {
                             $webpage->update(
                                 [
-                                    'title' => $auData->{'Webpage Browser Title'}
+                                    'title' => $auData->{'browser_title'}
                                 ]
                             );
                         }
