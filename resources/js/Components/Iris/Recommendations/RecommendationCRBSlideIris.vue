@@ -60,12 +60,8 @@ const isLoadingVisit = ref(false)
                 {{ product.code }}
             </div>
 
-            <!-- Section: first name and date -->
+            <!-- Section:  and date -->
             <div v-if="layout?.iris?.is_logged_in" class="mt-auto">
-                <div class="mt-3 text-center text-xxs md:text-base text-gray-700 italic">
-                    <!-- <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${product.customer_country_code.toLowerCase()}.png`" /> -->
-                    {{ product.customer_first_name ?? firstName }}
-                </div>
                 <div class="text-center text-xxs md:text-sm text-gray-400 italic">
                     {{ useFormatTime(product.submitted_at) }}
                 </div>

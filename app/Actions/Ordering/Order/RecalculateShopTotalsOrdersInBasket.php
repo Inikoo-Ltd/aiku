@@ -31,7 +31,7 @@ class RecalculateShopTotalsOrdersInBasket implements ShouldBeUnique
             return;
         }
         foreach ($shop->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
-            CalculateOrderTotalAmounts::run($order, true, true, false, true);
+            CalculateOrderTotalAmounts::dispatch($order, true, true, false, true);
         }
     }
 

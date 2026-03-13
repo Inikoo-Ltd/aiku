@@ -40,9 +40,19 @@ const submit = () => {
 
 const _inputOneTimePassword = ref(null)
 
-onMounted(async () => {
-    if (_inputOneTimePassword.value)
-        _inputOneTimePassword.value?.focus()
+const hasFocused = ref(false)
+
+onMounted(() => {
+    if (!hasFocused.value && _inputOneTimePassword.value) {
+        _inputOneTimePassword.value.focus()
+        hasFocused.value = true
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            _inputOneTimePassword.value?.blur()
+        }
+    })
 })
 
 const layout = inject("layout", layoutStructure)
@@ -66,7 +76,7 @@ const onLogoutAuth = () => {
             </label>
 
             <input v-model="form.one_time_password" ref="_inputOneTimePassword" id="one_time_password" required
-                class="mt-1 block w-full px-3 py-2 border rounded-md" />
+                class="mt-1 block w-full px-3 py-2 border rounded-md"   :type="'text'" />
         </div>
 
         <div class="flex space-x-2">

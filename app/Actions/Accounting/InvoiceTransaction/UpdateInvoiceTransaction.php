@@ -37,6 +37,7 @@ class UpdateInvoiceTransaction extends OrgAction
 
         SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id);
         SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id);
+        SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id);
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 

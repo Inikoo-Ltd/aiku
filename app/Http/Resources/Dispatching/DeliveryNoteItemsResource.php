@@ -77,7 +77,8 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_id'                   => $this->org_stock_id,
             'batch_code'                     => $this->batch_code,
             'expiry_date'                    => $this->expiry_date,
-            'packed_in_message'              => $packedInMessage
+            'packed_in_message'              => $packedInMessage,
+            'is_done_packing'                => (bool) $this->packing_id,
         ];
     }
 }

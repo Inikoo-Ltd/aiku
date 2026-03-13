@@ -71,7 +71,7 @@ class ShowInventoryDashboard extends OrgAction
                             'icon'        => ['fal', 'fa-box'],
                             'description' => __('current'),
                             'route'       => [
-                                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index',
+                                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.index',
                                 'parameters' => $routeParameters
                             ],
                             'index'       => [

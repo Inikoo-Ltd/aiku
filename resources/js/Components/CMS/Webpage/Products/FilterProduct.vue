@@ -5,13 +5,17 @@ import { trans } from 'laravel-vue-i18n'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { getFilterComponent } from '@/Composables/SideEditorHelperFilter'
 import { blueprint } from '../Products1/BlueprintFilter'
+import PureInput from '@/Components/Pure/PureInput.vue'
+import { faSearch } from '@fas'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const props = defineProps<{
   modelValue: Record<string, any>
   productCategory: number
+  search:string
 }>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue','handleSearch','update:search'])
 const layout = inject('layout', retinaLayoutStructure)
 
 // ✅ Ensure modelValue.data exists safely
@@ -46,11 +50,26 @@ onMounted(() => {
     }
   })
 })
+
+const searchModel = computed({
+  get: () => props.search,
+  set: (val: string) => emit('update:search', val)
+})
 </script>
 
 <template>
   <aside class="w-full lg:w-64">
     <h3 class="font-medium mb-3">{{ trans("Filters") }}</h3>
+
+    <PureInput v-model="searchModel" @keyup.enter="() => emit('handleSearch')" type="text"
+      :placeholder="trans('filter products...')" :clear="true" :prefix="{ icon: faSearch, label: '' }"
+      class="search-input ring-0">
+      <template #prefix>
+        <div class="pl-3 whitespace-nowrap text-gray-400">
+          <font-awesome-icon :icon="faSearch" class="icon-search" fixed-width aria-hidden="true" />
+        </div>
+      </template>
+    </PureInput>
 
     <div v-for="item in blueprintCopy" :key="item.id" class="my-4">
       <div v-if="item?.type !== 'hidden'">

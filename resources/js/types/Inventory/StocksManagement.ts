@@ -40,6 +40,8 @@ export interface StockLocation {
     data: []
     settings: {
         min_stock: number
+        max_stock: number
+        replenishment_stock: number
     },
     created_at: string
     updated_at: string
@@ -61,6 +63,12 @@ export interface StocksManagementTS {
             icon_state: IconTS
             value: number
         }
+    }
+    stock_cost : {
+        cost_stock_price_per_unit : number
+        cost_stock_price_outer : number
+        cost_current_price_per_unit : number
+        cost_current_price_outer : number
     }
     locations: StockLocation[]
 }

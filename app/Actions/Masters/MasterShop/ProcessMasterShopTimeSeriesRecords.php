@@ -24,6 +24,8 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $masterShopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$masterShopId:$frequency->value:$from:$to";

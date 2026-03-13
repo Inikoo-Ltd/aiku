@@ -53,7 +53,6 @@ class ShowOfferCampaign extends OrgAction
 
         if ($offerCampaign->type !== OfferCampaignTypeEnum::VOLUME_DISCOUNT) {
             $tabs = OfferCampaignTabsEnum::valuesExcept([
-                OfferCampaignTabsEnum::GR_GIFT,
                 OfferCampaignTabsEnum::GR_AMNESTY
             ]);
         }
