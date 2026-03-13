@@ -140,7 +140,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customer_sales_channels_platform_type_amazon
  * @property int $number_customer_sales_channels_platform_type_magento
  * @property int $number_customer_sales_channels_platform_type_wix
- * @property int $number_customer_sales_channels_platform_type_allegro
  * @property string|null $historic_clv_amount
  * @property string|null $historic_clv_amount_org_currency
  * @property string|null $historic_clv_amount_grp_currency
@@ -200,6 +199,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivery_notes_cancelled_at_state_picked
  * @property int $number_orders_state_picked
  * @property int $number_orders_state_packing
+ * @property int $number_customer_sales_channels_platform_type_allegro
  * @property-read \App\Models\CRM\Customer $customer
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()

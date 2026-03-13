@@ -11,8 +11,6 @@ namespace App\Enums\Web\WebBlockType;
 
 use App\Enums\EnumHelperTrait;
 
-use function Deployer\Support\array_flatten;
-
 enum WebBlockTemplateEnum: string
 {
     use EnumHelperTrait;
