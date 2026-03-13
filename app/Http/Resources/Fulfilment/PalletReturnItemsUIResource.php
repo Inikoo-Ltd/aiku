@@ -41,6 +41,10 @@ class PalletReturnItemsUIResource extends JsonResource
         $pallet = Pallet::find($this->pallet_id);
         $returnFormat = [
             'id'                               => $this->id,
+            'pallet_return_id'                 => $this->pallet_return_id ?? null,
+            'pallet_return_reference'          => $this->pallet_return_reference ?? null,
+            'pallet_return_slug'               => $this->pallet_return_slug ?? null,
+            'pallet_return_type'               => $this->pallet_return_type ?? null,
             'pallet_id'                        => $this->pallet_id,
             'slug'                             => $this->slug,
             'reference'                        => $this->reference,
