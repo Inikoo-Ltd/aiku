@@ -25,7 +25,8 @@ class GetDispatchHubDropshippingWidget
             'label'            => __('Dropshipping'),
             'tooltip'          => __('Dropshipping Delivery Notes'),
             'total_route'      => [
-                'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.shop',
+                // 'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.shop',
+                'name'       => 'grp.org.warehouses.show.dispatching.in_warehouse.delivery-notes',
                 'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::DROPSHIPPING->value]
             ],
             'cases'            => [
