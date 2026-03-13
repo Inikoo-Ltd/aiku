@@ -134,12 +134,12 @@ class IndexRetinaBundles extends RetinaAction
         return $this->handle($customerSalesChannel, 'bundles');
     }
 
-    public function jsonResponse(LengthAwarePaginator $portfolios): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $bundles): AnonymousResourceCollection
     {
-        return DropshippingBundlesResource::collection($portfolios);
+        return DropshippingBundlesResource::collection($bundles);
     }
 
-    public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $bundles, ActionRequest $request): Response
     {
         $manual = false;
         if (isset($this->platform) && $this->platform->type == PlatformTypeEnum::MANUAL) {
@@ -190,7 +190,7 @@ class IndexRetinaBundles extends RetinaAction
                     'current'    => $this->tab,
                     'navigation' => CustomerSalesChannelPortfolioTabsEnum::navigation()
                 ],
-                'bundles' => DropshippingPortfoliosResource::collection($portfolios)
+                'bundles' => DropshippingPortfoliosResource::collection($bundles)
             ]
         )->table($this->tableStructure($this->customerSalesChannel, prefix: 'bundles'));
     }
