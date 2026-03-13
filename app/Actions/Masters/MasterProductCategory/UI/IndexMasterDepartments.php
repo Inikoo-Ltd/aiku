@@ -144,7 +144,13 @@ class IndexMasterDepartments extends OrgAction
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
             ->allowedSorts([
-                'code', 'name', 'used_in', 'sub_departments', 'collections', 'families', 'products',
+                'code',
+                'name',
+                'used_in',
+                'sub_departments',
+                'collections',
+                'families',
+                'products',
                 'sales_grp_currency_external',
                 'invoices',
                 'dropshippers',

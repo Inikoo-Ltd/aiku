@@ -79,19 +79,16 @@ class MasterShopResource extends JsonResource
                     'icon'  => 'fal fa-folder-tree',
                     "color" => "#a3e635",
                     'value' => $masterShop->stats->number_current_master_product_categories_type_department,
-
-                    'metaRight' => [
-                        'tooltip' => __('Master Sub Departments'),
-                        'icon'    => [
-                            'icon'  => 'fal fa-folder-download',
-                            'class' => ''
-                        ],
-                        'route'   => [
-                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
-                            'parameters' => [$masterShop->slug]
-                        ],
-                        'count'   => $masterShop->stats->number_current_master_product_categories_type_sub_department,
+                ],
+                [
+                    'label' => __('Master Sub Departments'),
+                    'route' => [
+                        'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
+                        'parameters' => [$masterShop->slug]
                     ],
+                    'icon'  => 'fal fa-folder-download',
+                    "color" => "#f1db0eff",
+                    'value' => $masterShop->stats->number_current_master_product_categories_type_sub_department,
                 ],
                 [
                     'label' => __('Master Families'),

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
-import { inject } from 'vue'
+import { inject, onMounted } from 'vue'
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle } from "@fal"
-import { faShoppingBasket, faStickyNote, faShoppingCart } from "@fas"
+import { faShoppingBasket, faStickyNote, faShoppingCart, faPlusCircle, faBox } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -21,6 +21,8 @@ import { routeType } from '@/types/route'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { StockLocation, StocksManagementTS } from '@/types/Inventory/StocksManagement'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import axios from 'axios'
+import { notify } from '@kyvg/vue3-notification'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faShoppingBasket, faStickyNote, faShoppingCart)
 
 const props = defineProps<{
@@ -41,7 +43,7 @@ const locationNotes = ref<Record<number, string>>({
 })
 
 // Popover states
-const notePopovers = ref<Record<number, boolean>>({})
+const notePopovers = ref<Record<number, string>>({})
 const tempNotes = ref<Record<number, string>>({})
 
 const isStockCheck = ref(false)
@@ -49,14 +51,21 @@ const isMoveStock = ref(false)
 const isEditLocations = ref(false)
 
 // Functions
-const setActivePickingLocation = (locationId: number) => {
-    activePickingLocation.value = activePickingLocation.value === locationId ? null : locationId
+const setActivePickingLocation = (location: StockLocation) => {
+    // Leave it disabled for now. Always have active location. Checked through DB & Logic across actions. Need to ask Raul next
+    // activePickingLocation.value = activePickingLocation.value === location.id ? null : location.id;
+    if(activePickingLocation.value === location.id) return;
+    activePickingLocation.value = location.id;
+
+    updateStockLocation(location, {
+        set_as_priority: true
+    })
 }
 
 const questionPopoverRefs = ref<Record<number, any>>({})
-const locationMinMaxStock = ref<Record<number, { min: number | null, max: number | null, replenishment: number | null }>>({})
+const locationMinMaxStock = ref<Record<number, { min_stock: number | null, max_stock: number | null, replenishment_stock: number | null }>>({})
 const questionPopovers = ref<Record<number, boolean>>({})
-const tempMinMaxStock = ref<Record<number, { min: number | null, max: number | null, replenishment: number | null }>>({})
+const tempMinMaxStock = ref<Record<number, { min_stock: number | null, max_stock: number | null, replenishment_stock: number | null }>>({})
 
 
 // const setPopoverRef = (el: any, locationId: number) => {
@@ -91,9 +100,9 @@ const toggleQuestionPopover = (locationId: number, event: Event) => {
     // Initialize temp min/max
     if (!questionPopovers.value[locationId]) {
         tempMinMaxStock.value[locationId] = {
-            min: locationMinMaxStock.value[locationId]?.min || null,
-            max: locationMinMaxStock.value[locationId]?.max || null,
-            replenishment: locationMinMaxStock.value[locationId]?.replenishment || null
+            min_stock: locationMinMaxStock.value[locationId]?.min_stock || null,
+            max_stock: locationMinMaxStock.value[locationId]?.max_stock || null,
+            replenishment_stock: locationMinMaxStock.value[locationId]?.replenishment_stock || null
         }
     }
 
@@ -104,15 +113,17 @@ const toggleQuestionPopover = (locationId: number, event: Event) => {
     }
 }
 
-const saveMinMaxStock = (locationId: number) => {
+const saveMinMaxStock = (location: StockLocation) => {
     // Initialize if not exists
+    const locationId = location.id; 
+
     if (!tempMinMaxStock.value[locationId]) {
-        tempMinMaxStock.value[locationId] = { min: null, max: null, replenishment: null }
+        tempMinMaxStock.value[locationId] = { min_stock: null, max_stock: null, replenishment_stock: null }
     }
 
     // Validation: min should not be greater than max
-    const min = tempMinMaxStock.value[locationId]?.min
-    const max = tempMinMaxStock.value[locationId]?.max
+    const min = tempMinMaxStock.value[locationId]?.min_stock
+    const max = tempMinMaxStock.value[locationId]?.max_stock
 
     if (min !== null && max !== null && min > max) {
         alert(trans('Minimum stock cannot be greater than maximum stock'))
@@ -120,20 +131,25 @@ const saveMinMaxStock = (locationId: number) => {
     }
 
     locationMinMaxStock.value[locationId] = {
-        min: tempMinMaxStock.value[locationId]?.min || null,
-        max: tempMinMaxStock.value[locationId]?.max || null,
-        replenishment: tempMinMaxStock.value[locationId]?.replenishment || null
+        min_stock: tempMinMaxStock.value[locationId]?.min_stock || null,
+        max_stock: tempMinMaxStock.value[locationId]?.max_stock || null,
+        replenishment_stock: tempMinMaxStock.value[locationId]?.replenishment_stock || null
     }
     questionPopovers.value[locationId] = false
     if (questionPopoverRefs.value[locationId]) {
         questionPopoverRefs.value[locationId].hide()
     }
+
+    console.log(locationMinMaxStock.value)
+    updateStockLocation(location, {
+        ...locationMinMaxStock.value[locationId]
+    })
 }
 
 const cancelMinMaxStock = (locationId: number) => {
     questionPopovers.value[locationId] = false
     if (tempMinMaxStock.value[locationId]) {
-        tempMinMaxStock.value[locationId] = { min: null, max: null, replenishment: null }
+        tempMinMaxStock.value[locationId] = { min_stock: null, max_stock: null, replenishment_stock: null }
     }
     if (questionPopoverRefs.value[locationId]) {
         questionPopoverRefs.value[locationId].hide()
@@ -147,6 +163,7 @@ const toggleNotePopover = (event: Event, loc: StockLocation) => {
     event.stopPropagation()
 
     tempLocToEdit.value = {...loc}
+
     _popoverNotes.value?.toggle(event)
 
     // Close all other popovers first
@@ -168,12 +185,16 @@ const toggleNotePopover = (event: Event, loc: StockLocation) => {
     //     notePopovers.value[locationId] = !notePopovers.value[locationId]
     // }
 }
-const onSaveNote = () => {
+const onSaveNote = (editedLoc: StockLocation) => {
     // locationNotes.value[locationId] = tempNotes.value[locationId] || ''
     // notePopovers.value[locationId] = false
     if (_popoverNotes.value) {
         _popoverNotes.value.hide()
     }
+
+    updateStockLocation(editedLoc, {
+        notes: editedLoc.notes
+    })
 }
 
 // const cancelNote = (locationId: number) => {
@@ -200,6 +221,59 @@ const getQuestionTooltip = (locationId: number) => {
         return trans('Recommended replenishment quantity')
     }
 }
+
+onMounted(() => {
+    // Initialize activePickingLocation
+    let lowestPickingPriority = props.stocks_management.locations.find((data) => data.picking_priority == 1)?.id;
+    if(lowestPickingPriority) {
+        activePickingLocation.value = lowestPickingPriority;
+    }
+
+    // Initialize Min/Max or Replenishment values
+    tempMinMaxStock.value = Object.fromEntries(
+        props.stocks_management.locations.map((data) => [
+            data.id,
+            {
+                min_stock: data.settings.min_stock ?? null,
+                max_stock: data.settings.max_stock ?? null,
+                replenishment_stock: data.settings.replenishment_stock ?? null,
+            }
+        ])
+    )
+
+    // Initialize notePopovers values
+    notePopovers.value = Object.fromEntries(
+        props.stocks_management.locations.map((data) => [
+            data.id,
+            data.notes ?? ""
+        ])
+    )
+})
+
+// TODO Refactor Update Location
+const updateStockLocation = async (stockLoc: StockLocation, body: {}) => {
+    await axios.patch(route('grp.models.location_org_stock.update', {
+        locationOrgStock: stockLoc.id
+    }), body)
+    .then((res) => {
+        // TODO hydrate back to notePopovers
+        notify({
+            title: "Success",
+            text: "Successfully updated location org stocks data",
+            type: "success"
+        })
+    })
+    .catch((err) => {
+        notify({
+            title: "Failed",
+            text: "Unable to modify location org stocks data",
+            type: "error"
+        })
+    })
+    .finally(() => {
+        // isLoading.value = false
+    });
+}
 </script>
 
 <template>
@@ -208,19 +282,17 @@ const getQuestionTooltip = (locationId: number) => {
         <!-- Header Section -->
         <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold flex items-center gap-2">
-                <i class="fas fa-box"></i> Active
+                <FontAwesomeIcon :icon="faBox"></FontAwesomeIcon> Active
             </h2>
             <button class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-plus-circle text-xl"></i>
+                <FontAwesomeIcon :icon="faPlusCircle" class="text-xl"></FontAwesomeIcon>
             </button>
         </div>
-
         <!-- Section: Summary Stats -->
         <div class="grid grid-cols-4 gap-2 text-center">
-            <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded">
+            <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded" v-tooltip="item.icon_state.tooltip">
                 <span>
-                    <!-- <FontAwesomeIcon :icon="item.icon_state" class="text-gray-500" fixed-width aria-hidden="true" /> -->
-                    <Icon :data="item.icon_state" />
+                    <Icon :data="{...item.icon_state, tooltip : null}" />
                 </span>
                 <span class="ml-2 text-lg font-bold">
                     {{ locale.number(item.value ?? 0) }}
@@ -239,21 +311,22 @@ const getQuestionTooltip = (locationId: number) => {
                 <div class="col-span-2 font-semibold text-gray-600">Stock value:</div>
                 <div class="col-span-3 text-right">
                     <!-- 4720000 -->
-                    -
+                        {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_stock_price_outer || 0) }} <span>total</span>
                 </div>
                 <div class="col-span-2 text-right">
                     <!-- 8000 /SKO -->
-                    -
+                     {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_stock_price_per_unit || 0) }} / SKO
                 </div>
             </div>
             <div class="grid grid-cols-7 gap-x-3">
                 <div class="col-span-2 font-semibold text-gray-600">Current cost:</div>
                 <div class="col-span-3 text-right">
                     <!-- 4720000 -->
+                      {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_current_price_outer || 0) }} <span>total</span>
                 </div>
                 <div class="col-span-2 text-right">
                     <!-- 8000 /Unit -->
-                    -
+                      {{ locale.currencyFormat(currency_code, stocks_management.stock_cost.cost_current_price_per_unit || 0) }} / Unit
                 </div>
             </div>
         </div>
@@ -304,14 +377,13 @@ const getQuestionTooltip = (locationId: number) => {
                             </div>
 
                             <!-- Shopping Basket Icon -->
-                            <div @click="() => setActivePickingLocation(loc.id)"
+                            <div @click="() => setActivePickingLocation(loc)"
                                 v-tooltip="trans('Set as active picking location')"
                                 class="cursor-pointer transition-colors duration-200" :class="{
                                     'text-blue-700': activePickingLocation === loc.id,
                                     'text-gray-400 hover:text-gray-700': activePickingLocation !== loc.id
                                 }">
-                                <FontAwesomeIcon
-                                    :icon="activePickingLocation === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
+                                <FontAwesomeIcon :icon="activePickingLocation === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
                                     class="" fixed-width aria-hidden="true" />
                             </div>
 
@@ -321,9 +393,9 @@ const getQuestionTooltip = (locationId: number) => {
                             <div @click="(event) => toggleQuestionPopover(loc.id, event)"
                                 v-tooltip="getQuestionTooltip(loc.id)"
                                 class="cursor-pointer text-gray-400 hover:text-gray-700 flex gap-1">
-                                <span v-if="(tempMinMaxStock[loc?.id]?.min || tempMinMaxStock[loc?.id]?.max) && activePickingLocation === loc.id">( {{ tempMinMaxStock[loc?.id]?.min }}, {{ tempMinMaxStock[loc?.id]?.max }}
+                                <span v-if="(tempMinMaxStock[loc?.id]?.min_stock || tempMinMaxStock[loc?.id]?.max_stock) && activePickingLocation === loc.id">( {{ tempMinMaxStock[loc?.id]?.min_stock }}, {{ tempMinMaxStock[loc?.id]?.max_stock }}
                                     )</span>
-                                <span v-else-if="tempMinMaxStock[loc?.id]?.replenishment && activePickingLocation !== loc.id">( {{ tempMinMaxStock[loc?.id]?.replenishment }} )</span>
+                                <span v-else-if="tempMinMaxStock[loc?.id]?.replenishment_stock && activePickingLocation !== loc.id">( {{ tempMinMaxStock[loc?.id]?.replenishment_stock }} )</span>
                                 <div v-else>
                                     <FontAwesomeIcon icon="fal fa-question-square" class="" fixed-width
                                         aria-hidden="true" />
@@ -349,10 +421,10 @@ const getQuestionTooltip = (locationId: number) => {
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">
                                                     {{ trans('Min') }}
                                                 </label>
-                                                <InputNumber :modelValue="tempMinMaxStock[loc.id]?.min || null"
+                                                <InputNumber :modelValue="tempMinMaxStock[loc.id]?.min_stock || null"
                                                     @update:modelValue="(val) => {
-                                                        if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min: null, max: null }
-                                                        tempMinMaxStock[loc.id].min = val
+                                                        if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
+                                                        tempMinMaxStock[loc.id].min_stock = val
                                                     }" class="w-full" :placeholder="trans('Enter minimum stock')"
                                                     :min="0" />
                                             </div>
@@ -360,10 +432,10 @@ const getQuestionTooltip = (locationId: number) => {
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">
                                                     {{ trans('Max') }}
                                                 </label>
-                                                <InputNumber :modelValue="tempMinMaxStock[loc.id]?.max || null"
+                                                <InputNumber :modelValue="tempMinMaxStock[loc.id]?.max_stock || null"
                                                     @update:modelValue="(val) => {
-                                                        if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min: null, max: null }
-                                                        tempMinMaxStock[loc.id].max = val
+                                                        if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null }
+                                                        tempMinMaxStock[loc.id].max_stock = val
                                                     }" class="w-full" :placeholder="trans('Enter maximum stock')"
                                                     :min="0" />
                                             </div>
@@ -371,10 +443,10 @@ const getQuestionTooltip = (locationId: number) => {
 
                                         <!-- Show Replenishment input when location is not active -->
                                         <div v-else>
-                                            <InputNumber :modelValue="tempMinMaxStock[loc.id]?.replenishment || null"
+                                            <InputNumber :modelValue="tempMinMaxStock[loc.id]?.replenishment_stock || null"
                                                 @update:modelValue="(val) => {
-                                                if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min: null, max: null, replenishment: null }
-                                                tempMinMaxStock[loc.id].replenishment = val
+                                                if (!tempMinMaxStock[loc.id]) tempMinMaxStock[loc.id] = { min_stock: null, max_stock: null, replenishment_stock: null }
+                                                tempMinMaxStock[loc.id].replenishment_stock = val
                                                 }" class="w-full" :placeholder="trans('Enter replenishment quantity')"
                                                 :min="0" />
                                         </div>
@@ -384,10 +456,10 @@ const getQuestionTooltip = (locationId: number) => {
                                             class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
                                             {{ trans('Cancel') }}
                                         </button>
-                                        <!-- <button @click="() => saveMinMaxStock(loc.id)"
+                                        <button @click="() => saveMinMaxStock(loc)"
                                             class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                             {{ trans('Save') }}
-                                        </button> -->
+                                        </button>
                                     </div>
                                 </div>
                             </Popover>
@@ -415,7 +487,7 @@ const getQuestionTooltip = (locationId: number) => {
         <!-- Action Buttons -->
         <div class="flex justify-between border-t pt-3">
             <Button @click="() => isStockCheck = !isStockCheck" iconRight="fal fa-clipboard-check"
-                :label="trans('Stock check')" size="sm" type="tertiary" />
+                :label="trans('Audit Stock')" size="sm" type="tertiary" />
 
             <Button v-if="layout.app.environment === 'local'" @click="() => isMoveStock = !isMoveStock" iconRight="fal fa-forklift" :label="trans('Move stock')"
                 size="sm" type="tertiary" />
@@ -454,7 +526,7 @@ const getQuestionTooltip = (locationId: number) => {
                         label="Cancel"
                     />
                     <Button
-                        @click="() => onSaveNote()"
+                        @click="() => onSaveNote(tempLocToEdit)"
                         label="Save"
                         full
                     />

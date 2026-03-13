@@ -73,12 +73,15 @@ trait WithAllegroApiServices
         }
     }
 
-    public function sanitizeAllegroDescription(string $content): string
+    public function sanitizeAllegroDescription(?string $content): string
     {
-        $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
-        $content = str_replace(['<em>', '</em>'], ['<i>', '</i>'], $content);
+        if (!$content) {
+            return "<p>".__("No description available")."</p>";
+        }
 
-        return strip_tags($content, '<b><i><em><ul><ol><li><p><br>');
+        $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+
+        return strip_tags($content, '<b><p><br>');
     }
 
     // -------------------------------------------------------------------------

@@ -21,9 +21,9 @@ class EditSalesChannel extends OrgAction
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($salesChannel),
-                'title'       => __("$salesChannel->name"),
+                'title'       => $salesChannel->name,
                 'pageHead'    => [
-                    'title'   =>  __("$salesChannel->name"),
+                    'title'   =>  $salesChannel->name,
                     'actions' => [
                         [
                             'type'  => 'button',

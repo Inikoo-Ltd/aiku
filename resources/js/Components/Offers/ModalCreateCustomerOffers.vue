@@ -4,12 +4,13 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ref, reactive, inject, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
-import { InputNumber, RadioButton, Checkbox } from 'primevue'
+import { InputNumber, RadioButton, Checkbox, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
+import Multiselect from "@vueform/multiselect"
 
 const props = defineProps<{
     shop_data: {
@@ -19,38 +20,33 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', {})
+const currentParams = layout?.currentParams ?? {}
 const isOpenModal = ref(false)
-
-const offerLabel = ref('')
-const typeOffer = ref('quantity')
-const offerQtyItems = ref<number | null>(null)
-const offerAmount = ref<number | null>(0)
-const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref(null)
-
 const isLoadingSubmit = ref(false)
 
-const currentParams = layout?.currentParams ?? {}
+const offerAmount = ref<number | null>(0)
+const discountPercentage = ref<number | null>(null)
 
 const organisation = currentParams.organisation
 const shopCode = currentParams.shop
 const offerCampaign = currentParams.offerCampaign
 
-
+const selectedFilters = ref<number[]>([])
+const selectedShops = ref([])
+const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
 const categoryFilters = ref<number[]>([])
 const collectionFilters = ref<number[]>([])
 const productFilters = ref<number[]>([])
+const dateType = ref<'permanent' | 'interval'>('permanent')
+const startDate = ref<Date | null>(null)
+const endDate = ref<Date | null>(null)
 
 const target = reactive({
-    shop: true,
+    shop: false,
     category: false,
     collection: false,
     product: false
 })
-
-const categoryType = ref<'department' | 'subdepartment' | 'family' | null>(null)
-
-const selectedFilters = ref<number[]>([])
 
 const shopId = layout?.group?.id
 const shopSlug = props.shop_data.slug
@@ -83,9 +79,22 @@ const productFetchRoute = {
 }
 
 const submitCategoryOffer = () => {
-    // Section: Submit
+
+    const payload = {
+        target,
+        category_type: categoryType.value,
+        category_ids: categoryFilters.value,
+        collection_ids: collectionFilters.value,
+        product_ids: productFilters.value,
+        offer_amount: offerAmount.value,
+        discount_percentage: discountPercentage.value,
+        shops: selectedShops.value
+    }
+
+    console.log("SUBMIT PAYLOAD:", payload)
+    // return
     router.post(
-        route('grp.org.shops.show.discounts.campaigns.campaigns.store_customer', {
+        route('grp.org.shops.show.discounts.campaigns.store_customer', {
             organisation: 'sk',
             shop: 'se',
             offerCampaign: 'co-se',
@@ -97,7 +106,10 @@ const submitCategoryOffer = () => {
             collection_ids: collectionFilters.value,
             product_ids: productFilters.value,
             offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value
+            discount_percentage: discountPercentage.value,
+            date_type: dateType.value,
+            start_date: startDate.value,
+            end_date: endDate.value
         },
         {
             preserveScroll: true,
@@ -128,12 +140,19 @@ const submitCategoryOffer = () => {
 }
 
 const resetForm = () => {
-    offerLabel.value = ''
-    typeOffer.value = 'quantity'
-    offerQtyItems.value = null
     offerAmount.value = null
     discountPercentage.value = null
-    offerCategoryId.value = null
+    categoryType.value = null
+    categoryFilters.value = []
+    collectionFilters.value = []
+    productFilters.value = []
+    target.category = false
+    target.collection = false
+    target.shop = false
+    target.product = false
+    dateType.value = 'permanent'
+    startDate.value = null
+    endDate.value = null
 }
 
 const isFormInvalid = computed(() => {
@@ -144,6 +163,15 @@ const isFormInvalid = computed(() => {
         return true
     }
 
+    if (target.product) {
+        if (!productFilters.value.length) return true
+        return false
+    }
+
+    if (target.shop && !selectedShops.value.length) {
+        return true
+    }
+
     if (target.category) {
 
         if (!categoryType.value) return true
@@ -151,16 +179,13 @@ const isFormInvalid = computed(() => {
         if (!categoryFilters.value.length) return true
     }
 
-    if (target.collection) {
-
-        if (!collectionFilters.value.length) return true
+    if (target.collection && !collectionFilters.value.length) {
+        return true
     }
 
-    if (target.product) {
+    if (!startDate.value) return true
 
-        if (!productFilters.value.length) return true
-    }
-
+    if (dateType.value === 'interval' && !endDate.value) return true
     return false
 })
 
@@ -203,6 +228,14 @@ watch(() => target.category, (val) => {
     }
 
 })
+
+const authorisedShops =
+    layout.organisations.data
+        .find((o: any) => o.slug === organisation)
+        ?.authorised_shops ?? []
+
+console.log("authorisedShops", authorisedShops)
+console.log("layout create", layout.organisations.data)
 </script>
 
 <template>
@@ -212,27 +245,6 @@ watch(() => target.category, (val) => {
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Customer Offer') }}</h2>
-
-                <div class="bg-gray-50 border rounded-lg p-3 text-sm">
-                    <div class="flex gap-4 flex-wrap">
-
-                        <div>
-                            <span class="font-medium">Organisation:</span>
-                            {{ organisation }}
-                        </div>
-
-                        <div>
-                            <span class="font-medium">Shop:</span>
-                            {{ shopCode }}
-                        </div>
-
-                        <div>
-                            <span class="font-medium">Campaign:</span>
-                            {{ offerCampaign }}
-                        </div>
-
-                    </div>
-                </div>
 
                 <div class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
@@ -316,6 +328,25 @@ watch(() => target.category, (val) => {
 
                 </div>
 
+                <div v-if="target.shop">
+
+                    <label class="font-medium">
+                        {{ trans('Select Shop') }}
+                    </label>
+                    <Multiselect v-model="selectedShops" :options="authorisedShops" valueProp="slug" label="label"
+                        mode="multiple" :closeOnSelect="false" :searchable="true" placeholder="Select shops">
+
+                        <template #option="{ option }">
+                            <div class="flex justify-between w-full">
+                                <span>{{ option.label }}</span>
+                                <span class="text-gray-400 text-sm">{{ option.code }}</span>
+                            </div>
+                        </template>
+
+                    </Multiselect>
+
+                </div>
+
                 <div v-if="target.collection && collectionRoute">
 
                     <label class="font-medium">
@@ -351,6 +382,57 @@ watch(() => target.category, (val) => {
                     <InputNumber v-model="discountPercentage" inputId="offer_discount" suffix="%" :min="0" :max="100"
                         class="w-full" :placeholder="trans('Enter percentage')" />
                 </div>
+
+                <!-- Section: Offer Duration -->
+                <div class="space-y-3">
+
+                    <div class="font-medium flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Offer Duration') }}:
+                    </div>
+
+                    <div class="flex gap-x-4">
+                        <div class="flex items-center gap-x-2">
+                            <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
+                            <label for="permanent">{{ trans('Permanent') }}</label>
+                        </div>
+
+                        <div class="flex items-center gap-x-2">
+                            <RadioButton v-model="dateType" inputId="interval" value="interval" />
+                            <label for="interval">{{ trans('Interval') }}</label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Start Date -->
+                        <div class="space-y-2">
+                            <label class="font-medium mb-2 block">
+                                <FontAwesomeIcon icon="fas fa-asterisk"
+                                    class="font-light text-xs text-red-400 align-middle" />
+                                {{ trans('Start Date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
+                            </label>
+
+                            <DatePicker v-model="startDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                                :placeholder="trans('Select start date')" />
+                        </div>
+
+                        <!-- End Date (Only for Interval) -->
+                        <div v-if="dateType === 'interval'" class="space-y-2">
+                            <label class="font-medium mb-2 block">
+                                {{ trans('End Date') }}
+                                <InformationIcon
+                                    :information="trans('If start date is empty, will start immediately')" />:
+                            </label>
+
+                            <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
+                                :minDate="startDate" :placeholder="trans('Select end date')" />
+                        </div>
+                    </div>
+
+                </div>
+
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />

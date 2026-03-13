@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -45,6 +46,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int $id
  * @property ProductCategoryTypeEnum $type
  * @property ProductCategoryStateEnum $state
+ * @property HealthRankEnum|null $health_rank
  * @property int $group_id
  * @property int $organisation_id
  * @property int|null $shop_id
@@ -146,6 +148,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
     protected $casts = [
         'data'             => 'array',
         'web_images'       => 'array',
+        'health_rank'      => HealthRankEnum::class,
         'state'            => ProductCategoryStateEnum::class,
         'type'             => ProductCategoryTypeEnum::class,
         'activated_at'     => 'datetime',

@@ -13,11 +13,14 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Discounts\OfferCampaign\UI\ShowOfferCampaign;
 use App\Actions\OrgAction;
 use App\Http\Resources\Catalogue\OfferResource;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,21 +38,23 @@ class ShowOffer extends OrgAction
         $icon      = ['fal', 'fa-badge-percent'];
         $iconRight = null;
 
-        $editRouteName = match ($request->route()->getName()) {
-            'grp.org.shops.show.discounts.campaigns.gift.show' => 'grp.org.shops.show.discounts.campaigns.gift.edit',
-            'grp.org.shops.show.discounts.campaigns.amnesty.show' => 'grp.org.shops.show.discounts.campaigns.amnesty.edit',
-            'grp.org.shops.show.discounts.campaigns.offer.show' => 'grp.org.shops.show.discounts.campaigns.offer.edit',
-            default => 'grp.org.shops.show.discounts.offers.edit',
-        };
+        $editRoute = null;
+        $actions = [];
 
-        $actions[] = [
-            'type'  => 'button',
-            'style' => 'edit',
-            'route' => [
-                'name'       => $editRouteName,
-                'parameters' => $request->route()->originalParameters()
-            ],
-        ];
+        if ($offer->type == "VolGr Gift") {
+            $editRoute = [
+                'name'       => 'grp.org.shops.show.discounts.campaigns.offer.edit_vol_gr_gift',
+                'parameters' => $request->route()->parameters()
+            ];
+        }
+
+        if ($editRoute) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'route' => $editRoute
+            ];
+        }
 
 
         preg_match('/^all_products_in_product_category(?::(\d+))?:/', $offer->allowance_signature, $m);
@@ -57,12 +62,35 @@ class ShowOffer extends OrgAction
 
 
         $vueComponent = match ($offer->type) {
-            'VolGr Gift' => 'Org/Discounts/VolGrGiftOffer',
+            'VolGr Gift' => 'Org/Discounts/OfferVolGrGift',
+            'Amount AND Order Number' => 'Org/Discounts/OfferAmountOrder',
             default => 'Org/Discounts/Offer'
         };
 
 
-        $data = OfferResource::make($offer);
+        $data['offer'] = OfferResource::make($offer);
+
+        if ($offer->type == "VolGr Gift") {
+            /** @var OfferAllowance $giftAllowance */
+            $giftAllowance  = $offer->offerAllowances()->first();
+            $productOptions = [];
+
+            foreach (Arr::get($giftAllowance->data, 'products', []) as $productData) {
+                $product = Product::find($productData['id']);
+                if ($product) {
+                    $productOptions[] = [
+                        'id'      => $product->id,
+                        'slug'    => $product->slug,
+                        'code'    => $product->code,
+                        'name'    => $product->name,
+                        'web_images_main'       => data_get($product->web_images, 'main'),
+                        'default' => Arr::get($productData, 'default', false),
+                    ];
+                }
+            }
+            $data['products'] = $productOptions;
+        }
+
 
         return Inertia::render(
             $vueComponent,
@@ -78,7 +106,7 @@ class ShowOffer extends OrgAction
                     'model'     => __('Offer'),
                     'iconRight' => $iconRight,
                     'icon'      => $icon,
-                    'actions'   => app()->environment('local') ? $actions : [],
+                    'actions'   => $actions,
                 ],
                 'url_master'    => $productCategory && $offer->type === 'Category Quantity Ordered Order Interval' ? [
                     'name'       => 'grp.masters.master_shops.show.master_families.edit',
@@ -101,7 +129,7 @@ class ShowOffer extends OrgAction
         return $this->handle($offer);
     }
 
-
+    /** @noinspection PhpUnusedParameterInspection */
     public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
     {
         $this->initialisationFromShop($shop, $request);
@@ -109,6 +137,7 @@ class ShowOffer extends OrgAction
         return $this->handle($offer);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inGiftCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
     {
         if ($offer->type != "VolGr Gift") {
@@ -120,6 +149,7 @@ class ShowOffer extends OrgAction
         return $this->handle($offer);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inAmnestyCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Offer
     {
         if ($offer->type != "GR Amnesty") {

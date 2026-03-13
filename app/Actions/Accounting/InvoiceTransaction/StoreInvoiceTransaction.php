@@ -97,6 +97,7 @@ class StoreInvoiceTransaction extends OrgAction
 
         SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id);
         SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id);
+        SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id);
 
         if ($invoiceTransaction->order_id && $invoiceTransaction->transaction_id) {
             $invoiceTransaction->transaction->update([

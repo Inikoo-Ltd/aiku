@@ -117,6 +117,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Snapshot|null $liveFamilySnapshot
+ * @property-read Snapshot|null $liveProductSnapshot
  * @property-read Snapshot|null $liveProductsSnapshot
  * @property-read Snapshot|null $liveSnapshot
  * @property-read Snapshot|null $liveSubDepartmentSnapshot
@@ -328,6 +329,11 @@ class Website extends Model implements Auditable, HasMedia
     public function unpublishedProductSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'unpublished_product_snapshot_id');
+    }
+
+    public function liveProductSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(Snapshot::class, 'live_product_snapshot_id');
     }
 
     public function unpublishedProductsSnapshot(): BelongsTo

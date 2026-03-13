@@ -80,13 +80,14 @@ trait IsDeliveryNotesIndex
                 ->where('dispatched_at', Carbon::today());
         }
 
-
+        $query->leftJoin('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id');
+        $query->leftJoin('orders', 'orders.id', 'delivery_note_order.order_id');
+        
         if ($parent instanceof Warehouse) {
             $query->where('delivery_notes.warehouse_id', $parent->id);
         } elseif ($parent instanceof Group) {
             $query->where('delivery_notes.group_id', $parent->id);
-        } elseif ($parent instanceof Order) {
-            $query->leftjoin('delivery_note_order', 'delivery_note_order.delivery_note_id', '=', 'delivery_notes.id');
+         } elseif ($parent instanceof Order) {
             $query->where('delivery_note_order.order_id', $parent->id);
         } elseif ($parent instanceof Customer) {
             $query->where('delivery_notes.customer_id', $parent->id);
@@ -148,10 +149,17 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.public_notes',
                 'delivery_notes.shipping_notes',
                 'delivery_notes.shipping_data',
+                'orders.in_warehouse_at'
             ])
+            ->selectRaw("
+                COALESCE(
+                    DATE_PART('day', NOW() - orders.in_warehouse_at),
+                    0
+                ) as number_of_days_in_warehouse
+            ")
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
-            ->allowedSorts(['reference', 'date', 'number_items', 'customer_name', 'type', 'effective_weight', 'picking_sessions_count'])
+            ->allowedSorts(['reference', 'date', 'number_items', 'customer_name', 'type', 'effective_weight', 'picking_sessions_count', 'number_of_days_in_warehouse'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -240,6 +248,7 @@ trait IsDeliveryNotesIndex
 
             $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            // $table->column(key: 'number_of_days_in_warehouse', label: __('Days'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if (!$parent instanceof Customer) {
                 $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }
@@ -248,6 +257,7 @@ trait IsDeliveryNotesIndex
                 $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
             }
             $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
             if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {
                 $table->column(key: 'delivery', label: __('Shipping'));

@@ -32,6 +32,7 @@ class ShowOfferCampaign extends OrgAction
     use OfferCampaignDiscountShippingTrait;
     use OfferCampaignGiftTrait;
     use OfferCampaignOrderRecursionTrait;
+    use OfferCampaignVoucherOffersTrait;
 
     public function handle(OfferCampaign $offerCampaign): OfferCampaign
     {
@@ -52,7 +53,6 @@ class ShowOfferCampaign extends OrgAction
 
         if ($offerCampaign->type !== OfferCampaignTypeEnum::VOLUME_DISCOUNT) {
             $tabs = OfferCampaignTabsEnum::valuesExcept([
-                OfferCampaignTabsEnum::GR_GIFT,
                 OfferCampaignTabsEnum::GR_AMNESTY
             ]);
         }
@@ -75,6 +75,7 @@ class ShowOfferCampaign extends OrgAction
             OfferCampaignTypeEnum::SHIPPING         => $this->getDiscountShippingHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::GIFT             => $this->getGiftHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::ORDER_RECURSION  => $this->getOrderRecursionHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::VOUCHERS         => $this->getVoucherHtmlResponse($offerCampaign, $request),
         };
     }
 

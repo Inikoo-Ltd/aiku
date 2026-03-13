@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
+use App\Actions\Dropshipping\Allegro\User\DeleteAllegroUser;
 use App\Actions\Dropshipping\Amazon\DeleteAmazonUser;
 use App\Actions\Dropshipping\Ebay\DeleteEbayUser;
 use App\Actions\Dropshipping\Magento\DeleteMagentoUser;
@@ -48,6 +49,7 @@ class CloseCustomerSalesChannel extends OrgAction
                 PlatformTypeEnum::AMAZON => DeleteAmazonUser::run($customerSalesChannel->user),
                 PlatformTypeEnum::EBAY => DeleteEbayUser::run($customerSalesChannel->user),
                 PlatformTypeEnum::TIKTOK => DeleteTiktokUser::run($customerSalesChannel->user),
+                PlatformTypeEnum::ALLEGRO => DeleteAllegroUser::run($customerSalesChannel->user),
                 default => null
             };
         }

@@ -8,12 +8,10 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
 use Exception;
@@ -33,61 +31,24 @@ class ProcessSendMailshot
 
     public function handle(Mailshot $mailshot): void
     {
-
-        // NOTE: Ensure no second wave exists when the parent mailshot has second wave disabled
+        $chunkSize = 100;
+        // NOTE: Ensure no second wave exists when the parent mailshot has the second wave disabled
         if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
             DeleteMailshotSecondWave::run($mailshot->secondWave);
         }
 
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot);
 
+        $outbox = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->first();
+
         // Process recipients in chunks of 250
-        $queryBuilder->chunk(250, function ($recipients) use ($mailshot) {
+        $queryBuilder->chunk($chunkSize, function ($recipients) use ($mailshot, $outbox) {
 
             $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
-            foreach ($recipients as $recipient) {
+            AddRecipientsToMailshot::run($mailshot, $recipients, $emailDeliveryChannel, $outbox);
 
-                $recipientExists = $mailshot->recipients()
-                    ->where('recipient_id', $recipient->id)
-                    ->where('recipient_type', class_basename($recipient))
-                    ->exists();
 
-                if (!$recipientExists && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
-
-                    $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->first();
-
-                    $dispatchedEmail = StoreDispatchedEmail::run(
-                        $mailshot,
-                        $recipient,
-                        [
-                            'is_test'       => false,
-                            'outbox_id'     => $outbox->id,
-                            'email_address' => $recipient->email,
-                            'provider'      => DispatchedEmailProviderEnum::SES
-                        ]
-                    );
-
-                    StoreMailshotRecipient::run(
-                        $mailshot,
-                        [
-                            'dispatched_email_id' => $dispatchedEmail->id,
-                            'recipient_type'      => class_basename($recipient),
-                            'recipient_id'        => $recipient->id,
-                            'channel'             => $emailDeliveryChannel->id,
-                        ]
-                    );
-                }
-            }
-
-            // After processing the chunk, update and dispatch the delivery channel
-            UpdateEmailDeliveryChannel::run(
-                $emailDeliveryChannel,
-                [
-                    'number_emails' => $mailshot->recipients()->where('channel', $emailDeliveryChannel->id)->count()
-                ]
-            );
-            SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
         });
 
         UpdateMailshot::run(

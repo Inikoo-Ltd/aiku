@@ -11,13 +11,14 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CloneProductCategoryParentsFromMaster
 {
     use asAction;
 
-    public function handle(ProductCategory $productCategory): ProductCategory
+    public function handle(ProductCategory $productCategory, Command|null $command = null): ProductCategory
     {
         $masterCategory = $productCategory->masterProductCategory;
         if (!$masterCategory || $productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -25,21 +26,22 @@ class CloneProductCategoryParentsFromMaster
         }
 
         if ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            return $this->cloneDepartmentFromMaster($productCategory);
+            return $this->cloneSubDepartmentParentsFromMaster($productCategory, $command);
         }
 
         if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            return $this->cloneFamilyFromMaster($productCategory);
+            return $this->cloneFamilyParentsFromMaster($productCategory);
         }
 
         return $productCategory;
     }
 
-    public function cloneDepartmentFromMaster(ProductCategory $productCategory): ProductCategory
+    public function cloneSubDepartmentParentsFromMaster(ProductCategory $productCategory, Command|null $command = null): ProductCategory
     {
         $masterCategory = $productCategory->masterProductCategory;
         $masterDepartment = $masterCategory->masterDepartment;
         if (!$masterDepartment) {
+            $command?->error('master department not found');
             return $productCategory;
         }
 
@@ -48,18 +50,21 @@ class CloneProductCategoryParentsFromMaster
             ->where('shop_id', $productCategory->shop_id)->first();
 
         if ($department) {
+            $command?->info('set department to '.$department->slug);
             UpdateSubDepartmentDepartment::run(
                 $productCategory,
                 [
                     'department_id' => $department->id,
                 ]
             );
+        } else {
+            $command?->error('department not found');
         }
 
         return $productCategory;
     }
 
-    public function cloneFamilyFromMaster(ProductCategory $productCategory): ProductCategory
+    public function cloneFamilyParentsFromMaster(ProductCategory $productCategory): ProductCategory
     {
         $masterCategory = $productCategory->masterProductCategory;
         $masterParent   = $masterCategory->parent;
@@ -97,6 +102,20 @@ class CloneProductCategoryParentsFromMaster
 
 
         return $productCategory;
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'category:get_parents_from_master {product_category}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $productCategory = ProductCategory::where('slug', $command->argument('product_category'))->firstOrFail();
+        $command->info('Updating parents of '.$productCategory->name);
+        $this->handle($productCategory, $command);
+
+        return 0;
     }
 
 

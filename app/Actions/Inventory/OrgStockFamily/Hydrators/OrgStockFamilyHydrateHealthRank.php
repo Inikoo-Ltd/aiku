@@ -1,0 +1,96 @@
+<?php
+
+/*
+ * Author: stewicca <stewicalf@gmail.com>
+ * Created: Thu, 12 Mar 2026, Bali, Indonesia
+ * Copyright (c) 2026, Steven Wicca Alfredo
+ */
+
+namespace App\Actions\Inventory\OrgStockFamily\Hydrators;
+
+use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class OrgStockFamilyHydrateHealthRank implements ShouldBeUnique
+{
+    use AsAction;
+
+    public string $commandSignature = 'hydrate:org-stock-family-health-rank';
+
+    public function asCommand(Command $command): void
+    {
+        $this->handle();
+        $command->info('Org stock family health ranks updated.');
+    }
+
+    public function handle(): void
+    {
+        DB::statement("
+            WITH stats AS (
+                SELECT
+                    itos.org_stock_family_id,
+                    MAX(it.date) AS last_sale_date,
+                    SUM(CASE WHEN it.date >= NOW() - INTERVAL '365 days' THEN 1 ELSE 0 END) AS freq_12m
+                FROM invoice_transaction_has_org_stocks itos
+                JOIN invoice_transactions it ON it.id = itos.invoice_transaction_id
+                WHERE it.in_process = false
+                  AND it.deleted_at IS NULL
+                  AND itos.org_stock_family_id IS NOT NULL
+                GROUP BY itos.org_stock_family_id
+            ),
+            max_values AS (
+                SELECT GREATEST(MAX(freq_12m), 1) AS max_freq
+                FROM stats
+                WHERE last_sale_date >= NOW() - INTERVAL '365 days'
+            ),
+            active_scored AS (
+                SELECT
+                    s.org_stock_family_id,
+                    s.freq_12m / m.max_freq AS score
+                FROM stats s
+                CROSS JOIN max_values m
+                WHERE s.last_sale_date >= NOW() - INTERVAL '365 days'
+            ),
+            ranked AS (
+                SELECT
+                    org_stock_family_id,
+                    PERCENT_RANK() OVER (ORDER BY score) AS pct_rank
+                FROM active_scored
+            ),
+            final_ranks AS (
+                SELECT org_stock_family_id, 'D' AS health_rank
+                FROM stats
+                WHERE last_sale_date IS NULL OR last_sale_date < NOW() - INTERVAL '365 days'
+
+                UNION ALL
+
+                SELECT
+                    org_stock_family_id,
+                    CASE
+                        WHEN pct_rank >= 0.85 THEN 'A'
+                        WHEN pct_rank >= 0.50 THEN 'B'
+                        ELSE 'C'
+                    END AS health_rank
+                FROM ranked
+            )
+            UPDATE org_stock_families
+            SET health_rank = fr.health_rank
+            FROM final_ranks fr
+            WHERE org_stock_families.id = fr.org_stock_family_id
+        ");
+
+        DB::statement("
+            UPDATE org_stock_families
+            SET health_rank = 'D'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM invoice_transaction_has_org_stocks itos
+                JOIN invoice_transactions it ON it.id = itos.invoice_transaction_id
+                WHERE itos.org_stock_family_id = org_stock_families.id
+                  AND it.deleted_at IS NULL
+            )
+        ");
+    }
+}
