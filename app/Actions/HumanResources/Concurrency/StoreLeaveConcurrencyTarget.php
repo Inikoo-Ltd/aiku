@@ -41,7 +41,7 @@ class StoreLeaveConcurrencyTarget extends OrgAction
     public function rules(): array
     {
         return [
-            'target_type' => ['required', 'string', Rule::in(['Employee', 'LeaveType'])],
+            'target_type' => ['required', 'string', Rule::in(['Employee', 'JobPosition'])],
             'target_id' => ['required', 'numeric'],
             'role' => ['sometimes', 'nullable', 'string', Rule::enum(LeaveConcurrencyTargetRoleEnum::class)],
         ];
@@ -54,7 +54,7 @@ class StoreLeaveConcurrencyTarget extends OrgAction
 
         $modelClass = match ($targetType) {
             'Employee' => \App\Models\HumanResources\Employee::class,
-            'LeaveType' => \App\Models\HumanResources\LeaveType::class,
+            'JobPosition' => \App\Models\HumanResources\JobPosition::class,
             default => null,
         };
 

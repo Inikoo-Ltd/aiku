@@ -40,7 +40,7 @@ class LeaveType extends Model
     protected $casts = [
         'category'                        => LeaveCategoryEnum::class,
         'requires_approval'               => 'boolean',
-        'max_days_per_year'               => 'decimal:2',
+        'max_days_per_year'               => 'integer',
         'settings'                        => 'array',
         'is_active'                       => 'boolean',
         'ignore_concurrency_leave_rules'  => 'boolean',
