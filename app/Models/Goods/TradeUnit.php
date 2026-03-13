@@ -68,7 +68,6 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $source_id
  * @property array<array-key, mixed> $sources
  * @property TradeUnitStatusEnum $status
- * @property HealthRankEnum|null $health_rank
  * @property string|null $anomality_status
  * @property string|null $un_number
  * @property string|null $un_class
@@ -125,6 +124,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $scpn_number
  * @property bool $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property HealthRankEnum|null $health_rank
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

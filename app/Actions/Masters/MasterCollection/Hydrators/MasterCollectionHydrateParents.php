@@ -8,7 +8,6 @@
 
 namespace App\Actions\Masters\MasterCollection\Hydrators;
 
-use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterCollection;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
