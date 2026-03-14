@@ -65,6 +65,7 @@
     "maennchen/zipstream-php": "^3.1",
     "masbug/flysystem-google-drive-ext": "^2.3",
     "matchish/laravel-scout-elasticsearch": "^7.2",
+    "matomo/device-detector": "^6.5",
     "meilisearch/meilisearch-php": "^1.0",
     "monicahq/laravel-cloudflare": "^4",
     "mpdf/qrcode": "^1.2",

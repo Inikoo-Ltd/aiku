@@ -26,7 +26,7 @@ class StoreWebsitePageView implements ShouldBeUnique
 
     public function getJobUniqueId(WebsiteVisitor $visitor, Website $website, string $url): string
     {
-        return "{$visitor->id}:{$website->id}:{$url}";
+        return "$visitor->id:$website->id:$url";
     }
 
     public function handle(
@@ -64,7 +64,7 @@ class StoreWebsitePageView implements ShouldBeUnique
 
     protected function resolveWebpage(Website $website, string $path): ?Webpage
     {
-        $cacheKey = "webpage_resolve:{$website->id}:" . md5($path);
+        $cacheKey = "webpage_resolve:$website->id:" . md5($path);
 
         return Cache::remember($cacheKey, 86400, function () use ($website, $path) {
             return Webpage::query()

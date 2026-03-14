@@ -1,0 +1,58 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 14 Mar 2026 11:42:38 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Web\WebsiteVisitor\UI;
+
+use DeviceDetector\ClientHints;
+use DeviceDetector\DeviceDetector;
+use DeviceDetector\Parser\Client\Browser;
+use DeviceDetector\Parser\OperatingSystem;
+use Illuminate\Support\Arr;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class GetBrowserInfo
+{
+    use AsAction;
+
+    public function handle(string $userAgent): array
+    {
+        $cacheKey = 'browser_info_v1:'.md5($userAgent.serialize(request()->server()));
+
+        return cache()->remember(
+            $cacheKey,
+            now()->addDays(100),
+            function () use ($userAgent) {
+                $clientHints = ClientHints::factory(request()->server());
+
+                $dd = new DeviceDetector($userAgent, $clientHints);
+                $dd->setCache(
+                    new \DeviceDetector\Cache\LaravelCache()
+                );
+
+                $dd->parse();
+
+                if ($dd->isBot()) {
+                    $botInfo = $dd->getBot();
+
+                    return [
+                        'device'  => 'Bot',
+                        'browser' => Arr::get($botInfo, 'name'),
+                        'os'      => Arr::get($botInfo, 'category'),
+                    ];
+                }
+
+                return [
+                    'device'  => ucfirst($dd->getDeviceName()) ?? 'Unknown Device',
+                    'browser' => Browser::getBrowserFamily($dd->getClient('name')),
+                    'os'      => OperatingSystem::getOsFamily($dd->getOs('name')),
+                ];
+            }
+        );
+    }
+
+}
