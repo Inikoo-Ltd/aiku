@@ -9,6 +9,7 @@
 namespace App\Models\Comms;
 
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
