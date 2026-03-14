@@ -42,7 +42,7 @@ class FetchAuroraDispatchedEmails extends FetchAuroraAction
                     );
 
                     if ($dispatchedEmailData['dispatchedEmail']['provider_dispatch_id'] && $dispatchedEmailData['dispatchedEmail']['sent_at']) {
-                        if (!DB::table('ses_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)
+                        if (!DB::table('ses_dispatched_emails')
                             ->where('ses_id', $dispatchedEmailData['dispatchedEmail']['provider_dispatch_id'])->exists()) {
                             DB::table('ses_dispatched_emails')->insert([
                                 'dispatched_email_id' => $dispatchedEmail->id,

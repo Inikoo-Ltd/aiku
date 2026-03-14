@@ -22,7 +22,6 @@ class SeedSesMessageId
     {
         $sesMessageId = $dispatchedEmail->provider_dispatch_id;
         if (!DB::table('ses_dispatched_emails')
-            ->where('dispatched_email_id', $dispatchedEmail->id)
             ->where('ses_id', $sesMessageId)->exists()) {
             DB::table('ses_dispatched_emails')->insert([
                 'dispatched_email_id' => $dispatchedEmail->id,
