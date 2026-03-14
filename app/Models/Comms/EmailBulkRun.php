@@ -49,7 +49,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailBulkRunRecipient> $recipients
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Shop|null $shop
  * @property-read \App\Models\Comms\EmailBulkRunStats|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRun newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRun newQuery()

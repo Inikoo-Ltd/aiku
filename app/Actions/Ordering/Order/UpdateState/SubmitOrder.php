@@ -136,7 +136,7 @@ class SubmitOrder extends OrgAction
 
         $eligible  = false;
 
-        if($grGiftOffer) {
+        if ($grGiftOffer) {
             $minAmount = Arr::get($grGiftOffer->trigger_data, 'min_amount', 100000);
             if ($order->gross_amount >= $minAmount) {
                 $eligible = true;

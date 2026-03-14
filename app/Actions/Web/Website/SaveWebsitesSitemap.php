@@ -17,7 +17,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class SaveWebsitesSitemap
 {
-
     use AsAction;
 
     public int $jobTries = 1;
@@ -27,10 +26,10 @@ class SaveWebsitesSitemap
         /** @var Website $website */
         foreach (Website::where('state', WebsiteStateEnum::LIVE)->where('migrated', true)->get() as $website) {
 
-            if($command){
+            if ($command) {
                 $command->info("Creating Sitemap for website $website->domain.");
                 SaveWebsiteSitemap::run($website, $command);
-            }else{
+            } else {
                 SaveWebsiteSitemap::dispatch($website);
             }
 

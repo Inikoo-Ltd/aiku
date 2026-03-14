@@ -12,7 +12,6 @@ use App\Actions\Web\WebsitePageView\StoreWebsitePageView;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteVisitor;
-use Exception;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;

@@ -66,7 +66,7 @@ class GetBrowserInfo
         if (!$browserData['browser']) {
             $browserData['browser'] = 'Unknown';
         }
-        if ($browserData['device']=='') {
+        if ($browserData['device'] == '') {
             $browserData['device'] = 'Unknown Device';
         }
         if (!$browserData['os']) {

@@ -10,7 +10,6 @@
 
 namespace App\Actions\Web\Website;
 
-
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\Web\Webpage;
@@ -24,7 +23,6 @@ use Spatie\Sitemap\Tags\Url;
 
 class SaveWebsiteSitemap implements ShouldBeUnique
 {
-
     use AsAction;
 
     public int $jobTries = 1;
