@@ -20,8 +20,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property int $id
- * @property int $organisation_id
- * @property int|null $shop_id
  * @property int|null $outbox_id
  * @property string $parent_type MailShot|EmailBulkRun|EmailPush|EmailOngoingRun
  * @property int $parent_id
@@ -47,8 +45,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
  * @property int $number_email_tracking_events
- * @property int|null $post_room_id
- * @property int|null $org_post_room_id
  * @property string|null $uuid
  * @property-read \App\Models\Comms\EmailAddress|null $emailAddress
  * @property-read \App\Models\Comms\EmailCopy|null $emailCopy
