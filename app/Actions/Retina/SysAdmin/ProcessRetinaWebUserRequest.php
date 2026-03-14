@@ -14,11 +14,10 @@ use App\Actions\Analytics\WebUserRequest\StoreWebUserRequest;
 use App\Actions\RetinaAction;
 use App\Actions\SysAdmin\WithLogRequest;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Actions\Utils\GetOsFromUserAgent;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Analytics\WebUserRequest;
 use App\Models\CRM\WebUser;
-use hisorange\BrowserDetect\Parser as Browser;
 use Illuminate\Support\Carbon;
 
 class ProcessRetinaWebUserRequest extends RetinaAction
@@ -49,19 +48,18 @@ class ProcessRetinaWebUserRequest extends RetinaAction
                 });
             }
         }
-        $parsedUserAgent = (new Browser())->parse($userAgent);
 
         $location = json_encode($this->getLocation($ip));
-        $device   = $parsedUserAgent->deviceType();
-        $os       = GetOsFromUserAgent::run($parsedUserAgent);
+
+        $browserData = GetBrowserInfo::run($userAgent);
 
         $modelData = [
             'date'         => $datetime,
             'route_name'   => $routeData['name'],
             'route_params' => json_encode($routeData['arguments']),
-            'os'           => $os,
-            'device'       => $device,
-            'browser'      => explode(' ', $parsedUserAgent->browserName())[0] ?: 'Unknown',
+            'os'           => $browserData['os'],
+            'device'       => $browserData['device'],
+            'browser'      => $browserData['browser'],
             'ip_address'   => $ip,
             'location'     => $location,
             'webpage_id'   => $webpageID,

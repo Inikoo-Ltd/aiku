@@ -42,7 +42,6 @@
     "google/apiclient": "^2.15.0",
     "guzzlehttp/guzzle": "^7.2",
     "guzzlehttp/psr7": "^2.8",
-    "hisorange/browser-detect": "^4.5",
     "http-interop/http-factory-guzzle": "^1.2",
     "inertiajs/inertia-laravel": "^2.0",
     "inspector-apm/inspector-laravel": "^4.15",

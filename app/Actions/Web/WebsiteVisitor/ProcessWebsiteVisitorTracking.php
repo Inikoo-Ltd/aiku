@@ -50,15 +50,8 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
         if ($visitor) {
             $visitor = UpdateWebsiteVisitor::run($visitor, $currentUrl);
         } else {
-            try {
-                $browserData = GetBrowserInfo::run($userAgent);
-            } catch (Exception) {
-                $browserData = [
-                    'device'  => 'Unknown Device',
-                    'browser' => 'Unknown',
-                    'os'      => 'Unknown'
-                ];
-            }
+
+            $browserData = GetBrowserInfo::run($userAgent);
 
             $visitor = StoreWebsiteVisitor::run(
                 website: $website,

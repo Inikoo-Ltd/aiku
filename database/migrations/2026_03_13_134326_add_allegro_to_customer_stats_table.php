@@ -13,16 +13,20 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('customer_stats', function (Blueprint $table) {
-            $table->unsignedInteger('number_customer_sales_channels_platform_type_allegro')->default(0);
-        });
+        if (!Schema::hasColumn('customer_stats', 'number_customer_sales_channels_platform_type_allegro')) {
+            Schema::table('customer_stats', function (Blueprint $table) {
+                $table->unsignedInteger('number_customer_sales_channels_platform_type_allegro')->default(0);
+            });
+        }
     }
 
 
     public function down(): void
     {
-        Schema::table('customer_stats', function (Blueprint $table) {
-            $table->dropColumn('number_customer_sales_channels_platform_type_allegro');
-        });
+        if (Schema::hasColumn('customer_stats', 'number_customer_sales_channels_platform_type_allegro')) {
+            Schema::table('customer_stats', function (Blueprint $table) {
+                $table->dropColumn('number_customer_sales_channels_platform_type_allegro');
+            });
+        }
     }
 };

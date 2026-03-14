@@ -12,7 +12,9 @@ use DeviceDetector\ClientHints;
 use DeviceDetector\DeviceDetector;
 use DeviceDetector\Parser\Client\Browser;
 use DeviceDetector\Parser\OperatingSystem;
+use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetBrowserInfo
@@ -23,36 +25,49 @@ class GetBrowserInfo
     {
         $cacheKey = 'browser_info_v1:'.md5($userAgent.serialize(request()->server()));
 
-        return cache()->remember(
-            $cacheKey,
-            now()->addDays(100),
-            function () use ($userAgent) {
-                $clientHints = ClientHints::factory(request()->server());
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
 
-                $dd = new DeviceDetector($userAgent, $clientHints);
-                $dd->setCache(
-                    new \DeviceDetector\Cache\LaravelCache()
-                );
+        $clientHints = ClientHints::factory(request()->server());
 
-                $dd->parse();
+        try {
+            $dd = new DeviceDetector($userAgent, $clientHints);
+        } catch (Exception) {
+            return [
+                'device'  => 'Unknown Device',
+                'browser' => 'Unknown',
+                'os'      => 'Unknown'
+            ];
+        }
 
-                if ($dd->isBot()) {
-                    $botInfo = $dd->getBot();
-
-                    return [
-                        'device'  => 'Bot',
-                        'browser' => Arr::get($botInfo, 'name'),
-                        'os'      => Arr::get($botInfo, 'category'),
-                    ];
-                }
-
-                return [
-                    'device'  => ucfirst($dd->getDeviceName()) ?? 'Unknown Device',
-                    'browser' => Browser::getBrowserFamily($dd->getClient('name')),
-                    'os'      => OperatingSystem::getOsFamily($dd->getOs('name')),
-                ];
-            }
+        $dd->setCache(
+            new \DeviceDetector\Cache\LaravelCache()
         );
+
+        $dd->parse();
+
+        if ($dd->isBot()) {
+            $botInfo = $dd->getBot();
+
+            $browserData = [
+                'device'  => 'Bot',
+                'browser' => Arr::get($botInfo, 'name'),
+                'os'      => Arr::get($botInfo, 'category'),
+            ];
+        } else {
+            $browserData = [
+                'device'  => ucfirst($dd->getDeviceName()) ?? 'Unknown Device',
+                'browser' => Browser::getBrowserFamily($dd->getClient('name')),
+                'os'      => OperatingSystem::getOsFamily($dd->getOs('name')),
+            ];
+        }
+
+        Cache::put($cacheKey, $browserData, now()->days(100));
+
+
+        return $browserData;
+
     }
 
 }
