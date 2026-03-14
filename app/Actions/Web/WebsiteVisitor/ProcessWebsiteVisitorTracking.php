@@ -22,7 +22,7 @@ class ProcessWebsiteVisitorTracking implements ShouldBeUnique
     use AsAction;
 
     public string $jobQueue = 'analytics';
-    public int $jobTimeout = 60;
+    public int $jobTimeout = 120;
     public int $jobTries = 1;
 
     public function handle(

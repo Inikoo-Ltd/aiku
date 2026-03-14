@@ -21,7 +21,7 @@ class StoreWebsitePageView implements ShouldBeUnique
     use AsAction;
 
     public string $jobQueue = 'analytics';
-    public int $jobTimeout = 1;
+    public int $jobTimeout = 120;
     public int $jobTries = 1;
 
     public function getJobUniqueId(WebsiteVisitor $visitor, Website $website, string $url): string
