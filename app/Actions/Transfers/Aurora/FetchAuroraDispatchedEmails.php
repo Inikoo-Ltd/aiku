@@ -14,6 +14,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Transfers\SourceOrganisationService;
 use Exception;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -39,6 +40,18 @@ class FetchAuroraDispatchedEmails extends FetchAuroraAction
                         modelData: $dispatchedEmailData['dispatchedEmail'],
                         strict: false,
                     );
+
+                    if ($dispatchedEmailData['dispatchedEmail']['provider_dispatch_id'] && $dispatchedEmailData['dispatchedEmail']['sent_at']) {
+                        if (!DB::table('ses_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)
+                            ->where('ses_id', $dispatchedEmailData['dispatchedEmail']['provider_dispatch_id'])->exists()) {
+                            DB::table('ses_dispatched_emails')->insert([
+                                'dispatched_email_id' => $dispatchedEmail->id,
+                                'ses_id'              => $dispatchedEmailData['dispatchedEmail']['provider_dispatch_id'],
+                                'send_at'             => $dispatchedEmailData['dispatchedEmail']['sent_at']
+                            ]);
+                        }
+                    }
+
                     $this->recordChange($organisationSource, $dispatchedEmail->wasChanged());
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $dispatchedEmailData['dispatchedEmail'], 'DispatchedEmail', 'update');
@@ -54,6 +67,14 @@ class FetchAuroraDispatchedEmails extends FetchAuroraAction
                         hydratorsDelay: 60,
                         strict: false,
                     );
+
+                    if ($dispatchedEmailData['dispatchedEmail']['provider_dispatch_id'] && $dispatchedEmailData['dispatchedEmail']['sent_at']) {
+                        DB::table('ses_dispatched_emails')->insert([
+                            'dispatched_email_id' => $dispatchedEmail->id,
+                            'ses_id'              => $dispatchedEmailData['dispatchedEmail']['provider_dispatch_id'],
+                            'send_at'             => $dispatchedEmailData['dispatchedEmail']['sent_at']
+                        ]);
+                    }
 
                     $this->recordNew($organisationSource);
                     $sourceData = explode(':', $dispatchedEmail->source_id);
