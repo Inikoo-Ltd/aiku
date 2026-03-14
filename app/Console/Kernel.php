@@ -466,6 +466,15 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+        $this->logSchedule(
+            $schedule->command('dispatched-email:clean-provider-dispatch-id')->dailyAt('3:30')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CleanProviderDispatchID',
+            ),
+            name: 'CleanProviderDispatchID',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
     }
 
     protected function commands(): void
