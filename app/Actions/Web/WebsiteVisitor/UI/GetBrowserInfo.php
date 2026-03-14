@@ -63,11 +63,20 @@ class GetBrowserInfo
             ];
         }
 
+        if (!$browserData['browser']) {
+            $browserData['browser'] = 'Unknown';
+        }
+        if ($browserData['device']=='') {
+            $browserData['device'] = 'Unknown Device';
+        }
+        if (!$browserData['os']) {
+            $browserData['os'] = 'Unknown';
+        }
+
         Cache::put($cacheKey, $browserData, now()->days(100));
 
 
         return $browserData;
-
     }
 
 }
