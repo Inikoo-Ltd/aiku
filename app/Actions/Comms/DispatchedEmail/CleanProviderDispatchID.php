@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 14 Mar 2026 15:22:20 Central Indonesia Time, Kuala Lumpur, Malaysia
@@ -8,6 +9,7 @@
 namespace App\Actions\Comms\DispatchedEmail;
 
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -15,17 +17,31 @@ class CleanProviderDispatchID
 {
     use AsAction;
 
-    public function handle(): void
+    public function handle(?Command $command = null): void
     {
-        DB::table('dispatched_emails')
-            ->where('provider', DispatchedEmailProviderEnum::SES->value)
-            ->where('created_at', '<', now()->subDays(1))
-            ->update(['provider_dispatch_id' => null]);
+        $batchSize = 5000;
+        $affected  = 1;
 
-        DB::table('dispatched_emails')
-            ->where('provider','!=' ,DispatchedEmailProviderEnum::SES->value)
-            ->where('created_at', '<', now()->subDays(3))
-            ->update(['provider_dispatch_id' => null]);
+        while ($affected > 0) {
+            $affected = DB::table('dispatched_emails')
+                ->whereIn('id', function ($query) use ($batchSize) {
+                    $query->select('id')
+                        ->from('dispatched_emails')
+                        ->whereNotNull('provider_dispatch_id')
+                        ->where(function ($q) {
+                            $q->where(function ($sq) {
+                                $sq->where('provider', DispatchedEmailProviderEnum::SES->value)
+                                    ->where('sent_at', '<', now()->subDays(61));
+                            })->orWhere(function ($sq) {
+                                $sq->where('provider', '!=', DispatchedEmailProviderEnum::SES->value)
+                                    ->where('sent_at', '<', now()->subDays(7));
+                            });
+                        })
+                        ->limit($batchSize);
+                })
+                ->update(['provider_dispatch_id' => null]);
+            $command?->info("Updated $affected dispatched emails");
+        }
     }
 
     public function getCommandSignature(): string
@@ -33,9 +49,9 @@ class CleanProviderDispatchID
         return 'dispatched-email:clean-provider-dispatch-id';
     }
 
-    public function asCommand(): void
+    public function asCommand(Command $command): void
     {
-        $this->handle();
+        $this->handle($command);
     }
 
 }
