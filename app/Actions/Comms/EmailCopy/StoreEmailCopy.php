@@ -47,7 +47,7 @@ class StoreEmailCopy extends OrgAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($dispatchedEmail->organisation, $modelData);
+        $this->initialisation($dispatchedEmail->outbox->organisation, $modelData);
 
         return $this->handle($dispatchedEmail, $this->validatedData);
     }

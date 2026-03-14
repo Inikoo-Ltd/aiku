@@ -45,7 +45,7 @@ class UpdateDispatchedEmail extends OrgAction
         $this->strict         = $strict;
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($dispatchedEmail->organisation, $modelData);
+        $this->initialisation($dispatchedEmail->outbox->organisation, $modelData);
 
         return $this->handle($dispatchedEmail, $this->validatedData);
     }
