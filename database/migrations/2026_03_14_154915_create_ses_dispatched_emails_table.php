@@ -17,7 +17,7 @@ return new class () extends Migration {
             $table->id();
             $table->unsignedInteger('dispatched_email_id')->index();
             $table->foreign('dispatched_email_id')->references('id')->on('dispatched_emails')->cascadeOnDelete();
-            $table->string('ses_id', 40)->index();
+            $table->string('ses_id', 80)->index();
             $table->dateTimeTz('send_at')->index();
         });
     }
