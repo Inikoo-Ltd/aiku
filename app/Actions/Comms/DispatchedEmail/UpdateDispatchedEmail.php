@@ -41,10 +41,10 @@ class UpdateDispatchedEmail extends OrgAction
     {
         $rules = [
             'provider_dispatch_id' => ['sometimes', 'required', 'string'],
-            'state'  => ['sometimes', 'required', Rule::enum(DispatchedEmailStateEnum::class)]
+            'state'                => ['sometimes', 'required', Rule::enum(DispatchedEmailStateEnum::class)]
         ];
         if (!$this->strict) {
-            $rules         = $this->noStrictUpdateRules($rules);
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
