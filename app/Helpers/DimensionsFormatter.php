@@ -15,73 +15,75 @@ class DimensionsFormatter
 {
     use AsObject;
 
-    public function dimensions(string $dimensionsData)
+    public function dimensions(string $dimensionsData): string
     {
         $data = json_decode($dimensionsData, true);
         if ($data) {
-            return match ($data['type']) {
+            return match (Arr::get($data, 'type')) {
                 'rectangular' => number(
-                    convertUnits(
-                        $data['l'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).'x'.number(
-                    convertUnits(
-                        $data['w'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).'x'.number(
-                    convertUnits(
-                        $data['h'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
+                        convertUnits(
+                            $data['l'] ?? 0,
+                            'm',
+                            Arr::get($data, 'units', 'm')
+                        )
+                    ).'x'.number(
+                        convertUnits(
+                            $data['w'] ?? 0,
+                            'm',
+                            Arr::get($data, 'units', 'm')
+                        )
+                    ).'x'.number(
+                        convertUnits(
+                            $data['h'] ?? 0,
+                            'm',
+                            Arr::get($data, 'units', 'm')
+                        )
+                    ).' ('.Arr::get($data, 'units', 'm').')',
                 'sheet' => number(
-                    convertUnits(
-                        $data['l'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).'x'.number(
-                    convertUnits(
-                        $data['w'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
+                        convertUnits(
+                            $data['l'] ?? 0,
+                            'm',
+                            Arr::get($data, 'units', 'm')
+                        )
+                    ).'x'.number(
+                        convertUnits(
+                            $data['w'] ?? 0,
+                            'm',
+                            Arr::get($data, 'units', 'm')
+                        )
+                    ).' ('.Arr::get($data, 'units', 'm').')',
                 'cilinder' => number(
-                    convertUnits(
-                        $data['h'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).'x'.number(
-                    convertUnits(
-                        $data['w'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
+                        convertUnits(
+                            $data['h'] ?? 0,
+                            'm',
+                            Arr::get($data, 'units', 'm')
+                        )
+                    ).'x'.number(
+                        convertUnits(
+                            $data['w'] ?? 0,
+                            'm',
+                            Arr::get($data, 'units', 'm')
+                        )
+                    ).' ('.Arr::get($data, 'units', 'm').')',
                 'sphere' => 'D:'.number(
-                    convertUnits(
-                        $data['h'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
+                        convertUnits(
+                            $data['h'] ?? 0,
+                            'm',
+                            Arr::get($data, 'units', 'm')
+                        )
+                    ).' ('.Arr::get($data, 'units', 'm').')',
                 'string' => 'L.'.number(
-                    convertUnits(
-                        $data['l'] ?? 0,
-                        'm',
-                        Arr::get($data, 'units', 'm')
-                    )
-                ).' ('.Arr::get($data, 'units', 'm').')',
+                        convertUnits(
+                            $data['l'] ?? 0,
+                            'm',
+                            Arr::get($data, 'units', 'm')
+                        )
+                    ).' ('.Arr::get($data, 'units', 'm').')',
                 default => '',
             };
         }
+
+        return '';
     }
 
 }
