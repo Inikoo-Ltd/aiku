@@ -15,7 +15,6 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Comms\DispatchedEmail;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDispatchedEmail extends OrgAction
 {
@@ -26,15 +25,6 @@ class UpdateDispatchedEmail extends OrgAction
     public function handle(DispatchedEmail $dispatchedEmail, array $modelData): DispatchedEmail
     {
         return $this->update($dispatchedEmail, $modelData, ['data']);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("mail.edit");
     }
 
     public function rules(): array

@@ -8,7 +8,9 @@
 
 namespace App\Actions\Comms\Outbox\Hydrators;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDispatchedEmails;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
@@ -62,6 +64,8 @@ class OutboxHydrateDispatchedEmails implements ShouldBeUnique
 
         if ($oldNumberDispatchedEmails != $stats['number_dispatched_emails']) {
             GroupHydrateDispatchedEmails::dispatch($outbox->group_id);
+            OrganisationHydrateDispatchedEmails::dispatch($outbox->organisation_id);
+            ShopHydrateDispatchedEmails::dispatch($outbox->shop_id);
         }
     }
 

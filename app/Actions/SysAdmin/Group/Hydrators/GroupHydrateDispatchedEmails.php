@@ -10,7 +10,6 @@
 
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
-use App\Actions\Traits\WithEnumStats;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +18,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GroupHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
 
     public function getJobUniqueId(?int $groupID): string
     {

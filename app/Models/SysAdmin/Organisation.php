@@ -891,11 +891,6 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->hasMany(Adjustment::class);
     }
 
-    public function dispatchedEmails(): HasMany
-    {
-        return $this->hasMany(DispatchedEmail::class);
-    }
-
     public function webUserRequests(): HasMany
     {
         return $this->hasMany(WebUserRequest::class);

@@ -36,15 +36,9 @@ class StoreDispatchedEmail extends OrgAction
 
     public function handle(EmailOngoingRun|EmailBulkRun|Mailshot|EmailTemplate $parent, WebUser|Customer|Prospect|User|OutBoxHasSubscriber|ExternalEmailRecipient $recipient, array $modelData, bool $isTest = false): DispatchedEmail
     {
-
-        data_set($modelData, 'organisation_id', $parent->organisation_id);
-        data_set($modelData, 'shop_id', $parent->shop_id);
-
         if (!$parent instanceof EmailTemplate) {
             $outbox = $parent->outbox;
             data_set($modelData, 'outbox_id', $outbox->id);
-            data_set($modelData, 'post_room_id', $outbox->post_room_id);
-            data_set($modelData, 'org_post_room_id', $outbox->org_post_room_id);
         }
 
         data_set($modelData, 'recipient_type', class_basename($recipient));
