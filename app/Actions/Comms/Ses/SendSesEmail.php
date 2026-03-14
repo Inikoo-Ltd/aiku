@@ -10,9 +10,11 @@ namespace App\Actions\Comms\Ses;
 
 use App\Actions\Comms\DispatchedEmail\UpdateDispatchedEmail;
 use App\Actions\Comms\EmailAddress\Traits\AwsClient;
+use App\Actions\Comms\EmailCopy\StoreEmailCopy;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateEmails;
 use App\Actions\CRM\Prospect\UpdateProspectEmailSent;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use Aws\Exception\AwsException;
 use Aws\Result;
@@ -29,7 +31,7 @@ class SendSesEmail
 
     public mixed $message;
 
-    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, string $unsubscribeUrl = null, ?string $senderName = null): DispatchedEmail
+    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false): DispatchedEmail
     {
         if ($dispatchedEmail->state != DispatchedEmailStateEnum::READY) {
             return $dispatchedEmail;
@@ -37,11 +39,10 @@ class SendSesEmail
 
         $emailTo = $dispatchedEmail->emailAddress->email;
 
-
         $actuallySend = false;
         if (app()->isProduction()) {
             $actuallySend = true;
-        } elseif (config('app.send_email_in_non_production_env') || $dispatchedEmail->is_test) {
+        } elseif (config('app.send_email_in_non_production_env') || $isTest) {
             $actuallySend = true;
 
             $emailTo = config('app.test_email_to_address');
@@ -95,20 +96,34 @@ class SendSesEmail
             try {
                 $result = $this->sendEmail($emailData);
 
-                UpdateDispatchedEmail::run(
+                $dispatchedEmail = UpdateDispatchedEmail::run(
                     $dispatchedEmail,
                     [
                         'state'                => DispatchedEmailStateEnum::SENT,
                         'sent_at'              => now(),
-                        'provider_dispatch_id' => Arr::get($result, 'MessageId')
+                        'provider_dispatch_id' => $isTest ? null : Arr::get($result, 'MessageId')
                     ]
                 );
+
+                if (!$isTest && $dispatchedEmail->outbox
+                    && in_array($dispatchedEmail->outbox->code, [
+                        OutboxCodeEnum::DELIVERY_CONFIRMATION,
+                        OutboxCodeEnum::ORDER_CONFIRMATION,
+                        OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
+                        OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+                        OutboxCodeEnum::RENTAL_AGREEMENT,
+                    ])) {
+                    StoreEmailCopy::make()->action($dispatchedEmail, [
+                        'subject' => $subject,
+                        'body'    => $emailHtmlBody
+                    ]);
+                }
+
 
                 if ($dispatchedEmail->recipient && $dispatchedEmail->recipient_type == 'Prospect') {
                     UpdateProspectEmailSent::run($dispatchedEmail->recipient);
                 }
             } catch (AwsException $e) {
-
                 if ($e->getAwsErrorCode() == 'Throttling' && $attempt < $numberAttempts - 1) {
                     $attempt++;
                     usleep(rand(200, 300) + pow(2, $attempt));
@@ -149,6 +164,7 @@ class SendSesEmail
 
             break;
         } while ($attempt < $numberAttempts);
+
 
         if ($dispatchedEmail->outbox) {
             OutboxHydrateEmails::run($dispatchedEmail->outbox);

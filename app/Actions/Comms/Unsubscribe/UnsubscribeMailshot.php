@@ -28,9 +28,6 @@ class UnsubscribeMailshot
 
     public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
     {
-        if ($dispatchedEmail->is_test) {
-            return $dispatchedEmail;
-        }
 
         $recipient = $dispatchedEmail->recipient;
         $parent = $dispatchedEmail->parent;

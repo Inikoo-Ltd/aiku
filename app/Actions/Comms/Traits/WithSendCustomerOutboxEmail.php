@@ -57,7 +57,6 @@ trait WithSendCustomerOutboxEmail
 
         $recipient = $customer;
         $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $recipient, [
-            'is_test'       => false,
             'outbox_id'     => $outbox->id,
             'email_address' => $recipient->email,
             'provider'      => DispatchedEmailProviderEnum::SES

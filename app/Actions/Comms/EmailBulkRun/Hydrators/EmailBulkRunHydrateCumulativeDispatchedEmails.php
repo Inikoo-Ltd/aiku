@@ -36,8 +36,7 @@ class EmailBulkRunHydrateCumulativeDispatchedEmails implements ShouldBeUnique
         /** @noinspection PhpUncoveredEnumCasesInspection */
         $query = DB::table('dispatched_emails')
             ->where('parent_type', 'EmailBulkRun')
-            ->where('parent_id', $emailBulkRun->id)
-            ->where('is_test', false);
+            ->where('parent_id', $emailBulkRun->id);
 
 
 

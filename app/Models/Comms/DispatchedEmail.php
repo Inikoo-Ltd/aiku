@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * @property int $id
@@ -44,7 +43,6 @@ use Illuminate\Support\Facades\Auth;
  * @property bool $mask_as_spam
  * @property bool $provoked_unsubscribe
  * @property array<array-key, mixed> $data
- * @property bool $is_test
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $fetched_at
@@ -116,10 +114,6 @@ class DispatchedEmail extends Model
 
     public function getName(): string
     {
-        if ($this->is_test) {
-            return Auth::user()->contact_name;
-        }
-
         if ($this->recipient) {
             /** @var Prospect|Customer $recipient */
             $recipient = $this->recipient;

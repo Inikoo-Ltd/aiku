@@ -46,7 +46,6 @@ class SendMailshotTest extends OrgAction
 
         foreach ($recipients as $recipient) {
             $dispatchedEmail = StoreDispatchedEmail::run($parent, $recipient, [
-                'is_test'   => true,
                 'outbox_id' => Outbox::where('type', OutboxTypeEnum::TEST)->pluck('id')->first(),
                 'email_address' => $recipient->email,
                 'provider' => DispatchedEmailProviderEnum::SES

@@ -19,6 +19,7 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailOngoingRun;
+use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\ExternalEmailRecipient;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\OutBoxHasSubscriber;
@@ -28,7 +29,6 @@ use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Str;
 
 class StoreDispatchedEmail extends OrgAction
@@ -36,16 +36,20 @@ class StoreDispatchedEmail extends OrgAction
     use WithNoStrictRules;
 
 
-    public function handle(EmailOngoingRun|EmailBulkRun|Mailshot $parent, WebUser|Customer|Prospect|User|OutBoxHasSubscriber|ExternalEmailRecipient $recipient, array $modelData): DispatchedEmail
+    public function handle(EmailOngoingRun|EmailBulkRun|Mailshot|EmailTemplate $parent, WebUser|Customer|Prospect|User|OutBoxHasSubscriber|ExternalEmailRecipient $recipient, array $modelData, bool $isTest = false): DispatchedEmail
     {
-        $outbox = $parent->outbox;
 
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
-        data_set($modelData, 'outbox_id', $outbox->id);
-        data_set($modelData, 'post_room_id', $outbox->post_room_id);
-        data_set($modelData, 'org_post_room_id', $outbox->org_post_room_id);
+
+        if (!$parent instanceof EmailTemplate) {
+            $outbox = $parent->outbox;
+            data_set($modelData, 'outbox_id', $outbox->id);
+            data_set($modelData, 'post_room_id', $outbox->post_room_id);
+            data_set($modelData, 'org_post_room_id', $outbox->org_post_room_id);
+        }
+
         data_set($modelData, 'recipient_type', class_basename($recipient));
         data_set($modelData, 'recipient_id', $recipient->id);
         data_set($modelData, 'uuid', Str::uuid());
@@ -57,23 +61,17 @@ class StoreDispatchedEmail extends OrgAction
         $dispatchedEmail = $parent->dispatchedEmails()->create($modelData);
 
 
-        GroupHydrateDispatchedEmails::dispatch($dispatchedEmail->group)->delay($this->hydratorsDelay);
-        OrganisationHydrateDispatchedEmails::dispatch($dispatchedEmail->organisation)->delay($this->hydratorsDelay);
-        if ($dispatchedEmail->shop_id) {
-            ShopHydrateDispatchedEmails::dispatch($dispatchedEmail->shop)->delay($this->hydratorsDelay);
+        if (!$isTest) {
+            GroupHydrateDispatchedEmails::dispatch($dispatchedEmail->group)->delay($this->hydratorsDelay);
+            OrganisationHydrateDispatchedEmails::dispatch($dispatchedEmail->organisation)->delay($this->hydratorsDelay);
+            if ($dispatchedEmail->shop_id) {
+                ShopHydrateDispatchedEmails::dispatch($dispatchedEmail->shop)->delay($this->hydratorsDelay);
+            }
         }
+
 
 
         return $dispatchedEmail;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("mail.edit");
     }
 
     public function rules(): array

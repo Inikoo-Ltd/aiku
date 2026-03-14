@@ -104,7 +104,6 @@ class ProcessSendMailshotSecondWave
                         $mailshot,
                         $recipient,
                         [
-                            'is_test'       => false,
                             'outbox_id'     => $outbox->id,
                             'email_address' => $recipient->email,
                             'provider'      => DispatchedEmailProviderEnum::SES
