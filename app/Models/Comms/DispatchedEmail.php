@@ -12,7 +12,6 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
-use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property int $id
- * @property int $group_id
  * @property int $organisation_id
  * @property int|null $shop_id
  * @property int|null $outbox_id
@@ -55,13 +53,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \App\Models\Comms\EmailAddress|null $emailAddress
  * @property-read \App\Models\Comms\EmailCopy|null $emailCopy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailTrackingEvent> $emailTrackingEvents
- * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Comms\Mailshot|null $mailshot
- * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read Model|\Eloquent $parent
  * @property-read Model|\Eloquent|null $recipient
- * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|DispatchedEmail query()
@@ -69,8 +64,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class DispatchedEmail extends Model
 {
-    use InShop;
-
     protected $casts = [
         'data'             => 'array',
         'state'            => DispatchedEmailStateEnum::class,

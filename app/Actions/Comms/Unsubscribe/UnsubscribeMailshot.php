@@ -19,6 +19,7 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Mailshot;
+use App\Models\CRM\Prospect;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
 
@@ -28,8 +29,9 @@ class UnsubscribeMailshot
 
     public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
     {
-
+        /** @var Customer|Prospect $recipient */
         $recipient = $dispatchedEmail->recipient;
+        /** @var Mailshot|EmailBulkRun $parent */
         $parent = $dispatchedEmail->parent;
 
         if (class_basename($recipient) == 'Prospect') {
@@ -37,9 +39,7 @@ class UnsubscribeMailshot
         }
 
         if (class_basename($recipient) == class_basename(Customer::class)) {
-
             if (class_basename($parent) == class_basename(Mailshot::class)) {
-
                 $modelData = match ($parent->type) {
                     MailshotTypeEnum::NEWSLETTER => [
                         'is_subscribed_to_newsletter' => false,
@@ -55,7 +55,6 @@ class UnsubscribeMailshot
             }
 
             if (class_basename($parent) == class_basename(EmailBulkRun::class)) {
-
                 $modelData = match ($parent->outbox->code) {
                     OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => [
                         'is_subscribed_to_price_change_notification' => false,
@@ -74,17 +73,17 @@ class UnsubscribeMailshot
         UpdateDispatchedEmail::run(
             $dispatchedEmail,
             [
-                'state'           => DispatchedEmailStateEnum::UNSUBSCRIBED,
+                'state'                => DispatchedEmailStateEnum::UNSUBSCRIBED,
                 'provoked_unsubscribe' => true
 
             ]
         );
 
         $eventData = [
-            'type' => EmailTrackingEventTypeEnum::UNSUBSCRIBED,
-            'group_id' => $dispatchedEmail->group_id,
-            'organisation_id' => $dispatchedEmail->organisation_id,
-            'data' => [
+            'type'            => EmailTrackingEventTypeEnum::UNSUBSCRIBED,
+            'group_id'        => $dispatchedEmail->outbox->group_id,
+            'organisation_id' => $dispatchedEmail->outbox->organisation_id,
+            'data'            => [
                 'ipAddress' => $request->ip(),
                 'userAgent' => $request->userAgent()
             ]
@@ -107,9 +106,9 @@ class UnsubscribeMailshot
     {
         return [
             'api_response_status' => 200,
-            'api_response_data' => [
+            'api_response_data'   => [
                 'recipient_email' => $dispatchedEmail->emailAddress?->email,
-                'recipient_name' => $dispatchedEmail->getName(),
+                'recipient_name'  => $dispatchedEmail->getName(),
             ]
         ];
     }

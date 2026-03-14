@@ -8,11 +8,9 @@
 
 namespace App\Actions\Comms\DispatchedEmail;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDispatchedEmails;
 use App\Actions\Comms\EmailAddress\StoreEmailAddress;
+use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDispatchedEmails;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
@@ -39,7 +37,6 @@ class StoreDispatchedEmail extends OrgAction
     public function handle(EmailOngoingRun|EmailBulkRun|Mailshot|EmailTemplate $parent, WebUser|Customer|Prospect|User|OutBoxHasSubscriber|ExternalEmailRecipient $recipient, array $modelData, bool $isTest = false): DispatchedEmail
     {
 
-        data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
 
@@ -60,16 +57,9 @@ class StoreDispatchedEmail extends OrgAction
         /** @var DispatchedEmail $dispatchedEmail */
         $dispatchedEmail = $parent->dispatchedEmails()->create($modelData);
 
-
         if (!$isTest) {
-            GroupHydrateDispatchedEmails::dispatch($dispatchedEmail->group)->delay($this->hydratorsDelay);
-            OrganisationHydrateDispatchedEmails::dispatch($dispatchedEmail->organisation)->delay($this->hydratorsDelay);
-            if ($dispatchedEmail->shop_id) {
-                ShopHydrateDispatchedEmails::dispatch($dispatchedEmail->shop)->delay($this->hydratorsDelay);
-            }
+            OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(10);
         }
-
-
 
         return $dispatchedEmail;
     }

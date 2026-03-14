@@ -11,7 +11,7 @@ namespace App\Actions\Comms\Ses;
 use App\Actions\Comms\DispatchedEmail\UpdateDispatchedEmail;
 use App\Actions\Comms\EmailAddress\Traits\AwsClient;
 use App\Actions\Comms\EmailCopy\StoreEmailCopy;
-use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateEmails;
+use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails;
 use App\Actions\CRM\Prospect\UpdateProspectEmailSent;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -166,9 +166,8 @@ class SendSesEmail
         } while ($attempt < $numberAttempts);
 
 
-        if ($dispatchedEmail->outbox) {
-            OutboxHydrateEmails::run($dispatchedEmail->outbox);
-        }
+        OutboxHydrateDispatchedEmails::run($dispatchedEmail->outbox_id);
+
 
         return $dispatchedEmail;
     }

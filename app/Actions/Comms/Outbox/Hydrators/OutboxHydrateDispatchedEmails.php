@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Outbox\Hydrators;
 
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDispatchedEmails;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
@@ -16,20 +17,28 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class OutboxHydrateEmails implements ShouldBeUnique
+class OutboxHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
     public string $jobQueue = 'low-priority';
 
-    public function getJobUniqueId(Outbox $outbox): string
+    public function getJobUniqueId(?int $outboxID): string
     {
-        return $outbox->id;
+        return $outboxID ?? 'empty';
     }
 
-    public function handle(Outbox $outbox): void
+    public function handle(?int $outboxID): void
     {
+        if (!$outboxID) {
+            return;
+        }
+        $outbox = Outbox::find($outboxID);
+        if (!$outbox) {
+            return;
+        }
+
         $stats = [
             'number_dispatched_emails' => DB::table('dispatched_emails')->where('outbox_id', $outbox->id)->count(),
         ];
@@ -47,7 +56,13 @@ class OutboxHydrateEmails implements ShouldBeUnique
             )
         );
 
-        $outbox->stats()->update($stats);
+        $outboxStats = $outbox->stats;
+        $oldNumberDispatchedEmails = $outboxStats->number_dispatched_emails;
+        $outboxStats->update($stats);
+
+        if ($oldNumberDispatchedEmails != $stats['number_dispatched_emails']) {
+            GroupHydrateDispatchedEmails::dispatch($outbox->group_id);
+        }
     }
 
 }
