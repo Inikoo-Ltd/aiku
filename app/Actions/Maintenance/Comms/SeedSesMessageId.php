@@ -45,7 +45,7 @@ class SeedSesMessageId
         DispatchedEmail::whereNotNull('sent_at')
             ->whereNotNull('provider_dispatch_id')
             ->where('sent_at', '>=', now()->subDays(61))
-            ->orderBy('id')
+            ->orderBy('sent_at', 'desc')
             ->chunk(
                 1000,
                 function ($dispatchedEmails) use ($command) {
