@@ -17,7 +17,7 @@ class TrackWebsiteVisitor
     {
 
         if ($this->shouldTrack($request)) {
-            ProcessWebsiteVisitorTracking::run(
+            ProcessWebsiteVisitorTracking::dispatch(
                 sessionId: $request->session()->getId(),
                 website: $request->input('website'),
                 webUser: $request->user('retina'),
