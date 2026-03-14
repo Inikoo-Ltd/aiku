@@ -10,20 +10,30 @@
 
 namespace App\Actions\Web\Website;
 
-use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
+
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Storage;
+use Lorisleiva\Actions\Concerns\AsAction;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 
-class SaveWebsiteSitemap extends OrgAction
+class SaveWebsiteSitemap implements ShouldBeUnique
 {
-    use WithActionUpdate;
+
+    use AsAction;
+
+    public int $jobTries = 1;
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(Website $website): string
+    {
+        return $website->id;
+    }
 
     public function handle(Website $website, Command|null $command = null): int
     {
@@ -103,7 +113,7 @@ class SaveWebsiteSitemap extends OrgAction
                     continue;
                 }
 
-                if($webpage->state != WebpageStateEnum::LIVE){
+                if ($webpage->state != WebpageStateEnum::LIVE) {
                     continue;
                 }
 
@@ -136,6 +146,11 @@ class SaveWebsiteSitemap extends OrgAction
         $indexSitemap->writeToDisk('local', "sitemaps/sitemap_$website->id.xml");
 
         return $count;
+    }
+
+    public function asJob(Website $website): void
+    {
+        $this->handle($website);
     }
 
     public string $commandSignature = 'website_sitemap {website}';
