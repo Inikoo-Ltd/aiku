@@ -319,7 +319,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('19:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'SaveWebsitesSitemap',
             ),
             name: 'SaveWebsitesSitemap',
