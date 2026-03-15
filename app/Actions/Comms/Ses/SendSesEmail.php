@@ -20,7 +20,6 @@ use Aws\Exception\AwsException;
 use Aws\Result;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -59,7 +58,6 @@ class SendSesEmail
                 [
                     'state'                => DispatchedEmailStateEnum::SENT,
                     'sent_at'              => now(),
-                    'provider_dispatch_id' => 'devel-'.Str::uuid()
                 ]
             );
 
@@ -102,7 +100,6 @@ class SendSesEmail
                     [
                         'state'                => DispatchedEmailStateEnum::SENT,
                         'sent_at'              => now(),
-                        'provider_dispatch_id' => $isTest ? null : Arr::get($result, 'MessageId')//Todo remove this we will use ses_dispatched_emails instead
                     ]
                 );
 

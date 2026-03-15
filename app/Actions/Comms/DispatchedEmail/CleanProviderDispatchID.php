@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\DispatchedEmail;
 
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -19,29 +18,11 @@ class CleanProviderDispatchID
 
     public function handle(?Command $command = null): void
     {
-        $batchSize = 5000;
-        $affected  = 1;
+        $deletedCount = DB::table('ses_dispatched_emails')
+            ->where('send_at', '<', now()->subDays(60))
+            ->delete();
 
-        while ($affected > 0) {
-            $affected = DB::table('dispatched_emails')
-                ->whereIn('id', function ($query) use ($batchSize) {
-                    $query->select('id')
-                        ->from('dispatched_emails')
-                        ->whereNotNull('provider_dispatch_id')
-                        ->where(function ($q) {
-                            $q->where(function ($sq) {
-                                $sq->where('provider', DispatchedEmailProviderEnum::SES->value)
-                                    ->where('sent_at', '<', now()->subDays(61));
-                            })->orWhere(function ($sq) {
-                                $sq->where('provider', '!=', DispatchedEmailProviderEnum::SES->value)
-                                    ->where('sent_at', '<', now()->subDays(7));
-                            });
-                        })
-                        ->limit($batchSize);
-                })
-                ->update(['provider_dispatch_id' => null]);
-            $command?->info("Updated $affected dispatched emails");
-        }
+        $command?->info("Deleted {$deletedCount} records from ses_dispatched_emails table.");
     }
 
     public function getCommandSignature(): string

@@ -154,14 +154,14 @@ class ProcessSesNotification
     public function getDispatchedEmail(string $sesMessageID): ?DispatchedEmail
     {
         $dispatchedEmailData = DB::table('ses_dispatched_emails')->select('dispatched_email_id')->where('ses_id', $sesMessageID)->first();
-        if (!$dispatchedEmailData) {
+        if ($dispatchedEmailData) {
             $dispatchedEmail = DispatchedEmail::find($dispatchedEmailData->dispatched_email_id);
             if ($dispatchedEmail) {
                 return $dispatchedEmail;
             }
         }
-        // return null; //todo uncomment this
-        return DispatchedEmail::where('provider_dispatch_id', $sesMessageID)->first();// todo remove this
+
+        return null;
     }
 
     public string $commandSignature = 'ses-notify:process {id?}';

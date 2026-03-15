@@ -63,13 +63,11 @@ class StoreDispatchedEmail extends OrgAction
         $rules = [
             'email_address'        => ['required', 'email'],
             'provider'             => ['required', Rule::enum(DispatchedEmailProviderEnum::class)],
-            'provider_dispatch_id' => ['sometimes', 'required', 'string'],
         ];
 
         if (!$this->strict) {
             $rules['state']                = ['required', Rule::enum(DispatchedEmailStateEnum::class)];
             $rules['email_address']        = ['required', 'string'];
-            $rules['provider_dispatch_id'] = ['sometimes', ' nullable', 'string'];
 
             $rules['sent_at']          = ['sometimes', 'nullable', 'date'];
             $rules['first_read_at']    = ['sometimes', 'nullable', 'date'];

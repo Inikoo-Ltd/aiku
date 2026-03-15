@@ -25,7 +25,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $parent_id
  * @property int|null $email_address_id
  * @property DispatchedEmailProviderEnum $provider
- * @property string|null $provider_dispatch_id
  * @property string|null $recipient_type
  * @property int|null $recipient_id
  * @property DispatchedEmailStateEnum $state
