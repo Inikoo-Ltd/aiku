@@ -36,10 +36,9 @@ class SendResetPasswordEmail extends OrgAction
             return null;
         }
 
-        $recipient       = $webUser;
-        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
+        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $webUser, [
             'outbox_id'     => $outbox->id,
-            'email_address' => $recipient->email,
+            'email_address' => $webUser->email,
             'provider'      => DispatchedEmailProviderEnum::SES
         ]);
         $dispatchedEmail->refresh();
