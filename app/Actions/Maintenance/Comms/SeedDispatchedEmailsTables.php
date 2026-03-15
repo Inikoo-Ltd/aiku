@@ -15,6 +15,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SeedDispatchedEmailsTables
 {
     use AsAction;
+
     public string $commandSignature = 'repair:seed-dispatched-emails-tables';
 
 
@@ -27,7 +28,7 @@ class SeedDispatchedEmailsTables
 
         DB::table('dispatched_emails')
             ->whereNotNull('parent_type')
-            ->orderBy('id')
+            ->orderBy('id', 'desc')
             ->chunk($chunkSize, function ($dispatchedEmails) use ($command, &$processedCount) {
                 $emailOngoingRunInserts = [];
                 $emailBulkRunInserts    = [];
@@ -35,6 +36,10 @@ class SeedDispatchedEmailsTables
                 $idsToUpdate            = [];
 
                 foreach ($dispatchedEmails as $dispatchedEmail) {
+                    if (!$dispatchedEmail->parent_id) {
+                        continue;
+                    }
+
                     $idsToUpdate[] = $dispatchedEmail->id;
 
                     $insertData = [
@@ -86,12 +91,12 @@ class SeedDispatchedEmailsTables
                     DB::table('mailshot_has_dispatched_emails')->insert($mailshotInserts);
                 }
 
-                //                DB::table('dispatched_emails')
-                //                    ->whereIn('id', $idsToUpdate)
-                //                    ->update([
-                //                        'parent_type' => null,
-                //                        'parent_id'   => null,
-                //                    ]);
+                DB::table('dispatched_emails')
+                    ->whereIn('id', $idsToUpdate)
+                    ->update([
+                        'parent_type' => null,
+                        'parent_id'   => null,
+                    ]);
 
                 $processedCount += count($dispatchedEmails);
                 $command->info("Processed $processedCount dispatched emails...");
