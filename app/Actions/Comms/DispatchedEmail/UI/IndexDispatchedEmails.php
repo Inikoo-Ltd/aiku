@@ -79,8 +79,8 @@ class IndexDispatchedEmails extends OrgAction
                 $queryBuilder->where('dispatched_emails.outbox_id', $parent->id);
                 break;
             case 'Mailshot':
-                $queryBuilder->where('dispatched_emails.parent_type', 'Mailshot');
-                $queryBuilder->where('dispatched_emails.parent_id', $parent->id);
+                $queryBuilder->leftJoin('mailshot_has_dispatched_emails', 'mailshot_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                $queryBuilder->where('mailshot_id', $parent->id);
                 break;
             case 'Prospect':
                 $queryBuilder->where('dispatched_emails.recipient_type', 'Prospect');

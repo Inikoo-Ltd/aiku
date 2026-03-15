@@ -39,7 +39,7 @@ class SendEmailDeliveryChannel
     public function handle(EmailDeliveryChannel $emailDeliveryChannel): void
     {
         /** @var Mailshot|EmailBulkRun $model */
-        $model         = $emailDeliveryChannel->model;
+        $model = $emailDeliveryChannel->model;
         $emailHtmlBody = GetHtmlLayout::run($model);
 
         UpdateEmailDeliveryChannel::run(
@@ -97,7 +97,7 @@ class SendEmailDeliveryChannel
         if ($model instanceof Mailshot) {
             MailshotHydrateDispatchedEmails::run($model);
             UpdateMailshotSentState::run($model);
-        } else {
+        } elseif ($model instanceof EmailBulkRun) {
             EmailBulkRunHydrateCumulativeDispatchedEmails::run($model, DispatchedEmailStateEnum::SENT);
             EmailBulkRunHydrateDispatchedEmails::run($model);
             UpdateEmailBulkRunSentState::run($model);

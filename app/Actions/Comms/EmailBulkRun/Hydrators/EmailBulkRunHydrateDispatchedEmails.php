@@ -43,8 +43,8 @@ class EmailBulkRunHydrateDispatchedEmails implements ShouldBeUnique
                 enum: DispatchedEmailStateEnum::class,
                 models: DispatchedEmail::class,
                 where: function ($q) use ($emailBulkRun) {
-                    $q->where('parent_type', get_class($emailBulkRun));
-                    $q->where('parent_id', $emailBulkRun->id);
+                    $q->leftJoin('email_bulk_run_has_dispatched_emails', 'email_bulk_run_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+                    $q->where('email_bulk_run_id', $emailBulkRun->id);
                 }
             )
         );

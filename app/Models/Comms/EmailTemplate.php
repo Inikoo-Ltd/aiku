@@ -10,6 +10,7 @@ namespace App\Models\Comms;
 
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -17,7 +18,6 @@ use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -123,12 +123,6 @@ class EmailTemplate extends Model implements HasMedia, Auditable
     public function screenshot(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'screenshot_id');
-    }
-
-    // use when testing send email
-    public function dispatchedEmails(): MorphMany
-    {
-        return $this->morphMany(DispatchedEmail::class, 'parent');
     }
 
     public function sender(): string

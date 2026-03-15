@@ -13,6 +13,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -110,9 +111,9 @@ class EmailBulkRun extends Model
         return $this->hasOne(EmailBulkRunIntervals::class);
     }
 
-    public function dispatchedEmails(): MorphMany
+    public function dispatchedEmails(): BelongsToMany
     {
-        return $this->morphMany(DispatchedEmail::class, 'parent');
+        return $this->belongsToMany(DispatchedEmail::class, 'email_bulk_run_has_dispatched_emails');
     }
 
     public function channels(): MorphMany

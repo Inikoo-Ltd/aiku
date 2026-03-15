@@ -49,7 +49,11 @@ class StoreDispatchedEmail extends OrgAction
         data_set($modelData, 'email_address_id', $emailAddress->id);
 
         /** @var DispatchedEmail $dispatchedEmail */
-        $dispatchedEmail = $parent->dispatchedEmails()->create($modelData);
+        if (!$parent instanceof EmailTemplate) {
+            $dispatchedEmail = $parent->dispatchedEmails()->create($modelData);
+        } else {
+            $dispatchedEmail = DispatchedEmail::create($modelData);
+        }
 
         if (!$isTest) {
             OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(10);
@@ -61,13 +65,13 @@ class StoreDispatchedEmail extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'email_address'        => ['required', 'email'],
-            'provider'             => ['required', Rule::enum(DispatchedEmailProviderEnum::class)],
+            'email_address' => ['required', 'email'],
+            'provider'      => ['required', Rule::enum(DispatchedEmailProviderEnum::class)],
         ];
 
         if (!$this->strict) {
-            $rules['state']                = ['required', Rule::enum(DispatchedEmailStateEnum::class)];
-            $rules['email_address']        = ['required', 'string'];
+            $rules['state']         = ['required', Rule::enum(DispatchedEmailStateEnum::class)];
+            $rules['email_address'] = ['required', 'string'];
 
             $rules['sent_at']          = ['sometimes', 'nullable', 'date'];
             $rules['first_read_at']    = ['sometimes', 'nullable', 'date'];

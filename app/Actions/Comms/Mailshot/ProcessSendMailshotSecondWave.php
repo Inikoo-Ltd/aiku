@@ -57,8 +57,10 @@ class ProcessSendMailshotSecondWave
             $join->on('customers.id', '=', 'dispatched_emails.recipient_id')
                 ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
         });
-        $queryBuilder->where('dispatched_emails.parent_type', class_basename(Mailshot::class));
-        $queryBuilder->where('dispatched_emails.parent_id', $parentMailshots->id);
+
+        $queryBuilder->leftJoin('mailshot_has_dispatched_emails', 'mailshot_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+        $queryBuilder->where('mailshot_id', $mailshot->id);
+
         $queryBuilder->where('dispatched_emails.state', DispatchedEmailStateEnum::SENT->value);
         $queryBuilder->whereNotNull('dispatched_emails.sent_at');
 
