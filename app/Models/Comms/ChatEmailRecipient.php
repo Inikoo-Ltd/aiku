@@ -10,6 +10,7 @@ namespace App\Models\Comms;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\InShop;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -37,4 +38,10 @@ class ChatEmailRecipient extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'chat_email_recipient_has_dispatched_emails');
+    }
+
 }
