@@ -152,6 +152,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property string $price_rrp_ratio
  * @property bool $is_migrating_to_aiku
+ * @property \Illuminate\Support\Carbon|null $migrated_to_aiku_on
  * @property array<array-key, mixed>|null $offers_data
  * @property ShopEngineEnum $engine
  * @property array<array-key, mixed> $opening_hours
@@ -294,6 +295,7 @@ class Shop extends Model implements HasMedia, Auditable
         'engine'                       => ShopEngineEnum::class,
         'fetched_at'                   => 'datetime',
         'last_fetched_at'              => 'datetime',
+        'migrated_to_aiku_on'          => 'date',
         'offers_data'                  => 'array',
         'opening_hours'                => 'array'
     ];
