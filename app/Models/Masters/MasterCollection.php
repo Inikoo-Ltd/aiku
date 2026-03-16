@@ -57,6 +57,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property string|null $health_rank
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, Collection> $childrenCollections
  * @property-read Group $group

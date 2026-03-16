@@ -33,44 +33,42 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
             'data' => $fulfillmentOrder
         ]);
 
-        DB::transaction(function () use ($shopifyUser, $fulfillmentOrder) {
-            $assignedLineItems = [];
+        $assignedLineItems = [];
 
-            $destination = $fulfillmentOrder['destination'];
-            $lineItems = $fulfillmentOrder['lineItems']['edges'];
+        $destination = $fulfillmentOrder['destination'];
+        $lineItems = $fulfillmentOrder['lineItems']['edges'];
 
-            data_set($fulfillmentOrder, 'shipping_address', $destination);
-            data_set($fulfillmentOrder, 'customer', $fulfillmentOrder['order']['customer']);
-            data_set($fulfillmentOrder, 'created_at', $fulfillmentOrder['order']['createdAt']);
+        data_set($fulfillmentOrder, 'shipping_address', $destination);
+        data_set($fulfillmentOrder, 'customer', $fulfillmentOrder['order']['customer']);
+        data_set($fulfillmentOrder, 'created_at', $fulfillmentOrder['order']['createdAt']);
 
-            foreach ($lineItems as $lineItemEdge) {
-                $lineItem = $lineItemEdge['node'];
+        foreach ($lineItems as $lineItemEdge) {
+            $lineItem = $lineItemEdge['node'];
 
-                $productId = data_get($lineItem, 'lineItem.product.id');
+            $productId = data_get($lineItem, 'lineItem.product.id');
 
-                if (empty($productId)) {
-                    continue;
-                }
-
-                $assignedLineItems[] = [
-                    'id' => $lineItem['id'],
-                    'quantity' => $lineItem['remainingQuantity'],
-                    'sku' => $lineItem['sku'],
-                    'product_id' => $productId
-                ];
+            if (empty($productId)) {
+                continue;
             }
 
-            if (empty($assignedLineItems)) {
-                return;
-            }
+            $assignedLineItems[] = [
+                'id' => $lineItem['id'],
+                'quantity' => $lineItem['remainingQuantity'],
+                'sku' => $lineItem['sku'],
+                'product_id' => $productId
+            ];
+        }
 
-            data_set($fulfillmentOrder, 'line_items', $assignedLineItems);
+        if (empty($assignedLineItems)) {
+            return;
+        }
 
-            if ($shopifyUser->customer->is_dropshipping) {
-                StoreOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
-            } elseif ($shopifyUser->customer->is_fulfilment) {
-                StoreFulfilmentOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
-            }
-        });
+        data_set($fulfillmentOrder, 'line_items', $assignedLineItems);
+
+        if ($shopifyUser->customer->is_dropshipping) {
+            StoreOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
+        } elseif ($shopifyUser->customer->is_fulfilment) {
+            StoreFulfilmentOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
+        }
     }
 }

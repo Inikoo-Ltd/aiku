@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Faker\Factory as Faker;
 
-class StoreBundle extends OrgAction
+class UpdateBundle extends OrgAction
 {
     use WithNoStrictRules;
 
@@ -32,9 +32,9 @@ class StoreBundle extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): Bundle
+    public function handle(Bundle $bundle, array $modelData): Bundle
     {
-        return DB::transaction(function () use ($customerSalesChannel, $modelData) {
+        return DB::transaction(function () use ($bundle, $modelData) {
             $productData = [];
             $selectedProducts = Arr::pull($modelData, 'products');
 
@@ -98,14 +98,10 @@ class StoreBundle extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'name'        => ['required', 'string', 'max:255'],
-            'code'        => ['required', 'string', 'max:64'],
+            'name'        => ['sometimes', 'string', 'max:255'],
+            'code'        => ['sometimes', 'string', 'max:64'],
             'description' => ['sometimes', 'nullable', 'string', 'max:65535'],
-            'price'       => ['required', 'numeric', 'min:0'],
-            'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'products'    => ['required', 'array', 'min:1'],
-            'products.*.product_id'  => ['required', 'integer', 'exists:products,id'],
-            'products.*.quantity'  => ['required', 'numeric', 'min:1'],
+            'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0']
         ];
 
         if (!$this->strict) {
@@ -118,7 +114,7 @@ class StoreBundle extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(CustomerSalesChannel $customerSalesChannel, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Bundle
+    public function action(Bundle $bundle, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Bundle
     {
         if (!$audit) {
             Portfolio::disableAuditing();
@@ -126,29 +122,29 @@ class StoreBundle extends OrgAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->customer       = $customerSalesChannel->customer;
-        $this->initialisationFromShop($customerSalesChannel->shop, $modelData);
+        $this->customer       = $bundle->customer;
+        $this->initialisationFromShop($bundle->customer->shop, $modelData);
 
-        return $this->handle($customerSalesChannel, $this->validatedData);
+        return $this->handle($bundle, $this->validatedData);
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Bundle
+    public function asController(Bundle $bundle, ActionRequest $request): Bundle
     {
-        $this->customer = $customerSalesChannel->customer;
+        $this->customer = $bundle->customer;
 
-        $this->initialisationFromShop($customerSalesChannel->shop, $request);
+        $this->initialisationFromShop($bundle->customer->shop, $request);
 
-        return $this->handle($customerSalesChannel, $this->validatedData);
+        return $this->handle($bundle, $this->validatedData);
     }
 
     public string $commandSignature = 'ds:bundle:store {customerSalesChannel}';
 
     public function asCommand(Command $command): void
     {
-        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+        $customerSalesChannel = Bundle::where('id', $command->argument('bundle'))->firstOrFail();
 
         $faker = Faker::create();
         $modelData = [

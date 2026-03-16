@@ -91,6 +91,14 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property string|null $health_rank
+ * @property string|null $desc_video_url
+ * @property int|null $desc_art1
+ * @property int|null $desc_art2
+ * @property int|null $desc_art3
+ * @property int|null $desc_art4
+ * @property int|null $desc_art5
+ * @property int|null $extra_desc_art1
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections

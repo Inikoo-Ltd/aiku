@@ -41,6 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $discontinued_in_organisation_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property string|null $health_rank
  * @property-read Group $group
  * @property-read \App\Models\Inventory\OrgStockFamilyIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStock> $orgStocks

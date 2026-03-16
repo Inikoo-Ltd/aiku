@@ -140,6 +140,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_minion_variant
  * @property bool $follow_trade_unit_media
  * @property bool $mismatch_detected Have a mismatch trade unit data (picking quantity, linked trade unit) with one or more of its children product
+ * @property string|null $health_rank
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

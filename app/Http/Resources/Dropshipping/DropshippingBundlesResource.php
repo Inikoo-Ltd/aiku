@@ -8,12 +8,9 @@
 
 namespace App\Http\Resources\Dropshipping;
 
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Helpers\NaturalLanguage;
 use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property string $slug

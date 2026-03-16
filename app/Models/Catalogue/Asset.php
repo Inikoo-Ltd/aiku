@@ -61,6 +61,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $follow_master
  * @property array<array-key, mixed>|null $offers_data
  * @property array<array-key, mixed> $tax_category
+ * @property string|null $health_rank
  * @property ProductUnitRelationshipType $unit_relationship_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Barcode> $barcode
  * @property-read Charge|null $charge

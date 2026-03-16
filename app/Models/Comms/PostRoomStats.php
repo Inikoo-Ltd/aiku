@@ -89,7 +89,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_credit_balance_notification_for_user
  * @property int $number_outboxes_type_chat_notification_to_customer
  * @property int $number_outboxes_type_price_change_notification
- * @property int $number_outboxes_type_oos_in_order_notification
  * @property int $number_outboxes_type_invoice_date_changed
  * @property-read \App\Models\Comms\PostRoom|null $postRoom
  * @method static Builder<static>|PostRoomStats newModelQuery()

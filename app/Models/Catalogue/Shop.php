@@ -161,6 +161,8 @@ use App\Models\HumanResources\WorkSchedule;
  * @property int|null $migration_pivot
  * @property string|null $product_price_currency_exchange
  * @property int|null $seeder_shop_id
+ * @property string|null $proforma_footer
+ * @property string|null $migrated_to_aiku_on
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses

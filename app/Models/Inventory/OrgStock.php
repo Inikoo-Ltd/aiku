@@ -74,6 +74,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $source_quantity_to_be_picked
  * @property bool $is_on_demand
  * @property bool $has_been_in_warehouse
+ * @property string|null $health_rank
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals

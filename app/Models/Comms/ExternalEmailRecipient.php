@@ -12,17 +12,9 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\InShop;
 
 /**
- * @property int $id
- * @property int $group_id
- * @property int $organisation_id
- * @property int $shop_id
- * @property string $name
- * @property string $email
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\SysAdmin\Group $group
- * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read \App\Models\Catalogue\Shop $shop
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\SysAdmin\Organisation|null $organisation
+ * @property-read \App\Models\Catalogue\Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalEmailRecipient newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalEmailRecipient newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalEmailRecipient query()

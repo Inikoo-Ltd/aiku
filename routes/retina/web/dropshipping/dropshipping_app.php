@@ -37,7 +37,6 @@ use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForEmptyBasket;
 use App\Actions\Retina\Dropshipping\BackInStock\UI\IndexRetinaDropshippingBackInStocks;
-use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBundles;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
