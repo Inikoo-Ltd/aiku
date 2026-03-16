@@ -23,6 +23,7 @@ use App\Models\CRM\Prospect;
 use Illuminate\Support\Facades\Crypt;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
+use Illuminate\Support\Facades\DB;
 
 class UnsubscribeMailshot
 {
@@ -32,16 +33,18 @@ class UnsubscribeMailshot
     {
         /** @var Customer|Prospect $recipient */
         $recipient = $dispatchedEmail->recipient;
-        /** @var Mailshot|EmailBulkRun $parent */
-        $parent = $dispatchedEmail->parent;
 
-        if (class_basename($recipient) == 'Prospect') {
+        if ($recipient instanceof Prospect) {
             UpdateProspectEmailUnsubscribed::run($recipient, now());
         }
 
-        if (class_basename($recipient) == class_basename(Customer::class)) {
-            if (class_basename($parent) == class_basename(Mailshot::class)) {
-                $modelData = match ($parent->type) {
+        if ($recipient instanceof Customer) {
+
+            $hasMasilhot = DB::table('mailshot_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+
+            if ($hasMasilhot) {
+                $mailshot = Mailshot::find($hasMasilhot->mailshot_id);
+                $modelData = match ($mailshot->type) {
                     MailshotTypeEnum::NEWSLETTER => [
                         'is_subscribed_to_newsletter' => false,
                     ],
@@ -55,8 +58,12 @@ class UnsubscribeMailshot
                 UpdateCustomerComms::run($customerComms, $modelData, false);
             }
 
-            if (class_basename($parent) == class_basename(EmailBulkRun::class)) {
-                $modelData = match ($parent->outbox->code) {
+
+            $hasEmailBulkRun = DB::table('email_bulk_run_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+
+            if ($hasEmailBulkRun) {
+                $emailBulkRun = EmailBulkRun::find($hasEmailBulkRun->email_bulk_run_id);
+                $modelData = match ($emailBulkRun->outbox->code) {
                     OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => [
                         'is_subscribed_to_price_change_notification' => false,
                     ],
