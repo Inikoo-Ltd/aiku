@@ -82,15 +82,15 @@ const props = defineProps<{
 		end: string
 	}
 	daysInMonth: number
-	monthName: string
-	employeeOptions: { value: number; label: string }[]
-	typeOptions: { value: string; label: string }[]
-	type_options?: Record<string, string>
-	status_options?: Record<string, string>
-	departmentOptions?: { value: string; label: string }[]
-	holidays?: Array<{
-		id: number
-		label: string
+		monthName: string
+		employeeOptions: { value: number; label: string }[]
+		typeOptions: { value: string; label: string }[]
+		type_options?: Record<string, string | { label: string; category?: string }>
+		status_options?: Record<string, string>
+		departmentOptions?: { value: string; label: string }[]
+		holidays?: Array<{
+			id: number
+			label: string
 		from: string
 		to: string
 		type: string
@@ -261,6 +261,13 @@ const openModal = (leave: LeaveItem) => {
 const closeModal = () => {
 	showModal.value = false
 	selectedLeave.value = null
+}
+
+const formatTypeLabel = (typeLabel: string | Record<string, any> | undefined | null): string => {
+	if (!typeLabel) return ''
+	if (typeof typeLabel === 'string') return typeLabel
+	if (typeof typeLabel === 'object' && typeLabel.label) return typeLabel.label
+	return String(typeLabel)
 }
 
 const buildRequestData = (): Record<string, any> => {
@@ -561,7 +568,7 @@ const getLeaveSegmentStyle = (segment: LeaveSegment): Record<string, string | nu
 }
 
 const getLeaveTooltip = (segment: LeaveSegment): string => {
-	return `${segment.leave.employee_name} - ${segment.leave.type_label} (${segment.segmentStart} to ${segment.segmentEnd})`
+	return `${segment.leave.employee_name} - ${formatTypeLabel(segment.leave.type_label)} (${segment.segmentStart} to ${segment.segmentEnd})`
 }
 
 const openExportModal = () => {
@@ -978,7 +985,7 @@ const submitExport = () => {
 						<label class="block text-sm font-medium text-gray-500">{{
 							trans("Type")
 						}}</label>
-						<div class="mt-1 text-sm text-gray-900">{{ selectedLeave.type_label }}</div>
+						<div class="mt-1 text-sm text-gray-900">{{ formatTypeLabel(selectedLeave.type_label) }}</div>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-500">{{
@@ -1080,7 +1087,7 @@ const submitExport = () => {
 						}}</label>
 						<Select
 							v-model="exportForm.type"
-							:options="parsedTypeOptions"
+							:options="typeOptions"
 							optionLabel="label"
 							optionValue="value"
 							:placeholder="trans('All Types')"
