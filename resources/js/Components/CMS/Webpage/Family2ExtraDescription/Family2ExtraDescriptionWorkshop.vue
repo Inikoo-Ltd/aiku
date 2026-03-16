@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed, inject, ref } from "vue"
-import { get, isPlainObject } from "lodash-es"
+import { computed, inject, ref, watch } from "vue"
+import { get, isPlainObject, debounce } from "lodash-es"
+import axios from "axios"
 
 import Image from "@/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -9,6 +10,7 @@ import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 import { getStyles } from "@/Composables/styles"
 import { getBestOffer } from "@/Composables/useOffers"
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
@@ -34,20 +36,35 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {})
 
-const showExtra = ref(false)
+/* --------------------------------------------
+DESCRIPTION
+-------------------------------------------- */
 
-const toggleShowExtra = () => {
-  showExtra.value = !showExtra.value
+const description = ref("")
+
+const cleanHtml = (html: string) => {
+  return (html || "").replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 }
+
+watch(
+  () => props.modelValue?.family?.description_extra,
+  (val) => {
+    description.value = cleanHtml(val)
+  },
+  { immediate: true }
+)
+
+/* --------------------------------------------
+OFFERS
+-------------------------------------------- */
 
 const bestOffer = computed(() => {
   return getBestOffer(props.modelValue?.family?.offers_data)
 })
 
-const cleanedDescription = computed(() => {
-  const html = props.modelValue?.family?.description_extra || ""
-  return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
-})
+/* --------------------------------------------
+COLUMN POSITION
+-------------------------------------------- */
 
 const columnPosition = computed(() => {
   const rawVal = get(props.modelValue, ["column_position"])
@@ -74,15 +91,25 @@ const textOrder = computed(() =>
   isImageLeft.value ? "order-2" : "order-1"
 )
 
-console.log('family-extra', props.modelValue)
+/* --------------------------------------------
+SAVE DESCRIPTION
+-------------------------------------------- */
+
+const saveDescription = debounce(async (key: string, value: string) => {
+  try {
+    const url = route("grp.models.product_category.update", {
+      productCategory: props.modelValue?.family?.id,
+    })
+
+    await axios.patch(url, { [key]: value })
+  } catch (error: any) {
+    console.error("Save failed:", error)
+  }
+}, 1000)
 </script>
 
 <template>
-  <div
-    :id="modelValue?.id || 'family-2'"
-    component="family-2"
-    class="w-full"
-  >
+  <div :id="modelValue?.id || 'family-2'" class="w-full">
     <div
       :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
@@ -96,11 +123,7 @@ console.log('family-extra', props.modelValue)
         <!-- IMAGE -->
         <div
           class="relative w-full overflow-hidden cursor-pointer"
-          :class="[imageOrder,
-            modelValue?.family.extra_description_image
-              ? 'h-full'
-              : ''
-          ]"
+          :class="[imageOrder, modelValue?.family?.extra_description_image ? 'h-full' : '']"
           :style="getStyles(modelValue?.image?.container?.properties, screenType)"
         >
           <Image
@@ -111,7 +134,7 @@ console.log('family-extra', props.modelValue)
             :height="getStyles(modelValue?.image?.container?.properties, screenType, false)?.height"
             :width="getStyles(modelValue?.image?.container?.properties, screenType, false)?.width"
           />
-    </div>
+        </div>
 
         <!-- TEXT -->
         <div
@@ -120,7 +143,15 @@ console.log('family-extra', props.modelValue)
           :style="getStyles(modelValue?.text_block?.properties, screenType)"
         >
           <div class="w-full max-w-xl">
-            <div v-html="cleanedDescription"></div>
+            <EditorV2
+              v-model="description"
+              placeholder="Family Description"
+              @update:model-value="(e) => saveDescription('description_extra', e)"
+              :uploadImageRoute="{
+                name: webpageData?.images_upload_route?.name,
+                parameters: { modelHasWebBlocks: blockData?.id }
+              }"
+            />
 
             <div class="flex justify-start mt-6">
               <LinkIris

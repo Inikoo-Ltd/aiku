@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject, ref } from "vue"
-import { get, isPlainObject } from "lodash-es"
+import { computed, inject, ref, watch, toRefs, nextTick, onMounted } from "vue"
+import { get, isPlainObject, debounce } from "lodash-es"
 
 import Image from "@/Components/Image.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -14,13 +14,13 @@ import { getBestOffer } from "@/Composables/useOffers"
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
+import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
 import { Swiper, SwiperSlide } from "swiper/vue"
-import { Navigation, Pagination } from "swiper/modules"
+import { Navigation } from "swiper/modules"
 
 import "swiper/css"
 import "swiper/css/navigation"
-import "swiper/css/pagination"
 
 library.add(
   faCube,
@@ -42,23 +42,27 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {})
 
+const { modelValue, webpageData, blockData } = toRefs(props)
+
 const showExtra = ref(false)
 
-const toggleShowExtra = () => {
-  showExtra.value = !showExtra.value
-}
+const name = ref(
+  modelValue.value?.family?.description_title ||
+  modelValue.value?.family?.name ||
+  ""
+)
 
 const bestOffer = computed(() => {
-  return getBestOffer(props.modelValue?.family?.offers_data)
+  return getBestOffer(modelValue.value?.family?.offers_data)
 })
 
 const cleanedDescription = computed(() => {
-  const html = props.modelValue?.family?.description || ""
+  const html = modelValue.value?.family?.description || ""
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
 
 const columnPosition = computed(() => {
-  const rawVal = get(props.modelValue, ["column_position"])
+  const rawVal = get(modelValue.value, ["column_position"])
 
   if (!isPlainObject(rawVal)) return rawVal
 
@@ -83,9 +87,47 @@ const textOrder = computed(() =>
 )
 
 const images = computed(() => {
-  const src = props.modelValue?.family?.web_images?.all
+  const src = modelValue.value?.family?.web_images?.all
   if (!src) return []
   return Array.isArray(src) ? src : [src]
+})
+
+const saveDescription = debounce(async (key: string, value: string) => {
+  try {
+    const url = route("grp.models.product_category.update", {
+      productCategory: modelValue.value.family.id,
+    })
+
+    await axios.patch(url, { [key]: value })
+  } catch (error: any) {
+    console.error("Save failed:", error)
+  }
+}, 1000)
+
+watch(name, async (val) => {
+  modelValue.value.family.description_title = val
+  saveDescription("description_title", val)
+
+  await nextTick()
+  autoResize()
+})
+
+const titleRef = ref<HTMLTextAreaElement | null>(null)
+
+const autoResize = () => {
+  const el = titleRef.value
+  if (!el) return
+
+  el.style.height = "0px"
+  el.style.height = el.scrollHeight + "px"
+}
+onMounted(async () => {
+  await nextTick()
+  autoResize()
+
+  requestAnimationFrame(() => {
+    autoResize()
+  })
 })
 </script>
 
@@ -100,103 +142,64 @@ const images = computed(() => {
       <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
 
         <!-- IMAGE -->
-        <div
-          class="relative w-full overflow-hidden"
+        <div class="relative w-full overflow-hidden"
           :class="[imageOrder, images.length ? 'h-[250px] sm:h-[300px] md:h-[400px]' : '']"
-          :style="getStyles(modelValue?.image?.container?.properties, screenType)"
-        >
+          :style="getStyles(modelValue?.image?.container?.properties, screenType)">
 
           <!-- CUSTOM NAVIGATION -->
-          <div
-            v-if="images.length > 1"
-            class="swiper-btn-prev absolute left-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer"
-          >
-            <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-white text-3xl"/>
+          <div v-if="images.length > 1"
+            class="swiper-btn-prev absolute left-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer">
+            <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-white text-3xl" />
           </div>
 
-          <div
-            v-if="images.length > 1"
-            class="swiper-btn-next absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer"
-          >
-            <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-white text-3xl"/>
+          <div v-if="images.length > 1"
+            class="swiper-btn-next absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer">
+            <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-white text-3xl" />
           </div>
 
           <!-- SWIPER -->
-          <Swiper
-            v-if="images.length > 1"
-            :modules="[Navigation]"
-            :slides-per-view="1"
-            :loop="true"
-            :navigation="{
-              prevEl: '.swiper-btn-prev',
-              nextEl: '.swiper-btn-next'
-            }"
-            :pagination="{ clickable: true }"
-            class="w-full h-full"
-          >
+          <Swiper v-if="images.length > 1" :modules="[Navigation]" :slides-per-view="1" :loop="true" :navigation="{
+            prevEl: '.swiper-btn-prev',
+            nextEl: '.swiper-btn-next'
+          }" :pagination="{ clickable: true }" class="w-full h-full">
             <SwiperSlide v-for="(img, i) in images" :key="i">
               <div class="w-full h-full">
-                <Image
-                  :src="img.original"
-                  :alt="modelValue?.image?.alt || 'Image preview'"
-                  :imgAttributes="modelValue?.image?.attributes"
-                  :imageCover="true"
-                  class="w-full h-full object-fill"
-                />
+                <Image :src="img.original" :alt="modelValue?.image?.alt || 'Image preview'"
+                  :imgAttributes="modelValue?.image?.attributes" :imageCover="true" class="w-full h-full object-fill" />
               </div>
             </SwiperSlide>
           </Swiper>
 
           <!-- SINGLE IMAGE -->
-          <component
-            v-else
-            :is="modelValue?.image?.link?.href ? LinkIris : 'div'"
-            :href="modelValue?.image?.link?.href"
-            :target="modelValue?.image?.link?.target"
-            :type="modelValue?.image?.link?.type"
-            class="absolute inset-0"
-          >
-            <Image
-              :src="images[0]?.original"
-              :alt="modelValue?.image?.alt || 'Image preview'"
-              :imgAttributes="modelValue?.image?.attributes"
-              :imageCover="true"
-              class="w-full h-full object-fill"
-            />
+          <component v-else :is="modelValue?.image?.link?.href ? LinkIris : 'div'" :href="modelValue?.image?.link?.href"
+            :target="modelValue?.image?.link?.target" :type="modelValue?.image?.link?.type" class="absolute inset-0">
+            <Image :src="images[0]?.original" :alt="modelValue?.image?.alt || 'Image preview'"
+              :imgAttributes="modelValue?.image?.attributes" :imageCover="true" class="w-full h-full object-fill" />
           </component>
 
         </div>
 
         <!-- TEXT -->
-        <div
-          class="flex flex-col justify-center m-auto"
-          :class="textOrder"
-          :style="getStyles(modelValue?.text_block?.properties, screenType)"
-        >
+        <div class="flex flex-col justify-center m-auto" :class="textOrder"
+          :style="getStyles(modelValue?.text_block?.properties, screenType)">
 
           <div class="w-full max-w-xl">
 
-            <h1
-              v-if="modelValue.family.name"
-              class="!text-[1.8rem] font-semibold"
-            >
-              {{ modelValue.family.name }}
-            </h1>
+            <textarea ref="titleRef" v-model="name" @input="autoResize" rows="1" placeholder="Family Title"
+              class="w-full resize-none overflow-hidden box-border appearance-none bg-transparent border-none p-0 m-0 text-[1.5rem] leading-[2rem] font-semibold text-gray-800 focus:outline-none focus:ring-0 shadow-none" />
 
-            <div v-html="cleanedDescription"></div>
+            <EditorV2 v-model="modelValue.family.description" placeholder="Family Description"
+              @update:model-value="(e) => saveDescription('description', e)" :uploadImageRoute="{
+                name: webpageData?.images_upload_route?.name,
+                parameters: { modelHasWebBlocks: blockData?.id }
+              }" />
 
             <div class="flex justify-start mt-6">
 
-              <LinkIris
-                :href="modelValue?.button?.link?.href"
-                :canonical_url="modelValue?.button?.link?.canonical_url"
-                :target="modelValue?.button?.link?.target"
-                :type="modelValue?.button?.link?.type"
-              >
-                <Button
-                  :label="modelValue?.button?.text"
-                  :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
-                />
+              <LinkIris :href="modelValue?.button?.link?.href" :canonical_url="modelValue?.button?.link?.canonical_url"
+                :target="modelValue?.button?.link?.target" :type="modelValue?.button?.link?.type">
+                <Button :label="modelValue?.button?.text"
+                  :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)" />
               </LinkIris>
 
             </div>
