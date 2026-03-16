@@ -81,6 +81,10 @@ const isFirstReturnRow = (item: any) => {
 }
 
 const isReturnReady = (item: any) => {
+    if (props.tab === "grouped" && Array.isArray((item as any)?.pallets)) {
+        return (item as any).pallets.every((row: any) => row?.pivot_state !== "picking")
+    }
+
     const returnId = item?.pallet_return_id
     const data = (props.data as any)?.data
 
@@ -162,16 +166,18 @@ const returnRoute = (item: any) => {
 }
 
 const palletRoute = (item: any) => {
-    if (!item?.location_slug || !item?.slug) {
+    const params: any = route().params as any
+
+    if (!item?.slug || !item?.fulfilment_slug || !item?.fulfilment_customer_slug || !params.organisation) {
         return null
     }
 
-    return route('grp.org.warehouses.show.fulfilment.locations.show.pallets.show', {
-        organisation: (route().params as any).organisation,
-        warehouse: (route().params as any).warehouse,
-        location: item.location_slug,
-        pallet: item.slug,
-    })
+    return route('grp.org.fulfilments.show.crm.customers.show.pallets.show', [
+        params.organisation,
+        item.fulfilment_slug,
+        item.fulfilment_customer_slug,
+        item.slug,
+    ])
 }
 </script>
 
@@ -185,7 +191,7 @@ const palletRoute = (item: any) => {
                         {{ item.pallet_return_reference }}
                     </Link>
                     <div v-else>
-                        {{ item.pallet_return_reference || "-" }}
+                        {{ "-" }}
                     </div>
                 </div>
             </div>
@@ -196,9 +202,9 @@ const palletRoute = (item: any) => {
                 <div
                     v-for="pallet in item.pallets"
                     :key="pallet.id"
-                    class="flex flex-col gap-y-1 border-b last:border-b-0 pb-2"
+                    class="border-b last:border-b-0 py-2"
                 >
-                    <div class="flex flex-wrap gap-x-4 gap-y-1">
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
                         <div class="min-w-[140px]">
                             <Link v-if="palletRoute(pallet)" :href="palletRoute(pallet)" class="primaryLink">
                                 {{ pallet.reference }}
@@ -239,10 +245,7 @@ const palletRoute = (item: any) => {
                             </div>
                         </div>
 
-                    </div>
-
-                    <div class="flex justify-end">
-                        <div class="flex items-center gap-x-3">
+                        <div class="flex items-center gap-x-3 ml-auto">
                             <div>
                                 <Tag v-if="pallet.location_code" :label="pallet.location_code" />
                                 <div v-else class="text-gray-400 text-xs">-</div>
@@ -360,6 +363,43 @@ const palletRoute = (item: any) => {
                         </div>
                     </div>
                 </div>
+            </div>
+        </template>
+
+        <template v-if="tab === 'grouped'" #cell(actions)="{ item }">
+            <div v-if="isPickingFinished() && isReturnReady(item)" class="flex justify-end gap-x-2">
+                <Button
+                    v-if="canPickAllReturn(item)"
+                    icon="fal fa-check"
+                    :label="trans('Pick all')"
+                    type="secondary"
+                    size="xs"
+                    class="py-0"
+                    v-tooltip="trans('Pick all remaining pallets in this return')"
+                    @click="() => onPickAll(item)"
+                />
+
+                <Link
+                    v-if="getDispatchableReturn(item)?.dispatchRoute?.name && getDispatchableReturn(item)?.canDispatch"
+                    as="div"
+                    :href="route(getDispatchableReturn(item).dispatchRoute.name, getDispatchableReturn(item).dispatchRoute.parameters)"
+                    :method="getDispatchableReturn(item).dispatchRoute.method || 'post'"
+                    preserveScroll
+                    v-tooltip="trans('Dispatch')"
+                >
+                    <Button icon="fal fa-save" :label="trans('Dispatch')" type="secondary" size="xs" class="py-0" />
+                </Link>
+
+                <Link
+                    v-if="getDispatchableReturn(item)?.cancelRoute?.name"
+                    as="div"
+                    :href="route(getDispatchableReturn(item).cancelRoute.name, getDispatchableReturn(item).cancelRoute.parameters)"
+                    :method="getDispatchableReturn(item).cancelRoute.method || 'patch'"
+                    preserveScroll
+                    v-tooltip="trans('Cancel')"
+                >
+                    <Button icon="far fa-times" :label="trans('Cancel')" type="negative" size="xs" class="py-0" />
+                </Link>
             </div>
         </template>
 

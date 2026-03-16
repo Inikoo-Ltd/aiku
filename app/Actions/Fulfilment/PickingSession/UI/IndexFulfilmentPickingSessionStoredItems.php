@@ -41,7 +41,7 @@ class IndexFulfilmentPickingSessionStoredItems extends OrgAction
             ->join('pallet_returns', 'pallet_returns.id', '=', 'pallet_return_items.pallet_return_id');
 
         $query
-            ->defaultSort('stored_items.reference')
+            ->defaultSort('pallet_returns.reference', 'stored_items.reference')
             ->select([
                 'stored_items.id',
                 'stored_items.reference',
@@ -68,7 +68,7 @@ class IndexFulfilmentPickingSessionStoredItems extends OrgAction
             ]);
 
         return $query
-            ->allowedSorts(['reference', 'total_quantity', 'total_quantity_ordered'])
+            ->allowedSorts(['pallet_return_reference', 'reference', 'total_quantity', 'total_quantity_ordered'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -100,7 +100,7 @@ class IndexFulfilmentPickingSessionStoredItems extends OrgAction
                 $table->column(key: 'actions', label: __('Action'), canBeHidden: false, searchable: false);
             }
 
-            $table->defaultSort('reference');
+            $table->defaultSort('pallet_return_reference');
         };
     }
 }

@@ -21,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
+use App\Http\Resources\Fulfilment\FulfilmentPickingSessionPalletReturnsGroupedResource;
 
 class ShowFulfilmentPickingSession extends OrgAction
 {
@@ -69,16 +70,31 @@ class ShowFulfilmentPickingSession extends OrgAction
 
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
-        $title = __('Fulfilment Picking Session');
-        $actions = null;
-        $navigation = PickingSessionTabsEnum::navigation();
+        $title      = __('Fulfilment Picking Session');
+        $actions    = null;
+        $navigation = PickingSessionTabsEnum::navigationExcept([
+            PickingSessionTabsEnum::ITEMIZED,
+        ]);
 
+        if (array_key_exists(PickingSessionTabsEnum::GROUPED->value, $navigation)) {
+            $navigation[PickingSessionTabsEnum::GROUPED->value]['title'] = __('Group by Pallet return');
+        }
+
+        if ($pickingSession->state === PickingSessionStateEnum::IN_PROCESS) {
+            unset($navigation[PickingSessionTabsEnum::GROUPED->value]);
+        }
+
+        if (in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
+            unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
+        }
 
         if (!request()->input('tab')) {
-            $this->tab = PickingSessionTabsEnum::ITEMS->value;
+            if (in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
+                $this->tab = PickingSessionTabsEnum::GROUPED->value;
+            } else {
+                $this->tab = PickingSessionTabsEnum::ITEMS->value;
+            }
         }
-        unset($navigation[PickingSessionTabsEnum::GROUPED->value]);
-        unset($navigation[PickingSessionTabsEnum::ITEMIZED->value]);
 
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             $actions[] = [
@@ -143,6 +159,13 @@ class ShowFulfilmentPickingSession extends OrgAction
                     ->tableStructure(pickingSession: $pickingSession, prefix: PickingSessionTabsEnum::ITEMS->value)
             );
         } else {
+            if (in_array($pickingSession->state, [PickingSessionStateEnum::HANDLING, PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
+                $inertiaResponse->table(
+                    IndexFulfilmentPickingSessionPalletItemsGrouped::make()
+                        ->tableStructure(pickingSession: $pickingSession, prefix: PickingSessionTabsEnum::GROUPED->value)
+                );
+            }
+
             $inertiaResponse->table(
                 IndexFulfilmentPickingSessionPalletItems::make()
                     ->tableStructure(pickingSession: $pickingSession, prefix: PickingSessionTabsEnum::ITEMS->value)
@@ -164,9 +187,36 @@ class ShowFulfilmentPickingSession extends OrgAction
             ];
         }
 
+        if ($pickingSession->state === PickingSessionStateEnum::IN_PROCESS) {
+            return [
+                PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value
+                    ? fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
+                    : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
+            ];
+        }
+
+        if ($pickingSession->state === PickingSessionStateEnum::HANDLING) {
+            return [
+                PickingSessionTabsEnum::GROUPED->value => $this->tab == PickingSessionTabsEnum::GROUPED->value
+                    ? fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))
+                    : Inertia::lazy(fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
+                PickingSessionTabsEnum::ITEMS->value   => $this->tab == PickingSessionTabsEnum::ITEMS->value
+                    ? fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
+                    : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
+            ];
+        }
+
+        if (in_array($pickingSession->state, [PickingSessionStateEnum::PICKING_FINISHED, PickingSessionStateEnum::PACKING_FINISHED], true)) {
+            return [
+                PickingSessionTabsEnum::GROUPED->value => $this->tab == PickingSessionTabsEnum::GROUPED->value
+                    ? fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))
+                    : Inertia::lazy(fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
+            ];
+        }
+
         return [
-            PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
+            PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value
+                ? fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
                 : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
         ];
     }

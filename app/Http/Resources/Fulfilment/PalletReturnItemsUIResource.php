@@ -50,6 +50,7 @@ class PalletReturnItemsUIResource extends JsonResource
             'reference'                        => $this->reference,
             'customer_reference'               => (string)$this->customer_reference,
             'fulfilment_customer_name'         => $this->fulfilment_customer_name,
+            'fulfilment_slug'                  => $this->fulfilment_slug,
             'fulfilment_customer_slug'         => $this->fulfilment_customer_slug,
             'fulfilment_customer_id'           => $this->fulfilment_customer_id,
             'notes'                            => (string)$this->notes,

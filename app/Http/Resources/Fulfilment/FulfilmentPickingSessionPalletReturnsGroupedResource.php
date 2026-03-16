@@ -19,6 +19,9 @@ class FulfilmentPickingSessionPalletReturnsGroupedResource extends JsonResource
             $query = Pallet::query()
                 ->join('pallet_return_items', 'pallet_return_items.pallet_id', '=', 'pallets.id')
                 ->join('pallet_returns', 'pallet_returns.id', '=', 'pallet_return_items.pallet_return_id')
+                ->leftJoin('fulfilments', 'pallets.fulfilment_id', '=', 'fulfilments.id')
+                ->leftJoin('fulfilment_customers', 'fulfilment_customers.id', '=', 'pallets.fulfilment_customer_id')
+                ->leftJoin('customers', 'customers.id', '=', 'fulfilment_customers.customer_id')
                 ->leftJoin('locations', 'locations.id', '=', 'pallets.location_id')
                 ->where('pallet_return_items.picking_session_id', $pickingSessionId)
                 ->where('pallet_return_items.pallet_return_id', $palletReturn->id)
@@ -48,6 +51,8 @@ class FulfilmentPickingSessionPalletReturnsGroupedResource extends JsonResource
                     'pallets.pallet_return_id',
                     'locations.slug as location_slug',
                     'locations.code as location_code',
+                    DB::raw('fulfilments.slug as fulfilment_slug'),
+                    DB::raw('customers.slug as fulfilment_customer_slug'),
                     DB::raw('pallet_returns.state as pallet_return_state')
                 )
                 ->get();
