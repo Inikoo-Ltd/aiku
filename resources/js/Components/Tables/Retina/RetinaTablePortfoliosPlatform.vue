@@ -312,7 +312,7 @@ const openEditModal = (item) => {
 	isOpenModalEditProduct.value = true
 	selectedEditProduct.value = {
 		...item,
-		basePrice: item?.customer_price,
+		basePrice: item?.product_rrp,
 	}
 }
 
@@ -528,6 +528,9 @@ const onClickFilterForSale = (query: string) => {
 const compTableFilterForSale = computed(() => {
 	return layout.currentQuery?.[`${props.tab}_filter`]?.is_for_sale
 })
+
+const percentageIncrease = ref(0);
+
 </script>
 
 <template>
@@ -1340,17 +1343,18 @@ const compTableFilterForSale = computed(() => {
 					size="small"
 					:currency="layout?.iris?.currency?.code"
 					:locale="layout.locale"
-					:disabled="true" />
+					:allowEmpty="false"
+					:min="selectedEditProduct?.product_rrp" />
 				<div class="mt-2 flex flex-row gap-2">
 					<Button
-						v-for="percent in [20, 40, 60, 80, 100]"
+						v-for="percent in [20, 40, 60]"
 						:key="'p' + percent"
 						@click="
 							set(
 								selectedEditProduct,
 								['customer_price'],
 								calculateAdjustedPrice(
-									selectedEditProduct?.basePrice || 0,
+									selectedEditProduct?.product_rrp || 0,
 									percent,
 									'percent'
 								)
@@ -1360,7 +1364,43 @@ const compTableFilterForSale = computed(() => {
 						size="xs"
 						type="tertiary"
 						:style="'white-w-outline'" />
-					<Button
+						<div class="flex flex-row">
+							<InputNumber 
+								@update:modelValue="(value) => percentageIncrease = value"
+								:modelValue="percentageIncrease"
+								:inputClass="'xxs w-[65px]'"
+								:inputStyle="{
+									'border-top-right-radius':0,
+									'border-bottom-right-radius':0,
+									'font-size': '0.75rem'
+								}"
+								type="tertiary"
+								:style="'white-w-outline'" 
+								:min="0"
+								:max="100"
+								:allowEmpty="false"
+								:suffix="'%'"
+							/>
+							<Button 
+								@click="
+									set(
+										selectedEditProduct,
+										['customer_price'],
+										calculateAdjustedPrice(
+											selectedEditProduct?.product_rrp || 0,
+											percentageIncrease,
+											'percent'
+										)
+									)
+								"
+								:label="`+`"
+								size="xs"
+								type="tertiary"
+								:class="'rounded-l-none  ml-0 px-4'"
+								:style="'white-w-outline'" 
+							/>
+						</div>
+						<Button
 						v-for="amount in [2, 4, 6, 8, 10]"
 						:key="'a' + amount"
 						@click="
@@ -1368,7 +1408,7 @@ const compTableFilterForSale = computed(() => {
 								selectedEditProduct,
 								['customer_price'],
 								calculateAdjustedPrice(
-									selectedEditProduct?.basePrice || 0,
+									selectedEditProduct?.product_rrp || 0,
 									amount,
 									'fixed'
 								)
