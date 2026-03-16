@@ -9,7 +9,10 @@
 namespace App\Actions\Helpers\Redirects;
 
 use App\Models\Comms\DispatchedEmail;
+use App\Models\CRM\Customer;
+use App\Models\CRM\Prospect;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -18,22 +21,34 @@ class RedirectUnsubscribe
 {
     use AsAction;
 
-    public function handle(DispatchedEmail $dispatchedEmail): RedirectResponse
+    public function handle(DispatchedEmail $dispatchedEmail, string $encryptedDispatchedEmailID): RedirectResponse
     {
         $baseUrl = null;
-        if ($dispatchedEmail->shop && $dispatchedEmail->shop->website) {
-            $baseUrl = $dispatchedEmail->shop->website->getUrl();
+
+        $recipient = $dispatchedEmail->recipient;
+        if ($recipient instanceof Customer || $recipient instanceof Prospect) {
+            $shop = $recipient->shop;
+        } else {
+            abort(404, 'Recipient not found');
+        }
+
+
+        if ($shop->website) {
+            $baseUrl = $shop->website->getUrl();
         }
 
         if ($baseUrl) {
-            return Redirect::away($baseUrl . '/unsubscribe/' . $dispatchedEmail->uuid);
+            return Redirect::away($baseUrl.'/unsubscribe/'.$encryptedDispatchedEmailID);
         }
 
         abort(404, 'Shop website not found');
     }
 
-    public function asController(DispatchedEmail $dispatchedEmail, ActionRequest $request): RedirectResponse
+    public function asController(string $encryptedDispatchedEmailID, ActionRequest $request): RedirectResponse
     {
-        return $this->handle($dispatchedEmail);
+        $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
+        $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
+
+        return $this->handle($dispatchedEmail, $encryptedDispatchedEmailID);
     }
 }
