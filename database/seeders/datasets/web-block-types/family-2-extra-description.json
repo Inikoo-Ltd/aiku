@@ -13,8 +13,8 @@
 			"button": {
 				"link": {
 					"id": null,
-					"url": "#porducts",
-					"href": "#porducts",
+					"url": "#products",
+					"href": "#products",
 					"type": "external"
 				},
 				"text": "Scroll back to product",
