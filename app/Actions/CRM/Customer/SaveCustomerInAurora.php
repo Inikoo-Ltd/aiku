@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\Dispatching\Picking\WithAuroraApi;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -32,7 +33,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
      */
     public function handle(Customer $customer): void
     {
-        if (!$customer->shop->is_aiku) {
+        if (!$customer->shop->is_aiku || $customer->shop->type == ShopTypeEnum::EXTERNAL) {
             return;
         }
 
@@ -43,8 +44,12 @@ class SaveCustomerInAurora implements ShouldBeUnique
 
         $apiUrl = $this->getApiUrl($customer->organisation);
 
+        $shopSourceIdData = $customer->shop->source_id;
+        if (!$shopSourceIdData) {
+            return;
+        }
 
-        $shopSourceId = explode(':', $customer->shop->source_id);
+        $shopSourceId = explode(':', $shopSourceIdData);
 
         if (!$shopSourceId) {
             return;

@@ -9,9 +9,11 @@
 namespace App\Models\Comms;
 
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -48,7 +50,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailBulkRunRecipient> $recipients
- * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Shop|null $shop
  * @property-read \App\Models\Comms\EmailBulkRunStats|null $stats
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRun newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailBulkRun newQuery()
@@ -109,9 +111,9 @@ class EmailBulkRun extends Model
         return $this->hasOne(EmailBulkRunIntervals::class);
     }
 
-    public function dispatchedEmails(): MorphMany
+    public function dispatchedEmails(): BelongsToMany
     {
-        return $this->morphMany(DispatchedEmail::class, 'parent');
+        return $this->belongsToMany(DispatchedEmail::class, 'email_bulk_run_has_dispatched_emails');
     }
 
     public function channels(): MorphMany

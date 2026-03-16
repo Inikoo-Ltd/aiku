@@ -29,9 +29,11 @@ trait WithRepairWebpages
     }
 
     //
-    protected function normalizeWebBlockByType(Webpage $webpage, array $webBlockTemplateCodes, string $scope): void
+    protected function normalizeWebBlockByType(Webpage $webpage, array $webBlockTemplateCodes, WebBlockTemplateEnum $webBlockTemplateType): void
     {
         $website = $webpage->website;
+
+        $scope = $webBlockTemplateType->value;
 
         if (!in_array($scope, WebBlockTemplateEnum::values()) || !$website) {
             return;
@@ -66,7 +68,7 @@ trait WithRepairWebpages
 
             $usedWebBlocks = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes);
             if (count($usedWebBlocks) == 0) {
-                $this->createWebBlock($webpage, $usedWebBlockTemplateCodes);
+                $this->createWebBlockFromSavedTemplate($webpage, $webBlockTemplateType, $usedWebBlockTemplateCodes);
             } elseif (count($usedWebBlocks) > 1) {
                 $usedWebBlocks->pop();
 

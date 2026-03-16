@@ -12,6 +12,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Webpage;
@@ -72,12 +73,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
             DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
         }
 
-        $webBlocksDataNew = $this->getWebpageBlocksByType($webpage, 'product-1');
-        if (count($webBlocksDataNew) == 0) {
-            $command->error('Webpage '.$webpage->code.' Product Web Block not found');
-
-            $this->createWebBlock($webpage, 'product-1');
-        }
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::PRODUCT->templateCodes(), WebBlockTemplateEnum::PRODUCT);
 
 
         $ok                  = true;

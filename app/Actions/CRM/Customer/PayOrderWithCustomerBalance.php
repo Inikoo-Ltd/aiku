@@ -63,7 +63,7 @@ class PayOrderWithCustomerBalance extends OrgAction
         $customer = $order->customer;
 
 
-        $toPayAmount=min($toPayAmount, $balance);
+        $toPayAmount = min($toPayAmount, $balance);
 
 
 

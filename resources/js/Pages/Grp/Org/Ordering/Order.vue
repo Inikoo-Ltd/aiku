@@ -278,6 +278,7 @@ const props = defineProps<{
         name: string
         icon: string
     }
+    is_faire_order: boolean
 }>()
 
 
@@ -1151,10 +1152,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </template>
 
         <template #button-cancel="{ action }">
-            <div class="relative">
+            <div class="relative" v-if="!is_faire_order">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="cancelLoading"
                     @click="() => confirm2(action)" :key="`ActionButton${action.label}${action.style}`"
                     :tooltip="action.tooltip" />
+            </div>
+            <div class="relative" v-else>
             </div>
         </template>
 

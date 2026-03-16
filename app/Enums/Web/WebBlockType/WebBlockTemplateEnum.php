@@ -47,4 +47,11 @@ enum WebBlockTemplateEnum: string
             ]
         };
     }
+
+    public static function allTemplateCodes(): array
+    {
+        return array_merge(
+            ...array_map(fn ($item) => $item->templateCodes(), self::cases())
+        );
+    }
 }

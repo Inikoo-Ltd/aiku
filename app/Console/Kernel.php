@@ -319,7 +319,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('19:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'SaveWebsitesSitemap',
             ),
             name: 'SaveWebsitesSitemap',
@@ -463,6 +463,15 @@ class Kernel extends ConsoleKernel
             ),
             name: 'PurgeDownloadPortfolioCustomerSalesChannel',
             type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('dispatched-email:clean-provider-dispatch-id')->dailyAt('3:30')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CleanProviderDispatchID',
+            ),
+            name: 'CleanProviderDispatchID',
+            type: 'command',
             scheduledAt: now()->format('H:i')
         );
 

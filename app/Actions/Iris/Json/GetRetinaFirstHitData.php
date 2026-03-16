@@ -28,7 +28,7 @@ class GetRetinaFirstHitData extends RetinaAction
         RetinaLogWebUserRequest::run();
         if (auth()->check()) {
             Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
-        }else{
+        } else {
             Cookie::queue(Cookie::forget('iris_vua'));
         }
         return $this->getIrisUserData();

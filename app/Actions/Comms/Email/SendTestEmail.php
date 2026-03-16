@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Email;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
-use App\Actions\Comms\DispatchedEmail\StoreEmailTemplateDispatchedEmail;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
@@ -29,45 +28,43 @@ class SendTestEmail extends OrgAction
     public function handle(Mailshot|Outbox|EmailTemplate $entity, array $modelData): ?DispatchedEmail
     {
         if ($entity instanceof Mailshot) {
-            $parent = $entity;
-            $shop = $entity->shop;
-            $sender = $entity->sender();
-            $subject = $entity->subject;
+            $parent     = $entity;
+            $shop       = $entity->shop;
+            $sender     = $entity->sender();
+            $subject    = $entity->subject;
             $senderName = $entity->senderName();
         } elseif ($entity instanceof Outbox) {
-            $parent = $entity->emailOngoingRun;
-            $shop = $entity->shop;
-            $sender = $entity->emailOngoingRun->sender();
-            $subject = $entity->emailOngoingRun->email->subject;
+            $parent     = $entity->emailOngoingRun;
+            $shop       = $entity->shop;
+            $sender     = $entity->emailOngoingRun->sender();
+            $subject    = $entity->emailOngoingRun->email->subject;
             $senderName = $entity->emailOngoingRun->senderName();
         } elseif ($entity instanceof EmailTemplate) {
-            $parent = $entity;
-            $shop = $entity->shop;
-            $sender = $entity->sender();
-            $subject = $entity->name;
+            $parent     = $entity;
+            $shop       = $entity->shop;
+            $sender     = $entity->sender();
+            $subject    = $entity->name;
             $senderName = $entity->senderName();
         } else {
             throw new \InvalidArgumentException('Invalid entity type');
         }
 
         $externalRecipient = StoreExternalEmailRecipient::run($shop, [
-            'name' => 'Test email',
+            'name'  => 'Test email',
             'email' => $modelData['email']
         ]);
 
-        if ($entity instanceof EmailTemplate) {
-            $dispatchedEmail = StoreEmailTemplateDispatchedEmail::run($parent, $externalRecipient, [
-                'is_test' => false,
+
+        $dispatchedEmail = StoreDispatchedEmail::run(
+            parent: $parent,
+            recipient: $externalRecipient,
+            modelData: [
                 'email_address' => $modelData['email'],
-                'provider' => DispatchedEmailProviderEnum::SES,
-            ]);
-        } else {
-            $dispatchedEmail = StoreDispatchedEmail::run($parent, $externalRecipient, [
-                'is_test' => false,
-                'email_address' => $modelData['email'],
-                'provider' => DispatchedEmailProviderEnum::SES,
-            ]);
-        }
+                'provider'      => DispatchedEmailProviderEnum::SES,
+            ],
+            isTest: true
+        );
+
         $dispatchedEmail->refresh();
 
         $this->sendEmailWithMergeTags(
@@ -76,6 +73,7 @@ class SendTestEmail extends OrgAction
             subject: $subject,
             emailHtmlBody: $modelData['compiled_layout'],
             senderName: $senderName,
+            isTest:true
         );
 
         return $dispatchedEmail;
@@ -91,7 +89,7 @@ class SendTestEmail extends OrgAction
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email'],
+            'email'           => ['required', 'email'],
             'compiled_layout' => ['required', 'string'],
         ];
     }

@@ -45,7 +45,7 @@ class RepairInvoiceTransactionHasOrgStocks
 
         $query->chunkById(self::CHUNK_SIZE, function ($invoiceTransactions) use ($bar) {
             foreach ($invoiceTransactions as $invoiceTransaction) {
-                SyncInvoiceTransactionOrgStockBridges::run($invoiceTransaction->id);
+                SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id);
                 $bar->advance();
             }
         });

@@ -31,7 +31,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexCreditTransactionsAll extends OrgAction
 {
     use WithAccountingSubNavigation;
-    
+
     use WithAccountingAuthorisation;
 
     private Shop|Organisation $parent;
@@ -162,7 +162,7 @@ class IndexCreditTransactionsAll extends OrgAction
         }
 
         return Inertia::render(
-        'Org/Accounting/CreditTransactions',
+            'Org/Accounting/CreditTransactions',
             [
                 'breadcrumbs' => $breadCrumbs,
                 'title'       => __('Credit Transactions'),
@@ -176,7 +176,7 @@ class IndexCreditTransactionsAll extends OrgAction
         )->table($this->tableStructure($this->parent));
     }
 
-    
+
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix): array
     {
         $headCrumb = function () use ($routeName, $routeParameters, $suffix) {
@@ -197,7 +197,7 @@ class IndexCreditTransactionsAll extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.accounting.credit_transactions.index'  => 
+            'grp.org.accounting.credit_transactions.index'  =>
             array_merge(
                 ShowAccountingDashboard::make()->getBreadcrumbs('grp.org.accounting.dashboard', $routeParameters),
                 $headCrumb()
