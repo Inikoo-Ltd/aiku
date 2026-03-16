@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from "vue"
-import { useBannerBackgroundColor, useHeadlineText } from "@/Composables/useStockList"
 import { ulid } from "ulid"
 
 import SliderCommonWorkshop from "@/Components/Banners/SlidesWorkshop/SliderCommonWorkshop.vue"
@@ -13,6 +12,7 @@ import { routeType } from "@/types/route"
 import CommonSlidesBluprint from "./Blueprint/CommonSlidesBluprint"
 import SlidesBluprint from "./Blueprint/SlidesBluprint"
 import IndexSlidesControl from "./SlidesWorkshop/IndexSlidesControl.vue"
+import { cloneDeep } from "lodash-es"
 
 type SlideWorkshopData = any
 
@@ -26,6 +26,7 @@ const props = defineProps<{
     stock_images: routeType
     uploaded_images: routeType
   }
+  ratio : string
 }>()
 
 const emits = defineEmits<{
@@ -46,8 +47,12 @@ const ComponentsBlueprint = ref(SlidesBluprint.data)
 
 /* ---------------- helpers ---------------- */
 const getComponents = () => props.modelValue.components || []
+
 const setComponents = (val: SlideWorkshopData[]) => {
-  props.modelValue.components = val
+  emits("update:modelValue", {
+    ...props.modelValue,
+    components: val
+  })
 }
 const findIndex = (ulid: string) =>
   getComponents().findIndex((i: any) => i.ulid === ulid)
@@ -63,17 +68,21 @@ watch(
   (val) => {
     if (!val?.ulid) return
 
-    const list = [...getComponents()]
+    const list = cloneDeep(getComponents())
     const index = findIndex(val.ulid)
     if (index === -1) return
 
-    list[index] = { ...val }
-    setComponents(list)
+    list[index] = cloneDeep(val)
+
+    emits("update:modelValue", {
+      ...props.modelValue,
+      components: list
+    })
+
     emits("jumpToIndex", val.ulid)
   },
   { deep: true }
 )
-
 
 const removeComponent = (slide: SlideWorkshopData) => {
   const list = [...getComponents()]
@@ -171,6 +180,7 @@ const data = computed<BannerWorkshop>({
                 :blueprint="ComponentsBlueprint"
                 :remove="removeComponent"  
                 :uploadRoutes="imagesUploadRoute" 
+                :ratio
             />
         </div>
 
@@ -183,7 +193,7 @@ const data = computed<BannerWorkshop>({
             @onPick="onPickImageGalery" 
             @on-upload="uploadImageRespone"
             :use-crop="true" 
-            :crop-props="{ratio: modelValue.type == 'square' ? {w: 1, h: 1} : {w: 4, h: 1}}" 
+            :crop-props="{ratio: modelValue.type == 'square' ? [1/1] : [ 4/1, null]}" 
             :stockImageRoutes="galleryRoute.stock_images"
             :imagesUploadedRoutes="galleryRoute.uploaded_images"
         />
@@ -193,7 +203,7 @@ const data = computed<BannerWorkshop>({
          <Modal :isOpen="isOpenCropModal" @onClose="closeCropModal">
             <div>
                 <CropImage
-                    :ratio="modelValue.type == 'square' ? {w: 1, h: 1} : {w: 4, h: 1}"
+                    :ratio="ratio"
                     :data="uploadedFilesList"
                     :imagesUploadRoute="route(imagesUploadRoute.name,imagesUploadRoute.parameters)"
                     :response="uploadImageRespone" />

@@ -9,20 +9,25 @@ namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Traits\Catalogue\ProductCategory\WithRedoProductCategoryTimeSeries;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 
-class RedoFamiliesTimeSeries
+class RedoFamiliesTimeSeries implements ShouldBeUnique
 {
-    use WithHydrateCommand;
-    use WithRedoProductCategoryTimeSeries {
+    use WithHydrateCommand, WithRedoProductCategoryTimeSeries {
         WithRedoProductCategoryTimeSeries::asCommand insteadof WithHydrateCommand;
+        WithRedoProductCategoryTimeSeries::asJob insteadof WithHydrateCommand;
     }
 
-    public string $commandSignature = 'families:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    protected ?ProductCategoryTypeEnum $categoryType;
+
+    public string $jobQueue         = 'default-long';
+    public string $commandSignature = 'families:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
-        $this->model       = ProductCategory::class;
-        $this->restriction = 'family';
+        $this->model        = ProductCategory::class;
+        $this->categoryType = ProductCategoryTypeEnum::FAMILY;
     }
 }

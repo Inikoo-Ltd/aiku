@@ -26,6 +26,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasSearchableText;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -39,6 +40,7 @@ class IndexCustomers extends OrgAction
 {
     use WithCustomersSubNavigation;
     use WithCRMAuthorisation;
+    use HasSearchableText;
 
     private Group|Shop|Organisation $parent;
 
@@ -96,17 +98,16 @@ class IndexCustomers extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
             $query->where(function ($query) use ($value, $parent) {
-                $value = escapeSQLSearch($value);
-                $query->whereAnyWordStartWith('customers.name', $value)
-                    ->orWhereStartWith('customers.email', $value)
-                    ->orWhere('customers.reference', '=', $value)
-                    ->orWhereHas('tags', function ($tagQuery) use ($value) {
-                        $tagQuery->where('tags.name', 'LIKE', "%{$value}%");
-                    });
+                $value = $this->normalizeSearchableText($value);
 
-                if (class_basename($parent) == 'Group') {
-                    $query->orWhereStartWith('organisations.name', $value);
-                    $query->orWhereStartWith('shops.name', $value);
+                // Ignore if search token is less than 2 words
+                $searchTokens = array_values(array_filter(
+                    explode(' ', trim($value)),
+                    fn ($t) => strlen($t) >= 2
+                ));
+
+                foreach ($searchTokens as $searchToken) {
+                    $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
                 }
             });
         });
@@ -294,7 +295,7 @@ class IndexCustomers extends OrgAction
             }
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+                ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
 
             if ($isDropshipping) {
                 $table->column(

@@ -46,12 +46,11 @@ class StoreMasterAsset extends OrgAction
      */
     public function handle(MasterProductCategory $masterFamily, array $modelData): MasterAsset
     {
-
-        $isMain = Arr::get($modelData, 'is_main', true);
+        $isMain          = Arr::get($modelData, 'is_main', true);
         $isMinionVariant = false;
         if (Arr::has($modelData, 'is_minion_variant')) {
             $isMinionVariant = Arr::get($modelData, 'is_minion_variant', false);
-            $isMain = !$isMinionVariant;
+            $isMain          = !$isMinionVariant;
         }
 
         data_set($modelData, 'is_main', $isMain);
@@ -98,10 +97,17 @@ class StoreMasterAsset extends OrgAction
             $this->processTradeUnits($masterAsset, $tradeUnits);
             $masterAsset->refresh();
 
-            if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT  && count($shopProducts) > 0) {
-                StoreProductFromMasterProduct::make()->action($masterAsset, [
-                    'shop_products'     => $shopProducts,
-                ]);
+            if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT && count($shopProducts) > 0) {
+                $isForSale = data_get($modelData, 'is_for_sale', true);
+                StoreProductFromMasterProduct::dispatch(
+                    $masterAsset,
+                    [
+                        'shop_products' => $shopProducts,
+                        'is_for_sale'   => $isForSale
+                    ],
+                    generateVariant:true,
+                    ignoreCreateWebpage: !$isForSale
+                );
             }
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
@@ -122,7 +128,6 @@ class StoreMasterAsset extends OrgAction
 
         return $masterAsset;
     }
-
 
 
     public function rules(): array
@@ -156,9 +161,9 @@ class StoreMasterAsset extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ],
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'price'                    => ['sometimes', 'numeric', 'min:0'],
+            'price'                    => ['sometimes', 'numeric', 'min:0.01'],
             'unit'                     => ['sometimes', 'required', 'string'],
-            'rrp'                      => ['sometimes', 'required', 'numeric', 'min:0'],
+            'rrp'                      => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'              => ['sometimes', 'nullable', 'max:15000'],
             'data'                     => ['sometimes', 'array'],
             'is_main'                  => ['sometimes', 'boolean'],
@@ -173,13 +178,14 @@ class StoreMasterAsset extends OrgAction
             'trade_units'              => ['sometimes', 'array', 'nullable'],
             'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)],
             'shop_products'            => ['sometimes', 'array'],
-            'units'                  => ['sometimes'],
-            'description_title'      => ['sometimes', 'string', 'nullable', 'max:300'],
-            'description_extra'      => ['sometimes', 'string', 'nullable', 'max:15000'],
-            'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
-            'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
-            'marketing_dimensions'   => ['sometimes'],
-            'is_minion_variant'      => ['sometimes', 'boolean'],
+            'units'                    => ['sometimes'],
+            'description_title'        => ['sometimes', 'string', 'nullable', 'max:300'],
+            'description_extra'        => ['sometimes', 'string', 'nullable', 'max:15000'],
+            'marketing_weight'         => ['sometimes', 'numeric', 'min:0'],
+            'gross_weight'             => ['sometimes', 'numeric', 'min:0'],
+            'marketing_dimensions'     => ['sometimes'],
+            'is_minion_variant'        => ['sometimes', 'boolean'],
+            'is_for_sale'              => ['sometimes', 'boolean'],
 
         ];
 
@@ -200,13 +206,14 @@ class StoreMasterAsset extends OrgAction
             MasterAsset::disableAuditing();
         }
 
-        $this->masterFamily = $masterFamily;
+        $this->masterFamily   = $masterFamily;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->asAction       = true;
         $this->strict         = $strict;
 
 
         $this->initialisationFromGroup($masterFamily->group, $modelData);
+
         return $this->handle($masterFamily, $this->validatedData);
     }
 

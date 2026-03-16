@@ -14,23 +14,23 @@ use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
-use App\Actions\Dispatching\DeliveryNote\FinishPackDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
-use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
-use App\Actions\Dispatching\Shipment\StoreShipment;
-use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Dispatching\PickingSession\CalculatePickingSessionPicks;
+use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
+use App\Actions\Dispatching\Shipment\StoreShipment;
+use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
 use App\Actions\Goods\Stock\StoreStock;
@@ -39,8 +39,8 @@ use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -103,6 +103,7 @@ beforeEach(function () {
 
     if (!isset($this->employee)) {
         $employeeData                  = Employee::factory()->definition();
+        $employeeData['alias']         = Str::random(6);
         $employeeData['worker_number'] .= Str::random(6);
 
         $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
@@ -420,7 +421,7 @@ test('Set Delivery Note state to Packed', function (Picking $picking) {
     $deliveryNote     = $picking->deliveryNote;
     $deliveryNoteItem = $picking->deliveryNoteItem;
 
-    $packedDeliveryNote = FinishPackDeliveryNote::make()->action($deliveryNote, $this->user);
+    $packedDeliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $this->user);
 
     $packedDeliveryNote->refresh();
     $deliveryNoteItem->refresh();
@@ -696,7 +697,7 @@ test("UI Index dispatching picking sessions", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page
-                    ->where("title", "Picking sessions")
+                    ->where("title", "Picking Sessions")
                     ->etc()
             )
             ->has("data");

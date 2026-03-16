@@ -16,4 +16,12 @@ trait HasTabs
             return  [$case->value => $case->blueprint()];
         })->all();
     }
+
+    public static function navigationExcept(array $excludes): array
+    {
+        return collect(self::cases())
+            ->filter(fn ($case) => !in_array($case, $excludes))
+            ->mapWithKeys(fn ($case) => [$case->value => $case->blueprint()])
+            ->all();
+    }
 }

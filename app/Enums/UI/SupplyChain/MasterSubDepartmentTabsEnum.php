@@ -21,18 +21,13 @@ enum MasterSubDepartmentTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case HISTORY  = 'history';
-    case SUB_DEPARTMENTS = 'sub_departments';
-    case SALES    = 'sales';
     case IMAGES    = 'images';
+    // case SUB_DEPARTMENTS = 'sub_departments';
+    case SALES    = 'sales';
 
     public function blueprint(): array
     {
         return match ($this) {
-            MasterSubDepartmentTabsEnum::SALES => [
-                'title' => __('Sales'),
-                'icon'  => 'fal fa-money-bill-wave',
-            ],
-
             MasterSubDepartmentTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',
@@ -40,21 +35,22 @@ enum MasterSubDepartmentTabsEnum: string
                 'icon'  => 'fal fa-clock',
 
             ],
-            MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS => [
-                'title' => __('Sub departments in shop'),
-                'icon'  => 'fal fa-store',
-            ],
+            // MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS => [
+            //     'title' => __('Sub departments in shop'),
+            //     'icon'  => 'fal fa-store',
+            // ],
 
             MasterSubDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
-
             MasterSubDepartmentTabsEnum::IMAGES => [
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
-                'align' => 'right',
+            ],
+            MasterSubDepartmentTabsEnum::SALES => [
+                'title' => __('Sales'),
+                'icon'  => 'fal fa-money-bill-wave',
             ],
         };
     }

@@ -44,6 +44,7 @@ class LuigiBoxGetProductDetail extends IrisAction
             'products.offers_data',
             'products.price',
             'webpages.canonical_url as url',
+            'products.offers_data as product_offers_data',
         ]);
 
         // To keep the order of products to like the original Luigi

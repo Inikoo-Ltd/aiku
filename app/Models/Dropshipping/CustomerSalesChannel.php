@@ -82,6 +82,8 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property string|null $checked_as_down_at
  * @property int|null $checked_as_down_days
  * @property int|null $number_downside
+ * @property int $number_orders_state_picked
+ * @property int $number_orders_state_packing
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer

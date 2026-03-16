@@ -14,6 +14,7 @@ use App\Actions\Comms\Traits\WithSendSubscribersOutboxEmail;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Ordering\Order;
@@ -27,17 +28,22 @@ class SendDispatchedOrderEmailToSubscribers extends OrgAction
 
     public function handle(Order $order): void
     {
+        if ($order->shop->type === ShopTypeEnum::EXTERNAL) {
+            return;
+        }
+
         /** @var Outbox $outbox */
         $outbox = $order->shop->outboxes()->where('code', OutboxCodeEnum::DELIVERY_NOTE_DISPATCHED->value)->first();
 
         $customer = $order->customer;
+        $deliveryNote = $order->deliveryNotes->first();
 
         $this->sendOutboxEmailToSubscribers(
             $outbox,
             additionalData: [
                 'customer_name' => $customer->name,
                 'order_reference' => $order->reference,
-                'date' => $order->created_at->format('F jS, Y'),
+                'dispatched_date' => $order->dispatched_at->format('F jS, Y'),
                 'order_link' => route('grp.org.shops.show.crm.customers.show.orders.show', [
                     $order->organisation->slug,
                     $order->shop->slug,
@@ -52,6 +58,15 @@ class SendDispatchedOrderEmailToSubscribers extends OrgAction
                 'invoice_link' => route('grp.org.accounting.invoices.show', [
                     $order->organisation->slug,
                     $order->invoices->first()->slug
+                ]),
+                'invoice_reference' => $order->invoices->first()->reference,
+                'delivery_note_reference' => $deliveryNote->reference,
+                'delivery_note_link' => route('grp.org.shops.show.crm.customers.show.orders.show.delivery-note.show', [
+                    $order->organisation->slug,
+                    $order->shop->slug,
+                    $order->customer->slug,
+                    $order->slug,
+                    $deliveryNote->slug
                 ]),
             ]
         );

@@ -379,7 +379,7 @@ const compToolTip = computed(() => {
                                             <div>
                                                 {{ trans("Select method") }}:
                                             </div>
-                                            <div v-if="data.can_manual_refund" @click="() => set(data, 'selected_action', 'manual')" v-tooltip="trans('Manual Refund (you wlll need to process refund externally and provide a transaction id)')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
+                                            <div v-if="data.can_manual_refund" @click="() => set(data, 'selected_action', 'manual')" v-tooltip="trans('Manual Refund (you will need to process refund externally and provide a transaction id)')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'manual' ? 'fas fa-digging' : 'fal fa-digging'" class="" fixed-width aria-hidden="true" />
                                             </div>
                                             <div @click="() => set(data, 'selected_action', 'balance')" v-tooltip="trans('Refund to customer balance')" aclick="() => onClickBalance(data, 'balance')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'balance' ? 'text-blue-700' : ''">

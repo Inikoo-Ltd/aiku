@@ -140,7 +140,6 @@ class GetGroupOverview extends OrgAction
             [
                 'name'  => __('Dispatched Emails'),
                 'icon'  => 'fal fa-paper-plane',
-                'route' => route('grp.overview.comms-marketing.dispatched-emails.index'),
                 'count' => $group->commsStats->number_dispatched_emails ?? 0
             ],
 
@@ -381,7 +380,7 @@ class GetGroupOverview extends OrgAction
                 'count' => $group->fulfilmentStats->number_pallets ?? 0
             ],
             [
-                'name'  => __("Customer'S SKUs"),
+                'name'  => __("Customer's SKUs"),
                 'icon'  => 'fal fa-box-open',
                 'route' => route('grp.overview.fulfilment.stored-items.index'),
                 'count' => $group->fulfilmentStats->number_stored_items ?? 0

@@ -18,6 +18,8 @@ use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
+use App\Actions\Dispatching\Shipment\StoreShipment;
+use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsCharges;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsCollections;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsGroups;
@@ -38,6 +40,7 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
@@ -529,6 +532,20 @@ test('update order state to Packed ', function (Order $order) {
 })->depends('update order state to Handling');
 
 test('update order state to Finalised ', function (Order $order) {
+    $shipper = StoreShipper::make()->action($order->organisation, [
+        'code'     => 'hello',
+        'name'     => 'hello',
+        'trade_as' => 'hello',
+    ]);
+
+    /** @var DeliveryNote $deliveryNote */
+    $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+    StoreShipment::make()->action($deliveryNote, $shipper, [
+        'reference'          => 'abc',
+        'tracking'           => 'abc',
+        'combined_label_url' => 'https://www.google.com',
+    ]);
+
     $order = FinaliseOrder::make()->action($order);
     $order->refresh();
     expect($order)->toBeInstanceOf(Order::class)

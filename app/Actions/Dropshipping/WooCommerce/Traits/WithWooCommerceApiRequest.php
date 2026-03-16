@@ -183,6 +183,10 @@ trait WithWooCommerceApiRequest
                     Cache::put($cacheKey, $data, Carbon::now()->addMinutes($this->cacheDuration));
                 }
 
+                if (preg_match('/<html>.*?<title>(.*?)<\/title>.*?<\/html>/s', $response->body(), $matches)) {
+                    return ['message' => 'Error in service: ' . Arr::get($matches, '1', 'Unknown error')];
+                }
+
                 return $data;
             } else {
                 return [$response->body()];

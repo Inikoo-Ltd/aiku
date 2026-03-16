@@ -26,6 +26,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $id
+ * @property mixed $customer_name
+ * @property mixed $order_slug
+ * @property mixed $customer_slug
+ * @property mixed $fulfilment_customer_slug
  *
  */
 class DispatchedEmailsResource extends JsonResource
@@ -50,8 +54,6 @@ class DispatchedEmailsResource extends JsonResource
                     'icon'    => 'fal fa-dumpster',
                 ] : [],
             'number_email_tracking_events' => $this->number_email_tracking_events,
-            'shop_code'                    => $this->shop_code,
-            'shop_slug'                    => $this->shop_slug,
             'organisation_name'            => $this->organisation_name,
             'organisation_slug'            => $this->organisation_slug,
             'customer_name'                => $this->customer_name,

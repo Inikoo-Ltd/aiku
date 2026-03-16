@@ -30,6 +30,7 @@ use Illuminate\Support\Arr;
  * @property mixed $sub_departments
  * @property mixed $collections
  * @property mixed $web_images
+ * @property mixed $health_rank
  */
 class MasterDepartmentsResource extends JsonResource
 {
@@ -61,12 +62,16 @@ class MasterDepartmentsResource extends JsonResource
             'collections'      => $this->collections,
             'show_in_website'  => $this->show_in_website,
             'currency_code'    => $this->currency_code,
-            'sales'            => $this->sales ?? 0,
-            'sales_ly'         => $this->sales_ly ?? 0,
-            'sales_delta'      => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
+            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
             'invoices'         => $this->invoices ?? 0,
             'invoices_ly'      => $this->invoices_ly ?? 0,
             'invoices_delta'   => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'dropshippers'     => $this->dropshippers ?? 0,
+            'listings'         => $this->listings ?? 0,
+            'sold'             => $this->sold ?? 0,
+            'health_rank' => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

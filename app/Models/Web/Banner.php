@@ -13,6 +13,7 @@ use App\Actions\Utils\Abbreviate;
 ;
 
 use App\Enums\Web\Banner\BannerStateEnum;
+use App\Enums\Web\Banner\BannerTypeEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Snapshot;
@@ -40,7 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $website_id
  * @property int|null $web_block_id
  * @property string $ulid
- * @property string $type
+ * @property BannerTypeEnum $type
  * @property string $slug
  * @property string $name
  * @property BannerStateEnum $state
@@ -56,6 +57,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
+ * @property string|null $ratio
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Deployment> $deployments
  * @property-read \App\Models\SysAdmin\Group $group
@@ -93,7 +95,8 @@ class Banner extends Model implements HasMedia, Auditable
     protected $casts = [
         'compiled_layout' => 'array',
         'data'            => 'array',
-        'state'           => BannerStateEnum::class
+        'state'           => BannerStateEnum::class,
+        'type'            => BannerTypeEnum::class
     ];
 
     protected $attributes = [

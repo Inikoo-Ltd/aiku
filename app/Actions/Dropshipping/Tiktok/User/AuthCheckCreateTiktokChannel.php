@@ -39,7 +39,7 @@ class AuthCheckCreateTiktokChannel extends RetinaAction
 
         $customerSalesChannel = CheckTiktokChannel::run($customerSalesChannel->user);
 
-        if (!$customerSalesChannel->platform_status) {
+        if (!$customerSalesChannel->can_connect_to_platform) {
             throw ValidationException::withMessages(['message' => __('Your TikTok channel is not authorized yet. Please contact support.')]);
         }
 

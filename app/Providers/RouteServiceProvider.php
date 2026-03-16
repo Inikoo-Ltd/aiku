@@ -13,14 +13,18 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use App\Models\HumanResources\Leave;
 
 class RouteServiceProvider extends ServiceProvider
 {
     public const string HOME = '/dashboard';
 
-
     public function boot(): void
     {
+        Route::bind('leave', function ($value) {
+            return Leave::findOrFail($value);
+        });
+
         $webHooksDomain = app()->environment('local') && config('app.sandbox.local_webhooks_url') ?
             config('app.sandbox.local_webhooks_url') : config('app.domain');
 

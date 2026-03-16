@@ -80,6 +80,7 @@ class CategoriseInvoice extends OrgAction
                 InvoiceCategoryTypeEnum::EXTERNAL_INVOICER => $invoice->external_invoicer_id ? $invoiceCategory : null,
                 InvoiceCategoryTypeEnum::IN_SALES_CHANNEL => $this->inHaystack($invoiceCategory, 'sales_channel_ids', $invoice->sales_channel_id),
                 InvoiceCategoryTypeEnum::IN_SALES_CHANNEL_SHOP => $this->salesChannelShop($invoice, $invoiceCategory),
+                InvoiceCategoryTypeEnum::IN_SHOP_OR_IN_SALES_CHANNEL_SHOP => $this->inShopOrSalesChannelShop($invoice, $invoiceCategory),
             };
 
 
@@ -130,6 +131,24 @@ class CategoriseInvoice extends OrgAction
     protected function shopFallback(Invoice $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
     {
         if ($invoice->shop_id == Arr::get($invoiceCategory->settings, 'shop_id')) {
+            return $invoiceCategory;
+        }
+
+        return null;
+    }
+
+
+    protected function inShopOrSalesChannelShop(Invoice $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
+    {
+        $shopsIds               = Arr::get($invoiceCategory->settings, 'shop_ids', []);
+        $shopsIdsForChannelsIds = Arr::get($invoiceCategory->settings, 'shop_for_sales_channel_ids', []);
+        $salesChannelsIds       = Arr::get($invoiceCategory->settings, 'sales_channel_ids', []);
+
+        if (in_array($invoice->shop_id, $shopsIds)) {
+            return $invoiceCategory;
+        }
+
+        if (in_array($invoice->shop_id, $shopsIdsForChannelsIds) && in_array($invoice->sales_channel_id, $salesChannelsIds)) {
             return $invoiceCategory;
         }
 

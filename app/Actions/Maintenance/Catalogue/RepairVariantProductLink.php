@@ -13,6 +13,7 @@ use App\Actions\Masters\MasterVariant\UpdateMasterVariant;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterVariant;
 use Illuminate\Console\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairVariantProductLink
 {
@@ -40,7 +41,12 @@ class RepairVariantProductLink
 
         $total = (clone $query)->count();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($total);
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
         $query->chunk(200, function ($masterVariants) use ($bar) {

@@ -12,6 +12,8 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Prices2 from '@/Components/CMS/Webpage/Products1/Prices2.vue'
 import Image from '@/Components/Image.vue'
 import Prices from '@/Components/CMS/Webpage/Products1/Prices.vue'
+import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue'
+
 
 const props = defineProps<{
     product: ProductHit
@@ -27,9 +29,9 @@ const isLoadingVisit = ref(false)
 </script>
 
 <template>
-    <div class="relative flex flex-col h-full p-3 rounded bg-white">
+  <div class="relative flex flex-col h-full md:p-3 rounded bg-white">
         <!-- Section: Image -->
-        <div class="mb-3 flex justify-center">
+        <div class="mb-3 flex justify-center relative">
             <component
                 :is="product.attributes.web_url[0] ? LinkIris : 'div'"
                 :href="product.attributes.web_url[0]"
@@ -37,9 +39,22 @@ const isLoadingVisit = ref(false)
                 @success="() => SelectItemCollector(product)"
                 @start="() => isLoadingVisit = true"
                 @finish="() => isLoadingVisit = false">
-                <img v-if="product.attributes.image_link || product.iris_attributes?.web_images?.main?.gallery?.original" :src="product.attributes.image_link || product.iris_attributes?.web_images?.main?.gallery?.original" :alt="product.attributes.title" class="object-contain w-full h-full" />
+                <Image v-if="product.attributes.image_link || product.iris_attributes?.web_images?.main?.gallery" :src="product.iris_attributes?.web_images?.main?.gallery" :alt="product.name" class="object-contain w-full h-full" />
                 <FontAwesomeIcon v-else icon="fal fa-image" class="opacity-40 text-2xl md:text-5xl" fixed-width aria-hidden="true" />
             </component>
+
+            <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
+                <NewAddToCartButton 
+                    v-if="product.iris_attributes?.stock && layout.retina?.type === 'b2b'" 
+                    :hasInBasket="layout?.family_page?.productInBasket?.list?.[product.iris_attributes.id]"
+                    :product="product.iris_attributes" 
+                    :key="product.iris_attributes.id"
+                    :addToBasketRoute="{ name: 'iris.models.transaction.store'}" 
+                    :updateBasketQuantityRoute="{ name: 'iris.models.transaction.update'}" 
+                    :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
+                    :buttonStyle="layout?.buttonBasket?.buttonStyle"
+                    />
+            </div>
         </div>
 
         <!-- Section: Title -->
@@ -88,13 +103,13 @@ const isLoadingVisit = ref(false)
                     v-if="layout.retina?.type === 'b2b'"
                     :product="product.iris_attributes"
                     :currency="currency"
-                    :basketButton="false"
+                    :basketButton="true"
                 />
                 <Prices
                     v-else
                     :product="product.iris_attributes"
                     :currency="currency"
-                    :basketButton="false"
+                    :basketButton="true"
                 />
             </template>
         </div>

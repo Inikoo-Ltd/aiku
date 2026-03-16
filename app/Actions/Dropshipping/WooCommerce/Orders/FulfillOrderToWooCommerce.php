@@ -50,7 +50,7 @@ class FulfillOrderToWooCommerce extends OrgAction
                 'date_shipped'         => now()->timestamp // current timestamp
             ];
 
-            $shippingNote = __("Shipping Tracking ($shipment->tracking): $shipment->trade_as ") . $shipment->combined_label_url;
+            $shippingNote = __("Shipping Tracking (:shipmentTracking): :shipmentTradeAs :shipmentLabelUrl", ['shipmentTracking' => $shipment->tracking, 'shipmentTradeAs' => $shipment->trade_as, 'shipmentLabelUrl' => $shipment->combined_label_url]);
             $wooCommerceUser->createCustomerOrderNote($fulfillOrderId, $shippingNote);
         }
 

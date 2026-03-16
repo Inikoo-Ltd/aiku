@@ -15,13 +15,14 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
 import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
-import { faXmark } from "@fortawesome/free-solid-svg-icons"
+import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import { faCheck, faMinus, faTimes } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { faShapes, faStar, faTriangle, faEquals } from "@fas"
 import { routeType } from "@/types/route"
+import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 
 const props = defineProps<{
     data: {}
@@ -56,7 +57,7 @@ function masterFamilyRoute(masterProduct: MasterProduct) {
 
 function masterProductRoute(masterProduct: MasterProduct) {
     let masterShop = masterProduct.master_shop_slug ?? (route().params as RouteParams).masterShop;
-    
+
     if (route().current() == "grp.masters.master_products.index") {
         return route(
             "grp.masters.master_products.show",
@@ -87,6 +88,14 @@ function masterProductRoute(masterProduct: MasterProduct) {
             {
                 masterShop: (route().params as RouteParams).masterShop,
                 masterFamily: (route().params as RouteParams).masterFamily,
+                masterProduct: masterProduct.slug
+            }
+        )
+    } else if (route().current() == "grp.masters.master_shops.show.master_products.mismatch_detected.index") {
+        return route(
+            "grp.masters.master_shops.show.master_products.mismatch_detected.show",
+            {
+                masterShop: (route().params as RouteParams).masterShop,
                 masterProduct: masterProduct.slug
             }
         )
@@ -317,6 +326,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     class="secondaryLink whitespace-nowrap w-max inline-block">
                     {{ masterProduct.code }}
                 </Link>
+                <FontAwesomeIcon v-if="masterProduct.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch found in products under this master. Please update the master product trade units.')"/>
             </div>
         </template>
 
@@ -351,28 +361,34 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </span>
                 </span>
             </Link>
-            <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
+<!--             <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
                border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
                 -
-            </span>
+            </span> -->
         </template>
 
         <template #cell(name)="{ item: masterProduct }">
-            <div>
-                <ProductUnitLabel
+            <div class="flex items-center">
+
+                <div v-if="masterProduct.trade_units" class="text-xxs shrink-0">
+                    <LabelSKU :product="masterProduct" :trade_units="masterProduct.trade_units" />
+                </div>
+
+                <div class="xtruncate">
+                <!-- <ProductUnitLabel
                     v-if="masterProduct?.units"
                     :units="masterProduct?.units"
                     :unit="masterProduct?.unit"
                     class="!py-0 !px-1 !rounded-sm !text-sm mr-1"
-                />
-
-                {{ masterProduct["name"] }}
+                /> -->
+                    {{ masterProduct.name }}
+                </div>
 
             </div>
         </template>
 
-         <template #cell(unit)="{ item: product }"> 
+         <template #cell(unit)="{ item: product }">
                <!--  <PureInput v-if="onEditOpen.includes(product.id)" :key="product.id" v-model="editingValues[product.id].unit"></PureInput> -->
                 <span >{{ product.unit }}</span>
         </template>
@@ -415,19 +431,23 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         </template>
 
-        <template #cell(sales)="{ item: product }">
-            <span class="tabular-nums">{{ locale.currencyFormat(product.currency_code, product.sales) }}</span>
+        <template #cell(sold)="{ item }">
+            <div class="inline" v-tooltip="'Number if outers sold'">{{ item.sold }}</div>
         </template>
 
-        <template #cell(sales_delta)="{ item }">
-            <div v-if="item.sales_delta">
-                <span>{{ item.sales_delta.formatted }}</span>
+        <template #cell(sales_grp_currency_external)="{ item: product }">
+            <span class="tabular-nums">{{ locale.currencyFormat(product.currency_code, product.sales_grp_currency_external) }}</span>
+        </template>
+
+        <template #cell(sales_grp_currency_external_delta)="{ item }">
+            <div v-if="item.sales_grp_currency_external_delta">
+                <span>{{ item.sales_grp_currency_external_delta.formatted }}</span>
                 <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.sales_delta.is_positive)?.icon"
+                    :icon="getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[
-                        getIntervalChangesIcon(item.sales_delta.is_positive).class,
-                        getIntervalStateColor(item.sales_delta.is_positive),
+                        getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_grp_currency_external_delta.is_positive),
                     ]"
                     fixed-width
                     aria-hidden="true"

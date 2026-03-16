@@ -9,7 +9,7 @@ type Offer = {
 }
 
 const props = defineProps<{
-    template : string
+    template : string  // 'active-inactive-gr', 'triggers_labels'
     offers_data: {
         number_offers: number
         offers: Offer[]

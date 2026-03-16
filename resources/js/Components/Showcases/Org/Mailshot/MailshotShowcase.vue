@@ -139,7 +139,7 @@ const isLoadingVisit = ref(false)
         </template>
         <div v-if="isInProcess">
             <EmptyState :data="{
-                title: trans(`${props.data.mailshot.data.subject} is still in process`),
+                title: trans(`:mailshotSubject is still in process`, { mailshotSubject: props.data.mailshot.data.subject ?? '' }),
             }">
                 <template #button-empty-state>
                     <Link :href="route('grp.helpers.redirect_mailshot_workshop', {

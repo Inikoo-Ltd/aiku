@@ -36,6 +36,7 @@ class IndexInvoiceTransactions extends OrgAction
             ->select([
                 'invoice_transactions.model_type',
                 'invoice_transactions.model_id',
+                'invoice_transactions.is_gift',
                 'invoice_transactions.in_process',
                 'invoice_transactions.data',
                 'historic_assets.code',

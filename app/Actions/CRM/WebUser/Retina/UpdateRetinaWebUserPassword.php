@@ -30,6 +30,11 @@ class UpdateRetinaWebUserPassword extends RetinaAction
     public function handle(array $modelData): WebUser
     {
         $webUserPasswordReset = WebUserPasswordReset::find($modelData['web_user_password_reset_id']);
+
+        if (!$webUserPasswordReset) {
+            abort(422);
+        }
+
         $webUser              = $webUserPasswordReset->webUser;
 
         $webUserPasswordReset->delete();

@@ -11,10 +11,12 @@ use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductChanged;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductDelete;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
 use App\Actions\Dropshipping\ShopifyUser\WebhookUninstalledShopifyUser;
+use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
@@ -30,7 +32,7 @@ Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(func
     Route::any('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
     Route::get('fetch_stock.json', CallbackFetchStock::class)->name('fetch_stock');
     Route::post('app-uninstalled', WebhookUninstalledShopifyUser::class)->name('app_uninstalled');
-    Route::any('products-deleted', CallbackProductChanged::class)->name('products_deleted');
+    Route::any('products-deleted', CallbackProductDelete::class)->name('products_deleted');
     Route::any('products-updated', CallbackProductChanged::class)->name('products_updated');
 
 });
@@ -64,4 +66,5 @@ Route::middleware('verify.shopify.webhook')->group(function () {
 
 Route::prefix('tiktok')->as('webhooks.tiktok.')->group(function () {
     Route::post('orders', HandleOrderIncomingTiktok::class)->name('orders.create');
+    Route::get('callback', AuthenticateTiktokAccount::class)->name('callback');
 });

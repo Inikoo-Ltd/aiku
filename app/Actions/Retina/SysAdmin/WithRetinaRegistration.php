@@ -167,6 +167,7 @@ trait WithRetinaRegistration
                 ),
             ],
             'phone'           => ['required', 'max:255'],
+            'tiktok_code'     => ['nullable', 'string', 'max:255'],
             'contact_address' => ['required', new ValidAddress()],
             'is_opt_in'       => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],

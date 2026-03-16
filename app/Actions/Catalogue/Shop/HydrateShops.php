@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBrands;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotesState;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDispatchedEmails;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrdersDispatchedToday;
@@ -25,6 +26,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandling;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandlingBlocked;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateInWarehouse;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePacked;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePacking;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePicked;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateSubmitted;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
@@ -107,6 +110,8 @@ class HydrateShops
         ShopHydrateOrderStateInWarehouse::run($shop->id);
         ShopHydrateOrderStateHandling::run($shop->id);
         ShopHydrateOrderStateHandlingBlocked::run($shop->id);
+        ShopHydrateOrderStatePicked::run($shop->id);
+        ShopHydrateOrderStatePacking::run($shop->id);
         ShopHydrateOrderStatePacked::run($shop->id);
         ShopHydrateOrderStateFinalised::run($shop->id);
         ShopHydrateOrdersDispatchedToday::run($shop->id);
@@ -126,6 +131,8 @@ class HydrateShops
         ShopHydrateTags::run($shop);
         ShopHydrateBrands::run($shop);
         ShopHydrateShippingCountries::run($shop);
+
+        ShopHydrateDispatchedEmails::run($shop->id);
 
 
         foreach (DeliveryNoteStateEnum::cases() as $case) {

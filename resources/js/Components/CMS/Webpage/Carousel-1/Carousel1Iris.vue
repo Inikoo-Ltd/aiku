@@ -141,7 +141,7 @@ const idxSlideLoading = ref<number | null>(null)
         @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
         <FontAwesomeIcon :icon="faChevronLeft" />
       </button>
-      <div class="mx-24 overflow-hidden">
+      <div class="mx-10 overflow-hidden">
          <Swiper v-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
         :space-between="spaceBetween" :breakpoints="breakpoints" 
         :autoplay="fieldValue.carousel_data.carousel_setting?.interval && fieldValue.carousel_data.carousel_setting?.autoplay

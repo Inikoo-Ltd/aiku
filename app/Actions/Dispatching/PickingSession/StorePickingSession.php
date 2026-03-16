@@ -9,18 +9,19 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
-use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\SysAdmin\User;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -122,6 +123,7 @@ class StorePickingSession extends OrgAction
                 'number_delivery_notes' => $numberDeliveryNotes,
             ]);
 
+            WarehouseHydratePickingSessions::dispatch($warehouse);
 
             return $pickingSession;
         });

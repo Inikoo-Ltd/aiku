@@ -46,8 +46,8 @@ const dataSetsSplit = computed(() => {
     const shopsBody = props.tableData.tables.shops.body.filter(row => row.state === 'active')
 
     const sortedShops = [...shopsBody].sort((a, b) => {
-        const aValue = Number(a.columns.sales_org_currency[props.intervals.value]?.raw_value) || 0;
-        const bValue = Number(b.columns.sales_org_currency[props.intervals.value]?.raw_value) || 0;
+        const aValue = Number(a.columns.sales_org_currency_external[props.intervals.value]?.raw_value) || 0;
+        const bValue = Number(b.columns.sales_org_currency_external[props.intervals.value]?.raw_value) || 0;
         return bValue - aValue; // Descending (highest first)
         // return aValue - bValue; // Ascending (lowest first)
     });
@@ -61,12 +61,12 @@ const dataSetsSplit = computed(() => {
     const othersShop = sortedShops.slice(4);
 
     const summedOrgValue = othersShop.reduce((sum, item) => {
-        const xx = sum + (Number(item.columns.sales_org_currency[props.intervals.value]?.raw_value) || 0); 
+        const xx = sum + (Number(item.columns.sales_org_currency_external[props.intervals.value]?.raw_value) || 0);
         return xx
     }, 0);
 
     const summedGrpValue = othersShop.reduce((sum, item) => {
-        const xx = sum + (Number(item.columns.sales_grp_currency?.[props.intervals.value]?.raw_value) || 0); 
+        const xx = sum + (Number(item.columns.sales_grp_currency?.[props.intervals.value]?.raw_value) || 0);
         return xx
     }, 0);
 
@@ -75,13 +75,13 @@ const dataSetsSplit = computed(() => {
     // Create the summed object
     const summedEntry = {
         columns: {
-            sales_org_currency: {
+            sales_org_currency_external: {
                 [props.intervals.value]: {
                     raw_value: summedOrgValue,
                     formatted_value: trans('Others')
                 }
             },
-            sales_org_currency_minified: {
+            sales_org_currency_external_minified: {
                 [props.intervals.value]: {
                     raw_value: summedOrgValue,
                     formatted_value: trans('Others')
@@ -128,9 +128,9 @@ const isLoadingVisit = ref<number | null>(null)
                 <!-- Total Count -->
                 <div v-if="!tableData?.tables?.organisations"
                     class="flex gap-x-2 items-end"
-                    v-tooltip="props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency?.[intervals.value]?.formatted_value"
+                    v-tooltip="props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency_external?.[intervals.value]?.formatted_value"
                 >
-                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency_minified?.[intervals.value]?.formatted_value }}
+                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency_external_minified?.[intervals.value]?.formatted_value }}
                 </div>
 
                 <!-- Case Breakdown -->
@@ -158,15 +158,15 @@ const isLoadingVisit = ref<number | null>(null)
                                 aria-hidden="true" />
                             <div class="text-gray-400">
                                 <span class="text-gray-500 font-semibold">{{ row.columns.label_minified?.formatted_value }}</span>
-                                ({{ row.columns.sales_org_currency_minified?.[intervals.value]?.formatted_value }})
+                                ({{ row.columns.sales_org_currency_external_minified?.[intervals.value]?.formatted_value }})
                             </div>
-                            <!-- <span class="font-semibold">{{ row.columns.sales_org_currency[intervals.value]?.formatted_value }}</span> -->
+                            <!-- <span class="font-semibold">{{ row.columns.sales_org_currency_external[intervals.value]?.formatted_value }}</span> -->
                         </component>
                     </template>
                 </div>
             </div>
         </dd>
-        
+
         <!-- Pie Chart -->
         <div class="w-28">
             <Pie
@@ -174,7 +174,7 @@ const isLoadingVisit = ref<number | null>(null)
                     labels: dataSetsSplit.map(bod => bod.columns.label?.formatted_value),
                     datasets: [
                         {
-                            data: dataSetsSplit.map(bod => bod.columns.sales_org_currency?.[intervals.value]?.raw_value),
+                            data: dataSetsSplit.map(bod => bod.columns.sales_org_currency_external?.[intervals.value]?.raw_value),
                             backgroundColor: [
                                 ...dataSetsSplit.map((dCase, idx) => useStringToHex(dCase.columns.label.formatted_value)),
                             ],

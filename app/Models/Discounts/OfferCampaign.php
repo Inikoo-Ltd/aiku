@@ -8,7 +8,7 @@
 
 namespace App\Models\Discounts;
 
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignOffersStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
@@ -30,7 +30,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $group_id
  * @property int $organisation_id
  * @property int $shop_id
- * @property OfferCampaignStateEnum $state
+ * @property OfferCampaignOffersStateEnum $offers_state
  * @property bool $status
  * @property string $slug
  * @property string $code
@@ -78,10 +78,10 @@ class OfferCampaign extends Model implements Auditable
 
 
     protected $casts = [
-        'data'     => 'array',
-        'settings' => 'array',
-        'state'    => OfferCampaignStateEnum::class,
-        'type'     => OfferCampaignTypeEnum::class
+        'data'         => 'array',
+        'settings'     => 'array',
+        'offers_state' => OfferCampaignOffersStateEnum::class,
+        'type'         => OfferCampaignTypeEnum::class
     ];
 
     protected $attributes = [
@@ -100,7 +100,7 @@ class OfferCampaign extends Model implements Auditable
         'name',
         'type',
         'status',
-        'state',
+        'offers_state',
     ];
 
     public function getSlugOptions(): SlugOptions

@@ -10,6 +10,7 @@ namespace App\Models\Comms;
 
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -44,6 +45,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $organisation_id
  * @property int|null $shop_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
@@ -123,4 +125,23 @@ class EmailTemplate extends Model implements HasMedia, Auditable
         return $this->belongsTo(Media::class, 'screenshot_id');
     }
 
+    public function sender(): string
+    {
+        if (app()->environment('production')) {
+            /** @var Shop $parent */
+            $parent = $this->shop;
+            //todo we need to set up sender and very SES etc
+            //   $sender = $parent->senderEmail->email_address;
+            $sender = $parent?->email;
+        } else {
+            $sender = config('app.email_address_in_non_production_env');
+        }
+
+        return $sender;
+    }
+
+    public function senderName(): string
+    {
+        return $this->shop?->name ?? '';
+    }
 }

@@ -19,6 +19,8 @@ enum DeliveryNoteItemStateEnum: string
     case QUEUED = 'queued'; // picker assigned
     case HANDLING = 'handling'; // picking and packing
     case HANDLING_BLOCKED = 'handling_blocked';
+    case PICKED = 'picked';
+    case PACKING = 'packing';
     case PACKED = 'packed';
     case FINALISED = 'finalised';
     case DISPATCHED = 'dispatched';
@@ -33,6 +35,8 @@ enum DeliveryNoteItemStateEnum: string
             'queued'           => __('In Queue'),
             'handling'         => __('Handling'),
             'handling_blocked' => __('Handling Blocked'),
+            'picked'           => __('Picked'),
+            'packing'          => __('Packing'),
             'packed'           => __('Packed'),
             'finalised'        => __('Finalised'),
             'dispatched'       => __('Dispatched'),
@@ -78,6 +82,26 @@ enum DeliveryNoteItemStateEnum: string
             'handling_blocked' => [
                 'tooltip' => __('Handling Blocked'),
                 'icon'    => 'fal fa-hand-paper',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'picked'           => [
+                'tooltip' => __('Picked'),
+                'icon'    => 'fal fa-check',
+                'class'   => 'text-indigo-500',
+                'color'   => 'indigo',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'packing'          => [
+                'tooltip' => __('Packing'),
+                'icon'    => 'fal fa-box-open',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',
                 'app'     => [

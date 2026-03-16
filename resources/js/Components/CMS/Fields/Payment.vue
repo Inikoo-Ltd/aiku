@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import Button from '@/Components/Elements/Buttons/Button.vue';
-import Popover from 'primevue/popover';
-import { cloneDeep } from 'lodash-es';
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faShieldAlt, faTimes, faTrash } from "@fas";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn } from "@fortawesome/free-brands-svg-icons";
+import { ref, computed } from 'vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import Popover from 'primevue/popover'
+import { cloneDeep } from 'lodash-es'
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faShieldAlt, faTimes, faTrash } from "@fas"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn } from "@fortawesome/free-brands-svg-icons"
 
 import btree from '@/../art/payment_service_providers/btree.svg'
 import cash from '@/../art/payment_service_providers/cash.svg'
@@ -36,10 +36,12 @@ import SecureCheckout from '@/../art/payment_service_providers/SecureCheckout.pn
 import VisaBrandMarlBlue from '@/../art/payment_service_providers/VisaBrandmarkBlueRGB2021.png'
 import KarnaPaymentBadge from '@/../art/payment_service_providers/Klarna_Payment_Badge.png'
 import KarnaLogo from '@/../art/payment_service_providers/Klarna-Logo.wine.png'
-/* import KarnaWhiteLogo from '@/../art/payment_service_providers/png-clipart-klarna-white-logo-tech-companies.png' */
 import KarnaPaylater from '@/../art/payment_service_providers/png-clipart-pay-later-with-klarna-logo-tech-companies.png'
 
-library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faTimes, faTrash);
+library.add(
+  faFacebookF, faInstagram, faTiktok, faPinterest,
+  faYoutube, faLinkedinIn, faShieldAlt, faTimes, faTrash
+)
 
 type PaymentItem = {
   name: string
@@ -47,13 +49,18 @@ type PaymentItem = {
   image?: string
 }
 
-const props = withDefaults(defineProps<{
-  modelValue?: PaymentItem[]
-}>(), {
-  modelValue: () => []
-});
+const props = defineProps<{
+  modelValue?: PaymentItem[] | null
+}>()
 
-const emits = defineEmits<{ (e: 'update:modelValue', value: any[]): void }>();
+const emits = defineEmits<{
+  (e: 'update:modelValue', value: PaymentItem[]): void
+}>()
+
+/* SAFE ARRAY (handles null) */
+const safeModelValue = computed<PaymentItem[]>(() => {
+  return Array.isArray(props.modelValue) ? props.modelValue : []
+})
 
 const payments = ref<PaymentItem[]>([
   { name: 'Braintree', value: 'Braintree', image: btree },
@@ -84,69 +91,91 @@ const payments = ref<PaymentItem[]>([
   { name: 'Visa Brandmark Blue', value: 'Visa Brandmark Blue', image: VisaBrandMarlBlue },
   { name: 'Karna Badge', value: 'Karna Badge', image: KarnaPaymentBadge },
   { name: 'Karna', value: 'Karna', image: KarnaLogo },
-/*   { name: 'Karna White logo', value: 'Karna White logo', image: KarnaWhiteLogo }, */
   { name: 'Karna Paylater', value: 'Karna Paylater', image: KarnaPaylater },
 ])
 
 const _addop = ref<any>(null);
 const _editop = ref<any[]>([]);
 
-const addPayment = (value: { name: string, image: string }) => {
-  const data = cloneDeep(props.modelValue);
-  data.push({ ...value, value: value.name });
-  emits('update:modelValue', data);
-  _addop.value?.hide();
-};
+const addPayment = (value: PaymentItem) => {
+  const data = cloneDeep(safeModelValue.value)
+  data.push({ ...value, value: value.name })
+  emits('update:modelValue', data)
+  _addop.value?.hide()
+}
 
-const updatePayment = (index: number, value: { name: string, image: string }) => {
-  const data = cloneDeep(props.modelValue);
-  data[index] = { ...value, value: value.name };
-  emits('update:modelValue', data);
-  _editop.value[index]?.hide();
-};
+
+const updatePayment = (index: number, value: PaymentItem) => {
+  const data = cloneDeep(safeModelValue.value)
+  data[index] = { ...value, value: value.name }
+  emits('update:modelValue', data)
+  _editop.value[index]?.hide()
+}
+
 
 const deletePayment = (event: Event, index: number) => {
-  event.stopPropagation();
-  const data = cloneDeep(props.modelValue);
-  data.splice(index, 1);
-  emits('update:modelValue', data);
-};
+  event.stopPropagation()
+  const data = cloneDeep(safeModelValue.value)
+  data.splice(index, 1)
+  emits('update:modelValue', data)
+}
 
 const togglePopover = (event: Event, popoverRef: any) => {
-  popoverRef?.toggle(event);
-};
+  popoverRef?.toggle(event)
+}
 </script>
 
 <template>
   <div>
-    <div v-for="(item, index) in modelValue" :key="index" class="flex justify-center w-full mt-4">
-      <div @click="(e) => togglePopover(e, _editop[index])"
-           class="relative flex flex-col items-center border  bg-gray-200 border-gray-300 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 w-full p-4 m-2 transform hover:-translate-y-1">
-        <button @click="(e) => deletePayment(e, index)"
-                class="absolute top-2 right-2 text-xs p-1 focus:outline-none"
-                aria-label="Delete">
-          <FontAwesomeIcon :icon="['fas', 'times']" class="text-red-500 text-sm" />
+    <div v-for="(item, index) in safeModelValue" :key="index" class="flex justify-center w-full mt-4">
+      <div
+        @click="(e) => togglePopover(e, _editop[index])"
+        class="relative flex flex-col items-center border bg-gray-200 border-gray-300 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 w-full p-4 m-2 transform hover:-translate-y-1"
+      >
+        <button
+          @click="(e) => deletePayment(e, index)"
+          class="absolute top-2 right-2 text-xs p-1 focus:outline-none"
+        >
+          <FontAwesomeIcon :icon="['fas','times']" class="text-red-500 text-sm" />
         </button>
-        <img v-if="item.image" class="h-20 w-20 object-contain" :src="item.image" alt="Payment" />
+
+        <img v-if="item.image" class="h-20 w-20 object-contain" :src="item.image" />
       </div>
-      <Popover ref="_editop[index]">
+
+      <Popover :ref="el => _editop[index] = el">
         <div class="grid grid-cols-5 gap-4 p-4">
-          <div v-for="icon in payments" :key="icon.value" @click="() => updatePayment(index, icon)"
-               class="flex flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3 cursor-pointer bg-gray-200">
-            <img class="h-20 w-20 object-contain mb-2" :src="icon.image" alt="Payment">
+          <div
+            v-for="icon in payments"
+            :key="icon.value"
+            @click="() => updatePayment(index, icon)"
+            class="flex flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3 cursor-pointer bg-gray-200"
+          >
+            <img class="h-20 w-20 object-contain mb-2" :src="icon.image" />
             <div class="text-center text-sm font-medium truncate">{{ icon.name }}</div>
           </div>
         </div>
       </Popover>
     </div>
-    
-    <Button type="dashed" icon="fal fa-plus" label="Add Payments Method" full size="s" class="mt-2" @click="(e) => togglePopover(e, _addop)" />
-    
+
+    <Button
+      type="dashed"
+      icon="fal fa-plus"
+      label="Add Payments Method"
+      full
+      size="s"
+      class="mt-2"
+      @click="(e) => togglePopover(e, _addop)"
+    />
+
     <Popover ref="_addop">
       <div class="grid grid-cols-5 gap-4 p-4">
-        <div v-for="icon in payments" :key="icon.value" @click="() => addPayment(icon)"
-             class="flex flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3 cursor-pointer bg-gray-200">
-          <img class="h-20 w-20 object-contain mb-2" :src="icon.image" alt="Payment">
+        <div
+          v-for="icon in payments"
+          :key="icon.value"
+          @click="() => addPayment(icon)"
+          class="flex flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3 cursor-pointer bg-gray-200"
+        >
+          <img class="h-20 w-20 object-contain mb-2" :src="icon.image" />
           <div class="text-center text-sm font-medium truncate">{{ icon.name }}</div>
         </div>
       </div>

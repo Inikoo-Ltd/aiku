@@ -21,6 +21,7 @@ enum PlatformTabsEnum: string
     case CHANNELS            = 'channels';
     case CUSTOMERS           = 'customers';
     case PRODUCTS            = 'products';
+    case TOP_LISTED_FAMILIES = 'top_listed_families';
     case TOP_LISTED_PRODUCTS = 'top_listed_products';
     case TOP_SOLD_PRODUCTS   = 'top_sold_products';
 
@@ -43,6 +44,10 @@ enum PlatformTabsEnum: string
                 'title' => __('Channels'),
                 'icon'  => 'fal fa-code-branch',
                 'icon_rotation' => '90',
+            ],
+            PlatformTabsEnum::TOP_LISTED_FAMILIES => [
+                'title' => __('Top Listed Families'),
+                'icon'  => 'fal fal fa-bars',
             ],
             PlatformTabsEnum::TOP_LISTED_PRODUCTS => [
                 'title' => __('Top Listed Products'),

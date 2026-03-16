@@ -60,7 +60,7 @@ const toggleImageSelection = (imageId: number) => {
         } else {
             notify({
                 title: trans('Selection limit reached'),
-                text: trans(`You can only select up to ${props.maxSelected} images.`),
+                text: trans(`You can only select up to :maxSelected images.`, { maxSelected: props.maxSelected ?? '0' }),
                 type: 'warning',
             });
         }

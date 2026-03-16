@@ -13,6 +13,7 @@ use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairPaymentAccountShopMissingStat
 {
@@ -35,8 +36,12 @@ class RepairPaymentAccountShopMissingStat
             $shop = Shop::where('slug', $command->argument('shop'))->first();
 
             $count = PaymentAccountShop::where('shop_id', $shop->id)->count();
+            ProgressBar::setFormatDefinition(
+                'aiku_eta',
+                ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+            );
             $bar = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
+            $bar->setFormat('aiku_eta');
             $bar->start();
 
             PaymentAccountShop::where('shop_id', $shop->id)->orderBy('id')
@@ -49,8 +54,12 @@ class RepairPaymentAccountShopMissingStat
         } else {
             $count = PaymentAccountShop::count();
 
+            ProgressBar::setFormatDefinition(
+                'aiku_eta',
+                ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+            );
             $bar = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
+            $bar->setFormat('aiku_eta');
             $bar->start();
 
             PaymentAccountShop::orderBy('id')

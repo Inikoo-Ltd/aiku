@@ -143,7 +143,6 @@ class RunPriceChangeNotificationEmailBulkRuns
                             $emailBulkRun,
                             $customer,
                             [
-                                'is_test'       => false,
                                 'outbox_id'     => $outbox->id,
                                 'email_address' => $customer->email,
                                 'provider'      => DispatchedEmailProviderEnum::SES,
@@ -226,7 +225,7 @@ class RunPriceChangeNotificationEmailBulkRuns
 
             $productImage = Arr::get(
                 $dataProduct->imageSources(200, 200),
-                'original'
+                'png'
             );
 
             $currency = $dataProduct->currency;

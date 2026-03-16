@@ -10,6 +10,7 @@
 namespace App\Imports\Dropshipping;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Imports\WithImport;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -48,23 +49,27 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
         $rowData = $row->only($fields)->all();
 
         $modelData = [
-            'sku' => $rowData['sku'],
-            // 'customer_product_name' => $rowData['title']
+            'sku' => $rowData['sku']
         ];
 
         try {
-            $product = Product::where('code', $modelData['sku'])->first();
+            $product = Product::where('shop_id', $this->customerSalesChannel->shop_id)->where('code', $modelData['sku'])->first();
 
             if (! $product->is_for_sale) {
                 throw ValidationException::withMessages(['sku' => 'Product is not for sale.']);
             }
 
-            if (! Portfolio::where('customer_sales_channel_id', $this->customerSalesChannel->id)
+            $portfolio = Portfolio::where('customer_sales_channel_id', $this->customerSalesChannel->id)
                 ->where('item_id', $product->id)
                 ->where('item_type', $product->getMorphClass())
-                ->exists()) {
-
+                ->first();
+            if (! $portfolio) {
                 StorePortfolio::make()->action($this->customerSalesChannel, $product, []);
+            } else {
+                UpdatePortfolio::make()->action($portfolio, [
+                    'customer_product_name' => $product->name,
+                    'item_name' => $product->name
+                ]);
             }
 
             $this->setRecordAsCompleted($uploadRecord);

@@ -60,13 +60,13 @@ use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\PublishEmail;
+use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
-use App\Actions\Comms\Mailshot\SendMailshotTest;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
@@ -107,11 +107,14 @@ use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\Dispatching\Box\StoreBox;
 use App\Actions\Dispatching\Box\UpdateBox;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemUnpack;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
+use App\Actions\Dispatching\Trolley\UpdateTrolley;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
@@ -152,6 +155,7 @@ use App\Actions\Fulfilment\Pallet\ReturnPallet;
 use App\Actions\Fulfilment\Pallet\SetPalletAsDamaged;
 use App\Actions\Fulfilment\Pallet\SetPalletAsLost;
 use App\Actions\Fulfilment\Pallet\SetPalletAsNotReceived;
+use App\Actions\Fulfilment\Pallet\SetPalletBackToStoring;
 use App\Actions\Fulfilment\Pallet\SetPalletRental;
 use App\Actions\Fulfilment\Pallet\StoreMultiplePalletsFromDelivery;
 use App\Actions\Fulfilment\Pallet\StorePalletCreatedInPalletDelivery;
@@ -172,6 +176,7 @@ use App\Actions\Fulfilment\PalletDelivery\StartBookingPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\SubmitAndConfirmPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\UpdatePalletDelivery;
 use App\Actions\Fulfilment\PalletReturn\AddAddressToPalletReturn;
+use App\Actions\Fulfilment\PalletReturn\CancelPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DeleteDispatchedPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DeletePalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DeletePalletReturnAddress;
@@ -370,6 +375,10 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
+use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
+use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
+use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
+use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 
@@ -465,6 +474,7 @@ Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(
 
 Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
     Route::patch('update', UpdateMasterAsset::class)->name('update');
+    Route::patch('repair-trade-units', RepairMasterAssetTradeUnitsToChildren::class)->name('repair_mismatch_trade_units');
     Route::patch('update-images', UpdateMasterProductImages::class)->name('update_images');
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
@@ -643,6 +653,7 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
 
     Route::post('dispatch', DispatchPalletReturn::class)->name('dispatch');
     Route::patch('delete', DeletePalletReturn::class)->name('delete');
+    Route::patch('cancel', CancelPalletReturn::class)->name('cancel');
     Route::delete('dispatched-delete', DeleteDispatchedPalletReturn::class)->name('dispatched-delete');
 
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inPalletReturn'])->name('attachment.attach');
@@ -684,9 +695,12 @@ Route::name('pallet.')->prefix('pallet/{pallet:id}')->group(function () {
     Route::patch('not-received', SetPalletAsNotReceived::class)->name('not-received');
     Route::patch('undo-not-received', UndoNotReceivedPallet::class)->name('undo-not-received');
     Route::patch('undo-booked-in', UndoBookedInPallet::class)->name('undo_book_in');
+
+
     Route::patch('return', ReturnPallet::class)->name('return');
     Route::patch('damaged', SetPalletAsDamaged::class)->name('damaged');
     Route::patch('lost', SetPalletAsLost::class)->name('lost');
+    Route::patch('back-to-storing', SetPalletBackToStoring::class)->name('pallet.back-to-storing');
     Route::patch('location', UpdatePalletLocation::class)->name('location.update');
 });
 
@@ -780,7 +794,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('update', [UpdateOutbox::class,'inShop'])->name('update')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
-        Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
+        Route::post('send/test', [SendTestEmail::class, 'asControllerOutbox'])->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/send', SendMailShotNow::class)->name('newsletter.send')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('newsletter.schedule')->withoutScopedBindings();
@@ -823,7 +837,7 @@ Route::name('fulfilment.')->prefix('fulfilment/{fulfilment:id}')->group(function
         Route::patch('/', UpdateOutbox::class)->name('update')->withoutScopedBindings();
         Route::post('publish', PublishOutbox::class)->name('publish')->withoutScopedBindings();
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
-        Route::post('send/test', SendMailshotTest::class)->name('send.test')->withoutScopedBindings();
+        Route::post('send/test', SendTestEmail::class)->name('send.test')->withoutScopedBindings();
     });
 });
 
@@ -878,6 +892,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('images/footer', [UploadImagesToWebsite::class, 'footer'])->name('footer.images.store');
     Route::post('images/favicon', [UploadImagesToWebsite::class, 'favicon'])->name('favicon.images.store');
     Route::post('images/sidebar', [UploadImagesToWebsite::class, 'sidebar'])->name('sidebar.images.store');
+    Route::post('images/sidebar', [UploadImagesToWebsite::class, 'menu'])->name('menu.images.store');
 
     Route::post('/banner', StoreBanner::class)->name('banner.store');
 
@@ -1135,6 +1150,15 @@ Route::post('master-product-category/{masterProductCategory:id}/master-variant',
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
+Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');
+Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
+
+Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
+    Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
+    Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
+    Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
+});
+Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
 
 
 require __DIR__.'/models/inventory/warehouse.php';
@@ -1150,6 +1174,9 @@ require __DIR__.'/models/stock/stock.php';
 require __DIR__.'/models/accounting/invoice.php';
 require __DIR__.'/models/accounting/refund.php';
 require __DIR__.'/models/accounting/payment.php';
+require __DIR__.'/models/discounts/offer_campaign.php';
+require __DIR__.'/models/discounts/offer.php';
+
 
 require __DIR__.'/models/billables/billables.php';
 require __DIR__.'/models/billables/services.php';

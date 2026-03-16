@@ -19,23 +19,24 @@ class PreprocessMasterCollectionTimeSeries implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(int|null $masterAssetID): string
+    public function getJobUniqueId(int|null $masterAssetID, ?string $date = null): string
     {
-        return $masterAssetID ?? 'empty';
+        return ($masterAssetID ?? 'empty').':'.($date ?? now()->toDateString());
     }
 
-    public function handle(int|null $masterAssetID): void
+    public function handle(int|null $masterAssetID, ?string $date = null): void
     {
         if (!$masterAssetID) {
             return;
         }
 
+        $resolvedDate = $date ?? now()->toDateString();
+        $carbon       = \Carbon\Carbon::parse($resolvedDate);
 
         $masterCollectionsIds = DB::table('master_collection_has_models')
             ->where('model_type', 'MasterAsset')
             ->where('model_id', $masterAssetID)
             ->pluck('master_collection_id')->unique()->toArray();
-
 
         foreach ($masterCollectionsIds as $masterCollectionsId) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
@@ -43,17 +44,15 @@ class PreprocessMasterCollectionTimeSeries implements ShouldBeUnique
                     $masterCollectionsId,
                     $frequency,
                     match ($frequency) {
-                        TimeSeriesFrequencyEnum::YEARLY => now()->startOfYear()->toDateString(),
-                        TimeSeriesFrequencyEnum::QUARTERLY => now()->startOfQuarter()->toDateString(),
-                        TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->toDateString(),
-                        TimeSeriesFrequencyEnum::WEEKLY => now()->startOfWeek()->toDateString(),
-                        TimeSeriesFrequencyEnum::DAILY => now()->toDateString()
+                        TimeSeriesFrequencyEnum::YEARLY    => $carbon->copy()->startOfYear()->toDateString(),
+                        TimeSeriesFrequencyEnum::QUARTERLY => $carbon->copy()->startOfQuarter()->toDateString(),
+                        TimeSeriesFrequencyEnum::MONTHLY   => $carbon->copy()->startOfMonth()->toDateString(),
+                        TimeSeriesFrequencyEnum::WEEKLY    => $carbon->copy()->startOfWeek()->toDateString(),
+                        TimeSeriesFrequencyEnum::DAILY     => $resolvedDate,
                     },
-                    now()->toDateString()
+                    $resolvedDate
                 )->delay(1800);
             }
         }
     }
-
-
 }

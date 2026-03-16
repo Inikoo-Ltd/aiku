@@ -84,7 +84,7 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
             return locale.currencyFormat(options?.currency_code, Number(label))
         }
     } else {
-        return label || '-'
+        return label || 0
     }
     
 }

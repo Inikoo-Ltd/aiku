@@ -9,20 +9,25 @@
 namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 
-class RedoMasterSubDepartmentsTimeSeries
+class RedoMasterSubDepartmentsTimeSeries implements ShouldBeUnique
 {
-    use WithHydrateCommand;
-    use WithRedoMasterProductCategoryTimeSeries {
+    use WithHydrateCommand, WithRedoMasterProductCategoryTimeSeries {
         WithRedoMasterProductCategoryTimeSeries::asCommand insteadof WithHydrateCommand;
+        WithRedoMasterProductCategoryTimeSeries::asJob insteadof WithHydrateCommand;
     }
 
-    public string $commandSignature = 'master_sub_departments:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    protected ?MasterProductCategoryTypeEnum $categoryType;
+
+    public string $jobQueue         = 'default-long';
+    public string $commandSignature = 'master-sub-departments:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
-        $this->model       = MasterProductCategory::class;
-        $this->restriction = 'sub_department';
+        $this->model        = MasterProductCategory::class;
+        $this->categoryType = MasterProductCategoryTypeEnum::SUB_DEPARTMENT;
     }
 }

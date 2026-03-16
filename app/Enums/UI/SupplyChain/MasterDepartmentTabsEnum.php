@@ -18,10 +18,10 @@ enum MasterDepartmentTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case CONTENT = 'content';
-    case DEPARTMENTS = 'departments';
+    case IMAGES = 'images';
+    // case DEPARTMENTS = 'departments';
     case SALES = 'sales';
     case HISTORY = 'history';
-    case IMAGES = 'images';
 
 
     public function blueprint(): array
@@ -31,17 +31,11 @@ enum MasterDepartmentTabsEnum: string
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
-            MasterDepartmentTabsEnum::DEPARTMENTS => [
-                'title' => __('Departments in shop'),
-                'icon'  => 'fal fa-store',
-            ],
+            // MasterDepartmentTabsEnum::DEPARTMENTS => [
+            //     'title' => __('Departments in shop'),
+            //     'icon'  => 'fal fa-store',
+            // ],
 
-            MasterDepartmentTabsEnum::IMAGES => [
-                'title' => __('Media'),
-                'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
-                'align' => 'right',
-            ],
             MasterDepartmentTabsEnum::HISTORY => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
@@ -56,6 +50,10 @@ enum MasterDepartmentTabsEnum: string
                 'title' => __('Content'),
                 'icon'  => 'fal fa-quote-left',
             ],
+            MasterDepartmentTabsEnum::IMAGES => [
+                'title' => __('Media'),
+                'icon'  => 'fal fa-camera-retro',
+            ]
         };
     }
 }

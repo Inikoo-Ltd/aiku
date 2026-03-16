@@ -94,30 +94,30 @@ class DashboardHeaderSalesChannelsSalesResource extends JsonResource
         ];
 
         $salesGrpCurrency = [
-            'sales_grp_currency'          => [
+            'sales_grp_currency_external'          => [
                 'formatted_value'   => __('Sales'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_grp_currency',
+                'scope'             => 'sales_grp_currency_external',
             ],
-            'sales_grp_currency_minified' => [
+            'sales_grp_currency_external_minified' => [
                 'formatted_value'   => __('Sales'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'minified',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_grp_currency',
+                'scope'             => 'sales_grp_currency_external',
             ],
-            'sales_grp_currency_delta'    => [
+            'sales_grp_currency_external_delta'    => [
                 'formatted_value'   => 'Δ 1Y',
                 'currency_type'     => 'always',
                 'tooltip'           => $deltaLabel,
                 'data_display_type' => 'always',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_grp_currency',
+                'scope'             => 'sales_grp_currency_external',
             ],
         ];
 

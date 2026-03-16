@@ -8,6 +8,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
@@ -74,6 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $source_quantity_to_be_picked
  * @property bool $is_on_demand
  * @property bool $has_been_in_warehouse
+ * @property HealthRankEnum|null $health_rank
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
@@ -115,6 +117,7 @@ class OrgStock extends Model implements Auditable
         'discontinuing_in_organisation_at' => 'datetime',
         'discontinued_in_organisation_at'  => 'datetime',
         'state'                            => OrgStockStateEnum::class,
+        'health_rank'                      => HealthRankEnum::class,
         'quantity_status'                  => OrgStockQuantityStatusEnum::class,
         'fetched_at'                       => 'datetime',
         'last_fetched_at'                  => 'datetime',
@@ -205,18 +208,6 @@ class OrgStock extends Model implements Auditable
     public function tradeUnits(): MorphToMany
     {
         return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
-        //        return $this->morphToMany(
-        //            TradeUnit::class,
-        //            'model',
-        //            'model_has_trade_units',
-        //            'model_id',
-        //            null,
-        //            null,
-        //            null,
-        //            'trade_units',
-        //        )
-        //            ->withPivot(['quantity', 'notes'])
-        //            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany

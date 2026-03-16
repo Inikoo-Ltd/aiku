@@ -2,7 +2,6 @@ export const blueprint = (data?: {}, id: number) => {
 	const banner = data?.layout?.web_blocks?.find((item) => item.id == id) ?? null
 	const banner_data = banner?.web_block?.layout?.data?.fieldValue ?? null
 
-	console.log('banner_data',banner_data, banner)
 	return {
 		blueprint: [
 			{
@@ -35,15 +34,15 @@ export const blueprint = (data?: {}, id: number) => {
 				},
 			},
 			{
+				key: ["banner_dimension",'properties','dimension'],
+				label: "Banner dimension",
+				type: "dimension",
+				useIn: ["desktop", "tablet", "mobile"],
+			},
+			{
 				name: "Layout",
 				key: ["container", "properties"],
 				replaceForm: [
-					{
-						key: ["dimension"],
-						label: "Dimension",
-						type: "dimension",
-						useIn: ["desktop", "tablet", "mobile"],
-					},
 					{
 						key: ["padding"],
 						label: "Padding",

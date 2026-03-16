@@ -12,71 +12,76 @@ use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Collection;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
-class RedoCollectionTimeSeries
+class RedoCollectionTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'collections:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    public string $jobQueue         = 'default-long';
+    public string $commandSignature = 'collections:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
         $this->model = Collection::class;
     }
 
-    public function handle(Collection $collection, array $frequencies, bool $async = true): void
+    public function getJobUniqueId(string $from, string $to): string
     {
-        $assetsIDs = null;
+        return "{$from}_{$to}";
+    }
 
-        if ($collection->state == CollectionStateEnum::IN_PROCESS) {
+    public function handle(Collection $collection, bool $async = false, ?string $from = null, ?string $to = null): void
+    {
+        if ($collection->state == CollectionStateEnum::IN_PROCESS || !$collection->source_id) {
             return;
         }
 
-        if ($collection->source_id) {
+        if (!$from || !$to) {
             $assetsIDs = $collection->products->pluck('asset_id')->unique()->toArray();
+
             $firstInvoicedDate = DB::table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->whereNull('deleted_at')->max('date');
 
-            if ($firstInvoicedDate && ($firstInvoicedDate < $collection->created_at)) {
-                $collection->update(['created_at' => $firstInvoicedDate]);
-            }
-        }
-
-        $from = $collection->created_at->toDateString();
-
-        if ($collection->state == CollectionStateEnum::ACTIVE) {
-            $to = now()->toDateString();
-        } else {
-            if (!$collection->inactivated_at) {
-                if ($assetsIDs == null) {
-                    $assetsIDs = $collection->products->pluck('asset_id')->unique()->toArray();
-                }
-
-                $lastDate = DB::table('invoice_transactions')->whereIn('asset_id', $assetsIDs)->whereNull('deleted_at')->max('date');
-
-                if (!$lastDate) {
-                    $lastDate = now();
-                }
-
-                $collection->update([
-                    'inactivated_at' => $lastDate
-                ]);
+            if (!$firstInvoicedDate) {
+                return;
             }
 
-            $to = $collection->inactivated_at->toDateString();
+            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
+            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
         }
 
-
-        if ($from != null && $to != null) {
-            foreach ($frequencies as $frequency) {
-                if ($async) {
-                    ProcessCollectionTimeSeriesRecords::dispatch($collection->id, $frequency, $from, $to)->onQueue('low-priority');
-                } else {
-                    ProcessCollectionTimeSeriesRecords::run($collection->id, $frequency, $from, $to);
-                }
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            if ($async) {
+                ProcessCollectionTimeSeriesRecords::dispatch($collection->id, $frequency, $from, $to)->onQueue('low-priority');
+            } else {
+                ProcessCollectionTimeSeriesRecords::run($collection->id, $frequency, $from, $to);
             }
         }
+    }
+
+    public function asJob(string $from, string $to): void
+    {
+        $tableName = (new $this->model())->getTable();
+        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
+
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
+            foreach ($modelsData as $modelId) {
+                $model    = (new $this->model());
+                $instance = $this->hasSoftDeletes($model)
+                    ? $model->withTrashed()->find($modelId->id)
+                    : $model->find($modelId->id);
+
+                try {
+                    $this->handle($instance, false, $from, $to);
+                } catch (Throwable $e) {
+                    report($e);
+                }
+            }
+        });
     }
 
     public function asCommand(Command $command): int
@@ -89,49 +94,25 @@ class RedoCollectionTimeSeries
         $bar->setFormat('debug');
         $bar->start();
 
-        try {
-            $frequencyOption = $command->option('frequency');
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
+            foreach ($modelsData as $modelId) {
+                $model    = (new $this->model());
+                $instance = $this->hasSoftDeletes($model)
+                    ? $model->withTrashed()->find($modelId->id)
+                    : $model->find($modelId->id);
 
-            if ($frequencyOption === 'all') {
-                $frequencies = TimeSeriesFrequencyEnum::cases();
-            } else {
-                $frequencies = [
-                    TimeSeriesFrequencyEnum::from($frequencyOption)
-                ];
-            }
-        } catch (Throwable $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-
-        $query->chunk(
-            1000,
-            function (\Illuminate\Support\Collection $modelsData) use ($bar, $command, $frequencies) {
-                foreach ($modelsData as $modelId) {
-                    if ($this->modelAsHandleArg) {
-                        $model = (new $this->model());
-                        if ($this->hasSoftDeletes($model)) {
-                            $instance = $model->withTrashed()->find($modelId->id);
-                        } else {
-                            $instance = $model->find($modelId->id);
-                        }
-                    } else {
-                        $instance = $modelId->id;
-                    }
-
-                    try {
-                        $this->handle($instance, $frequencies, $command->option('async'));
-                    } catch (Throwable $e) {
-                        $command->error($e->getMessage());
-                    }
-                    $bar->advance();
+                try {
+                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
+                } catch (Throwable $e) {
+                    $command->error($e->getMessage());
                 }
+
+                $bar->advance();
             }
-        );
+        });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
 
         return 0;
     }

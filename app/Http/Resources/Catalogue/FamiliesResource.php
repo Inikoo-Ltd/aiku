@@ -48,6 +48,7 @@ use Illuminate\Support\Arr;
  * @property mixed $web_images
  * @property mixed $image_id
  * @property mixed $currency_code
+ * @property mixed $health_rank
  */
 class FamiliesResource extends JsonResource
 {
@@ -89,13 +90,16 @@ class FamiliesResource extends JsonResource
             'updated_at'                    => $this->updated_at,
             'number_current_products'       => $this->number_current_products,
             'collections'                   => $collections,
-            'sales'                         => $this->sales ?? 0,
-            'sales_ly'                      => $this->sales_ly ?? 0,
-            'sales_delta'                   => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'sales_grp_currency_external'   => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
+            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
             'currency_code'                 => $this->currency_code,
             'invoices'                      => $this->invoices ?? 0,
             'invoices_ly'                   => $this->invoices_ly ?? 0,
             'invoices_delta'                => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'dropshippers'                  => $this->dropshippers ?? 0,
+            'listings'                      => $this->listings ?? 0,
+            'sold'                          => $this->sold ?? 0,
             'organisation_name'             => $this->organisation_name,
             'organisation_slug'             => $this->organisation_slug,
             'master_product_category_id'    => $this->master_product_category_id,
@@ -105,6 +109,7 @@ class FamiliesResource extends JsonResource
             'is_description_reviewed'       => $this->is_description_reviewed,
             'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
             'image_thumbnail'               => Arr::get($this->web_images, 'main.thumbnail'),
+            'health_rank'                   => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

@@ -233,8 +233,15 @@ class GetRetinaDropshippingNavigation
 
                         ]
                     ],
+                    [
+                        'label' => __('VAT Validation History'),
+                        'icon'  => ['fal', 'fa-history'],
+                        'root'  => 'retina.sysadmin.vat-validation-history',
+                        'route' => [
+                            'name' => 'retina.sysadmin.vat-validation-history',
 
-
+                        ]
+                    ],
                 ]
             ]
         ];

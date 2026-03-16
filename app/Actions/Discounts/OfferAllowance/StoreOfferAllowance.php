@@ -56,6 +56,8 @@ class StoreOfferAllowance extends OrgAction
             'type'          => ['sometimes', Rule::enum(OfferAllowanceType::class)],
             'target_type'   => ['sometimes', Rule::enum(OfferAllowanceTargetTypeEnum::class)],
             'class'         => ['sometimes', Rule::enum(OfferAllowanceClass::class)],
+            'state'         => ['sometimes', Rule::in(OfferAllowanceStateEnum::class)],
+            'status'        => ['sometimes', 'boolean'],
         ];
         if (!$this->strict) {
             $rules['state']            = ['required', Rule::enum(OfferAllowanceStateEnum::class)];

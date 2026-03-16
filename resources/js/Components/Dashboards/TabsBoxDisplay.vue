@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject } from "vue"
+import { inject, ref } from "vue"
 import Icon from "../Icon.vue"
 import { faSpinnerThird } from '@fad'
 import { router } from '@inertiajs/vue3'
@@ -8,12 +8,13 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream } from '@fal'
+import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen, faChevronDown } from '@fal'
 
 library.add(
     faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle,
     faNetworkWired, faSpinnerThird, faEye, faThLarge, faTachometerAltFast,
-    faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream,faAppleCrate
+    faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faAppleCrate,
+    faBoxOpen, faChevronDown
 )
 
 const layoutStore = inject('layout', layoutStructure)
@@ -38,10 +39,29 @@ const props = defineProps<{
                 type?: string // 'icon', 'date', 'number', 'currency'
             }
         }[]
+        children?: {
+            label: string
+            slug: string
+            currency_code?: string
+            tabs: {
+                tab_slug: string
+                value: string | number
+                type?: string
+                information?: {
+                    label: string | number
+                    type?: string
+                }
+            }[]
+        }[]
     }[]
     current?: string | number
 }>()
 
+const expandedBoxes = ref<Record<string, boolean>>({})
+
+const toggleExpand = (boxLabel: string) => {
+    expandedBoxes.value[boxLabel] = !expandedBoxes.value[boxLabel]
+}
 
 const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
     if (!amount) return 0
@@ -68,7 +88,7 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
         if (!options?.currency_code) return label
         return currencyFormat(options?.currency_code, Number(label))
     } else {
-        return label || '-'
+        return label || '0'
     }
 }
 
@@ -101,17 +121,22 @@ const getRoute = (tabSlug) => {
 <template>
     <div>
         <!-- TabsBoxDisplay -->
-        <div class="hidden px-6 md:flex gap-x-6 my-2">
+        <div class="hidden px-6 md:flex gap-x-6 my-2 items-start">
             <div
                 v-for="box in tabs_box"
                 :key="box.label"
-                class="rounded-md px-3 relative border w-full flex flex-col py-2 select-none"
+                class="rounded-md px-3 relative border w-full flex flex-col py-2 select-none transition-all duration-200"
                 :style="{
                   backgroundColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '22' : 'transparent',
                   color: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit',
                   borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit'
                 }"
             >
+                <div class="text-center mb-2 text-xs">
+                    <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="" fixed-width aria-hidden="true" />
+                    {{ box.label }}
+                </div>
+
                 <div class="flex gap-x-4">
                     <div
                         v-for="tab in box.tabs"
@@ -152,6 +177,50 @@ const getRoute = (tabSlug) => {
                         </div>
                     </div>
                 </div>
+
+                <!-- Expand Button -->
+                <button
+                    v-if="box.children && box.children.length > 0"
+                    class="mt-1 flex items-center justify-center w-full text-gray-400 hover:text-gray-600 transition-colors"
+                    @click.stop="toggleExpand(box.label)"
+                >
+                    <FontAwesomeIcon
+                        icon="fal fa-chevron-down"
+                        class="text-[10px] transition-transform duration-200"
+                        :class="expandedBoxes[box.label] ? 'rotate-180' : ''"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                </button>
+
+                <!-- Children Rows -->
+                <div
+                    v-if="box.children && box.children.length > 0 && expandedBoxes[box.label]"
+                    class="mt-2 border-t pt-2 space-y-1"
+                    :style="{ borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '44' : '#e5e7eb' }"
+                >
+                    <div
+                        v-for="child in box.children"
+                        :key="child.slug"
+                        class="flex items-center gap-x-2 text-xs"
+                    >
+                        <span class="truncate text-gray-500 flex-1 min-w-0">{{ child.label }}</span>
+                        <div class="flex gap-x-3 shrink-0">
+                            <div
+                                v-for="childTab in child.tabs"
+                                :key="childTab.tab_slug"
+                                class="text-right"
+                            >
+                                <div class="tabular-nums font-medium">
+                                    {{ renderLabelBasedOnType(childTab.value, childTab.type, { currency_code: child.currency_code }) }}
+                                </div>
+                                <div class="text-gray-400">
+                                    {{ renderLabelBasedOnType(childTab.information?.label, childTab.information?.type, { currency_code: child.currency_code }) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -167,11 +236,23 @@ const getRoute = (tabSlug) => {
                 }"
             >
                 <!-- Box Header -->
-                <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                    <div class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700">
+                <div
+                    class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center"
+                    :class="box.children && box.children.length > 0 ? 'cursor-pointer' : ''"
+                    @click="box.children && box.children.length > 0 ? toggleExpand('mobile-' + box.label) : null"
+                >
+                    <div class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 flex-1">
                         <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="text-gray-500" fixed-width aria-hidden="true" />
                         <span>{{ box.label }}</span>
                     </div>
+                    <FontAwesomeIcon
+                        v-if="box.children && box.children.length > 0"
+                        icon="fal fa-chevron-down"
+                        class="text-gray-400 text-xs transition-transform duration-200"
+                        :class="expandedBoxes['mobile-' + box.label] ? 'rotate-180' : ''"
+                        fixed-width
+                        aria-hidden="true"
+                    />
                 </div>
 
                 <!-- Tabs Grid -->
@@ -230,6 +311,34 @@ const getRoute = (tabSlug) => {
                             <!-- Tab Information Label -->
                             <div class="text-center text-xs text-gray-500 leading-tight">
                                 {{ renderLabelBasedOnType(tab.information?.label, tab.information?.type, { currency_code: box.currency_code }) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Children -->
+                <div
+                    v-if="box.children && box.children.length > 0 && expandedBoxes['mobile-' + box.label]"
+                    class="border-t border-gray-200 divide-y divide-gray-100"
+                >
+                    <div
+                        v-for="child in box.children"
+                        :key="'mobile-child-' + child.slug"
+                        class="px-4 py-2 flex items-center justify-between text-xs"
+                    >
+                        <span class="text-gray-600 font-medium truncate mr-2">{{ child.label }}</span>
+                        <div class="flex gap-x-4 shrink-0">
+                            <div
+                                v-for="childTab in child.tabs"
+                                :key="childTab.tab_slug"
+                                class="text-right"
+                            >
+                                <div class="tabular-nums font-semibold text-gray-800">
+                                    {{ renderLabelBasedOnType(childTab.value, childTab.type, { currency_code: child.currency_code }) }}
+                                </div>
+                                <div class="text-gray-400">
+                                    {{ renderLabelBasedOnType(childTab.information?.label, childTab.information?.type, { currency_code: child.currency_code }) }}
+                                </div>
                             </div>
                         </div>
                     </div>

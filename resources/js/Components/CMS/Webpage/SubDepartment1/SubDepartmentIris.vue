@@ -5,7 +5,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { faGalaxy, faTimesCircle } from "@fas";
 import { getStyles } from "@/Composables/styles"
 import Image from "@/Components/Image.vue";
-import { computed, ref } from "vue";
+import { computed, ref, inject } from "vue";
 import {
   faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse,
   faTruck, faTag, faPhone, faInfoCircle
@@ -32,7 +32,7 @@ library.add(
   faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt,
   faGlobe, faPercent, faPoundSign, faClock
 );
-
+const layout = inject("layout",{})
 const props = defineProps<{
   fieldValue: {
     collections: Array<Object>
@@ -53,14 +53,23 @@ const fallbackPerRow = {
 };
 
 const perRow = computed(() => {
-  return (
-    props.fieldValue?.settings?.per_row?.[props.screenType] ||
-    fallbackPerRow[props.screenType] ||
+  const base =
+    props.fieldValue?.settings?.per_row?.[props.screenType] ??
+    fallbackPerRow[props.screenType] ??
     1
-  );
-});
 
-const gridColsClass = computed(() => `grid-cols-${perRow.value}`);
+  if (layout.rightbasket?.show) {
+    if (props.screenType === 'mobile') {
+      return base 
+    }
+
+    return 3
+  }
+
+  return base
+})
+
+const gridColsClass = computed(() => `grid-cols-${perRow.value}`)
 
 const screenClass = computed(() => {
   switch (props.screenType) {

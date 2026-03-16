@@ -32,7 +32,13 @@ class FetchAuroraOrder extends FetchAurora
             return;
         }
 
-        if ($shop->is_aiku) {
+
+        $forceFetch = false;
+        if ($this->auroraModelData->{'force_fetch'} == 'Yes') {
+            $forceFetch = true;
+        }
+
+        if ($shop->is_aiku && !$forceFetch) {
             return;
         }
 

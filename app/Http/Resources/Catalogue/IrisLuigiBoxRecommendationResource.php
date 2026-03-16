@@ -12,6 +12,7 @@ namespace App\Http\Resources\Catalogue;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
+use Illuminate\Support\Arr;
 
 class IrisLuigiBoxRecommendationResource extends JsonResource
 {
@@ -20,7 +21,9 @@ class IrisLuigiBoxRecommendationResource extends JsonResource
 
     public function toArray($request): array
     {
-        $bestPercentageOff            = data_get($this->offers_data, 'best_percentage_off.percentage_off', 0);
+        $productOffersData = json_decode($this->product_offers_data, true);
+
+        $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
         $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
@@ -49,6 +52,7 @@ class IrisLuigiBoxRecommendationResource extends JsonResource
             'discounted_profit_per_unit'    => $profitPerUnitDiscounted,
             'discounted_margin'             => $marginDiscounted,
             'discounted_percentage'         => percentage($bestPercentageOff, 1),
+            'product_offers_data'           => $productOffersData,
         ];
     }
 

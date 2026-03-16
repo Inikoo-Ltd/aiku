@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Http\Resources\Helpers\LanguageResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -81,6 +82,164 @@ class EditCollection extends OrgAction
             ];
         }
 
+        $languages = [$collection->shop->language_id => LanguageResource::make($collection->shop->language)->resolve()];
+        $nameFields = [
+            'name'              => $collection->masterCollection
+                ? [
+                    'type'          => 'input_translation',
+                    'label'         => __('Name'),
+                    'language_from' => 'en',
+                    'full'          => true,
+                    'main'          => $collection->masterCollection->name,
+                    'languages'     => $languages,
+                    'mode'          => 'single',
+                    'value'         => $collection->name,
+                    'reviewed'      => $collection->is_name_reviewed,
+                    'information'   => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
+                ]
+                : [
+                    'type'        => 'input',
+                    'label'       => __('Name'),
+                    'information' => __('This will displayed as H1 in the product page on website and in orders and invoices.'),
+                    'options'     => [
+                        'counter' => true,
+                    ],
+                    'value'       => $collection->name
+                ],
+            'description'       => $collection->masterCollection
+                ? [
+                    'type'          => 'textEditor_translation',
+                    'label'         => __('Description'),
+                    'language_from' => 'en',
+                    'full'          => true,
+                    'main'          => $collection->masterCollection->description,
+                    'languages'     => $languages,
+                    'mode'          => 'single',
+                    'value'         => $collection->description,
+                    'reviewed'      => $collection->is_description_reviewed,
+                    'information'   => __('This show in product webpage'),
+                    'toogle'        => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear'
+                    ],
+                ]
+                : [
+                    'type'        => 'textEditor',
+                    'label'       => __('Description'),
+                    'information' => __('This show in product webpage'),
+                    'options'     => [
+                        'counter' => true,
+                    ],
+                    'toogle'      => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear'
+                    ],
+                    'value'       => $collection->description
+                ],
+            'description_extra' => $collection->masterCollection
+                ? [
+                    'type'          => 'textEditor_translation',
+                    'label'         => __('Extra description'),
+                    'language_from' => 'en',
+                    'full'          => true,
+                    'main'          => $collection->masterCollection->description_extra,
+                    'languages'     => $languages,
+                    'mode'          => 'single',
+                    'value'         => $collection->description_extra,
+                    'reviewed'      => $collection->is_description_extra_reviewed,
+                    'information'   => __('This above product specification in product webpage'),
+                    'toogle'        => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear'
+                    ],
+                ]
+                : [
+                    'type'        => 'textEditor',
+                    'label'       => __('Extra description'),
+                    'information' => __('This above product specification in product webpage'),
+                    'options'     => [
+                        'counter' => true,
+                    ],
+                    'value'       => $collection->description_extra,
+                    'toogle'      => [
+                        'heading2',
+                        'heading3',
+                        'fontSize',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'bulletList',
+                        "fontFamily",
+                        'orderedList',
+                        'blockquote',
+                        'divider',
+                        'alignLeft',
+                        'alignRight',
+                        "customLink",
+                        'alignCenter',
+                        'undo',
+                        'redo',
+                        'highlight',
+                        'color',
+                        'clear'
+                    ],
+                ]
+        ];
+
         return Inertia::render(
             'EditModel',
             [
@@ -112,86 +271,13 @@ class EditCollection extends OrgAction
                         [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
-                            'fields' => [
+                            'fields' => array_merge([
                                 // 'code' => [
                                 //     'type'  => 'input',
                                 //     'label' => __('Code'),
                                 //     'value' => $collection->code
                                 // ],
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('Name'),
-                                    'value' => $collection->name
-                                ],
-                                /*   'description_title' => [
-                                    'type'  => 'input',
-                                    'label' => __('Description title'),
-                                    'options'   => [
-                                        'counter'   => true,
-                                    ],
-                                    'value' => $collection->description_title
-                                ], */
-                                'description' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('Description'),
-                                    'options'   => [
-                                        'counter'   => true,
-                                    ],
-                                    'value' => $collection->description,
-                                    'toogle'  => [
-                                        'heading2',
-                                        'heading3',
-                                        'fontSize',
-                                        'bold',
-                                        'italic',
-                                        'underline',
-                                        'bulletList',
-                                        "fontFamily",
-                                        'orderedList',
-                                        'blockquote',
-                                        'divider',
-                                        'alignLeft',
-                                        'alignRight',
-                                        "customLink",
-                                        'alignCenter',
-                                        'undo',
-                                        'redo',
-                                        'highlight',
-                                        'color',
-                                        'clear'
-                                    ],
-                                ],
-                                'description_extra' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('Extra description'),
-                                    'options'   => [
-                                        'counter'   => true,
-                                    ],
-                                    'value' => $collection->description_extra,
-                                    'toogle'  => [
-                                        'heading2',
-                                        'heading3',
-                                        'fontSize',
-                                        'bold',
-                                        'italic',
-                                        'underline',
-                                        'bulletList',
-                                        "fontFamily",
-                                        'orderedList',
-                                        'blockquote',
-                                        'divider',
-                                        'alignLeft',
-                                        'alignRight',
-                                        "customLink",
-                                        'alignCenter',
-                                        'undo',
-                                        'redo',
-                                        'highlight',
-                                        'color',
-                                        'clear'
-                                    ],
-                                ],
-                            ]
+                            ], $nameFields)
                         ],
                         // [
                         //     'label'  => __('Image'),

@@ -45,7 +45,7 @@ class StoreOfferCampaign extends OrgAction
     public function rules(): array
     {
         return [
-            'code' => [
+            'code'   => [
                 'required',
                 new IUnique(
                     table: 'offer_campaigns',
@@ -57,9 +57,10 @@ class StoreOfferCampaign extends OrgAction
                 'max:64',
                 'alpha_dash'
             ],
-            'name' => ['required', 'max:250', 'string'],
-            'data' => ['sometimes', 'required'],
-            'type' => ['required', Rule::enum(OfferCampaignTypeEnum::class)],
+            'name'   => ['required', 'max:250', 'string'],
+            'data'   => ['sometimes', 'required'],
+            'type'   => ['required', Rule::enum(OfferCampaignTypeEnum::class)],
+            'status' => ['sometimes', 'boolean'],
         ];
     }
 

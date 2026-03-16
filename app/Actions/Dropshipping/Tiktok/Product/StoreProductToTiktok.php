@@ -29,8 +29,11 @@ class StoreProductToTiktok extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(TiktokUser $tiktokUser, Portfolio $portfolio): array
+    public function handle(Portfolio $portfolio): Portfolio
     {
+        /** @var TiktokUser $tiktokUser */
+        $tiktokUser = $portfolio->customerSalesChannel->user;
+
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
         ]);
@@ -132,7 +135,7 @@ class StoreProductToTiktok extends RetinaAction
                 ]);
             }
 
-            return $tiktokProduct;
+            return $portfolio;
         } catch (\Exception $e) {
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [
@@ -147,7 +150,7 @@ class StoreProductToTiktok extends RetinaAction
                 ]);
             }
 
-            return [];
+            return $portfolio;
         }
     }
 

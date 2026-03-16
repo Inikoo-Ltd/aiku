@@ -12,6 +12,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -33,17 +34,11 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         /** @var \App\Models\Catalogue\Collection $collection */
         $collection = $webpage->model;
 
+        // FIX FOR DUPLICATED FAMILIES WEBBLOCK UNDER COLLECTION
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES->value);
 
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'families-1');
-
-        if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'families-1');
-        }
-
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
-        if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'products-1');
-        }
+        // FIX FOR DUPLICATED PRODUCTS WEBBLOCK UNDER COLLECTION
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
 
         $countCollectionDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'collection-description-1');
         if (count($countCollectionDescriptionBlock) == 0) {
@@ -82,7 +77,6 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         $collectionDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'collection-description-1')->first()->model_has_web_blocks_id;
         $webBlocks                     = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
-
         $runningPosition = 2;
         foreach ($webBlocks as $key => $position) {
             if ($key == $collectionDescriptionWebBlock) {
@@ -92,7 +86,6 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
                 $runningPosition++;
             }
         }
-
 
         foreach ($webBlocks as $key => $position) {
             DB::table('model_has_web_blocks')
@@ -107,8 +100,10 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->where('model_type', 'Collection')->get();
-
+        $webpagesID = DB::table('webpages')
+        ->select('id')
+        ->where('model_type', 'Collection')
+        ->get();
 
         foreach ($webpagesID as $webpageID) {
             $webpage = Webpage::find($webpageID->id);

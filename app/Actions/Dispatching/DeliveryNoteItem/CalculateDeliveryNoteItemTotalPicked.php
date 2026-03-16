@@ -26,7 +26,11 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
     {
         $pickings = $deliveryNoteItem->pickings;
 
-        $totalPicked    = $pickings->where('type', PickingTypeEnum::PICK)->sum('quantity');
+
+        $totalPicked    = $pickings->whereIn('type', [
+            PickingTypeEnum::PICK,
+            PickingTypeEnum::MAGIC_PICK
+        ])->sum('quantity');
         $totalNotPicked = $pickings->where('type', PickingTypeEnum::NOT_PICK)->sum('quantity');
 
         $isFullyPicked        = $totalPicked == $deliveryNoteItem->quantity_required;

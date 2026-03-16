@@ -8,78 +8,62 @@
 
 namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 trait WithRedoMasterProductCategoryTimeSeries
 {
-    public function handle(MasterProductCategory $masterProductCategory, array $frequencies, ?Command $command = null, bool $async = true): void
+    public function getJobUniqueId(string $from, string $to): string
     {
-        $type = MasterProductCategoryTypeEnum::from($this->restriction);
+        return "{$from}_{$to}";
+    }
 
-        if ($masterProductCategory->type !== $type) {
-            $command?->error("Can only process {$type->value}s, $masterProductCategory->name is a $masterProductCategory->type");
+    public function handle(MasterProductCategory $masterProductCategory, bool $async = false, ?string $from = null, ?string $to = null): void
+    {
+        if (!$from || !$to) {
+            $firstInvoicedDate = DB::table('invoice_transactions')->where("master_{$this->categoryType->value}_id", $masterProductCategory->id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::table('invoice_transactions')->where("master_{$this->categoryType->value}_id", $masterProductCategory->id)->whereNull('deleted_at')->max('date');
 
-            return;
-        }
-
-        $from = null;
-
-        $firstInvoicedDate = DB::table('invoice_transactions')->where("master_{$this->restriction}_id", $masterProductCategory->id)->whereNull('deleted_at')->min('date');
-
-        if ($firstInvoicedDate && ($firstInvoicedDate < $masterProductCategory->created_at)) {
-            $masterProductCategory->update(['created_at' => $firstInvoicedDate]);
-        }
-
-        if ($masterProductCategory->created_at) {
-            $from = $masterProductCategory->created_at->toDateString();
-        }
-
-        if ($masterProductCategory->status) {
-            $to = now()->toDateString();
-        } else {
-            $to = $masterProductCategory->discontinued_at;
-
-            $lastInvoicedDate = DB::table('invoice_transactions')
-                ->where("master_{$this->restriction}_id", $masterProductCategory->id)
-                ->whereNull('deleted_at')
-                ->max('date');
-
-            if (!$to && !$lastInvoicedDate) {
+            if (!$firstInvoicedDate) {
                 return;
             }
 
-            if ($lastInvoicedDate) {
-                $lastInvoicedDate = Carbon::parse($lastInvoicedDate);
-            }
-
-            if ($lastInvoicedDate && (!$to || $lastInvoicedDate->greaterThan($to))) {
-                $to = $lastInvoicedDate;
-                $masterProductCategory->update(['discontinued_at' => $to]);
-            }
-
-            if (!$to) {
-                return;
-            }
-
-            $to = $to->toDateString();
+            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
+            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
         }
 
-        if ($from != null && $to != null) {
-            foreach ($frequencies as $frequency) {
-                if ($async) {
-                    ProcessMasterProductCategoryTimeSeriesRecords::dispatch($masterProductCategory->id, $frequency, $from, $to)->onQueue('low-priority');
-                } else {
-                    ProcessMasterProductCategoryTimeSeriesRecords::run($masterProductCategory->id, $frequency, $from, $to);
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            if ($async) {
+                ProcessMasterProductCategoryTimeSeriesRecords::dispatch($masterProductCategory->id, $frequency, $from, $to)->onQueue('low-priority');
+            } else {
+                ProcessMasterProductCategoryTimeSeriesRecords::run($masterProductCategory->id, $frequency, $from, $to);
+            }
+        }
+    }
+
+    public function asJob(string $from, string $to): void
+    {
+        $tableName = (new $this->model())->getTable();
+        $query     = DB::table($tableName)->select('id')->where('type', $this->categoryType->value)->orderBy('id', 'desc');
+
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
+            foreach ($modelsData as $modelId) {
+                $instance = MasterProductCategory::find($modelId->id);
+                if (!$instance) {
+                    continue;
+                }
+
+                try {
+                    $this->handle($instance, false, $from, $to);
+                } catch (Throwable $e) {
+                    report($e);
                 }
             }
-        }
+        });
     }
 
     public function asCommand(Command $command): int
@@ -87,54 +71,32 @@ trait WithRedoMasterProductCategoryTimeSeries
         $command->info($command->getName());
         $tableName = (new $this->model())->getTable();
         $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
-        $bar       = $command->getOutput()->createProgressBar($count);
+        $query->where('type', $this->categoryType->value);
+        $count = $query->count();
+        $bar   = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');
         $bar->start();
 
-        try {
-            $frequencyOption = $command->option('frequency');
-
-            if ($frequencyOption === 'all') {
-                $frequencies = TimeSeriesFrequencyEnum::cases();
-            } else {
-                $frequencies = [
-                    TimeSeriesFrequencyEnum::from($frequencyOption)
-                ];
-            }
-        } catch (Throwable $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-
-        $query->chunk(
-            1000,
-            function (Collection $modelsData) use ($bar, $command, $frequencies) {
-                foreach ($modelsData as $modelId) {
-                    if ($this->modelAsHandleArg) {
-                        $model = (new $this->model());
-                        if ($this->hasSoftDeletes($model)) {
-                            $instance = $model->withTrashed()->find($modelId->id);
-                        } else {
-                            $instance = $model->find($modelId->id);
-                        }
-                    } else {
-                        $instance = $modelId->id;
-                    }
-
-                    try {
-                        $this->handle($instance, $frequencies, $command, $command->option('async'));
-                    } catch (Throwable $e) {
-                        $command->error($e->getMessage());
-                    }
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
+            foreach ($modelsData as $modelId) {
+                $instance = MasterProductCategory::find($modelId->id);
+                if (!$instance) {
                     $bar->advance();
+                    continue;
                 }
+
+                try {
+                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
+                } catch (Throwable $e) {
+                    $command->error($e->getMessage());
+                }
+
+                $bar->advance();
             }
-        );
+        });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
 
         return 0;
     }

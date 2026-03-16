@@ -317,6 +317,7 @@ class StoreOrder extends OrgAction
             'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
             'platform_id'               => ['sometimes', 'nullable', 'integer'],
             'platform_order_id'         => ['sometimes', 'nullable'],
+            'is_shipping_by_external'   => ['sometimes', 'nullable'],
             'customer_client_id'        => ['sometimes', 'nullable', 'exists:customer_clients,id'],
             'customer_sales_channel_id' => ['sometimes', 'nullable', 'integer'],
             'data'                      => ['sometimes', 'array'],

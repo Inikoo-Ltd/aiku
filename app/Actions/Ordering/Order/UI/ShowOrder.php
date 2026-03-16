@@ -23,6 +23,7 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -168,7 +169,7 @@ class ShowOrder extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"       => __("Delivery Instructions"),
+                    "label"       => __("Shipping label message") . ' ('  . __("Customer") . ')',
                     "note"        => $order->shipping_notes ?? '',
                     "information" => __("This note is from the customer. Will be printed in the shipping label."),
                     "editable"    => true,
@@ -188,11 +189,12 @@ class ShowOrder extends OrgAction
                     "note"        => $order->public_notes ?? '',
                     "information" => __("This note will be visible to public, both staff and the customer can see."),
                     "editable"    => true,
+                    "warning"     => __('Customer can see this note'),
                     "bgColor"     => "#94DB84",
                     "field"       => "public_notes"
                 ],
                 [
-                    "label"       => __("Private"),
+                    "label"       => __("Order private note"),
                     "note"        => $order->internal_notes ?? '',
                     "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
                     "editable"    => true,
@@ -375,19 +377,28 @@ class ShowOrder extends OrgAction
                 'readonly'                    => false,
                 'shop_type'                   => $order->shop->type,
                 'is_shop_external'            => $this->shop->type == ShopTypeEnum::EXTERNAL,
+                'external_shop'               => $this->shop->type == ShopTypeEnum::EXTERNAL ? [
+                    'engine_value'            => $this->shop->engine->value,
+                    'engine_label'            => ShopEngineEnum::from($this->shop->engine->value)->label(),
+                    'external_shipping_label' => $this->shop->engine == ShopEngineEnum::FAIRE ? __('Ship with Faire') : __('External shipping')
+                ] : null,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
-                'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
+                'contact_address'             => $order->customer ? AddressResource::make($order->customer->address)->getArray() : null,
                 'box_stats'                   => $this->getOrderBoxStats($order),
                 'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'                        => OrderResource::make($order),
                 'delivery_note'               => $deliveryNoteResource,
 
+
                 'payments_data'         => $paymentsData,
                 'payments_accounts'     => $paymentAccountData,
                 'state'                 => $order->state->value,
                 'route_recalculate_vat' => [
-                    // Show button if order is creating (not submitted) and deliveryNote has is_cash_on_delivery true and it's not in those condition. Based on Dimitar requests.
-                    'showButton' => in_array($order->state, [OrderStateEnum::CREATING])
+                    'showButton' => !in_array($order->state, [
+                        OrderStateEnum::DISPATCHED,
+                        OrderStateEnum::FINALISED,
+                        OrderStateEnum::CANCELLED
+                        ])
                         || $order->deliveryNotes()
                             ->where('is_cash_on_delivery', true)
                             ->whereNotIn('state', [
@@ -519,6 +530,7 @@ class ShowOrder extends OrgAction
                     'name' => $order->salesChannel->name,
                     'icon' => $order->salesChannel->type->icon()
                 ] : null,
+                'is_faire_order'    => $order->shop->engine == ShopEngineEnum::FAIRE,
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))

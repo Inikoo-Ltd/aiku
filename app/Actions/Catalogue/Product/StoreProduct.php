@@ -109,6 +109,7 @@ class StoreProduct extends OrgAction
         $product = DB::transaction(function () use ($shop, $modelData, $orgStocks, $tradeUnits) {
             /** @var Product $product */
             $product = $shop->products()->create($modelData);
+            $product->stats()->create();
 
             if ($tradeUnits) {
                 $product = SyncProductTradeUnits::run($product, $tradeUnits);
@@ -132,7 +133,7 @@ class StoreProduct extends OrgAction
                 ]);
             }
 
-            $product->stats()->create();
+
             $product->refresh();
 
             $product = $this->createAsset($product);
@@ -181,6 +182,7 @@ class StoreProduct extends OrgAction
                 'asset_id' => $asset->id
             ]
         );
+        $product->refresh();
         $historicAsset = StoreHistoricAsset::run(
             $product,
             [
@@ -206,21 +208,27 @@ class StoreProduct extends OrgAction
 
     public function rules(): array
     {
+        $codeRule = [
+            'required',
+            'max:64',
+            $this->shop->type == ShopTypeEnum::EXTERNAL ? 'string' : new AlphaDashDot(),
+            Rule::notIn(['export', 'create', 'upload']),
+        ];
+
+        if ($this->shop->type != ShopTypeEnum::EXTERNAL) {
+            $codeRule[] = new IUnique(
+                table: 'assets',
+                extraConditions: [
+                    ['column' => 'shop_id', 'value' => $this->shop->id],
+                    ['column' => 'state', 'operator' => '!=', 'value' => ProductStateEnum::DISCONTINUED->value],
+                    ['column' => 'deleted_at', 'operator' => 'null'],
+                ]
+            );
+        }
+
+
         $rules = [
-            'code'              => [
-                'required',
-                'max:64',
-                $this->shop->type == ShopTypeEnum::EXTERNAL ? 'string' : new AlphaDashDot(),
-                Rule::notIn(['export', 'create', 'upload']),
-                new IUnique(
-                    table: 'assets',
-                    extraConditions: [
-                        ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'state', 'operator' => '!=', 'value' => ProductStateEnum::DISCONTINUED->value],
-                        ['column' => 'deleted_at', 'operator' => 'null'],
-                    ]
-                ),
-            ],
+            'code'              => $codeRule,
             'name'              => ['required', 'max:250', 'string'],
             'state'             => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
             'family_id'         => [
@@ -294,6 +302,7 @@ class StoreProduct extends OrgAction
             $rules['trade_config']              = ['required', Rule::enum(ProductTradeConfigEnum::class)];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
             $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
+            $rules['description']               = ['sometimes', 'nullable', 'max:65500'];
         } else {
             $rules['trade_units'] = ['nullable', 'array'];
         }

@@ -10,6 +10,7 @@ namespace App\Models\Catalogue;
 
 use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Models\Masters\MasterCollection;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -59,6 +60,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property CollectionProductsStatusEnum $products_status
  * @property array<array-key, mixed>|null $offers_data
  * @property \Illuminate\Support\Carbon|null $inactivated_at
+ * @property string|null $name_i8n
+ * @property string|null $description_i8n
+ * @property string|null $description_title_i8n
+ * @property string|null $description_extra_i8n
+ * @property HealthRankEnum|null $health_rank
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
@@ -105,6 +111,7 @@ class Collection extends Model implements Auditable, HasMedia
         'data'            => 'array',
         'web_images'      => 'array',
         'state'           => CollectionStateEnum::class,
+        'health_rank'     => HealthRankEnum::class,
         'products_status' => CollectionProductsStatusEnum::class,
         'offers_data'     => 'array',
         'inactivated_at'  => 'datetime',

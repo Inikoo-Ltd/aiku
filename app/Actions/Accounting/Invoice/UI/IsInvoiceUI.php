@@ -60,6 +60,9 @@ trait IsInvoiceUI
     {
         /** @var Outbox $outbox */
         $outbox = $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first();
+        if (!$outbox) {
+            return [];
+        }
 
         if ($invoice->shop->type === ShopTypeEnum::FULFILMENT) {
             return [

@@ -1,79 +1,259 @@
-<script setup lang="ts">
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Link } from '@inertiajs/vue3'
-import { inject, ref } from 'vue'
-import Icon from '../Icon.vue'
-import LoadingIcon from '../Utils/LoadingIcon.vue'
-import { Icon as IconTS } from '@/types/Utils/Icon'
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Thu, 23 Feb 2023 14:32:57 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2023, Raul A Perusquia Flores
+  -->
 
-const props = defineProps<{
+<script setup lang="ts">
+import { computed } from "vue"
+import { Link } from "@inertiajs/vue3"
+import Icon from "../Icon.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import {
+    faClock,
+    faList,
+    faCheck,
+    faBox,
+    faCheckCircle,
+    faBoxOpen,
+    faHourglassStart,
+    faAllergies,
+    faChartLine,
+} from "@fal"
+
+library.add(faClock, faList, faCheck, faBox, faCheckCircle, faBoxOpen, faHourglassStart, faAllergies, faChartLine)
+
+interface RouteTarget {
+    name: string
+    parameters?: object
+}
+
+interface MetricData {
+    value: number | null
+    route_target?: RouteTarget
+}
+
+interface MetricItem {
+    key: string
+    label: string
+    icon?: string[]
+}
+
+interface Metric {
+    key: string
+    label: string
+    type: string
+    icon?: string[]
+    items?: MetricItem[]
+}
+
+interface DashboardData {
+    dimension: {
+        key: string
+        label: string
+        items: { key: string; label: string }[]
+    }
+    metrics: Metric[]
     data: {
-        [key: string]: {
-            label: string
-            sublabel: string
-            count: number
-            cases: {
-                key: string
-                label: string
-                value?: number
-                icon: string | string[]
-                icon_state: IconTS
-                class?: string
-                route?: {
-                    name: string
-                    parameters?: object
-                }
-            }[]
+        [rowKey: string]: {
+            [metricKey: string]: MetricData
         }
     }
+    row_totals: {
+        [rowKey: string]: { value: number; route_target?: RouteTarget }
+    }
+    totals: {
+        [metricKey: string]: { value: number; route_target?: RouteTarget }
+    }
+    grand_total: {
+        value: number
+        icon?: string[]
+        route_target?: RouteTarget
+    }
+}
+
+const props = defineProps<{
+    tab: string
+    data: DashboardData
 }>()
 
-const locale = inject('locale', aikuLocaleStructure)
-const isLoadingSub = ref<null | string>(null)
+const rows = computed(() => {
+    if (!props.data?.dimension) {
+        return [{ key: "_global", label: null }]
+    }
+    return props.data.dimension.items
+})
+
+const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
+    if (!routeTarget) return null
+    try {
+        if (route().has(routeTarget.name)) {
+            return route(routeTarget.name, (routeTarget.parameters ?? {}) as Record<string, string>)
+        }
+    } catch {
+        return null
+    }
+    return null
+}
+
+const isWeakValue = (value: number | null | undefined) => {
+    return value === null || value === 0
+}
 </script>
 
 <template>
-    <div class="flex flex-wrap p-4 gap-x-4 gap-y-4">
-        <div v-for="(dash, idxDash) in data" class="w-full max-w-sm px-5 py-4 lg:px-6 lg:py-6 rounded-lg bg-white shadow border border-gray-200">
-            <div class="text-lg font-semibold text-gray-400 xmb-1.5 lg:mb-3">
-                {{ dash.label }}
-            </div>
-            <div class="flex flex-col gap-1">
-                <!-- Total Count -->
-                <div class="flex items-center">
-                    <span class="text-3xl font-bold text-org-500">
-                        {{ locale.number(dash.count) }}
+    <div class="bg-white px-1 sm:px-2 md:px-4 overflow-x-auto pb-4">
+        <div class="flex gap-1 md:gap-3 w-full pt-3">
+
+            <!-- ================= DIMENSION COLUMN ================= -->
+            <div v-if="data?.dimension"
+                class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[120px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
+                :style="{ flexGrow: 1 }">
+
+                <div
+                    class="h-14 md:h-20 flex items-center justify-center font-semibold text-xs md:text-lg border-b border-gray-200 px-1 md:px-4">
+                    <span class="md:hidden">
+                        {{ data.dimension.label.charAt(0).toUpperCase() }}
                     </span>
-                    <span class="ml-2 text-sm text-gray-500">{{ dash.sublabel }}</span>
+                    <span class="hidden md:inline">
+                        {{ data.dimension.label }}
+                    </span>
                 </div>
-                
-                <!-- Breakdown of each case -->
-                <div class="flex flex-wrap gap-4">
-                    <component
-                        v-for="(item, idx) in dash.cases"
-                        :is="item.route?.name ? Link : 'div'"
-                        :href="item.route?.name ? route(item.route.name, item.route.parameters) : '#'"
-                        :key="item.key"
-                        class="flex items-center gap-2 px-2 py-1 lg:px-1 lg:py-0.5 rounded"
-                        :class="item.route?.name ? 'hover:bg-gray-200' : ''"
-                        xv-tooltip="item.label"
-                        @start="() => isLoadingSub = `${idxDash}${idx}`"
-                    >
-                        <LoadingIcon
-                            v-if="isLoadingSub === `${idxDash}${idx}`"
-                        />
-                        <Icon
-                            v-else-if="item.icon_state"
-                            :data="item.icon_state"
-                        />
-                        <FontAwesomeIcon v-else :icon="item.icon" class="" fixed-width aria-hidden="true" />
-                        <span class="text-base font-medium">
-                            {{ locale.number(item.value || 0) }}
+
+                <div v-for="row in rows" :key="row.key"
+                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                    <span class="md:hidden">
+                        {{ row.label.charAt(0).toUpperCase() }}
+                    </span>
+                    <span class="hidden md:inline">
+                        {{ row.label }}
+                    </span>
+                </div>
+
+                <div class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
+                    <span class="md:hidden">Σ</span>
+                    <span class="hidden md:inline">Total</span>
+                </div>
+            </div>
+
+            <!-- ================= METRICS ================= -->
+            <template v-for="metric in data?.metrics" :key="metric.key">
+
+                <!-- SINGLE METRIC -->
+                <div v-if="metric.type !== 'group'"
+                    class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
+                    :style="{ flexGrow: 1 }">
+
+                    <div
+                        class="h-14 md:h-20 flex flex-col items-center justify-center md:gap-1 border-b border-gray-200 px-1 md:px-4">
+                        <span class="hidden md:inline text-lg font-semibold">
+                            {{ metric.label }}
                         </span>
+                        <Icon v-if="metric.icon" :data="metric" class='text-xs md:text-xl' />
+                    </div>
+
+                    <template v-for="row in rows" :key="row.key">
+                        <component :is="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ? Link : 'div'"
+                            :href="getSafeRoute(data.data[row.key]?.[metric.key]?.route_target) ?? undefined" :class="[
+                                'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
+                                isWeakValue(data.data[row.key]?.[metric.key]?.value)
+                                    ? 'opacity-40'
+                                    : '',
+                                getSafeRoute(data.data[row.key]?.[metric.key]?.route_target)
+                                    ? 'hover:underline cursor-pointer'
+                                    : ''
+                            ]">
+                            {{ data.data[row.key]?.[metric.key]?.value ?? '-' }}
+                        </component>
+                    </template>
+
+                    <component v-if="data?.dimension"
+                        :is="getSafeRoute(data.totals[metric.key]?.route_target) ? Link : 'div'"
+                        :href="getSafeRoute(data.totals[metric.key]?.route_target) ?? undefined"
+                        :class="[
+                            'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
+                            getSafeRoute(data.totals[metric.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                        ]">
+                        {{ data.totals[metric.key]?.value ?? '-' }}
                     </component>
                 </div>
+
+                <!-- GROUP METRIC -->
+                <div v-else
+                    class="flex basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-max rounded-lg md:rounded-xl border border-gray-200"
+                    :style="{ flexGrow: metric.items.length }">
+                    <div v-for="(item, itemIndex) in metric.items" :key="item.key"
+                        class="flex-1 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col"
+                        :class="itemIndex < (metric.items?.length ?? 0) - 1 ? 'border-r border-gray-200' : ''">
+                        <div
+                            class="h-14 md:h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-1 md:px-4">
+                            <span class="hidden md:inline text-lg font-semibold">
+                                {{ item.label }}
+                            </span>
+                            <Icon v-if="item.icon" :data="item" class='text-xs md:text-lg' />
+                        </div>
+
+                        <template v-for="row in rows" :key="row.key + '-' + item.key">
+                            <component :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'div'"
+                                :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined" :class="[
+                                    'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
+                                    isWeakValue(data.data[row.key]?.[item.key]?.value)
+                                        ? 'opacity-40'
+                                        : '',
+                                    getSafeRoute(data.data[row.key]?.[item.key]?.route_target)
+                                        ? 'hover:underline cursor-pointer'
+                                        : ''
+                                ]">
+                                {{ data.data[row.key]?.[item.key]?.value ?? '-' }}
+                            </component>
+                        </template>
+
+                        <component v-if="data?.dimension"
+                            :is="getSafeRoute(data.totals[item.key]?.route_target) ? Link : 'div'"
+                            :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
+                            :class="[
+                                'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
+                                getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                            ]">
+                            {{ data.totals[item.key]?.value ?? '-' }}
+                        </component>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ================= ROW TOTAL BOX ================= -->
+            <div class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
+                :style="{ flexGrow: 1 }">
+                <div
+                    class="h-14 md:h-20 flex flex-col items-center justify-center font-semibold text-xs md:text-lg gap-1 border-b border-gray-200">
+                    <span class="hidden md:inline">Total</span>
+                    <Icon v-if="data?.grand_total?.icon" :data="data.grand_total" class='text-xs md:text-lg' />
+                </div>
+
+                <component v-for="row in rows" :key="row.key"
+                    :is="getSafeRoute(data.row_totals[row.key]?.route_target) ? Link : 'div'"
+                    :href="getSafeRoute(data.row_totals[row.key]?.route_target) ?? undefined"
+                    :class="[
+                        'h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0',
+                        isWeakValue(data.row_totals[row.key]?.value) ? 'opacity-40' : '',
+                        getSafeRoute(data.row_totals[row.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
+                    ]">
+                    {{ data.row_totals[row.key]?.value ?? '-' }}
+                </component>
+
+                <component
+    v-if="data?.dimension"
+    :is="getSafeRoute(data.grand_total?.route_target) ? Link : 'div'"
+    :href="getSafeRoute(data.grand_total?.route_target) ?? undefined"
+    :class="[
+        'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
+        getSafeRoute(data.grand_total?.route_target) ? 'hover:underline cursor-pointer' : ''
+    ]"
+>
+    {{ data.grand_total?.value ?? '-' }}
+</component>
             </div>
+
         </div>
     </div>
 </template>

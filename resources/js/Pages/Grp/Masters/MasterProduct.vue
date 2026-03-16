@@ -3,7 +3,8 @@ import { Head, Link, useForm, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faCube, faFileInvoice, faFolder, faFolderOpen, faAtom, faFolderTree,
-    faChartLine, faShoppingCart, faStickyNote, faMoneyBillWave
+    faChartLine, faShoppingCart, faStickyNote, faMoneyBillWave,
+    faTools
 } from "@fal"
 import { faCheckCircle, faSave, faShapes, faStar } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -28,6 +29,8 @@ import { trans } from "laravel-vue-i18n"
 import axios from "axios";
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import { notify } from "@kyvg/vue3-notification"
+import { faWarning } from "@fortawesome/free-solid-svg-icons"
+import { Message } from "primevue"
 
 library.add(
     faChartLine, faCheckCircle, faFolderTree, faFolder, faCube,
@@ -58,6 +61,7 @@ const props = defineProps<{
     trade_unit_slug?: string
     masterVariant?: {}
     is_variant_leader?: boolean
+    mismatch_detected?: boolean
 }>()
 
 const layout = inject('layout', {});
@@ -173,6 +177,26 @@ const routeVariant = () => {
     )
 }
 
+const repairTradeUnitToChildren = async () => {
+    console.log("REPAIRING");
+    await axios.patch(route('grp.models.master_asset.repair_mismatch_trade_units', {
+        masterAsset: props.masterAsset.id,
+    })).then((response) => {
+        notify({
+            title: trans("Success!"),
+            text: trans("Successfully repaired the product details"),
+            type: "success"
+        })
+        router.visit(route('grp.masters.master_shops.show.master_products.show', route().params))
+    }).catch((errors) => {
+        notify({
+            title: trans("Something went wrong"),
+            text: errors.message || trans("Failed to update product quantity in basket"),
+            type: "error"
+        })
+    })
+}
+
 console.log(props)
 
 watch(() => currentTab.value, (value) => {
@@ -212,23 +236,33 @@ onMounted(() => {
                 />
             </Link>
             <!-- TODO PLEASE CHANGE TO HAVE LINK TO MASTER VARIANT -->
-               <Link v-if="masterVariant" :href="routeVariant()" v-tooltip="trans('Go to Master Variant')">
-                   <FontAwesomeIcon  :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
-               </Link>
-         
+            <Link v-if="masterVariant" :href="routeVariant()" v-tooltip="trans('Go to Master Variant')">
+                <FontAwesomeIcon  :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
+            </Link>
+        </template>
+        
+        <template #afterTitle2>
+            <FontAwesomeIcon 
+                v-if="mismatch_detected" 
+                :icon="faWarning" 
+                class="text-red-500" 
+                v-tooltip="trans('One of more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
+            />
+        </template>
+
+        <template #button-repair-mismatch="{ action }">
+            <Button v-if="mismatch_detected" :icon="faTools" :label="trans('Repair trade units')" v-tooltip="trans('Will force child to follow master products trade units')" @click="repairTradeUnitToChildren()" :style="'warning'" />
         </template>
 
         <template #button-assign="{ action }">
-            <Button v-if="currentTab === 'products'" :icon="action.icon" :label="action.label" @click="openModal()"
-                :style="action.style" />
-            <div v-else></div>
+            <Button :disabled="tableData.data.length == 0" v-tooltip="tableData.data.length == 0 ? trans('Product already exists on all shops under this master shop') : ''" :icon="action.icon" :label="action.label" @click="openModal()" :style="action.style"/>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <div  class="bg-white px-4 py-2 w-full border-gray-200 border-b overflow-x-auto breadcrumbs-container">
+    <div  class="bg-white pt-2 w-full border-gray-200 border-b overflow-x-auto breadcrumbs-container">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item }">
-                <div class="flex items-center gap-1 whitespace-nowrap">
+                <div class="flex items-center gap-1 whitespace-nowrap px-4 pb-2">
                     <component :is="item.to ? Link : 'span'" :handleTabUpdate="handleTabUpdate"
                         :href="item.to ? route(item.to.name, item.to.parameters) : undefined" :title="item.title"
                         class="flex items-center gap-2 text-sm transition-colors duration-150"
@@ -239,6 +273,14 @@ onMounted(() => {
                 </div>
             </template>
         </Breadcrumb>
+        <Message v-if="mismatch_detected" :severity="'error'">
+            <FontAwesomeIcon 
+                :icon="faWarning" 
+                class="text-red-500 mr-1" 
+                v-tooltip="trans('One of more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
+            />
+            {{ trans("One or more products linked to this master contain mismatched trade unit data. Please correct this by updating the master product's trade units.") }}
+        </Message>
     </div>
 
     <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :handleTabUpdate :currency="currency" />

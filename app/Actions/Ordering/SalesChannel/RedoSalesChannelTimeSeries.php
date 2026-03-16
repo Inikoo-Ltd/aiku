@@ -11,54 +11,70 @@ use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Ordering\SalesChannel;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
-class RedoSalesChannelTimeSeries
+class RedoSalesChannelTimeSeries implements ShouldBeUnique
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'sales-channels:redo_time_series {organisations?*} {--S|shop= shop slug} {--s|slug=} {--f|frequency=all : The frequency for time series (all, daily, weekly, monthly, quarterly, yearly)} {--a|async : Run synchronously}';
+    public string $jobQueue         = 'default-long';
+    public string $commandSignature = 'sales-channels:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
         $this->model = SalesChannel::class;
     }
 
-    public function handle(SalesChannel $salesChannel, array $frequencies, bool $async = true): void
+    public function getJobUniqueId(string $from, string $to): string
     {
-        $firstInvoicedDate = DB::table('invoices')
-            ->where('sales_channel_id', $salesChannel->id)
-            ->whereNull('deleted_at')
-            ->min('date');
+        return "{$from}_{$to}";
+    }
 
-        if ($firstInvoicedDate && ($firstInvoicedDate < $salesChannel->created_at)) {
-            $salesChannel->update(['created_at' => $firstInvoicedDate]);
+    public function handle(SalesChannel $salesChannel, bool $async = false, ?string $from = null, ?string $to = null): void
+    {
+        if (!$from || !$to) {
+            $firstInvoicedDate = DB::table('invoices')->where('sales_channel_id', $salesChannel->id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::table('invoices')->where('sales_channel_id', $salesChannel->id)->whereNull('deleted_at')->max('date');
+
+            if (!$firstInvoicedDate) {
+                return;
+            }
+
+            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
+            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
         }
 
-        $from = $salesChannel->created_at->toDateString();
-
-        $to = DB::table('invoices')
-            ->where('sales_channel_id', $salesChannel->id)
-            ->whereNull('deleted_at')
-            ->max('date');
-
-        if (!$to) {
-            $to = now();
-        }
-
-        $to = Carbon::parse($to)->toDateString();
-
-        if ($from != null && $to != null) {
-            foreach ($frequencies as $frequency) {
-                if ($async) {
-                    ProcessSalesChannelTimeSeriesRecords::dispatch($salesChannel->id, $frequency, $from, $to)->onQueue('low-priority');
-                } else {
-                    ProcessSalesChannelTimeSeriesRecords::run($salesChannel->id, $frequency, $from, $to);
-                }
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            if ($async) {
+                ProcessSalesChannelTimeSeriesRecords::dispatch($salesChannel->id, $frequency, $from, $to)->onQueue('low-priority');
+            } else {
+                ProcessSalesChannelTimeSeriesRecords::run($salesChannel->id, $frequency, $from, $to);
             }
         }
+    }
+
+    public function asJob(string $from, string $to): void
+    {
+        $tableName = (new $this->model())->getTable();
+        $query     = DB::table($tableName)->select('id')->orderBy('id', 'desc');
+
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
+            foreach ($modelsData as $modelId) {
+                $model    = (new $this->model());
+                $instance = $this->hasSoftDeletes($model)
+                    ? $model->withTrashed()->find($modelId->id)
+                    : $model->find($modelId->id);
+
+                try {
+                    $this->handle($instance, false, $from, $to);
+                } catch (Throwable $e) {
+                    report($e);
+                }
+            }
+        });
     }
 
     public function asCommand(Command $command): int
@@ -71,49 +87,25 @@ class RedoSalesChannelTimeSeries
         $bar->setFormat('debug');
         $bar->start();
 
-        try {
-            $frequencyOption = $command->option('frequency');
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
+            foreach ($modelsData as $modelId) {
+                $model    = (new $this->model());
+                $instance = $this->hasSoftDeletes($model)
+                    ? $model->withTrashed()->find($modelId->id)
+                    : $model->find($modelId->id);
 
-            if ($frequencyOption === 'all') {
-                $frequencies = TimeSeriesFrequencyEnum::cases();
-            } else {
-                $frequencies = [
-                    TimeSeriesFrequencyEnum::from($frequencyOption)
-                ];
-            }
-        } catch (Throwable $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-
-        $query->chunk(
-            1000,
-            function (\Illuminate\Support\Collection $modelsData) use ($bar, $command, $frequencies) {
-                foreach ($modelsData as $modelId) {
-                    if ($this->modelAsHandleArg) {
-                        $model = (new $this->model());
-                        if ($this->hasSoftDeletes($model)) {
-                            $instance = $model->withTrashed()->find($modelId->id);
-                        } else {
-                            $instance = $model->find($modelId->id);
-                        }
-                    } else {
-                        $instance = $modelId->id;
-                    }
-
-                    try {
-                        $this->handle($instance, $frequencies, $command->option('async'));
-                    } catch (Throwable $e) {
-                        $command->error($e->getMessage());
-                    }
-                    $bar->advance();
+                try {
+                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
+                } catch (Throwable $e) {
+                    $command->error($e->getMessage());
                 }
+
+                $bar->advance();
             }
-        );
+        });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
 
         return 0;
     }

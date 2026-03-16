@@ -90,9 +90,11 @@ class IndexMasterSubDepartments extends GrpAction
             'master_product_categories.created_at',
             'master_product_categories.updated_at',
             'master_product_categories.web_images',
+            'master_product_category_stats.number_current_sub_departments as used_in',
             'master_product_category_stats.number_current_master_product_categories_type_family as number_families',
             'master_product_category_stats.number_current_master_assets_type_product as number_products',
             'currencies.code as currency_code',
+            'master_product_categories.health_rank',
         ];
 
         if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
@@ -101,18 +103,24 @@ class IndexMasterSubDepartments extends GrpAction
                 timeSeriesRecordsTable: 'master_product_category_time_series_records',
                 foreignKey: 'master_product_category_id',
                 aggregateColumns: [
-                    'sales_grp_currency' => 'sales',
-                    'invoices'           => 'invoices'
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices',
+                    'dropshippers'                => 'dropshippers',
+                    'listings'                    => 'listings',
+                    'sold'                        => 'sold',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true
             );
 
-            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+            $selects[] = $timeSeriesData['selectRaw']['listings'];
+            $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
 
         $queryBuilder->select($selects);
@@ -123,10 +131,15 @@ class IndexMasterSubDepartments extends GrpAction
             ->allowedSorts([
                 'code',
                 'name',
+                'used_in',
                 'number_families',
                 'number_products',
-                'sales',
-                'invoices'
+                'sales_grp_currency_external',
+                'invoices',
+                'dropshippers',
+                'listings',
+                'sold',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -157,16 +170,20 @@ class IndexMasterSubDepartments extends GrpAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
                     ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                     ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
+                    ->column(key: 'used_in', label: __('Used In'), sortable: true)
                     ->column(key: 'number_families', label: __('M. Families'), sortable: true)
                     ->column(key: 'number_products', label: __('M. Products'), sortable: true);
             }
@@ -184,13 +201,7 @@ class IndexMasterSubDepartments extends GrpAction
 
         $subNavigation = null;
         $modelNavigation = [];
-        if ($this->parent instanceof MasterShop) {
-            $subNavigation = $this->getMasterShopNavigation($this->parent);
-        } elseif ($this->parent instanceof MasterProductCategory) {
-            $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
-            $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
 
-        }
         $title      = $this->parent->name;
         $model      = '';
         $icon       = [
@@ -203,6 +214,18 @@ class IndexMasterSubDepartments extends GrpAction
         $iconRight  = [
             'icon' => 'fal fa-folder-download',
         ];
+
+        if ($this->parent instanceof MasterShop) {
+            $subNavigation = $this->getMasterShopNavigation($this->parent);
+        } elseif ($this->parent instanceof MasterProductCategory) {
+            $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
+            $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
+
+            $icon = [
+                'icon'  => ['fal', 'fa-folder-tree'],
+                'title' => __('Master Department')
+            ];
+        }
 
         return Inertia::render(
             'Masters/MasterSubDepartments',

@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -91,6 +92,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property HealthRankEnum|null $health_rank
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -146,6 +148,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
     protected $casts = [
         'data'             => 'array',
         'web_images'       => 'array',
+        'health_rank'      => HealthRankEnum::class,
         'state'            => ProductCategoryStateEnum::class,
         'type'             => ProductCategoryTypeEnum::class,
         'activated_at'     => 'datetime',

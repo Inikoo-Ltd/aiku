@@ -46,9 +46,11 @@ class DownloadPortfoliosCSV extends RetinaAction
         $normalizedProductStates = $this->normalizeProductStates($productStates);
 
         $portfolios = DB::table('portfolios')
-            ->select('products.*', 'product_categories.name as family_name', 'portfolios.reference')
+            ->select('products.*', 'family.code as family_code', 'family.name as family_name', 'dept.code as department_code', 'dept.name as department_name', 'subdept.code as subdepartment_code', 'subdept.name as subdepartment_name', 'portfolios.reference')
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
-            ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
+            ->leftJoin('product_categories as dept', 'products.department_id', '=', 'dept.id')
+            ->leftJoin('product_categories as subdept', 'products.sub_department_id', '=', 'subdept.id')
+            ->leftJoin('product_categories as family', 'products.family_id', '=', 'family.id')
             ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('portfolios.status', true)
             ->when(count($normalizedProductStates) > 0, function ($query) use ($normalizedProductStates) {
@@ -147,6 +149,12 @@ class DownloadPortfoliosCSV extends RetinaAction
         return [
             'product_code' => 'Product code',
             'product_user_reference' => 'Product user reference',
+            'department_code' => 'Department code',
+            'department_name' => 'Department name',
+            'subdepartment_code' => 'Sub Department code',
+            'subdepartment_name' => 'Sub Department name',
+            'family_code' => 'Family code',
+            'family_name' => 'Family name',
             'product_name' => 'Product name',
             'materials_ingredients' => 'Materials/Ingredients',
             'unit_dimensions' => 'Unit dimensions',
@@ -167,6 +175,12 @@ class DownloadPortfoliosCSV extends RetinaAction
         return [
             'product_code' => $row->code,
             'product_user_reference' => $row->reference ?? '',
+            'department_code' => $row->department_code ?? '',
+            'department_name' => $row->department_name ?? '',
+            'subdepartment_code' => $row->subdepartment_code ?? '',
+            'subdepartment_name' => $row->subdepartment_name ?? '',
+            'family_code' => $row->family_code ?? '',
+            'family_name' => $row->family_name ?? '',
             'product_name' => $row->name,
             'materials_ingredients' => $row->marketing_ingredients ?? '',
             'unit_dimensions' => $dimensions,

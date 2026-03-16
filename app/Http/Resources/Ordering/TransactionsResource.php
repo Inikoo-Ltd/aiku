@@ -50,6 +50,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $transaction_label
  * @property mixed $product_units
  * @property mixed $quantity_picked
+ * @property bool $is_cut_view
  */
 class TransactionsResource extends JsonResource
 {
@@ -68,14 +69,15 @@ class TransactionsResource extends JsonResource
             $webpageUrl = $webpage?->getUrl();
         }
 
+
         return [
             'id'                        => $this->id,
             'state'                     => $this->state,
             'status'                    => $this->status,
-            'quantity_ordered'          => $this->quantity_ordered,
-            'quantity_bonus'            => $this->quantity_bonus,
-            'quantity_picked'           => $this->quantity_picked,
-            'quantity_dispatched'       => $this->quantity_dispatched,
+            'quantity_ordered'          => trimDecimalZeros($this->quantity_ordered),
+            'quantity_bonus'            => trimDecimalZeros($this->quantity_bonus),
+            'quantity_picked'           => trimDecimalZeros($this->quantity_picked),
+            'quantity_dispatched'       => trimDecimalZeros($this->quantity_dispatched),
             'quantity_fail'             => $this->quantity_fail,
             'quantity_cancelled'        => $this->quantity_cancelled,
             'gross_amount'              => $this->gross_amount,
@@ -95,7 +97,8 @@ class TransactionsResource extends JsonResource
             'discretionary_offer_label' => $this->discretionary_offer_label,
             'transaction_label'         => $this->transaction_label,
             'product_units'             => $this->product_units,
-            'is_cut_view'               => false,
+            'is_cut_view'               => $this->is_cut_view,
+            'is_gift'                   => $this->is_gift,
 
 
             'deleteRoute' => $request->user() instanceof User

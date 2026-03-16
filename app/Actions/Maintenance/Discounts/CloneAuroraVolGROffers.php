@@ -8,7 +8,7 @@
 
 namespace App\Actions\Maintenance\Discounts;
 
-use App\Actions\Discounts\Offer\StoreVolumeGRDiscount;
+use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -57,9 +57,15 @@ class CloneAuroraVolGROffers
             ->whereIn('Deal Campaign Key', [
                 $volCampaign->{'Deal Campaign Key'}
             ])->orderBy('Deal Key', 'desc')
-            ->chunk(100, function ($auroraOffers) use ($toShop, $organisation, $command) {
+            ->chunk(100, function ($auroraOffers) use ($fromShop, $toShop, $organisation, $command) {
                 foreach ($auroraOffers as $auroraOffer) {
                     $fromFamily = ProductCategory::where('source_family_id', $organisation->id.':'.$auroraOffer->{'Deal Trigger Key'})->first();
+
+                    if (!$fromFamily) {
+                        $fromFamily = ProductCategory::where('shop_id', $fromShop->id)->whereRaw("lower(code) = lower(?)", [$auroraOffer->{'Deal Component Allowance Target Label'}])->first();
+                    }
+
+
                     if (!$fromFamily) {
                         $command->error("Family not found for DK ".$auroraOffer->{'Deal Key'}."  ".$auroraOffer->{'Deal Name'});
                         continue;

@@ -28,9 +28,9 @@ class DashboardTotalPlatformSalesResource extends JsonResource
             'customers',
             'portfolios',
             'customer_clients',
-            // 'sales',
-            // 'sales_org_currency',
-            'sales_grp_currency',
+            // 'sales_external,
+            // 'sales_org_currency_external',
+            'sales_grp_currency_external',
         ];
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
@@ -70,26 +70,26 @@ class DashboardTotalPlatformSalesResource extends JsonResource
                 'portfolios',
                 'portfolios_minified',
 
-                // 'sales',
-                // 'sales_minified',
-                // 'sales_delta',
+                // 'sales_external',
+                // 'sales_external_minified',
+                // 'sales_external_delta',
 
-                // 'sales_org_currency',
-                // 'sales_org_currency_minified',
-                // 'sales_org_currency_delta',
+                // 'sales_org_currency_external',
+                // 'sales_org_currency_external_minified',
+                // 'sales_org_currency_external_delta',
 
-                'sales_grp_currency',
-                'sales_grp_currency_minified',
-                'sales_grp_currency_delta',
+                'sales_grp_currency_external',
+                'sales_grp_currency_external_minified',
+                'sales_grp_currency_external_delta',
             ])
         );
 
-        $columns['sales'] = $columns['sales_grp_currency'];
-        $columns['sales_minified'] = $columns['sales_grp_currency_minified'];
-        $columns['sales_delta'] = $columns['sales_grp_currency_delta'];
-        $columns['sales_org_currency'] = $columns['sales_grp_currency'];
-        $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
-        $columns['sales_org_currency_delta'] = $columns['sales_grp_currency_delta'];
+        $columns['sales_external'] = $columns['sales_grp_currency_external'];
+        $columns['sales_external_minified'] = $columns['sales_grp_currency_external_minified'];
+        $columns['sales_external_delta'] = $columns['sales_grp_currency_external_delta'];
+        $columns['sales_org_currency_external'] = $columns['sales_grp_currency_external'];
+        $columns['sales_org_currency_external_minified'] = $columns['sales_grp_currency_external_minified'];
+        $columns['sales_org_currency_external_delta'] = $columns['sales_grp_currency_external_delta'];
 
         return [
             'slug'    => 'totals',

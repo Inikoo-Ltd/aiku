@@ -10,94 +10,66 @@ namespace App\Actions\Traits\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 trait WithRedoProductCategoryTimeSeries
 {
-    public function handle(ProductCategory $productCategory, array $frequencies, ?Command $command = null, bool $async = true): void
+    public function getJobUniqueId(string $from, string $to): string
     {
-        $type = ProductCategoryTypeEnum::from($this->restriction);
+        return "{$from}_{$to}";
+    }
 
-        if ($productCategory->type !== $type) {
-            $command?->error("Can only process {$type->value}s, $productCategory->name is a $productCategory->type");
-
-            return;
-        }
-
-        $from = null;
-
-        $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->restriction}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
-
-        if ($firstInvoicedDate && ($firstInvoicedDate < $productCategory->created_at)) {
-            $productCategory->update(['created_at' => $firstInvoicedDate]);
-        }
-
-        if ($productCategory->created_at) {
-            $from = $productCategory->created_at->toDateString();
-        }
-
+    public function handle(ProductCategory $productCategory, bool $async = false, ?string $from = null, ?string $to = null): void
+    {
         if ($productCategory->state == ProductCategoryStateEnum::IN_PROCESS) {
             return;
         }
 
-        if ($productCategory->state == ProductCategoryStateEnum::ACTIVE || $productCategory->state == ProductCategoryStateEnum::DISCONTINUING) {
-            $to = now()->toDateString();
-        } elseif ($productCategory->state == ProductCategoryStateEnum::DISCONTINUED) {
-            $to = $productCategory->discontinued_at;
+        if (!$from || !$to) {
+            $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->max('date');
 
-            $lastInvoicedDate = DB::table('invoice_transactions')
-                ->where("{$this->restriction}_id", $productCategory->id)
-                ->whereNull('deleted_at')
-                ->max('date');
-
-            if (!$to && !$lastInvoicedDate) {
+            if (!$firstInvoicedDate) {
                 return;
             }
 
-            if ($lastInvoicedDate) {
-                $lastInvoicedDate = Carbon::parse($lastInvoicedDate);
-            }
-
-            if ($lastInvoicedDate && (!$to || $lastInvoicedDate->greaterThan($to))) {
-                $to = $lastInvoicedDate;
-                $productCategory->update(['discontinued_at' => $to]);
-            }
-
-            if (!$to) {
-                return;
-            }
-
-            $to = $to->toDateString();
-        } else {
-            $to = DB::table('invoice_transactions')
-                ->where("{$this->restriction}_id", $productCategory->id)
-                ->whereNull('deleted_at')
-                ->max('date');
-
-            if (!$to) {
-                return;
-            }
-
-            $to = Carbon::parse($to);
-            $to = $to->toDateString();
+            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
+            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
         }
 
-        if ($from != null && $to != null) {
-            foreach ($frequencies as $frequency) {
-                if ($async) {
-                    ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to)->onQueue('low-priority');
-                } else {
-                    ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
+        foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            if ($async) {
+                ProcessProductCategoryTimeSeriesRecords::dispatch($productCategory->id, $frequency, $from, $to)->onQueue('low-priority');
+            } else {
+                ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
+            }
+        }
+    }
+
+    public function asJob(string $from, string $to): void
+    {
+        $tableName = (new $this->model())->getTable();
+        $query     = DB::table($tableName)->select('id')->where('type', $this->categoryType->value)->orderBy('id', 'desc');
+
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
+            foreach ($modelsData as $modelId) {
+                $instance = ProductCategory::find($modelId->id);
+                if (!$instance) {
+                    continue;
+                }
+
+                try {
+                    $this->handle($instance, false, $from, $to);
+                } catch (Throwable $e) {
+                    report($e);
                 }
             }
-        }
+        });
     }
 
     public function asCommand(Command $command): int
@@ -105,54 +77,32 @@ trait WithRedoProductCategoryTimeSeries
         $command->info($command->getName());
         $tableName = (new $this->model())->getTable();
         $query     = $this->prepareQuery($tableName, $command);
-        $count     = $query->count();
+        $query->where('type', $this->categoryType->value);
+        $count = $query->count();
         $bar       = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');
         $bar->start();
 
-        try {
-            $frequencyOption = $command->option('frequency');
-
-            if ($frequencyOption === 'all') {
-                $frequencies = TimeSeriesFrequencyEnum::cases();
-            } else {
-                $frequencies = [
-                    TimeSeriesFrequencyEnum::from($frequencyOption)
-                ];
-            }
-        } catch (Throwable $e) {
-            $command->error($e->getMessage());
-
-            return 1;
-        }
-
-        $query->chunk(
-            1000,
-            function (Collection $modelsData) use ($bar, $command, $frequencies) {
-                foreach ($modelsData as $modelId) {
-                    if ($this->modelAsHandleArg) {
-                        $model = (new $this->model());
-                        if ($this->hasSoftDeletes($model)) {
-                            $instance = $model->withTrashed()->find($modelId->id);
-                        } else {
-                            $instance = $model->find($modelId->id);
-                        }
-                    } else {
-                        $instance = $modelId->id;
-                    }
-
-                    try {
-                        $this->handle($instance, $frequencies, $command, $command->option('async'));
-                    } catch (Throwable $e) {
-                        $command->error($e->getMessage());
-                    }
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
+            foreach ($modelsData as $modelId) {
+                $instance = ProductCategory::find($modelId->id);
+                if (!$instance) {
                     $bar->advance();
+                    continue;
                 }
+
+                try {
+                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
+                } catch (Throwable $e) {
+                    $command->error($e->getMessage());
+                }
+
+                $bar->advance();
             }
-        );
+        });
 
         $bar->finish();
-        $command->info("");
+        $command->info('');
 
         return 0;
     }

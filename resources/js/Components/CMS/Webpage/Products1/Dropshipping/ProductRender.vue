@@ -157,6 +157,14 @@ const scrollToIndex = (index: number) => {
 }
 
 
+const onScroll = () => {
+    if (!mobileSlider.value) return
+
+    const el = mobileSlider.value
+    const slideWidth = el.clientWidth
+    currentIndex.value = Math.round(el.scrollLeft / slideWidth)
+}
+
 
 </script>
 
@@ -164,8 +172,7 @@ const scrollToIndex = (index: number) => {
     <div id="product-render" class="relative flex flex-col justify-between h-full ">
         <!-- Top Section -->
         <div>
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
-                :screenType />
+            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" :screenType />
 
             <!-- Product Image -->
             <component :is="product.canonical_url || product.url ? LinkIris : 'div'"
@@ -180,10 +187,18 @@ const scrollToIndex = (index: number) => {
                         <div v-if="images.length" class="md:hidden w-full relative aspect-square overflow-hidden">
 
                             <!-- MULTI IMAGE SLIDER -->
-                            <div v-if="images.length > 1" ref="mobileSlider" @touchstart="onTouchStart"
-                                @touchend="onTouchEnd" class="flex w-full h-full overflow-hidden">
+                             <div
+                                    v-if="images.length > 1"
+                                    ref="mobileSlider"
+                                    class="mobile-slider flex w-full h-full overflow-x-auto scroll-smooth snap-x snap-mandatory"
+                                    @scroll="onScroll"
+                                >
 
-                                <div v-for="(img, i) in images" :key="i" class="w-full h-full flex-shrink-0">
+                                <div
+                                    v-for="(img, i) in images"
+                                    :key="i"
+                                    class="w-full h-full flex-shrink-0 snap-start"
+                                >
 
                                     <Image :src="img" :alt="product.name"
                                         class="w-full h-full select-none pointer-events-none"
@@ -315,5 +330,14 @@ const scrollToIndex = (index: number) => {
     </div>
 </template>
 
+<style scoped>
+.mobile-slider {
+    -webkit-overflow-scrolling: touch; /* smooth momentum on iOS */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and old Edge */
+}
 
-<style scoped></style>
+.mobile-slider::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+}
+</style>

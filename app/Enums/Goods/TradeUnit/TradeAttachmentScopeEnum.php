@@ -21,6 +21,7 @@ enum TradeAttachmentScopeEnum: string
     case ALLERGEN_DECLARATIONS = 'allergen_declarations';
     case DOC = 'doc';
     case CPSR = 'cpsr';
+    case TEST_REPORTS = 'test_reports';
     case OTHER = 'other';
 
     case IFRA_PRIVATE = 'ifra_private';
@@ -30,6 +31,7 @@ enum TradeAttachmentScopeEnum: string
     case ALLERGEN_DECLARATIONS_PRIVATE = 'allergen_declarations_private';
     case DOC_PRIVATE = 'doc_private';
     case CPSR_PRIVATE = 'cpsr_private';
+    case TEST_REPORTS_PRIVATE = 'test_reports_private';
     case OTHER_PRIVATE = 'other_private';
 
 
@@ -43,6 +45,7 @@ enum TradeAttachmentScopeEnum: string
             'allergen_declarations'         => __('Allergen Declarations'),
             'doc'                           => __('Declaration of Conformity'),
             'cpsr'                          => 'CPSR',
+            'test_reports'                  => __('Test Reports'),
             'other'                         => __('Other'),
             'ifra_private'                  => 'UFRA'.' ('.__('Private').')',
             'sds_private'                   => 'SDS'.' ('.__('Private').')',
@@ -51,6 +54,7 @@ enum TradeAttachmentScopeEnum: string
             'allergen_declarations_private' => __('Allergen Declarations').' ('.__('Private').')',
             'doc_private'                   => __('Declaration of Conformity (Private)').' ('.__('Private').')',
             'cpsr_private'                  => 'CPSR'.' ('.__('Private').')',
+            'test_reports_private'          => __('Test Reports').' ('.__('Private').')',
             'other_private'                 => __('Other').' ('.__('Private').')',
         ];
     }

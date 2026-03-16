@@ -68,6 +68,7 @@ const component = computed(() => {
 
 onMounted(() => {
     layout.root_active = "retina.ecom.basket."
+    window.scrollTo(0, 0)
 })
 onUnmounted(() => {
     layout.root_active = ""

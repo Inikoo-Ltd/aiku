@@ -143,7 +143,6 @@ class RunBasketLowStockEmailBulkRuns
                             $emailBulkRun,
                             $customer,
                             [
-                                'is_test'       => false,
                                 'outbox_id'     => $outbox->id,
                                 'email_address' => $customer->email,
                                 'provider'      => DispatchedEmailProviderEnum::SES,
@@ -229,7 +228,7 @@ class RunBasketLowStockEmailBulkRuns
 
             $productImage = Arr::get(
                 $dataProduct->imageSources(200, 200),
-                'original'
+                'png'
             );
 
             $availableQuantity = $dataProduct->available_quantity ?? 0;

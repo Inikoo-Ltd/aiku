@@ -29,12 +29,11 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
         $firstModel = is_array($models) ? ($models[0] ?? []) : [];
 
         $fields = [
-            'baskets_created_grp_currency',
             'invoices',
             'registrations',
             'registrations_with_orders',
             'registrations_without_orders',
-            'sales_grp_currency',
+            'sales_grp_currency_external',
         ];
 
         $summedData = $this->sumIntervalValuesFromArrays($models, $fields);
@@ -58,19 +57,9 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
                     'key_date_filter' => 'between[registered_at]',
                 ],
             ],
-            'inBasket' => [
-                'route_target' => [
-                    'name' => 'grp.overview.ordering.orders_in_basket.index',
-                    'parameters' => [],
-                    'key_date_filter' => 'between[date]',
-                ],
-            ],
         ];
 
         $columnsConfig = [
-            'baskets_created_grp_currency' => $routeTargets['inBasket'],
-            'baskets_created_grp_currency_minified' => $routeTargets['inBasket'],
-
             'registrations_with_orders',
             'registrations_without_orders',
 
@@ -80,9 +69,9 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
             'invoices_minified' => $routeTargets['invoices'],
             'invoices_delta',
 
-            'sales_grp_currency',
-            'sales_grp_currency_minified',
-            'sales_grp_currency_delta',
+            'sales_grp_currency_external',
+            'sales_grp_currency_external_minified',
+            'sales_grp_currency_external_delta',
         ];
 
         $registrationsColumns = $this->getDashboardColumnsFromArray($summedData, [
@@ -108,11 +97,9 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
             $registrationsColumns
         );
 
-        $columns['baskets_created_org_currency'] = $columns['baskets_created_grp_currency'];
-        $columns['baskets_created_org_currency_minified'] = $columns['baskets_created_grp_currency_minified'];
-        $columns['sales_org_currency'] = $columns['sales_grp_currency'];
-        $columns['sales_org_currency_minified'] = $columns['sales_grp_currency_minified'];
-        $columns['sales_org_currency_delta'] = $columns['sales_grp_currency_delta'];
+        $columns['sales_org_currency_external'] = $columns['sales_grp_currency_external'];
+        $columns['sales_org_currency_external_minified'] = $columns['sales_grp_currency_external_minified'];
+        $columns['sales_org_currency_external_delta'] = $columns['sales_grp_currency_external_delta'];
 
         return [
             'slug'    => 'totals',
@@ -147,7 +134,7 @@ class DashboardTotalOrganisationsSalesResource extends JsonResource
                         $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
 
                         $columns[$columnKey][$interval]['tooltip'] = sprintf(
-                            'With orders: %s | Without orders: %s',
+                            'With product in basket: %s | With empty basket: %s',
                             number_format($withOrders),
                             number_format($withoutOrders)
                         );

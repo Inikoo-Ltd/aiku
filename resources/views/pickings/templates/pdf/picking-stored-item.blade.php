@@ -44,7 +44,13 @@
         <td style="width: 50%;">
             <strong>To:</strong> <br>
             {{ $customer->name ?? 'Customer Name' }}<br>
-            {{ $deliveryAddress ?? 'Delivery Address' }}<br>
+            @if($palletReturn->is_collection)
+                <br> 
+                {{ __('Set for collection on Warehouse') }}: <br>
+                {{ $shop->address->formatted_address }}<br>
+            @else
+                {{ $deliveryAddress ?? 'Delivery Address' }}<br>
+            @endif
         </td>
     </tr>
 </table>

@@ -17,12 +17,14 @@ enum PickingTypeEnum: string
 
     case PICK = 'pick';
     case NOT_PICK = 'not-pick';
+    case MAGIC_PICK = 'magic_pick';
 
     public static function labels(): array
     {
         return [
             'pick'     => __('Pick'),
             'not-pick' => __('Not Pick'),
+            'magic_pick' => __('Magic Pick'),
         ];
     }
 

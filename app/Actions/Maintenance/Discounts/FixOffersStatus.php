@@ -14,6 +14,7 @@ use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class FixOffersStatus
 {
@@ -32,7 +33,12 @@ class FixOffersStatus
 
         $offers = Offer::where('shop_id', $shop->id)->get();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $progressBar = $command->getOutput()->createProgressBar($offers->count());
+        $progressBar->setFormat('aiku_eta');
         $progressBar->start();
 
         /** @var Offer $offer */

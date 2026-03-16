@@ -98,6 +98,10 @@ class ShowPlatform extends OrgAction
                     $this->tab == PlatformTabsEnum::PRODUCTS->value
                         ? fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))
                         : Inertia::lazy(fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
+                PlatformTabsEnum::TOP_LISTED_FAMILIES->value =>
+                    $this->tab == PlatformTabsEnum::TOP_LISTED_FAMILIES->value
+                        ? fn () => TopListedProductsResource::collection(IndexTopListedFamiliesInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_LISTED_FAMILIES->value))
+                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedFamiliesInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_LISTED_FAMILIES->value))),
                 PlatformTabsEnum::TOP_LISTED_PRODUCTS->value =>
                     $this->tab == PlatformTabsEnum::TOP_LISTED_PRODUCTS->value
                         ? fn () => TopListedProductsResource::collection(IndexTopListedProductsInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_LISTED_PRODUCTS->value))
@@ -123,6 +127,10 @@ class ShowPlatform extends OrgAction
         )->table(
             IndexPortfoliosInPlatform::make()->tableStructure(
                 prefix: PlatformTabsEnum::PRODUCTS->value,
+            )
+        )->table(
+            IndexTopListedFamiliesInPlatform::make()->tableStructure(
+                prefix: PlatformTabsEnum::TOP_LISTED_FAMILIES->value,
             )
         )->table(
             IndexTopListedProductsInPlatform::make()->tableStructure(

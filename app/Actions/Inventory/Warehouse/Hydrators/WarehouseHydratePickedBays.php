@@ -26,17 +26,16 @@ class WarehouseHydratePickedBays implements ShouldBeUnique
 
     public function handle(Warehouse $warehouse): void
     {
-        $allPickedBays            = $warehouse->pickedBays()->count();
+        $allPickedBays     = $warehouse->pickedBays()->count();
         $currentPickedBays = $warehouse->pickedBays()->where('status', true)->count();
-        $usedPickedBays = $warehouse->pickedBays()->where('status', true)->whereNotNull('delivery_note_id')->count();
+        $usedPickedBays    = $warehouse->pickedBays()->where('status', true)->where('number_delivery_notes', '>', 0)->count();
 
 
         $stats = [
-            'number_current_picked_bays' => $currentPickedBays,
+            'number_current_picked_bays'        => $currentPickedBays,
             'number_current_picked_bays_in_use' => $usedPickedBays,
-            'number_picked_bays' => $allPickedBays
+            'number_picked_bays'                => $allPickedBays
         ];
-
 
 
         $warehouse->stats()->update($stats);

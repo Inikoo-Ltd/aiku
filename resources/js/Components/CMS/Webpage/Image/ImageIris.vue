@@ -140,6 +140,8 @@ const idxSlideLoading = ref<number | null>(null)
                     :src="image?.source"
                     :alt="image?.properties?.alt || `image ${index + 1}`"
                     :imageCover="true"
+                    :height="getStyles(image.properties, screenType, false)?.height"
+						        :width="getStyles(image.properties, screenType, false)?.width" 
                     :style="{
                         ...getStyles(fieldValue?.value?.layout?.properties, screenType),
                         ...getStyles(image?.properties, screenType)
@@ -153,10 +155,17 @@ const idxSlideLoading = ref<number | null>(null)
             </template>
             </component>
           <div v-else class="block w-full h-full">
-            <Image :src="image?.source" :alt="image?.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
+            <Image 
+              :src="image?.source" 
+              :alt="image?.properties?.alt || `image ${index + 1}`" 
+              :imageCover="true" :style="{
               ...getStyles(fieldValue?.value?.layout?.properties, screenType),
               ...getStyles(image?.properties, screenType)
-            }" :imgAttributes="{ ...image?.attributes, loading: 'lazy' }" />
+              }" 
+              :imgAttributes="{ ...image?.attributes, loading: 'lazy' }" 
+              :height="getStyles(image.properties, screenType, false)?.height"
+						  :width="getStyles(image.properties, screenType, false)?.width" 
+              />
           </div>
         </SwiperSlide>
       </Swiper>
@@ -220,8 +229,15 @@ const idxSlideLoading = ref<number | null>(null)
             @start="() => idxSlideLoading = index"
             @finish="() => idxSlideLoading = null"
           >
-            <Image v-if="image?.source" :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`"
-              :imageCover="true" class="w-full h-full aspect-square object-cover rounded-lg" :style="{
+            <Image 
+              v-if="image?.source" 
+              :src="image.source" 
+              :alt="image.properties?.alt || `image ${index + 1}`"
+              :imageCover="true" 
+              class="w-full h-full aspect-square object-cover rounded-lg"
+              :height="getStyles(image.properties, screenType, false)?.height"
+						  :width="getStyles(image.properties, screenType, false)?.width" 
+              :style="{
                 ...getStyles(fieldValue.value.layout?.properties, screenType),
                 ...getStyles(image.properties, screenType)
               }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }"
@@ -236,12 +252,11 @@ const idxSlideLoading = ref<number | null>(null)
             </div>
           </component>
 
-          <div v-if="fieldValue.value.caption?.use_caption" class="flex justify-center mt-2">
-            <div v-if="fieldValue.value.caption?.use_caption">
-              <span v-if="image.caption" :style="getStyles(fieldValue.value.caption?.properties, screenType)">
-                {{ image.caption }}
+          <div v-if="fieldValue.value.caption?.use_caption" class="flex mt-2">
+            <div class="text-center w-full">
+              <span  :style="getStyles(fieldValue.value.caption?.properties, screenType)">
+                <div v-html="image.caption"></div>
               </span>
-              <span v-else class="text-gray-300 font-semibold">{{ trans("No caption") }}</span>
             </div>
           </div>
         </div>

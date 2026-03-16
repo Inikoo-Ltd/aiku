@@ -8,6 +8,8 @@
 
 namespace App\Console;
 
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
+use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
@@ -25,6 +27,7 @@ use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
 use App\Actions\Helpers\Intervals\ResetWeeklyIntervals;
 use App\Actions\Helpers\Intervals\ResetYearIntervals;
 use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
+use App\Actions\HydrateHealthRank;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -306,14 +309,6 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
-        //        $this->logSchedule(
-        //            $schedule->command('faire:orders')->hourly()->sentryMonitor(
-        //                monitorSlug: 'GetFaireOrders',
-        //            ),
-        //            name: 'GetFaireOrders',
-        //            type: 'command',
-        //            scheduledAt: now()->format('H:i')
-        //        );
 
         $this->logSchedule(
             $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
@@ -325,7 +320,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('19:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'SaveWebsitesSitemap',
             ),
             name: 'SaveWebsitesSitemap',
@@ -334,7 +329,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
+            $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('20:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'ConsolidateRecurringBills',
             ),
             name: 'ConsolidateRecurringBills',
@@ -370,13 +365,14 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
+            $schedule->command('art hydrate:mismatch_detected')->weeklyOn(1, '03:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateMismatchDetected',
             ),
-            name: 'PurgeDownloadPortfolioCustomerSalesChannel',
-            type: 'job',
+            name: 'HydrateMismatchDetected',
+            type: 'command',
             scheduledAt: now()->format('H:i')
         );
+
 
         $this->logSchedule(
             $schedule->job(SendReorderRemainderEmails::makeJob())->dailyAt('15:00')->timezone('UTC')->sentryMonitor(
@@ -397,47 +393,20 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->command('process:time-series', ['--frequency' => 'daily'])->dailyAt('01:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ProcessDailyTimeSeries',
+            $schedule->job(GetFaireOrdersAllShops::makeJob())->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'GetFaireOrdersAllShops',
             ),
-            name: 'ProcessDailyTimeSeries',
-            type: 'command',
+            name: 'GetFaireOrdersAllShops',
+            type: 'job',
             scheduledAt: now()->format('H:i')
         );
 
         $this->logSchedule(
-            $schedule->command('process:time-series', ['--frequency' => 'weekly'])->weeklyOn(1, '02:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ProcessWeeklyTimeSeries',
+            $schedule->job(GetFaireProductsAllShops::makeJob())->twiceDailyAt(12, 17)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'GetFaireProductsAllShops',
             ),
-            name: 'ProcessWeeklyTimeSeries',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );
-
-        $this->logSchedule(
-            $schedule->command('process:time-series', ['--frequency' => 'monthly'])->monthlyOn(1, '03:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ProcessMonthlyTimeSeries',
-            ),
-            name: 'ProcessMonthlyTimeSeries',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );
-
-        $this->logSchedule(
-            $schedule->command('process:time-series', ['--frequency' => 'quarterly'])->quarterlyOn(1, '04:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ProcessQuarterlyTimeSeries',
-            ),
-            name: 'ProcessQuarterlyTimeSeries',
-            type: 'command',
-            scheduledAt: now()->format('H:i')
-        );
-
-        $this->logSchedule(
-            $schedule->command('process:time-series', ['--frequency' => 'yearly'])->yearlyOn(1, 1, '05:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'ProcessYearlyTimeSeries',
-            ),
-            name: 'ProcessYearlyTimeSeries',
-            type: 'command',
+            name: 'GetFaireProductsAllShops',
+            type: 'job',
             scheduledAt: now()->format('H:i')
         );
 
@@ -489,6 +458,32 @@ class Kernel extends ConsoleKernel
         //     scheduledAt: now()->format('H:i')
         // );
 
+        $this->logSchedule(
+            $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
+            ),
+            name: 'PurgeDownloadPortfolioCustomerSalesChannel',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('dispatched-email:clean-provider-dispatch-id')->dailyAt('3:30')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CleanProviderDispatchID',
+            ),
+            name: 'CleanProviderDispatchID',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(HydrateHealthRank::makeJob())->dailyAt('04:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateHealthRank',
+            ),
+            name: 'HydrateHealthRank',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void

@@ -48,12 +48,7 @@ class GetMailshotRecipientsQueryBuilder
         }
 
         return null;
-        // return match (Arr::get($mailshot->recipients_recipe, 'recipient_builder_type')) {
-        //     'query' => $this->getRecipientsFromQuery($mailshot),
-        //     'prospects' => $this->getRecipientsFromProspectsList(Arr::get($mailshot->recipients_recipe, 'recipient_builder_data.prospects')),
-        //     'custom_prospects_query' => $this->getRecipientsFromCustomQuery($mailshot),
-        //     default => null
-        // };
+
     }
 
     /**

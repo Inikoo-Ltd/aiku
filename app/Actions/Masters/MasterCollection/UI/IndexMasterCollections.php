@@ -81,6 +81,7 @@ class IndexMasterCollections extends OrgAction
             'master_shops.slug as master_shop_slug',
             'master_shops.code as master_shop_code',
             'master_shops.name as master_shop_name',
+            'master_collections.health_rank',
         ];
 
         if ($prefix === MasterCollectionsTabsEnum::SALES->value) {
@@ -89,17 +90,17 @@ class IndexMasterCollections extends OrgAction
                 timeSeriesRecordsTable: 'master_collection_time_series_records',
                 foreignKey: 'master_collection_id',
                 aggregateColumns: [
-                    'sales_grp_currency' => 'sales',
-                    'invoices'           => 'invoices'
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices'
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true
             );
 
-            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
@@ -178,8 +179,9 @@ class IndexMasterCollections extends OrgAction
                 'number_current_master_families',
                 'number_current_master_products',
                 'number_current_master_collections',
-                'sales',
-                'invoices'
+                'sales_grp_currency_external',
+                'invoices',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -210,17 +212,18 @@ class IndexMasterCollections extends OrgAction
             if ($sales) {
                 $table
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon');
                 /*   $table->column(key: 'parents', label: __('Parents'), canBeHidden: false); */
                 $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'name', label: __(key: 'Name'), canBeHidden: false, sortable: true, searchable: true);
-                $table->column(key: 'master_department', label: __('M. Departement'), canBeHidden: false, sortable: true, searchable: false);
+                $table->column(key: 'master_department', label: __('M. Department'), canBeHidden: false, sortable: true, searchable: false);
                 $table->column(key: 'master_sub_department', label: __('M. Sub-department'), canBeHidden: false, sortable: true, searchable: false);
                 $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
                 $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);

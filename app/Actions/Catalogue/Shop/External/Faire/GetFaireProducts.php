@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 01 Mar 2026 22:05:48 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 namespace App\Actions\Catalogue\Shop\External\Faire;
 
 use App\Actions\Catalogue\Product\StoreProduct;
@@ -30,14 +36,14 @@ class GetFaireProducts extends OrgAction
 
     public function handle(Shop $shop, array $modelData, ?Command $command = null): void
     {
-        if($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::FAIRE) {
+        if ($shop->type !== ShopTypeEnum::EXTERNAL || $shop->engine !== ShopEngineEnum::FAIRE) {
             return;
         }
 
         $faireProducts = [];
         $limit         = 200;
         $page          = 1;
-        $filters = [];
+        $filters       = [];
 
         if ($minHours = Arr::get($modelData, 'min_hours')) {
             $filters = [
@@ -68,7 +74,6 @@ class GetFaireProducts extends OrgAction
 
 
         foreach ($faireProducts as $faireProduct) {
-
             $faireState = Arr::get($faireProduct, 'lifecycle_state');
             if (!in_array($faireState, ['PUBLISHED', 'UNPUBLISHED'])) {
                 continue;
@@ -87,45 +92,42 @@ class GetFaireProducts extends OrgAction
                     continue;
                 }
 
-                $product = Product::where('shop_id', $shop->id)->where('code', $faireSKU)->first();
+                $product = Product::where('shop_id', $shop->id)->where('marketplace_id', $variant['id'])->first();
 
                 if ($product) {
-
                     try {
                         UpdateProduct::make()->action($product, [
-                                'code'           => $faireSKU,
-                                'name'           => $faireProduct['name'].' - '.$variant['name'],
-                                'description'    => $faireProduct['description'],
-                                'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
-                                'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
-                                'units'          => $faireProduct['unit_multiplier'],
-                                'marketplace_id' => $variant['id'],
-                                'data'           => [
-                                    'faire' => $variant
-                                ]
-                            ], strict: false);
+                            'code'                  => $faireSKU,
+                            'name'                  => $faireProduct['name'].' - '.$variant['name'],
+                            'description'           => $faireProduct['description'],
+                            'rrp'                   => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
+                            'price'                 => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                            'units'                 => $faireProduct['unit_multiplier'],
+                            'marketplace_second_id' => $faireProduct['id'],
+                            'data'                  => [
+                                'faire' => $variant
+                            ]
+                        ], strict: false);
                     } catch (Exception $e) {
                         $command?->error("Product update failed: ".$faireProduct['name'].' - '.$variant['name'].' '.$e->getMessage());
                     }
-
-
                 } else {
-
                     try {
                         $product = StoreProduct::make()->action($shop, [
-                            'code'           => $faireSKU,
-                            'name'           => $faireProduct['name'].' - '.$variant['name'],
-                            'description'    => $faireProduct['description'],
-                            'rrp'            => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
-                            'price'          => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
-                            'unit'           => 'Piece',
-                            'units'          => $faireProduct['unit_multiplier'],
-                            'is_main'        => true,
-                            'trade_config'   => ProductTradeConfigEnum::AUTO,
-                            'status'         => ProductStatusEnum::FOR_SALE,
-                            'state'          => ProductStateEnum::IN_PROCESS,
-                            'marketplace_id' => $variant['id'],
-                            'data'           => [
+                            'code'                  => $faireSKU,
+                            'name'                  => $faireProduct['name'].' - '.$variant['name'],
+                            'description'           => $faireProduct['description'],
+                            'rrp'                   => $this->extractFaireRetailPrices($shop, Arr::get($variant, 'prices')),
+                            'price'                 => $faireProduct['unit_multiplier'] * $this->extractFaireCostPrices($shop, Arr::get($variant, 'prices')),
+                            'unit'                  => 'Piece',
+                            'units'                 => $faireProduct['unit_multiplier'],
+                            'is_main'               => true,
+                            'trade_config'          => ProductTradeConfigEnum::AUTO,
+                            'status'                => ProductStatusEnum::FOR_SALE,
+                            'state'                 => ProductStateEnum::IN_PROCESS,
+                            'marketplace_id'        => $variant['id'],
+                            'marketplace_second_id' => $faireProduct['id'],
+                            'data'                  => [
                                 'faire' => $variant
                             ]
                         ], strict: false);
@@ -134,28 +136,26 @@ class GetFaireProducts extends OrgAction
                         $command?->error("Product creation failed: ".$faireProduct['name'].' - '.$variant['name'].' '.$e->getMessage());
                     }
                 }
-
-
             }
         }
     }
 
     public function extractFaireRetailPrices(Shop $shop, array $prices): float
     {
-        $found = false;
-        $rrp = Arr::get($prices, '0.retail_price.amount_minor');
+        $found         = false;
+        $rrp           = Arr::get($prices, '0.retail_price.amount_minor');
         $faireCurrency = Arr::get($prices, '0.retail_price.currency');
 
         foreach ($prices as $price) {
             if (Arr::get($price, 'retail_price.currency') === $shop->currency->code) {
                 $found = true;
-                $rrp = Arr::get($price, 'retail_price.amount_minor');
+                $rrp   = Arr::get($price, 'retail_price.amount_minor');
             }
         }
 
-        if (! $found) {
+        if (!$found) {
             $currency = Currency::where('code', $faireCurrency)->first();
-            $rrp = GetCurrencyExchange::run($currency, $shop->currency);
+            $rrp      = GetCurrencyExchange::run($currency, $shop->currency);
         }
 
         return $rrp / 100;
@@ -163,20 +163,20 @@ class GetFaireProducts extends OrgAction
 
     public function extractFaireCostPrices(Shop $shop, array $prices): float
     {
-        $found = false;
-        $cost = Arr::get($prices, '0.wholesale_price.amount_minor');
+        $found         = false;
+        $cost          = Arr::get($prices, '0.wholesale_price.amount_minor');
         $faireCurrency = Arr::get($prices, '0.wholesale_price.currency');
 
         foreach ($prices as $price) {
             if (Arr::get($price, 'wholesale_price.currency') === $shop->currency->code) {
                 $found = true;
-                $cost = Arr::get($price, 'wholesale_price.amount_minor');
+                $cost  = Arr::get($price, 'wholesale_price.amount_minor');
             }
         }
 
-        if (! $found) {
+        if (!$found) {
             $currency = Currency::where('code', $faireCurrency)->first();
-            $cost = GetCurrencyExchange::run($currency, $shop->currency);
+            $cost     = GetCurrencyExchange::run($currency, $shop->currency);
         }
 
         return $cost / 100;

@@ -69,6 +69,11 @@ class GetGroupDashboardTimeSeriesData
 
         $faireInvoiceCategories = collect($allInvoiceCategories)
             ->filter(fn ($category) => str_contains(strtolower($category['name'] ?? ''), 'faire'))
+            ->map(function ($category) {
+                $category['is_global_marketplaces'] = true;
+
+                return $category;
+            })
             ->values()
             ->all();
 

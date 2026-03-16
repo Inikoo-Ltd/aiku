@@ -84,7 +84,7 @@ function getOutboxNameDisplay(outbox: Outbox) {
         name: outbox.name,
         showSchedule: isReorderReminder,
         scheduleText: isReorderReminder ? `${outbox.days_after} days` : '',
-        scheduleTooltip: trans(`Sent after ${outbox.days_after} days from last invoice`)
+        scheduleTooltip: trans(`Sent after :outboxDaysAfter days from last invoice`, { outboxDaysAfter: outbox.days_after ?? '0' })
     };
 }
 

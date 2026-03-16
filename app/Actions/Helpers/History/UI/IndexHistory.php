@@ -27,7 +27,7 @@ class IndexHistory
 
     public string $model;
 
-    public function handle($model, $prefix = null): LengthAwarePaginator|array|bool
+    public function handle($model, $prefix = null, $eventScopeFilter = null): LengthAwarePaginator|array|bool
     {
         $this->model = class_basename($model);
 
@@ -48,6 +48,11 @@ class IndexHistory
         $queryBuilder->orderBy('id', 'DESC');
         $queryBuilder->where('auditable_type', $this->model);
         $queryBuilder->where('event', '!=', AuditEventEnum::CUSTOMER_NOTE->value);
+
+        if ($eventScopeFilter) {
+            $queryBuilder->where('event', $eventScopeFilter);
+        }
+
         if (isset($model->id)) {
             $queryBuilder->where('auditable_id', $model->id);
         }

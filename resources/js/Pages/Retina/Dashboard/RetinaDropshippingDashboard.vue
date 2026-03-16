@@ -181,7 +181,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                         <FontAwesomeIcon icon="fas fa-receipt" class="text-gray-600" fixed-width aria-hidden="true"/>
                                     </dt>
 
-                                    <TaxNumberDisplay :tax_number="data.customer.tax_number" />
+                                    <TaxNumberDisplay :tax_number="data.customer.tax_number" :show_view_history_button="true" :view_history_link="'retina.sysadmin.vat-validation-history'" />
                                 </div>
                             </div>
 

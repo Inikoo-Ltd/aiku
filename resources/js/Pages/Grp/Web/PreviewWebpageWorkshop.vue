@@ -39,6 +39,7 @@ const isPreviewMode = ref(false)
 const activeBlock = ref<number | null>(null)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const key = ref(ulid())
+const blockRefs = new Map<number, HTMLElement>()
 const defaultCurrency = {
   code: "GBP",
   symbol: "£",
@@ -103,6 +104,26 @@ const reloadPage = (withkey = false) => {
   if (withkey) key.value = ulid()
 }
 
+
+
+const setBlockRef = (el: HTMLElement | null, idx: number) => {
+  if (!el) return
+  blockRefs.set(idx, el)
+}
+
+const isNeedBottom = (idx:number) => {
+  const el = blockRefs.get(idx)
+  if (!el) return false
+
+  const rect = el.getBoundingClientRect()
+
+  // jika terlalu dekat top viewport
+  if (rect.top < 80) return true
+
+  return false
+}
+
+
 provide("reloadPage", reloadPage)
 
 onMounted(() => {
@@ -137,12 +158,13 @@ watch(filterBlock, () => {
         <div v-if="data?.layout?.web_blocks?.length">
           <TransitionGroup tag="div" name="list" class="relative"> 
             <template v-for="(block, idx) in data.layout.web_blocks" :key="block.id">
-              <section v-show="showWebpage(block)" :data-block-id="idx" class="w-full min-h-[10px] relative"
+              <section v-show="showWebpage(block)" :data-block-id="idx"   :ref="el => setBlockRef(el, idx)" class="w-full min-h-[10px] relative"
                 :class="{ 'border-4 active-block': activeBlock === idx }"
                 :style="activeBlock === idx ? { borderColor: layout?.app?.theme?.[0] } : {}"
                 @click="() => sendMessageToParent('activeBlock', idx)">
                 <!-- Toolbar Controls -->
-                <div v-if="activeBlock === idx" class="trapezoid-button" @click.stop>
+                <div v-if="activeBlock === idx" class="trapezoid-button"
+                  :class="{ 'trapezoid-bottom': isNeedBottom(idx) }" @click.stop>
                   <div class="flex" v-if="editable">
                     <div v-tooltip="trans('Add Block Before')"
                       class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition"
@@ -196,16 +218,26 @@ watch(filterBlock, () => {
 
 <style lang="scss">
 .trapezoid-button {
-  @apply absolute z-[90] top-[-37px] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
+  @apply absolute z-[90] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
   transform: translateX(-50%);
   background-color: v-bind('layout?.app?.theme[0]') !important;
   clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
   box-shadow: 0 4px 0px v-bind('layout?.app?.theme[0]') !important;
   border: none;
 
+  top: -37px;
+
   &:hover {
     background-color: v-bind('layout?.app?.theme[0]') !important;
   }
+}
+
+/* jika index === 1 → pindah ke bawah */
+.trapezoid-bottom {
+  top: auto;
+  bottom: -37px;
+  clip-path: polygon(0% 0%, 100% 0%, 85% 100%, 15% 100%);
+  box-shadow: 0 -4px 0px v-bind('layout?.app?.theme[0]') !important;
 }
 
 #jsd-widget {

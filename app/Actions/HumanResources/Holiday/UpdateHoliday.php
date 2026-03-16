@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\Holiday\HolidayTypeEnum;
 use App\Models\HumanResources\Holiday;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
@@ -28,6 +29,13 @@ class UpdateHoliday extends OrgAction
             $modelData['year'] = (int) date('Y', strtotime($modelData['from']));
         }
 
+        if (Arr::has($modelData, 'is_recurring')) {
+            $data = Arr::get($modelData, 'data', $holiday->data ?? []);
+            $data['is_recurring'] = (bool) $modelData['is_recurring'];
+            $modelData['data'] = $data;
+            unset($modelData['is_recurring']);
+        }
+
         $holiday->update($modelData);
 
         return $holiday->refresh();
@@ -42,21 +50,33 @@ class UpdateHoliday extends OrgAction
             'from'  => ['sometimes', 'required', 'date'],
             'to'    => ['sometimes', 'required', 'date', 'after_or_equal:from'],
             'data'  => ['nullable', 'array'],
+            'is_recurring' => ['nullable', 'boolean'],
         ];
     }
 
     public function action(Holiday $holiday, array $modelData): Holiday
     {
-        return $this->handle($holiday, $modelData);
+        $this->asAction = true;
+        $this->initialisation($holiday->organisation, $modelData);
+
+        return $this->handle($holiday, $this->validatedData);
     }
 
-    public function asController(Holiday $holiday, ActionRequest $request): Holiday
+    public function asController(Organisation $organisation, Holiday $holiday, ActionRequest $request): Holiday
     {
-        return $this->handle($holiday, $request->validated());
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($holiday, $this->validatedData);
     }
 
     public function htmlResponse(Holiday $holiday): RedirectResponse
     {
-        return Redirect::back()->with('success', __('Holiday updated successfully.'));
+        request()->session()->flash('notification', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('Holiday successfully updated.'),
+        ]);
+
+        return Redirect::back();
     }
 }

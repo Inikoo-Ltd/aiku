@@ -1,4 +1,5 @@
-<script setup lang='ts'>
+<script setup lang="ts">
+import { computed } from 'vue'
 import { useRangeFromNow } from '@/Composables/useFormatTime'
 import SliderLandscape from "@/Components/Banners/Slider/SliderLandscape.vue"
 import SliderSquare from "@/Components/Banners/Slider/SliderSquare.vue"
@@ -6,62 +7,134 @@ import Image from '@/Components/Image.vue'
 import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
-    data: {
-        type: string
-        compiled_layout: {}
-        published_snapshot: {
-            publisher: string
-            publisher_avatar: string
-            comment: string
-            published_at: string
-        }
+  data: {
+    type: string
+    compiled_layout: any
+    published_snapshot?: {
+      publisher?: string
+      publisher_avatar?: string
+      comment?: string
+      published_at?: string
     }
+    ratio?: string
+  }
 }>()
 
+/*
+  Ratio logic:
+  - "4/1"
+  - "1/1"
+  - "1.77"
+  - undefined → fallback based on type
+*/
+
+const rawRatio = computed(() => props.data?.ratio)
+
+const ratioStyle = computed(() => {
+  const ratio = rawRatio.value
+
+  if (!ratio) {
+    return props.data.type === 'landscape'
+      ? { paddingTop: '20%' }     // 4/1
+      : { paddingTop: '100%' }    // 1/1
+  }
+
+  if (ratio.includes('/')) {
+    const [w, h] = ratio.split('/').map(Number)
+    if (w > 0 && h > 0) {
+      return { paddingTop: `${(h / w) * 100}%` }
+    }
+  }
+
+  const numeric = Number(ratio)
+  if (!isNaN(numeric) && numeric > 0) {
+    return { paddingTop: `${(1 / numeric) * 100}%` }
+  }
+
+  return props.data.type === 'landscape'
+    ? { paddingTop: '25%' }
+    : { paddingTop: '100%' }
+})
+
+const publishedAgo = computed(() => {
+  const publishedAt = props.data?.published_snapshot?.published_at
+  if (!publishedAt) return null
+  return `${useRangeFromNow(publishedAt)} ago`
+})
 </script>
 
 <template>
-    <!-- If banner is 'landscape' -->
-    <div v-if="data.type == 'landscape'" class="">
-        <div v-if="data.published_snapshot" class="w-full bg-white flex items-center justify-between py-3 px-4">
-            <div class="flex gap-x-2">
-                <div v-if="data?.published_snapshot?.publisher_avatar" class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-gray-300">
-                    <Image :src="data.published_snapshot.publisher_avatar" />
-                </div>
-                <div v-if="data.published_snapshot?.publisher" class="font-bold text-lg leading-none">{{ data.published_snapshot.publisher }}</div>
-                <div v-else class=" leading-none text-gray-400 italic">{{ trans("Not published yet") }}</div>
-                <div v-if="data.published_snapshot?.comment" class="text-sm text-gray-500 italic">
-                    ({{ data.published_snapshot.comment }})
-                </div>
-            </div>
-            <div v-if="data.published_snapshot.published_at" class="text-sm text-gray-600 tracking-wide text-right">
-                Published at <span class="font-bold">{{ useRangeFromNow(data.published_snapshot.published_at) }}</span> ago
-            </div>
+  <div class="w-full bg-white border border-gray-300 rounded-md overflow-hidden">
+    <div
+      v-if="data.published_snapshot"
+      class="w-full flex items-center justify-between py-3 px-4 border-b"
+    >
+      <div class="flex gap-2 items-center min-w-0">
+        <div
+          v-if="data?.published_snapshot?.publisher_avatar"
+          class="h-6 w-6 rounded-full overflow-hidden ring-1 ring-gray-300 shrink-0"
+        >
+          <Image :src="data.published_snapshot.publisher_avatar" />
         </div>
-        <div class="aspect-[2/1] md:aspect-[3/1] lg:aspect-[4/1] w-auto min-h-24 md:min-h-48 max-h-60">
-            <SliderLandscape :data="data.compiled_layout" :production="true" />
+
+        <div
+          v-if="data.published_snapshot?.publisher"
+          class="font-semibold text-sm truncate"
+        >
+          {{ data.published_snapshot.publisher }}
         </div>
+
+        <div v-else class="text-gray-400 italic text-sm">
+          {{ trans("Not published yet") }}
+        </div>
+
+        <div
+          v-if="data.published_snapshot?.comment"
+          class="text-xs text-gray-500 italic truncate"
+        >
+          ({{ data.published_snapshot.comment }})
+        </div>
+      </div>
+
+      <div
+        v-if="data.published_snapshot?.published_at"
+        class="text-xs text-gray-600 shrink-0"
+      >
+        {{ publishedAgo }}
+      </div>
+    </div>
+    
+
+    <div class="relative w-full overflow-hidden">
+      <div :style="ratioStyle"></div>
+      <div class="absolute inset-0">
+        <div class="w-full h-full flex justify-center">
+          <div
+            v-if="data.type === 'square'"
+            class="w-full h-full flex justify-center"
+          >
+            <SliderSquare
+              :data="data.compiled_layout"
+              view="desktop"
+              :ratio="rawRatio"
+            />
+          </div>
+
+          <div
+            v-else
+            class="w-full max-w-[1200px] mx-auto"
+          >
+            <SliderLandscape
+              :data="data.compiled_layout"
+              view="desktop"
+              :ratio="rawRatio"
+            />
+          </div>
+
+        </div>
+
+      </div>
     </div>
 
-    <!-- If banner is 'square' -->
-    <div v-else class="">
-        <div v-if="data.published_snapshot" class="w-full bg-white flex items-center justify-between py-3 px-4">
-            <div class="flex gap-x-2">
-                <div class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-gray-300">
-                    <Image :src="data.published_snapshot.publisher_avatar" />
-                </div>
-                <div class="font-bold text-lg leading-none">{{ data.published_snapshot.publisher }}</div>
-                <div v-if="data.published_snapshot.comment" class="text-sm text-gray-500 italic">
-                    ({{ data.published_snapshot.comment }})
-                </div>
-            </div>
-            <div v-if="data.published_snapshot.published_at" class="text-sm text-gray-600 tracking-wide text-right">
-                Published at <span class="font-bold">{{ useRangeFromNow(data.published_snapshot.published_at) }}</span> ago
-            </div>
-        </div>
-        <div class="aspect-[2/1] md:aspect-[3/1] lg:aspect-[4/1] w-fit h-56 md:h-60">
-            <SliderSquare :data="data.compiled_layout" :production="true" />
-        </div>
-    </div>
-    <!-- <pre>{{ data.compiled_layout }}</pre> -->
+  </div>
 </template>

@@ -178,7 +178,6 @@ const fetchRecommendersToGetProducts = async () => {
                     }
                 }
             )
-            console.log('product detail:', response.data.data)
             listProducts.value = response.data.data
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
@@ -214,7 +213,7 @@ onMounted(() => {
                 </div>
             </div>
             
-            <div class="py-4 px-3 md:px-12">
+            <div class="py-4 px-3 md:px-12 swiper-container">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"
@@ -256,4 +255,10 @@ onMounted(() => {
 .swiper-nav-button svg {
     @apply text-gray-700 w-4 h-4;
 }
+
+:deep(.swiper-container .swiper-wrapper) {
+  height: 100% !important;
+}
+
+
 </style>

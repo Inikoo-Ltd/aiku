@@ -15,6 +15,7 @@ const props = defineProps<{
     fieldData: {
         placeholder: string
         required: boolean
+        isWithRequiredField?: boolean
     }
 }>()
 
@@ -33,7 +34,11 @@ const inAdministrativeAreas = (administrativeArea: string, countryID: number) =>
 const addressFields = (countryID: number) => {
     return props.options.countriesAddressData[countryID]['fields'];
 }
-const handleChange = (aa) => {
+const handleChange = (fieldAddress?: string) => {
+    if (fieldAddress) {
+        props.form.clearErrors(fieldAddress)
+    }
+    
     delete addressValues['country_code']
     props.form.clearErrors(props.fieldName);
 }
@@ -92,18 +97,18 @@ const handleChange = (aa) => {
                     </div>
                     <div v-else>
                         <label :for="`${addressField}`" class="block text-xs font-medium text-gray-700">
+                            <FontAwesomeIcon v-if="fieldData.isWithRequiredField && addressFieldData.required" icon="fas fa-asterisk" class="text-red-500 text-xxs !text-[0.5rem] align-middle" fixed-width aria-hidden="true" />
                             {{ addressFieldData.label }}
-                            <span v-if="form.errors[addressField]" class="mt-2 text-sm text-red-600">{{ form.errors[addressField] }}</span>
                         </label>
-                        <input @input="handleChange()" v-model="addressValues[addressField]" type="text"
+                        <input @input="handleChange(addressField)" v-model="addressValues[addressField]" type="text"
                             name="address_line_2" :id="`${addressField}`"
-                            class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
+                            class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            :class="form.errors[fieldName] || form.errors[addressField] ? 'errorShake' : ''"
+                        />
                     </div>
                 </div>
-                <div class="w-5 self-end">
-                    <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[addressField]"
-                        class="h-5 w-5 text-red-500" aria-hidden="true" />
-                </div>
+                <span v-if="form.errors[addressField]" class="mt-1 text-sm text-red-600">{{ form.errors[addressField] }}</span>
+                
             </div>
         </template>
     </div>

@@ -217,7 +217,8 @@ class GetWarehouseNavigation
                         ] : null,
                         $user->hasPermissionTo("dispatching.$warehouse->id.view") ?
                         [
-                            'label' => __('Picking sessions'),
+                            'label' => __('P. Sessions'),
+                            'tooltip' => __('Picking sessions'),
                             'icon'  => ['fab', 'fa-stack-overflow'],
                             'root'  => 'grp.org.warehouses.show.dispatching.picking_sessions.',
                             'route' => [
@@ -242,18 +243,33 @@ class GetWarehouseNavigation
                             ]
                         ],
                         [
-                            'label' => __('boxes'),
-                            'tooltip' => __('boxes'),
-                            'icon'  => ['fal', 'fa-box'],
-                            'root'  => 'grp.org.warehouses.show.dispatching.boxes.',
+                            'label' => __('Trolleys'),
+                            'tooltip' => __('Picking Trolleys'),
+                            'icon'  => ['fal', 'fa-dolly-flatbed-alt'],
+                            'root'  => 'grp.org.warehouses.show.dispatching.trolleys.',
                             'route' => [
-                                "name"       => "grp.org.warehouses.show.dispatching.boxes.index",
+                                "name"       => "grp.org.warehouses.show.dispatching.trolleys.index",
                                 "parameters" => [
                                     $warehouse->organisation->slug,
                                     $warehouse->slug
                                 ],
                             ]
                         ],
+                        [
+                            'label' => __('P. Bays'),
+                            'tooltip' => __('Picked bays'),
+                            'icon'  => ['fal', 'fa-monument'],
+                            'root'  => 'grp.org.warehouses.show.dispatching.picked_bays.',
+                            'route' => [
+                                "name"       => "grp.org.warehouses.show.dispatching.picked_bays.index",
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ],
+
+
                     ]
                 ],
             ];

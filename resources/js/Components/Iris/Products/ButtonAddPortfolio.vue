@@ -160,7 +160,7 @@ const onAddPortfoliosSpecificChannel = async (product: ProductResource, channel:
 
         notify({
             title: trans("Success"),
-            text: trans(`Added product ${product.name}`),
+            text: trans("Added product :productName", { productName: product.name }),
             type: "success"
         })
 

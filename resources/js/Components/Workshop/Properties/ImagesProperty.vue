@@ -17,10 +17,10 @@ const model = defineModel();
 
 const blueprint = [
   { key: ["source"], label: "Image", type: "upload_image" },
-    {
+  {
     key: ["caption"],
     label: trans("Caption"),
-    type: "text",
+    type: "editorhtml",
   },
   { key: ["link_data"], label: "Link", type: "link" },
   { key: ["properties", "alt"], label: "Alt", type: "text" },

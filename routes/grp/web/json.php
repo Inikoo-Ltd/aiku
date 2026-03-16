@@ -54,12 +54,15 @@ use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
 use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
+use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodeComputers;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
+use App\Actions\Dispatching\Trolley\Json\ListAvailableTrolleys;
+use App\Actions\Dispatching\Trolley\Json\ListUnavailableTrolleys;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
@@ -78,6 +81,7 @@ use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
@@ -259,6 +263,7 @@ Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::c
 Route::post('variant/{variant}/products', GetGrpProductOfVariant::class)->name('variant.products');
 
 Route::get('product/{product}/trade-units', GetExternalProductTradeUnits::class)->name('product.external.trade-units-linked');
+Route::post('master-product/{masterAsset}/check-org-stocks-existence', CheckMasterAssetTradeUnitOrgStockExistence::class)->name('master_product.check_org_stock_existence');
 
 Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
@@ -266,5 +271,8 @@ Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');
 Route::get('product-category/{productCategory:id}/last-ordered-products', GetLastOrderedProducts::class)->name('product_category.last-ordered-products.index');
 
-
 Route::get('location/geocode', GetGeocode::class)->name('get_geocode');
+
+Route::get('{warehouse}/trolleys/list/', ListAvailableTrolleys::class)->name('available_trolleys.list');
+Route::get('{warehouse}/trolleys/unavailable-list/', ListUnavailableTrolleys::class)->name('unavailable_trolleys.list');
+Route::get('{warehouse}/picked-bays/list/', ListAvailablePickedBays::class)->name('picked_bays.list');

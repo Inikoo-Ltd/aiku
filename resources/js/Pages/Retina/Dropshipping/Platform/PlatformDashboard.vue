@@ -15,6 +15,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformEbayWarningNotComplete from "@/Components/Retina/Platform/PlatformEbayWarningNotComplete.vue"
+import PlatformTiktokWarningNotComplete from "@/Components/Retina/Platform/PlatformTiktokWarningNotComplete.vue"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
@@ -200,28 +201,36 @@ const layout = inject('layout', layoutStructure)
                     </ModalConfirmationDelete>
                 </div>
 
-				<div v-if="!platform_status && customer_sales_channel?.type === 'ebay' && customer_sales_channel?.platform_completion">
-					<ButtonWithLink @click="onSubmitReconnect" type="tertiary"
-									:icon="['fal', 'fa-spinner']"
-									:label="trans('Re-Authenticate')">
-					</ButtonWithLink>
+				<div class="flex flex-nowrap items-center gap-2">
+					<div v-if="['ebay', 'allegro'].includes(customer_sales_channel?.type)">
+						<ButtonWithLink @click="onSubmitReconnect" type="tertiary"
+										:label="trans('Reconnect')"
+										:icon="['fas', 'fa-spinner']">
+						</ButtonWithLink>
+					</div>
+					<div v-if="route().params?.['customerSalesChannel'] && platform_status">
+						<ButtonWithLink :url="route('retina.dropshipping.customer_sales_channels.edit', route().params)"
+										type="tertiary"
+										:icon="['fal', 'fa-pencil']"
+										:label="trans('Manage Sales Channel')">
+						</ButtonWithLink>
+					</div>
 				</div>
 
-                <div v-if="route().params?.['customerSalesChannel'] && platform_status">
-                    <ButtonWithLink :url="route('retina.dropshipping.customer_sales_channels.edit', route().params)"
-									type="tertiary"
-									:icon="['fal', 'fa-pencil']"
-									:label="trans('Manage Sales Channel')">
-                    </ButtonWithLink>
-                </div>
             </div>
 
             <!-- Section: Alert if platform not connected yet -->
-            <template v-if="!can_connect_to_platform">
+            <template v-if="!can_connect_to_platform || !platform_status">
                 <PlatformWarningNotConnectedShopify
                     v-if="platform.type === 'shopify'"
                     :customer_sales_channel="customer_sales_channel"
                 />
+
+				<PlatformTiktokWarningNotComplete
+					v-else-if="platform.type === 'tiktok' && can_connect_to_platform"
+					:customer_sales_channel="customer_sales_channel"
+					:tiktok_user="platformData"
+				/>
 
                 <PlatformWarningNotConnected
                     v-else-if="platform.type !== 'ebay'"
@@ -230,7 +239,7 @@ const layout = inject('layout', layoutStructure)
                 />
 
                 <PlatformEbayWarningNotComplete
-                    v-else
+					v-else-if="platform.type === 'ebay'"
                     :customer_sales_channel="customer_sales_channel"
                     :error_captcha="error_captcha"
                 />

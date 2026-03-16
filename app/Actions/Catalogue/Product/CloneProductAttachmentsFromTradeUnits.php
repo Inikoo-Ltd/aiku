@@ -35,7 +35,14 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
         $tradeUnit          = $product->tradeUnits->first();
         /** @var \App\Models\Helpers\Media $publicAttachments */
         $publicAttachments = $tradeUnit->attachments()
-            ->wherePivotIn('scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
+            ->wherePivotIn('scope', [
+                TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS,
+                TradeAttachmentScopeEnum::CPSR,
+                TradeAttachmentScopeEnum::DOC,
+                TradeAttachmentScopeEnum::IFRA,
+                TradeAttachmentScopeEnum::SDS,
+                TradeAttachmentScopeEnum::TEST_REPORTS,
+            ])
             ->get();
 
         foreach ($publicAttachments as $publicAttachment) {
@@ -57,7 +64,14 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
         $tradeUnitFamily = $tradeUnit->tradeUnitFamily;
         if ($tradeUnitFamily) {
             /** @var \App\Models\Helpers\Media $familyAttachments */
-            $familyAttachments = $tradeUnitFamily->attachments()->wherePivotIn('scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
+            $familyAttachments = $tradeUnitFamily->attachments()->wherePivotIn('scope', [
+                TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS,
+                TradeAttachmentScopeEnum::CPSR,
+                TradeAttachmentScopeEnum::DOC,
+                TradeAttachmentScopeEnum::IFRA,
+                TradeAttachmentScopeEnum::SDS,
+                TradeAttachmentScopeEnum::TEST_REPORTS,
+            ])
                 ->get();
             foreach ($familyAttachments as $familyAttachment) {
                 if (array_key_exists($familyAttachment->checksum, $processedChecksums)) {

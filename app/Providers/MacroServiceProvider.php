@@ -66,6 +66,11 @@ class MacroServiceProvider extends ServiceProvider
             return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", $value.'%');
         });
 
+        Builder::macro('whereEndWith', function (string $column, string $value): Builder {
+            /** @var Builder $this */
+            return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value);
+        });
+
         Builder::macro('whereWith', function (string $column, string $value): Builder {
             /** @var Builder $this */
             return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
@@ -81,6 +86,11 @@ class MacroServiceProvider extends ServiceProvider
         Builder::macro('orWhereStartWith', function (string $column, string $value): Builder {
             /** @var Builder $this */
             return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", $value.'%');
+        });
+
+        Builder::macro('orWhereEndWith', function (string $column, string $value): Builder {
+            /** @var Builder $this */
+            return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value);
         });
 
         Builder::macro('orWhereWith', function (string $column, string $value): Builder {

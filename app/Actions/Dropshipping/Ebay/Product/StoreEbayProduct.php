@@ -16,7 +16,6 @@ use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
-use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
@@ -33,10 +32,10 @@ class StoreEbayProduct extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(EbayUser $ebayUser, Portfolio $portfolio)
+    public function handle(EbayUser $ebayUser, Portfolio $portfolio): Portfolio
     {
         $logs = StorePlatformPortfolioLog::run($portfolio, [
-            'type'   => PlatformPortfolioLogsTypeEnum::UPLOAD
+            'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
         ]);
 
         try {
@@ -86,7 +85,7 @@ class StoreEbayProduct extends RetinaAction
                         ]
                     ]);
 
-                    if (! blank($params)) {
+                    if (!blank($params)) {
                         throw ValidationException::withMessages(['title' => $displayError]);
                     }
 
@@ -109,27 +108,28 @@ class StoreEbayProduct extends RetinaAction
                 'imageUrls' => $images
             ];
 
-            $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
+            $descriptions = mb_substr($portfolio->customer_description, 0, 4000);
+            /* $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
             $decoded = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $noTags = strip_tags($decoded);
             $clean = preg_replace('/[^A-Za-z0-9.,;\'"!? \n-]/', ' ', $noTags);
             $clean = preg_replace('/\s+/', ' ', trim($clean));
-            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));
+            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));*/
 
             if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
             }
 
-            $categories = $ebayUser->getCategorySuggestions($product->department->name);
+            $categories = $ebayUser->getCategorySuggestions($product->family->name);
 
             $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
             $categoryName = Arr::get($categories, 'categorySuggestions.0.category.categoryName');
 
-            if (! $categoryId) {
-                $categories = $ebayUser->searchAvailableProducts($product->department->name);
+            if (!$categoryId) {
+                $categories = $ebayUser->searchAvailableProducts($product->family->name);
 
                 if ($handleError($categories)) {
-                    return;
+                    return $portfolio;
                 }
 
                 $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
@@ -142,7 +142,7 @@ class StoreEbayProduct extends RetinaAction
             }
 
             if ($handleError($categories)) {
-                return;
+                return $portfolio;
             }
 
             $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
@@ -173,11 +173,11 @@ class StoreEbayProduct extends RetinaAction
                 'availability' => [
                     'shipToLocationAvailability' => [
                         'availabilityDistributions' => [
-                                [
-                                    'merchantLocationKey' => $ebayUser->location_key,
-                                    'quantity' => $availableQuantity
-                                ]
-                            ],
+                            [
+                                'merchantLocationKey' => $ebayUser->location_key,
+                                'quantity' => $availableQuantity
+                            ]
+                        ],
                         'quantity' => $availableQuantity
                     ]
                 ],
@@ -248,13 +248,13 @@ class StoreEbayProduct extends RetinaAction
             }
 
             if ($handleError($offer)) {
-                return;
+                return $portfolio;
             }
 
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
 
             if ($handleError($publishedOffer)) {
-                return;
+                return $portfolio;
             }
 
             $portfolio = UpdatePortfolio::run($portfolio, [
@@ -274,10 +274,11 @@ class StoreEbayProduct extends RetinaAction
                 ]);
             }
 
-            UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
+            return $portfolio;
         } catch (\Exception $e) {
-            UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
-            throw $e;
+            return $portfolio;
+
+            // throw $e;
         }
     }
 }

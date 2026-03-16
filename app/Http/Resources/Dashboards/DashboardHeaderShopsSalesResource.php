@@ -32,7 +32,6 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         $model = $this->resource;
 
         $deltaLabel = __('Change versus 1 Year ago');
-        $inBasketLabel = __('In basket');
 
         $labelValue = match ($this->context) {
             GroupDashboardSalesTableTabsEnum::GLOBAL_DROPSHIPPING => __('Dropshipping'),
@@ -53,64 +52,6 @@ class DashboardHeaderShopsSalesResource extends JsonResource
                 'data_display_type' => 'minified',
                 'align'             => 'left'
             ]
-        ];
-
-        $basketShopCurrency = [
-            'baskets_created' => [
-                'formatted_value'   => $inBasketLabel,
-                'currency_type'     => 'shop',
-                'data_display_type' => 'full',
-                'sortable'          => true,
-                'align'             => 'right',
-                'scope'             => 'baskets_created',
-            ],
-            'baskets_created_minified' => [
-                'formatted_value'   => $inBasketLabel,
-                'currency_type'     => 'shop',
-                'data_display_type' => 'minified',
-                'sortable'          => true,
-                'align'             => 'right',
-                'scope'             => 'baskets_created',
-            ],
-        ];
-
-        $basketOrgCurrency = [
-            'baskets_created_org_currency' => [
-                'formatted_value'   => $inBasketLabel,
-                'currency_type'     => 'org',
-                'data_display_type' => 'full',
-                'sortable'          => true,
-                'align'             => 'right',
-                'scope'             => 'baskets_created_org_currency',
-            ],
-            'baskets_created_org_currency_minified' => [
-                'formatted_value'   => $inBasketLabel,
-                'currency_type'     => 'org',
-                'data_display_type' => 'minified',
-                'sortable'          => true,
-                'align'             => 'right',
-                'scope'             => 'baskets_created_org_currency',
-            ],
-
-        ];
-
-        $basketGrpCurrency = [
-            'baskets_created_grp_currency'          => [
-                'formatted_value'   => $inBasketLabel,
-                'currency_type'     => 'grp',
-                'data_display_type' => 'full',
-                'sortable'          => true,
-                'align'             => 'right',
-                'scope'             => 'baskets_created_grp_currency',
-            ],
-            'baskets_created_grp_currency_minified' => [
-                'formatted_value'   => $inBasketLabel,
-                'currency_type'     => 'grp',
-                'data_display_type' => 'minified',
-                'sortable'          => true,
-                'align'             => 'right',
-                'scope'             => 'baskets_created_grp_currency',
-            ],
         ];
 
         $registrationColumns = [
@@ -172,103 +113,91 @@ class DashboardHeaderShopsSalesResource extends JsonResource
         ];
 
         $salesShopCurrency = [
-            'sales'          => [
+            'sales_external'          => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'full',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales',
+                'scope'             => 'sales_external',
             ],
-            'sales_minified' => [
+            'sales_external_minified' => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'minified',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales',
+                'scope'             => 'sales_external',
             ],
-            'sales_delta'    => [
+            'sales_external_delta'    => [
                 'currency_type'     => 'shop',
                 'data_display_type' => 'always',
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales',
+                'scope'             => 'sales_external',
             ],
 
         ];
 
         $salesOrgCurrency = [
-            'sales_org_currency'          => [
+            'sales_org_currency_external'          => [
                 'formatted_value'   => __('Sales'),
                 'currency_type'     => 'org',
                 'data_display_type' => 'full',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_org_currency',
+                'scope'             => 'sales_org_currency_external',
             ],
-            'sales_org_currency_minified' => [
+            'sales_org_currency_external_minified' => [
                 'currency_type'     => 'org',
                 'data_display_type' => 'minified',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_org_currency',
+                'scope'             => 'sales_org_currency_external',
             ],
-            'sales_org_currency_delta'    => [
+            'sales_org_currency_external_delta'    => [
                 'currency_type'     => 'org',
                 'data_display_type' => 'always',
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_org_currency',
+                'scope'             => 'sales_org_currency_external',
             ],
         ];
 
         $salesGrpCurrency = [
-            'sales_grp_currency'          => [
+            'sales_grp_currency_external'          => [
                 'formatted_value'   => __('Sales'),
                 'currency_type'     => 'grp',
                 'data_display_type' => 'full',
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_grp_currency',
+                'scope'             => 'sales_grp_currency_external',
             ],
-            'sales_grp_currency_minified' => [
+            'sales_grp_currency_external_minified' => [
                 'currency_type'     => 'grp',
                 'data_display_type' => 'minified',
                 'formatted_value'   => __('Sales'),
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_grp_currency',
+                'scope'             => 'sales_grp_currency_external',
             ],
-            'sales_grp_currency_delta'    => [
+            'sales_grp_currency_external_delta'    => [
                 'currency_type'     => 'grp',
                 'data_display_type' => 'always',
                 'formatted_value'   => 'Δ 1Y',
                 'tooltip'           => $deltaLabel,
                 'sortable'          => true,
                 'align'             => 'right',
-                'scope'             => 'sales_grp_currency',
+                'scope'             => 'sales_grp_currency_external',
             ],
         ];
 
         $columns = $shopColumns;
-
-        if ($model instanceof Organisation) {
-            $columns = array_merge($columns, $basketShopCurrency);
-        }
-
-        if ($this->context !== GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT) {
-            $columns = array_merge($columns, $basketOrgCurrency);
-        }
-
-        if ($model instanceof Group && $this->context !== GroupDashboardSalesTableTabsEnum::GLOBAL_FULFILMENT) {
-            $columns = array_merge($columns, $basketGrpCurrency);
-        }
 
         $columns = array_merge($columns, $registrationColumns);
         $columns = array_merge($columns, $invoicesColumns);

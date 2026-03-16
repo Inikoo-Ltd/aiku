@@ -14,24 +14,27 @@ use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\HydrateOffers;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
+use App\Actions\Discounts\Offer\SetOfferAsPermanent;
+use App\Actions\Discounts\Offer\StoreFirstOrderBonus;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
-use App\Actions\Discounts\Offer\StoreVolumeGRDiscount;
-use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
-use App\Actions\Discounts\Offer\UpdateOffer;
 use App\Actions\Discounts\Offer\SuspendOffer;
+use App\Actions\Discounts\Offer\UpdateOffer;
+use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
+use App\Actions\Discounts\Offer\UpdateOfferStatusFromDates;
+use App\Actions\Discounts\Offer\VolGr\StoreVolumeGRDiscount;
+use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
+use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
-use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
-use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
-use App\Enums\Discounts\Offer\OfferDurationEnum;
-use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
@@ -40,14 +43,12 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
-use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferAllowance;
+use App\Models\Discounts\OfferCampaign;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
-use App\Actions\Discounts\Offer\SetOfferAsPermanent;
-use App\Actions\Discounts\Offer\StoreFirstOrderBonus;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -91,15 +92,15 @@ test('seed offer campaigns', function () {
     $this->group->refresh();
     $this->organisation->refresh();
 
-    expect($this->group->discountsStats->number_offer_campaigns)->toBe(8)
-        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(0)
-        ->and($this->group->discountsStats->number_offer_campaigns_state_in_process)->toBe(8)
-        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(8)
-        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(0)
-        ->and($this->organisation->discountsStats->number_offer_campaigns_state_in_process)->toBe(8)
-        ->and($shop->discountsStats->number_offer_campaigns)->toBe(8)
-        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(0)
-        ->and($shop->discountsStats->number_offer_campaigns_state_in_process)->toBe(8);
+    expect($this->group->discountsStats->number_offer_campaigns)->toBe(11)
+        ->and($this->group->discountsStats->number_current_offer_campaigns)->toBe(10)
+        ->and($this->group->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(10)
+        ->and($this->organisation->discountsStats->number_offer_campaigns)->toBe(11)
+        ->and($this->organisation->discountsStats->number_current_offer_campaigns)->toBe(10)
+        ->and($this->organisation->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(10)
+        ->and($shop->discountsStats->number_offer_campaigns)->toBe(11)
+        ->and($shop->discountsStats->number_current_offer_campaigns)->toBe(10)
+        ->and($shop->discountsStats->number_offer_campaigns_offers_state_in_process)->toBe(10);
 });
 
 test('update offer campaign', function () {
@@ -195,7 +196,7 @@ test('UI Index offer campaigns', function () {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Org/Discounts/Campaigns')
+            ->component('Org/Discounts/OfferCampaigns')
             ->has('title')
             ->has('pageHead')
             ->has('data')
@@ -336,14 +337,21 @@ test('create first order bonus', function () {
 test('update offer allowance signature', function () {
     $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
-    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offerData = Offer::factory()->definition();
+    $offerData['duration'] = OfferDurationEnum::PERMANENT;
+    $offerData['start_at']   = now();
+
+
+    $offer         = StoreOffer::make()->action($offerCampaign, $offerData);
+    UpdateOfferStatusFromDates::run($offer);
+
 
     $allowanceData = OfferAllowance::factory()->definition();
     data_set($allowanceData, 'type', OfferAllowanceType::PERCENTAGE_OFF);
     data_set($allowanceData, 'target_type', OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER);
     data_set($allowanceData, 'data.percentage_off', 10);
-    // Ensure status is true via state
-    data_set($allowanceData, 'state', OfferAllowanceStateEnum::ACTIVE);
+
 
     $allowance1 = StoreOfferAllowance::make()->action($offer, $allowanceData);
     $allowance1->update(['status' => true]);
@@ -359,7 +367,6 @@ test('update offer allowance signature', function () {
     data_set($allowanceData2, 'type', OfferAllowanceType::PERCENTAGE_OFF);
     data_set($allowanceData2, 'target_type', OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY);
     data_set($allowanceData2, 'data.percentage_off', 20);
-    data_set($allowanceData2, 'state', OfferAllowanceStateEnum::ACTIVE);
 
     $allowance2 = StoreOfferAllowance::make()->action($offer, $allowanceData2);
     $allowance2->update(['status' => true]);

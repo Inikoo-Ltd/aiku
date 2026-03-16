@@ -48,7 +48,6 @@ const props = defineProps<{
     salesData?: object
     sales?: object
     routes: {
-        families: { dataList: routeType, submitAttach: routeType, detach: routeType }
         products: { dataList: routeType, submitAttach: routeType, detach: routeType }
         collections: { dataList: routeType, submitAttach: routeType, detach: routeType }
     }
@@ -118,7 +117,7 @@ const onSubmitAttach = async ({
             closeModal()
             notify({
                 title: trans('Success'),
-                text: trans(`Successfully attach ${scope}.`),
+                text: trans(`Successfully attach :tscope.`, { tscope: scope }),
                 type: 'success',
             })
             resetSelection()
@@ -127,7 +126,7 @@ const onSubmitAttach = async ({
             errorMessage.value = errors
             notify({
                 title: trans('Something went wrong.'),
-                text: trans(`Failed to attach ${scope}, please try again.`),
+                text: trans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
                 type: 'error',
             })
         },
@@ -143,30 +142,12 @@ const onSubmitAttach = async ({
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <section v-if="currentTab == 'families'">
-                <Button
-                    type="secondary"
-                    label="Attach families"
-                    icon="fal fa-plus"
-                    @click="isModalOpen.families.value = true"
-                    :tooltip="trans('Attach families to this collections')"
-                />
-            </section>
             <section v-if="currentTab == 'products'">
                 <Button
                     type="secondary"
                     label="Attach products"
                     icon="fal fa-plus"
                     @click="isModalOpen.products.value = true"
-                    :tooltip="trans('Attach products to this collections')"
-                />
-            </section>
-            <section v-if="currentTab == 'collections'">
-                <Button
-                    type="secondary"
-                    label="Attach collections"
-                    icon="fal fa-plus"
-                    @click="isModalOpen.collections.value = true"
                     :tooltip="trans('Attach products to this collections')"
                 />
             </section>
@@ -205,50 +186,6 @@ const onSubmitAttach = async ({
                     routeToSubmit: routes.products.submitAttach,
                     selectedIds: ids,
                     resetSelection: resetSelectionByScope.products,
-                })
-            "
-        />
-    </Modal>
-
-    <!-- Modal: Collections -->
-    <Modal
-        :isOpen="isModalOpen.collections.value"
-        @onClose="isModalOpen.collections.value = false"
-        width="w-full max-w-6xl"
-    >
-        <ListSelector
-            :headLabel="`${trans('Add collections to collection')}`"
-            :routeFetch="routes.collections.dataList"
-            :isLoadingSubmit="isLoading"
-            @submit="(ids) =>
-                onSubmitAttach({
-                    closeModal: () => (isModalOpen.collections.value = false),
-                    scope: 'collections',
-                    routeToSubmit: routes.collections.submitAttach,
-                    selectedIds: ids,
-                    resetSelection: resetSelectionByScope.collections,
-                })
-            "
-        />
-    </Modal>
-
-    <!-- Modal: Families -->
-    <Modal
-        :isOpen="isModalOpen.families.value"
-        @onClose="isModalOpen.families.value = false"
-        width="w-full max-w-6xl h-full"
-    >
-        <ListSelector
-            :headLabel="`${trans('Add families to collection')}`"
-            :routeFetch="routes.families.dataList"
-            :isLoadingSubmit="isLoading"
-            @submit="(ids) =>
-                onSubmitAttach({
-                    closeModal: () => (isModalOpen.families.value = false),
-                    scope: 'families',
-                    routeToSubmit: routes.families.submitAttach,
-                    selectedIds: ids,
-                    resetSelection: resetSelectionByScope.families,
                 })
             "
         />

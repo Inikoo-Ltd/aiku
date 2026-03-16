@@ -59,6 +59,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
     isLoadingGoogle.value = true
     const data = await axios.post(route('retina.login_google', {}), {
         google_access_token: e.access_token,
+        tiktok_code: route().queryParams?.tiktok_code
     })
 
     console.log('Google register response:', data.data)
@@ -98,7 +99,10 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 				<!-- Submit Button -->
 				<ButtonWithLink
 					:routeTarget="{
-						name: 'retina.register_standalone'
+						name: 'retina.register_standalone',
+                        parameters: {
+                            tiktok_code: route().queryParams?.tiktok_code
+                        }
 					}"
 					full
 					xlabel="trans('Register')"
@@ -144,7 +148,9 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                 <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
                         <span class="font-normal">{{ trans("Already have an account?") }}</span>
-                        <Link :href="route('retina.login.show')"
+                        <Link :href="route('retina.login.show', {
+                            tiktok_code: route().queryParams?.tiktok_code
+                        })"
                             class="  font-medium hover:underline transition duration-150 ease-in-out ml-1">
                             {{ trans("Login here") }}
                         </Link>

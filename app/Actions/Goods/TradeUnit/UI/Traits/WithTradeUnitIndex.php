@@ -137,4 +137,13 @@ trait WithTradeUnitIndex
     {
         $table->column(key: 'marketing_weight', label: __('Weight').' ('.__('Marketing').')', canBeHidden: false, sortable: true, searchable: true, align: 'right');
     }
+
+    protected function addSalesColumns(InertiaTable $table): void
+    {
+        $table
+            ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
+            ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+            ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
+            ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+    }
 }

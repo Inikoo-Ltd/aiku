@@ -45,8 +45,7 @@ const isSubNavActive = (subNav: SubNav) => {
 </script>
 
 <template>
-    <div
-        class="relative select-none w-full flex pr-4 sm:mt-1 lg:mt-0 border-b border-gray-300 sm:gap-y-1 items-end text-gray-400 text-xs">
+    <div class="relative select-none w-full flex pr-4 sm:mt-1 lg:mt-0 border-b border-gray-300 sm:gap-y-1 items-end text-gray-400 text-xs">
         <!-- Tab: Home/dashboard -->
         <!-- <div v-if="dataNavigation.length && false"
     class="py-1 flex items-center transition-all"
@@ -93,7 +92,7 @@ const isSubNavActive = (subNav: SubNav) => {
 </div> -->
 
         <!-- Tabs: Left -->
-        <div class="w-full flex">
+        <div class="w-full flex customOverflowX">
             <TransitionGroup>
                 <template v-for="subNav, itemIdx in dataNavigation" :key="'subNav' + itemIdx">
                     <component v-if="subNav && subNav.align !== 'right'" :is="subNav.route?.name ? Link : 'div'"
@@ -189,12 +188,18 @@ const isSubNavActive = (subNav: SubNav) => {
     @apply text-gray-500 border-b border-transparent;
 }
 
+.customOverflowX{
+    overflow-x: scroll;
+    scrollbar-width: none;
+}
 
 .anchorSubnavActive {
     background: v-bind('`color-mix(in srgb, ${layout?.app?.theme[0]} 15%, transparent)`') !important;
     color: v-bind('`${layout?.app?.theme[0]}`') !important;
     outline: none !important;
-    position: relative;
+    position: sticky;
+    left: 0;
+    z-index: 20;
     text-decoration: none;
 }
 
@@ -229,7 +234,9 @@ const isSubNavActive = (subNav: SubNav) => {
     @apply text-gray-500 bg-gray-200;
 
     outline: none;
-    position: relative;
+    position: sticky;
+    left: 0;
+    z-index: 20;
     text-decoration: none;
 }
 

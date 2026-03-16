@@ -126,6 +126,12 @@ class Snapshot extends Model
         switch (class_basename($this->parent)) {
             case 'Banner':
                 $slides         = $this->slides()->get();
+                if ($customOrder = data_get($this->layout, 'orders', null)) {
+                    $slides = $slides
+                        ->sortBy(function ($model) use ($customOrder) {
+                            return $customOrder[$model->ulid] ?? PHP_INT_MAX;
+                        });
+                }
                 $compiledLayout = $this->layout;
                 data_set($compiledLayout, 'components', json_decode(SlideResource::collection($slides)->toJson(), true));
                 data_set($compiledLayout, 'type', $this->parent->type);

@@ -8,7 +8,9 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -53,6 +55,8 @@ use Illuminate\Support\Arr;
  * @property mixed $variant_code
  * @property mixed $webpage
  * @property mixed $is_for_sale
+ * @property mixed $discontinued_at
+ * @property mixed $health_rank
  *
  * @method imageSources(int $int, int $int1)
  */
@@ -71,6 +75,15 @@ class ProductsResource extends JsonResource
             ];
         }
 
+        $extraField = [];
+
+        /** @var Product $product */
+        $product = $this->resource;
+
+        // Don't worry, won't run if relationship is not eager loaded
+        if ($product->relationLoaded('orgStocks')) {
+            data_set($extraField, 'org_stocks', $this->getDataPickingFactor($product->orgStocks));
+        }
 
 
 
@@ -82,6 +95,7 @@ class ProductsResource extends JsonResource
             'state'                     => $state,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
+            'discontinued_at'           => $this->discontinued_at,
             'shop_slug'                 => $this->shop_slug,
             'shop_code'                 => $this->shop_code,
             'shop_name'                 => $this->shop_name,
@@ -103,15 +117,14 @@ class ProductsResource extends JsonResource
             'gross_weight'              => $this->gross_weight,
             'rrp'                       => $this->rrp,
             'rrp_per_unit'              => $this->units != 0 ? $this->rrp / $this->units : '',
-            'customers_invoiced'        => $this->customers_invoiced ?? 0,
-            'customers_invoiced_ly'     => $this->customers_invoiced_ly ?? 0,
-            'customers_invoiced_delta'  => $this->calculateDelta($this->customers_invoiced ?? 0, $this->customers_invoiced_ly ?? 0),
-            'sales'                     => $this->sales ?? 0,
-            'sales_ly'                  => $this->sales_ly ?? 0,
-            'sales_delta'               => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
+            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
             'invoices'                  => $this->invoices ?? 0,
-            'invoices_ly'               => $this->invoices_ly ?? 0,
-            'invoices_delta'            => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'refunds'                   => $this->refunds ?? 0,
+            'dropshippers'              => $this->dropshippers ?? 0,
+            'listings'                  => $this->listings ?? 0,
+            'sold'                      => $this->sold ?? 0,
             'currency_code'             => $this->currency_code,
             'stock'                     => $this->available_quantity,
             'image_thumbnail'           => Arr::get($this->web_images, 'main.thumbnail'),
@@ -120,8 +133,24 @@ class ProductsResource extends JsonResource
             'is_variant_leader'         => $this->is_variant_leader,
             'variant_code'              => $this->variant_code,
             'iris_url'                  => $this->webpage?->canonical_url,
-            'is_for_sale'               => $this->is_for_sale
+            'is_for_sale'               => $this->is_for_sale,
+            'health_rank'          => $this->health_rank ? HealthRankEnum::from($this->health_rank)->stateIcon()[HealthRankEnum::from($this->health_rank)->value] : null,
+            ...$extraField
         ];
+    }
+
+    private function getDataPickingFactor($orgStocks): ?array
+    {
+
+
+        return $orgStocks->map(function ($orgStock) {
+
+
+
+            return [
+                'pick_fractional'   => ($orgStock->pivot->quantity && $orgStock->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)), $orgStock->packed_in) : null,
+            ];
+        })->toArray();
     }
 
     private function calculateDelta($current, $previous): ?array

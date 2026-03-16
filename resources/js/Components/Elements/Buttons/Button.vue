@@ -62,6 +62,8 @@ else if (props.style == "delete" || props.style == "negative" || props.style == 
 else if (props.style == "positive" || props.type == "positive") styleClass = `${ props.noHover ? "cursor-default" : "hover:text-green-800 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2" } border border-green-500 text-green-600 disabled:bg-green-200/75 `;
 else if (props.style == "warning" || props.type == "warning") styleClass = "border border-amber-500 text-amber-600 hover:text-amber-800 bg-amber-10 hover:bg-amber-200 disabled:bg-amber-300/75 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2";
 
+else if (props.style == "yellow" || props.type == "yellow")
+  styleClass = "bg-yellow-400 hover:bg-yellow-500 border border-yellow-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
 else if (props.style == "white" || props.type == "white") styleClass = "bg-white hover:bg-gray-300 text-gray-600";
 else if (props.style == "red" || props.type == "red") styleClass = "bg-red-500 hover:bg-red-600 border border-red-500 hover:border-red-600 text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:text-red-300 disabled:bg-red-600";
 else if (props.style == "green" || props.type == "green") styleClass = `bg-green-500 ${ props.noHover ? "" : "hover:bg-green-600" } border border-green-600  text-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2`;
@@ -86,7 +88,7 @@ switch (props.size) {
     sizeClass = "rounded-sm px-1 py-0.5 md:px-2 md:py-1 text-xxs";
     break;
   case "xs":
-    sizeClass = "rounded-sm px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs";
+    sizeClass = "rounded px-1.5 md:px-2.5 py-1 md:py-1.5 text-xs";
     break;
   case "sm":
   case "s":
@@ -108,7 +110,8 @@ switch (props.size) {
 // Auto add label for several conditions
 const getActionLabel = (label: string | undefined) => {
   if (label) {
-    return trans(label);
+    return label
+    // return trans(label);
   } else {
     switch (props.style || props.type) {
       case "edit":
@@ -164,7 +167,7 @@ const getActionIcon = (icon: any) => {
 </script>
 
 <template>
-  <button type="button"  :style="injectStyle ?? {}"
+  <button :style="injectStyle ?? {}"
           class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
           :class="[
             full ? 'w-full justify-center' : 'xmin-w-max',

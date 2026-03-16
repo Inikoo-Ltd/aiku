@@ -99,9 +99,6 @@ class EditShop extends OrgAction
         $isExternal =  $shop->type === ShopTypeEnum::EXTERNAL;
 
         $allowedBlueprintLabels = [
-            __('Shop details'),
-            __('Properties'),
-            __('Languages'),
             __('Faire Settings'),
             __('Shopify Keys'),
             __('Wix Keys'),
@@ -379,6 +376,18 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
+                    'label'  => __('Proforma footer'),
+                    'icon'   => 'fa-light fa-shoe-prints',
+                    'fields' => [
+                        'proforma_footer' => [
+                            'type'  => 'textEditor',
+                            'label' => __('Proforma footer'),
+                            'full'  => true,
+                            'value' => $shop->proforma_footer
+                        ],
+                    ],
+                ],
+                                [
                     'label'  => __('Invoices footer'),
                     'icon'   => 'fa-light fa-shoe-prints',
                     'fields' => [
@@ -387,6 +396,38 @@ class EditShop extends OrgAction
                             'label' => __('Invoice footer'),
                             'full'  => true,
                             'value' => $shop->invoice_footer
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Invoice PDF columns'),
+                    'icon'   => 'fal fa-columns',
+                    'fields' => [
+                        'download_pdf_columns' => [
+                            'type'  => 'checkbox',
+                            'label' => __('Data to display in PDF'),
+                            'information' => __('Default data to include in invoice PDF'),
+                            'value' => (function () use ($shop): array {
+                                $savedColumns = Arr::get($shop->settings, 'invoicing.download_pdf_columns', []);
+                                $columns      = [
+                                    ['label' => __('Pro mode'), 'key' => 'pro_mode'],
+                                    ['label' => __('Recommended retail prices') . ' ' . __('(RRP)'), 'key' => 'rrp'],
+                                    ['label' => __('Parts'), 'key' => 'parts'],
+                                    ['label' => __('Commodity Codes'), 'key' => 'commodity_codes'],
+                                    ['label' => __('Barcode'), 'key' => 'barcode'],
+                                    ['label' => __('Weight'), 'key' => 'weight'],
+                                    ['label' => __('Country of Origin'), 'key' => 'country_of_origin'],
+                                    ['label' => __('Hide Payment Status'), 'key' => 'hide_payment_status'],
+                                    ['label' => __('CPNP'), 'key' => 'cpnp'],
+                                    ['label' => __('Group by Tariff Code'), 'key' => 'group_by_tariff_code'],
+                                ];
+
+                                return array_map(fn ($col) => [
+                                    'label' => $col['label'],
+                                    'key'   => $col['key'],
+                                    'value' => (bool) Arr::get($savedColumns, $col['key'], false),
+                                ], $columns);
+                            })(),
                         ],
                     ],
                 ],
@@ -433,7 +474,7 @@ class EditShop extends OrgAction
                             'mode'        => 'tags',
                             'labelProp'   => 'label',
                             'valueProp'   => 'id'
-                        ]
+                        ],
                     ],
                 ],
                 $shop->type === ShopTypeEnum::DROPSHIPPING ? [
@@ -483,10 +524,20 @@ class EditShop extends OrgAction
                                     'warningTitle'   => __('We are having troubles connecting to the platform'),
                                     'warningBody'    => __('Error Message') . ": " . $shop->external_shop_connection_error
                                 ],
-                                'faire_order_from_date' => [
-                                    'type'  => 'date',
-                                    'label' => __('Faire Order From Date'),
-                                    'value' => Arr::get($shop->settings, 'faire.order_from_date', '')
+                                'faire_order_from_days' => [
+                                    'type'  => 'input',
+                                    'label' => __('Faire Order From Days'),
+                                    'value' => Arr::get($shop->settings, 'faire.order_from_days', '6')
+                                ],
+                                'faire_is_shipping_by_external' => [
+                                    'type'          => 'toggle',
+                                    'label'         => __('Shipping by external service'),
+                                    'value' => Arr::get($shop->settings, 'faire.is_shipping_by_external', false)
+                                ],
+                                'faire_dont_send_first_orders_automatically_to_warehouse' => [
+                                    'type'          => 'toggle',
+                                    'label'         => __('Do not send first orders to warehouse'),
+                                    'value' => Arr::get($shop->settings, 'faire.dont_send_first_orders_automatically_to_warehouse', false)
                                 ]
                             ],
                         ],

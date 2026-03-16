@@ -9,7 +9,7 @@ import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Select from 'primevue/select'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
+import { Popover } from 'primevue'
 
 library.add(faChevronDown, faCheckSquare, faSquare, faCalendarAlt)
 
@@ -255,6 +255,7 @@ const applyInterval = (intervalValue: string) => {
 watch(selectedInterval, (newValue) => {
     if (newValue) {
         applyInterval(newValue)
+        _popover.value?.hide()
     }
 })
 
@@ -305,10 +306,16 @@ onBeforeMount(() => {
     }
 
 })
+
+// Section: Popover
+const _popover = ref()
+const toggle = (event) => {
+    _popover.value.toggle(event);
+}
 </script>
 
 <template>
-    <div class="flex items-center gap-2 rounded-md" v-tooltip="trans('Filter data by dates')">
+    <div class="flex items-center gap-2 rounded-md">
         <!-- Display selected date range when custom interval is active -->
         <transition name="slide-fade">
             <div v-if="hasBetweenQuery && dateFilterValue[0] && dateFilterValue[1]"
@@ -319,47 +326,46 @@ onBeforeMount(() => {
             </div>
         </transition>
 
-        <Popover v-slot="{ open }" class="relative">
-            <PopoverButton
-                :class="open ? '' : ''"
-                v-tooltip="trans('Filter by dates')"
-                class="group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+        <div
+            @click="toggle"
+            v-tooltip="trans('Filter by dates')"
+            class="cursor-pointer group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+        >
+            <div class="h-9 w-9 rounded flex justify-center items-center"
+                :class="true ? 'border border-gray-300 hover:bg-gray-300 text-gray-600 hover:text-xgray-200' : 'bg-gray-600 hover:bg-gray-700 text-white'"
             >
-                <div class="h-9 w-9 rounded flex justify-center items-center"
-                    :class="true ? 'border border-gray-300 hover:bg-gray-300 text-gray-600 hover:text-xgray-200' : 'bg-gray-600 hover:bg-gray-700 text-white'"
-                >
-                    <FontAwesomeIcon v-if="!isLoadingReload" icon='fal fa-calendar-alt' class='cursor-pointer'
-                        fixed-width aria-hidden='true' />
-                    <LoadingIcon v-else />
-                </div>
-            </PopoverButton>
+                <FontAwesomeIcon v-if="!isLoadingReload" icon='fal fa-calendar-alt' class='cursor-pointer'
+                    fixed-width aria-hidden='true' />
+                <LoadingIcon v-else />
+            </div>
+        </div>
 
-            <Transition name="headlessui" >
-                <PopoverPanel
-                    class="bg-gray-50 border border-gray-300 rounded-md absolute right-0 z-10 mt-3 w-fit transform px-4 pt-4 pb-6"
-                >
-                    <div class="flex items-center gap-x-3 mb-3">
-                        <Select
-                            v-model="selectedPeriodType"
-                            :options="optionsList"
-                            :placeholder="trans('Dates range')"
-                            class="flex-1"
-                        />
 
-                        <Select
-                            v-model="selectedInterval"
-                            :options="dateIntervals.map(i => ({ label: i.label, value: i.value }))"
-                            optionLabel="label"
-                            optionValue="value"
-                            :placeholder="trans('Quick intervals')"
-                            class="flex-1"
-                        />
+        <Popover ref="_popover">
+            <div class="bg-gray-50 border border-gray-300 rounded-md xabsolute right-0 z-10 mt-3 w-fit transform px-4 pt-4 pb-6" >
+                <div class="flex items-center gap-x-3 mb-3">
+                    <Select
+                        v-model="selectedPeriodType"
+                        :options="optionsList"
+                        :placeholder="trans('Dates range')"
+                        class="flex-1"
+                    />
 
-                        <div @click="resetFilter" class="text-red-400 hover:text-red-600 cursor-pointer whitespace-nowrap">
-                            {{ trans("Reset") }}
-                        </div>
+                    <Select
+                        v-model="selectedInterval"
+                        :options="dateIntervals.map(i => ({ label: i.label, value: i.value }))"
+                        optionLabel="label"
+                        optionValue="value"
+                        :placeholder="trans('Quick intervals')"
+                        class="flex-1"
+                    />
+
+                    <div @click="resetFilter" class="text-red-400 hover:text-red-600 cursor-pointer whitespace-nowrap">
+                        {{ trans("Reset") }}
                     </div>
+                </div>
 
+                <div class="flex justify-end w-[520px]">
                     <VueDatePicker
                         v-model="dateFilterValue"
                         range
@@ -369,25 +375,26 @@ onBeforeMount(() => {
                         :enableTimePicker="false"
                         @update:model-value="selectedInterval = null"
                     />
+                </div>
+            </div>
 
-                    <div class="grid grid-cols-2 text-sm mt-3">
-                        <!-- cccccccccccccccccccccccccc -->
-                        <div class="text-left px-1.5">
-                            <div class="text-gray-400">{{ trans("Since") }}</div>
-                            <div class="">
-                                {{ useFormatTime(dateFilterValue[0])}}
-                            </div>
-                        </div>
-
-                        <div class="justify-self-end text-right px-1.5">
-                            <div class="text-gray-400">{{ trans("Until") }}</div>
-                            <div class="">
-                                {{ useFormatTime(dateFilterValue[1])}}
-                            </div>
-                        </div>
+            <div class="grid grid-cols-2 text-sm mt-3">
+                <!-- cccccccccccccccccccccccccc -->
+                <div class="text-left px-1.5">
+                    <div class="text-gray-400">{{ trans("Since") }}</div>
+                    <div class="">
+                        {{ useFormatTime(dateFilterValue[0])}}
                     </div>
-                </PopoverPanel>
-            </Transition>
+                </div>
+
+                <div class="justify-self-end text-right px-1.5">
+                    <div class="text-gray-400">{{ trans("Until") }}</div>
+                    <div class="">
+                        {{ useFormatTime(dateFilterValue[1])}}
+                    </div>
+                </div>
+            </div>
+
         </Popover>
     </div>
 </template>

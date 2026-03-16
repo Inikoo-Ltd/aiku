@@ -78,6 +78,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $amount_total
  * @property numeric $commission_amount
  * @property string|null $margin
+ * @property bool $is_gift
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
  * @property-read \App\Models\CRM\Customer $customer
@@ -91,10 +92,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferAllowance> $offerAllowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferCampaign> $offerCampaign
  * @property-read Order|null $order
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasOrgStock> $orgStockBridges
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read RecurringBillTransaction|null $recurringBillTransaction
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read TaxCategory $taxCategory
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\InvoiceTransactionHasTradeUnit> $tradeUnitBridges
  * @property-read Transaction|null $transaction
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $transactionRefunds
  * @method static Builder<static>|InvoiceTransaction newModelQuery()
@@ -197,6 +200,16 @@ class InvoiceTransaction extends Model
     public function transactionRefunds(): HasMany
     {
         return $this->hasMany(InvoiceTransaction::class, 'original_invoice_transaction_id');
+    }
+
+    public function tradeUnitBridges(): HasMany
+    {
+        return $this->hasMany(InvoiceTransactionHasTradeUnit::class);
+    }
+
+    public function orgStockBridges(): HasMany
+    {
+        return $this->hasMany(InvoiceTransactionHasOrgStock::class);
     }
 
     public function taxCategory(): BelongsTo

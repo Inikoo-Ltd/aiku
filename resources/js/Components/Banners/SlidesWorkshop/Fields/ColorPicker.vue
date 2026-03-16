@@ -24,7 +24,7 @@ const props = withDefaults(defineProps<{
   colorSuggestions: () => true,
   mode: 'color',
   fieldData: {
-    icon: 'far fa-paint-brush'
+    icon: 'far fa-paint-brush-alt'
   }
 })
 

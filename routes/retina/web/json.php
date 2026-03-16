@@ -8,10 +8,12 @@
 
 use App\Actions\Catalogue\Product\Json\GetRetinaPortfoliosInProduct;
 use App\Actions\Catalogue\Product\Json\GetRetinaSalesChannelInProductCategory;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetAllegroProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerCollectionSalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductCategorySalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetTiktokProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Dropshipping\Tiktok\User\UI\ShowTiktokUser;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
@@ -49,6 +51,9 @@ Route::get('collection/{collection:id}/channels', GetRetinaCustomerCollectionSal
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/tiktok-products', GetTiktokProducts::class)->name('dropshipping.customer_sales_channel.tiktok_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/allegro-products', GetAllegroProducts::class)->name('dropshipping.customer_sales_channel.allegro_products');
+
 Route::get('first-hit', GetRetinaFirstHitData::class)->name('first_hit');
 Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
 Route::get('log-web-user-request', RetinaLogWebUserRequest::class)->name('hit');

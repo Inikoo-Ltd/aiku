@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, onUnmounted } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -16,7 +16,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
 import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faMedal } from '@fal'
-import { faMedal as fasMedal, faCircle } from '@fas'
+import { faMedal as fasMedal, faCandleHolder, faCircle } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -40,7 +40,7 @@ interface ChatConfig {
     }
 }
 
-library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
+library.add(faHome, faImage, faSparkles, faSignIn, faPlusCircle, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp)
 
 initialiseIrisApp()
 
@@ -108,6 +108,7 @@ const getAnnouncements = async () => {
 
 provide('screenType', screenType)
 
+
 onMounted(() => {
     CustomerIdCollector(layout.iris_variables?.customer_id?.toString())  // Luigi: to set customer_id
 
@@ -123,7 +124,12 @@ onMounted(() => {
 
     irisStyleVariables(theme?.color)
 
+    if(layout?.iris?.is_logged_in){
+        fetchHasInBasket()
+    }
 })
+
+
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
@@ -148,6 +154,27 @@ const fetchSidebarOnce = async () => {
         isSidebarFetching.value = false
     }
 }
+
+const fetchHasInBasket = async () => {
+    set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
+    try {
+        const apiUrl = `/json/basket/transaction-data`
+
+        if (!apiUrl) {
+            throw new Error("Invalid model_type or missing route configuration");
+        }
+
+        const response = await axios.get(apiUrl);
+        /* console.log('plmnbvc',response.data) */
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+    } catch (error) {
+        console.error('Failed to load product portfolio', error);
+    } finally {
+        set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
+
+    }
+};
+
 
 
 
@@ -256,7 +283,7 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
                 <div
                     v-if="layout?.iris?.is_logged_in && screenType !== 'mobile'"
                     class="sticky z-[51] border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
-                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-lg' : 'border-transparent max-w-0'"
+                    :class="layout.rightbasket?.show && layout.iris_variables?.cart_count > 0 ? 'border-l-gray-300 max-w-md' : 'border-transparent max-w-0'"
                 >
                     <IrisRightsideBasket
                         v-if="layout.iris_variables?.cart_count > 0"
@@ -331,7 +358,7 @@ iframe#launcher {
 }
 
 .text-primary {
-    color: var(--theme-color-4);
+    color: var(--theme-color-4) !important;
 }
 
 </style>

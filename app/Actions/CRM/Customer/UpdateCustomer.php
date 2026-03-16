@@ -9,7 +9,10 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
+use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
@@ -107,6 +110,7 @@ class UpdateCustomer extends OrgAction
             $customer->refresh();
             data_set($modelData, 'location', $customer->address->getLocation());
         }
+
         if (Arr::has($modelData, 'delivery_address')) {
             $deliveryAddressData = Arr::get($modelData, 'delivery_address');
             Arr::forget($modelData, 'delivery_address');
@@ -189,6 +193,10 @@ class UpdateCustomer extends OrgAction
                 });
         }
 
+        if (Arr::has($modelData, 'disable_order_auto_processing')) {
+            data_set($modelData, 'settings.disable_order_auto_processing', Arr::pull($modelData, 'disable_order_auto_processing', false));
+        }
+
         if (Arr::hasAny($modelData, ['contact_name', 'company_name'])) {
             $contact_name = Arr::exists($modelData, 'contact_name') ? Arr::get($modelData, 'contact_name') : $customer->contact_name;
             $company_name = Arr::exists($modelData, 'company_name') ? Arr::get($modelData, 'company_name') : $customer->company_name;
@@ -208,6 +216,8 @@ class UpdateCustomer extends OrgAction
 
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
         UpdateCustomerComms::run($customer->comms, $emailSubscriptionsData);
+
+        $oldRegisteredAt = $customer->registered_at;
 
         $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
 
@@ -261,6 +271,24 @@ class UpdateCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
+        $registeredAtDate = $customer->registered_at ? \Carbon\Carbon::parse($customer->registered_at)->toDateString() : null;
+
+        if (Arr::has($changes, 'registered_at') && $oldRegisteredAt) {
+            $oldRegisteredAtDate = \Carbon\Carbon::parse($oldRegisteredAt)->toDateString();
+            RedoShopTimeSeries::dispatch($oldRegisteredAtDate, $oldRegisteredAtDate)->delay($this->hydratorsDelay);
+            RedoOrganisationTimeSeries::dispatch($oldRegisteredAtDate, $oldRegisteredAtDate)->delay($this->hydratorsDelay);
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch($oldRegisteredAtDate, $oldRegisteredAtDate)->delay($this->hydratorsDelay);
+            }
+        }
+
+        if ($registeredAtDate) {
+            RedoShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            RedoOrganisationTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            if ($customer->master_shop_id) {
+                RedoMasterShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            }
+        }
 
         return $customer;
     }
@@ -312,7 +340,7 @@ class UpdateCustomer extends OrgAction
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
-
+            'disable_order_auto_processing'                         => ['sometimes', 'boolean']
         ];
 
         if ($this?->asAction) {

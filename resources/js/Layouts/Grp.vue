@@ -72,10 +72,16 @@ import {
 	faEyeSlash,
 	faCheckDouble,
 	faSmile,
-	faMailBulk,
-	faShare, faUndoAlt, faRobot, faUnlink,
+	faMailBulk, faEllipsisV,
+	faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument,faUnlink, faBoxOpen, faArrowRight as falArrowRight,
+	faStar as faStarLight,
+	faArrowUp as faArrowUpLight,
+	faMinus as faMinusLight,
+	faTimesCircle as faTimesCircleLight,
+	faUserAlien,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
+import { faViruses } from "@fad"
 import {
 	faAsterisk as fasAsterisk,
 	faBoxHeart,
@@ -87,7 +93,7 @@ import {
 	faStar,
 	faCheckCircle,
 	faTimesCircle,
-	faSkull as fasSkull,
+	faSkull as fasSkull, faMonument, faCubes, faExclamationTriangle as fasExclamationTriangle, faCandleHolder, faMedal
 } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
@@ -97,6 +103,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import { fetchUnreadCount } from "@/Composables/useNotificationSound"
+import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 
 library.add(
 	faRainbow,
@@ -116,6 +123,7 @@ library.add(
 	faExclamationTriangle,
 	faSunset,
 	faChair,
+	falMonument,
 	faSkull,
 	faSkullCow,
 	faToggleOn,
@@ -165,9 +173,12 @@ library.add(
 	faTrashAlt,
 	faCheck,
 	faAsterisk,
-	faMailBulk,
-	faShare, faUndoAlt, faRobot, faUnlink,
-	faBadgePercent
+	faMailBulk, faEllipsisV,
+	faShare, faUndoAlt,faRobot,faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses,
+	faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
+	faBadgePercent,
+	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
+	faUserAlien,
 )
 
 provide("layout", useLayoutStore())
@@ -176,7 +187,6 @@ provide("isMovePallet", true)
 
 initialiseApp()
 
-const StackedComponents = defineAsyncComponent(() => import("@/Layouts/Grp/StackedComponents.vue"))
 
 const layout = useLayoutStore()
 const sidebarOpen = ref(false)

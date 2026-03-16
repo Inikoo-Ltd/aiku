@@ -16,16 +16,16 @@ class ShopPlatformStatsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'               => $this->id,
-            'code'             => $this->code,
-            'slug'             => $this->slug,
-            'name'             => $this->name,
-            'type'             => $this->type,
-            'channels'         => $this->channels ?? 0,
-            'customers'        => $this->customers ?? 0,
-            'portfolios'       => $this->portfolios ?? 0,
-            'customer_clients' => $this->customer_clients ?? 0,
-            'sales'            => $this->sales ?? 0,
+            'id'                          => $this->id,
+            'code'                        => $this->code,
+            'slug'                        => $this->slug,
+            'name'                        => $this->name,
+            'type'                        => $this->type,
+            'channels'                    => $this->channels ?? 0,
+            'customers'                   => $this->customers ?? 0,
+            'portfolios'                  => $this->portfolios ?? 0,
+            'customer_clients'            => $this->customer_clients ?? 0,
+            'sales_grp_currency_external' => $this->sales_grp_currency_external ?? 0,
         ];
     }
 }

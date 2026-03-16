@@ -23,7 +23,6 @@ library.add(faCircle, faCheckCircle, faTimes, faBoxUp)
 const props = defineProps<{
     form: any
     fieldName: any
-    options: string[] | { label?: string, value: string }[]
     fieldData: {
         fetchRoute: routeType
     }
@@ -64,7 +63,7 @@ const link = ref()
 // const committedProducts = ref<Portfolio[]>(props.modelValue || [])
 
 const openDialog = () => {
-    // selectedProduct.value = [...committedProducts.value]
+    // props.form[props.fieldName] = [...committedProducts.value]
     showDialog.value = true
 }
 
@@ -97,24 +96,24 @@ const getProductsList = async (url?: string) => {
         isLoadingFetch.value = false
     }
 }
-
 const debouncegetProductsList = debounce(() => (getProductsList()), 500)
 
 const compSelectedProduct = computed(() =>
-    selectedProduct.value.map((item: Portfolio) => item.id)
+    props.form[props.fieldName].map((item: Portfolio) => item.id)
 )
 
-const selectedProduct = ref<Portfolio[]>([])
+// const selectedProduct = ref<Portfolio[]>(props.form[props.fieldName])
 const selectProduct = (item: Portfolio) => {
-    selectedProduct.value
-    const exists = selectedProduct.value.find(p => p.id === item.id)
+    props.form[props.fieldName]
+    const exists = props.form[props.fieldName].find(p => p.id === item.id)
     if (exists) {
-        selectedProduct.value = selectedProduct.value.filter(p => p.id !== item.id)
+        props.form[props.fieldName] = props.form[props.fieldName].filter(p => p.id !== item.id)
     } else {
-        selectedProduct.value?.push(item)
+        props.form[props.fieldName]?.push(item)
     }
 
-    props.form[props.fieldName] = selectedProduct.value.map(p => p.id)
+    // props.form[props.fieldName] = props.form[props.fieldName].map(p => p.id)
+    props.form[props.fieldName] = props.form[props.fieldName]
 }
 
 
@@ -122,21 +121,21 @@ const selectProduct = (item: Portfolio) => {
 const isAllSelected = computed(() => {
     if (list.value.length === 0) return false
     return list.value.every(item =>
-        selectedProduct.value.some(selected => selected.id === item.id)
+        props.form[props.fieldName].some(selected => selected.id === item.id)
     )
 })
 const selectAllProducts = () => {
     if (isAllSelected.value) {
         const currentPageIds = list.value.map(item => item.id)
-        selectedProduct.value = selectedProduct.value.filter(
+        props.form[props.fieldName] = props.form[props.fieldName].filter(
             selected => !currentPageIds.includes(selected.id)
         )
     } else {
-        const currentSelectedIds = selectedProduct.value.map(item => item.id)
+        const currentSelectedIds = props.form[props.fieldName].map(item => item.id)
         const productsToAdd = list.value.filter(
             item => !currentSelectedIds.includes(item.id)
         )
-        selectedProduct.value = [...selectedProduct.value, ...productsToAdd]
+        props.form[props.fieldName] = [...props.form[props.fieldName], ...productsToAdd]
     }
 }
 
@@ -151,39 +150,47 @@ onUnmounted(() => {
 })
 
 const clearAll = () => {
-    selectedProduct.value = []
+    props.form[props.fieldName] = []
 }
 
 // Method: on handle radio selection
 const onClickRadioProduct = (item) => {
-    if (get(props.form, ['default']) === item.id) {
-        set(props.form, ['default'], null)
-    } else {
-        set(props.form, ['default'], item.id)
-    }
+    const willBeChecked = !item.default
 
-    console.log('vvvvvvvvv', props.form)
+    props.form[props.fieldName].forEach(p => {
+        p.default = false
+    })
+
+    item.default = willBeChecked
+
+    props.form.isDirty = true
+}
+
+// Method: on click remove item
+const onRemoveItem = (item) => {
+    props.form[props.fieldName] = props.form[props.fieldName].filter((p: Portfolio) => p.id !== item.id)
+    // props.form[props.fieldName] = props.form[props.fieldName]
 }
 </script>
 
 <template>
-    <div>
+    <div class="flex gap-x-6">
         <div class="">
             <div class="xflex justify-between">
                 <div class="flex flex-grow flex-wrap">
-                    <template v-if="selectedProduct.length">
+                    <template v-if="props.form[props.fieldName].length">
                         <Tag
-                            v-for="(item, index) in selectedProduct"
+                            v-for="(item, index) in props.form[props.fieldName]"
                             :key="index"
                             @click="onClickRadioProduct(item)"
                             class="mb-2 xflex-grow cursor-pointer"
                         >
                             <template #label>
                                 <div class="flex items-center gap-2">
-                                    <FontAwesomeIcon v-if="get(props.form, ['default']) === item.id" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" v-tooltip="trans('Default gift, will auto selected on each Order created')"/>
+                                    <FontAwesomeIcon v-if="item.default" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" v-tooltip="trans('Default gift, will auto selected on each Order created')"/>
                                     <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
-                                    <div><span class="font-bold">{{ item.code }}</span> - {{ item.name }}</div>
-                                    <FontAwesomeIcon @click.stop="selectedProduct = selectedProduct.filter((p: Portfolio) => p.id !== item.id)" icon="fal fa-times" fixed-width class="text-red-500 hover:text-red-700 cursor-pointer" aria-hidden="true" />
+                                    <div class="text-justify"><span class="font-bold">{{ item.code }}</span> - <span class="opacity-70">{{ item.name }}</span></div>
+                                    <FontAwesomeIcon @click.stop="onRemoveItem(item)" icon="fal fa-times" fixed-width class="hover:bg-red-500/30 rounded-full px-1 py-1 text-red-400 hover:text-red-700 cursor-pointer" aria-hidden="true" />
                                 </div>
                             </template>
                         </Tag>
@@ -196,14 +203,18 @@ const onClickRadioProduct = (item) => {
                 </div>
 
                 <div>
-                    <Button
-                        @click="openDialog"
+                    <div @click="openDialog" class="border border-dashed border-gray-400 text-center hover:bg-gray-200 cursor-pointer rounded px-3 py-1 text-sm text-gray-600">
+                        <FontAwesomeIcon :icon="faPlus" class="opacity-70 text-xs" fixed-width aria-hidden="true" />
+                        {{ ctrans("Select") }}
+                    </div>
+                    <!-- <Button
+                        
                         :label="'select'"
                         size="xs"
                         full
                         type="dashed"
                         :icon="faPlus"
-                    />
+                    /> -->
                 </div>
             </div>
         </div>
@@ -323,5 +334,16 @@ const onClickRadioProduct = (item) => {
                 <!-- <Button type="create" full @click="confirmSelection" label="Select"></Button> -->
             </template>
         </Dialog>
+
+        
+
+        <!-- <button if="!fieldData.verification" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="submit">
+            <template v-if="form.isDirty">
+                <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
+                <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+            </template>
+            <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+        </button> -->
     </div>
+    <!-- <pre>{{ props.form[props.fieldName] }}</pre> -->
 </template>

@@ -34,7 +34,7 @@ class StoreWooCommerceProduct extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
+    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): Portfolio
     {
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
@@ -209,7 +209,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 ]);
             }
 
-            return $result;
+            return $portfolio;
         } catch (\Exception $e) {
             // Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
@@ -228,7 +228,7 @@ class StoreWooCommerceProduct extends RetinaAction
 
 
 
-            return null;
+            return $portfolio;
         }
     }
 

@@ -17,8 +17,10 @@ use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateFamil
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateStatus;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterSubDepartmentHydrateSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryWebImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,7 +31,9 @@ class UpdateCatalogueDuringMigration
 
     public function handle(MasterShop $masterShop, Command $command): void
     {
+        /** @var MasterShop $primaryPivotShop */
         $primaryPivotShop = $masterShop->shops()->where('migration_pivot', 1)->firstOrFail();
+
         if ($primaryPivotShop) {
             $command->info('Updating master catalogue from pivot shop '.$primaryPivotShop->name);
             CloneCatalogueStructure::run(
@@ -44,6 +48,7 @@ class UpdateCatalogueDuringMigration
                 MasterDepartmentHydrateMasterAssets::run($masterProductCategory);
                 MasterDepartmentHydrateDepartments::run($masterProductCategory);
                 MasterDepartmentHydrateMasterSubDepartments::run($masterProductCategory);
+                MasterSubDepartmentHydrateSubDepartment::run($masterProductCategory);
                 MasterFamilyHydrateMasterAssets::run($masterProductCategory);
                 MasterFamilyHydrateFamilies::run($masterProductCategory);
                 MasterFamilyHydrateStatus::run($masterProductCategory);
@@ -51,7 +56,9 @@ class UpdateCatalogueDuringMigration
             }
         }
 
-        foreach ($masterShop->shops as $shop) {
+
+        /** @var Shop $shop */
+        foreach ($masterShop->shops()->orderBy('id')->get() as $shop) {
             if ($shop->state == ShopStateEnum::CLOSED) {
                 continue;
             }
@@ -77,7 +84,7 @@ class UpdateCatalogueDuringMigration
                 shop: $shop,
                 deleteMissing: true
             );
-            if (!in_array($shop->slug, ['bg', 'ua'])) {
+            if (!$shop->is_aiku) {
                 UpdateProductDescriptionAndNameFromAurora::run($shop);
                 UpdateFamilyDescriptionAndNameFromAurora::run($shop);
             }

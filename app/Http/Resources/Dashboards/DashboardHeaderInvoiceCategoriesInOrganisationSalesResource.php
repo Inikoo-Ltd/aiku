@@ -97,59 +97,59 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                 ]
             ],
             [
-                'sales' => [
+                'sales_external' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'shop',
                     'data_display_type' => 'full',
                     'sortable'          => true,
-                    'scope'             => 'sales',
+                    'scope'             => 'sales_external',
                 ]
             ],
             [
-                'sales_minified' => [
+                'sales_external_minified' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'shop',
                     'data_display_type' => 'minified',
                     'sortable'          => true,
-                    'scope'             => 'sales',
+                    'scope'             => 'sales_external',
                 ]
             ],
             [
-                'sales_delta' => [
+                'sales_external_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'shop',
                     'data_display_type' => 'always',
                     'sortable'          => true,
-                    'scope'             => 'sales',
+                    'scope'             => 'sales_external',
                 ]
             ],
             [
-                'sales_org_currency' => [
+                'sales_org_currency_external' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
                     'sortable'          => true,
-                    'scope'             => 'sales_org_currency',
+                    'scope'             => 'sales_org_currency_external',
                 ]
             ],
             [
-                'sales_org_currency_minified' => [
+                'sales_org_currency_external_minified' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'minified',
                     'sortable'          => true,
-                    'scope'             => 'sales_org_currency',
+                    'scope'             => 'sales_org_currency_external',
                 ]
             ],
             [
-                'sales_org_currency_delta' => [
+                'sales_org_currency_external_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'org',
                     'data_display_type' => 'always',
                     'sortable'          => true,
-                    'scope'             => 'sales_org_currency',
+                    'scope'             => 'sales_org_currency_external',
                 ],
             ],
         );

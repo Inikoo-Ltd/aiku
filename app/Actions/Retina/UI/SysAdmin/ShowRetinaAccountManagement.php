@@ -126,6 +126,19 @@ class ShowRetinaAccountManagement extends RetinaAction
                                 ]
                         ],
                         [
+                            'title'  => __('Order Management'),
+                            'label'  => __('Order Management'),
+                            'icon'    => 'fal fa-shopping-cart',
+                            'fields' => [
+                                'disable_order_auto_processing'    => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Require manual order approval'),
+                                    'information' => __('When enabled, imported orders will not be charged automatically. You can review the order details and choose how to pay before processing.'),
+                                    'value' => data_get($customer->settings, 'disable_order_auto_processing', false),
+                                ]
+                            ]
+                        ],
+                        [
                             'title'  => __('Interest'),
                             'label'  => __('Interest'),
                             'icon'    => 'fal fa-tags',

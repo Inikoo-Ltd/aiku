@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, provide } from "vue"
+import { ref, computed, provide, onMounted, onBeforeUnmount, watch, nextTick } from "vue"
 import SlidesWorkshop from "@/Components/Banners/SlidesWorkshop.vue"
 import SliderLandscape from "@/Components/Banners/Slider/SliderLandscape.vue"
 import SliderSquare from "@/Components/Banners/Slider/SliderSquare.vue"
@@ -12,6 +12,7 @@ const props = defineProps<{
   modelValue: BannerWorkshop
   imagesUploadRoute: any
   banner: any
+  ratio: string
   galleryRoute: {
     stock_images: routeType
     uploaded_images: routeType
@@ -39,6 +40,65 @@ const hasSlides = computed(() => {
   return props.modelValue?.components?.some((item: any) => item.ulid != null)
 })
 
+const containerRef = ref<HTMLElement | null>(null)
+const containerWidth = ref(0)
+
+let resizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  if (!containerRef.value) return
+
+  containerWidth.value = containerRef.value.offsetWidth
+
+  resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      containerWidth.value = entry.contentRect.width
+    }
+  })
+
+  resizeObserver.observe(containerRef.value)
+})
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+})
+
+const calculatedHeight = computed(() => {
+  if (!props.ratio || !containerWidth.value) return 0
+
+  if (props.ratio.includes('/')) {
+    const [w, h] = props.ratio.split('/').map(Number)
+    return containerWidth.value * (h / w)
+  }
+
+  const numeric = Number(props.ratio)
+  if (!isNaN(numeric) && numeric > 0) {
+    return containerWidth.value * (1 / numeric)
+  }
+
+  return 0
+})
+
+const scaleValue = computed(() => {
+  if (calculatedHeight.value <= 500) return 1
+  return 500 / calculatedHeight.value
+})
+
+const needsScale = computed(() => calculatedHeight.value > 500)
+
+watch(
+  () => props.modelValue.components.length,
+  async () => {
+
+    await nextTick()
+
+    requestAnimationFrame(() => {
+      if (containerRef.value) {
+        containerWidth.value = containerRef.value.offsetWidth
+      }
+    })
+  }
+)
 </script>
 
 <template>
@@ -48,49 +108,36 @@ const hasSlides = computed(() => {
     </div>
 
     <!-- Banner preview -->
-    <div
-      class="flex pr-0.5"
-      :class="[props.modelValue.type === 'square'
-        ? 'justify-start 2xl:justify-center'
-        : 'justify-center']"
-    >
-      <div
-        v-if="props.modelValue.type === 'square'"
-        class="w-full min-h-[250px] max-h-[400px]"
-      >
-        <SliderSquare
-          :data="props.modelValue"
-          :jumpToIndex="jumpToIndex"
-          :view="screenView"
-        />
+    <div class="flex pr-0.5  editor-class" :class="[props.modelValue.type === 'square'
+      ? 'justify-start 2xl:justify-center'
+      : 'justify-center']">
+      <div v-if="props.modelValue.type === 'square'" class="w-full min-h-[250px] max-h-[400px]">
+        <SliderSquare :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio />
       </div>
 
-      <SliderLandscape
-        v-else
-        :data="props.modelValue"
-        :jumpToIndex="jumpToIndex"
-        :view="screenView"
-      />
+      <div v-else ref="containerRef" class="w-full max-w-[1200px] mx-auto overflow-hidden relative"
+        :style="needsScale ? { height: '500px' } : {}">
+        <div :style="needsScale
+          ? {
+            transform: `scale(${scaleValue})`,
+            transformOrigin: 'top center',
+            width: '100%'
+          }
+          : {}">
+          <SliderLandscape :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio="ratio" />
+        </div>
+      </div>
     </div>
 
     <!-- Editor -->
-    <SlidesWorkshop
-      :bannerType="props.modelValue.type"
-      class="clear-both mt-2 p-2.5"
-      v-model="data"
-      @jumpToIndex="val => (jumpToIndex = val)"
-      :imagesUploadRoute="imagesUploadRoute"
-      :screenView="screenView"
-      :galleryRoute="galleryRoute"
-    />
+    <SlidesWorkshop :bannerType="props.modelValue.type" class="clear-both mt-2 p-2.5" v-model="data"
+      @jumpToIndex="val => (jumpToIndex = val)" :imagesUploadRoute="imagesUploadRoute" :screenView="screenView"
+      :galleryRoute="galleryRoute" :ratio />
   </div>
 
   <!-- Empty state -->
   <div v-else>
-    <SlidesWorkshopAddMode
-      :data="props.modelValue"
-      :imagesUploadRoute="imagesUploadRoute"
-      :galleryRoute="galleryRoute"
-    />
+    <SlidesWorkshopAddMode :data="props.modelValue" :imagesUploadRoute="imagesUploadRoute" :galleryRoute="galleryRoute"
+      :ratio />
   </div>
 </template>

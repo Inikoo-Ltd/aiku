@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Exception;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateMailshotTemplate extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
     /**
      * @throws Exception
      */
@@ -62,12 +64,6 @@ class CreateMailshotTemplate extends OrgAction
 
             ]
         );
-    }
-
-    // NOTE: update this path
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
     /**

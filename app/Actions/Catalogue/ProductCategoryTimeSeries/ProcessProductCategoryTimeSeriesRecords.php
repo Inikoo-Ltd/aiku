@@ -9,8 +9,10 @@ namespace App\Actions\Catalogue\ProductCategoryTimeSeries;
 
 use App\Actions\Catalogue\ProductCategoryTimeSeries\Hydrators\ProductCategoryTimeSeriesHydrateNumberRecords;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\ProductCategoryTimeSeries;
+use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
+    use BuildsInvoiceTransactionTimeSeriesQuery;
 
     public string $jobQueue = 'sales';
 
@@ -54,102 +57,26 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(ProductCategoryTimeSeries $timeSeries, string $from, string $to): void
     {
+        $processedPeriods = [];
+
         $categoryColumn = match ($timeSeries->type) {
-            'department' => 'department_id',
+            'department'     => 'department_id',
             'sub_department' => 'sub_department_id',
-            'family' => 'family_id',
+            'family'         => 'family_id',
         };
 
-        $results = DB::table('invoice_transactions')
+        $query = DB::table('invoice_transactions')
             ->where($categoryColumn, $timeSeries->product_category_id)
             ->where('date', '>=', $from)
             ->where('date', '<=', $to)
             ->whereNull('deleted_at');
 
-        if ($timeSeries->frequency == TimeSeriesFrequencyEnum::YEARLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM date) as year'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN invoice_id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN invoice_id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM date) as year'),
-                DB::raw('EXTRACT(QUARTER FROM date) as quarter'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN invoice_id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN invoice_id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM date)'), DB::raw('EXTRACT(QUARTER FROM date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM date) as year'),
-                DB::raw('EXTRACT(MONTH FROM date) as month'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN invoice_id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN invoice_id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM date)'), DB::raw('EXTRACT(MONTH FROM date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-            $results->select(
-                DB::raw('EXTRACT(YEAR FROM date) as year'),
-                DB::raw('EXTRACT(WEEK FROM date) as week'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN invoice_id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN invoice_id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('EXTRACT(YEAR FROM date)'), DB::raw('EXTRACT(WEEK FROM date)'));
-        } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
-            $results->select(
-                DB::raw('CAST(date AS DATE) as date'),
-                DB::raw('SUM(net_amount) as sales'),
-                DB::raw('SUM(org_net_amount) as sales_org_currency'),
-                DB::raw('SUM(grp_net_amount) as sales_grp_currency'),
-                DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN invoice_id END) as invoices'),
-                DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN invoice_id END) as refunds'),
-                DB::raw('COUNT(DISTINCT order_id) as orders'),
-            )->groupBy(DB::raw('CAST(date AS DATE)'));
-        }
-
-        $results = $results->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
 
         foreach ($results as $result) {
-            if ($timeSeries->frequency == TimeSeriesFrequencyEnum::QUARTERLY) {
-                $periodFrom = Carbon::create((int)$result->year, ((int)$result->quarter - 1) * 3 + 1)->startOfQuarter();
-                $periodTo = Carbon::create((int)$result->year, ((int)$result->quarter - 1) * 3 + 1)->endOfQuarter();
-                $period     = $result->year.' Q'.$result->quarter;
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::MONTHLY) {
-                $periodFrom = Carbon::create((int) $result->year, (int) $result->month)->startOfMonth();
-                $periodTo   = Carbon::create((int) $result->year, (int) $result->month)->endOfMonth();
-                $period     = $result->year.'-'.str_pad($result->month, 2, '0', STR_PAD_LEFT);
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::WEEKLY) {
-                $periodFrom = Carbon::create((int) $result->year)->week((int) $result->week)->startOfWeek();
-                $periodTo   = Carbon::create((int) $result->year)->week((int) $result->week)->endOfWeek();
-                $period     = $result->year.' W'.str_pad($result->week, 2, '0', STR_PAD_LEFT);
-            } elseif ($timeSeries->frequency == TimeSeriesFrequencyEnum::DAILY) {
-                $periodFrom = Carbon::parse($result->date)->startOfDay();
-                $periodTo   = Carbon::parse($result->date)->endOfDay();
-                $period     = Carbon::parse($result->date)->format('Y-m-d');
-            } else {
-                $periodFrom = Carbon::parse((int) $result->year.'-01-01');
-                $periodTo   = Carbon::parse((int) $result->year.'-12-31');
-                $period     = $result->year;
-            }
+            ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
+
+            $metrics = $this->getPortfolioStats($timeSeries->product_category_id, $timeSeries->type, $periodFrom, $periodTo);
 
             $timeSeries->records()->updateOrCreate(
                 [
@@ -163,17 +90,96 @@ class ProcessProductCategoryTimeSeriesRecords implements ShouldBeUnique
                     'frequency'                       => $timeSeries->frequency->singleLetter()
                 ],
                 [
-                    'from'               => $periodFrom,
-                    'to'                 => $periodTo,
-                    'sales'              => $result->sales,
-                    'sales_org_currency' => $result->sales_org_currency,
-                    'sales_grp_currency' => $result->sales_grp_currency,
-                    'customers_invoiced' => $result->customers_invoiced,
-                    'invoices'           => $result->invoices,
-                    'refunds'            => $result->refunds,
-                    'orders'             => $result->orders,
+                    'from'                        => $periodFrom,
+                    'to'                          => $periodTo,
+                    'sales_external'              => $result->sales_external,
+                    'sales_org_currency_external' => $result->sales_org_currency_external,
+                    'sales_grp_currency_external' => $result->sales_grp_currency_external,
+                    'customers_invoiced'          => $result->customers_invoiced,
+                    'invoices'                    => $result->invoices,
+                    'refunds'                     => $result->refunds,
+                    'orders'                      => $result->orders,
+                    'sold'                        => $result->sold,
+                    ...$metrics,
+                ]
+            );
+
+            $processedPeriods[] = $period;
+        }
+
+        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+    }
+
+    protected function processPeriodsWithoutInvoices(ProductCategoryTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    {
+        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+
+        foreach ($nonInvoicePeriods as $periodData) {
+            $metrics = $this->getPortfolioStats($timeSeries->product_category_id, $timeSeries->type, $periodData['from'], $periodData['to']);
+
+            $hasActivity = collect($metrics)->some(fn ($value) => $value != 0 && $value !== null);
+
+            if (!$hasActivity) {
+                continue;
+            }
+
+            $timeSeries->records()->updateOrCreate(
+                [
+                    'product_category_time_series_id' => $timeSeries->id,
+                    'period'                          => $periodData['period'],
+                    'type'                            => match ($timeSeries->type) {
+                        'department'     => 'D',
+                        'sub_department' => 'S',
+                        'family'         => 'F',
+                    },
+                    'frequency'                       => $timeSeries->frequency->singleLetter()
+                ],
+                [
+                    'from'                        => $periodData['from'],
+                    'to'                          => $periodData['to'],
+                    'sales_external'              => 0,
+                    'sales_org_currency_external' => 0,
+                    'sales_grp_currency_external' => 0,
+                    'customers_invoiced'          => 0,
+                    'invoices'                    => 0,
+                    'refunds'                     => 0,
+                    'orders'                      => 0,
+                    'sold'                        => 0,
+                    ...$metrics,
                 ]
             );
         }
+    }
+
+    protected function getPortfolioStats(int $productCategoryId, string $type, Carbon $periodFrom, Carbon $periodTo): array
+    {
+        $categoryColumn = match ($type) {
+            'department'     => 'department_id',
+            'sub_department' => 'sub_department_id',
+            'family'         => 'family_id',
+        };
+
+        $assetIds = DB::table('products')
+            ->where($categoryColumn, $productCategoryId)
+            ->where('is_main', true)
+            ->pluck('asset_id');
+
+        if ($assetIds->isEmpty()) {
+            return ['dropshippers' => 0, 'listings' => 0];
+        }
+
+        $result = DB::table('portfolios')
+            ->selectRaw('COUNT(id) as total_listed, COUNT(DISTINCT customer_id) as total_customers')
+            ->where('item_type', 'Product')
+            ->whereIn('item_id', $assetIds)
+            ->where('last_added_at', '>=', $periodFrom)
+            ->where('last_added_at', '<=', $periodTo)
+            ->whereNull('last_removed_at')
+            ->first();
+
+        return [
+            'dropshippers' => $result->total_customers ?? 0,
+            'listings'     => $result->total_listed ?? 0,
+        ];
     }
 }

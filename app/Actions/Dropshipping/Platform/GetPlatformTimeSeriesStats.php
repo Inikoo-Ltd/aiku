@@ -53,14 +53,14 @@ class GetPlatformTimeSeriesStats
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
                 [
-                    'sales'              => 'sales',
-                    'sales_org_currency' => 'sales_org_currency',
-                    'sales_grp_currency' => 'sales_grp_currency',
-                    'invoices'           => 'invoices',
-                    'channels'           => 'channels',
-                    'customers'          => 'customers',
-                    'portfolios'         => 'portfolios',
-                    'customer_clients'   => 'customer_clients'
+                    'sales_external'              => 'sales_external',
+                    'sales_org_currency_external' => 'sales_org_currency_external',
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices',
+                    'channels'                    => 'channels',
+                    'customers'                   => 'customers',
+                    'portfolios'                  => 'portfolios',
+                    'customer_clients'            => 'customer_clients'
                 ],
                 'platform_time_series_records',
                 'platform_time_series_id',
@@ -109,10 +109,10 @@ class GetPlatformTimeSeriesStats
 
         $salesField = match (true) {
             // $parent instanceof Shop => 'sales',
-            $parent instanceof Shop => 'sales_grp_currency',
+            $parent instanceof Shop => 'sales_grp_currency_external',
             // $parent instanceof Organisation => 'sales_org_currency',
-            $parent instanceof Organisation => 'sales_grp_currency',
-            $parent instanceof Group => 'sales_grp_currency',
+            $parent instanceof Organisation => 'sales_grp_currency_external',
+            $parent instanceof Group => 'sales_grp_currency_external',
         };
 
         foreach ($intervals as $interval) {
@@ -136,10 +136,10 @@ class GetPlatformTimeSeriesStats
 
         $salesField = match (true) {
             // $parent instanceof Shop => 'sales',
-            $parent instanceof Shop => 'sales_grp_currency',
+            $parent instanceof Shop => 'sales_grp_currency_external',
             // $parent instanceof Organisation => 'sales_org_currency',
-            $parent instanceof Organisation => 'sales_grp_currency',
-            $parent instanceof Group => 'sales_grp_currency',
+            $parent instanceof Organisation => 'sales_grp_currency_external',
+            $parent instanceof Group => 'sales_grp_currency_external',
         };
 
         foreach ($intervals as $interval) {

@@ -9,16 +9,18 @@
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\Picking\PickAllItem;
 use App\Actions\Dispatching\Picking\PickFromMagicPlace;
+use App\Actions\Dispatching\Picking\StoreAsWaitingPicking;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpsertPicking;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem:id}')->group(function () {
-    Route::post('packing', StorePacking::class)->name('packing.store')->withoutScopedBindings();
+    // Route::post('packing', StorePacking::class)->name('packing.store')->withoutScopedBindings();
     Route::post('picking', StorePicking::class)->name('picking.store');
     Route::post('picking', UpsertPicking::class)->name('picking.upsert');
     Route::post('picking-all', PickAllItem::class)->name('picking_all.store')->withoutScopedBindings();
     Route::post('not-picking', StoreNotPickPicking::class)->name('not_picking.store')->withoutScopedBindings();
+    Route::post('set-as-waiting', StoreAsWaitingPicking::class)->name('set_as_waiting.store')->withoutScopedBindings();
     Route::post('pick-from-magic-place', PickFromMagicPlace::class)->name('picking.magic_place')->withoutScopedBindings();
 });

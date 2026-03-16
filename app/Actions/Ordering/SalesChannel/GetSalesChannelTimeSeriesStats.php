@@ -42,9 +42,9 @@ class GetSalesChannelTimeSeriesStats
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
                 [
-                    'refunds'                   => 'refunds',
-                    'invoices'                  => 'invoices',
-                    'sales_grp_currency'        => 'sales_grp_currency',
+                    'refunds'                     => 'refunds',
+                    'invoices'                    => 'invoices',
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
                 ],
                 'sales_channel_time_series_records',
                 'sales_channel_time_series_id',

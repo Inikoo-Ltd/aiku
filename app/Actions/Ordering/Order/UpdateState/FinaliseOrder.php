@@ -8,13 +8,16 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
 
@@ -53,6 +56,15 @@ class FinaliseOrder extends OrgAction
             $this->orderHydrators($order);
             $this->orderHandlingHydrators($order, $oldState);
             $this->orderHandlingHydrators($order, OrderStateEnum::FINALISED);
+
+            if (!$fromDeliveryNote) {
+                /** @var DeliveryNote $deliveryNote */
+                $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+                if ($deliveryNote) {
+                    FinaliseDeliveryNote::make()->action($deliveryNote, true);
+                }
+            }
+
 
             return $order;
         }

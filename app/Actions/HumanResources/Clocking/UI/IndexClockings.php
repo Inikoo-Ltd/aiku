@@ -65,25 +65,29 @@ class IndexClockings extends OrgAction
                     'clocked_at',
                     'clockings.id',
                     'clockings.type',
+                    'clockings.notes',
+                    'clockings.organisation_id',
                     'workplaces.slug as workplace_slug',
                     'clocking_machines.slug as clocking_machine_slug',
                     'clocking_machine_id',
                     'media.slug as media_slug',
-                    'media.id as media_id'
+                    'media.id as media_id',
+                    'organisations.code as organisation_code'
                 ]
             )
             ->leftJoin('workplaces', 'clockings.workplace_id', 'workplaces.id')
             ->leftJoin('media', 'clockings.image_id', 'media.id')
             ->leftJoin('clocking_machines', 'clockings.clocking_machine_id', 'clocking_machines.id')
+            ->leftJoin('organisations', 'clockings.organisation_id', 'organisations.id')
             ->allowedSorts(['clocked_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
 
-    public function tableStructure(Organisation|Workplace|ClockingMachine|Timesheet $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Organisation|Workplace|ClockingMachine|Timesheet $parent, ?array $modelOperations = null, $prefix = null, bool $showActions = false): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $showActions) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -101,9 +105,14 @@ class IndexClockings extends OrgAction
                             class_basename($parent) == 'ClockingMachine' ? $parent->humanResourcesStats?->number_clockings : $parent->stats?->number_clockings,
                     ]
                 )
-                ->column(key: 'media_slug', label: __('photo'), canBeHidden: false)
-                ->column(key: 'clocked_at', label: __('time'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'media_slug', label: __('Photo'), canBeHidden: false)
+                ->column(key: 'clocked_at', label: __('Time'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('slug');
+
+            if ($showActions && class_basename($parent) == 'Timesheet') {
+                $table->column(key: 'actions', label: 'Actions');
+            }
         };
     }
 
@@ -183,7 +192,9 @@ class IndexClockings extends OrgAction
                         ] : false
                     ]
                 ],
-                'data'        => ClockingsResource::collection($clockings),
+                'data'        => ClockingsResource::collection($clockings)->additional([
+                    'can_edit_clockings' => $this->canEdit,
+                ]),
 
 
             ]

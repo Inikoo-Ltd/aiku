@@ -13,6 +13,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairProductCategoryMissingStats
 {
@@ -54,8 +55,12 @@ class RepairProductCategoryMissingStats
         } else {
             $count = ProductCategory::withTrashed()->count();
 
+            ProgressBar::setFormatDefinition(
+                'aiku_eta',
+                ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+            );
             $bar = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
+            $bar->setFormat('aiku_eta');
             $bar->start();
 
             ProductCategory::withTrashed()->orderBy('id')

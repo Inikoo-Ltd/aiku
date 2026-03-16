@@ -95,6 +95,11 @@ class EditClockingMachine extends OrgAction
                         'label' => __('Allow Multiple Scans'),
                         'value' => (bool) data_get($clockingMachine->config, 'qr.allow_multiple_scans', false),
                     ],
+                    'config.qr.allow_coordinates' => [
+                        'type'  => 'toggle',
+                        'label' => __('Allow Coordinates Matching'),
+                        'value' => (bool) data_get($clockingMachine->config, 'qr.allow_coordinates', false),
+                    ],
                     'config.qr.coordinates' => [
                         'type'  => 'map-picker',
                         'label' => __('Maps Coordinates'),

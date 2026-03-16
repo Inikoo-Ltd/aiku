@@ -139,6 +139,7 @@ class IndexCollections extends OrgAction
             'webpages.slug as webpage_slug',
             'websites.slug as website_slug',
             'currencies.code as currency_code',
+            'collections.health_rank',
         ];
 
         if ($prefix === CollectionsTabsEnum::SALES->value) {
@@ -147,16 +148,16 @@ class IndexCollections extends OrgAction
                 timeSeriesRecordsTable: 'collection_time_series_records',
                 foreignKey: 'collection_id',
                 aggregateColumns: [
-                    'sales_grp_currency' => 'sales',
-                    'invoices'           => 'invoices'
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
+                    'invoices'                    => 'invoices'
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
                 includeLY: true
             );
 
-            $selects[] = $timeSeriesData['selectRaw']['sales'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
@@ -184,8 +185,9 @@ class IndexCollections extends OrgAction
                 'number_parents',
                 'number_families',
                 'number_products',
-                'sales',
+                'sales_grp_currency_external',
                 'invoices',
+                'health_rank',
             ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -228,10 +230,11 @@ class IndexCollections extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
                 $table->column(key: 'image_thumbnail', label: '', type: 'avatar');

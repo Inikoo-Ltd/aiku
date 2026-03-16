@@ -24,6 +24,7 @@ import { ZiggyVue } from "ziggy-js";
 import "leaflet/dist/leaflet.css"
 
 import L from "leaflet"
+import { ctrans } from "@/Composables/useTrans";
 
 delete L.Icon.Default.prototype._getIconUrl
 
@@ -118,8 +119,10 @@ createInertiaApp(
                     });
       }
 
-      app.use(plugin).
-        use(createPinia()).
+      app.use(plugin);
+      app.config.globalProperties.ctrans = ctrans;  // global function for <template> -- Custom translation
+      
+      app.use(createPinia()).
         use(ZiggyVue, Ziggy).
         use(Notifications).
         use(FloatingVue).

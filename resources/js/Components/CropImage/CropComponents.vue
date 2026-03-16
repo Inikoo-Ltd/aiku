@@ -38,7 +38,7 @@ const generateThumbnail = (fileOrUrl) => {
     <div class="block w-full">
         <div class="w-full overflow-hidden relative">
             <Cropper ref="_cropper" class="w-[400px] md:w-[440px] h-[200px] rounded-2xl object-cover" :src="generateThumbnail(props.data)" :stencil-props="{
-                aspectRatio:  props.ratio.w / props.ratio.h,
+                aspectRatio: ratio,
                 movable: true,
                 resizable: true,
             }" :auto-zoom="true"  @ready="onReady" @change="cropOnChange" >

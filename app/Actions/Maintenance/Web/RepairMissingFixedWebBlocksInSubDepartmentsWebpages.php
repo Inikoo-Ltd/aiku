@@ -12,6 +12,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
@@ -35,30 +36,14 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
     protected function processSubDepartmentWebpages(Webpage $webpage, Command $command): void
     {
-
-
-
         /** @var ProductCategory $subDepartment */
         $subDepartment = $webpage->model;
 
-        $productsWebBlock = $this->getWebpageBlocksByType($webpage, 'families-1');
+        // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
 
-        if (count($productsWebBlock) == 0) {
-            $command->error('Webpage '.$webpage->code.' Families Web Block not found');
-            $this->createWebBlock($webpage, 'families-1');
-        } elseif (count($productsWebBlock) > 1) {
-            $command->error('Webpage '.$webpage->code.' MORE than 1 Families Web Block found');
-        }
-
-        $productsWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
-
-        if (count($productsWebBlock) == 0) {
-            $command->error('Webpage '.$webpage->code.' Products Web Block not found');
-            $this->createWebBlock($webpage, 'products-1');
-        } elseif (count($productsWebBlock) > 1) {
-            $command->error('Webpage '.$webpage->code.' MORE than 1 Products Web Block found');
-        }
-
+        // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
 
         $collectionsWebBlock = $this->getWebpageBlocksByType($webpage, 'collections-1');
         if (count($collectionsWebBlock) > 0) {
@@ -80,7 +65,13 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         }
 
         $webpage->refresh();
-        $this->setDescriptionWebBlockOnTop($webpage);
+        if (count($countCollectionDescriptionBlock) == 0) {
+            $this->setDescriptionWebBlockOnTop($webpage);
+        }
+
+        if ($command->option('hide-description')) {
+            $this->setDescriptionWebBlockHidden($webpage);
+        }
         $webpage->refresh();
 
         UpdateWebpageContent::run($webpage);
@@ -127,13 +118,32 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
         UpdateWebpageContent::run($webpage);
     }
 
+    public function setDescriptionWebBlockHidden(Webpage $webpage): void
+    {
+        $subDepartmentDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'sub-department-description-1')->first();
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_sub_departments_webpages';
+        if ($subDepartmentDescriptionWebBlock) {
+            DB::table('model_has_web_blocks')
+                ->where('id', $subDepartmentDescriptionWebBlock->model_has_web_blocks_id)
+                ->update(['show' => false]);
+        }
+
+        UpdateWebpageContent::run($webpage);
+    }
+
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_sub_departments_webpages {--website_id=} {--hide-description}';
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->where('sub_type', 'sub_department')->get();
-
+        $websiteId       = $command->option('website_id');
+        $webpagesID = DB::table('webpages')
+                        ->select('id')
+                        ->where('sub_type', 'sub_department')
+                        ->when(
+                            !empty($websiteId),
+                            fn ($q) => $q->where('website_id', $websiteId)
+                        )
+                        ->get();
 
         foreach ($webpagesID as $webpageID) {
             $webpage = Webpage::find($webpageID->id);

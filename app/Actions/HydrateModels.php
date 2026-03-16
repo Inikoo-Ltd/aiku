@@ -59,11 +59,11 @@ class HydrateModels extends HydrateModel
             $this->hydrateCatalogueSales($command);
         }
 
-        if ($this->checkIfCanHydrate(['billables', 'bil','bill'], $command)) {
+        if ($this->checkIfCanHydrate(['billables', 'bil', 'bill'], $command)) {
             $this->hydrateBillables($command);
         }
 
-        if ($this->checkIfCanHydrate(['discount', 'disc'], $command)) {
+        if ($this->checkIfCanHydrate(['discount', 'disc', 'offers'], $command)) {
             $this->hydrateDiscount($command);
         }
 
@@ -196,8 +196,8 @@ class HydrateModels extends HydrateModel
     protected function hydrateDiscount(Command $command): void
     {
         $command->info('Discount section 💲');
-        $command->call('hydrate:offers');
         $command->call('hydrate:offer_campaigns');
+        $command->call('hydrate:offers');
     }
 
     protected function hydrateWebsite(Command $command): void
@@ -216,7 +216,6 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:mailshots');
         $command->call('hydrate:email_bulk_runs');
         $command->call('hydrate:dispatched_emails');
-
     }
 
     protected function hydrateSysadmin(Command $command): void

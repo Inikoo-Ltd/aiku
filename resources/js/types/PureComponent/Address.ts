@@ -71,6 +71,7 @@ export interface AddressManagement {
 		store_route: routeType
 	}
 	collection_address_id?: number
+	is_shipping_by_external?: boolean
 	updateRoute: routeType
 	addresses: any
   address_modal_title: string

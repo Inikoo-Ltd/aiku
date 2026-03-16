@@ -147,6 +147,14 @@ const scrollToIndex = (index: number) => {
     })
 }
 
+const onScroll = () => {
+    if (!mobileSlider.value) return
+
+    const el = mobileSlider.value
+    const slideWidth = el.clientWidth
+    currentIndex.value = Math.round(el.scrollLeft / slideWidth)
+}
+
 
 defineExpose({
     _button_variant
@@ -163,7 +171,7 @@ defineExpose({
                 :screenType="screenType" />
 
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
-            <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
+           <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
                 :type="typeOfLink"
                 class="relative block w-full mb-1 rounded overflow-hidden  aspect-[5/5]"
                 @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false">
@@ -175,10 +183,18 @@ defineExpose({
                         <div v-if="images.length" class="md:hidden w-full relative aspect-square overflow-hidden">
 
                             <!-- MULTI IMAGE SLIDER -->
-                            <div v-if="images.length > 1" ref="mobileSlider" @touchstart="onTouchStart"
-                                @touchend="onTouchEnd" class="flex w-full h-full overflow-hidden">
+                                <div
+                                    v-if="images.length > 1"
+                                    ref="mobileSlider"
+                                    class="mobile-slider flex w-full h-full overflow-x-auto scroll-smooth snap-x snap-mandatory"
+                                    @scroll="onScroll"
+                                >
 
-                                <div v-for="(img, i) in images" :key="i" class="w-full h-full flex-shrink-0">
+                                <div
+                                    v-for="(img, i) in images"
+                                    :key="i"
+                                    class="w-full h-full flex-shrink-0 snap-start"
+                                >
 
                                     <Image :src="img" :alt="product.name"
                                         class="w-full h-full select-none pointer-events-none"
@@ -280,10 +296,10 @@ defineExpose({
 
             </component>
 
-            <div class="xpx-3 mt-2">
+              <div class="mt-2">
                 <!-- Title -->
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
-                    :type="typeOfLink" :id="product?.url?.id">
+                    :type="typeOfLink" :id="product?.url?.id" @start="() => idxSlideLoading = true" @finish="() => idxSlideLoading = false">
                     <template #default>
                         <p class="inline-block leading-4">
                             <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
@@ -291,9 +307,9 @@ defineExpose({
                         </p>
                     </template>
                 </LinkIris>
+
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
-                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{
-                        product.name }}
+                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
                 </div>
 
                 <!-- Product Code -->
@@ -347,4 +363,14 @@ defineExpose({
 </template>
 
 
-<style scoped></style>
+<style scoped>
+.mobile-slider {
+    -webkit-overflow-scrolling: touch; /* smooth momentum on iOS */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and old Edge */
+}
+
+.mobile-slider::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+}
+</style>

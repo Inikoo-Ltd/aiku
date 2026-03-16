@@ -9,6 +9,7 @@
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
+use App\Actions\Dropshipping\Allegro\Product\StoreRetinaNewProductToCurrentAllegro;
 use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
@@ -21,6 +22,7 @@ use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
+use App\Actions\Dropshipping\Tiktok\Product\MatchRetinaPortfolioToCurrentTiktokProduct;
 use App\Actions\Dropshipping\Tiktok\Product\StoreRetinaNewProductToCurrentTiktok;
 use App\Actions\Dropshipping\Tiktok\User\AuthCheckCreateTiktokChannel;
 use App\Actions\Dropshipping\Tiktok\User\CheckTiktokChannel;
@@ -39,6 +41,8 @@ use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByCashOnDelivery;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
+use App\Actions\Retina\Allegro\CreateRetinaNewAllPortfoliosToAllegro;
+use App\Actions\Retina\Allegro\CreateRetinaNewBulkPortfoliosToAllegro;
 use App\Actions\Retina\CRM\DeleteRetinaBackInStockReminder;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\DeleteRetinaFavourite;
@@ -69,8 +73,8 @@ use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
+use App\Actions\Retina\Dropshipping\Orders\UpdateOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
-use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderEligibleGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
@@ -151,6 +155,8 @@ use App\Actions\Retina\SysAdmin\DeleteRetinaWebUser;
 use App\Actions\Retina\SysAdmin\StoreRetinaWebUser;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Retina\SysAdmin\UpdateRetinaWebUser;
+use App\Actions\Retina\TikTok\CreateRetinaNewAllPortfoliosToTiktok;
+use App\Actions\Retina\TikTok\CreateRetinaNewBulkPortfoliosToTiktok;
 use App\Actions\Retina\UI\Profile\UpdateRetinaProfile;
 use App\Actions\Retina\Woo\CreateRetinaNewAllPortfoliosToWoo;
 use App\Actions\Retina\Woo\CreateRetinaNewBulkPortfoliosToWoo;
@@ -253,7 +259,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('/', UpdateRetinaOrder::class)->name('update');
-    Route::patch('update-eligible-gift', UpdateRetinaOrderEligibleGift::class)->name('update_eligible_gift');
+    Route::patch('update-gr-gift', UpdateOrderGrGift::class)->name('update_gr_gift');
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
@@ -347,6 +353,12 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', StoreNewProductToCurrentEbay::class)->name('woo.single_upload')->withoutScopedBindings();
 
+    Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/tiktok-batch-all', CreateRetinaNewAllPortfoliosToTiktok::class)->name('tiktok.batch_all')->withoutScopedBindings();
+
+    Route::post('{customerSalesChannel:id}/allegro-batch-upload', CreateRetinaNewBulkPortfoliosToAllegro::class)->name('allegro.batch_upload')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/allegro-batch-all', CreateRetinaNewAllPortfoliosToAllegro::class)->name('allegro.batch_all')->withoutScopedBindings();
+
     Route::post('{amazonUser:id}/amazon-batch-upload', SyncronisePortfoliosToAmazon::class)->name('amazon.batch_upload')->withoutScopedBindings();
     Route::post('{amazonUser:id}/amazon-single-upload/{portfolio:id}', SyncronisePortfolioToAmazon::class)->name('amazon.single_upload')->withoutScopedBindings();
 
@@ -402,6 +414,9 @@ Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetina
 Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentChannel::class, 'asDraft'])->name('portfolio.update_new_product.draft');
 
 Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreRetinaNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product')->withoutScopedBindings();
+Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchRetinaPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product');
+
+Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreRetinaNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product')->withoutScopedBindings();
 
 Route::post('portfolios/update-new-product-price/publish', UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class)->name('portfolios.update_new_product_price.publish');
 Route::post('portfolios/update-new-product-price/draft', [UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel::class, 'asDraft'])->name('portfolios.update_new_product_price.draft');

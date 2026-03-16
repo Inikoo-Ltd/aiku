@@ -79,7 +79,7 @@ const getIntervalStateColor = (state?: string) => {
 </script>
 
 <template>
-    <component
+    <component v-if="cell"
         class="flex gap-2 items-center tabular-nums text-xs md:text-base"
         :class="[
             cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
@@ -101,14 +101,14 @@ const getIntervalStateColor = (state?: string) => {
             :alt="cell.icon"
             v-tooltip="cell?.tooltip ?? cell.icon"
         />
-        <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value }}</span>
+        <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value === 'NA' ? '--' : cell?.formatted_value }}</span>
         <FontAwesomeIcon
             v-if="cell?.delta_icon?.change"
-            :icon="getIntervalChangesIcon(cell?.delta_icon?.change)?.icon"
+            :icon="cell?.formatted_value === 'NA' ? faEquals : getIntervalChangesIcon(cell?.delta_icon?.change)?.icon"
             class="text-xxs md:text-sm"
             :class="[
-                getIntervalChangesIcon(cell?.delta_icon?.change)?.class,
-                getIntervalStateColor(cell?.delta_icon?.state),
+                cell?.formatted_value === 'NA' ? '' : getIntervalChangesIcon(cell?.delta_icon?.change)?.class,
+                cell?.formatted_value === 'NA' ? 'text-gray-400' : getIntervalStateColor(cell?.delta_icon?.state),
             ]"
             fixed-width
             aria-hidden="true"

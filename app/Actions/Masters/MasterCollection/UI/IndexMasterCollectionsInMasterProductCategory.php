@@ -58,10 +58,12 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
             'master_collections.id',
             'master_collections.code',
             'master_collections.state',
+            'master_collections.status',
             'master_collections.name',
             'master_collections.description',
             'master_collections.created_at',
             'master_collections.updated_at',
+            'master_collections.web_images',
             'master_collections.slug',
         ];
 
@@ -75,7 +77,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
                 timeSeriesRecordsTable: 'master_collection_time_series_records',
                 foreignKey: 'master_collection_id',
                 aggregateColumns: [
-                    'sales_grp_currency' => 'sales',
+                    'sales_grp_currency_external' => 'sales_grp_currency_external',
                     'invoices'           => 'invoices'
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
@@ -83,9 +85,9 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
                 includeLY: true
             );
             $selects[] = 'currencies.code as currency_code';
-            $selects[] = $timeSeriesData['selectRaw']['sales'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
-            $selects[] = $timeSeriesData['selectRaw']['sales_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
@@ -108,7 +110,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
             $allowedSorts = [
                 'code',
                 'name',
-                'sales',
+                'sales_grp_currency_external',
                 'invoices'
             ];
         }
@@ -146,8 +148,8 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
             if ($sales) {
                 $table
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
             } else {
@@ -182,7 +184,9 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
 
         $title = $masterProductCategory->name;
-        $iconRight = [];
+        $iconRight       = [
+            'icon' => 'fal fa-album-collection',
+        ];
 
         $afterTitle = [
             'label' => __('Master Collections')
@@ -196,7 +200,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
             $subNavigation = $this->getMasterDepartmentSubNavigation($masterProductCategory);
         } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $icon = [
-                'icon'  => ['fal', 'fa-dot-circle'],
+                'icon'  => ['fal', 'fa-folder-download'],
                 'title' => __('Master sub department')
             ];
             $subNavigation = $this->getMasterSubDepartmentSubNavigation($masterProductCategory);

@@ -19,6 +19,7 @@ use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Discounts\OfferCampaign;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -41,15 +42,25 @@ class SeedShopOfferCampaigns extends GrpAction
             $code = $case->codes()[$case->value];
 
             if ($shop->offerCampaigns()->where('code', $code)->exists()) {
+                /** @var OfferCampaign $offerCampaign */
+                $offerCampaign = $shop->offerCampaigns()->where('code', $code)->first();
+                $offerCampaign->update(
+                    [
+                        'code'   => $code,
+                        'status' => $case->defaultStatus()
+                    ]
+                );
+
                 continue;
             }
 
             $offerCampaign = StoreOfferCampaign::make()->action(
                 $shop,
                 [
-                    'code' => $code,
-                    'name' => $case->labels()[$case->value],
-                    'type' => $case
+                    'code'   => $code,
+                    'name'   => $case->labels()[$case->value],
+                    'type'   => $case,
+                    'status' => $case->defaultStatus(),
                 ]
             );
 
@@ -95,7 +106,7 @@ class SeedShopOfferCampaigns extends GrpAction
     public function asCommand(Command $command): int
     {
         $command->info("Seeding shop offer campaigns");
-        foreach (Shop::all() as $shop) {
+        foreach (Shop::where('type', ShopTypeEnum::B2B)->get() as $shop) {
             $this->handle($shop);
         }
 

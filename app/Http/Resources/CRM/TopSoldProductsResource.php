@@ -20,6 +20,7 @@ class TopSoldProductsResource extends JsonResource
     {
         return [
             'id'            => $this->id,
+            'slug'          => $this->slug,
             'code'          => $this->code,
             'name'          => $this->name,
             'total_sold'    => (float) $this->total_sold,

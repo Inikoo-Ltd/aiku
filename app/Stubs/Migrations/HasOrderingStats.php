@@ -61,6 +61,14 @@ trait HasOrderingStats
             $table->unsignedInteger('number_orders_handing_type_'.$case->snake())->default(0);
         }
 
+
+        foreach (OrderStateEnum::cases() as $case) {
+            if ($case->value != 'cancelled') {
+                $table->unsignedInteger('number_orders_cancelled_at_state_'.$case->snake())->default(0);
+            }
+        }
+
+
         return $table;
     }
 
@@ -82,6 +90,17 @@ trait HasOrderingStats
         foreach (OrderHandingTypeEnum::cases() as $case) {
             $table->dropColumn('number_orders_handing_type_'.$case->snake());
         }
+
+        $table->dropColumn('number_orders_state_picked');
+        $table->dropColumn('number_orders_state_packing');
+
+        foreach (OrderStateEnum::cases() as $case) {
+            if ($case->value != 'cancelled') {
+                $table->dropColumn('number_orders_cancelled_at_state_'.$case->snake());
+            }
+        }
+
+        $table->dropColumn('number_orders_cancelled_at_state_packed');
 
         return $table;
     }

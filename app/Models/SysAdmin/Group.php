@@ -34,7 +34,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Subscription;
-use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use App\Models\Comms\EmailAddress;
 use App\Models\Comms\EmailBulkRun;
@@ -51,6 +50,7 @@ use App\Models\Discounts\OfferCampaign;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
+use App\Models\Dispatching\Trolley;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
@@ -73,7 +73,6 @@ use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\PickedBay;
-use App\Models\Inventory\PickingTrolley;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Masters\MasterAsset;
@@ -163,7 +162,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read LaravelCollection<int, Customer> $customers
  * @property-read LaravelCollection<int, DeliveryNote> $deliveryNotes
  * @property-read \App\Models\SysAdmin\GroupDiscountsStats|null $discountsStats
- * @property-read LaravelCollection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\GroupDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, EmailAddress> $emailAddresses
  * @property-read LaravelCollection<int, EmailBulkRun> $emailBulkRuns
@@ -220,7 +218,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read LaravelCollection<int, PaymentServiceProvider> $paymentServiceProviders
  * @property-read LaravelCollection<int, Payment> $payments
  * @property-read LaravelCollection<int, PickedBay> $pickedBays
- * @property-read LaravelCollection<int, PickingTrolley> $pickingTrolleys
  * @property-read LaravelCollection<int, Picking> $pickings
  * @property-read LaravelCollection<int, Platform> $platforms
  * @property-read LaravelCollection<int, Portfolio> $portfolios
@@ -261,6 +258,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read LaravelCollection<int, TopUp> $topUps
  * @property-read LaravelCollection<int, TradeUnitFamily> $tradeUnitFamilies
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
+ * @property-read LaravelCollection<int, Trolley> $trolleys
  * @property-read LaravelCollection<int, Upload> $uploads
  * @property-read LaravelCollection<int, UserRequest> $userRequests
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\User> $users
@@ -755,11 +753,6 @@ class Group extends Authenticatable implements Auditable, HasMedia
         return $this->hasMany(EmailBulkRun::class);
     }
 
-    public function dispatchedEmails(): HasMany
-    {
-        return $this->hasMany(DispatchedEmail::class);
-    }
-
     public function webBlockTypes(): HasMany
     {
         return $this->hasMany(WebBlockType::class);
@@ -992,9 +985,9 @@ class Group extends Authenticatable implements Auditable, HasMedia
         return $this->hasMany(Holiday::class);
     }
 
-    public function pickingTrolleys(): HasMany
+    public function trolleys(): HasMany
     {
-        return $this->hasMany(PickingTrolley::class);
+        return $this->hasMany(Trolley::class);
     }
 
     public function pickedBays(): HasMany

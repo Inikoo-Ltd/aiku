@@ -14,6 +14,7 @@ use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Dispatching\RetinaShipmentsResource;
 use App\Models\Comms\DispatchedEmail;
@@ -32,6 +33,10 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
 
     public function handle(Order $order): ?DispatchedEmail
     {
+        if ($order->shop->type === ShopTypeEnum::EXTERNAL) {
+            return null;
+        }
+
         list($emailHtmlBody, $dispatchedEmail) = $this->getEmailBody($order->customer, OutboxCodeEnum::DELIVERY_CONFIRMATION);
         if (!$emailHtmlBody) {
             return null;
@@ -56,7 +61,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                             <td class="content-block" style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;" valign="top">
                                 <h2 style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 18px; color: #000; line-height: 1.2em; font-weight: 400; margin: 0 0 15px;">
                                     <!--[if mso]><span style="font-family: Arial, sans-serif" class="fallback-text">Order Details</span><![endif]-->
-                                    <!--[if !mso]><!--><span class="fallback-text">'.__('Order Details').'</span><!--<![endif]-->
+                                    <!--[if !mso]><!--><span class="fallback-text">' . __('Order Details') . '</span><!--<![endif]-->
                                 </h2>
                             </td>
                         </tr>
@@ -68,50 +73,50 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                                             <strong><span class="fallback-text">Order Number:</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
-                                            <a href="'.$orderUrl.'" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">'.$order->reference.'</span></a>
+                                            <a href="' . $orderUrl . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $order->reference . '</span></a>
                                         </td>
-                                    </tr>'.
+                                    </tr>' .
             ($order->customer_client_id ? '
                                     <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
                                             <strong><span class="fallback-text">Client:</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
-                                            <span class="fallback-text">'.$order->customerClient->name.'</span>
+                                            <span class="fallback-text">' . $order->customerClient->name . '</span>
                                         </td>
-                                    </tr>' : '').'
+                                    </tr>' : '') . '
                                     <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
                                             <strong><span class="fallback-text">Shipping to:</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
-                                            <span class="fallback-text">'.($order->deliveryAddress ? $order->deliveryAddress->getHtml() : 'N/A').'</span>
+                                            <span class="fallback-text">' . ($order->deliveryAddress ? $order->deliveryAddress->getHtml() : 'N/A') . '</span>
                                         </td>
                                     </tr>
                                     <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
-                                            <strong><span class="fallback-text">'.__('Dispatched Date').':</span></strong>
+                                            <strong><span class="fallback-text">' . __('Dispatched Date') . ':</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
-                                            <span class="fallback-text">'.($order->dispatched_at ? $order->dispatched_at->format('F j, Y h:i A P') : 'N/A').'</span>
+                                            <span class="fallback-text">' . ($order->dispatched_at ? $order->dispatched_at->format('F j, Y h:i A P') : 'N/A') . '</span>
                                         </td>
                                     </tr>
                                     <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
-                                            <strong><span class="fallback-text">'.__('Total Amount').':</span></strong>
+                                            <strong><span class="fallback-text">' . __('Total Amount') . ':</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
-                                            <span class="fallback-text">'.$order->currency->code.' '.number_format($order->total_amount, 2).'</span>
+                                            <span class="fallback-text">' . $order->currency->code . ' ' . number_format($order->total_amount, 2) . '</span>
                                         </td>
                                     </tr>';
 
         if ($pdfInvoices = $this->generateInvoicePdfHtml($order)) {
             $orderHtmlBlock .= '  <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
-                                            <strong><span class="fallback-text">'.__('PDF invoice').':</span></strong>
+                                            <strong><span class="fallback-text">' . __('PDF invoice') . ':</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
-                                          '.$pdfInvoices.'
+                                          ' . $pdfInvoices . '
                                         </td>
                                     </tr>';
         }
@@ -121,7 +126,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                                             <strong><span class="fallback-text">Tracking Information:</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
-                                            '.($shipments ? $this->generateTrackingHtml($shipments) : '<span class="fallback-text">No tracking information available</span>').'
+                                            ' . ($shipments ? $this->generateTrackingHtml($shipments) : '<span class="fallback-text">No tracking information available</span>') . '
                                         </td>
                                     </tr>
                                 </table>
@@ -182,15 +187,15 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
 
                     if ($trackingNumber) {
                         if ($trackingUrl && $trackingUrl !== __('tracking')) {
-                            $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">'.$shipperName.': </span>';
-                            $html .= '<a href="'.$trackingUrl.'" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">'.$trackingNumber.'</span></a></div>';
+                            $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': </span>';
+                            $html .= '<a href="' . $trackingUrl . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $trackingNumber . '</span></a></div>';
                         } else {
-                            $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">'.$shipperName.': '.$trackingNumber.'</span></div>';
+                            $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': ' . $trackingNumber . '</span></div>';
                         }
                     }
                 }
             } elseif (!empty($shipment['tracking'])) {
-                $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">'.$shipperName.': '.$shipment['tracking'].'</span></div>';
+                $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': ' . $shipment['tracking'] . '</span></div>';
             }
         }
 
@@ -209,7 +214,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
         foreach ($invoices as $invoice) {
             $url = $this->getPdfInvoiceLink($invoice);
             if ($url != '') {
-                $pdfLinks[] = '<a href="'.$url.'" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">'.$invoice->reference.'</span></a></div>';
+                $pdfLinks[] = '<a href="' . $url . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $invoice->reference . '</span></a></div>';
             }
         }
 

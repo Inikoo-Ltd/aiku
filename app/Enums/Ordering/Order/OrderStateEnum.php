@@ -25,6 +25,8 @@ enum OrderStateEnum: string
     case IN_WAREHOUSE = 'in_warehouse'; // Waiting to be picked
     case HANDLING = 'handling';  // Being picked
     case HANDLING_BLOCKED = 'handling_blocked';  // Being picked
+    case PICKED = 'picked';
+    case PACKING = 'packing';
     case PACKED = 'packed';  // Packed and ready to be dispatched
     case FINALISED = 'finalised';  // Invoiced and ready to be dispatched
     case DISPATCHED = 'dispatched';
@@ -38,6 +40,8 @@ enum OrderStateEnum: string
             'in_warehouse'     => __('In Warehouse'),
             'handling'         => __('Handling'),
             'handling_blocked' => __('Handling Blocked'),
+            'picked'           => __('Picked'),
+            'packing'          => __('Packing'),
             'packed'           => __('Packed'),
             'finalised'        => __('Finalized'),
             'dispatched'       => __('Dispatched'),
@@ -79,7 +83,7 @@ enum OrderStateEnum: string
                 ]
             ],
             'handling'         => [
-                'tooltip' => __('Handling'),
+                'tooltip' => __('Picking'),
                 'icon'    => 'fal fa-apple-crate',
                 'class'   => 'text-gray-500',
                 'color'   => 'slate',
@@ -88,9 +92,29 @@ enum OrderStateEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
+            'picked'           => [
+                'tooltip' => __('Picked'),
+                'icon'    => 'fal fa-check',
+                'class'   => 'text-indigo-500',
+                'color'   => 'indigo',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'packing'          => [
+                'tooltip' => __('Packing'),
+                'icon'    => 'fal fa-box-open',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
             'handling_blocked' => [
                 'tooltip' => __('Handling Blocked'),
-                'icon'    => 'fal fa-ban',
+                'icon'    => 'fal fa-snooze',
                 'class'   => 'text-red-500',
                 'color'   => 'slate',
                 'app'     => [

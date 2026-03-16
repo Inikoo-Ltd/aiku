@@ -16,15 +16,15 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 const locale = inject("locale", aikuLocaleStructure)
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
+    offerCampaign?: {}
 }>()
 
-function offerRoute(offer: Order) {
+function offerRoute(offer: {}) {
     switch (route().current()) {
         case "grp.org.shops.show.discounts.offers.index":
-        case "grp.org.shops.show.discounts.campaigns.show":
         case "grp.org.shops.show.catalogue.families.show":
             return route(
                 "grp.org.shops.show.discounts.offers.show",
@@ -32,10 +32,36 @@ function offerRoute(offer: Order) {
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
                     offer.slug])
+        case "grp.org.shops.show.discounts.campaigns.show":
+            return route(
+                returnRouteOffer(offer),
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: (route().params as RouteParams).shop,
+                    offerCampaign: props.offerCampaign?.slug ?? offer.offer_campaign_slug,
+                    offer: offer.slug
+                })
         default:
-            return ""
+            return "#"
     }
 }
+
+function returnRouteOffer(offer: any) {
+    switch (offer.type) {
+        case 'VolGr Gift':
+            return "grp.org.shops.show.discounts.campaigns.gift.show";
+        case 'GR Amnesty':
+            return "grp.org.shops.show.discounts.campaigns.amnesty.show";
+        case 'Category Quantity Ordered':
+            return "grp.org.shops.show.discounts.campaigns.offer.show";
+        default:
+            return "grp.org.shops.show.discounts.campaigns.offer.show";
+    }
+}
+
+console.log("Curr Route", route().current())
+
+
 </script>
 
 <template>
@@ -46,8 +72,8 @@ function offerRoute(offer: Order) {
             </Link>
         </template>
 
-        <template #cell(sales)="{ item: collection }">
-            <span class="tabular-nums">{{ locale.currencyFormat('GBP', collection.sales) }}</span>
+        <template #cell(sales_grp_currency_external)="{ item: collection }">
+            <span class="tabular-nums">{{ locale.currencyFormat('GBP', collection.sales_grp_currency_external) }}</span>
         </template>
     </Table>
 </template>

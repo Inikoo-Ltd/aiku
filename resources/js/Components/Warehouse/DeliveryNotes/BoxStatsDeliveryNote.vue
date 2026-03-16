@@ -18,8 +18,11 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
-import Icon from "@/Components/Icon.vue"
 import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
+import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
+import Select from 'primevue/select';
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -36,6 +39,10 @@ const props = defineProps<{
         is_collection?: boolean
         is_replacement?: boolean
         is_create_replacement?: boolean
+        currency_code: string
+        external_shop: {
+
+        } | null
         delivery_note: {
             reference?: string
             route: routeType
@@ -57,6 +64,7 @@ const props = defineProps<{
         picker: {
             id: number
             username: string
+            contact_name: string
         }
         order?: {
             reference: string
@@ -110,6 +118,11 @@ const props = defineProps<{
             }
         }
         shipping_fields_update_route: routeType
+        trolleys?: {
+            id: number
+            name: string
+            slug: string
+        }[]
     }
     routes: {
         pickers_list: routeType
@@ -122,14 +135,16 @@ const props = defineProps<{
     }
     updateRoute: routeType
     replaceAllTrigger?: number
+    warehouse: {
+        slug: string
+    }
 }>()
 
 const emit = defineEmits<{
     'replace-all': []
 }>()
 
-// console.log(props.boxStats)
-
+const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
 // Section: Replace All functionality
@@ -216,7 +231,28 @@ const updateCollection = async (e: Event) => {
     }
 }
 
+const parcelPresets = [
+    { label: '40 × 40 × 40 cm', weight: null, dimensions: [40, 40, 40] },
+    { label: '60 × 40 × 30 cm', weight: null, dimensions: [60, 40, 30] },
+    { label: '60 × 50 × 40 cm', weight: null, dimensions: [60, 50, 40] },
+    { label: '60 × 60 × 40 cm', weight: null, dimensions: [60, 60, 40] },
+    { label: '41 × 24 × 31 cm', weight: null, dimensions: [41, 24, 31] },
+    { label: '94 × 48 × 37 cm', weight: null, dimensions: [94, 48, 37] },
+    { label: '94 × 48 × 43 cm', weight: null, dimensions: [94, 48, 43] },
+    { label: '22 × 19 × 17 cm', weight: null, dimensions: [22, 19, 17] },
+    { label: '68 × 68 × 44 cm', weight: null, dimensions: [68, 68, 44] },
+]
 
+const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: { dimensions: any; weight: any }) => {
+
+    if (!preset) return
+
+    parcel.dimensions = [...preset.dimensions]
+
+    if (preset.weight) {
+        parcel.weight = preset.weight
+    }
+}
 </script>
 
 <template>
@@ -367,33 +403,72 @@ const updateCollection = async (e: Event) => {
                 </div>
 
                 <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_create_replacement">
-                    <div v-if="boxStats?.picker?.contact_name">
-                        <dl v-tooltip="trans('Picker name')"
-                            class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                    <div class="flex gap-x-4 items-center">
+                        <!-- Section: Picker name -->
+                        <div v-if="boxStats?.picker?.contact_name">
+                            <dl class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                                <dt class="flex-none">
+                                    {{ trans("Picker") }}:
+                                </dt>
+                                <dd class="text-gray-500">
+                                    {{ boxStats?.picker?.contact_name }}
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- Section: Packer name -->
+                        <div v-if="boxStats?.packer?.contact_name">
+                            <dl v-tooltip="trans('Packer name')"
+                                class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                                <dt class="flex-none">
+                                    {{ trans("Packer") }}:
+                                </dt>
+                                <dd class="text-gray-500">
+                                    {{ boxStats?.packer?.contact_name }}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Section: Trolleys -->
+                    <ManageTrolleysInDeliveryNote
+                        v-if="!(['unassigned', 'queued'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
+                        :deliveryNote
+                        :trolleys="boxStats.trolleys"
+                        :warehouse
+                    />
+                    
+                    <!-- Section: Picked Bays -->
+                    <div v-if="[ 'picked', 'packing'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
+                        <dl class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
-                                {{ trans("Picker") }}:
+                                {{ trans("Picked bays") }}:
                             </dt>
-                            <dd class="text-gray-500">
-                                {{ boxStats?.picker?.contact_name }}
+                            <dd v-if="boxStats?.picked_bays?.length" class="text-gray-500">
+                                <span
+                                    v-for="bay in boxStats?.picked_bays"
+                                    :key="bay.id"
+                                    :to="`/bays/${bay.id}`"
+                                    xclass="underline opacity-70 hover:opacity-100"
+                                >
+                                    {{ bay?.name ?? '-' }}
+                                </span>
+                            </dd>
+                            <dd v-else class="text-gray-500">
+                                -
                             </dd>
                         </dl>
-                    </div>
-                    <div class="mt-2 border-t border-gray-300 w-full" />
 
-                    <!-- Current State -->
-                    <dl xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
-                        <dt class="flex-none">
-                            <!-- <FontAwesomeIcon
-                                icon="fal fa-weight"
-                                fixed-width
-                                aria-hidden="true"
-                                class="text-gray-500" /> -->
-                            <Icon :data="boxStats?.state_icon" />
-                        </dt>
-                        <dd class="text-gray-500">
-                            {{ boxStats.state_label }}
-                        </dd>
-                    </dl>
+                        <ChangePickedBays
+                            v-if="['picked'].includes(deliveryNote.state)"
+                            :warehouse="warehouse"
+                            :deliveryNote="deliveryNote"
+                            :pickedBays="boxStats?.picked_bays"
+                        />
+                    </div>
+                    
+                    <div class="!mt-2 border-t border-gray-300 w-full" />
+
 
                     <!-- Total Items -->
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -418,8 +493,8 @@ const updateCollection = async (e: Event) => {
                     </dl>
 
                     <!-- Section: Parcels -->
-                    <div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
-                        class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
+                    <div v-if="['packing', 'packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
+                        class="flex gap-x-1 pb-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
                         <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
                             fixed-width aria-hidden='true' />
                         <div class=" group w-full pl-px">
@@ -427,7 +502,7 @@ const updateCollection = async (e: Event) => {
                                 <div class="text-gray-500">{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
                                 <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
-                                <template v-if="!(boxStats?.shipments?.length >= 1) && deliveryNote?.state === 'packed'">
+                                <template v-if="!(boxStats?.shipments?.length >= 1) && (deliveryNote?.state === 'packed' || deliveryNote?.state === 'packing'  || deliveryNote?.state === 'handling')">
                                     <div v-if="boxStats?.parcels?.length"
                                         @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
                                         class="cursor-pointer text-gray-400 hover:text-gray-600">
@@ -486,6 +561,8 @@ const updateCollection = async (e: Event) => {
                                 :shipments_routes="boxStats.shipments_routes"
                                 :address="boxStats.address"
                                 :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
+                                :currencyCode="boxStats?.currency_code"
+                                :external_shop="boxStats?.external_shop"
                             />
                         </dd>
                     </dl>
@@ -513,7 +590,7 @@ const updateCollection = async (e: Event) => {
         </BoxStatPallet>
 
         <!-- Modal: Parcels -->
-        <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg">
+        <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-2xl">
             <div class="text-center font-bold mb-4">
                 {{ trans('Add shipment') }}
             </div>
@@ -537,33 +614,33 @@ const updateCollection = async (e: Event) => {
                     </div>
 
                     <!-- Field: row parcels -->
-                    <div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
+                    <div class="grid gap-y-1 max-h-64 overflow-y-auto">
                         <TransitionGroup v-if="parcelsCopy?.length" name="list">
                             <div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex"
-                                class="grid grid-cols-12 items-center gap-x-6">
-                                <div @click="() => onDeleteParcel(parcelIndex)" class="flex justify-center">
+                                class="grid grid-cols-12 items-center gap-x-1">
+                                <div @click="() => onDeleteParcel(parcelIndex)" class="col-span-1 flex justify-center pr-2">
                                     <FontAwesomeIcon icon="fal fa-trash-alt"
                                         class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width
                                         aria-hidden="true" />
                                 </div>
-                                <div class="col-span-2 flex items-center space-x-2">
+                               
+                                <div class="col-span-1 flex justify-center">
                                     <InputNumber
                                         v-model="parcel.weight"
                                         :min="0.001"
-                                        inputClass="!w-16 !text-sm !py-2 !px-1.5 !text-center"
+                                        inputClass="!text-xs !w-6 sm:!w-12 sm:!text-sm !py-3 sm:!py-2 !px-1.5 !text-center"
                                         size="small"
                                         placeholder="0"
-                                        fluid
                                         :locale="locale.locale_iso"
                                         :max-fraction-digits="3"
                                     />
                                 </div>
 
-                                <div class="col-span-9 flex items-center gap-x-1 font-light">
+                                <div class="col-span-7 sm:col-span-5 flex justify-center items-center gap-x-1 sm:gap-x-2 font-light ml-1 sm:ml-2">
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[0]"
-                                        class="w-16"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
                                         fluid
@@ -574,7 +651,7 @@ const updateCollection = async (e: Event) => {
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[1]"
-                                        class="w-16"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
                                         fluid
@@ -585,7 +662,7 @@ const updateCollection = async (e: Event) => {
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[2]"
-                                        class="w-16"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
                                         fluid
@@ -612,6 +689,19 @@ const updateCollection = async (e: Event) => {
                                         </template>
                                     </Popover> -->
                                 </div>
+
+                                 <div class="col-span-3 sm:col-span-5 pl-1 sm:pl-0">
+                                    <Select
+                                        :modelValue="parcelPresets.find(p =>
+                                            p.dimensions.every((d,i)=>d===parcel.dimensions[i])
+                                        )"
+                                        :options="parcelPresets"
+                                        optionLabel="label"
+                                        placeholder="Preset Size"
+                                        class="w-20 sm:w-full text-xs sm:text-sm"
+                                        @change="(e)=>applyParcelPreset(parcel,e.value)"
+                                    />
+                                </div>
                             </div>
                         </TransitionGroup>
                         <div v-else class="text-center text-gray-400">
@@ -637,6 +727,8 @@ const updateCollection = async (e: Event) => {
                 </div>
             </div>
         </Modal>
+
+        <!-- Modal: change trolley -->
     </div>
 </template>
 

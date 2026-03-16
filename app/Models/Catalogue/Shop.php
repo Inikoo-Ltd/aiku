@@ -8,7 +8,7 @@
 
 namespace App\Models\Catalogue;
 
-use App\Actions\Catalogue\Shop\Traits\WithFaireShopApiCollection;
+use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -160,6 +160,8 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $external_shop_connection_error
  * @property int|null $migration_pivot
  * @property string|null $product_price_currency_exchange
+ * @property int|null $seeder_shop_id
+ * @property string|null $proforma_footer
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -234,6 +236,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\Catalogue\ShopSalesIntervals|null $salesIntervals
+ * @property-read Shop|null $seederShop
  * @property-read SenderEmail|null $senderEmail
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
@@ -276,7 +279,7 @@ class Shop extends Model implements HasMedia, Auditable
     use InOrganisation;
     use HasHistory;
     use HasImage;
-    use WithFaireShopApiCollection;
+    use WithFaireApi;
 
     protected $casts = [
         'data'                         => 'array',
@@ -453,6 +456,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function masterShop(): BelongsTo
     {
         return $this->belongsTo(MasterShop::class);
+    }
+
+    public function seederShop(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'seeder_shop_id');
     }
 
     public function currency(): BelongsTo

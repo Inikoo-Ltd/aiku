@@ -21,6 +21,8 @@ enum ClockingMachineTabsEnum: string
 
     case HISTORY             = 'history';
     case DATA                = 'data';
+    case SCAN_QR_CODE        = 'scan_qr_code';
+
 
 
     public function blueprint(): array
@@ -45,6 +47,10 @@ enum ClockingMachineTabsEnum: string
             ClockingMachineTabsEnum::SHOWCASE => [
                 'title' => __('Clocking machine'),
                 'icon'  => 'fas fa-info-circle',
+            ],
+            ClockingMachineTabsEnum::SCAN_QR_CODE => [
+                'title' => __('Scan QR Code'),
+                'icon'  => 'fal fa-qrcode',
             ],
         };
     }

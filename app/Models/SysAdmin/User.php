@@ -31,7 +31,6 @@ use App\Models\Traits\WithPushNotifications;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Actions\SysAdmin\User\SendLinkResetPassword;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -187,12 +186,6 @@ class User extends Authenticatable implements HasMedia, Auditable
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128);
-    }
-
-
-    public function sendPasswordResetNotification($token): void
-    {
-        SendLinkResetPassword::run($token, $this);
     }
 
     public function routeNotificationForFcm(): array

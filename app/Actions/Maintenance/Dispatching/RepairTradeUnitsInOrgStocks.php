@@ -13,6 +13,7 @@ use App\Models\Inventory\OrgStock;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairTradeUnitsInOrgStocks extends OrgAction
 {
@@ -53,8 +54,12 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
 
         $totalCount = OrgStock::count();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $bar = $command->getOutput()->createProgressBar($totalCount);
-        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $bar->setFormat('aiku_eta');
         $bar->start();
 
 

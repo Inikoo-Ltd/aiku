@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignOffersStateEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -21,7 +21,7 @@ return new class () extends Migration {
             $table = $this->groupOrgRelationship($table);
             $table->unsignedSmallInteger('shop_id')->index();
             $table->foreign('shop_id')->references('id')->on('shops');
-            $table->string('state')->default(OfferCampaignStateEnum::IN_PROCESS->value)->index();
+            $table->string('state')->default(OfferCampaignOffersStateEnum::IN_PROCESS->value)->index();
             $table->boolean('status')->default(false)->index();
             $table->string('slug')->unique()->collation('und_ns');
             $table->string('code');

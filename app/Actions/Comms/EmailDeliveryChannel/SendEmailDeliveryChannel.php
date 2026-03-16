@@ -19,9 +19,12 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
+use App\Models\Comms\EmailBulkRunRecipient;
 use App\Models\Comms\EmailDeliveryChannel;
 use App\Models\Comms\Mailshot;
+use App\Models\Comms\MailshotRecipient;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -36,7 +39,7 @@ class SendEmailDeliveryChannel
     public function handle(EmailDeliveryChannel $emailDeliveryChannel): void
     {
         /** @var Mailshot|EmailBulkRun $model */
-        $model         = $emailDeliveryChannel->model;
+        $model = $emailDeliveryChannel->model;
         $emailHtmlBody = GetHtmlLayout::run($model);
 
         UpdateEmailDeliveryChannel::run(
@@ -47,8 +50,10 @@ class SendEmailDeliveryChannel
             ]
         );
 
-
+        /** @var EmailBulkRunRecipient|MailshotRecipient $recipient */
         foreach ($model->recipients()->where('channel', $emailDeliveryChannel->id)->get() as $recipient) {
+            /** @var DispatchedEmail $dispatchedEmail */
+            $dispatchedEmail = $recipient->dispatchedEmail;
             $model->refresh();
 
 
@@ -64,17 +69,17 @@ class SendEmailDeliveryChannel
             }
 
             // Send redirect URL
-            $unsubscribeUrl = route('grp.redirect_unsubscribe', $recipient->dispatchedEmail->uuid);
+            $unsubscribeUrl = route('grp.redirect_unsubscribe', $dispatchedEmail->uuid);
 
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
 
             $this->sendEmailWithMergeTags(
-                $recipient->dispatchedEmail,
+                $dispatchedEmail,
                 $model->sender(),
                 $subject,
                 $emailHtmlBody,
                 $unsubscribeUrl,
-                additionalData: $recipient->dispatchedEmail->data['additional_data'] ?? [],
+                additionalData: $dispatchedEmail->data['additional_data'] ?? [],
                 senderName: $model->senderName()
             );
         }
@@ -92,7 +97,7 @@ class SendEmailDeliveryChannel
         if ($model instanceof Mailshot) {
             MailshotHydrateDispatchedEmails::run($model);
             UpdateMailshotSentState::run($model);
-        } else {
+        } elseif ($model instanceof EmailBulkRun) {
             EmailBulkRunHydrateCumulativeDispatchedEmails::run($model, DispatchedEmailStateEnum::SENT);
             EmailBulkRunHydrateDispatchedEmails::run($model);
             UpdateEmailBulkRunSentState::run($model);

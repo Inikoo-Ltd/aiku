@@ -19,6 +19,7 @@ import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
 import RenderProduct from "@/Components/CMS/Webpage/Products/Ecommerce/RenderProduct.vue"
+import Image from "@/Components/Image.vue"
 
 
 const props = defineProps<{
@@ -279,6 +280,13 @@ onMounted(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const sortParam = urlParams.get("order_by")
 
+    layout.buttonBasket = {
+        buttonStyle: getStyles(props.fieldValue?.button?.properties, props.screenType, false),
+        buttonStyleLogin : getStyles(props.fieldValue?.buttonLogin?.properties, props.screenType),
+        buttonStyleHover : getStyles(props.fieldValue?.buttonHover?.properties, props.screenType, false),
+        button: props.fieldValue?.button
+    }
+
     if (sortParam) {
         orderBy.value = sortParam
         const key = sortParam.replace("-", "")
@@ -289,13 +297,13 @@ onMounted(() => {
     if (layout?.iris?.is_logged_in) {
         firstLoad.value = 1
         fetchProducts(); // break chace from product dont deleted
-        fetchHasInBasket();
+        /* fetchHasInBasket(); */
     } else {
         setTimeout(() => {   // Needed, to handle, after login phase
             if (layout?.iris?.is_logged_in) {
                 firstLoad.value = 1
                 fetchProducts()
-                fetchHasInBasket()
+                /* fetchHasInBasket() */
             }
         }, 400)
     }
@@ -340,23 +348,24 @@ const toggleSort = (key: string) => {
     handleSearch()
 }
 
+//do not delete the comment please it will be use it
 
 // const productInBasket = ref({
 //     isLoading: false,
 //     list: []
 // })
 
-const getRouteForProductInBasket = () => {
+/* const getRouteForProductInBasket = () => {
     const { model_type, model_id } = props.fieldValue;
     if (model_type == "ProductCategory") {
         return `/json/product-category/${model_id}/transaction-data`
     } else if (model_type == "Collection") {
         return `/json/collection/${model_id}/transaction-data`
     }
-};
+}; */
 
 // Method: fetch each quantity_ordered of the products
-const fetchHasInBasket = async () => {
+/* const fetchHasInBasket = async () => {
     // productInBasket.value.isLoading = true;
     set(layout, ['family_page', 'productInBasket', 'isLoading'], true)
     try {
@@ -380,7 +389,7 @@ const fetchHasInBasket = async () => {
         set(layout, ['family_page', 'productInBasket', 'isLoading'], false)
 
     }
-};
+}; */
 
 
 
@@ -435,27 +444,48 @@ watch(
             <!-- Sidebar Filters for Desktop -->
             <transition v-if="!props.fieldValue?.settings?.is_hide_filter" name="slide-fade">
                 <aside v-show="!isMobile && isShowAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
-                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
+                    <FilterProducts 
+                        v-model="filter" 
+                        :productCategory="props.fieldValue.model_id" 
+                        :search="q" 
+                        @handleSearch="handleSearch" 
+                        @update:search="(e)=> q = e"
+                    />
                 </aside>
             </transition>
 
             <!-- Main Content -->
             <div class="flex-1">
                 <!-- Search & Sort -->
-                <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="px-4 pt-1 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
                         <template v-if="!props.fieldValue?.settings?.is_hide_filter">
-                            <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-3 !w-auto"
+                            <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-2 !w-auto"
                                 aria-label="Open Filters"
                                 :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             <!-- Sidebar Toggle for Desktop -->
-                            <div v-else class="py-4">
-                                <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-3 !w-auto"
+                            <div v-else class="py-3">
+                                <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-2 !w-auto"
                                     aria-label="Open Filters"
                                     :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             </div>
                         </template>
-                        <div class=" w-full" >
+                        <div
+                            class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
+                            <span class="font-medium">
+                                {{ trans("Showing") }}
+                                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                    {{ products.length }}
+                                </span>
+                                {{ trans("of") }}
+                                <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                    {{ totalProducts }}
+                                </span>
+                                {{ products.length === 1 ? trans("product") : trans("products") }}
+                            </span>
+                        </div>
+                        
+                       <!--  <div class=" w-full" >
                             <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
                                 :placeholder="trans('Search products...')" :clear="true" :isLoading="isLoadingInitial"
                                 :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
@@ -466,12 +496,11 @@ watch(
                                     </div>
                                 </template>
                             </PureInput>
-                        </div>
-
+                        </div> -->
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex xspace-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
+                    <div class="flex space-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
                         <!-- <button @click="toggleNewArrivals"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
                             isNewArrivals
@@ -482,7 +511,7 @@ watch(
                         </button> -->
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                            class="pb-2 px-4 text-sm font-medium whitespace-nowrap flex items-center border-b-2 gap-1 sort-button"
+                            class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
                             :class="[
                                 sortKey === option.value
                                     ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
@@ -494,7 +523,7 @@ watch(
                 </div>
 
                 <!-- Section: Results  -->
-                <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
+                <!-- <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
                         <span class="font-medium">
@@ -512,7 +541,7 @@ watch(
 
                     <div>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Product Grid -->
                <div :class="responsiveGridClass" class="grid gap-x-6 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 gap-y-10 p-3"
@@ -528,12 +557,11 @@ watch(
 
 
 
-                    <template v-else-if="products.length">
+                    <template v-else-if="products.length" >
                       <div
                             v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border relative rounded flex md:flex-1 justify-center"
-                            :class="product.stock &&  code != 'products-1' ? '' : 'bg-red-100'"
                         >
                             <RenderProduct 
                                 :code="code" 
@@ -541,12 +569,27 @@ watch(
                                 :key="index" 
                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)" 
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])" 
-                                :bestSeller="fieldValue.bestseller" 
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
                                 :button="fieldValue?.button"
+                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])" 
+                                :bestSeller="fieldValue.bestseller" 
                                 :screenType
                             />
+                        </div>
+
+                        <div v-if="fieldValue?.cards" v-for="card in fieldValue?.cards.filter((item) => item.visible)"
+                            class="relative rounded-2xl overflow-hidden min-h-80">
+                            <Image :src="card.image.source" class="absolute inset-0 w-full h-full object-cover" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                            </div>
+                            <!-- Center Content -->
+                            <div
+                                class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
+                                <div v-html="card.text"></div>
+                                <Button class="mt-4"
+                                    :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
+                                    :label="card?.button?.text" />
+                            </div>
                         </div>
                     </template>
 
@@ -573,7 +616,13 @@ watch(
             <Drawer v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"
                 :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
-                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
+                    <FilterProducts  
+                        v-model="filter" 
+                        :productCategory="props.fieldValue.model_id" 
+                        :search="q" 
+                        @handleSearch="handleSearch" 
+                        @update:search="(e)=> q = e" 
+                    />
                 </div>
             </Drawer>
         </div>
@@ -605,7 +654,7 @@ aside {
 .sort-button{
    color: v-bind('search_sort_class?.color || null') !important;
    font-family: v-bind('search_sort_class?.fontFamily || null') !important;
-   font-size: v-bind('search_sort_class?.fontSize || null') !important;
+   font-size: v-bind('search_sort_class?.fontSize || "14px"') !important;
    font-style: v-bind('search_sort_class?.fontStyle || null') !important;
 }
 

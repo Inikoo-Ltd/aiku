@@ -561,7 +561,7 @@ const routeOrder = (order) => {
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-piggy-bank" :style="{ color: themeColors.buttonBg }" />
-						{{ trans('Associted Credit Transaction') }}
+						{{ trans('Associated Credit Transaction') }}
 					</h3>
 				</div>
 				<dl class="px-6 py-4 space-y-4">

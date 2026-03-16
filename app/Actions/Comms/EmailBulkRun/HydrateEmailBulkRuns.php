@@ -18,7 +18,7 @@ class HydrateEmailBulkRuns
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'hydrate:email_bulk_runs {organisations?*} {--s|slugs=}';
+    public string $commandSignature = 'hydrate:email_bulk_runs {organisations?*} {--s|slugs=} {--i|ids=}';
 
     public function __construct()
     {

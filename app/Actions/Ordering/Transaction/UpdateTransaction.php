@@ -31,6 +31,11 @@ class UpdateTransaction extends OrgAction
 
     public function handle(Transaction $transaction, array $modelData, $calculateShipping = true): Transaction
     {
+        if (Arr::has($modelData, 'is_cut_view') && !Arr::get($modelData, 'is_cut_view')) {
+            $modelData['quantity_ordered'] = (int)ceil($transaction->quantity_ordered);
+        }
+
+
         if (Arr::exists($modelData, 'quantity_ordered') && $this->strict) {
             if ($modelData['quantity_ordered'] == 0 && $transaction->order->status == OrderStatusEnum::CREATING) {
                 return DeleteTransaction::run($transaction);
@@ -39,7 +44,7 @@ class UpdateTransaction extends OrgAction
             if ($transaction->model_type == 'Product') {
                 /** @var Product $product */
                 $product         = $transaction->model;
-                $estimatedWeight = Arr::get($modelData, 'quantity_ordered') * $product->gross_weight;
+                $estimatedWeight = (int)ceil(Arr::get($modelData, 'quantity_ordered') * $product->gross_weight);
                 data_set($modelData, 'estimated_weight', $estimatedWeight);
             }
 
@@ -70,14 +75,9 @@ class UpdateTransaction extends OrgAction
             data_set($modelData, 'grp_net_amount', $grpExchange * $netAmount);
         }
 
-
         $this->update($transaction, $modelData, ['data']);
 
         if ($this->strict) {
-
-
-
-
             $changes = Arr::except($transaction->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
@@ -97,7 +97,7 @@ class UpdateTransaction extends OrgAction
 
         $rules = [
             'quantity_ordered'    => $qtyRule,
-            'quantity_picked'    => $qtyRule,
+            'quantity_picked'     => $qtyRule,
             'quantity_bonus'      => $qtyRule,
             'quantity_dispatched' => $qtyRule,
             'quantity_fail'       => $qtyRule,
@@ -114,6 +114,7 @@ class UpdateTransaction extends OrgAction
             'tax_category_id'     => ['sometimes', 'exists:tax_categories,id'],
             'date'                => ['sometimes', 'date'],
             'submitted_at'        => ['sometimes', 'date'],
+            'is_cut_view'         => ['sometimes', 'boolean']
         ];
 
         if (!$this->strict) {

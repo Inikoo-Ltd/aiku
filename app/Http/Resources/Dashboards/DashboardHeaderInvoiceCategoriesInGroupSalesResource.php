@@ -98,59 +98,59 @@ class DashboardHeaderInvoiceCategoriesInGroupSalesResource extends JsonResource
                 ]
             ],
             [
-                'sales_org_currency' => [
+                'sales_org_currency_external' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'full',
                     'sortable'          => true,
-                    'scope'             => 'sales_org_currency',
+                    'scope'             => 'sales_org_currency_external',
                 ]
             ],
             [
-                'sales_org_currency_minified' => [
+                'sales_org_currency_external_minified' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',
                     'data_display_type' => 'minified',
                     'sortable'          => true,
-                    'scope'             => 'sales_org_currency',
+                    'scope'             => 'sales_org_currency_external',
                 ]
             ],
             [
-                'sales_org_currency_delta' => [
+                'sales_org_currency_external_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'org',
                     'data_display_type' => 'always',
                     'sortable'          => true,
-                    'scope'             => 'sales_org_currency',
+                    'scope'             => 'sales_org_currency_external',
                 ],
             ],
             [
-                'sales_grp_currency' => [
+                'sales_grp_currency_external' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'grp',
                     'data_display_type' => 'full',
                     'sortable'          => true,
-                    'scope'             => 'sales_grp_currency',
+                    'scope'             => 'sales_grp_currency_external',
                 ]
             ],
             [
-                'sales_grp_currency_minified' => [
+                'sales_grp_currency_external_minified' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'grp',
                     'data_display_type' => 'minified',
                     'sortable'          => true,
-                    'scope'             => 'sales_grp_currency',
+                    'scope'             => 'sales_grp_currency_external',
                 ]
             ],
             [
-                'sales_grp_currency_delta' => [
+                'sales_grp_currency_external_delta' => [
                     'formatted_value'   => 'Δ 1Y',
                     'tooltip'           => $deltaTooltip,
                     'currency_type'     => 'grp',
                     'data_display_type' => 'always',
                     'sortable'          => true,
-                    'scope'             => 'sales_grp_currency',
+                    'scope'             => 'sales_grp_currency_external',
                 ],
             ],
         );

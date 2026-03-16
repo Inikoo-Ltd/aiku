@@ -12,7 +12,6 @@ const props = defineProps<{
         text_color?: string
         position: string
     }
-    // swiperRef?: Element
 }>()
 
 const positionRibbon = computed(() => {

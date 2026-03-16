@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInOrders;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInOrders;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
@@ -162,6 +163,17 @@ class UpdateOrder extends OrgAction
                     ShippingZoneHydrateUsageInOrders::dispatch($order->shipping_zone_id)->delay($this->hydratorsDelay);
                 }
             }
+
+            if (Arr::has($changedFields, 'is_shipping_by_external')) {
+                $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
+                UpdateDeliveryNote::run($deliveryNote, ['is_shipping_by_external' => $order->is_shipping_by_external]);
+            }
+
+            if (Arr::has($changedFields, 'internal_notes')) {
+                foreach ($order->deliveryNotes()->whereNotIn('delivery_notes.state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])->get() as $deliveryNote) {
+                    UpdateDeliveryNote::run($deliveryNote, ['internal_notes' => $order->internal_notes]);
+                }
+            }
         }
 
         return $order;
@@ -203,6 +215,7 @@ class UpdateOrder extends OrgAction
             'tax_category_id'         => ['sometimes', Rule::exists('tax_categories', 'id')],
             'shipping_zone_schema_id' => ['sometimes', 'nullable'],
             'shipping_zone_id'        => ['sometimes', 'nullable'],
+            'is_shipping_by_external' => ['sometimes', 'boolean'],
         ];
 
 

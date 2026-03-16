@@ -9,7 +9,7 @@
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignOffersStateEnum;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -38,8 +38,8 @@ class OrganisationHydrateOfferCampaigns implements ShouldBeUnique
             $stats,
             $this->getEnumStats(
                 model: 'offer_campaigns',
-                field: 'state',
-                enum: OfferCampaignStateEnum::class,
+                field: 'offers_state',
+                enum: OfferCampaignOffersStateEnum::class,
                 models: OfferCampaign::class,
                 where: function ($q) use ($organisation) {
                     $q->where('organisation_id', $organisation->id);

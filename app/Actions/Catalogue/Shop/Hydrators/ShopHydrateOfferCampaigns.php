@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
+use App\Enums\Discounts\OfferCampaign\OfferCampaignOffersStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\OfferCampaign;
 use Illuminate\Console\Command;
@@ -83,8 +83,8 @@ class ShopHydrateOfferCampaigns implements ShouldBeUnique
             $stats,
             $this->getEnumStats(
                 model: 'offer_campaigns',
-                field: 'state',
-                enum: OfferCampaignStateEnum::class,
+                field: 'offers_state',
+                enum: OfferCampaignOffersStateEnum::class,
                 models: OfferCampaign::class,
                 where: function ($q) use ($shop) {
                     $q->where('shop_id', $shop->id);

@@ -10,6 +10,7 @@ namespace App\Actions\CRM\WebUser\Retina;
 
 use App\Actions\CRM\WebUser\AuthoriseWebUserWithLegacyPassword;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
+use App\Actions\Dropshipping\Tiktok\User\ProcessUnregisterCustomerTiktokUser;
 use App\Actions\SysAdmin\User\LogUserFailLogin;
 use App\Actions\Traits\WithLogin;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
@@ -50,11 +51,11 @@ class RetinaLogin
 
             $webUser = WebUser::where('website_id', $websiteId)
                 ->where('status', true)
-                ->where('username', $handle)->first();
+                ->whereRaw('LOWER(username) = ?', [strtolower($handle)])->first();
             if (!$webUser) {
                 $webUser = WebUser::where('website_id', $websiteId)
                     ->where('status', true)
-                    ->where('email', $handle)->first();
+                    ->whereRaw('LOWER(email) = ?', [strtolower($handle)])->first();
             }
 
             if ($webUser && $webUser->auth_type == WebUserAuthTypeEnum::AURORA) {
@@ -82,7 +83,7 @@ class RetinaLogin
                 // try now with email
                 data_set($credentials, 'email', $credentials['username']);
                 data_forget($credentials, 'username');
-
+                // Note we're using custom CaseInsensitiveEloquentUserProvider for case insensitive username
                 $authorised = Auth::guard('retina')->attempt($credentials, $rememberMe);
             }
         }
@@ -122,6 +123,11 @@ class RetinaLogin
             datetime: now()
         );
 
+        if ($tiktokCode = $request->input('tiktok_code')) {
+            ProcessUnregisterCustomerTiktokUser::run($webUser->customer, [
+                'tiktok_code' => $tiktokCode
+            ]);
+        }
 
         $request->session()->regenerate();
         Session::put('reloadLayout', '1');

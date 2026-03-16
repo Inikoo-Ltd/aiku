@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { useFormatTime } from '@/Composables/useFormatTime'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faInfoCircle)
 
 const props = defineProps<{
@@ -20,24 +22,37 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
 <template>
     <section
         class="relative w-full md:w-fit flex justify-between items-center rounded-lg px-5 py-1 shadow-md text-white mb-2"
-        :class="layout?.user?.gr_data?.customer_is_gr ? 'background-primary' : 'bg-gray-400/70'"
+        :class="(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) ? 'background-primary' : 'bg-gray-400/70'"
     >
         <!-- Content -->
         <div class="w-full relative flex items-center text-2xl">
-            <template v-if="layout?.user?.gr_data?.customer_is_gr">
+            <!-- Label: Gold reward Amnesty -->
+            <template v-if="layout?.user?.gr_data?.amnesty">
                 <span>
                     <span v-if="offer?.max_percentage_discount">{{ Number(offer?.max_percentage_discount) * 100 + ' ' }}% <strong>OFF</strong></span>
-                    {{ ' ' + trans('Gold Reward Active') }}
+                    {{ ' ' + ctrans('Gold Reward Amnesty') }}
+                    <FontAwesomeIcon icon="fas fa-candle-holder" class="text-base" fixed-width aria-hidden="true" />
+                    <span class="text-base">
+                        ({{ ctrans('Until :amnestyUntil', { amnestyUntil: useFormatTime(layout?.user?.gr_data?.amnesty_until, { formatTime: 'MMM do' }) }) }})
+                    </span>
+                </span>
+            </template>
+
+            <!-- Label: Gold reward member -->
+            <template v-else-if="layout?.user?.gr_data?.customer_is_gr">
+                <span>
+                    <span v-if="offer?.max_percentage_discount">{{ Number(offer?.max_percentage_discount) * 100 + ' ' }}% <strong>OFF</strong></span>
+                    {{ ' ' + ctrans('Gold Reward Active') }}
                 </span>
             </template>
 
 
             <template v-else>
-                {{ trans('Gold Reward Inactive') }}
+                {{ ctrans('Gold Reward Inactive') }}
             </template>
         </div>
         <span 
-            v-if="!layout?.user?.gr_data?.customer_is_gr"
+            v-if="!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr)"
             @click="_popoverInfoCircle?.toggle"
             @mouseenter="_popoverInfoCircle?.show" 
             @mouseleave="_popoverInfoCircle?.hide" 
@@ -56,7 +71,7 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
         </Popover>
     </section>
 
-    <div class="flex items-center gap-x-2" v-if="layout?.user?.gr_data?.customer_is_gr">
+    <div class="flex items-center gap-x-2" v-if="(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr)">
         <img :src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo" class="h-[4em]" />
     </div>
 </template>

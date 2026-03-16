@@ -14,6 +14,7 @@ use App\Actions\Comms\Email\SendCustomerWelcomeEmail;
 use App\Actions\Comms\Email\SendNewCustomerNotification;
 use App\Actions\CRM\PollReply\StoreMultiPollReply;
 use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\Dropshipping\Tiktok\User\ProcessUnregisterCustomerTiktokUser;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -66,12 +67,15 @@ class RegisterCustomer extends OrgAction
             }
             $customer->refresh();
 
+            if (Arr::has($modelData, 'tiktok_code')) {
+                ProcessUnregisterCustomerTiktokUser::run($customer, $modelData);
+            }
+
             return [$customer, $webUser];
         });
 
-
-        SendCustomerWelcomeEmail::run($customer);
-        SendNewCustomerNotification::run($customer);
+        SendCustomerWelcomeEmail::dispatch($customer);
+        SendNewCustomerNotification::dispatch($customer);
         ShopHydrateCrmStats::run($shop);
 
 

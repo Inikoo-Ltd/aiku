@@ -37,6 +37,7 @@ import { Navigation, Thumbs } from 'swiper/modules'
 // import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
 
 
 
@@ -168,6 +169,15 @@ const varinatNavigation = ref({
   nextEl: null as HTMLElement | null,
 })
 
+const showDiscount = computed(() => {
+    return (
+        product.value?.stock &&
+        !product.value?.is_coming_soon &&
+        !(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) &&
+        bestOffer.value?.type === 'Category Quantity Ordered Order Interval'
+    )
+})
+
 watch([variantPrevEl, variantNextEl], () => {
   if (variantPrevEl.value && variantNextEl.value) {
     varinatNavigation.value = {
@@ -294,7 +304,8 @@ onMounted(async () => {
                     <template v-if="product.offers_data?.number_offers > 0">
                         <div class="flex flex-col w-1/2 offers">
                             <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
-                                <MemberPriceLabel v-if="layout?.user?.gr_data?.customer_is_gr" :offer="bestOffer" />
+                                <GRAmnestyPriceLabel v-if="layout?.user?.gr_data?.amnesty" :offer="bestOffer" />
+                                <MemberPriceLabel v-else-if="(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)" :offer="bestOffer" />
                                 <NonMemberPriceLabel v-else :product />
                             </template>
             
@@ -304,9 +315,8 @@ onMounted(async () => {
                                     && !layout?.user?.gr_data?.customer_is_gr"
                                 :offer="bestOffer(product.offers_data?.best_percentage_off?.offer_id)"
                             /> -->
-                            
                              <DiscountByType 
-                                v-if="(product.stock  && !product.is_coming_soon && !layout?.user?.gr_data?.customer_is_gr &&  bestOffer?.type === 'Category Quantity Ordered Order Interval')" 
+                                v-if="showDiscount" 
                                 :template="'products_triggers_label'"
                                 :offers_data="product?.offers_data" 
                             />
@@ -327,7 +337,7 @@ onMounted(async () => {
                     <div class="flex justify-between items-end">
                         <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
                         <span class="text-green-500 ml-1 font-bold">
-                            {{ layout?.user?.gr_data?.customer_is_gr ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
+                            {{( layout?.user?.gr_data?.customer_is_gr ||  layout?.user?.gr_data?.amnesty) ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
                         </span>
                         <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show" @mouseleave="_popoverProfit?.hide"
                             class="ml-1 cursor-pointer opacity-60 hover:opacity-100"
@@ -517,19 +527,14 @@ onMounted(async () => {
             <div v-if="product.offers_data?.number_offers > 0" class="flex flex-col gap-1 offers">
                 <template v-if="bestOffer?.type === 'Category Quantity Ordered Order Interval'">
                     <MemberPriceLabel
-                        v-if="layout?.user?.gr_data?.customer_is_gr"
+                        v-if="layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty"
                         :offer="bestOffer"
                     />
                     <NonMemberPriceLabel v-else :product />
                 </template>
 
                 <DiscountByType
-                    v-if="
-                        product.stock &&
-                        !product.is_coming_soon &&
-                        !layout?.user?.gr_data?.customer_is_gr &&
-                        bestOffer?.type === 'Category Quantity Ordered Order Interval'
-                    "
+                    v-if="showDiscount"
                     template="products_triggers_label"
                     :offers_data="product?.offers_data"
                 />
@@ -551,7 +556,7 @@ onMounted(async () => {
                     {{ trans("Profit") }}
                 </span>:
                 <span class="ml-1 font-bold text-green-500">
-                   {{ layout?.user?.gr_data?.customer_is_gr ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
+                   {{ (layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
                 </span>
 
                 <span
@@ -730,8 +735,8 @@ onMounted(async () => {
 
 .offers :deep(.offer-trigger-label) {
   @apply bg-gray-50 border border-b-4 rounded-md px-2 py-1 leading-3 text-xxs md:text-xs;
-  border-color:var(--theme-color-4) !important;
-  color: var(--theme-color-4) !important;
+  border-color:var(--theme-color-4);
+  color: var(--theme-color-4);
 }
 
 .offers :deep(.member-badge) {

@@ -20,6 +20,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
 use App\Models\Billables\ShippingZone;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Dispatching\DeliveryNote;
@@ -152,6 +153,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $commission_amount
  * @property string $profit_amount
  * @property string|null $margin
+ * @property bool $is_shipping_by_external
+ * @property \Illuminate\Support\Carbon|null $picked_at
+ * @property string|null $packing_at
+ * @property string $amount_off
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -167,6 +172,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Address> $fixedAddresses
  * @property-read Group $group
  * @property-read Collection<int, Invoice> $invoices
+ * @property-read Collection<int, \App\Models\Ordering\Transaction> $itemTransactions
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Collection<int, OrderPaymentApiPoint> $orderPaymentApiPoint
  * @property-read Organisation $organisation
@@ -215,6 +221,7 @@ class Order extends Model implements HasMedia, Auditable
         'submitted_at'           => 'datetime',
         'in_warehouse_at'        => 'datetime',
         'handling_at'            => 'datetime',
+        'picked_at'              => 'datetime',
         'packed_at'              => 'datetime',
         'finalised_at'           => 'datetime',
         'dispatched_at'          => 'datetime',
@@ -242,15 +249,16 @@ class Order extends Model implements HasMedia, Auditable
         'commission_amount' => 'decimal:2',
 
 
-        'state'               => OrderStateEnum::class,
-        'status'              => OrderStatusEnum::class,
-        'handing_type'        => OrderHandingTypeEnum::class,
-        'pay_status'          => OrderPayStatusEnum::class,
-        'pay_detailed_status' => OrderPayDetailedStatusEnum::class,
-        'shipping_engine'     => OrderShippingEngineEnum::class,
-        'charges_engine'      => OrderChargesEngineEnum::class,
-        'to_be_paid_by'       => OrderToBePaidByEnum::class,
-        'with_replacement'    => 'boolean',
+        'state'                   => OrderStateEnum::class,
+        'status'                  => OrderStatusEnum::class,
+        'handing_type'            => OrderHandingTypeEnum::class,
+        'pay_status'              => OrderPayStatusEnum::class,
+        'pay_detailed_status'     => OrderPayDetailedStatusEnum::class,
+        'shipping_engine'         => OrderShippingEngineEnum::class,
+        'charges_engine'          => OrderChargesEngineEnum::class,
+        'to_be_paid_by'           => OrderToBePaidByEnum::class,
+        'with_replacement'        => 'boolean',
+        'is_shipping_by_external' => 'boolean'
     ];
 
     protected $attributes = [
@@ -272,14 +280,9 @@ class Order extends Model implements HasMedia, Auditable
 
     protected array $auditInclude = [
         'reference',
-        'total_amount',
-        'charges_amount',
-        'net_amount',
-        'goods_amount',
-        'shipping_amount',
-        'payment_amount',
-        'commission_amount',
         'handing_type',
+        'is_shipping_by_external'.
+        'state'
     ];
 
 
@@ -306,6 +309,10 @@ class Order extends Model implements HasMedia, Auditable
         return $this->hasMany(Transaction::class);
     }
 
+    public function itemTransactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class)->where('transactions.model_type', class_basename(Product::class));
+    }
 
     public function deliveryNotes(): BelongsToMany
     {

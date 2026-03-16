@@ -42,9 +42,9 @@ class IndexAssetTimeSeries extends OrgAction
                 'id',
                 'from',
                 'to',
-                'sales',
-                'sales_org_currency',
-                'sales_grp_currency',
+                'sales_external',
+                'sales_org_currency_external',
+                'sales_grp_currency_external',
                 'invoices',
                 'refunds',
                 'orders',
@@ -52,7 +52,7 @@ class IndexAssetTimeSeries extends OrgAction
                 'customers_invoiced',
             ])
             ->defaultSort('-from')
-            ->allowedSorts(['from', 'to', 'sales', 'invoices', 'refunds', 'customers_invoiced'])
+            ->allowedSorts(['from', 'to', 'sales_external', 'invoices', 'refunds', 'customers_invoiced'])
             ->allowedFilters([])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -74,7 +74,7 @@ class IndexAssetTimeSeries extends OrgAction
                 )
                 ->withFrequency()
                 ->column('period', __('Period'), canBeHidden: false, sortable: false)
-                ->column('sales', __('Sales'), canBeHidden: false, sortable: true, type: 'number')
+                ->column('sales_external', __('Sales'), canBeHidden: false, sortable: true, type: 'number')
                 ->column('invoices', __('Invoices'), canBeHidden: false, sortable: true, type: 'number')
                 ->column('refunds', __('Refunds'), canBeHidden: false, sortable: true, type: 'number')
                 ->column('customers_invoiced', __('Customers'), canBeHidden: false, sortable: true, type: 'number')

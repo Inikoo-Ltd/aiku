@@ -25,7 +25,14 @@ class FetchAuroraDeliveryNote extends FetchAurora
         }
 
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Delivery Note Store Key'});
-        if ($shop->is_aiku) {
+
+
+        $forceFetch = false;
+        if ($this->auroraModelData->{'force_fetch'} == 'Yes') {
+            $forceFetch = true;
+        }
+
+        if ($shop->is_aiku && !$forceFetch) {
             return;
         }
 

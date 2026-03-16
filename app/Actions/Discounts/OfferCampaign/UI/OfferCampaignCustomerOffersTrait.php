@@ -33,17 +33,35 @@ trait OfferCampaignCustomerOffersTrait
                 ],
                 'pageHead'                                           => [
                     'icon'  =>
-                        [
-                            'icon'  => ['fal', 'comment-dollar'],
-                            'title' => __('Offer campaign')
-                        ],
+                    [
+                        'icon'  => ['fal', 'comment-dollar'],
+                        'title' => __('Offer campaign')
+                    ],
                     'title'         => $offerCampaign->name,
                     'model'         => __('Offer Campaign'),
                     'iconRight'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
+                    'actions' => app()->environment('local') ? [
+                        [
+                            'type'  => 'button',
+                            'key'   => 'customer_create_offer',
+                            // 'route' => [
+                            //     'name'       => preg_replace('/show$/', 'create_family_offer', request()->route()->getName()),
+                            //     'parameters' => array_values(request()->route()->originalParameters())
+                            // ]
+                        ]
+                    ] : [],
                 ],
                 'tabs'                                               => [
                     'current'    => $this->tab,
-                    'navigation' => OfferCampaignTabsEnum::navigation()
+                    'navigation' => OfferCampaignTabsEnum::navigationExcept([
+                        OfferCampaignTabsEnum::GR_AMNESTY
+                    ])
+                ],
+                'shop_data' => [
+                    'slug'          => $offerCampaign->shop->slug,
+                    'id'            => $offerCampaign->shop->shop_id,
+                    'currency_code' => $offerCampaign->shop->currency->code,
+
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
                     fn () => GetOfferCampaignOverview::run($offerCampaign)
@@ -56,6 +74,6 @@ trait OfferCampaignCustomerOffersTrait
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]
         )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
-        ->table(IndexHistory::make()->tableStructure(prefix:OfferCampaignTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value));
     }
 }

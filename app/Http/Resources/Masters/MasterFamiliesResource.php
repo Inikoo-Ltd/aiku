@@ -33,6 +33,7 @@ use Illuminate\Support\Arr;
  * @property mixed $master_sub_department_code
  * @property mixed $master_sub_department_name
  * @property mixed $currency_code
+ * @property mixed $health_rank
  */
 class MasterFamiliesResource extends JsonResource
 {
@@ -69,12 +70,17 @@ class MasterFamiliesResource extends JsonResource
             'number_current_products'    => $this->current_master_assets,
             'image_thumbnail'            => Arr::get($this->web_images, 'main.thumbnail'),
             'currency_code'              => $this->currency_code,
-            'sales'                      => $this->sales ?? 0,
-            'sales_ly'                   => $this->sales_ly ?? 0,
-            'sales_delta'                => $this->calculateDelta($this->sales ?? 0, $this->sales_ly ?? 0),
+            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
+            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
+            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
             'invoices'                   => $this->invoices ?? 0,
             'invoices_ly'                => $this->invoices_ly ?? 0,
             'invoices_delta'             => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'dropshippers'               => $this->dropshippers ?? 0,
+            'listings'                   => $this->listings ?? 0,
+            'sold'                       => $this->sold ?? 0,
+            'mismatch_detected'          => $this->mismatch_detected,
+            'health_rank'           => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

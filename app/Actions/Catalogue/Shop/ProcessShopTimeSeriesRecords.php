@@ -24,6 +24,8 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $shopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$shopId:$frequency->value:$from:$to";
@@ -76,18 +78,18 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                     'frequency'           => $timeSeries->frequency->singleLetter(),
                 ],
                 [
-                    'from'                         => $periodFrom,
-                    'to'                           => $periodTo,
-                    'sales'                        => $result->sales,
-                    'sales_org_currency'           => $result->sales_org_currency,
-                    'sales_grp_currency'           => $result->sales_grp_currency,
-                    'lost_revenue'                 => $result->lost_revenue,
-                    'lost_revenue_org_currency'    => $result->lost_revenue_org_currency,
-                    'lost_revenue_grp_currency'    => $result->lost_revenue_grp_currency,
-                    'customers_invoiced'           => $result->customers_invoiced,
-                    'invoices'                     => $result->invoices,
-                    'refunds'                      => $result->refunds,
-                    'orders'                       => $result->orders,
+                    'from'                        => $periodFrom,
+                    'to'                          => $periodTo,
+                    'sales_external'              => $result->sales_external,
+                    'sales_org_currency_external' => $result->sales_org_currency_external,
+                    'sales_grp_currency_external' => $result->sales_grp_currency_external,
+                    'lost_revenue'                => $result->lost_revenue,
+                    'lost_revenue_org_currency'   => $result->lost_revenue_org_currency,
+                    'lost_revenue_grp_currency'   => $result->lost_revenue_grp_currency,
+                    'customers_invoiced'          => $result->customers_invoiced,
+                    'invoices'                    => $result->invoices,
+                    'refunds'                     => $result->refunds,
+                    'orders'                      => $result->orders,
                     ...$metrics,
                 ]
             );
@@ -118,18 +120,18 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                     'frequency'           => $timeSeries->frequency->singleLetter(),
                 ],
                 [
-                    'from'                      => $periodData['from'],
-                    'to'                        => $periodData['to'],
-                    'sales'                     => 0,
-                    'sales_org_currency'        => 0,
-                    'sales_grp_currency'        => 0,
-                    'lost_revenue'              => 0,
-                    'lost_revenue_org_currency' => 0,
-                    'lost_revenue_grp_currency' => 0,
-                    'customers_invoiced'        => 0,
-                    'invoices'                  => 0,
-                    'refunds'                   => 0,
-                    'orders'                    => 0,
+                    'from'                        => $periodData['from'],
+                    'to'                          => $periodData['to'],
+                    'sales_external'              => 0,
+                    'sales_org_currency_external' => 0,
+                    'sales_grp_currency_external' => 0,
+                    'lost_revenue'                => 0,
+                    'lost_revenue_org_currency'   => 0,
+                    'lost_revenue_grp_currency'   => 0,
+                    'customers_invoiced'          => 0,
+                    'invoices'                    => 0,
+                    'refunds'                     => 0,
+                    'orders'                      => 0,
                     ...$metrics,
                 ]
             );
@@ -138,30 +140,30 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
 
     protected function getShopPeriodMetrics(int $shopId, Carbon $periodFrom, Carbon $periodTo): array
     {
-        $basketsCreated = DB::table('orders')
-            ->where('shop_id', $shopId)
-            ->where('state', OrderStateEnum::CREATING)
-            ->where('created_at', '>=', $periodFrom)
-            ->where('created_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
-            ->first();
+        // $basketsCreated = DB::table('orders')
+        //     ->where('shop_id', $shopId)
+        //     ->where('state', OrderStateEnum::CREATING)
+        //     ->where('created_at', '>=', $periodFrom)
+        //     ->where('created_at', '<=', $periodTo)
+        //     ->whereNull('deleted_at')
+        //     ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
+        //     ->first();
 
-        $basketsUpdated = DB::table('orders')
-            ->where('shop_id', $shopId)
-            ->where('state', OrderStateEnum::CREATING)
-            ->where('updated_at', '>=', $periodFrom)
-            ->where('updated_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
-            ->first();
+        // $basketsUpdated = DB::table('orders')
+        //     ->where('shop_id', $shopId)
+        //     ->where('state', OrderStateEnum::CREATING)
+        //     ->where('updated_at', '>=', $periodFrom)
+        //     ->where('updated_at', '<=', $periodTo)
+        //     ->whereNull('deleted_at')
+        //     ->selectRaw('sum(net_amount) as net_amount, sum(org_net_amount) as org_net_amount, sum(grp_net_amount) as grp_net_amount')
+        //     ->first();
 
-        $deliveryNotes = DB::table('delivery_notes')
-            ->where('shop_id', $shopId)
-            ->where('date', '>=', $periodFrom)
-            ->where('date', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->count();
+        // $deliveryNotes = DB::table('delivery_notes')
+        //     ->where('shop_id', $shopId)
+        //     ->where('date', '>=', $periodFrom)
+        //     ->where('date', '<=', $periodTo)
+        //     ->whereNull('deleted_at')
+        //     ->count();
 
         $registrationsBase = DB::table('customers')
             ->join('customer_stats', 'customers.id', '=', 'customer_stats.customer_id')
@@ -174,13 +176,13 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
         $registrationsWithoutOrders = (clone $registrationsBase)->where('customer_stats.number_orders', '=', 0)->count();
 
         return [
-            'baskets_created'              => $basketsCreated->net_amount,
-            'baskets_created_org_currency' => $basketsCreated->org_net_amount,
-            'baskets_created_grp_currency' => $basketsCreated->grp_net_amount,
-            'baskets_updated'              => $basketsUpdated->net_amount,
-            'baskets_updated_org_currency' => $basketsUpdated->org_net_amount,
-            'baskets_updated_grp_currency' => $basketsUpdated->grp_net_amount,
-            'delivery_notes'               => $deliveryNotes,
+            'baskets_created'              => 0,
+            'baskets_created_org_currency' => 0,
+            'baskets_created_grp_currency' => 0,
+            'baskets_updated'              => 0,
+            'baskets_updated_org_currency' => 0,
+            'baskets_updated_grp_currency' => 0,
+            'delivery_notes'               => 0,
             'registrations_with_orders'    => $registrationsWithOrders,
             'registrations_without_orders' => $registrationsWithoutOrders,
         ];

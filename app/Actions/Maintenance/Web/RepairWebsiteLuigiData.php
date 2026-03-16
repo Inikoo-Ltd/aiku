@@ -18,6 +18,7 @@ use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class RepairWebsiteLuigiData
 {
@@ -90,8 +91,12 @@ class RepairWebsiteLuigiData
         } else {
             $count = Website::where('migrated', true)->count();
 
+            ProgressBar::setFormatDefinition(
+                'aiku_eta',
+                ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+            );
             $bar = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
+            $bar->setFormat('aiku_eta');
             $bar->start();
 
             Website::where('migrated', true)->orderBy('id')

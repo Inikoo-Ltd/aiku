@@ -62,6 +62,13 @@ const getAdditionalClass = () => {
 
     return className;
 }
+
+const displayUnits = computed(() => {
+  const raw = String(props.product.units ?? '').replace(',', '.')
+  const value = Number(raw)
+  return value.toFixed(3).replace(/\.?0+$/, '')
+})
+
 </script>
 
 <template>
@@ -89,7 +96,7 @@ const getAdditionalClass = () => {
             class="border-s text-gray-700 whitespace-nowrap font-bold ms-2 ps-2"
             :class="trade_units.length >= 1 ? 'border-green-600' : 'border-red-600'"
         >
-            {{ product.units + " " + product.unit }}
+            {{ displayUnits + " " + product.unit }}
         </div>
 
         <Modal :isOpen="isOpenModal" @onClose="() => {isOpenModal = false; emit('closeModal')}" width="max-w-3xl w-full">

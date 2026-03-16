@@ -48,7 +48,8 @@ class StoreOffer extends OrgAction
             $offer->stats()->create();
             foreach ($allowances as $allowanceData) {
                 data_set($allowanceData, 'duration', $offer->duration);
-                data_set($allowanceData, 'end_at', null);
+                data_set($allowanceData, 'start_at', $offer->start_at);
+                data_set($allowanceData, 'end_at', $offer->end_at);
                 StoreOfferAllowance::run($offer, $allowanceData);
             }
             UpdateOfferAllowanceSignature::run($offer);
@@ -72,7 +73,10 @@ class StoreOffer extends OrgAction
         return $offer;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request)
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): Offer
     {
         $this->initialisationFromShop($shop, $request);
 
@@ -82,17 +86,11 @@ class StoreOffer extends OrgAction
         );
     }
 
-    public function inOfferCampaign(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): void
-    {
-        $this->initialisationFromShop($shop, $request);
-
-        dd($this->validatedData);
-    }
 
     public function rules(): array
     {
         $rules = [
-            'code'         => [
+            'code'                => [
                 'required',
                 new IUnique(
                     table: 'offers',
@@ -104,20 +102,20 @@ class StoreOffer extends OrgAction
                 'max:64',
                 'alpha_dash'
             ],
-            'name'         => ['required', 'max:250', 'string'],
-            'label'        => ['sometimes', 'nullable', 'max:1028', 'string'],
-            'data'         => ['sometimes', 'required'],
-            'settings'     => ['sometimes', 'required'],
-            'trigger_data' => ['sometimes', 'required'],
-            'start_at'     => ['sometimes', 'date'],
-            'end_at'       => ['sometimes', 'nullable', 'date'],
-            'type'         => ['required', 'string'],
+            'name'                => ['required', 'max:250', 'string'],
+            'label'               => ['sometimes', 'nullable', 'max:1028', 'string'],
+            'data'                => ['sometimes', 'required'],
+            'settings'            => ['sometimes', 'required'],
+            'trigger_data'        => ['sometimes', 'required'],
+            'start_at'            => ['sometimes', 'date'],
+            'end_at'              => ['sometimes', 'nullable', 'date'],
+            'type'                => ['required', 'string'],
             'offer_qty_items'     => ['sometimes', 'integer'],
             'offer_amount'        => ['sometimes', 'decimal:0,2'],
             'discount_percentage' => ['sometimes', 'integer', 'between:0,100'],
-            'trigger_type' => ['sometimes', Rule::in(['Order'])],
-            'allowances'   => ['sometimes', 'nullable', 'array'],
-            'duration'     => ['sometimes', Rule::enum(OfferDurationEnum::class)],
+            'trigger_type'        => ['sometimes', Rule::in(['Order'])],
+            'allowances'          => ['sometimes', 'nullable', 'array'],
+            'duration'            => ['sometimes', Rule::enum(OfferDurationEnum::class)],
         ];
         if (!$this->strict) {
             $rules['start_at']         = ['sometimes', 'nullable', 'date'];

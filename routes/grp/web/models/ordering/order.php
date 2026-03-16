@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
 use App\Actions\Dispatching\Picking\AssignPackerToPicking;
@@ -30,6 +31,7 @@ use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsManual;
 use App\Actions\Ordering\Order\UpdateOrderShippingTBCAmount;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
+use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
@@ -60,6 +62,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('pay-with-balance', PayOrderWithCustomerBalance::class)->name('pay_order_with_balance');
 
     Route::patch('update', UpdateOrder::class)->name('update');
+    Route::post('update-faire', UpdateFaireOrder::class)->name('update_faire');
     Route::patch('rollback-dispatch', RollbackDispatchedOrder::class)->name('rollback_dispatch');
     Route::patch('delivery-address-update', UpdateOrderDeliveryAddress::class)->name('delivery_address_update');
     Route::patch('generate-invoice', GenerateInvoiceFromOrder::class)->name('generate_invoice');
@@ -93,6 +96,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
         Route::patch('handling', UpdateOrderStateToHandling::class)->name('handling');
         Route::patch('packed', UpdateOrderStateToPacked::class)->name('packed');
+        Route::patch('finalise', FinaliseOrder::class)->name('finalise');
         Route::patch('dispatched', DispatchOrder::class)->name('dispatched');
     });
 

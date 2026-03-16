@@ -13,12 +13,20 @@ use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehousePalletReturn;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehouseStoredItemReturn;
+use App\Actions\Dispatching\PickedBay\UI\CreatePickedBay;
+use App\Actions\Dispatching\PickedBay\UI\EditPickedBay;
+use App\Actions\Dispatching\PickedBay\UI\IndexPickedBays;
+use App\Actions\Dispatching\PickedBay\UI\ShowPickedBay;
 use App\Actions\Dispatching\PickingSession\UI\IndexPickingSessions;
 use App\Actions\Dispatching\PickingSession\UI\ShowPickingSession;
 use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
 use App\Actions\Dispatching\Shipper\UI\ShowShipper;
+use App\Actions\Dispatching\Trolley\UI\CreateTrolley;
+use App\Actions\Dispatching\Trolley\UI\EditTrolley;
+use App\Actions\Dispatching\Trolley\UI\IndexTrolleys;
+use App\Actions\Dispatching\Trolley\UI\ShowTrolley;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use Illuminate\Support\Facades\Route;
 
@@ -39,11 +47,20 @@ Route::get('/delivery-notes/handling/shop/{shopType}', [IndexDeliveryNotes::clas
 Route::get('/delivery-notes/handling-blocked', [IndexDeliveryNotes::class, 'handlingBlocked'])->name('handling-blocked.delivery-notes');
 Route::get('/delivery-notes/handling-blocked/shop/{shopType}', [IndexDeliveryNotes::class, 'handlingBlockedShopTypes'])->name('handling-blocked.delivery-notes.shop');
 
+Route::get('/delivery-notes/picked', [IndexDeliveryNotes::class, 'picked'])->name('picked.delivery-notes');
+Route::get('/delivery-notes/picked/shop/{shopType}', [IndexDeliveryNotes::class, 'pickedShopTypes'])->name('picked.delivery-notes.shop');
+
+Route::get('/delivery-notes/packing', [IndexDeliveryNotes::class, 'packing'])->name('packing.delivery-notes');
+Route::get('/delivery-notes/packing/shop/{shopType}', [IndexDeliveryNotes::class, 'packingShopTypes'])->name('packing.delivery-notes.shop');
+
 Route::get('/delivery-notes/packed', [IndexDeliveryNotes::class, 'packed'])->name('packed.delivery-notes');
 Route::get('/delivery-notes/packed/shop/{shopType}', [IndexDeliveryNotes::class, 'packedShopTypes'])->name('packed.delivery-notes.shop');
 
 Route::get('/delivery-notes/finalised', [IndexDeliveryNotes::class, 'finalised'])->name('finalised.delivery-notes');
 Route::get('/delivery-notes/finalised/shop/{shopType}', [IndexDeliveryNotes::class, 'finalisedShopTypes'])->name('finalised.delivery-notes.shop');
+
+Route::get('/delivery-notes/in-warehouse', [IndexDeliveryNotes::class, 'inWarehouse'])->name('in_warehouse.delivery-notes');
+Route::get('/delivery-notes/in-warehouse/shop/{shopType}', [IndexDeliveryNotes::class, 'inWarehouseShopTypes'])->name('in_warehouse.delivery-notes.shop');
 
 Route::get('/delivery-notes/dispatched', [IndexDeliveryNotes::class, 'dispatched'])->name('dispatched.delivery-notes');
 Route::get('/delivery-notes/dispatched/shop/{shopType}', [IndexDeliveryNotes::class, 'dispatchedShopTypes'])->name('dispatched.delivery-notes.shop');
@@ -68,4 +85,23 @@ Route::get('shippers/{shipper}/edit', EditShipper::class)->name('shippers.edit')
 Route::get('boxes', IndexBoxes::class)->name('boxes.index');
 Route::get('boxes/create', CreateBox::class)->name('boxes.create');
 Route::get('picking-sessions', IndexPickingSessions::class)->name('picking_sessions.index');
+Route::get('picking-sessions/in-process', [IndexPickingSessions::class, 'InProcess'])->name('picking_sessions.in_process');
+Route::get('picking-sessions/picking', [IndexPickingSessions::class, 'Picking'])->name('picking_sessions.picking');
+Route::get('picking-sessions/waiting', [IndexPickingSessions::class, 'Waiting'])->name('picking_sessions.waiting');
+Route::get('picking-sessions/picked', [IndexPickingSessions::class, 'Picked'])->name('picking_sessions.picked');
+Route::get('picking-sessions/packed', [IndexPickingSessions::class, 'Packed'])->name('picking_sessions.packed');
 Route::get('picking-sessions/{pickingSession}', ShowPickingSession::class)->name('picking_sessions.show');
+
+Route::prefix('trolleys')->as('trolleys.')->group(function () {
+    Route::get('', IndexTrolleys::class)->name('index');
+    Route::get('create', CreateTrolley::class)->name('create');
+    Route::get('{trolley}', ShowTrolley::class)->name('show');
+    Route::get('{trolley}/edit', EditTrolley::class)->name('edit');
+});
+
+Route::prefix('picked-bays')->as('picked_bays.')->group(function () {
+    Route::get('', IndexPickedBays::class)->name('index');
+    Route::get('create', CreatePickedBay::class)->name('create');
+    Route::get('{pickedBay}', ShowPickedBay::class)->name('show');
+    Route::get('{pickedBay}/edit', EditPickedBay::class)->name('edit');
+});

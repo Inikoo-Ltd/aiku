@@ -8,10 +8,12 @@
 <script setup lang="ts">
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
+import { router } from '@inertiajs/vue3'
 import { Tooltip } from 'floating-vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { faHistory } from '@fal'
 library.add(faExclamationCircle, faCheckCircle)
 
 interface TaxNumberResource {
@@ -29,6 +31,8 @@ interface TaxNumberResource {
 
 const props = defineProps<{
     tax_number: TaxNumberResource
+    show_view_history_button: boolean|null
+    view_history_link: string|null
 }>()
 
 // Tax number validation helper functions
@@ -85,7 +89,7 @@ const getStatusText = (status: string, valid: boolean) => {
             
             <!-- Validation Status Display -->
             <div class="px-3 py-2 bg-gray-50 rounded border">
-                <div class="flex items-start justify-between">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <FontAwesomeIcon 
                             :icon="getStatusIcon(tax_number.status, tax_number.valid)"
@@ -94,7 +98,7 @@ const getStatusText = (status: string, valid: boolean) => {
                             fixed-width
                         />
 
-                        <div class="space-y-2">
+                        <div class="space-y-2 whitespace-nowrap">
                             <p class="text-sm">
                                 <span class="font-medium" :class="getStatusColor(tax_number.status, tax_number.valid)">
                                     {{ getStatusText(tax_number.status, tax_number.valid) }}
@@ -125,6 +129,13 @@ const getStatusText = (status: string, valid: boolean) => {
                             </p>
                         </div>
                     </div>
+
+                    <span v-if="show_view_history_button && view_history_link" class="justify-self-end ml-6 h-full whitespace-nowrap hover:underline cursor-pointer hover:text-gray-500" v-tooltip="trans('View Tax Number Validation History')" v-on:click="router.visit(route(view_history_link))">
+                        <span class="text-xs h-full mr-1 hidden md:inline">
+                            {{ trans('View History') }}
+                        </span>
+                        <FontAwesomeIcon :icon="faHistory"/>
+                    </span>
                 </div>
             </div>
         </div>

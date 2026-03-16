@@ -13,9 +13,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $sales_channel_time_series_id
  * @property string $frequency
- * @property string|null $sales
- * @property string|null $sales_org_currency
- * @property string|null $sales_grp_currency
+ * @property string|null $sales_external
+ * @property string|null $sales_org_currency_external
+ * @property string|null $sales_grp_currency_external
  * @property string|null $lost_revenue
  * @property string|null $lost_revenue_org_currency
  * @property string|null $lost_revenue_grp_currency
@@ -27,6 +27,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $period
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $sales_internal
+ * @property string|null $sales_org_currency_internal
+ * @property string|null $sales_grp_currency_internal
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannelTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannelTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannelTimeSeriesRecord query()

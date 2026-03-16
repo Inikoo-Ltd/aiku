@@ -29,11 +29,10 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
         $firstMasterShop = is_array($masterShops) ? ($masterShops[0] ?? []) : [];
 
         $fields = [
-            'baskets_created_grp_currency',
             'registrations',
             'registrations_with_orders',
             'registrations_without_orders',
-            'sales_grp_currency',
+            'sales_grp_currency_external',
             'invoices',
         ];
 
@@ -76,8 +75,6 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
                     ...$routeTargets['group']
                 ]
             ],
-            $this->getDashboardTableColumnFromArray($summedData, 'baskets_created_grp_currency'),
-            $this->getDashboardTableColumnFromArray($summedData, 'baskets_created_grp_currency_minified'),
             $registrationsColumns,
             $this->getDashboardTableColumnFromArray($summedData, 'registrations_delta'),
             $this->getDashboardTableColumnFromArray($summedData, 'registrations_with_orders'),
@@ -87,9 +84,9 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
             $this->getDashboardTableColumnFromArray($summedData, 'invoices'),
             $this->getDashboardTableColumnFromArray($summedData, 'invoices_minified'),
             $this->getDashboardTableColumnFromArray($summedData, 'invoices_delta'),
-            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency'),
-            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_minified'),
-            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_delta')
+            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_external'),
+            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_external_minified'),
+            $this->getDashboardTableColumnFromArray($summedData, 'sales_grp_currency_external_delta')
         );
 
         return [
@@ -125,7 +122,7 @@ class DashboardTotalGroupMasterShopsSalesResource extends JsonResource
                         $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
 
                         $columns[$columnKey][$interval]['tooltip'] = sprintf(
-                            'With orders: %s | Without orders: %s',
+                            'With product in basket: %s | With empty basket: %s',
                             number_format($withOrders),
                             number_format($withoutOrders)
                         );

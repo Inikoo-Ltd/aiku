@@ -39,7 +39,7 @@ class OffersResource extends JsonResource
             'shop_name'           => $this->shop_name,
             'orders'              => $this->orders,
             'invoices'            => $this->invoices,
-            'sales'               => $this->sales
+            'sales_grp_currency_external' => $this->sales_grp_currency_external
         ];
     }
 }

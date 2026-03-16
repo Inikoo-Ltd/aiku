@@ -42,7 +42,7 @@ class CreateRetinaNewAllPortfoliosToShopify extends RetinaAction
             'portfolios' => $portfolios->toArray(),
         ];
 
-        CreateNewBulkPortfoliosToShopify::run($customerSalesChannel, $payload);
+        CreateNewBulkPortfoliosToShopify::dispatch($customerSalesChannel, $payload);
     }
     /**
      * @throws \Exception

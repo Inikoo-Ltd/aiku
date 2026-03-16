@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
 use App\Models\SysAdmin\Organisation;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditMailshotTemplate extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
     /**
      * @throws Exception
      */
@@ -29,7 +31,7 @@ class EditMailshotTemplate extends OrgAction
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $parent->organisation,
+                    $emailTemplate,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
@@ -84,12 +86,6 @@ class EditMailshotTemplate extends OrgAction
         );
     }
 
-    // TODO: update this path
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
-    }
-
     /**
      * @throws Exception
      */
@@ -100,23 +96,36 @@ class EditMailshotTemplate extends OrgAction
         return $this->handle($shop, $emailTemplate, $request);
     }
 
-    // TODO: update this path
-    public function getBreadcrumbs(Organisation $parent, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(EmailTemplate $emailTemplate, string $routeName, array $routeParameters, string $suffix = null): array
     {
-        return array_merge(
-            IndexMailshots::make()->getBreadcrumbs(
-                routeName: $routeName,
-                routeParameters: $routeParameters,
-                parent: $parent
-            ),
-            [
+        $headCrumb = function (EmailTemplate $emailTemplate, array $routeParameters, string $suffix = null) {
+            return [
                 [
-                    'type'          => 'creatingModel',
-                    'creatingModel' => [
-                        'label' => __('Creating template'),
-                    ]
+                    'type' => 'simple',
+                    'simple' => [
+                        'route' => $routeParameters,
+                        'label' => $emailTemplate->name,
+                    ],
+                    'suffix' => __('(Edit)'),
                 ]
-            ]
-        );
+            ];
+        };
+
+
+        return match ($routeName) {
+            'grp.org.shops.show.marketing.templates.edit' =>
+            array_merge(
+                IndexMailshotTemplates::make()->getBreadcrumbs(
+                    'grp.org.shops.show.marketing.templates.index',
+                    $routeParameters,
+                    parent: $this->shop
+                ),
+                $headCrumb(
+                    $emailTemplate,
+                    $routeParameters,
+                ),
+            ),
+            default => []
+        };
     }
 }

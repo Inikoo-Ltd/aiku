@@ -92,6 +92,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\HumanResources\EmployeeHasJobPositions|null $pivot
  * @property-read Collection<int, \App\Models\HumanResources\JobPosition> $jobPositions
+ * @property-read \App\Models\HumanResources\EmployeeAnalytics|null $latestAnalytics
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read \App\Models\Helpers\Media|null $seoImage
@@ -240,6 +241,11 @@ class Employee extends Model implements HasMedia, Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(EmployeeStats::class);
+    }
+
+    public function latestAnalytics(): HasOne
+    {
+        return $this->hasOne(EmployeeAnalytics::class)->latestOfMany();
     }
 
     public function timesheets(): MorphMany

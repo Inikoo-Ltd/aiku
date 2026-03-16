@@ -21,6 +21,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class FixAuroraCategoryOffers
 {
@@ -49,7 +50,13 @@ class FixAuroraCategoryOffers
             ->whereNotNull('source_id')
             ->get();
 
+        ProgressBar::setFormatDefinition(
+            'aiku_eta',
+            ' %current%/%max% [%bar%] %percent:3s%% | Elapsed: %elapsed:6s% | ETA: %remaining:6s%'
+        );
         $progressBar = $command->getOutput()->createProgressBar($offers->count());
+        $progressBar->setFormat('aiku_eta');
+        $progressBar->start();
 
         /** @var Offer $offer */
         foreach ($offers as $offer) {
@@ -64,6 +71,9 @@ class FixAuroraCategoryOffers
 
             $auroraDealComponentData = DB::connection('aurora')->table('Deal Component Dimension')->where('Deal Component Deal Key', $auroraDealData->{'Deal Key'})->first();
 
+            if (!$auroraDealComponentData) {
+                continue;
+            }
 
             $discount = $auroraDealComponentData->{'Deal Component Allowance'};
 

@@ -25,7 +25,7 @@ trait WithHydrateCommand
     use AsAction;
 
     private string $model;
-    private ?string $restriction = null;
+    protected ?string $restriction = null;
     private ?array $evadeState = null;
     protected bool $modelAsHandleArg = true;
 
@@ -100,7 +100,12 @@ trait WithHydrateCommand
             }
         }
 
-
+        if ($command->hasOption('ids') && $command->option('ids')) {
+            $query->whereIn('id', explode(',', $command->option('ids')));
+        }
+        if ($command->hasOption('slugs') && $command->option('slugs')) {
+            $query->whereIn('slug', explode(',', $command->option('slugs')));
+        }
         if ($command->hasOption('slug') && $command->option('slug')) {
             $query->where('slug', $command->option('slug'));
         }

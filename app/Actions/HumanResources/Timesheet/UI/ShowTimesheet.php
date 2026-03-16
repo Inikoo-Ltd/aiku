@@ -93,8 +93,12 @@ class ShowTimesheet extends OrgAction
 
 
                 TimesheetTabsEnum::CLOCKINGS->value => $this->tab == TimesheetTabsEnum::CLOCKINGS->value ?
-                    fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))
-                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))),
+                    fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))->additional([
+                        'can_edit_clockings' => $this->canEdit,
+                    ])
+                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))->additional([
+                        'can_edit_clockings' => $this->canEdit,
+                    ])),
 
 
                 TimesheetTabsEnum::HISTORY->value => $this->tab == TimesheetTabsEnum::HISTORY->value ?
@@ -105,7 +109,8 @@ class ShowTimesheet extends OrgAction
         )->table(
             IndexClockings::make()->tableStructure(
                 parent: $timesheet,
-                prefix: TimesheetTabsEnum::CLOCKINGS->value
+                prefix: TimesheetTabsEnum::CLOCKINGS->value,
+                showActions: $this->canEdit
             )
         )->table(
             IndexTimeTrackers::make()->tableStructure(

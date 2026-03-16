@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -23,7 +24,17 @@ class GetEcomOrderActions
 
         $generateInvoiceLabel = __('Generate Invoice');
 
+        $hasShipment = null;//only used in bellow states
+        if ($order->is_shipping_by_external && $order->state == OrderStateEnum::PACKED) {
+            $hasShipment = false;
 
+            /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
+            $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+            if ($deliveryNote) {
+                $hasShipment = $deliveryNote->shipments()->count() > 0;
+            }
+
+        }
 
         if ($canEdit) {
             $actions    = match ($order->state) {
@@ -104,6 +115,24 @@ class GetEcomOrderActions
                 ],
 
 
+                OrderStateEnum::PACKED => [
+
+                    ($order->is_shipping_by_external && $hasShipment) ?
+                        [
+                            'type'    => 'button',
+                            'style'   => '',
+                            'tooltip' => $generateInvoiceLabel,
+                            'label'   => $generateInvoiceLabel,
+                            'key'     => 'action',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.state.finalise',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ] : [],
+                ],
                 OrderStateEnum::FINALISED => [
 
                     $order->invoices->count() == 0 ?

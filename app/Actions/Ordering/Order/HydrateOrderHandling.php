@@ -2,6 +2,10 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePacking;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePicked;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePacking;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePicked;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -128,6 +132,8 @@ class HydrateOrderHandling
         GroupHydrateOrderStateInWarehouse::run($id);
         GroupHydrateOrderStateHandling::run($id);
         GroupHydrateOrderStateHandlingBlocked::run($id);
+        GroupHydrateOrderStatePicked::run($id);
+        GroupHydrateOrderStatePacking::run($id);
         GroupHydrateOrderStatePacked::run($id);
         GroupHydrateOrderStateFinalised::run($id);
         GroupHydrateOrdersDispatchedToday::run($id);
@@ -152,6 +158,8 @@ class HydrateOrderHandling
         ShopHydrateOrderStateInWarehouse::run($id);
         ShopHydrateOrderStateHandling::run($id);
         ShopHydrateOrderStateHandlingBlocked::run($id);
+        ShopHydrateOrderStatePicked::run($id);
+        ShopHydrateOrderStatePacking::run($id);
         ShopHydrateOrderStatePacked::run($id);
         ShopHydrateOrderStateFinalised::run($id);
         ShopHydrateOrdersDispatchedToday::run($id);

@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
+use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\User\UserAddRoles;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
@@ -30,6 +31,7 @@ class AsyncShopPermissions extends OrgAction
         SeedShopPermissions::run($shop);
         SeedAikuScopedSections::make()->seedShopAikuScopedSection($shop);
 
+        SeedJobPositions::run($organisation);
 
         $orgAdmins = $organisation->group->users()->with('roles')->get()->filter(
             fn ($user) => $user->roles->where('name', "org-admin-$organisation->id")->toArray()

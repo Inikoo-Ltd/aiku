@@ -25,7 +25,7 @@ import { confetti } from '@tsparticles/confetti'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle, faCheckCircle as falCheckCircle, faHeart, faSparkles, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt, faMedal } from "@fal"
-import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faSparkles as fasSparkles, faInfo, faCircle, faMedal as fasMedal } from '@fas'
+import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faSparkles as fasSparkles, faInfo, faCircle, faMedal as fasMedal, faCandleHolder } from '@fas'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 
 import Modal from "@/Components/Utils/Modal.vue"
@@ -38,7 +38,7 @@ import { setColorStyleRoot } from "@/Composables/useApp"
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
 
-library.add(faMedal, fasMedal, fadMedal)
+library.add(faMedal, fasMedal, faCandleHolder, fadMedal)
 library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
 
@@ -502,5 +502,9 @@ onMounted(() => {
 
 #retina-confetti {
     pointer-events: none;
+}
+
+.text-primary {
+  color: v-bind("layout.iris.theme.color[4]") ;
 }
 </style>

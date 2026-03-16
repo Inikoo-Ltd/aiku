@@ -44,7 +44,7 @@ trait WithOrderingCustomerNotification
             $shipment = $deliveryNote->shipments?->first();
 
             if ($shipment) {
-                return $shipment?->combined_label_url;
+                return $shipment->combined_label_url;
             }
         }
 
@@ -110,8 +110,7 @@ trait WithOrderingCustomerNotification
 
     public function getEmailBody(Customer $customer, OutboxCodeEnum $outboxCode): array
     {
-        $recipient       = $customer;
-        if (!$recipient->email) {
+        if (!$customer->email) {
             return [null, null];
         }
 
@@ -122,10 +121,9 @@ trait WithOrderingCustomerNotification
             return [null, null];
         }
 
-        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
-            'is_test'       => false,
+        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $customer, [
             'outbox_id'     => $outbox->id,
-            'email_address' => $recipient->email,
+            'email_address' => $customer->email,
             'provider'      => DispatchedEmailProviderEnum::SES
         ]);
         $dispatchedEmail->refresh();

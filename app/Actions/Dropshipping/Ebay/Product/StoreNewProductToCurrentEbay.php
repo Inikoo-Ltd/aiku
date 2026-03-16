@@ -25,9 +25,9 @@ class StoreNewProductToCurrentEbay extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(EbayUser $ebayUser, Portfolio $portfolio): void
+    public function handle(EbayUser $ebayUser, Portfolio $portfolio): Portfolio
     {
-        StoreEbayProduct::run($ebayUser, $portfolio);
+        return StoreEbayProduct::run($ebayUser, $portfolio);
     }
 
     /**

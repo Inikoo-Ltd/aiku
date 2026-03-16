@@ -22,6 +22,7 @@ import PrimeVue from "primevue/config";
 import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
+import { ctrans } from "@/Composables/useTrans";
 
 if (import.meta.env.VITE_NEW_RELIC_BROWSER_RETINA_AGENT_ID) {
   const options = {
@@ -90,7 +91,9 @@ createInertiaApp(
                     });
       }
 
-      app.use(plugin).
+      app.use(plugin);
+      app.config.globalProperties.ctrans = ctrans;  // global function for <template> -- Custom translation
+      app.
         use(createPinia()).
         use(ZiggyVue, Ziggy).
         use(Notifications).

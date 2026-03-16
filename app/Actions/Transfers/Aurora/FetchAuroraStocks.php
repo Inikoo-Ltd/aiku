@@ -75,8 +75,8 @@ class FetchAuroraStocks extends FetchAuroraAction
             ];
         }
 
-
-        if ($stock = Stock::withTrashed()->where('source_id', $stockData['stock']['source_id'])->first()) {
+        $stock = Stock::withTrashed()->where('source_id', $stockData['stock']['source_id'])->first();
+        if ($stock) {
             $dataToUpdate = Arr::only($stockData['stock'], [
                 'name',
                 'code',
@@ -117,6 +117,12 @@ class FetchAuroraStocks extends FetchAuroraAction
         if (!$stock) {
             $stock = Stock::withTrashed()->where('source_slug', $stockData['stock']['source_slug'])->first();
         }
+
+
+        if (!$stock) {
+            $stock = Stock::whereRaw('LOWER(code)=? ', [trim(strtolower($stockData['stock']['code']))])->first();
+        }
+
 
         if (!$stock) {
             if ($stockData['stock_family']) {

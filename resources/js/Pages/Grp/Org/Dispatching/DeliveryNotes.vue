@@ -15,7 +15,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCheck, faHandPaper, faBoxCheck, faBoxOpen, faCheckDouble, faTasks } from "@fal"
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import HasPickTableDeliveryNote from '@/Components/Tables/Grp/Org/Dispatching/HasPickTableDeliveryNote.vue'
-import { ref, inject } from "vue"
+import { ref, inject, computed } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
@@ -27,6 +27,7 @@ const props = defineProps<{
   title: string
   data?: {}
   todo?: Boolean
+  shopType: string
   picking_session_route : routeType
 }>()
 
@@ -76,6 +77,10 @@ function createPickingSession() {
 }
 
 console.log("layoutStore", layoutStore)
+
+const isHidden = computed(() => { 
+  return props.shopType == 'b2b' || props.shopType == 'external'
+})
 </script>
 
 <template>
@@ -83,7 +88,7 @@ console.log("layoutStore", layoutStore)
   <PageHeading :data="pageHead">
     <template #other>
         <Button
-        v-if="selectedDeliveryNotes.length > 0"
+        v-if="selectedDeliveryNotes.length > 0 && !isHidden"
         type="create"
         :label="trans('Picking session')"
         :loading="loading"

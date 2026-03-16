@@ -31,6 +31,7 @@ class CreateShipmentInDeliveryNoteInWarehouse extends OrgAction
         return [
             'tracking'       => ['sometimes', 'nullable', 'max:1000', 'string'],
             'shipper_id' => ['required', Rule::exists(Shipper::class, 'id')->where('organisation_id', $this->organisation->id)],
+            'cost'  => ['sometimes', 'nullable', 'numeric'],
         ];
     }
 

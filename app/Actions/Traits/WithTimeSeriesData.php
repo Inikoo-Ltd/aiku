@@ -38,10 +38,10 @@ trait WithTimeSeriesData
                     ->whereYear('from', $year - 1)
                     ->first();
 
-                $previousYearSales = $previousYearRecord->sales_grp_currency ?? 0;
+                $previousYearSales = $previousYearRecord->sales_grp_currency_external ?? 0;
                 $previousYearInvoices = $previousYearRecord->invoices ?? 0;
 
-                $salesDelta = $record->sales_grp_currency - $previousYearSales;
+                $salesDelta = $record->sales_grp_currency_external - $previousYearSales;
                 $salesDeltaPercentage = $previousYearSales > 0
                     ? (($salesDelta / $previousYearSales) * 100)
                     : 0;
@@ -53,7 +53,7 @@ trait WithTimeSeriesData
 
                 return [
                     'year' => $year,
-                    'total_sales' => (float) $record->sales_grp_currency,
+                    'total_sales' => (float) $record->sales_grp_currency_external,
                     'total_invoices' => (int) $record->invoices,
                     'sales_delta' => (float) $salesDelta,
                     'sales_delta_percentage' => (float) $salesDeltaPercentage,
@@ -94,10 +94,10 @@ trait WithTimeSeriesData
                     ->whereRaw('EXTRACT(QUARTER FROM "from") = ?', [$quarter])
                     ->first();
 
-                $previousYearSales = $previousYearRecord->sales_grp_currency ?? 0;
+                $previousYearSales = $previousYearRecord->sales_grp_currency_external ?? 0;
                 $previousYearInvoices = $previousYearRecord->invoices ?? 0;
 
-                $salesDelta = $record->sales_grp_currency - $previousYearSales;
+                $salesDelta = $record->sales_grp_currency_external - $previousYearSales;
                 $salesDeltaPercentage = $previousYearSales > 0
                     ? (($salesDelta / $previousYearSales) * 100)
                     : 0;
@@ -111,7 +111,7 @@ trait WithTimeSeriesData
                     'quarter' => "Q{$quarter} " . substr((string)$year, -2),
                     'quarter_number' => $quarter,
                     'year' => $year,
-                    'total_sales' => (float) $record->sales_grp_currency,
+                    'total_sales' => (float) $record->sales_grp_currency_external,
                     'total_invoices' => (int) $record->invoices,
                     'sales_delta' => (float) $salesDelta,
                     'sales_delta_percentage' => (float) $salesDeltaPercentage,
@@ -152,7 +152,7 @@ trait WithTimeSeriesData
 
         return [
             'all_sales_since' => Carbon::parse($allRecords->first()->from)->toDateString(),
-            'total_sales' => (float) $allRecords->sum('sales_grp_currency'),
+            'total_sales' => (float) $allRecords->sum('sales_grp_currency_external'),
             'total_invoices' => (int) $allRecords->sum('invoices'),
         ];
     }

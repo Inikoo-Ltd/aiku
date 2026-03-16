@@ -3,7 +3,7 @@ import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import Row from "primevue/row"
 import ColumnGroup from "primevue/columngroup"
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, watch } from "vue"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
@@ -83,16 +83,17 @@ const emits = defineEmits<(e: "onChangeTab", val: string) => void>()
 
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 
-// console.log('%c Tables ', 'background: red; color: white', props.tableData.tables);
-// console.log('%c Settings ', 'background: blue; color: white', props.settings);
-
+const localCurrentTab = ref(props.tableData.current_tab)
+watch(() => props.tableData.current_tab, (newVal) => {
+	localCurrentTab.value = newVal
+})
 
 const compTableBody = computed(() => {
 	if (props.settings.model_state_type?.value === 'open') {
-		return props.tableData.tables[props.tableData.current_tab].body?.filter(row => row.state === 'active')
+		return props.tableData.tables[localCurrentTab.value].body?.filter(row => row.state === 'active')
 	}
 
-	return props.tableData.tables[props.tableData.current_tab].body;
+	return props.tableData.tables[localCurrentTab.value].body;
 })
 
 
@@ -134,6 +135,7 @@ const debStoreTab = debounce((tab: string) => {
 	})
 }, 800)
 const updateTab = (value: string) => {
+	localCurrentTab.value = value
 	emits('onChangeTab', value)
 	debStoreTab(value)
 }
@@ -147,14 +149,11 @@ const updateTab = (value: string) => {
 
 		<div class="">
 			<!-- Section: Tabs -->
-			<Tabs v-if="showTabs" :value="tableData.current_tab" class="overflow-x-auto text-xs md:text-base pb-2">
+			<Tabs v-if="showTabs" :value="localCurrentTab" class="overflow-x-auto text-xs md:text-base pb-2">
 				<TabList>
 					<Tab
 						v-for="(tab, tabSlug) in tableData.tabs"
-						@click="() => (
-							updateTab(tabSlug),
-							tableData.current_tab = tabSlug
-						)"
+						@click="() => updateTab(tabSlug)"
 						:key="tabSlug"
 						:value="tabSlug"
 					>
@@ -174,7 +173,7 @@ const updateTab = (value: string) => {
 
 				<!-- Column (looping) -->
 				<template
-					v-for="(columnHeader, colSlug, colIndex) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
+					v-for="(columnHeader, colSlug, colIndex) in props.tableData?.tables?.[localCurrentTab]?.header?.columns"
 					:key="colSlug"
 				>
 					<Column
@@ -209,8 +208,8 @@ const updateTab = (value: string) => {
 							<div class="px-2 flex relative" :class="columnHeader.align === 'left' ? '' : 'justify-end text-right'">
 								<DashboardCell
 									:interval="intervals"
-									:cell="props.tableData.tables[props.tableData.current_tab].totals?.columns?.[colSlug]?.[intervals.value]
-										?? props.tableData.tables[props.tableData.current_tab].totals?.columns?.[colSlug]
+									:cell="props.tableData.tables[localCurrentTab].totals?.columns?.[colSlug]?.[intervals.value]
+										?? props.tableData.tables[localCurrentTab].totals?.columns?.[colSlug]
 									"
 								/>
 							</div>

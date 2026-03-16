@@ -136,7 +136,7 @@ class StoreOrderFromShopify extends OrgAction
                 'reference'    => $reference,
                 'email'        => Arr::get($shopifyOrderData, 'customer.email'),
                 'contact_name' => Arr::get($receiverDetail, 'firstName').' '.Arr::get($receiverDetail, 'lastName'),
-                'phone'        => Arr::get($receiverDetail, 'phone'),
+                'phone'        => $this->sanitizePhone(Arr::get($receiverDetail, 'phone')),
                 'address'      => $deliveryAddress,
                 'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
             ]);
@@ -145,7 +145,7 @@ class StoreOrderFromShopify extends OrgAction
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
                 'email'        => Arr::get($shopifyOrderData, 'customer.email'),
                 'contact_name' => Arr::get($receiverDetail, 'firstName').' '.Arr::get($receiverDetail, 'lastName'),
-                'phone'        => Arr::get($receiverDetail, 'phone'),
+                'phone'        => $this->sanitizePhone(Arr::get($receiverDetail, 'phone')),
                 'address'      => $deliveryAddress,
                 'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
             ]);
@@ -154,4 +154,12 @@ class StoreOrderFromShopify extends OrgAction
         return $customerClient;
     }
 
+    private function sanitizePhone($phone): array|string|null
+    {
+        // Extract only digits
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+
+        // Ensure minimum 10 digits
+        return strlen($digits) >= 10 ? $digits : str_pad($digits, 10, '0', STR_PAD_RIGHT);
+    }
 }

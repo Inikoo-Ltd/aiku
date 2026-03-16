@@ -29,7 +29,6 @@ class StoreMediaFromIcon
     {
         $seed     = class_basename($model).'-'.$model->slug;
         $iconType = DiceBearStylesEnum::IDENTICON;
-
         $group_id = $model->group_id;
         if ($model instanceof Group) {
             $iconType = DiceBearStylesEnum::SHAPES;
@@ -39,14 +38,9 @@ class StoreMediaFromIcon
         } elseif ($model instanceof Shop) {
             $iconType = DiceBearStylesEnum::BOTS;
         }
-
-
         try {
-
-
             $svg = GetDiceBearAvatar::run($iconType, $seed);
             $checksum = md5($svg);
-
             /** @var Media $media */
             $media = $model->addMediaFromString($svg)
                 ->preservingOriginal()
@@ -60,7 +54,6 @@ class StoreMediaFromIcon
                 ->usingName($model->slug."-icon")
                 ->usingFileName(hash('crc32b', $checksum).'.svg')
                 ->toMediaCollection('icon');
-
             MediaHydrateDimensions::run($media);
             return $media;
         } catch (Exception) {

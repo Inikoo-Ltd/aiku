@@ -58,8 +58,12 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
 
+        $is_for_sale = true;
+        if (Arr::has($modelData, 'is_for_sale')) {
+            $is_for_sale = Arr::get($modelData, 'is_for_sale');
+        }
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
+        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts, $is_for_sale) {
             $data = [
                 'code'                 => Arr::get($modelData, 'code'),
                 'name'                 => Arr::get($modelData, 'name'),
@@ -75,6 +79,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'trade_units'          => $tradeUnits,
                 'shop_products'        => $shopProducts,
                 'is_minion_variant'    => Arr::get($modelData, 'is_minion_variant', false),
+                'is_for_sale'          => $is_for_sale,
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
@@ -105,7 +110,6 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
     public function prepareForValidation(): void
     {
-
         if (is_string($this->get('is_minion_variant'))) {
             // Typecast since got string from FE
             $this->set('is_minion_variant', match (strtolower($this->get('is_minion_variant'))) {
@@ -114,9 +118,14 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             });
         }
 
-
+        if (is_string($this->get('is_for_sale'))) {
+            // Typecast since got string from FE
+            $this->set('is_for_sale', match (strtolower($this->get('is_for_sale'))) {
+                'true'  => true,
+                default => false,
+            });
+        }
     }
-
     public function rules(): array
     {
         return [
@@ -159,12 +168,12 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             'shop_products.*.price'  => [
                 'required',
                 'numeric',
-                'min:0'
+                'min:0.01'
             ],
             'shop_products.*.rrp'    => [
                 'required',
                 'numeric',
-                'min:0'
+                'min:0.01'
             ],
             'shop_products.*.create_in_shop'    => [
                 'required',
@@ -175,6 +184,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             'marketing_dimensions'   => ['sometimes'],
             'masterShop'             => ['required'],
             'is_minion_variant'      => ['required', 'boolean'],
+            'is_for_sale'            => ['required', 'boolean'],
         ];
     }
 

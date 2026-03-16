@@ -31,9 +31,11 @@ class IndexTopListedProductsInPlatform extends OrgAction
         $query = QueryBuilder::for(\App\Models\Dropshipping\Portfolio::class)
             ->select(
                 'assets.id',
+                'assets.slug',
                 'assets.code',
                 'assets.name',
-                DB::raw('COUNT(portfolios.id) as total_listed')
+                DB::raw('COUNT(portfolios.id) as total_listed'),
+                DB::raw('COUNT(DISTINCT portfolios.customer_id) as total_customers')
             )
             ->join('assets', function ($join) {
                 $join->on('portfolios.item_id', '=', 'assets.id')
@@ -42,7 +44,7 @@ class IndexTopListedProductsInPlatform extends OrgAction
             ->where('portfolios.platform_id', $platform->id)
             ->where('assets.type', 'product')
             ->whereNull('portfolios.last_removed_at')
-            ->groupBy('assets.id', 'assets.code', 'assets.name')
+            ->groupBy('assets.id', 'assets.slug', 'assets.code', 'assets.name')
             ->orderByDesc('total_listed');
 
         if ($parent instanceof Shop) {
@@ -50,8 +52,9 @@ class IndexTopListedProductsInPlatform extends OrgAction
         }
 
         return $query
-            ->allowedSorts(['total_listed', 'assets.name', 'assets.code'])
+            ->allowedSorts(['total_listed', 'total_customers', 'assets.name', 'assets.slug', 'assets.code'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['created_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -70,8 +73,11 @@ class IndexTopListedProductsInPlatform extends OrgAction
                     'title'       => __('No top listed products found'),
                     'description' => __('There are no products currently listed on this platform.'),
                 ])
+                ->betweenDates(['created_at'])
+                ->column(key: 'slug', label: __('Slug'), sortable: true, searchable: true)
                 ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
+                ->column(key: 'total_customers', label: __('Customers'), sortable: true)
                 ->column(key: 'total_listed', label: __('Total Listed'), sortable: true)
                 ->defaultSort('-total_listed');
         };

@@ -174,6 +174,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
+                PlatformTypeEnum::TIKTOK => [
+                    'name'       => 'retina.models.dropshipping.tiktok.batch_upload',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
                 PlatformTypeEnum::EBAY => [
                     'name'       => 'retina.models.dropshipping.ebay.batch_upload',
                     'parameters' => [
@@ -190,6 +196,12 @@ class IndexRetinaPortfolios extends RetinaAction
                     'name'       => 'retina.models.dropshipping.magento.batch_upload',
                     'parameters' => [
                         'magentoUser' => $platformUser->id
+                    ]
+                ],
+                PlatformTypeEnum::ALLEGRO => [
+                    'name'       => 'retina.models.dropshipping.allegro.batch_upload',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
                 default => false
@@ -210,6 +222,18 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 PlatformTypeEnum::EBAY => [
                     'name'       => 'retina.models.dropshipping.ebay.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+                PlatformTypeEnum::TIKTOK => [
+                    'name'       => 'retina.models.dropshipping.tiktok.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+                PlatformTypeEnum::ALLEGRO => [
+                    'name'       => 'retina.models.dropshipping.allegro.batch_all',
                     'parameters' => [
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
@@ -319,6 +343,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::EBAY => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.ebay_products'
                         ],
+                        PlatformTypeEnum::TIKTOK => [
+                            'name' => 'retina.json.dropshipping.customer_sales_channel.tiktok_products'
+                        ],
+                        PlatformTypeEnum::ALLEGRO => [
+                            'name' => 'retina.json.dropshipping.customer_sales_channel.allegro_products'
+                        ],
                         default => false
                     },
                     'single_create_new' => match ($this->customerSalesChannel->platform->type) {
@@ -334,6 +364,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::TIKTOK => [
                             'name' => 'retina.models.portfolio.store_new_tiktok_product'
                         ],
+                        PlatformTypeEnum::ALLEGRO => [
+                            'name' => 'retina.models.portfolio.store_new_allegro_product'
+                        ],
                         default => false
                     },
                     'single_match' => match ($this->customerSalesChannel->platform->type) {
@@ -345,6 +378,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         ],
                         PlatformTypeEnum::EBAY => [
                             'name' => 'retina.models.portfolio.match_to_existing_ebay_product'
+                        ],
+                        PlatformTypeEnum::TIKTOK => [
+                            'name' => 'retina.models.portfolio.match_to_existing_tiktok_product'
+                        ],
+                        PlatformTypeEnum::ALLEGRO => [
+                            'name' => 'retina.models.portfolio.match_to_existing_tiktok_product'
                         ],
                         default => false
                     },

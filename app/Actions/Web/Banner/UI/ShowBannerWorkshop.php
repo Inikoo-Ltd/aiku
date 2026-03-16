@@ -111,7 +111,7 @@ class ShowBannerWorkshop extends OrgAction
                 ],
                 'galleryRoute'      => [
                     'stock_images'    => [
-                        'name' => "grp.gallery.stock-images.banner.$banner->type.index"
+                        'name' => "grp.gallery.stock-images.banner.{$banner->type?->value}.index"
                     ],
                     'uploaded_images' => [
                         'name' => 'grp.gallery.uploaded-images.banner.index'

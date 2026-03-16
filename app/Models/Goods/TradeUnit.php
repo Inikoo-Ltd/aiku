@@ -8,6 +8,7 @@
 
 namespace App\Models\Goods;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Barcode;
@@ -28,6 +29,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -122,6 +124,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $scpn_number
  * @property bool $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property HealthRankEnum|null $health_rank
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -152,6 +155,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Collection<int, SupplierProduct> $supplierProducts
  * @property-read Collection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
+ * @property-read Collection<int, \App\Models\Goods\TradeUnitTimeSeries> $timeSeries
  * @property-read Media|null $topImage
  * @property-read \App\Models\Goods\TradeUnitFamily|null $tradeUnitFamily
  * @property-read mixed $translations
@@ -183,6 +187,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     protected $casts = [
         'status'               => TradeUnitStatusEnum::class,
+        'health_rank'          => HealthRankEnum::class,
         'data'                 => 'array',
         'marketing_dimensions' => 'array',
         'sources'              => 'array',
@@ -382,6 +387,9 @@ class TradeUnit extends Model implements HasMedia, Auditable
         return $this->hasOne(Media::class, 'id', 'art5_image_id');
     }
 
-
+    public function timeSeries(): HasMany
+    {
+        return $this->hasMany(TradeUnitTimeSeries::class);
+    }
 
 }
