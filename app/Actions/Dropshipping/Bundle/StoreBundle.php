@@ -37,9 +37,11 @@ class StoreBundle extends OrgAction
     {
         return DB::transaction(function () use ($customerSalesChannel, $modelData) {
             $productData = [];
+            $selectedProducts = Arr::pull($modelData, 'products');
+
             data_set($productData, 'exclusive_for_customer_id', $customerSalesChannel->customer_id);
             data_set($productData, 'trade_units', Product::where('shop_id', $customerSalesChannel->shop_id)
-                ->whereIn('id', Arr::pluck($modelData['products'], 'product_id'))
+                ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
                 ->get()
                 ->map(function ($product) {
                     return $product->tradeUnits->map(function (TradeUnit $tradeUnit) {
@@ -66,11 +68,19 @@ class StoreBundle extends OrgAction
             data_set($modelData, 'bundleable_id', $product->id);
             data_set($modelData, 'bundleable_type', $product->getMorphClass());
             data_set($modelData, 'data', [
-                'products' => Arr::pull($modelData, 'products')
+                'products' => $selectedProducts
             ]);
 
             /** @var Bundle $bundle */
             $bundle = $customerSalesChannel->bundles()->create($modelData);
+
+            foreach ($selectedProducts as $selectedProduct) {
+                $bundle->items()->create([
+                    'item_id' => Arr::get($selectedProduct, 'product_id'),
+                    'item_type' => class_basename(Product::class),
+                    'quantity' => Arr::get($selectedProduct, 'quantity')
+                ]);
+            }
 
             return $bundle;
         });
@@ -147,7 +157,11 @@ class StoreBundle extends OrgAction
             'price'       => $faker->randomFloat(2, 10, 1000),
             'rrp'         => $faker->randomFloat(2, 10, 1000),
             'description' => $faker->sentence(),
-            'products'    => [151812, 411847, 154425]
+            'products'    => [
+                ['product_id' => 151812, 'quantity' => 1],
+                ['product_id' => 411847, 'quantity' => 2],
+                ['product_id' => 154425, 'quantity' => 3]
+            ]
         ];
 
         $bundle = $this->handle($customerSalesChannel, $modelData);
