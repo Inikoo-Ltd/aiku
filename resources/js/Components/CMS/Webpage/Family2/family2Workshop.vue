@@ -14,6 +14,7 @@ import { getBestOffer } from "@/Composables/useOffers"
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
+
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
 import { Swiper, SwiperSlide } from "swiper/vue"
@@ -45,6 +46,9 @@ const layout: any = inject("layout", {})
 const { modelValue, webpageData, blockData } = toRefs(props)
 
 const showExtra = ref(false)
+
+/* hide image in mobile */
+const showImage = computed(() => props.screenType !== "mobile")
 
 const name = ref(
   modelValue.value?.family?.description_title ||
@@ -121,6 +125,7 @@ const autoResize = () => {
   el.style.height = "0px"
   el.style.height = el.scrollHeight + "px"
 }
+
 onMounted(async () => {
   await nextTick()
   autoResize()
@@ -141,52 +146,49 @@ onMounted(async () => {
 
       <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
 
-        <!-- IMAGE -->
-        <div class="relative w-full overflow-hidden"
+        <!-- IMAGE (hidden on mobile) -->
+        <div v-if="showImage" class="relative w-full overflow-hidden"
           :class="[imageOrder, images.length ? 'h-[250px] sm:h-[300px] md:h-[400px]' : '']"
           :style="getStyles(modelValue?.image?.container?.properties, screenType)">
 
-          <!-- CUSTOM NAVIGATION -->
           <div v-if="images.length > 1"
             class="swiper-btn-prev absolute left-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer">
-            <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-white text-3xl" />
+            <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-gray-500 text-3xl" />
           </div>
 
           <div v-if="images.length > 1"
             class="swiper-btn-next absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer">
-            <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-white text-3xl" />
+            <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-gray-500 text-3xl" />
           </div>
 
-          <!-- SWIPER -->
           <Swiper v-if="images.length > 1" :modules="[Navigation]" :slides-per-view="1" :loop="true" :navigation="{
             prevEl: '.swiper-btn-prev',
             nextEl: '.swiper-btn-next'
-          }" :pagination="{ clickable: true }" class="w-full h-full">
+          }" class="w-full h-full">
             <SwiperSlide v-for="(img, i) in images" :key="i">
-              <div class="w-full h-full">
+              <div class="w-full h-full flex items-center justify-center">
                 <Image :src="img.original" :alt="modelValue?.image?.alt || 'Image preview'"
-                  :imgAttributes="modelValue?.image?.attributes" :imageCover="true" class="w-full h-full object-fill" />
+                  :imgAttributes="modelValue?.image?.attributes" :imageCover="false"
+                  class="w-auto h-full object-contain" />
               </div>
             </SwiperSlide>
           </Swiper>
 
-          <!-- SINGLE IMAGE -->
-          <component v-else :is="modelValue?.image?.link?.href ? LinkIris : 'div'" :href="modelValue?.image?.link?.href"
-            :target="modelValue?.image?.link?.target" :type="modelValue?.image?.link?.type" class="absolute inset-0">
+         <div v-else class="absolute inset-0">
             <Image :src="images[0]?.original" :alt="modelValue?.image?.alt || 'Image preview'"
-              :imgAttributes="modelValue?.image?.attributes" :imageCover="true" class="w-full h-full object-fill" />
-          </component>
+              :imgAttributes="modelValue?.image?.attributes" :imageCover="false" class="w-full h-full object-contain" />
+          </div>
 
         </div>
 
         <!-- TEXT -->
-        <div class="flex flex-col justify-center m-auto" :class="textOrder"
-          :style="getStyles(modelValue?.text_block?.properties, screenType)">
+        <div class="flex flex-col justify-center m-auto items-center md:items-start text-center md:text-left"
+          :class="textOrder" :style="getStyles(modelValue?.text_block?.properties, screenType)">
 
           <div class="w-full max-w-xl">
 
             <textarea ref="titleRef" v-model="name" @input="autoResize" rows="1" placeholder="Family Title"
-              class="w-full resize-none overflow-hidden box-border appearance-none bg-transparent border-none p-0 m-0 text-[1.5rem] leading-[2rem] font-semibold text-gray-800 focus:outline-none focus:ring-0 shadow-none" />
+              class="w-full resize-none overflow-hidden box-border appearance-none bg-transparent border-none p-0 m-0 text-[1.5rem] leading-[2rem] font-semibold text-gray-800 focus:outline-none focus:ring-0 shadow-none text-center md:text-left" />
 
             <EditorV2 v-model="modelValue.family.description" placeholder="Family Description"
               @update:model-value="(e) => saveDescription('description', e)" :uploadImageRoute="{
@@ -194,7 +196,7 @@ onMounted(async () => {
                 parameters: { modelHasWebBlocks: blockData?.id }
               }" />
 
-            <div class="flex justify-start mt-6">
+            <div class="flex justify-center md:justify-start mt-6">
 
               <LinkIris :href="modelValue?.button?.link?.href" :canonical_url="modelValue?.button?.link?.canonical_url"
                 :target="modelValue?.button?.link?.target" :type="modelValue?.button?.link?.type">

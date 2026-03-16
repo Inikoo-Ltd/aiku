@@ -196,25 +196,39 @@ const getRoute = (tabSlug) => {
                 <!-- Children Rows -->
                 <div
                     v-if="box.children && box.children.length > 0 && expandedBoxes[box.label]"
-                    class="mt-2 border-t pt-2 space-y-1"
+                    class="mt-2 border-t pt-2"
                     :style="{ borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '44' : '#e5e7eb' }"
                 >
+                    <!-- Table Header -->
+                    <div class="flex items-center gap-x-2 text-[10px] text-gray-400 mb-1 pb-1 border-b border-gray-100">
+                        <span class="flex-1 min-w-0"></span>
+                        <div class="flex gap-x-3 shrink-0">
+                            <div
+                                v-for="tab in box.tabs"
+                                :key="'col-header-' + tab.tab_slug"
+                                class="w-20 text-right"
+                            >
+                                <FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" fixed-width aria-hidden="true" />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Table Rows -->
                     <div
                         v-for="child in box.children"
                         :key="child.slug"
-                        class="flex items-center gap-x-2 text-xs"
+                        class="flex items-center gap-x-2 text-xs py-1 border-b border-gray-50 last:border-0"
                     >
-                        <span class="truncate text-gray-500 flex-1 min-w-0">{{ child.label }}</span>
+                        <span class="truncate text-gray-600 font-medium flex-1 min-w-0">{{ child.label }}</span>
                         <div class="flex gap-x-3 shrink-0">
                             <div
                                 v-for="childTab in child.tabs"
                                 :key="childTab.tab_slug"
-                                class="text-right"
+                                class="w-20 text-right"
                             >
-                                <div class="tabular-nums font-medium">
+                                <div class="tabular-nums font-semibold text-gray-800">
                                     {{ renderLabelBasedOnType(childTab.value, childTab.type, { currency_code: child.currency_code }) }}
                                 </div>
-                                <div class="text-gray-400">
+                                <div class="text-gray-400 text-[10px]">
                                     {{ renderLabelBasedOnType(childTab.information?.label, childTab.information?.type, { currency_code: child.currency_code }) }}
                                 </div>
                             </div>
@@ -319,24 +333,38 @@ const getRoute = (tabSlug) => {
                 <!-- Mobile Children -->
                 <div
                     v-if="box.children && box.children.length > 0 && expandedBoxes['mobile-' + box.label]"
-                    class="border-t border-gray-200 divide-y divide-gray-100"
+                    class="border-t border-gray-200"
                 >
+                    <!-- Mobile Table Header -->
+                    <div class="flex items-center gap-x-2 px-4 py-1.5 bg-gray-50 text-[10px] text-gray-400 border-b border-gray-200">
+                        <span class="flex-1 min-w-0"></span>
+                        <div class="flex gap-x-4 shrink-0">
+                            <div
+                                v-for="tab in box.tabs"
+                                :key="'mobile-col-header-' + tab.tab_slug"
+                                class="w-16 text-right"
+                            >
+                                <FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" fixed-width aria-hidden="true" />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Mobile Table Rows -->
                     <div
                         v-for="child in box.children"
                         :key="'mobile-child-' + child.slug"
-                        class="px-4 py-2 flex items-center justify-between text-xs"
+                        class="px-4 py-2 flex items-center justify-between text-xs border-b border-gray-100 last:border-0"
                     >
-                        <span class="text-gray-600 font-medium truncate mr-2">{{ child.label }}</span>
+                        <span class="text-gray-600 font-medium truncate mr-2 flex-1 min-w-0">{{ child.label }}</span>
                         <div class="flex gap-x-4 shrink-0">
                             <div
                                 v-for="childTab in child.tabs"
                                 :key="childTab.tab_slug"
-                                class="text-right"
+                                class="w-16 text-right"
                             >
                                 <div class="tabular-nums font-semibold text-gray-800">
                                     {{ renderLabelBasedOnType(childTab.value, childTab.type, { currency_code: child.currency_code }) }}
                                 </div>
-                                <div class="text-gray-400">
+                                <div class="text-gray-400 text-[10px]">
                                     {{ renderLabelBasedOnType(childTab.information?.label, childTab.information?.type, { currency_code: child.currency_code }) }}
                                 </div>
                             </div>

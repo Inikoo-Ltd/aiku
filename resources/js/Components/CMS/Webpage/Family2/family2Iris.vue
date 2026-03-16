@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject, ref } from "vue"
+import { computed, inject } from "vue"
 import { get, isPlainObject } from "lodash-es"
 
 import Image from "@/Components/Image.vue"
@@ -9,29 +9,19 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 import { getStyles } from "@/Composables/styles"
+import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 
-import { faCube, faLink, faInfoCircle } from "@fal"
-import { faStar, faCircle, faBadgePercent } from "@fas"
+import { faInfoCircle } from "@fal"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 
 import { Swiper, SwiperSlide } from "swiper/vue"
-import { Navigation, Pagination } from "swiper/modules"
+import { Navigation } from "swiper/modules"
 
 import "swiper/css"
 import "swiper/css/navigation"
-import "swiper/css/pagination"
 
-library.add(
-  faCube,
-  faLink,
-  faInfoCircle,
-  faStar,
-  faCircle,
-  faBadgePercent,
-  faChevronCircleLeft,
-  faChevronCircleRight
-)
+library.add(faInfoCircle, faChevronCircleLeft, faChevronCircleRight)
 
 const props = defineProps<{
   fieldValue: any
@@ -42,14 +32,18 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {})
 
-const showExtra = ref(false)
+const showImage = computed(() => props.screenType !== "mobile")
 
-const toggleShowExtra = () => {
-  showExtra.value = !showExtra.value
-}
+const offersData = computed(() => props.fieldValue?.family?.offers_data)
 
-const bestOffer = computed(() => {
-  return getBestOffer(props.fieldValue?.family?.offers_data)
+const bestOffer = computed(() => getBestOffer(offersData.value))
+
+const showTriggers = computed(() => {
+  if (!bestOffer.value) return false
+  return (
+    !(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) &&
+    bestOffer.value.type === "Category Quantity Ordered Order Interval"
+  )
 })
 
 const cleanedDescription = computed(() => {
@@ -58,29 +52,21 @@ const cleanedDescription = computed(() => {
 })
 
 const columnPosition = computed(() => {
-  const rawVal = get(props.fieldValue, ["column_position"])
-
-  if (!isPlainObject(rawVal)) return rawVal
+  const raw = get(props.fieldValue, ["column_position"])
+  if (!isPlainObject(raw)) return raw
 
   const view = props.screenType
-  return rawVal?.[view] ?? rawVal?.desktop ?? "Image-right"
+  return raw?.[view] ?? raw?.desktop ?? "Image-right"
 })
 
 const isImageLeft = computed(() => columnPosition.value === "Image-right")
 
 const gridClass = computed(() =>
-  isImageLeft.value
-    ? "md:grid-cols-[40%_60%]"
-    : "md:grid-cols-[60%_40%]"
+  isImageLeft.value ? "md:grid-cols-[40%_60%]" : "md:grid-cols-[60%_40%]"
 )
 
-const imageOrder = computed(() =>
-  isImageLeft.value ? "order-1" : "order-2"
-)
-
-const textOrder = computed(() =>
-  isImageLeft.value ? "order-2" : "order-1"
-)
+const imageOrder = computed(() => (isImageLeft.value ? "order-1" : "order-2"))
+const textOrder = computed(() => (isImageLeft.value ? "order-2" : "order-1"))
 
 const images = computed(() => {
   const src = props.fieldValue?.family?.web_images?.all
@@ -90,135 +76,210 @@ const images = computed(() => {
 </script>
 
 <template>
-  <div :id="fieldValue?.id || 'family-2'" component="family-2" class="w-full">
+<div :id="fieldValue?.id || 'family-2'" class="w-full">
 
-    <div :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue?.container?.properties, screenType)
-    }">
+ <div
+  class="max-w-[100rem] mx-auto w-full"
+  :style="{
+    ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+    ...getStyles(fieldValue?.container?.properties, screenType)
+  }"
+>
+    <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
 
-      <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
+      <!-- IMAGE -->
+      <div
+        v-if="showImage"
+        class="relative w-full overflow-hidden"
+        :class="[imageOrder, images.length ? 'h-[250px] sm:h-[300px] md:h-[400px]' : '']"
+        :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
+      >
 
-        <!-- IMAGE -->
-        <div
-          class="relative w-full overflow-hidden"
-          :class="[imageOrder, images.length ? 'h-[250px] sm:h-[300px] md:h-[400px]' : '']"
-          :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
-        >
-
-          <!-- CUSTOM NAVIGATION -->
-          <div
-            v-if="images.length > 1"
-            class="swiper-btn-prev absolute left-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer"
-          >
-            <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-white text-3xl"/>
-          </div>
-
-          <div
-            v-if="images.length > 1"
-            class="swiper-btn-next absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer"
-          >
-            <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-white text-3xl"/>
-          </div>
-
-          <!-- SWIPER -->
-          <Swiper
-            v-if="images.length > 1"
-            :modules="[Navigation]"
-            :slides-per-view="1"
-            :loop="true"
-            :navigation="{
-              prevEl: '.swiper-btn-prev',
-              nextEl: '.swiper-btn-next'
-            }"
-            :pagination="{ clickable: true }"
-            class="w-full h-full"
-          >
-            <SwiperSlide v-for="(img, i) in images" :key="i">
-              <div class="w-full h-full">
-                <Image
-                  :src="img.original"
-                  :alt="fieldValue?.image?.alt || 'Image preview'"
-                  :imgAttributes="fieldValue?.image?.attributes"
-                  :imageCover="true"
-                  class="w-full h-full object-fill"
-                />
-              </div>
-            </SwiperSlide>
-          </Swiper>
-
-          <!-- SINGLE IMAGE -->
-          <component
-            v-else
-            :is="fieldValue?.image?.link?.href ? LinkIris : 'div'"
-            :href="fieldValue?.image?.link?.href"
-            :target="fieldValue?.image?.link?.target"
-            :type="fieldValue?.image?.link?.type"
-            class="absolute inset-0"
-          >
-            <Image
-              :src="images[0]?.original"
-              :alt="fieldValue?.image?.alt || 'Image preview'"
-              :imgAttributes="fieldValue?.image?.attributes"
-              :imageCover="true"
-              class="w-full h-full object-fill"
-            />
-          </component>
-
+        <div v-if="images.length > 1" class="swiper-btn-prev nav-btn left-3">
+          <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-gray-500 text-3xl" />
         </div>
 
-        <!-- TEXT -->
-        <div
-          class="flex flex-col justify-center m-auto"
-          :class="textOrder"
-          :style="getStyles(fieldValue?.text_block?.properties, screenType)"
+        <div v-if="images.length > 1" class="swiper-btn-next nav-btn right-3">
+          <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-gray-500 text-3xl" />
+        </div>
+
+        <Swiper
+          v-if="images.length > 1"
+          :modules="[Navigation]"
+          :slides-per-view="1"
+          :loop="true"
+          :navigation="{ prevEl: '.swiper-btn-prev', nextEl: '.swiper-btn-next' }"
+          class="w-full h-full"
         >
+          <SwiperSlide v-for="(img, i) in images" :key="i">
+            <div class="img-wrapper">
+              <Image
+                :src="img.original"
+                :alt="fieldValue?.image?.alt || 'Image preview'"
+                :imgAttributes="fieldValue?.image?.attributes"
+                :imageCover="false"
+                class="img-fit"
+              />
+            </div>
+          </SwiperSlide>
+        </Swiper>
 
-          <div class="w-full max-w-xl">
+        <div v-else class="absolute inset-0">
+          <Image
+            :src="images[0]?.original"
+            :alt="fieldValue?.image?.alt || 'Image preview'"
+            :imgAttributes="fieldValue?.image?.attributes"
+            :imageCover="false"
+            class="w-full h-full object-contain"
+          />
+        </div>
 
-            <h1
-              v-if="fieldValue.family.name"
-              class="!text-[1.8rem] font-semibold"
-            >
-              {{ fieldValue.family.name }}
-            </h1>
+      </div>
 
-            <div v-html="cleanedDescription"></div>
+      <!-- TEXT -->
+      <div
+        class="text-container"
+        :class="textOrder"
+        :style="getStyles(fieldValue?.text_block?.properties, screenType)"
+      >
 
-            <div class="flex justify-start mt-6">
+        <div class="content-wrapper">
 
-              <LinkIris
-                :href="fieldValue?.button?.link?.href"
-                :canonical_url="fieldValue?.button?.link?.canonical_url"
-                :target="fieldValue?.button?.link?.target"
-                :type="fieldValue?.button?.link?.type"
-              >
-                <Button
-                  :label="fieldValue?.button?.text"
-                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-                />
-              </LinkIris>
+          <!-- DISCOUNT -->
+          <div
+            v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
+            class="discount-wrapper"
+          >
+
+            <div :class="bestOffer.type === 'Category Quantity Ordered Order Interval' ?  'flex gap-3' : 'discount-grid'">
+
+              <DiscountByType
+                :offers_data="fieldValue?.family?.offers_data"
+                :template="bestOffer.type === 'Category Quantity Ordered Order Interval'
+                  ? 'active-inactive-gr'
+                  : 'max_discount'"
+                class="discount-item"
+              />
+
+              <DiscountByType
+                v-if="showTriggers"
+                :offers_data="fieldValue?.family?.offers_data"
+                template="triggers_labels"
+                class="discount-item discount-span"
+              />
 
             </div>
 
           </div>
 
+          <h1 v-if="fieldValue.family.name" class="title">
+            {{ fieldValue.family.name }}
+          </h1>
+
+          <div v-html="cleanedDescription"></div>
+
+          <div class="btn-wrapper">
+            <LinkIris
+              :href="fieldValue?.button?.link?.href"
+              :canonical_url="fieldValue?.button?.link?.canonical_url"
+              :target="fieldValue?.button?.link?.target"
+              :type="fieldValue?.button?.link?.type"
+            >
+              <Button
+                :label="fieldValue?.button?.text"
+                :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+              />
+            </LinkIris>
+          </div>
+
         </div>
 
       </div>
+
     </div>
+
   </div>
+
+</div>
 </template>
 
 <style scoped>
-.swiper-btn-prev,
-.swiper-btn-next {
-  opacity: 0.85;
-  transition: opacity 0.2s ease;
+
+/* swiper navigation */
+.nav-btn {
+  @apply absolute top-1/2 -translate-y-1/2 z-10 cursor-pointer opacity-80 transition;
+}
+.nav-btn:hover {
+  @apply opacity-100;
 }
 
-.swiper-btn-prev:hover,
-.swiper-btn-next:hover {
-  opacity: 1;
+/* image */
+.img-wrapper {
+  @apply w-full h-full flex items-center justify-center;
 }
+.img-fit {
+  @apply w-auto h-full object-contain;
+}
+
+/* text layout */
+.text-container {
+  @apply flex flex-col justify-start items-center md:items-start text-center md:text-left;
+}
+
+.content-wrapper {
+  @apply w-full max-w-xl 2xl:max-w-2xl pt-4 md:pt-0;
+}
+
+.title {
+  @apply text-[1.8rem] font-semibold;
+}
+
+.btn-wrapper {
+  @apply flex justify-center md:justify-start mt-6;
+}
+
+/* discount layout */
+.discount-wrapper {
+  @apply w-full mt-4 2xl:mt-5;
+}
+
+.discount-grid {
+  @apply grid grid-cols-3 gap-2 2xl:gap-3 items-center;
+}
+
+.discount-span {
+  @apply col-span-2;
+}
+
+.discount-item {
+  @apply min-w-0;
+}
+
+/* discount styles */
+.discount-wrapper :deep(.offer-max-discount) {
+  @apply bg-[#A80000] border border-red-900 text-gray-100 flex items-center rounded-sm
+         px-1 py-0.5 sm:px-1.5 sm:py-1 md:px-2 md:py-1 text-xl;
+}
+
+.discount-span :deep(.percentage-text) {
+  @apply text-xs md:text-xs 2xl:text-base;
+}
+
+.discount-wrapper :deep(.gr-content) {
+  @apply w-full relative flex items-center text-xs md:text-xs 2xl:text-base;
+}
+
+.discount-wrapper :deep(.discount-percentage) {
+  @apply flex items-center text-white font-bold text-center
+         px-2 md:px-7 text-lg md:text-xs 2xl:text-sm min-w-24;
+}
+
+.discount-wrapper :deep(.discount-title) {
+  @apply whitespace-nowrap capitalize text-sm md:text-xxs 2xl:text-xs;
+}
+
+.discount-span :deep(.discount-triggers) {
+  @apply text-xxs md:text-xs;
+}
+
 </style>

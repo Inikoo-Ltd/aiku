@@ -74,40 +74,74 @@ const textOrder = computed(() =>
   isImageLeft.value ? "order-2" : "order-1"
 )
 
-console.log('family-extra', props.fieldValue)
+const hideImageOnMobile = computed(() => props.screenType === "mobile")
+
+const textAlignClass = computed(() =>
+  props.screenType === "mobile" ? "text-center" : "text-left"
+)
+
+const buttonJustifyClass = computed(() =>
+  props.screenType === "mobile" ? "justify-center" : "justify-start"
+)
+
+console.log("family-extra", props.fieldValue)
 </script>
 
 <template>
-  <div :id="fieldValue?.id || 'family-2'" component="family-2" class="w-full">
-    <div :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue?.container?.properties, screenType)
-    }">
-      <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
+  <div :id="fieldValue?.id || 'family-extra-description'" component="family-extra-description" class="w-full">
+    <div
+      :style="{
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        ...getStyles(fieldValue?.container?.properties, screenType)
+      }"
+    >
+      <div
+        class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1"
+        :class="gridClass"
+      >
         <!-- IMAGE -->
-        <div class="relative w-full overflow-hidden cursor-pointer" :class="[imageOrder,
-          fieldValue?.family.extra_description_image
-            ? 'h-full'
-            : ''
-        ]" :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
-          <Image :src="fieldValue?.family?.extra_description_image"
-            :alt="fieldValue?.family?.extra_description_image?.alt || 'Image preview'" :imageCover="true"
-            class="absolute inset-0 w-full h-full object-fill"
-            :height="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.height"
-            :width="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.width" />
+        <div
+          v-if="!hideImageOnMobile"
+          class="relative w-full overflow-hidden cursor-pointer"
+          :class="[
+            imageOrder,
+            fieldValue?.family.extra_description_image ? 'h-full' : ''
+          ]"
+          :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
+        >
+          <Image
+  :src="fieldValue?.family?.extra_description_image"
+  :alt="fieldValue?.family?.extra_description_image?.alt || 'Image preview'"
+  :imageCover="true"
+  class="absolute inset-0 w-full h-full object-cover"
+  :height="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.height"
+  :width="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.width"
+/>
         </div>
 
         <!-- TEXT -->
-        <div class="flex flex-col justify-center m-auto p-4" :class="textOrder"
-          :style="getStyles(fieldValue?.text_block?.properties, screenType)">
+        <div
+          class="flex flex-col justify-center m-auto p-4"
+          :class="[textOrder, textAlignClass]"
+          :style="getStyles(fieldValue?.text_block?.properties, screenType)"
+        >
           <div class="w-full max-w-xl">
             <div v-html="cleanedDescription"></div>
 
-            <div class="flex justify-start mt-6">
-              <LinkIris :href="fieldValue?.button?.link?.href" :canonical_url="fieldValue?.button?.link?.canonical_url"
-                :target="fieldValue?.button?.link?.target" :type="fieldValue?.button?.link?.type">
-                <Button :label="fieldValue?.button?.text"
-                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
+            <div
+              class="flex mt-6"
+              :class="buttonJustifyClass"
+            >
+              <LinkIris
+                :href="fieldValue?.button?.link?.href"
+                :canonical_url="fieldValue?.button?.link?.canonical_url"
+                :target="fieldValue?.button?.link?.target"
+                :type="fieldValue?.button?.link?.type"
+              >
+                <Button
+                  :label="fieldValue?.button?.text"
+                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+                />
               </LinkIris>
             </div>
           </div>
