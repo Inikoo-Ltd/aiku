@@ -114,7 +114,6 @@ const showLeftBlock = computed(() => {
 })
 
 
-console.log('sdsd', layout.user)
 const _popoverProfit = ref(null)
 </script>
 
