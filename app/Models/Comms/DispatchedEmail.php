@@ -79,13 +79,6 @@ class DispatchedEmail extends Model
         return $this->belongsTo(EmailAddress::class);
     }
 
-
-    public function recipient(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
-
     public function mailshot(): BelongsTo
     {
         return $this->belongsTo(Mailshot::class);
@@ -116,11 +109,6 @@ class DispatchedEmail extends Model
     public function emailCopy(): HasOne
     {
         return $this->hasOne(EmailCopy::class);
-    }
-
-    public function parent(): MorphTo
-    {
-        return $this->morphTo();
     }
 
 

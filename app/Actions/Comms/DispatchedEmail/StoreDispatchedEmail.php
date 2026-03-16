@@ -40,6 +40,7 @@ class StoreDispatchedEmail extends OrgAction
             data_set($modelData, 'outbox_id', $outbox->id);
         }
 
+        //todo will be changed
         data_set($modelData, 'recipient_type', class_basename($recipient));
         data_set($modelData, 'recipient_id', $recipient->id);
 
