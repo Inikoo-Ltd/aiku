@@ -177,7 +177,193 @@ const palletRoute = (item: any) => {
 
 <template>
     <Table :resource="data" :name="tab ?? ''" class="mt-5">
-        <template #cell(pallet_return_reference)="{ item }">
+        <template v-if="tab === 'grouped'" #cell(pallet_return_reference)="{ item }">
+            <div class="flex items-center gap-x-2">
+                <Icon v-if="item?.state_icon" :data="item['state_icon']" class="px-1 shrink-0" />
+                <div>
+                    <Link v-if="returnRoute(item)" :href="returnRoute(item)" class="primaryLink">
+                        {{ item.pallet_return_reference }}
+                    </Link>
+                    <div v-else>
+                        {{ item.pallet_return_reference || "-" }}
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template v-if="tab === 'grouped'" #cell(pallets)="{ item }">
+            <div class="flex flex-col gap-y-3">
+                <div
+                    v-for="pallet in item.pallets"
+                    :key="pallet.id"
+                    class="flex flex-col gap-y-1 border-b last:border-b-0 pb-2"
+                >
+                    <div class="flex flex-wrap gap-x-4 gap-y-1">
+                        <div class="min-w-[140px]">
+                            <Link v-if="palletRoute(pallet)" :href="palletRoute(pallet)" class="primaryLink">
+                                {{ pallet.reference }}
+                            </Link>
+                            <div v-else>
+                                {{ pallet.reference || "-" }}
+                            </div>
+                        </div>
+
+                        <div class="min-w-[160px]">
+                            <div>
+                                {{ pallet.customer_reference || "-" }}
+                                <div v-if="pallet.notes" class="text-gray-400">
+                                    <FontAwesomeIcon icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
+                                    <span>{{ pallet.notes }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex-1">
+                            <div v-if="pallet.stored_items?.length" class="flex flex-wrap gap-x-1 gap-y-1.5">
+                                <Tag
+                                    v-for="storedItem of pallet.stored_items"
+                                    :key="`${storedItem.reference}-${storedItem.quantity}`"
+                                    :label="`${storedItem.reference} (${storedItem.quantity})`"
+                                    :closeButton="false"
+                                    :stringToColor="true"
+                                >
+                                    <template #label>
+                                        <div class="whitespace-nowrap text-xs">
+                                            {{ storedItem.reference }} (<span class="font-light">{{ storedItem.quantity }}</span>)
+                                        </div>
+                                    </template>
+                                </Tag>
+                            </div>
+                            <div v-else class="text-gray-400 text-xs italic">
+                                {{ trans("No items") }}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="flex justify-end">
+                        <div class="flex items-center gap-x-3">
+                            <div>
+                                <Tag v-if="pallet.location_code" :label="pallet.location_code" />
+                                <div v-else class="text-gray-400 text-xs">-</div>
+                            </div>
+
+                            <div class="flex gap-x-2">
+                                <template v-if="pallet.updateRoute?.name && (pallet.state === 'picking' || pallet.pivot_state === 'picking')">
+                                    <Link
+                                        as="div"
+                                        :href="route(pallet.updateRoute.name, pallet.updateRoute.parameters)"
+                                        method="patch"
+                                        preserveScroll
+                                        @start="() => (isPickingLoading = pallet.id)"
+                                        @finish="() => (isPickingLoading = false)"
+                                        v-tooltip="trans('Set as picked')"
+                                    >
+                                        <Button icon="fal fa-check" type="positive" :loading="isPickingLoading === pallet.id" class="py-0" />
+                                    </Link>
+
+                                    <Popover v-if="pallet.notPickedRoute?.name">
+                                        <template #button="{ open }">
+                                            <Button
+                                                icon="fal fa-times"
+                                                :type="'negative'"
+                                                :key="pallet.id + open"
+                                                :loading="isSubmitNotPickedLoading === pallet.id"
+                                                v-tooltip="trans('Set as not picked')"
+                                            />
+                                        </template>
+                                        <template #content="{ close }">
+                                            <div class="w-[250px]">
+                                                <div class="mb-3">
+                                                    <div class="text-xs px-1 mb-1">
+                                                        <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans("Select status:") }}
+                                                    </div>
+                                                    <PureMultiselect
+                                                        v-model="selectedStatusNotPicked.status"
+                                                        @update:modelValue="() => (errorNotPicked.status = null)"
+                                                        :options="listStatusNotPicked"
+                                                        required
+                                                        caret
+                                                        :class="errorNotPicked.status ? 'errorShake' : ''"
+                                                    />
+                                                    <div v-if="errorNotPicked.status" class="mt-1 text-red-500 italic text-xxs">
+                                                        {{ errorNotPicked.status }}
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-4">
+                                                    <div class="text-xs px-1 mb-1">
+                                                        <span class="text-red-500 text-sm mr-0.5">*</span>{{ trans("Description:") }}
+                                                    </div>
+                                                    <PureTextarea
+                                                        v-model="selectedStatusNotPicked.notes"
+                                                        @update:modelValue="() => (errorNotPicked.notes = null)"
+                                                        :placeholder="trans('Enter reason why the pallet is not picked')"
+                                                        :class="errorNotPicked.notes ? 'errorShake' : ''"
+                                                    />
+                                                    <div v-if="errorNotPicked.notes" class="mt-1 text-red-500 italic text-xxs">
+                                                        {{ errorNotPicked.notes }}
+                                                    </div>
+                                                </div>
+
+                                                <div class="flex justify-end mt-2">
+                                                    <Button
+                                                        @click="async () => onSubmitNotPicked(pallet.id, close, pallet.notPickedRoute)"
+                                                        full
+                                                        :label="trans('Submit')"
+                                                        :disabled="!selectedStatusNotPicked.status || !selectedStatusNotPicked.notes"
+                                                        :loading="isSubmitNotPickedLoading === pallet.id"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </Popover>
+
+                                    <Link
+                                        v-if="pallet.unlinkRoute?.name"
+                                        as="div"
+                                        :href="route(pallet.unlinkRoute.name, pallet.unlinkRoute.parameters)"
+                                        method="patch"
+                                        preserveScroll
+                                        @start="() => (isUnlinkLoading = pallet.id)"
+                                        @finish="() => (isUnlinkLoading = false)"
+                                        v-tooltip="trans(`Unlink pallet from this return order (Will set it as in-warehouse)`)"
+                                    >
+                                        <Button icon="fal fa-backspace" type="warning" :loading="isUnlinkLoading === pallet.id" class="py-0" />
+                                    </Link>
+                                </template>
+
+                                <Link
+                                    v-else-if="pallet.undoPickingRoute?.name && (pallet.state === 'picked' || pallet.pivot_state === 'picked')"
+                                    as="div"
+                                    :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
+                                    method="patch"
+                                    preserveScroll
+                                    @start="() => (isPickingLoading = pallet.id)"
+                                    @finish="() => (isPickingLoading = false)"
+                                    v-tooltip="trans('Undo picking')"
+                                >
+                                    <Button icon="fal fa-undo" type="tertiary" size="xs" :loading="isPickingLoading === pallet.id" class="py-0" />
+                                </Link>
+
+                                <div v-else-if="pallet.status === 'incident' && pallet.state === 'lost'" class="text-red-300 italic">
+                                    {{ trans("Pallet lost") }}
+                                </div>
+                                <div v-else-if="pallet.status === 'incident' && pallet.state === 'damaged'" class="text-red-300 italic">
+                                    {{ trans("Pallet damaged") }}
+                                </div>
+                                <div v-else-if="pallet.pivot_state === 'cancel'" class="text-red-300 italic">
+                                    {{ trans("Pallet set back to storing") }}
+                                </div>
+                                <div v-else class="text-gray-400">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template v-else #cell(pallet_return_reference)="{ item }">
             <div class="flex items-center gap-x-2">
                 <Icon v-if="item?.state_icon" :data="item['state_icon']" class="px-1 shrink-0" />
                 <div>
