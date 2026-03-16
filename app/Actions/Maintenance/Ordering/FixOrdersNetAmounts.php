@@ -11,6 +11,7 @@ namespace App\Actions\Maintenance\Ordering;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 
 class FixOrdersNetAmounts
 {
@@ -24,23 +25,37 @@ class FixOrdersNetAmounts
         ]);
     }
 
-    public string $commandSignature = 'orders:fix_net_amounts {ids* : Order IDs to fix}';
+    public string $commandSignature = 'orders:fix_net_amounts {ids?* : Order IDs to fix (leave empty to fix all)}';
 
     public function asCommand(Command $command): void
     {
-        $orders = Order::whereIn('id', $command->argument('ids'))->get();
+        $ids = $command->argument('ids');
 
-        $bar = $command->getOutput()->createProgressBar($orders->count());
+        $query = $ids
+            ? Order::whereIn('id', $ids)
+            : Order::query();
+
+        $query->whereNull('deleted_at');
+
+        $total = $query->count();
+        $bar   = $command->getOutput()->createProgressBar($total);
         $bar->setFormat('debug');
         $bar->start();
 
-        foreach ($orders as $order) {
-            $this->handle($order);
-            $bar->advance();
-        }
+        $this->processInChunks($query, $bar);
 
         $bar->finish();
         $command->newLine();
-        $command->info("Fixed {$orders->count()} orders.");
+        $command->info("Fixed {$total} orders.");
+    }
+
+    private function processInChunks(Builder $query, $bar): void
+    {
+        $query->chunkById(500, function ($orders) use ($bar) {
+            foreach ($orders as $order) {
+                $this->handle($order);
+                $bar->advance();
+            }
+        });
     }
 }
