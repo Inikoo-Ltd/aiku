@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
 import { router, usePage  } from '@inertiajs/vue3'
-import type { Component,computed } from 'vue'
+import type { Component } from 'vue'
 
 import TableIrisDepartment from '@/Components/Tables/Iris/TableIrisDepartment.vue'
 import TableIrisSubDepartment from '@/Components/Tables/Iris/TableIrisSubDepartment.vue'
@@ -271,7 +271,7 @@ const safeTheme = computed(() => {
 
 :deep(.iris-catalouge .primaryLink) {
     background: v-bind('`linear-gradient(to top, #fcd34d, #fcd34d)`');
-
+    cursor: pointer;
     &:hover,
     &:focus {
         color: #374151;
@@ -281,11 +281,11 @@ const safeTheme = computed(() => {
 }
 
 :deep(.iris-catalouge .secondaryLink) {
-    background: v-bind('`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "AA"})`');
+    background: v-bind('`linear-gradient(to top, #fcd34d}, #fcd34d + "AA"})`');
 
     &:hover,
     &:focus {
-        color: v-bind('`${safeTheme[7]}`');
+        color: v-bind('`#fcd34d`');
     }
 
     @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
