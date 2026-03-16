@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, ref } from "vue"
 import { get, isPlainObject } from "lodash-es"
 
@@ -13,6 +14,13 @@ import { getBestOffer } from "@/Composables/useOffers"
 import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
+
+import { Swiper, SwiperSlide } from "swiper/vue"
+import { Navigation, Pagination } from "swiper/modules"
+
+import "swiper/css"
+import "swiper/css/navigation"
+import "swiper/css/pagination"
 
 library.add(
   faCube,
@@ -73,59 +81,112 @@ const imageOrder = computed(() =>
 const textOrder = computed(() =>
   isImageLeft.value ? "order-2" : "order-1"
 )
+
+const images = computed(() => {
+  const src = props.fieldValue?.family?.web_images?.all
+  if (!src) return []
+  return Array.isArray(src) ? src : [src]
+})
 </script>
 
 <template>
-  <div
-    :id="fieldValue?.id || 'family-2'"
-    component="family-2"
-    class="w-full"
-  >
-    <div
-      :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(fieldValue?.container?.properties, screenType)
-      }"
-    >
-      <div
-        class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1"
-        :class="gridClass"
-      >
+  <div :id="fieldValue?.id || 'family-2'" component="family-2" class="w-full">
+
+    <div :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(fieldValue?.container?.properties, screenType)
+    }">
+
+      <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
+
         <!-- IMAGE -->
-        <component
-          :is="fieldValue?.image?.link?.href ? LinkIris : 'div'"
-          :href="fieldValue?.image?.link?.href"
-          :target="fieldValue?.image?.link?.target"
-          :type="fieldValue?.image?.link?.type"
-          class="relative w-full overflow-hidden cursor-pointer"
-          :class="[imageOrder,
-            fieldValue?.image?.source
-              ? 'h-[250px] sm:h-[300px] md:h-[400px]'
-              : ''
-          ]"
+        <div
+          class="relative w-full overflow-hidden"
+          :class="[imageOrder, images.length ? 'h-[250px] sm:h-[300px] md:h-[400px]' : '']"
           :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
         >
-          <Image
-            :src="fieldValue?.image?.source"
-            :alt="fieldValue?.image?.alt || 'Image preview'"
-            :imgAttributes="fieldValue?.image?.attributes"
-            :imageCover="true"
-            class="absolute inset-0 w-full h-full object-fill"
-            :height="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.height"
-            :width="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.width"
-          />
-        </component>
+
+          <!-- CUSTOM NAVIGATION -->
+          <div
+            v-if="images.length > 1"
+            class="swiper-btn-prev absolute left-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer"
+          >
+            <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-white text-3xl"/>
+          </div>
+
+          <div
+            v-if="images.length > 1"
+            class="swiper-btn-next absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer"
+          >
+            <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-white text-3xl"/>
+          </div>
+
+          <!-- SWIPER -->
+          <Swiper
+            v-if="images.length > 1"
+            :modules="[Navigation]"
+            :slides-per-view="1"
+            :loop="true"
+            :navigation="{
+              prevEl: '.swiper-btn-prev',
+              nextEl: '.swiper-btn-next'
+            }"
+            :pagination="{ clickable: true }"
+            class="w-full h-full"
+          >
+            <SwiperSlide v-for="(img, i) in images" :key="i">
+              <div class="w-full h-full">
+                <Image
+                  :src="img.original"
+                  :alt="fieldValue?.image?.alt || 'Image preview'"
+                  :imgAttributes="fieldValue?.image?.attributes"
+                  :imageCover="true"
+                  class="w-full h-full object-fill"
+                />
+              </div>
+            </SwiperSlide>
+          </Swiper>
+
+          <!-- SINGLE IMAGE -->
+          <component
+            v-else
+            :is="fieldValue?.image?.link?.href ? LinkIris : 'div'"
+            :href="fieldValue?.image?.link?.href"
+            :target="fieldValue?.image?.link?.target"
+            :type="fieldValue?.image?.link?.type"
+            class="absolute inset-0"
+          >
+            <Image
+              :src="images[0]?.original"
+              :alt="fieldValue?.image?.alt || 'Image preview'"
+              :imgAttributes="fieldValue?.image?.attributes"
+              :imageCover="true"
+              class="w-full h-full object-fill"
+            />
+          </component>
+
+        </div>
 
         <!-- TEXT -->
         <div
-          class="flex flex-col justify-center m-auto p-4"
+          class="flex flex-col justify-center m-auto"
           :class="textOrder"
           :style="getStyles(fieldValue?.text_block?.properties, screenType)"
         >
+
           <div class="w-full max-w-xl">
+
+            <h1
+              v-if="fieldValue.family.name"
+              class="!text-[1.8rem] font-semibold"
+            >
+              {{ fieldValue.family.name }}
+            </h1>
+
             <div v-html="cleanedDescription"></div>
 
-            <div class="flex justify-center mt-6">
+            <div class="flex justify-start mt-6">
+
               <LinkIris
                 :href="fieldValue?.button?.link?.href"
                 :canonical_url="fieldValue?.button?.link?.canonical_url"
@@ -137,10 +198,27 @@ const textOrder = computed(() =>
                   :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
                 />
               </LinkIris>
+
             </div>
+
           </div>
+
         </div>
+
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.swiper-btn-prev,
+.swiper-btn-next {
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.swiper-btn-prev:hover,
+.swiper-btn-next:hover {
+  opacity: 1;
+}
+</style>

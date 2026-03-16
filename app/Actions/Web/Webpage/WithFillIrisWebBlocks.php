@@ -44,6 +44,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
         } elseif ($webBlockType == 'family-2') {
             $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
+        }elseif ($webBlockType == 'family-2-extra-description') {
+            $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
         } elseif (str_contains($webBlockType, 'product-')) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock, $isIris);
         } elseif ($webBlockType == 'see-also-1') {

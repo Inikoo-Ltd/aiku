@@ -1,3 +1,4 @@
+import { Family2ExtraDescriptionWorkshop } from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue';
 import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
@@ -95,7 +96,7 @@ import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
 import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionIris.vue"
 import DepartmentDescriptionIris from "@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionIris.vue"
 import SubDepartmentDesciptionIris from "@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionIris.vue"
-
+import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({
@@ -141,6 +142,9 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"families-1": FamiliesIris1,
 		"families-2": FamiliesIris2,
 		"families-3": FamiliesIris3,
+
+		 //family-extra-description
+		'family-2-extra-description' : Family2ExtraDescriptionIris,
 
 		//product
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
