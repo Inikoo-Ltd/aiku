@@ -461,6 +461,30 @@ class IndexRetinaPortfolios extends RetinaAction
                         ]
                     ]
                 ],
+
+                'bundle_routes' => [
+                    'store' => [
+                        'name'       => 'retina.models.dropshipping.bundles.store',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'ai' => [
+                        'generate_images' => [
+                            'name'       => 'retina.models.dropshipping.bundles.images.generate',
+                            'parameters' => []
+                        ],
+                        'generate_title' => [
+                            'name'       => 'retina.models.dropshipping.bundles.title.generate',
+                            'parameters' => []
+                        ],
+                        'generate_description' => [
+                            'name'       => 'retina.models.dropshipping.bundles.description.generate',
+                            'parameters' => []
+                        ]
+                    ],
+                ],
+
                 'order_route'    => isset($this->platform) && $this->platform->type === PlatformTypeEnum::MANUAL ? [
                     'name'       => 'retina.models.customer.order.platform.store',
                     'parameters' => [
