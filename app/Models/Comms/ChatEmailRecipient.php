@@ -23,12 +23,12 @@ use App\Models\Traits\InShop;
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalEmailRecipient newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalEmailRecipient newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ExternalEmailRecipient query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEmailRecipient newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEmailRecipient newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatEmailRecipient query()
  * @mixin \Eloquent
  */
-class ExternalEmailRecipient extends Model
+class ChatEmailRecipient extends Model
 {
     use InShop;
 

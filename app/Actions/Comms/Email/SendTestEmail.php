@@ -49,7 +49,7 @@ class SendTestEmail extends OrgAction
             throw new \InvalidArgumentException('Invalid entity type');
         }
 
-        $externalRecipient = StoreExternalEmailRecipient::run($shop, [
+        $externalRecipient = StoreChatEmailRecipient::run($shop, [
             'name'  => 'Test email',
             'email' => $modelData['email']
         ]);
