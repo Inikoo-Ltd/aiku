@@ -314,9 +314,19 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     public function webpage(): MorphOne
     {
-        return $this->morphOne(Webpage::class, 'model');
+        $relation = $this->morphOne(Webpage::class, 'model');
+
+        if ($this->type === ProductCategoryTypeEnum::DEPARTMENT) {
+            $relation->where('url', $this->url);
+        }
+
+        return $relation;
     }
 
+    public function webpages(): MorphMany
+    {
+        return $this->morphMany(Webpage::class, 'model');
+    }
 
     public function masterProductCategory(): BelongsTo
     {
