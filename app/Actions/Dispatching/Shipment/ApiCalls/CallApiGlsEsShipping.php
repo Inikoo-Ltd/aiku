@@ -169,6 +169,7 @@ class CallApiGlsEsShipping extends OrgAction
 
         $error = (string)$ret[0]->Errores->Error;
 
+
         if ($error) {
             $modelData['error'] = $error;
 
@@ -226,9 +227,16 @@ class CallApiGlsEsShipping extends OrgAction
 
         $weight = $parent->effective_weight / 1000;
 
+        $countryCode = Arr::get($parentResource, 'to_address.country_code');
+        if ($countryCode == 'ES') {
+            $service = '1';
+        } else {
+            $service = '74';
+        }
+
         $shipmentData                      = array();
         $shipmentData["date"]              = Carbon::now()->format('d/m/Y');
-        $shipmentData["service"]           = "1";
+        $shipmentData["service"]           = $service;
         $shipmentData["time"]              = "18";
         $shipmentData["parcels"]           = count($parcels);
         $shipmentData["weight"]            = $weight;

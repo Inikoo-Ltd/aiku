@@ -133,7 +133,7 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateOrgPostRooms::run($organisation);
         OrganisationHydrateOutboxes::run($organisation);
         OrganisationHydrateCustomerBalances::run($organisation);
-        OrganisationHydrateDispatchedEmails::run($organisation);
+        OrganisationHydrateDispatchedEmails::run($organisation->id);
         OrganisationHydrateWebUsers::run($organisation);
 
 

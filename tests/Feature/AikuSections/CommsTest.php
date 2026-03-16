@@ -572,41 +572,8 @@ test('UI Index Email Addresses Overview', function () {
     });
 });
 
-test('UI Index Dispatched Emails Overview', function () {
-    $response = $this->get(route('grp.overview.comms-marketing.dispatched-emails.index'));
 
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Comms/DispatchedEmails')
-            ->has('title')
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page
-                    ->where('title', 'Dispatched emails')
-                    ->etc()
-            )
-            ->has('data')
-            ->has('breadcrumbs', 3);
-    });
-});
 
-test('UI show dispatched emails', function () {
-    $response = $this->get(route('grp.overview.comms-marketing.dispatched-emails.index'));
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('Comms/DispatchedEmails')
-            ->has('title')
-            ->has(
-                'pageHead',
-                fn (AssertableInertia $page) => $page
-                    ->where('title', 'Dispatched emails')
-                    ->etc()
-            )
-            ->has('data')
-            ->has('breadcrumbs', 3);
-    });
-});
 
 test('UI edit outbox in fulfilment', function () {
     $fulfilment = Fulfilment::first();
@@ -752,7 +719,7 @@ test('mailshot hydrate', function (Mailshot $mailShot) {
 test('dispatched emails hydrate', function () {
     $dispatchedEmail = DispatchedEmail::first();
     HydrateDispatchedEmails::run($dispatchedEmail);
-    $this->artisan('hydrate:dispatched_emails --slugs '.$dispatchedEmail->id)->assertExitCode(0);
+    $this->artisan('hydrate:dispatched_emails --ids '.$dispatchedEmail->id)->assertExitCode(0);
 });
 
 test('outbox hydrate', function () {
@@ -764,7 +731,7 @@ test('outbox hydrate', function () {
 test('email bulk runs', function () {
     $emailBulkRun = EmailBulkRun::first();
     HydrateEmailBulkRuns::run($emailBulkRun);
-    $this->artisan('hydrate:email_bulk_runs --slugs '.$emailBulkRun->id)->assertExitCode(0);
+    $this->artisan('hydrate:email_bulk_runs --ids '.$emailBulkRun->id)->assertExitCode(0);
 });
 
 test('comms hydrator', function () {

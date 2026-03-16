@@ -34,7 +34,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Subscription;
-use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use App\Models\Comms\EmailAddress;
 use App\Models\Comms\EmailBulkRun;
@@ -161,7 +160,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Customer> $customers
  * @property-read LaravelCollection<int, DeliveryNote> $deliveryNotes
  * @property-read \App\Models\SysAdmin\GroupDiscountsStats|null $discountsStats
- * @property-read LaravelCollection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\GroupDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, EmailAddress> $emailAddresses
  * @property-read LaravelCollection<int, EmailBulkRun> $emailBulkRuns
@@ -751,11 +749,6 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function emailBulkRuns(): HasMany
     {
         return $this->hasMany(EmailBulkRun::class);
-    }
-
-    public function dispatchedEmails(): HasMany
-    {
-        return $this->hasMany(DispatchedEmail::class);
     }
 
     public function webBlockTypes(): HasMany

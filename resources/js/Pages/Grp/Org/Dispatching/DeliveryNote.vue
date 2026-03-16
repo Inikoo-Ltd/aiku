@@ -140,6 +140,7 @@ const props = defineProps<{
 		type: string   // 'b2b', 'dropshipping'
 	}
 	shop_type : string
+	is_faire_order : boolean
 }>();
 
 

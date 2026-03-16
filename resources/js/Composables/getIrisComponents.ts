@@ -94,6 +94,7 @@ import Slider1Iris from "@/Components/CMS/Webpage/Slider-1/Slider1Iris.vue"
 import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionIris.vue"
 import DepartmentDescriptionIris from "@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionIris.vue"
 import SubDepartmentDesciptionIris from "@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionIris.vue"
+import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
 
 
 const async = (loader: () => Promise<Component>) =>
@@ -221,7 +222,8 @@ export const getProductsRenderB2bComponent = (
 	options: Record<string, any> = {}
 ) => {
 	const components: Record<string, any> = {
-		"products-1": ProductRenderEcom,
+		//"products-1": ProductRenderEcom, old
+		"products-1": ProductRenderEcom3,
 		"products-2": Products2Render,
 	}
 

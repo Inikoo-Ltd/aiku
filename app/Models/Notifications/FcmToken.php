@@ -3,7 +3,6 @@
 namespace App\Models\Notifications;
 
 use Eloquent;
-use hisorange\BrowserDetect\Parser as Browser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -29,16 +28,7 @@ class FcmToken extends Model
 {
     protected $guarded = [];
 
-    public static function boot(): void
-    {
-        parent::boot();
 
-        self::creating(function ($model) {
-            $parsedUserAgent = (new Browser())->parse(request()->server('HTTP_USER_AGENT'));
-
-            $model->platform = $parsedUserAgent->userAgent();
-        });
-    }
 
     public function getTokenAttribute(): string
     {

@@ -162,10 +162,12 @@ class IndexMasterProducts extends GrpAction
             'master_assets.web_images',
             'master_asset_stats.number_current_assets as used_in',
             'currencies.code as currency_code',
+            'master_assets.health_rank',
         ];
 
         if (!$isSalesTab) {
-            array_push($selects,
+            array_push(
+                $selects,
                 'departments.slug as master_department_slug',
                 'departments.code as master_department_code',
                 'departments.name as master_department_name',
@@ -288,7 +290,8 @@ class IndexMasterProducts extends GrpAction
                 'master_department_code',
                 'master_sub_department_code',
                 'master_family_code',
-                'used_in'
+                'used_in',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -340,7 +343,8 @@ class IndexMasterProducts extends GrpAction
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')

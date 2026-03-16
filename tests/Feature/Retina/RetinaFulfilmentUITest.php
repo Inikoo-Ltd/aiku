@@ -220,6 +220,7 @@ beforeEach(function () {
 });
 
 test('show log in', function () {
+    $this->withoutExceptionHandling();
     $response = $this->get(route('retina.login.show'));
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Auth/RetinaLogin');

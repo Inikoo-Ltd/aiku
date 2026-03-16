@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from 'chart.js'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from "chart.js"
 import { Link, router, Head, usePage } from "@inertiajs/vue3"
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import {  faCheckCircle, faInfoCircle, faExclamationTriangle,faSeedling, faShare, faSpellCheck, faCheck, faTimes, faSignOutAlt, faTruck, faCheckDouble, faCross } from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import CountUp from 'vue-countup-v3'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCheckCircle, faInfoCircle, faExclamationTriangle, faSeedling, faShare, faSpellCheck, faCheck, faTimes, faSignOutAlt, faTruck, faCheckDouble, faCross } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import CountUp from "vue-countup-v3"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { routeType } from '@/types/route'
-import { inject, ref } from 'vue'
-import Modal from '@/Components/Utils/Modal.vue'
-import { notify } from '@kyvg/vue3-notification'
-import InputNumber from 'primevue/inputnumber'
-import Button from '@/Components/Elements/Buttons/Button.vue'
+import { routeType } from "@/types/route"
+import { inject, ref } from "vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import { notify } from "@kyvg/vue3-notification"
+import InputNumber from "primevue/inputnumber"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import FlashNotification from "@/Components/UI/FlashNotification.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
@@ -39,7 +39,7 @@ defineProps<{
     balance?: string  // 0.00
 }>()
 
-const locale = inject('locale', {})
+const locale = inject("locale", {})
 
 
 const isModalTopUpOpen = ref(false)
@@ -48,8 +48,8 @@ const privateNote = ref<string>("")
 
 const isLoading = ref(false)
 const onSubmitTopUp = () => {
-    router.post(route('retina.models.top_up_payment_api_point.store'), {
-        amount: amount.value,
+    router.post(route("retina.models.top_up_payment_api_point.store"), {
+        amount: amount.value
         // notes: privateNote.value,
     }, {
         preserveState: true,
@@ -73,7 +73,7 @@ const onSubmitTopUp = () => {
             notify({
                 title: trans("Something went wrong"),
                 text: trans("Please try again or contact support."),
-                type: "error",
+                type: "error"
             })
         }
     })
@@ -90,13 +90,13 @@ const isCustom = ref(false)
             <Button :label="trans('Top Up Balance')" @click="() => isModalTopUpOpen = true" icon="fas fa-plus" />
         </template>
     </PageHeading>
-    
+
     <FlashNotification :notification="usePage().props.flash.notification">
         <template #messageExtra>
             <a :href="route('retina.top_up.single_top_up_pdf.export', {
                 topUp: usePage().props.flash.notification.top_up.data.reference
             })" target="_blank" class="mt-3" style="text-decoration: underline; font-weight: 700;">
-                Click Here to Download Receipt
+                {{ trans("Click Here to Download Receipt") }}
             </a>
         </template>
     </FlashNotification>
@@ -107,7 +107,8 @@ const isCustom = ref(false)
             <!-- Section: Current balance -->
             <dl class="relative isolate bg-indigo-50 border border-indigo-200 rounded shadow px-4 py-5 sm:p-6 overflow-hidden grid items-center">
                 <div class="-z-10 absolute  top-1/2 -translate-y-1/2 transform-gpu blur-2xl" aria-hidden="true">
-                    <div class="aspect-[577/310] w-[36.0625rem] bg-gradient-to-r from-[#ff80b5] to-[#9089fc] opacity-30" style="clip-path: polygon(74.8% 41.9%, 97.2% 73.2%, 100% 34.9%, 92.5% 0.4%, 87.5% 0%, 75% 28.6%, 58.5% 54.6%, 50.1% 56.8%, 46.9% 44%, 48.3% 17.4%, 24.7% 53.9%, 0% 27.9%, 11.9% 74.2%, 24.9% 54.1%, 68.6% 100%, 74.8% 41.9%)" />
+                    <div class="aspect-[577/310] w-[36.0625rem] bg-gradient-to-r from-[#ff80b5] to-[#9089fc] opacity-30"
+                         style="clip-path: polygon(74.8% 41.9%, 97.2% 73.2%, 100% 34.9%, 92.5% 0.4%, 87.5% 0%, 75% 28.6%, 58.5% 54.6%, 50.1% 56.8%, 46.9% 44%, 48.3% 17.4%, 24.7% 53.9%, 0% 27.9%, 11.9% 74.2%, 24.9% 54.1%, 68.6% 100%, 74.8% 41.9%)" />
                 </div>
 
                 <dt class="text-base font-normal ">
@@ -125,7 +126,7 @@ const isCustom = ref(false)
             <div class="space-y-4 grid md:grid-cols-2 gap-x-4">
                 <div
                     class="flex  justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums col-span-2">
-                    <dl >
+                    <dl>
                         <dt class="text-base font-medium text-gray-400">
                             {{ topUpData.topUps.label }}
                         </dt>
@@ -135,8 +136,8 @@ const isCustom = ref(false)
                                 <!-- In Total -->
                                 <div class="flex gap-x-2 items-end">
                                     <Link :href="route(topUpData.topUps.route.name)">
-                                    <CountUp class="primaryLink inline-block" :endVal="topUpData.topUps.count"
-                                        :duration="1.5" :scrollSpyOnce="true" :options="{
+                                        <CountUp class="primaryLink inline-block" :endVal="topUpData.topUps.count"
+                                                 :duration="1.5" :scrollSpyOnce="true" :options="{
                                             formattingFn: (value: number) => locale.number(value)
                                         }" />
                                     </Link>
@@ -149,7 +150,6 @@ const isCustom = ref(false)
                     </dl>
                 </div>
             </div>
-
 
 
         </div>
@@ -167,8 +167,8 @@ const isCustom = ref(false)
 
                     <div class="flex flex-wrap gap-2 sm:gap-x-4">
                         <button :disabled="isCustom" @click="amount = 20"
-                            :class="amount === 20 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
-                            class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                                :class="amount === 20 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
+                                class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
                             {{ locale.currencyFormat(currency.code, 20) }}
                         </button>
 
@@ -179,14 +179,14 @@ const isCustom = ref(false)
                         </button>
 
                         <button :disabled="isCustom" @click="amount = 100"
-                            :class="amount === 100 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
-                            class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                                :class="amount === 100 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
+                                class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
                             {{ locale.currencyFormat(currency.code, 100) }}
                         </button>
 
                         <button :disabled="isCustom" @click="amount = 200"
-                            :class="amount === 200 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
-                            class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                                :class="amount === 200 ? 'bg-indigo-500 text-white disabled:text-gray-500' : 'bg-white text-gray-500'"
+                                class="h-12 disabled:bg-gray-200 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
                             {{ locale.currencyFormat(currency.code, 200) }}
                         </button>
 
@@ -194,11 +194,11 @@ const isCustom = ref(false)
                     </div>
 
                     <div @click="isCustom = !isCustom"
-                        :class="isCustom ? 'bg-indigo-500 text-white' : 'bg-white text-gray-500'"
-                        class="h-12 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
+                         :class="isCustom ? 'bg-indigo-500 text-white' : 'bg-white text-gray-500'"
+                         class="h-12 flex-grow w-fit cursor-pointer border border-gray-300 rounded-md flex items-center justify-center px-4 font-bold">
                         {{ trans("Custom amount") }}
                     </div>
-                    
+
                 </div>
                 <div v-if="isCustom" class="mt-4">
                     <label for="amount" class="block font-medium mb-2">

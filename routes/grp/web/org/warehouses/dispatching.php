@@ -60,6 +60,9 @@ Route::get('/delivery-notes/packed/shop/{shopType}', [IndexDeliveryNotes::class,
 Route::get('/delivery-notes/finalised', [IndexDeliveryNotes::class, 'finalised'])->name('finalised.delivery-notes');
 Route::get('/delivery-notes/finalised/shop/{shopType}', [IndexDeliveryNotes::class, 'finalisedShopTypes'])->name('finalised.delivery-notes.shop');
 
+Route::get('/delivery-notes/in-warehouse', [IndexDeliveryNotes::class, 'inWarehouse'])->name('in_warehouse.delivery-notes');
+Route::get('/delivery-notes/in-warehouse/shop/{shopType}', [IndexDeliveryNotes::class, 'inWarehouseShopTypes'])->name('in_warehouse.delivery-notes.shop');
+
 Route::get('/delivery-notes/dispatched', [IndexDeliveryNotes::class, 'dispatched'])->name('dispatched.delivery-notes');
 Route::get('/delivery-notes/dispatched/shop/{shopType}', [IndexDeliveryNotes::class, 'dispatchedShopTypes'])->name('dispatched.delivery-notes.shop');
 

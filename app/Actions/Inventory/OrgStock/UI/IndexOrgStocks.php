@@ -234,6 +234,7 @@ class IndexOrgStocks extends OrgAction
             'number_locations',
             'quantity_in_locations',
             'org_stocks.discontinued_in_organisation_at',
+            'org_stocks.health_rank',
             'org_stock_families.slug as family_slug',
             'org_stock_families.code as family_code',
             'organisations.name as organisation_name',
@@ -242,6 +243,17 @@ class IndexOrgStocks extends OrgAction
             'warehouses.slug as warehouse_slug',
             'org_stock_intervals.dispatched_ytd as dispatched',
             'org_stock_sales_intervals.revenue_org_currency_ytd as revenue',
+            DB::raw("(
+                SELECT COALESCE(SUM(os2.quantity_in_locations), 0)
+                FROM org_stocks os2
+                INNER JOIN model_has_trade_units mhtu2 ON mhtu2.model_id = os2.id AND mhtu2.model_type = 'OrgStock'
+                WHERE mhtu2.trade_unit_id IN (
+                    SELECT mhtu.trade_unit_id
+                    FROM model_has_trade_units mhtu
+                    WHERE mhtu.model_id = org_stocks.id
+                    AND mhtu.model_type = 'OrgStock'
+                )
+            ) as stock_value"),
             DB::raw("(
                 SELECT COALESCE(SUM(pot.org_net_amount), 0)
                 FROM purchase_order_transactions pot
@@ -294,7 +306,7 @@ class IndexOrgStocks extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value'];
+        $allowedSorts = ['code', 'name', 'family_code', 'unit_value', 'unit_cost', 'stock_value', 'discontinued_in_organisation_at', 'organisation_name', 'value_in_locations', 'dispatched', 'revenue', 'quantity_available', 'on_the_way_po_value', 'health_rank', 'woc'];
 
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
@@ -355,7 +367,8 @@ class IndexOrgStocks extends OrgAction
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 if ($parent instanceof OrgStockFamily || !$bucket || in_array($bucket, ['active', 'discontinuing'])) {
                     $table
@@ -371,6 +384,7 @@ class IndexOrgStocks extends OrgAction
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
                     $table->column(key: 'discontinued_in_organisation_at', label: $bucket == 'discontinued' ? __('Discontinued') : __('Last seen'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
                 }
+
             }
         };
     }

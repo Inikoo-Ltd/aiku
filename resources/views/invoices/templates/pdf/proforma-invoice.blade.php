@@ -326,6 +326,29 @@
         <td><b>{{ __('Total') }}</b></td>
         <td>{{ $order->currency->symbol . $order->total_amount }}</td>
     </tr>
+
+    @php
+        $amountToDeduct = (float) ($order->amount_off ?? 0);
+
+        if ($amountToDeduct <= 0) {
+            $amountToDeduct = (float) ($order->payment_amount ?? 0);
+        }
+    @endphp
+
+    @if($amountToDeduct > 0)
+        <tr class="amount">
+            <td style="border:none" colspan="4"></td>
+            <td>{{ __('Paid') }}</td>
+            <td>{{ $order->currency->symbol . number_format($amountToDeduct, 2, '.', '') }}</td>
+        </tr>
+
+        <tr class="total">
+            <td style="border:none" colspan="4"></td>
+            <td><b>{{ __('To Pay') }}</b></td>
+            <td>{{ $order->currency->symbol . number_format((float) $order->total_amount - $amountToDeduct, 2, '.', '') }}</td>
+        </tr>
+    @endif
+
     </tbody>
 
 </table>
@@ -400,9 +423,9 @@
 <br>
 <br>
 
-@if($order->footer)
-    <div>
-        {!! $order->footer !!}
+@if($shop->proforma_footer)
+    <div style="text-align:center;font-size:10pt;">
+        {!! $shop->proforma_footer !!}
     </div>
 @endif
 

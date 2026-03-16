@@ -25,7 +25,7 @@ enum HealthRankEnum: string
             'A' => __('Top Performer'),
             'B' => __('Good'),
             'C' => __('Average'),
-            'D' => __('Inactive'),
+            'D' => __('Zombie'),
         ];
     }
 
@@ -33,7 +33,7 @@ enum HealthRankEnum: string
     {
         return [
             'A' => [
-                'tooltip' => __('Top Performer'),
+                'tooltip' => __('Top Performer | Covers the top 0–15% of revenue in last 90 days'),
                 'icon' => 'fal fa-star',
                 'class' => 'text-green-500',
                 'color' => 'green',
@@ -43,7 +43,7 @@ enum HealthRankEnum: string
                 ],
             ],
             'B' => [
-                'tooltip' => __('Good'),
+                'tooltip' => __('Good | Covers 15–50% of revenue in last 90 days'),
                 'icon' => 'fal fa-arrow-up',
                 'class' => 'text-blue-500',
                 'color' => 'blue',
@@ -53,7 +53,7 @@ enum HealthRankEnum: string
                 ],
             ],
             'C' => [
-                'tooltip' => __('Average'),
+                'tooltip' => __('Average | Covers 50–100% of revenue in last 90 days'),
                 'icon' => 'fal fa-minus',
                 'class' => 'text-yellow-500',
                 'color' => 'yellow',
@@ -63,12 +63,12 @@ enum HealthRankEnum: string
                 ],
             ],
             'D' => [
-                'tooltip' => __('Inactive'),
-                'icon' => 'fal fa-times-circle',
+                'tooltip' => __('Zombie | No sales in the last quarter'),
+                'icon' => 'fal fa-user-alien',
                 'class' => 'text-red-500',
                 'color' => 'red',
                 'app' => [
-                    'name' => 'times-circle',
+                    'name' => 'user-alien',
                     'type' => 'font-awesome-5',
                 ],
             ],

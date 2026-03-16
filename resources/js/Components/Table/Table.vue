@@ -544,10 +544,10 @@ onUnmounted(() => {
 
 
 function sortBy(column) {
-    if (queryBuilderData.value.sort === column) {
-        queryBuilderData.value.sort = `-${column}`;
-    } else {
+    if (queryBuilderData.value.sort === `-${column}`) {
         queryBuilderData.value.sort = column;
+    } else {
+        queryBuilderData.value.sort = `-${column}`
     }
 
     queryBuilderData.value.cursor = null;

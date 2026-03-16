@@ -133,6 +133,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
 
         $grandTotal = $widgets->sum('total');
 
+        $routeParams = $totals['todo']['route_target']['parameters'] ?? [];
         return [
             'dimension'   => [
                 'key'   => 'channel',
@@ -146,7 +147,11 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             'grand_total' => [
                 'value' => $grandTotal,
                 'icon'  => ['fal', 'fa-chart-line'],
-                'tooltip' => 'Total'
+                'tooltip' => 'Total',
+                'route_target' => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.in_warehouse.delivery-notes',
+                        'parameters' => $routeParams,
+                ],
             ],
         ];
     }

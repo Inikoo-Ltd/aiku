@@ -11,8 +11,8 @@ namespace App\Actions\Comms\EmailTrackingEvent;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Comms\EmailTrackingEvent;
-use hisorange\BrowserDetect\Parser as Browser;
 use Illuminate\Support\Arr;
 
 class PostProcessingEmailTrackingEvent extends OrgAction
@@ -27,8 +27,8 @@ class PostProcessingEmailTrackingEvent extends OrgAction
 
         $device = null;
         if ($userAgent) {
-            $parsedUserAgent = (new Browser())->parse($userAgent);
-            $device          = $parsedUserAgent->deviceType();
+            $browserData = GetBrowserInfo::run($userAgent);
+            $device      = $browserData['device'];
         }
 
         return $this->update($emailTrackingEvent, [

@@ -43,7 +43,7 @@ class SendInvoiceDeletedNotification extends OrgAction
             additionalData: [
                 'customer_name' => $customer->name,
                 'invoice_reference' => $invoice->reference,
-                'date' => $invoice->deleted_at->format('F jS, Y'),
+                'deletion_date' => $invoice->deleted_at->format('F jS, Y'),
                 'invoice_link' => route('grp.org.accounting.deleted_invoices.show', [
                     $invoice->organisation->slug,
                     $invoice->slug

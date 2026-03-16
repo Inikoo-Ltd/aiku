@@ -105,7 +105,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         }
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS->value);
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
         if (count($countFamilyWebBlock) == 0) {
@@ -125,7 +125,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $webpage->refresh();
 
 
-        if(count($countFamilyDescriptionBlock) == 0) {
+        if (count($countFamilyDescriptionBlock) == 0) {
             $this->setFamilyWebBlockOnTop($webpage);
         }
 
@@ -155,7 +155,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             }
         }
     }
-    
+
     public function setDescriptionWebBlockHidden(Webpage $webpage): void
     {
         $familyDescriptionWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first();

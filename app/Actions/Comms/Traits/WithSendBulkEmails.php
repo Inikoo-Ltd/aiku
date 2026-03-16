@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Traits;
 
-use App\Actions\Comms\EmailCopy\StoreEmailCopy;
 use App\Actions\Comms\Ses\SendSesEmail;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\OutBoxHasSubscriber;
@@ -21,7 +20,9 @@ use Illuminate\Support\Str;
 
 trait WithSendBulkEmails
 {
-    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null): DispatchedEmail
+    use WithProcessEmailStyles;
+
+    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null, bool $isTest = false): DispatchedEmail
     {
         $html = $emailHtmlBody;
 
@@ -42,10 +43,7 @@ trait WithSendBulkEmails
 
         $html = preg_replace('/\R+/', '', $html);
 
-        StoreEmailCopy::make()->action($dispatchedEmail, [
-            'subject' => $subject,
-            'body'    => $html
-        ]);
+
 
         return SendSesEmail::run(
             subject: $subject,
@@ -53,7 +51,8 @@ trait WithSendBulkEmails
             dispatchedEmail: $dispatchedEmail,
             sender: $sender,
             unsubscribeUrl: $unsubscribeUrl,
-            senderName: $senderName
+            senderName: $senderName,
+            isTest: $isTest
         );
     }
 
@@ -70,6 +69,7 @@ trait WithSendBulkEmails
             $customerName = $dispatchedEmail->recipient->name ?? 'Customer name undefined';
         }
 
+        /** @noinspection HtmlUnknownAttribute */
         return match ($placeholder) {
             'username' => $this->getUsername($dispatchedEmail->recipient),
             'customer-name' => $customerName,
@@ -84,6 +84,7 @@ trait WithSendBulkEmails
             'customer-email' => Arr::get($additionalData, 'customer_email'),
             'customer-url' => Arr::get($additionalData, 'customer_url'),
             'customer-register-date' => Arr::get($additionalData, 'customer_register_date'),
+            'customer-address' => Arr::get($additionalData, 'customer_address'),
 
             'order-link' => Arr::get($additionalData, 'order_link'),
             'order-reference' => Arr::get($additionalData, 'order_reference'),
@@ -95,9 +96,11 @@ trait WithSendBulkEmails
             'pallet-link' => Arr::get($additionalData, 'pallet_link'),
             'blade-new-order-transactions' => Arr::get($additionalData, 'blade_new_order_transactions'),
             'tracking' => Arr::get($additionalData, 'tracking'),
-            'deletion-date',
-            'delivered-date',
-            'returned-date',
+            'deletion-date' => Arr::get($additionalData, 'deletion_date'),
+            'delivered-date' => Arr::get($additionalData, 'delivered_date'),
+            'returned-date' => Arr::get($additionalData, 'returned_date'),
+            'dispatched-date' => Arr::get($additionalData, 'dispatched_date'),
+            'undispatched-date' => Arr::get($additionalData, 'undispatched_date'),
             'order-date' => Arr::get($additionalData, 'date'),
             'tracking-url' => Arr::get($additionalData, 'tracking_url'),
             'currency' => Arr::get($additionalData, 'currency'),
@@ -130,6 +133,8 @@ trait WithSendBulkEmails
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
             'preview-amount' => Arr::get($additionalData, 'preview_amount'),
             'invoice-date-change-blade' => Arr::get($additionalData, 'invoice_date_change_blade'),
+            'delivery-note-link' => Arr::get($additionalData, 'delivery_note_link'),
+            'delivery-note-reference' => Arr::get($additionalData, 'delivery_note_reference'),
 
             default => $originalPlaceholder,
         };
@@ -153,27 +158,5 @@ trait WithSendBulkEmails
         } else {
             return $recipient->company_name ?? $recipient->username;
         }
-    }
-
-
-    public function processStyles($html): array|string|null
-    {
-        $html = preg_replace_callback('/<[^>]+style=["\'](.*?)["\'][^>]*>/i', function ($match) {
-            $style = $match[1];
-
-            // Find and modify color values within the style attribute
-            $style = preg_replace_callback('/color\s*:\s*([^;]+);/i', function ($colorMatch) {
-                $colorValue    = $colorMatch[1];
-                $modifiedColor = $colorValue.' !important';
-
-                return 'color: '.$modifiedColor.';';
-            }, $style);
-
-            // Update the style attribute in the HTML tag
-            return str_replace($match[1], $style, $match[0]);
-        }, $html);
-
-        // Remove <style> tags and their content
-        return preg_replace('/<style(.*?)>(.*?)<\/style>/is', '', $html);
     }
 }

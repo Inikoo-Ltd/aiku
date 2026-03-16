@@ -90,6 +90,7 @@ class IndexCollectionsInProductCategory extends OrgAction
             'collection_stats.number_products',
             'collection_stats.number_parents',
             'collections.master_collection_id',
+            'collections.health_rank',
             'webpages.id as webpage_id',
             'webpages.state as webpage_state',
             'webpages.url as webpage_url',
@@ -131,6 +132,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                 'number_products',
                 'sales_grp_currency_external',
                 'invoices',
+                'health_rank',
             ])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -163,7 +165,8 @@ class IndexCollectionsInProductCategory extends OrgAction
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)

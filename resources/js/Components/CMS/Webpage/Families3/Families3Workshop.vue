@@ -136,10 +136,10 @@ watch(() => props.screenType, async () => {
         <button
           ref="prevEl"
           type="button"
-          class="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 text-gray-500"
+          class="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 text-gray-800"
           @click.stop="scrollLeft"
         >
-          <FontAwesomeIcon :icon="['fas','chevron-circle-left']"/>
+          <FontAwesomeIcon :icon="['fas','chevron-circle-left']" class="text-4xl"/>
         </button>
 
         <!-- swiper -->
@@ -169,10 +169,10 @@ watch(() => props.screenType, async () => {
         <button
           ref="nextEl"
           type="button"
-          class="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 text-gray-500"
+          class="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 text-gray-800"
           @click.stop="scrollRight"
         >
-          <FontAwesomeIcon :icon="['fas','chevron-circle-right']"/>
+          <FontAwesomeIcon :icon="['fas','chevron-circle-right']" class="text-4xl"/>
         </button>
 
       </div>

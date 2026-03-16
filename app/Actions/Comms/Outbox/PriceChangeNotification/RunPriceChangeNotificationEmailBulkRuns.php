@@ -143,7 +143,6 @@ class RunPriceChangeNotificationEmailBulkRuns
                             $emailBulkRun,
                             $customer,
                             [
-                                'is_test'       => false,
                                 'outbox_id'     => $outbox->id,
                                 'email_address' => $customer->email,
                                 'provider'      => DispatchedEmailProviderEnum::SES,

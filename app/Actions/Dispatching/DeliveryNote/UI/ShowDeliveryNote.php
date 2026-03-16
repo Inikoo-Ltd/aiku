@@ -189,6 +189,10 @@ class ShowDeliveryNote extends OrgAction
             $showCancel = false;
         }
 
+        if (($deliveryNote->shop->engine == ShopEngineEnum::FAIRE)) {
+            $showCancel = false;
+        }
+
         $actions = [];
         if ($showCancel) {
             $actions[] = [
@@ -708,6 +712,7 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT) {
             $model = __('Replacement Delivery Note');
         }
+
         $props = [
             'title'         => __('delivery note'),
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -734,7 +739,7 @@ class ShowDeliveryNote extends OrgAction
             ],
             'warning'       => $warning,
             'tabs'          => [
-                'current'    => $this->tab,
+                'current'    => $deliveryNote->state == DeliveryNoteStateEnum::PACKING ? DeliveryNoteTabsEnum::PENDING_ITEMS->value : $this->tab,
                 'navigation' => $deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED ?
                     DeliveryNoteTabsEnum::navigation($deliveryNote) :
                     DeliveryNoteTabsEnum::navigationExcept($deliveryNote, [DeliveryNoteTabsEnum::DONE_ITEMS, DeliveryNoteTabsEnum::PENDING_ITEMS])
@@ -817,6 +822,8 @@ class ShowDeliveryNote extends OrgAction
             'warehouse'           => [
                 'slug' => $deliveryNote->warehouse->slug,
             ],
+
+            'is_faire_order'    => ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE),
 
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
