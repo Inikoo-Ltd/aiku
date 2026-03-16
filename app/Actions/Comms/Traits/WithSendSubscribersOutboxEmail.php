@@ -14,11 +14,11 @@
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
+use App\Actions\Comms\ExternalSubscriberEmailRecipient\StoreExternalSubscriberEmailRecipient;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
-use App\Models\Comms\OutBoxHasSubscriber;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 
@@ -46,17 +46,29 @@ trait WithSendSubscribersOutboxEmail
         $subscribedUsers = $outbox->subscribedUsers ?? [];
 
         foreach ($subscribedUsers as $subscribedUser) {
-            /** @var User|OutBoxHasSubscriber $recipient */
-            $recipient = $subscribedUser->user ?: $subscribedUser;
+            if ($subscribedUser->user) {
+                $recipient = $subscribedUser->user;
+            } else {
+                $externalSubscriberEmailRecipient = group()->externalSubscriberEmailRecipients()->where('email', $subscribedUser->external_email)->first();
 
-            if (!$recipient->email && !$recipient->external_email) {
+                if (!$externalSubscriberEmailRecipient) {
+                    $externalSubscriberEmailRecipient = StoreExternalSubscriberEmailRecipient::make()->action(group(), [
+                        'name'  => 'Who appropriate',
+                        'email' => $subscribedUser->external_email,
+                    ]);
+                }
+                $recipient = $externalSubscriberEmailRecipient;
+            }
+
+
+            if (!$recipient->email) {
                 continue;
             }
 
             /** @var DispatchedEmail $dispatchedEmail */
             $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
                 'outbox_id'     => $outbox->id,
-                'email_address' => $recipient->email ?? $recipient->external_email,
+                'email_address' => $recipient->email,
                 'provider'      => DispatchedEmailProviderEnum::SES,
             ]);
             $dispatchedEmail->refresh();

@@ -53,12 +53,9 @@ trait WithSendCustomerOutboxEmail
             return null;
         }
 
-
-
-        $recipient = $customer;
-        $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $recipient, [
+        $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $customer, [
             'outbox_id'     => $outbox->id,
-            'email_address' => $recipient->email,
+            'email_address' => $customer->email,
             'provider'      => DispatchedEmailProviderEnum::SES
         ]);
         $dispatchedEmail->refresh();

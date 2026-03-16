@@ -16,7 +16,7 @@ use App\Models\Traits\InShop;
  * @property int $group_id
  * @property int $organisation_id
  * @property int $shop_id
- * @property string $name
+ * @property string|null $name
  * @property string $email
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at

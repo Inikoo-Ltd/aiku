@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Email;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
+use App\Actions\Comms\TestEmailRecipient\StoreTestEmailRecipient;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
@@ -25,6 +26,9 @@ class SendTestEmail extends OrgAction
 {
     use WithSendBulkEmails;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Mailshot|Outbox|EmailTemplate $entity, array $modelData): ?DispatchedEmail
     {
         if ($entity instanceof Mailshot) {
@@ -49,15 +53,22 @@ class SendTestEmail extends OrgAction
             throw new \InvalidArgumentException('Invalid entity type');
         }
 
-        $externalRecipient = StoreChatEmailRecipient::run($shop, [
-            'name'  => 'Test email',
-            'email' => $modelData['email']
-        ]);
+
+        $email = $modelData['email'];
+
+        $testEmailRecipient = $shop->testEmailRecipients()->where('email', $email)->first();
+
+        if (!$testEmailRecipient) {
+            $testEmailRecipient = StoreTestEmailRecipient::make()->action($shop, [
+                'name'  => 'Mr/Miss Tester',
+                'email' => $email,
+            ]);
+        }
 
 
         $dispatchedEmail = StoreDispatchedEmail::run(
             parent: $parent,
-            recipient: $externalRecipient,
+            recipient: $testEmailRecipient,
             modelData: [
                 'email_address' => $modelData['email'],
                 'provider'      => DispatchedEmailProviderEnum::SES,
@@ -73,12 +84,15 @@ class SendTestEmail extends OrgAction
             subject: $subject,
             emailHtmlBody: $modelData['compiled_layout'],
             senderName: $senderName,
-            isTest:true
+            isTest: true
         );
 
         return $dispatchedEmail;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): DispatchedEmail
     {
         $this->initialisationFromShop($shop, $request);
@@ -94,6 +108,9 @@ class SendTestEmail extends OrgAction
         ];
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asControllerOutbox(Shop $shop, Outbox $outbox, ActionRequest $request): DispatchedEmail
     {
         $this->initialisationFromShop($shop, $request);
@@ -101,6 +118,10 @@ class SendTestEmail extends OrgAction
         return $this->handle($outbox, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     * @noinspection PhpUnusedParameterInspection
+     */
     public function asControllerFulfillment(Organisation $organisation, Fulfilment $fulfilment, Outbox $outbox, ActionRequest $request): DispatchedEmail
     {
         $this->initialisationFromFulfilment($fulfilment, $request);
@@ -108,6 +129,10 @@ class SendTestEmail extends OrgAction
         return $this->handle($outbox, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     * @noinspection PhpUnusedParameterInspection
+     */
     public function asControllerTemplate(Organisation $organisation, Shop $shop, EmailTemplate $emailTemplate, ActionRequest $request): DispatchedEmail
     {
         $this->initialisationFromShop($shop, $request);

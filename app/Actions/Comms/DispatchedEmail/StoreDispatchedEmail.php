@@ -19,8 +19,9 @@ use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailOngoingRun;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\ChatEmailRecipient;
+use App\Models\Comms\ExternalSubscriberEmailRecipient;
 use App\Models\Comms\Mailshot;
-use App\Models\Comms\OutBoxHasSubscriber;
+use App\Models\Comms\TestEmailRecipient;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
@@ -34,7 +35,7 @@ class StoreDispatchedEmail extends OrgAction
     use WithNoStrictRules;
 
 
-    public function handle(EmailOngoingRun|EmailBulkRun|Mailshot|EmailTemplate $parent, WebUser|Customer|Prospect|User|OutBoxHasSubscriber|ChatEmailRecipient $recipient, array $modelData, bool $isTest = false): DispatchedEmail
+    public function handle(EmailOngoingRun|EmailBulkRun|Mailshot|EmailTemplate $parent, WebUser|Customer|Prospect|User|TestEmailRecipient|ExternalSubscriberEmailRecipient|ChatEmailRecipient $recipient, array $modelData, bool $isTest = false): DispatchedEmail
     {
         if (!$parent instanceof EmailTemplate) {
             $outbox = $parent->outbox;
