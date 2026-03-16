@@ -2,7 +2,7 @@
 
 /*
  * Author: Eka yudinata <ekayudinata@gmail.com>
- * Created: Wed, 15 Jan 2026 16:22:00 Central European Standard Time, Malaga, Spain
+ * Created: Thu, 15 Jan 2026 16:22:00 Central European Standard Time, Malaga, Spain
  * Copyright (c) 2026, Inikoo LTD
  */
 
@@ -21,7 +21,7 @@ class RedirectUnsubscribe
 {
     use AsAction;
 
-    public function handle(DispatchedEmail $dispatchedEmail, string $encryptedDispatchedEmailID): RedirectResponse
+    public function handle(DispatchedEmail $dispatchedEmail): RedirectResponse
     {
         $baseUrl = null;
 
@@ -38,7 +38,9 @@ class RedirectUnsubscribe
         }
 
         if ($baseUrl) {
-            return Redirect::away($baseUrl.'/unsubscribe/'.$encryptedDispatchedEmailID);
+            $safeId = urlencode(Crypt::encryptString($dispatchedEmail->id));
+
+            return Redirect::away($baseUrl.'/unsubscribe/'.$safeId);
         }
 
         abort(404, 'Shop website not found');
@@ -49,6 +51,6 @@ class RedirectUnsubscribe
         $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
         $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
 
-        return $this->handle($dispatchedEmail, $encryptedDispatchedEmailID);
+        return $this->handle($dispatchedEmail);
     }
 }
