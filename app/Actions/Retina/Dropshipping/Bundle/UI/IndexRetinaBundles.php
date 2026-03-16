@@ -73,7 +73,7 @@ class IndexRetinaBundles extends RetinaAction
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $query->with(['customerSalesChannel']);
         }
-        $query->with(['bundleable']);
+        $query->with(['bundleable', 'items.item']);
 
         $query->where('bundles.bundleable_type', class_basename(Product::class))
             ->leftJoin('products', 'products.id', 'bundles.bundleable_id')
@@ -86,8 +86,6 @@ class IndexRetinaBundles extends RetinaAction
                 'products.description as product_description',
                 'products.is_for_sale',
             );
-
-        // so in bundles data there are some ids that are in products table, i want to get all of those using SQL here
 
         return $query->defaultSort('-bundles.id')
             ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter(), $this->getForSaleFilter()])

@@ -67,6 +67,7 @@ class StoreBundle extends OrgAction
             data_set($modelData, 'customer_id', $customerSalesChannel->customer_id);
             data_set($modelData, 'bundleable_id', $product->id);
             data_set($modelData, 'bundleable_type', $product->getMorphClass());
+            data_set($modelData, 'status', true);
             data_set($modelData, 'data', [
                 'products' => $selectedProducts
             ]);
