@@ -10,15 +10,12 @@ namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Comms\Mailshot\Filters\FilterByDepartment;
 use App\Models\CRM\Customer;
-use App\Models\CRM\Prospect;
 use App\Models\Helpers\Query;
 use App\Models\Comms\Mailshot;
-use Spatie\QueryBuilder\QueryBuilder;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Query\WithQueryCompiler;
 use App\Actions\Traits\WithCheckCanContactByEmail;
 use App\Actions\Comms\Mailshot\Filters\FilterByOrderValue;
-use App\Actions\Helpers\Query\GetQueryEloquentQueryBuilder;
 use App\Actions\Comms\Mailshot\Filters\FilterOrdersInBasket;
 use App\Actions\Comms\Mailshot\Filters\FilterBySubdepartment;
 use App\Actions\Comms\Mailshot\Filters\FilterGoldRewardStatus;
@@ -49,31 +46,6 @@ class GetMailshotRecipientsQueryBuilder
         }
 
         return null;
-    }
-
-    /**
-     * @throws \Exception
-     */
-    private function getRecipientsFromQuery(Mailshot $mailshot): QueryBuilder
-    {
-        /** @var Query $query */
-        $query = Query::find(Arr::get($mailshot->recipients_recipe, 'recipient_builder_data.query.id'));
-
-        $customArguments = null;
-        if ($query->has_arguments) {
-            $customArguments = $this->compileConstrains(Arr::get($mailshot->recipients_recipe, 'recipient_builder_data.query.data'));
-        }
-
-
-        return GetQueryEloquentQueryBuilder::run($query, $customArguments);
-    }
-
-    private function getRecipientsFromProspectsList(array $prospectIDs): QueryBuilder
-    {
-        return QueryBuilder::for(Prospect::class)
-            ->whereIn('id', $prospectIDs)
-            ->where('parent_type', 'Shop')
-            ->whereNotNull('email')->where('dont_contact_me', false);
     }
 
     /**

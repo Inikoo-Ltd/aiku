@@ -4,20 +4,16 @@ namespace App\Actions\Comms\Mailshot\Filters;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Arr;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
 
 class FilterBySubdepartment
 {
     /**
      * Apply the "By Subdepartment" filter.
      *
-     * @param SpatieQueryBuilder|Builder $query
-     * @param array $filters
-     * @return Builder
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
         $subDeptFilter = Arr::get($filters, 'by_subdepartment');
 

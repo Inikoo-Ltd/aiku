@@ -3,19 +3,15 @@
 namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Arr;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder;
 
 class FilterByOrderValue
 {
     /**
      * Apply the "By Order Value" filter.
      *
-     * @param SpatieQueryBuilder|Builder $query
-     * @param array $filters
-     * @return mixed
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
         $orderValueFilter = Arr::get($filters, 'by_order_value');
         $isOrderValueActive = is_array($orderValueFilter) ? ($orderValueFilter['value'] ?? false) : $orderValueFilter;

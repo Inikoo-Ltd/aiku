@@ -3,9 +3,8 @@
 namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Arr;
-use Illuminate\Database\Eloquent\Builder;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
+use Illuminate\Database\Query\Builder;
 
 class FilterOrdersInBasket
 {
@@ -16,7 +15,7 @@ class FilterOrdersInBasket
      * @param array $filters
      * @return Builder|SpatieQueryBuilder
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
 
         $basketFilter = Arr::get($filters, 'orders_in_basket');

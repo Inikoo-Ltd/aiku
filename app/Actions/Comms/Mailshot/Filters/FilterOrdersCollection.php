@@ -3,19 +3,15 @@
 namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Arr;
-use Illuminate\Database\Eloquent\Builder;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
+use Illuminate\Database\Query\Builder;
 
 class FilterOrdersCollection
 {
     /**
      * Apply the "Orders Collection" filter to the query.
      *
-     * @param Builder|SpatieQueryBuilder $query
-     * @param array $filters
-     * @return Builder|SpatieQueryBuilder
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
         $collectionFilter = Arr::get($filters, 'orders_collection');
         $isCollectionActive = is_array($collectionFilter) ? ($collectionFilter['value'] ?? false) : $collectionFilter;

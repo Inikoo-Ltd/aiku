@@ -3,7 +3,7 @@
 namespace App\Actions\Comms\Mailshot\Filters;
 
 use App\Services\GeocoderService;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
@@ -15,7 +15,7 @@ class FilterByLocation
      * @param array $filters
      * @return Builder
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
         $locationFilter = Arr::get($filters, 'by_location');
         $locationValue = is_array($locationFilter) ? ($locationFilter['value'] ?? []) : [];

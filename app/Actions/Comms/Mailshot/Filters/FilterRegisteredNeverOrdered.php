@@ -11,11 +11,8 @@ class FilterRegisteredNeverOrdered
     /**
      * Apply the "Registered Never Ordered" filter to the query.
      *
-     * @param Builder|QueryBuilder $query
-     * @param array $options
-     * @return Builder|QueryBuilder
      */
-    public function apply($query, array $filters): Builder
+    public function apply(Builder $query, array $filters): Builder
     {
 
         $regNeverOrdered = Arr::get($filters, 'registered_never_ordered');

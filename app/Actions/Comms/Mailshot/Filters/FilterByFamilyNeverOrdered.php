@@ -2,8 +2,8 @@
 
 namespace App\Actions\Comms\Mailshot\Filters;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 
 class FilterByFamilyNeverOrdered
@@ -11,11 +11,8 @@ class FilterByFamilyNeverOrdered
     /**
      * Apply the "By Family Never Ordered" filter to the query.
      *
-     * @param Builder|\Illuminate\Database\Query\Builder $query
-     * @param int|string $familyId
-     * @return Builder|\Illuminate\Database\Query\Builder
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
 
         $familyFilter = Arr::get($filters, 'by_family_never_ordered');

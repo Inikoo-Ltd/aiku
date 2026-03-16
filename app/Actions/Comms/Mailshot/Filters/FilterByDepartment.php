@@ -9,21 +9,17 @@
 namespace App\Actions\Comms\Mailshot\Filters;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
 
 class FilterByDepartment
 {
     /**
      * Apply the "By Department" filter.
      *
-     * @param SpatieQueryBuilder|Builder $query
-     * @param array $filters
-     * @return Builder
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
         $deptFilter = Arr::get($filters, 'by_departments');
 
