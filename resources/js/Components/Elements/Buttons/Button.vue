@@ -20,28 +20,30 @@ const layout: any = inject("layout", {});
 library.add(faPlus, faSave, fadSave, faSpinner, faUpload, faDownload, falPlus, faRocket, faArrowLeft, faPencil, faTrashAlt, faSpinnerThird, faTrashUndoAlt, faPersonDolly, faFileExport, faClipboard, faHistory, faListAlt, faTimes, faThLarge, faMinus, faExternalLink);
 
 
-const props = withDefaults(defineProps<{
-  style?: string | object
-  size?: string
-  icon?: Icon | string | string[] | IconDefinition
-  iconRight?: Icon | string | string[] | IconDefinition
-  action?: string
-  label?: string
-  full?: boolean
-  capitalize?: boolean
-  tooltip?: string
-  loading?: boolean
-  type?: string
-  disabled?: boolean
-  noHover?: boolean
-  injectStyle? : object|null
-  iconRightRotation?: number | string
-  iconRotation?: number | string
-}>(), {
-  size: "m",
-  capitalize: false,
-  loading: false
-});
+	const props = withDefaults(defineProps<{
+	  style?: string | object
+	  size?: string
+	  icon?: Icon | string | string[] | IconDefinition
+	  iconRight?: Icon | string | string[] | IconDefinition
+	  action?: string
+	  label?: string
+	  full?: boolean
+	  capitalize?: boolean
+	  tooltip?: string
+	  loading?: boolean
+	  type?: string
+	  nativeType?: "button" | "submit" | "reset"
+	  disabled?: boolean
+	  noHover?: boolean
+	  injectStyle? : object|null
+	  iconRightRotation?: number | string
+	  iconRotation?: number | string
+	}>(), {
+	  size: "m",
+	  capitalize: false,
+	  loading: false,
+	  nativeType: "button"
+	});
 
 
 let styleClass: string;
@@ -164,14 +166,16 @@ const getActionIcon = (icon: any) => {
 
 </script>
 
-<template>
-  <button :style="injectStyle ?? {}"
-          class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
-          :class="[
-            full ? 'w-full justify-center' : 'xmin-w-max',
-            styleClass,
-            sizeClass
-        ]"
+	<template>
+	  <button
+	          :style="injectStyle ?? {}"
+	          :type="nativeType"
+	          class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
+	          :class="[
+	            full ? 'w-full justify-center' : 'xmin-w-max',
+	            styleClass,
+	            sizeClass
+	        ]"
 
           :disabled="loading || disabled || style == 'disabled' || type == 'disabled'"
           v-tooltip="tooltip ?? undefined"
