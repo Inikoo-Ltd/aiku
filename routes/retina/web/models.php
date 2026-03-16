@@ -56,6 +56,7 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
 use App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken;
 use App\Actions\Retina\Dropshipping\Basket\DeleteRetinaBasket;
+use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductImages;
 use App\Actions\Retina\Dropshipping\Bundle\GetRetinaProductBundleDescription;
 use App\Actions\Retina\Dropshipping\Bundle\GetRetinaProductBundleTitle;
 use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
@@ -338,6 +339,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::prefix('bundles')->name('bundles.')->group(function () {
         Route::get('title-generator', GetRetinaProductBundleTitle::class)->name('title.generate');
         Route::get('description-generator', GetRetinaProductBundleDescription::class)->name('description.generate');
+        Route::get('images-generator', GenerateRetinaProductImages::class)->name('images.generate');
     });
 
     Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
