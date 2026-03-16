@@ -4,6 +4,7 @@ namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class FilterByOrderValue
 {
@@ -35,13 +36,17 @@ class FilterByOrderValue
                 return $query;
             }
 
-            $query->whereHas('orders', function ($q) use ($min, $max) {
+            $query->whereExists(function ($q) use ($min, $max) {
+                $q->select(DB::raw(1))
+                    ->from('orders')
+                    ->whereColumn('orders.customer_id', 'customers.id'); // adjust FK as needed
+
                 if ($min !== null && $min !== '') {
-                    $q->where('org_net_amount', '>=', $min);
+                    $q->whereRaw('orders.org_net_amount >= ?', [$min]);
                 }
 
                 if ($max !== null && $max !== '') {
-                    $q->where('org_net_amount', '<=', $max);
+                    $q->whereRaw('orders.org_net_amount <= ?', [$max]);
                 }
             });
         }
