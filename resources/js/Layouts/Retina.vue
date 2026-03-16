@@ -284,11 +284,9 @@ const fallbackTheme = useColorTheme[3]
 
 const safeTheme = computed(() => {
     const t = layout?.app?.theme
-    // console.log("t", t)
+    
     return (t && t.length >= 8) ? t : fallbackTheme
 })
-// console.log("fallbackTheme", fallbackTheme)
-// console.log("retinalayout", safeTheme.value)
 </script>
 
 <template>
