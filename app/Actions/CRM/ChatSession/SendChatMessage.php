@@ -174,7 +174,7 @@ class SendChatMessage
     {
         $chatLink = null;
         if ($chatSession->shop && $chatSession->shop->website && $chatSession->ulid) {
-            $chatLink = 'https://ds.test/?chat_session=' . $chatSession->ulid;
+            $chatLink = $chatSession->shop->website->getUrl() . '/?chat_session=' . $chatSession->ulid;
         }
         if ($chatSession->web_user_id && $chatSession->webUser && $chatSession->webUser->customer) {
             SendChatNotificationToCustomer::dispatch($chatSession->webUser->customer, ['chat_link' => $chatLink]);
