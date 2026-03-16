@@ -98,10 +98,25 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             };
         }
 
+        $countFamilyDescriptionBlock = null;
+        $familyDescriptionBlock = 'family-1';
 
-        $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
-        if (count($countFamilyDescriptionBlock) == 0) {
-            $this->createWebBlock($webpage, 'family-1');
+        if($command->option('alternative-design')) {
+            $familyDescriptionBlock = 'family-2';
+
+            $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-2');
+            if (count($countFamilyDescriptionBlock) == 0) {
+                $this->deleteWebBlocksByCode($webpage, 'family-1');
+                $this->createWebBlock($webpage, 'family-2');
+                $this->createWebBlock($webpage, 'family-2-extra-description');
+            }
+        } else {
+            $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
+            if (count($countFamilyDescriptionBlock) == 0) {
+                $this->createWebBlock($webpage, 'family-1');
+                $this->deleteWebBlocksByCode($webpage, 'family-2');
+                $this->deleteWebBlocksByCode($webpage, 'family-2-extra-description');
+            }
         }
 
         // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
@@ -124,9 +139,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
         $webpage->refresh();
 
-
         if (count($countFamilyDescriptionBlock) == 0) {
-            $this->setFamilyWebBlockOnTop($webpage);
+            $this->setFamilyWebBlockOnTop($webpage, $familyDescriptionBlock);
         }
 
         if ($command->option('hide-description')) {
@@ -169,10 +183,22 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         UpdateWebpageContent::run($webpage);
     }
 
-    public function setFamilyWebBlockOnTop(Webpage $webpage): void
+    public function setFamilyWebBlockOnTop(Webpage $webpage, $familyWebBlockCode = 'family-1'): void
     {
-        $familyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first()->model_has_web_blocks_id;
+        $familyWebBlock = $this->getWebpageBlocksByType($webpage, $familyWebBlockCode)->first()->model_has_web_blocks_id;
+        $familyExtraDesc = null;
 
+        if ($familyWebBlockCode == 'family-2') {
+            $familyExtraDesc = $this->getWebpageBlocksByType($webpage, 'family-2-extra-description')->first()->model_has_web_blocks_id;
+        }
+
+        $website = $webpage->website;
+        $liveProductsSnapshot = $website->liveProductsSnapshot;
+        $unpublishedProductsSnapshot = $website->unpublishedProductsSnapshot;
+
+        $usedWebBlockTemplateCodes = data_get($liveProductsSnapshot?->layout, 'code', data_get($unpublishedProductsSnapshot?->layout, 'code', array_first(WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes())));
+
+        $productList = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes)->first()->model_has_web_blocks_id;
 
         $trendsWebBlock     = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
         $lastSeenWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
@@ -192,6 +218,10 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
                 $webBlocks[$key] = 1;
+            } elseif ($key == $productList) {
+                $webBlocks[$key] = 2;
+            } elseif ($key == $familyExtraDesc) {
+                $webBlocks[$key] = 3;
             } elseif ($key == $trendsWebBlock) {
                 $webBlocks[$key] = $trendsWebBlockPosition;
             } elseif ($key == $lastSeenWebBlock) {
@@ -214,7 +244,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {--website_id=} {--webpage_id=} {--hide-description}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {--website_id=} {--webpage_id=} {--hide-description} {--a|alternative-design}';
 
     public function asCommand(Command $command): void
     {
