@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\Allegro\Product\StoreRetinaNewProductToCurrentAlleg
 use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
+use App\Actions\Dropshipping\Bundle\CalculateBundleItemPriceDetails;
 use App\Actions\Dropshipping\CustomerSalesChannel\RetinaDeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
@@ -340,6 +341,8 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
         Route::get('title-generator', GetRetinaProductBundleTitle::class)->name('title.generate');
         Route::get('description-generator', GetRetinaProductBundleDescription::class)->name('description.generate');
         Route::get('images-generator', GenerateRetinaProductImages::class)->name('images.generate');
+
+        Route::get('calculate-bundle-product', CalculateBundleItemPriceDetails::class)->name('products.calculate');
     });
 
     Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {

@@ -583,7 +583,7 @@ class EditShop extends OrgAction
                         'bundle_discount_percentage' => [
                             'type'  => 'input',
                             'label' => __('Bundle Discount Percentage'),
-                            'value' => Arr::get($shop->settings, 'shopify.bundle_discount_percentage', ''),
+                            'value' => Arr::get($shop->settings, 'discount.bundle_discount_percentage', ''),
                         ],
                     ],
                 ]
