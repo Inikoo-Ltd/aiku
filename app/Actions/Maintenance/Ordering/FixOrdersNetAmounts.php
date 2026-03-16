@@ -8,6 +8,7 @@
 
 namespace App\Actions\Maintenance\Ordering;
 
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
@@ -42,20 +43,79 @@ class FixOrdersNetAmounts
         $bar->setFormat('debug');
         $bar->start();
 
-        $this->processInChunks($query, $bar);
+        $this->processInChunks($query, $bar, $command);
 
         $bar->finish();
         $command->newLine();
         $command->info("Fixed {$total} orders.");
     }
 
-    private function processInChunks(Builder $query, $bar): void
+    private function processInChunks(Builder $query, $bar, Command $command): void
     {
-        $query->chunkById(500, function ($orders) use ($bar) {
-            foreach ($orders as $order) {
-                $this->handle($order);
-                $bar->advance();
+        $query->with(['shop.currency', 'group.currency', 'organisation.currency'])
+            ->chunkById(500, function ($orders) use ($bar, $command) {
+                foreach ($orders as $order) {
+                    $this->checkSuspiciousExchange($order, $command);
+                    $this->handle($order);
+                    $bar->advance();
+                }
+            });
+    }
+
+    private function checkSuspiciousExchange(Order $order, Command $command): void
+    {
+        $shopCurrency = $order->shop?->currency;
+        $date         = $order->date;
+
+        if (!$shopCurrency || !$date) {
+            return;
+        }
+
+        $groupCurrency = $order->group?->currency;
+        $orgCurrency   = $order->organisation?->currency;
+
+        if ($groupCurrency && $order->grp_exchange) {
+            $expectedGrp = GetHistoricCurrencyExchange::run($shopCurrency, $groupCurrency, $date);
+            if ($expectedGrp && $this->isDifferenceOverThreshold($order->grp_exchange, $expectedGrp)) {
+                $command->warn(
+                    sprintf(
+                        'Order #%s: grp_exchange suspicious — stored: %s, expected: %s (%.1f%%)',
+                        $order->id,
+                        $order->grp_exchange,
+                        round($expectedGrp, 4),
+                        $this->percentageDifference($order->grp_exchange, $expectedGrp)
+                    )
+                );
             }
-        });
+        }
+
+        if ($orgCurrency && $order->org_exchange) {
+            $expectedOrg = GetHistoricCurrencyExchange::run($shopCurrency, $orgCurrency, $date);
+            if ($expectedOrg && $this->isDifferenceOverThreshold($order->org_exchange, $expectedOrg)) {
+                $command->warn(
+                    sprintf(
+                        'Order #%s: org_exchange suspicious — stored: %s, expected: %s (%.1f%%)',
+                        $order->id,
+                        $order->org_exchange,
+                        round($expectedOrg, 4),
+                        $this->percentageDifference($order->org_exchange, $expectedOrg)
+                    )
+                );
+            }
+        }
+    }
+
+    private function isDifferenceOverThreshold(float|string $stored, float $expected, float $threshold = 5.0): bool
+    {
+        return $this->percentageDifference($stored, $expected) > $threshold;
+    }
+
+    private function percentageDifference(float|string $stored, float $expected): float
+    {
+        if ($expected == 0) {
+            return 0;
+        }
+
+        return abs(((float) $stored - $expected) / $expected) * 100;
     }
 }
