@@ -52,7 +52,7 @@ class UpdateDeliveryNoteItemUnpack extends OrgAction
         $deliveryNote = $deliveryNoteItem->deliveryNote;
         $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
 
-        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => $item->packings->count() == 0);
+        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => empty((float) $item->quantity_not_picked) && $item->packings->count() == 0);
 
         $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
 

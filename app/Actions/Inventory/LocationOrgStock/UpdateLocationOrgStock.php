@@ -47,7 +47,9 @@ class UpdateLocationOrgStock extends OrgAction
 
             foreach ($settingKeys as $key) {
                 $value = Arr::pull($modelData, $key, data_get($currSettings, $key));
-                if (!is_null($value)) $newSettings[$key] = $value;
+                if (!is_null($value)) {
+                    $newSettings[$key] = $value;
+                }
             }
 
             data_set($modelData, 'settings', $newSettings);

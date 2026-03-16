@@ -109,11 +109,12 @@ function normalizeVideoUrl(url: string): string {
  * Handle video URL submission
  */
 function onSubmitVideoUrl() {
-    const normalizedUrl = normalizeVideoUrl(selectedVideoToUpdate.value?.url || "")
-
+    const normalizedUrl = normalizeVideoUrl(selectedVideoToUpdate.value?.url || "");
     router["patch"](
         route(props.data.images_update_route.name, props.data.images_update_route.parameters),
-        { video_url: normalizedUrl },
+        {
+            [selectedVideoToUpdate.value.column_in_db]: normalizedUrl
+        },
         {
             preserveScroll: true,
             preserveState: true,

@@ -410,6 +410,7 @@ const successEditTradeUnit = (data) => {
                         parameters: { masterProductCategory: route().params['masterFamily'] }
                     }">
                     <template #info="{ data }">
+                        
                         <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
                             <!-- Product Image -->
                             <div class="w-12 h-12 rounded-lg border border-gray-200 shadow-sm flex items-center justify-center ">

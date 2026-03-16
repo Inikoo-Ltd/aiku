@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Traits;
 
-use App\Actions\Comms\EmailCopy\StoreEmailCopy;
 use App\Actions\Comms\Ses\SendSesEmail;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\OutBoxHasSubscriber;
@@ -21,7 +20,9 @@ use Illuminate\Support\Str;
 
 trait WithSendBulkEmails
 {
-    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null): DispatchedEmail
+    use WithProcessEmailStyles;
+
+    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null, bool $isTest = false): DispatchedEmail
     {
         $html = $emailHtmlBody;
 
@@ -42,10 +43,7 @@ trait WithSendBulkEmails
 
         $html = preg_replace('/\R+/', '', $html);
 
-        StoreEmailCopy::make()->action($dispatchedEmail, [
-            'subject' => $subject,
-            'body'    => $html
-        ]);
+
 
         return SendSesEmail::run(
             subject: $subject,
@@ -53,7 +51,8 @@ trait WithSendBulkEmails
             dispatchedEmail: $dispatchedEmail,
             sender: $sender,
             unsubscribeUrl: $unsubscribeUrl,
-            senderName: $senderName
+            senderName: $senderName,
+            isTest: $isTest
         );
     }
 
@@ -70,6 +69,7 @@ trait WithSendBulkEmails
             $customerName = $dispatchedEmail->recipient->name ?? 'Customer name undefined';
         }
 
+        /** @noinspection HtmlUnknownAttribute */
         return match ($placeholder) {
             'username' => $this->getUsername($dispatchedEmail->recipient),
             'customer-name' => $customerName,
@@ -132,6 +132,8 @@ trait WithSendBulkEmails
             'payment-note' => Arr::get($additionalData, 'payment_note'),
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
             'preview-amount' => Arr::get($additionalData, 'preview_amount'),
+            'chat-link' => Arr::get($additionalData, 'chat_link'),
+            'chat-message' => Arr::get($additionalData, 'chat_message'),
             'invoice-date-change-blade' => Arr::get($additionalData, 'invoice_date_change_blade'),
             'delivery-note-link' => Arr::get($additionalData, 'delivery_note_link'),
             'delivery-note-reference' => Arr::get($additionalData, 'delivery_note_reference'),
@@ -161,27 +163,5 @@ trait WithSendBulkEmails
         } else {
             return $recipient->company_name ?? $recipient->username;
         }
-    }
-
-
-    public function processStyles($html): array|string|null
-    {
-        $html = preg_replace_callback('/<[^>]+style=["\'](.*?)["\'][^>]*>/i', function ($match) {
-            $style = $match[1];
-
-            // Find and modify color values within the style attribute
-            $style = preg_replace_callback('/color\s*:\s*([^;]+);/i', function ($colorMatch) {
-                $colorValue    = $colorMatch[1];
-                $modifiedColor = $colorValue . ' !important';
-
-                return 'color: ' . $modifiedColor . ';';
-            }, $style);
-
-            // Update the style attribute in the HTML tag
-            return str_replace($match[1], $style, $match[0]);
-        }, $html);
-
-        // Remove <style> tags and their content
-        return preg_replace('/<style(.*?)>(.*?)<\/style>/is', '', $html);
     }
 }

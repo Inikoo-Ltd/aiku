@@ -91,6 +91,8 @@ class GetShopTimeSeriesStats
             $shopData = array_merge($shop->toArray(), $stats, $registrationsData, [
                 'slug' => $shop->slug ?? 'unknown',
                 'type' => $shop->type,
+                'is_aiku' => $shop->is_aiku,
+                'migrated_to_aiku_on' => $shop->migrated_to_aiku_on,
                 'organisation_slug' => $shop->organisation->slug ?? 'unknown',
                 'group_slug' => $shop->group->slug ?? 'unknown',
                 'shop_currency_code' => $shop->currency->code ?? 'GBP',

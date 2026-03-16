@@ -10,9 +10,9 @@ namespace App\Actions\Traits;
 
 use App\Actions\Elasticsearch\IndexElasticsearchDocument;
 use App\Actions\SysAdmin\WithLogRequest;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
-use hisorange\BrowserDetect\Parser as Browser;
 use Illuminate\Support\Carbon;
 
 trait WithLogUserableLogin
@@ -21,7 +21,7 @@ trait WithLogUserableLogin
 
     public function logUserableLogin(string $index, string $type, Carbon $datetime, string $ip, string $userAgent, User|WebUser $userable): void
     {
-        $parsedUserAgent = (new Browser())->parse($userAgent);
+        $browserData = GetBrowserInfo::run($userAgent);
 
         $body = [
             'type'        => $type,
@@ -31,17 +31,17 @@ trait WithLogUserableLogin
             'ip_address'  => $ip,
             'location'    => json_encode($this->getLocation($ip)), // reference: https://github.com/stevebauman/location
             'user_agent'  => $userAgent,
-            'device_type' => json_encode([
-                'title' => $parsedUserAgent->deviceType(),
-                'icon'  => $this->getDeviceIcon($parsedUserAgent->deviceType())
+            'device_type'          => json_encode([
+                'title' => $browserData['device'],
+                'icon'  => $this->getDeviceIcon($browserData['device'])
             ]),
-            'platform'    => json_encode([
-                'title' => $this->detectWindows11($parsedUserAgent),
-                'icon'  => $this->getPlatformIcon($this->detectWindows11($parsedUserAgent))
+            'platform'             => json_encode([
+                'title' => $browserData['os'],
+                'icon'  => $this->getPlatformIcon($browserData['os'])
             ]),
-            'browser'     => json_encode([
-                'title' => explode(' ', $parsedUserAgent->browserName())[0],
-                'icon'  => $this->getBrowserIcon(strtolower($parsedUserAgent->browserName()))
+            'browser'              => json_encode([
+                'title' => $browserData['browser'],
+                'icon'  => $this->getBrowserIcon(strtolower($browserData['browser']))
             ])
         ];
 

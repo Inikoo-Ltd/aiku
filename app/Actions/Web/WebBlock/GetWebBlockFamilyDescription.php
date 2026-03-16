@@ -1,10 +1,11 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 02 Jun 2025 14:27:00 Central Indonesia Time, Sanur, Shanghai, China
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * author Louis Perez
+ * created on 16-03-2026-14h-26m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
 namespace App\Actions\Web\WebBlock;
 
@@ -12,7 +13,7 @@ use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetWebBlockFamily
+class GetWebBlockFamilyDescription
 {
     use AsObject;
 

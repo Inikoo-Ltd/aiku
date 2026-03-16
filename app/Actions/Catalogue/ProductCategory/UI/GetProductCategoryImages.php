@@ -10,6 +10,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Traits\HasBucketDescriptionImages;
 use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Helpers\ImagesResource;
 use App\Models\Catalogue\ProductCategory;
@@ -19,13 +20,15 @@ class GetProductCategoryImages
 {
     use AsObject;
     use HasBucketImages;
+    use HasBucketDescriptionImages;
 
     public function handle(ProductCategory $productCategory): array
     {
         return [
             'editable'            => !$productCategory->master_product_category_id,
             'id'                  => $productCategory->id,
-            'images_category_box' => $this->getSingleImageData($productCategory),
+            // 'images_category_box' => $this->getSingleImageData($productCategory), // Old One
+            'images_category_box' => array_merge($this->getSingleImageData($productCategory), $this->getDescriptionImages($productCategory)),
             'images_update_route' => [
                 'method'     => 'patch',
                 'name'       => 'grp.models.product_category.update_images',

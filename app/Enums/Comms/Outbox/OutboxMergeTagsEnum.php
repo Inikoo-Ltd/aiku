@@ -29,6 +29,8 @@ enum OutboxMergeTagsEnum: string
     case PAYMENT_NOTE = 'Payment Note';
     case PAYMENT_REASON = 'Payment Reason';
     case PAYMENT_TYPE = 'Payment Type';
+    case CHAT_LINK = 'Chat Link';
+    case CHAT_MESSAGE = 'Chat Message';
     case RETINA_LOGIN_LINK = 'Retina Login Link';
     case WEB_USER_PASSWORD = 'Web User Password';
     case WEB_USER_CONTACT_NAME = 'Web User Contact Name';
@@ -100,6 +102,14 @@ enum OutboxMergeTagsEnum: string
             [
                 'name'  => __('Payment Type'),
                 'value' => '[Payment Type]'
+            ],
+            [
+                'name'  => __('Chat Link'),
+                'value' => '[Chat Link]'
+            ],
+            [
+                'name'  => __('Chat Message'),
+                'value' => '[Chat Message]'
             ],
             [
                 'name' => __('Retina Login Link'),

@@ -19,6 +19,8 @@ class SyncInvoiceTransactionStockBridges implements ShouldBeUnique, ShouldQueue
 {
     use AsAction;
 
+    public string $jobQueue = 'low-priority';
+
     public function getJobUniqueId(int $invoiceTransactionId): string
     {
         return (string) $invoiceTransactionId;
