@@ -7,6 +7,11 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Icon as IconTS } from "@/types/Utils/Icon"
+import ZombieIcon from "@/Components/Icons/ZombieIcon.vue"
+
+const svgComponents: Record<string, unknown> = {
+    zombie: ZombieIcon,
+}
 
 defineProps<{
     data: IconTS
@@ -16,8 +21,21 @@ defineProps<{
 
 <template>
 
+    <span
+        v-if="data?.text"
+        v-tooltip="title ? title : data.tooltip"
+        :class="['inline-flex items-center justify-center font-bold text-xs', data.class]"
+    >{{ data.text }}</span>
+
+    <component
+        :is="svgComponents[data.svg]"
+        v-else-if="data?.svg && svgComponents[data.svg]"
+        v-tooltip="title ? title : data.tooltip"
+        :class="data.class"
+    />
+
     <FontAwesomeIcon
-        v-if="data?.icon"
+        v-else-if="data?.icon"
         v-tooltip="title ? title : data.tooltip"
         aria-hidden="true"
         :icon="data.icon"

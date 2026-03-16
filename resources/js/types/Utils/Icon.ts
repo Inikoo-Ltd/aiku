@@ -15,7 +15,9 @@ export interface Icon {
 
 export interface StateIcon {
     tooltip?: string
-    icon: string | string[]
+    icon?: string | string[]
+    text?: string
+    svg?: string
     class?: string
     color?: string
     app?: {
