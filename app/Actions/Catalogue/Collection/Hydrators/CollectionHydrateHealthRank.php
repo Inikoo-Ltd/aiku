@@ -56,9 +56,17 @@ class CollectionHydrateHealthRank implements ShouldBeUnique
                 CROSS JOIN total t
             ),
             final_ranks AS (
-                SELECT collection_id, 'D' AS health_rank
-                FROM stats
-                WHERE last_sale_date IS NULL OR last_sale_date < NOW() - INTERVAL '90 days'
+                SELECT
+                    s.collection_id,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM collection_has_models chm2
+                        JOIN products p ON p.id = chm2.model_id AND chm2.model_type = 'Product'
+                        JOIN assets a ON a.id = p.asset_id
+                        WHERE chm2.collection_id = s.collection_id
+                          AND a.units > 0
+                    ) THEN 'Z' ELSE 'D' END AS health_rank
+                FROM stats s
+                WHERE s.last_sale_date IS NULL OR s.last_sale_date < NOW() - INTERVAL '90 days'
 
                 UNION ALL
 
@@ -79,7 +87,13 @@ class CollectionHydrateHealthRank implements ShouldBeUnique
 
         DB::statement("
             UPDATE collections
-            SET health_rank = 'D'
+            SET health_rank = CASE WHEN EXISTS (
+                SELECT 1 FROM collection_has_models chm
+                JOIN products p ON p.id = chm.model_id AND chm.model_type = 'Product'
+                JOIN assets a ON a.id = p.asset_id
+                WHERE chm.collection_id = collections.id
+                  AND a.units > 0
+            ) THEN 'Z' ELSE 'D' END
             WHERE NOT EXISTS (
                 SELECT 1
                 FROM collection_has_models chm
