@@ -2,36 +2,32 @@
 
 /*
  * Author: eka yudinata (https://github.com/ekayudinata)
- * Created: Friday, 13 Feb 2026 08:31:59 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Created: Monday, 16 Mar 2026 11:14:33 Central Indonesia Time, Sanur, Bali, Indonesia
  * Copyright (c) 2026, eka yudinata
  */
 
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Models\Comms\DispatchedEmail;
-use App\Models\Comms\ExternalEmailRecipient;
+use App\Models\Comms\ChatEmailRecipient;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Arr;
 
-trait WithSendExternalOutboxEmail
+trait WithSendChatOutboxEmail
 {
     use WithSendBulkEmails;
 
-    protected function sendOutboxEmailToExternal(
-        ExternalEmailRecipient $externalEmailRecipient,
+    protected function sendOutboxEmailToChatRecipient(
+        ChatEmailRecipient $chatEmailRecipient,
         Outbox $outbox,
         array $additionalData = [],
-    ): void {
-        $recipient = $externalEmailRecipient;
-
+    ): DispatchedEmail {
         /** @var DispatchedEmail $dispatchedEmail */
-        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
+        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $chatEmailRecipient, [
             'outbox_id'     => $outbox->id,
-            'email_address' => $recipient->email,
-            'provider'      => DispatchedEmailProviderEnum::SES,
+            'email_address' => $chatEmailRecipient->email,
         ]);
         $dispatchedEmail->refresh();
 
@@ -49,5 +45,7 @@ trait WithSendExternalOutboxEmail
             additionalData: $additionalData,
             senderName: $outbox->emailOngoingRun->senderName(),
         );
+
+        return $dispatchedEmail;
     }
 }

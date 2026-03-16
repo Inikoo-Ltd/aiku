@@ -30,6 +30,8 @@ import {
 import { faSearch, faBell } from "@far"
 import { faCheckCircle } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { useColorTheme } from "@/Composables/useStockList"
+import { computed } from 'vue'
 
 library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faMoneyBillWave, faSearch, faBell)
 
@@ -51,6 +53,16 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         type: notif.status
     })
 })
+
+const fallbackTheme = useColorTheme[3]   // default retina
+
+const safeTheme = computed(() => {
+    const t = layout?.app?.theme
+    // console.log("t", t)
+    return (t && t.length >= 8) ? t : fallbackTheme
+})
+// console.log("fallbackTheme", fallbackTheme)
+// console.log("pupillayout", safeTheme.value)
 </script>
 
 <template>
@@ -145,10 +157,10 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 }
 
 .primaryLink {
-    background: v-bind('`linear-gradient(to top, ${layout.app.theme[2]}, ${layout.app.theme[2] + "AA"})`');
+    background: v-bind('`linear-gradient(to top, ${safeTheme[2]}, ${safeTheme[2] + "AA"})`');
 
     &:hover, &:focus {
-        color: v-bind('`${layout.app.theme[3]}`');
+        color: v-bind('`${safeTheme[3]}`');
     }
 
     @apply focus:ring-0 focus:outline-none focus:border-none
@@ -160,10 +172,10 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 }
 
 .secondaryLink {
-    background: v-bind('`linear-gradient(to top, ${layout.app.theme[6]}, ${layout.app.theme[6] + "AA"})`');
+    background: v-bind('`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "AA"})`');
 
     &:hover, &:focus {
-        color: v-bind('`${layout.app.theme[7]}`');
+        color: v-bind('`${safeTheme[7]}`');
     }
 
     @apply focus:ring-0 focus:outline-none focus:border-none
@@ -176,9 +188,9 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
 
 // For icon box in FlatTreemap
 .specialBox {
-    background: v-bind('`linear-gradient(to top, ${layout.app.theme[0]}, ${layout.app.theme[0] + "AA"})`');
-    color: v-bind('`${layout.app.theme[0]}`');
-    border: v-bind('`4px solid ${layout.app.theme[0]}`');
+    background: v-bind('`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`');
+    color: v-bind('`${safeTheme[0]}`');
+    border: v-bind('`4px solid ${safeTheme[0]}`');
 
     &:hover, &:focus {
         color: v-bind('`${layout.app.theme[1]}`');

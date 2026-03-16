@@ -19,12 +19,14 @@ use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthRank;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateHealthRank;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateHealthRank;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class HydrateHealthRank
+class HydrateHealthRank implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'sales';
     public string $commandSignature = 'hydrate:health-rank';
 
     public function asCommand(Command $command): void

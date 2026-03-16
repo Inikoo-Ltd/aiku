@@ -37,6 +37,8 @@ import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
+import { useColorTheme } from "@/Composables/useStockList"
+import { computed } from 'vue'
 
 library.add(faMedal, fasMedal, faCandleHolder, fadMedal)
 library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt)
@@ -278,7 +280,15 @@ onMounted(() => {
     // }
 })
 
+const fallbackTheme = useColorTheme[3]
 
+const safeTheme = computed(() => {
+    const t = layout?.app?.theme
+    // console.log("t", t)
+    return (t && t.length >= 8) ? t : fallbackTheme
+})
+// console.log("fallbackTheme", fallbackTheme)
+// console.log("retinalayout", safeTheme.value)
 </script>
 
 <template>
@@ -395,7 +405,7 @@ onMounted(() => {
 
 <style lang="scss">
 // * {
-//     --color-primary: v-bind('layout.app.theme[0]');
+//     --color-primary: v-bind('safeTheme[0]');
 // }
 
 /* For Notification */
@@ -464,11 +474,11 @@ onMounted(() => {
 }
 
 .secondaryLink {
-    background: v-bind('`linear-gradient(to top, ${layout.app.theme[6]}, ${layout.app.theme[6] + "AA"})`');
+    background: v-bind('`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "AA"})`');
 
     &:hover,
     &:focus {
-        color: v-bind('`${layout.app.theme[7]}`');
+        color: v-bind('`${safeTheme[7]}`');
     }
 
     @apply focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1 py-0.5
@@ -476,13 +486,13 @@ onMounted(() => {
 
 // For icon box in FlatTreemap
 .specialBox {
-    background: v-bind('`linear-gradient(to top, ${layout.app.theme[0]}, ${layout.app.theme[0] + "AA"})`');
-    color: v-bind('`${layout.app.theme[0]}`');
-    border: v-bind('`4px solid ${layout.app.theme[0]}`');
+    background: v-bind('`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`');
+    color: v-bind('`${safeTheme[0]}`');
+    border: v-bind('`4px solid ${safeTheme[0]}`');
 
     &:hover,
     &:focus {
-        color: v-bind('`${layout.app.theme[1]}`');
+        color: v-bind('`${safeTheme[1]}`');
     }
 
     @apply border-indigo-300 border-2 rounded-md cursor-pointer focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0em] motion-safe:transition-all motion-safe:duration-100 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;

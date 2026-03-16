@@ -20,6 +20,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Prospect;
+use Illuminate\Support\Facades\Crypt;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
 
@@ -97,8 +98,11 @@ class UnsubscribeMailshot
         return $dispatchedEmail;
     }
 
-    public function asController(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
+    public function asController(string $encryptedDispatchedEmailID, ActionRequest $request): DispatchedEmail
     {
+        $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
+        $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
+
         return $this->handle($dispatchedEmail, $request);
     }
 

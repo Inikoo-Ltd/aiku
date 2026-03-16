@@ -109,30 +109,34 @@ const getAnnouncements = async () => {
 provide('screenType', screenType)
 
 
+const handleTabFocus = () => {
+    if (document.visibilityState === 'visible') {
+        checkScreenType()
+        fetchHasInBasket()
+    }
+}
+
 onMounted(() => {
-    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())  // Luigi: to set customer_id
+    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())
 
     checkScreenType()
     setColorStyleRoot(theme?.color)
     layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 
-    // Print log only in local
-    if (layout.app.environment === 'local') {
-        console.log('----- Iris Layout -----', layout)
-    }
+    document.addEventListener('visibilitychange', handleTabFocus)
 
     irisStyleVariables(theme?.color)
 
     if(layout?.iris?.is_logged_in){
         fetchHasInBasket()
+        if(layout.rightbasket) set(layout, ['rightbasket', 'show'], false)
     }
 })
 
-
-
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
+    document.removeEventListener('visibilitychange', handleTabFocus)
 })
 
 const isSidebarFetching = ref(false)
