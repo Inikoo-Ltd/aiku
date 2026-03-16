@@ -17,7 +17,7 @@ use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetRetinaProductBundleTitle extends RetinaAction
+class GenerateRetinaProductBundleTitle extends RetinaAction
 {
     use WithActionUpdate;
     use SanitizeInputs;

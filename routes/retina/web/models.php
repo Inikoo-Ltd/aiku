@@ -57,9 +57,10 @@ use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
 use App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken;
 use App\Actions\Retina\Dropshipping\Basket\DeleteRetinaBasket;
+use App\Actions\Retina\Dropshipping\Bundle\CalculateRetinaBundleItemPriceDetails;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductImages;
-use App\Actions\Retina\Dropshipping\Bundle\GetRetinaProductBundleDescription;
-use App\Actions\Retina\Dropshipping\Bundle\GetRetinaProductBundleTitle;
+use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleDescription;
+use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleTitle;
 use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
@@ -338,15 +339,14 @@ Route::delete('{token}/access-token', DeleteCustomerAccessToken::class)->name('a
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::prefix('bundles')->name('bundles.')->group(function () {
-        Route::get('title-generator', GetRetinaProductBundleTitle::class)->name('title.generate');
-        Route::get('description-generator', GetRetinaProductBundleDescription::class)->name('description.generate');
-        Route::get('images-generator', GenerateRetinaProductImages::class)->name('images.generate');
-
-        Route::get('calculate-bundle-product', CalculateBundleItemPriceDetails::class)->name('products.calculate');
+        Route::post('title-generator', GenerateRetinaProductBundleTitle::class)->name('title.generate');
+        Route::post('description-generator', GenerateRetinaProductBundleDescription::class)->name('description.generate');
+        Route::post('images-generator', GenerateRetinaProductImages::class)->name('images.generate');
     });
 
     Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
         Route::post('/', StoreRetinaBundle::class)->name('store');
+        Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
     });
 
     Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink');

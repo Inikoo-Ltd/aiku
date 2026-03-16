@@ -15,6 +15,7 @@ use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -30,13 +31,14 @@ class CalculateBundleItemPriceDetails extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(array $modelData): array
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array
     {
-        return DB::transaction(function () use ($modelData) {
+        return DB::transaction(function () use ($customerSalesChannel, $modelData) {
+            $shop = $customerSalesChannel->shop;
             $productData = [];
 
             $selectedProducts = Arr::pull($modelData, 'products');
-            $bundleDiscount = Arr::get($this->shop->settings, 'discount.bundle_discount_percentage');
+            $bundleDiscount = Arr::get($shop->settings, 'discount.bundle_discount_percentage');
 
             foreach ($selectedProducts as $selectedProduct) {
                 $quantity = Arr::get($selectedProduct, 'quantity');
@@ -93,18 +95,18 @@ class CalculateBundleItemPriceDetails extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(ActionRequest $request): array
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): array
     {
         $this->initialisationFromShop($this->customer->shop, $request);
 
-        return $this->handle($this->validatedData);
+        return $this->handle($customerSalesChannel, $this->validatedData);
     }
 
     public string $commandSignature = 'ds:bundle:product:calculate';
 
     public function asCommand(Command $command): void
     {
-        $this->shop = Shop::where('slug', 'awd')->firstOrFail();
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
 
         $modelData = [
             'products'    => [
@@ -114,7 +116,7 @@ class CalculateBundleItemPriceDetails extends OrgAction
             ]
         ];
 
-        $bundle = $this->handle($modelData);
+        $bundle = $this->handle($customerSalesChannel, $modelData);
         dd($bundle);
     }
 }
