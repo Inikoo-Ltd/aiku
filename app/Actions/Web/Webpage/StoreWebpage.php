@@ -155,7 +155,9 @@ class StoreWebpage extends OrgAction
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
                         $this->createWebBlock($webpage, 'department-description-1');
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
-                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                        if (data_get($modelData, 'layout_style') == 2) {
+                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                        }
                         $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
                         $this->createWebBlock($webpage, 'family-1');
@@ -222,6 +224,13 @@ class StoreWebpage extends OrgAction
         return $request->user()->authTo("web.{$this->shop->id}.edit");
     }
 
+    public function afterValidator($validator)
+    {
+        if ($validator->errors()->has('url') || $validator->errors()->has('code')) {
+            dd($validator);
+        }
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -268,7 +277,7 @@ class StoreWebpage extends OrgAction
             'model_id'           => ['sometimes', 'integer'],
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
-
+            'layout_style'       => ['sometimes', 'integer']
 
         ];
 

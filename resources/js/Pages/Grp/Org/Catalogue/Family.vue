@@ -166,8 +166,8 @@ const showDialog = ref(false)
         :showDialog="showDialog"
         :storeProductRoute="storeProductRoute"
         @update:show-dialog="(value) => showDialog = value"
-        :master-currency="currency"
         :shopsData="shopsData"
+        :master-currency="currency"
         :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
     />

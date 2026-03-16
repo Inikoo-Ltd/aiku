@@ -72,6 +72,11 @@ class EditDepartment extends OrgAction
             ];
         }
 
+        $webOptions = $department->webpages->mapWithKeys(fn ($item) => [$item->id => [
+            'label'     => $item->slug,
+            'id'        => $item->id
+        ]]);
+
         return Inertia::render(
             'EditModel',
             [
@@ -259,6 +264,20 @@ class EditDepartment extends OrgAction
                                             'noSaveButton' => true,
                                             "full"         => true
                                         ]
+                                    ]
+                                ],
+                                [
+                                    'label'  => __('Webpage Properties'),
+                                    'icon'   => 'fa-light fa-browser',
+                                    'fields' => [
+                                        'set_main_webpage' => [
+                                            'type'        => 'select',
+                                            'label'       => __('Main Webpage'),
+                                            'value'       => $department->webpage->id,
+                                            'options'     => $webOptions->toArray(),
+                                            'mode'        => 'single',
+                                            'required'    => true,
+                                        ],
                                     ]
                                 ],
                             ]
