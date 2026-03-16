@@ -88,7 +88,7 @@ console.log("family-extra", props.fieldValue)
 </script>
 
 <template>
-  <div :id="fieldValue?.id || 'family-2'" component="family-2" class="w-full">
+  <div :id="fieldValue?.id || 'family-extra-description'" component="family-extra-description" class="w-full">
     <div
       :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
