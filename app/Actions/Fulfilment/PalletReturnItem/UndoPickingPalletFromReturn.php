@@ -13,12 +13,16 @@ use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSess
 use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\PalletReturn\AutomaticallySetPalletReturnAsPickedIfAllItemsPicked;
 use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
+use App\Actions\Fulfilment\PalletStoredItem\RunPalletStoredItemQuantity;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
+use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Http\Resources\Fulfilment\PalletReturnItemUIResource;
 use App\Models\Fulfilment\PalletReturnItem;
+use App\Models\Fulfilment\StoredItemMovement;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Fulfilment\MayaPalletReturnItemUIResource;
 
@@ -30,13 +34,34 @@ class UndoPickingPalletFromReturn extends OrgAction
     {
         if ($palletReturnItem->type == 'Pallet') {
             UpdatePallet::run($palletReturnItem->pallet, [
-                'state' => PalletStateEnum::PICKING
+                'state'     => PalletStateEnum::PICKING,
+                'status'    => PalletStatusEnum::STORING,
+                'picked_at' => null,
             ]);
 
             $palletReturnItem = $this->update($palletReturnItem, [
                 'quantity_picked' => 0,
                 'state'           => PalletReturnItemStateEnum::PICKING
             ]);
+
+            foreach ($palletReturnItem->pallet->palletStoredItems as $palletStoredItem) {
+                $movements = StoredItemMovement::where('pallet_return_item_id', $palletReturnItem->id)
+                    ->where('pallet_id', $palletStoredItem->pallet_id)
+                    ->where('stored_item_id', $palletStoredItem->stored_item_id)
+                    ->get();
+
+                foreach ($movements as $movement) {
+                    $movement->delete();
+                }
+
+                $palletStoredItem->update([
+                    'state' => PalletStoredItemStateEnum::ACTIVE,
+                ]);
+
+                RunPalletStoredItemQuantity::run($palletStoredItem);
+            }
+
+            SetStoredItemReturnAutoServices::run($palletReturnItem->palletReturn, true);
         } else {
             $storedItems = PalletReturnItem::where('pallet_return_id', $palletReturnItem->pallet_return_id)->where('stored_item_id', $palletReturnItem->stored_item_id)->get();
             foreach ($storedItems as $storedItem) {

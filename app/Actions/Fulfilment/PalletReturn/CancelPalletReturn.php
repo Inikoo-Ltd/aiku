@@ -29,6 +29,9 @@ use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Fulfilment\PalletReturnItem;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
+use App\Actions\Fulfilment\PalletReturnItem\UndoPickingPalletFromReturn;
 
 class CancelPalletReturn extends OrgAction
 {
@@ -42,6 +45,18 @@ class CancelPalletReturn extends OrgAction
             $modelData[PalletReturnStateEnum::CANCEL->value.'_at']    = now();
             $modelData['state']                                       = PalletReturnStateEnum::CANCEL;
 
+            if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
+                $palletItems = PalletReturnItem::where('pallet_return_id', $palletReturn->id)
+                    ->where('type', 'Pallet')
+                    ->get();
+
+                foreach ($palletItems as $palletReturnItem) {
+                    if ($palletReturnItem->state === PalletReturnItemStateEnum::PICKED) {
+                        UndoPickingPalletFromReturn::run($palletReturnItem);
+                    }
+                }
+            }
+
             if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
                 $palletReturn->storedItems->each(function ($storedItem) {
                     $storedItem->increment('total_quantity', (float) $storedItem->pivot->quantity_ordered);
@@ -49,9 +64,11 @@ class CancelPalletReturn extends OrgAction
             }
 
             $palletReturn->pallets()->update([
-                'status' => PalletStatusEnum::STORING,
-                'state'  => PalletStateEnum::STORING,
-                'pallet_return_id'  => null
+                'status'            => PalletStatusEnum::STORING,
+                'state'             => PalletStateEnum::STORING,
+                'pallet_return_id'  => null,
+                'set_as_incident_at' => null,
+                'incident_report'   => [],
             ]);
             $palletReturn = $this->update($palletReturn, $modelData);
             $palletReturn->pallets()->updateExistingPivot($palletReturn->pallets->pluck('id'), [
