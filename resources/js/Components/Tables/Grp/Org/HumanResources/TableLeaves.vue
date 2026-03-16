@@ -558,23 +558,27 @@ const submitEdit = () => {
 					</p>
 				</div>
 
-				<p
-					v-if="leaveForm.type === 'annual' && !canSubmitLeave"
-					class="text-sm text-red-600">
-					{{ trans("Insufficient leave balance for the selected type.") }}
-				</p>
+					<p
+						v-if="leaveForm.type === 'annual' && !canSubmitLeave"
+						class="text-sm text-red-600">
+						{{ trans("Insufficient leave balance for the selected type.") }}
+					</p>
 
-				<div class="mt-6 flex justify-end gap-2">
-					<Button @click="closeCreateModal" :label="trans('Cancel')" type="tertiary" />
-					<Button
-						type="save"
-						nativeType="submit"
-						:label="trans('Submit Request')"
-						:loading="isSubmitting"
-						:disabled="leaveForm.type === 'annual' && !canSubmitLeave" />
-				</div>
-			</form>
-		</Modal>
+					<div class="mt-6 flex justify-end gap-2">
+						<Button
+							@click="closeCreateModal"
+							:label="trans('Cancel')"
+							type="tertiary"
+							nativeType="button" />
+						<Button
+							type="save"
+							nativeType="submit"
+							:label="trans('Submit Request')"
+							:loading="isSubmitting"
+							:disabled="leaveForm.type === 'annual' && !canSubmitLeave" />
+					</div>
+				</form>
+			</Modal>
 
 		<Modal :isOpen="isEditModalOpen" @onClose="closeEditModal" width="w-full max-w-md">
 			<h2 class="text-lg font-semibold text-gray-800 mb-4">
@@ -605,17 +609,21 @@ const submitEdit = () => {
 					<p v-if="editForm.errors.attachments" class="mt-1 text-sm text-red-600">
 						{{ editForm.errors.attachments }}
 					</p>
-				</div>
+					</div>
 
-				<div class="mt-6 flex justify-end gap-2">
-					<Button @click="closeEditModal" :label="trans('Cancel')" type="tertiary" />
-					<Button
-						@click="submitEdit"
-						type="save"
-						:label="trans('Save')"
-						:loading="isSubmitting" />
-				</div>
-			</form>
-		</Modal>
-	</div>
-</template>
+					<div class="mt-6 flex justify-end gap-2">
+						<Button
+							@click="closeEditModal"
+							:label="trans('Cancel')"
+							type="tertiary"
+							nativeType="button" />
+						<Button
+							type="save"
+							nativeType="submit"
+							:label="trans('Save')"
+							:loading="isSubmitting" />
+					</div>
+				</form>
+			</Modal>
+		</div>
+	</template>

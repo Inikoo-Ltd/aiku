@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -27,9 +27,16 @@ const props = defineProps<{
 		links: any
 		meta: any
 	}
-	type_options: Record<string, string>
+	type_options: Record<string, string | { label: string; category?: string }>
 	status_options: Record<string, string>
 }>()
+
+const parsedTypeOptions = computed(() => {
+	return Object.entries(props.type_options ?? {}).map(([value, data]) => ({
+		value,
+		label: typeof data === "string" ? data : data.label || value,
+	}))
+})
 
 const locale = useLocaleStore()
 const isEditModalOpen = ref(false)
@@ -373,20 +380,20 @@ const formatDate = (date: string) => {
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700">{{
-						trans("Leave Type")
-					}}</label>
-					<select
-						v-model="exportForm.type"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-						<option value="">{{ trans("All Types") }}</option>
-						<option v-for="(label, value) in type_options" :key="value" :value="value">
-							{{ label }}
-						</option>
-					</select>
-				</div>
-				<div>
-					<label class="block text-sm font-medium text-gray-700">{{
+						<label class="block text-sm font-medium text-gray-700">{{
+							trans("Leave Type")
+						}}</label>
+						<select
+							v-model="exportForm.type"
+							class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+							<option value="">{{ trans("All Types") }}</option>
+							<option v-for="option in parsedTypeOptions" :key="option.value" :value="option.value">
+								{{ option.label }}
+							</option>
+						</select>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700">{{
 						trans("Status")
 					}}</label>
 					<select
