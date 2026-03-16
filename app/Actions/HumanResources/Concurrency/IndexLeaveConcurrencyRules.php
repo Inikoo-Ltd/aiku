@@ -75,6 +75,7 @@ class IndexLeaveConcurrencyRules extends OrgAction
                 ->column(key: 'rule_type', label: __('Rule Type'), canBeHidden: false, sortable: true)
                 ->column(key: 'limit', label: __('Limit'), canBeHidden: true, sortable: true)
                 ->column(key: 'max_overlap_days', label: __('Max Overlap Days'), canBeHidden: true, sortable: true)
+                ->column(key: 'targets', label: __('Targets'), canBeHidden: true)
                 ->column(key: 'is_active', label: __('Active'), canBeHidden: true, sortable: true)
                 ->column(key: 'action', label: __('Actions'), canBeHidden: false)
                 ->defaultSort('name');
