@@ -18,6 +18,8 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
+use App\Models\Comms\OutBoxHasSubscriber;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 
 trait WithSendSubscribersOutboxEmail
@@ -44,6 +46,7 @@ trait WithSendSubscribersOutboxEmail
         $subscribedUsers = $outbox->subscribedUsers ?? [];
 
         foreach ($subscribedUsers as $subscribedUser) {
+            /** @var User|OutBoxHasSubscriber $recipient */
             $recipient = $subscribedUser->user ?: $subscribedUser;
 
             if (!$recipient->email && !$recipient->external_email) {
