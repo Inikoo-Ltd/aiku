@@ -16,15 +16,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $shop_id
  * @property int $customer_id
  * @property int|null $registration_product_id
- * @property array $top_products
+ * @property array<array-key, mixed> $top_products
  * @property \Illuminate\Support\Carbon|null $top_products_computed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\CRM\Customer $customer
  * @property-read Group $group
  * @property-read Organisation $organisation
- * @property-read Shop $shop
- * @property-read Customer $customer
  * @property-read Product|null $registrationProduct
+ * @property-read Shop $shop
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerInterest newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerInterest newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerInterest query()
  * @mixin \Eloquent
  */
 class CustomerInterest extends Model

@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\ChatEmailRecipient;
@@ -29,7 +28,6 @@ trait WithSendChatOutboxEmail
         $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $chatEmailRecipient, [
             'outbox_id'     => $outbox->id,
             'email_address' => $chatEmailRecipient->email,
-            'provider'      => DispatchedEmailProviderEnum::SES,
         ]);
         $dispatchedEmail->refresh();
 

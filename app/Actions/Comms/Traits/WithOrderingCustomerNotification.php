@@ -10,7 +10,6 @@ namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Comms\Outbox;
@@ -124,7 +123,6 @@ trait WithOrderingCustomerNotification
         $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $customer, [
             'outbox_id'     => $outbox->id,
             'email_address' => $customer->email,
-            'provider'      => DispatchedEmailProviderEnum::SES
         ]);
         $dispatchedEmail->refresh();
 

@@ -12,7 +12,6 @@ use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\TestEmailRecipient\StoreTestEmailRecipient;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailTemplate;
@@ -71,7 +70,6 @@ class SendTestEmail extends OrgAction
             recipient: $testEmailRecipient,
             modelData: [
                 'email_address' => $modelData['email'],
-                'provider'      => DispatchedEmailProviderEnum::SES,
             ],
             isTest: true
         );

@@ -12,7 +12,6 @@ use App\Actions\Comms\EmailAddress\StoreEmailAddress;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
@@ -28,7 +27,6 @@ use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
 
 class StoreDispatchedEmail extends OrgAction
 {
@@ -44,7 +42,6 @@ class StoreDispatchedEmail extends OrgAction
 
         data_set($modelData, 'recipient_type', class_basename($recipient));
         data_set($modelData, 'recipient_id', $recipient->id);
-        data_set($modelData, 'uuid', Str::uuid());
 
         $emailAddress = StoreEmailAddress::run($parent->group, Arr::pull($modelData, 'email_address'));
         data_set($modelData, 'email_address_id', $emailAddress->id);
@@ -67,7 +64,6 @@ class StoreDispatchedEmail extends OrgAction
     {
         $rules = [
             'email_address' => ['required', 'email'],
-            'provider'      => ['required', Rule::enum(DispatchedEmailProviderEnum::class)],
         ];
 
         if (!$this->strict) {

@@ -163,6 +163,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
+ * @property-read \App\Models\CRM\CustomerInterest|null $interests
  * @property-read Collection<int, Invoice> $invoices
  * @property-read Collection<int, MagentoUser> $magentoUsers
  * @property-read MediaCollection<int, Media> $media
