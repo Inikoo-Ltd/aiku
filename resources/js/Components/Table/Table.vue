@@ -544,10 +544,10 @@ onUnmounted(() => {
 
 
 function sortBy(column) {
-    if (queryBuilderData.value.sort === column) {
-        queryBuilderData.value.sort = `-${column}`;
-    } else {
+    if (queryBuilderData.value.sort === `-${column}`) {
         queryBuilderData.value.sort = column;
+    } else {
+        queryBuilderData.value.sort = `-${column}`
     }
 
     queryBuilderData.value.cursor = null;
@@ -910,7 +910,7 @@ const isLoading = ref<string | boolean>(false)
                                                     </template>
                                                     <template v-else-if="column.type === 'icon'">
                                                         <Icon
-                                                            v-if="item[column.key]?.icon"
+                                                            v-if="item[column.key]?.icon || item[column.key]?.text || item[column.key]?.svg"
                                                             :data="item[column.key]"
                                                         />
                                                         <FontAwesomeIcon v-else :icon="item[column.key]" class="" fixed-width aria-hidden="true" />

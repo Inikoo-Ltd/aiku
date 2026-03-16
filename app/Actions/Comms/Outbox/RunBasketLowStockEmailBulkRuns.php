@@ -14,7 +14,6 @@ use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRun;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use App\Actions\Traits\WithActionUpdate;
@@ -143,10 +142,8 @@ class RunBasketLowStockEmailBulkRuns
                             $emailBulkRun,
                             $customer,
                             [
-                                'is_test'       => false,
                                 'outbox_id'     => $outbox->id,
                                 'email_address' => $customer->email,
-                                'provider'      => DispatchedEmailProviderEnum::SES,
                                 'data->additional_data' => [
                                     'products' => $this->generateProductLinks($customer->product_ids)
                                 ]

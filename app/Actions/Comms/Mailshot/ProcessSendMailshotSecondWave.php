@@ -17,7 +17,6 @@ use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -54,11 +53,15 @@ class ProcessSendMailshotSecondWave
         $queryBuilder = QueryBuilder::for(Customer::class);
         $queryBuilder->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
         $queryBuilder->join('dispatched_emails', function ($join) {
+
+            //todo change this to
             $join->on('customers.id', '=', 'dispatched_emails.recipient_id')
                 ->where('dispatched_emails.recipient_type', '=', class_basename(Customer::class));
         });
-        $queryBuilder->where('dispatched_emails.parent_type', class_basename(Mailshot::class));
-        $queryBuilder->where('dispatched_emails.parent_id', $parentMailshots->id);
+
+        $queryBuilder->leftJoin('mailshot_has_dispatched_emails', 'mailshot_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id');
+        $queryBuilder->where('mailshot_id', $mailshot->id);
+
         $queryBuilder->where('dispatched_emails.state', DispatchedEmailStateEnum::SENT->value);
         $queryBuilder->whereNotNull('dispatched_emails.sent_at');
 
@@ -104,10 +107,8 @@ class ProcessSendMailshotSecondWave
                         $mailshot,
                         $recipient,
                         [
-                            'is_test'       => false,
                             'outbox_id'     => $outbox->id,
                             'email_address' => $recipient->email,
-                            'provider'      => DispatchedEmailProviderEnum::SES
                         ]
                     );
 

@@ -223,7 +223,8 @@ class IndexProductsInProductCategory extends OrgAction
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
@@ -234,7 +235,6 @@ class IndexProductsInProductCategory extends OrgAction
                     ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon')
                     ->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
         };

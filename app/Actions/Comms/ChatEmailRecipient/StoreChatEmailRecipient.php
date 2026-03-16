@@ -1,35 +1,35 @@
 <?php
 
 /*
- * Author: eka yudinata (https://github.com/ekayudinata)
- * Created: Friday, 13 Feb 2026 09:19:14 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2026, eka yudinata
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 16 Mar 2026 11:19:40 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Comms\Email;
+namespace App\Actions\Comms\ChatEmailRecipient;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Catalogue\Shop;
-use App\Models\Comms\ExternalEmailRecipient;
+use App\Models\Comms\ChatEmailRecipient;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreExternalEmailRecipient extends OrgAction
+class StoreChatEmailRecipient extends OrgAction
 {
     use WithNoStrictRules;
 
     /**
      * @throws \Throwable
      */
-    public function handle(Shop $shop, array $modelData): ExternalEmailRecipient
+    public function handle(Shop $shop, array $modelData): ChatEmailRecipient
     {
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
 
-        /** @var ExternalEmailRecipient $externalEmailRecipient */
-        $externalEmailRecipient = $shop->externalEmailRecipients()->create($modelData);
+        /** @var ChatEmailRecipient $chatEmailRecipient */
+        $chatEmailRecipient = $shop->chatEmailRecipients()->create($modelData);
 
-        return $externalEmailRecipient;
+        return $chatEmailRecipient;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -44,7 +44,7 @@ class StoreExternalEmailRecipient extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'name'  => ['required', 'string', 'max:255'],
+            'name'  => ['required','nullable', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
         ];
 
@@ -58,7 +58,7 @@ class StoreExternalEmailRecipient extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true): ExternalEmailRecipient
+    public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true): ChatEmailRecipient
     {
         $this->asAction       = true;
         $this->strict         = $strict;

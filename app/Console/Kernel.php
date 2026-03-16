@@ -29,6 +29,7 @@ use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
 use App\Actions\Helpers\Intervals\ResetWeeklyIntervals;
 use App\Actions\Helpers\Intervals\ResetYearIntervals;
 use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
+use App\Actions\HydrateHealthRank;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -321,7 +322,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('19:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'SaveWebsitesSitemap',
             ),
             name: 'SaveWebsitesSitemap',
@@ -482,6 +483,23 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
             ),
             name: 'PurgeDownloadPortfolioCustomerSalesChannel',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+        $this->logSchedule(
+            $schedule->command('dispatched-email:clean-provider-dispatch-id')->dailyAt('3:30')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CleanProviderDispatchID',
+            ),
+            name: 'CleanProviderDispatchID',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(HydrateHealthRank::makeJob())->dailyAt('04:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateHealthRank',
+            ),
+            name: 'HydrateHealthRank',
             type: 'job',
             scheduledAt: now()->format('H:i')
         );

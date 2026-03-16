@@ -121,17 +121,17 @@ trait OfferCampaignVolumeDiscountTrait
                     'navigation' => OfferCampaignTabsEnum::navigation()
                 ],
                 OfferCampaignTabsEnum::OVERVIEW->value   => $this->tab == OfferCampaignTabsEnum::OVERVIEW->value ?
-                    fn() => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute, $amnestyOffer)
-                    : Inertia::lazy(fn() => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute)),
+                    fn () => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute, $amnestyOffer)
+                    : Inertia::lazy(fn () => GetVolGRCampaignOverview::run($offerCampaign, $showAmnestyRoute, $editAmnestyRoute)),
                 OfferCampaignTabsEnum::OFFERS->value     => $this->tab == OfferCampaignTabsEnum::OFFERS->value ?
-                    fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))
-                    : Inertia::lazy(fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))),
+                    fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))
+                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'offer_only'))),
                 OfferCampaignTabsEnum::GR_AMNESTY->value => $this->tab == OfferCampaignTabsEnum::GR_AMNESTY->value ?
-                    fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'GR Amnesty'))
-                    : Inertia::lazy(fn() => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'GR Amnesty'))),
+                    fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'GR Amnesty'))
+                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($offerCampaign, OfferCampaignTabsEnum::OFFERS->value, filterByOfferType: 'GR Amnesty'))),
                 OfferCampaignTabsEnum::HISTORY->value    => $this->tab == OfferCampaignTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
+                    fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offerCampaign, OfferCampaignTabsEnum::HISTORY->value))),
             ]
         )->table(IndexOffers::make()->tableStructure(parent: $offerCampaign, prefix: OfferCampaignTabsEnum::OFFERS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: OfferCampaignTabsEnum::HISTORY->value))

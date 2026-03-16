@@ -9,18 +9,13 @@ namespace App\Http\Middleware;
 
 use App\Actions\Web\WebsiteVisitor\ProcessWebsiteVisitorTracking;
 use Closure;
-use hisorange\BrowserDetect\Parser;
 use Illuminate\Http\Request;
 
 class TrackWebsiteVisitor
 {
     public function handle(Request $request, Closure $next)
     {
-        return $next($request);
-    }
 
-    public function terminate(Request $request, $response): void
-    {
         if ($this->shouldTrack($request)) {
             ProcessWebsiteVisitorTracking::dispatch(
                 sessionId: $request->session()->getId(),
@@ -32,13 +27,12 @@ class TrackWebsiteVisitor
                 referrer: $request->header('referer'),
             );
         }
+        return $next($request);
     }
+
 
     protected function shouldTrack(Request $request): bool
     {
-        if (app()->environment('local')) {
-            return false;
-        }
 
         if (!$request->input('website')) {
             return false;
@@ -48,15 +42,11 @@ class TrackWebsiteVisitor
             return false;
         }
 
-        if ($this->isBot($request)) {
-            return false;
-        }
 
         $routeName = $request->route()?->getName();
         if (!$routeName) {
             return false;
         }
-
         $excludedRoutes = [
             'iris.models',
             'retina.models',
@@ -69,17 +59,5 @@ class TrackWebsiteVisitor
         return array_all($excludedRoutes, fn ($excluded) => !str_starts_with($routeName, $excluded));
     }
 
-    protected function isBot(Request $request): bool
-    {
-        $userAgent = $request->userAgent();
 
-        if (!$userAgent) {
-            return false;
-        }
-
-        $parsedUserAgent = new Parser()->parse($userAgent);
-        $deviceType = $parsedUserAgent->deviceType();
-
-        return strtolower($deviceType) === 'bot';
-    }
 }

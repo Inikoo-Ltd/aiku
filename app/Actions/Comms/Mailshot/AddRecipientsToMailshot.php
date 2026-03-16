@@ -12,7 +12,6 @@ use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\OrgAction;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 
@@ -33,10 +32,8 @@ class AddRecipientsToMailshot extends OrgAction
                     $mailshot,
                     $recipient,
                     [
-                        'is_test'       => false,
                         'outbox_id'     => $outbox->id,
                         'email_address' => $recipient->email,
-                        'provider'      => DispatchedEmailProviderEnum::SES
                     ]
                 );
 

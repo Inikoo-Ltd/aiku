@@ -32,7 +32,7 @@ class TradeUnitFamilyHydrateHealthRank implements ShouldBeUnique
                 SELECT
                     ittu.trade_unit_family_id,
                     MAX(it.date) AS last_sale_date,
-                    SUM(CASE WHEN it.date >= NOW() - INTERVAL '365 days' THEN 1 ELSE 0 END) AS freq_12m
+                    SUM(CASE WHEN it.date >= NOW() - INTERVAL '90 days' THEN COALESCE(it.grp_net_amount, 0) ELSE 0 END) AS revenue_3m
                 FROM invoice_transaction_has_trade_units ittu
                 JOIN invoice_transactions it ON it.id = ittu.invoice_transaction_id
                 WHERE it.in_process = false
@@ -40,40 +40,45 @@ class TradeUnitFamilyHydrateHealthRank implements ShouldBeUnique
                   AND ittu.trade_unit_family_id IS NOT NULL
                 GROUP BY ittu.trade_unit_family_id
             ),
-            max_values AS (
-                SELECT GREATEST(MAX(freq_12m), 1) AS max_freq
+            active AS (
+                SELECT trade_unit_family_id, revenue_3m
                 FROM stats
-                WHERE last_sale_date >= NOW() - INTERVAL '365 days'
+                WHERE last_sale_date >= NOW() - INTERVAL '90 days'
             ),
-            active_scored AS (
-                SELECT
-                    s.trade_unit_family_id,
-                    s.freq_12m / m.max_freq AS score
-                FROM stats s
-                CROSS JOIN max_values m
-                WHERE s.last_sale_date >= NOW() - INTERVAL '365 days'
+            total AS (
+                SELECT GREATEST(SUM(revenue_3m), 1) AS total_revenue FROM active
             ),
-            ranked AS (
+            cumulative AS (
                 SELECT
-                    trade_unit_family_id,
-                    PERCENT_RANK() OVER (ORDER BY score) AS pct_rank
-                FROM active_scored
+                    a.trade_unit_family_id,
+                    SUM(a.revenue_3m) OVER (ORDER BY a.revenue_3m DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) / t.total_revenue AS cum_pct
+                FROM active a
+                CROSS JOIN total t
             ),
             final_ranks AS (
-                SELECT trade_unit_family_id, 'D' AS health_rank
-                FROM stats
-                WHERE last_sale_date IS NULL OR last_sale_date < NOW() - INTERVAL '365 days'
+                SELECT
+                    s.trade_unit_family_id,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM invoice_transaction_has_trade_units prev_ittu
+                        JOIN model_has_trade_units mhtu ON mhtu.trade_unit_id = prev_ittu.trade_unit_id
+                            AND mhtu.model_type = 'OrgStock'
+                        JOIN org_stocks os ON os.id = mhtu.model_id
+                        WHERE prev_ittu.trade_unit_family_id = s.trade_unit_family_id
+                          AND os.quantity_in_locations > 0
+                    ) THEN 'Z' ELSE 'D' END AS health_rank
+                FROM stats s
+                WHERE s.last_sale_date IS NULL OR s.last_sale_date < NOW() - INTERVAL '90 days'
 
                 UNION ALL
 
                 SELECT
                     trade_unit_family_id,
                     CASE
-                        WHEN pct_rank >= 0.85 THEN 'A'
-                        WHEN pct_rank >= 0.50 THEN 'B'
+                        WHEN cum_pct <= 0.15 THEN 'A'
+                        WHEN cum_pct <= 0.50 THEN 'B'
                         ELSE 'C'
                     END AS health_rank
-                FROM ranked
+                FROM cumulative
             )
             UPDATE trade_unit_families
             SET health_rank = fr.health_rank

@@ -175,6 +175,7 @@ class IndexTradeUnits extends GrpAction
                 $table->betweenDates(['date']);
                 $this->addColumnCodeAndName($table);
                 $this->addSalesColumns($table);
+                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $this->addColumnCodeAndName($table);
                 $this->addColumnType($table, 'Unit label');
@@ -187,7 +188,6 @@ class IndexTradeUnits extends GrpAction
                 }
 
                 $this->addColumnMarketingWeight($table);
-                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             }
         };
     }

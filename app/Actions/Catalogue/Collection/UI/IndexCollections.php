@@ -233,7 +233,8 @@ class IndexCollections extends OrgAction
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
                 $table->column(key: 'image_thumbnail', label: '', type: 'avatar');
@@ -242,7 +243,6 @@ class IndexCollections extends OrgAction
                 $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
                 $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
                 $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
-                $table->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
                 $table->column(key: 'actions', label: '', searchable: true);
             }
         };

@@ -530,6 +530,7 @@ class ShowOrder extends OrgAction
                     'name' => $order->salesChannel->name,
                     'icon' => $order->salesChannel->type->icon()
                 ] : null,
+                'is_faire_order'    => $order->shop->engine == ShopEngineEnum::FAIRE,
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))

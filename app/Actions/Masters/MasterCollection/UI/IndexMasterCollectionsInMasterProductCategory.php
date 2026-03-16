@@ -58,10 +58,12 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
             'master_collections.id',
             'master_collections.code',
             'master_collections.state',
+            'master_collections.status',
             'master_collections.name',
             'master_collections.description',
             'master_collections.created_at',
             'master_collections.updated_at',
+            'master_collections.web_images',
             'master_collections.slug',
         ];
 

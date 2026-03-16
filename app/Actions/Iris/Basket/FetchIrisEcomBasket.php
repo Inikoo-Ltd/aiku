@@ -122,7 +122,7 @@ class FetchIrisEcomBasket extends IrisAction
                     'price_total' => $order->net_amount
                 ],
                 [
-                    'label'       => __('Tax').' ('.$taxCategory->name.')',
+                    'label'       => __('Tax').' ('.$taxCategory->getLocalizedName().')',
                     'information' => '',
                     'price_total' => $order->tax_amount
                 ]

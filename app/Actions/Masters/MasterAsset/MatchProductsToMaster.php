@@ -72,16 +72,16 @@ class MatchProductsToMaster extends OrgAction
         $matchedCount = 0;
 
 
-        if($command->argument('shop')){
+        if ($command->argument('shop')) {
             $shopId = Shop::where('slug', $command->argument('shop'))->first()->id;
             $shopsIds = [$shopId];
-        }else{
-            $shopsIds = Shop::where('state', ShopStateEnum::OPEN)->where('type',ShopTypeEnum::B2B)->pluck('id')->toArray();
+        } else {
+            $shopsIds = Shop::where('state', ShopStateEnum::OPEN)->where('type', ShopTypeEnum::B2B)->pluck('id')->toArray();
         }
 
 
         $totalCount = Product::whereNull('master_product_id')
-            ->whereIn('shop_id',$shopsIds)
+            ->whereIn('shop_id', $shopsIds)
             ->count();
 
         $bar = $command->getOutput()->createProgressBar($totalCount);
@@ -90,27 +90,27 @@ class MatchProductsToMaster extends OrgAction
 
 
         Product::whereNull('master_product_id')
-            ->whereIn('shop_id',$shopsIds)
+            ->whereIn('shop_id', $shopsIds)
             ->chunk(
-            $chunkSize,
-            function ($products) use (&$count, &$matchedCount, $bar, $command) {
-                foreach ($products as $product) {
-                    try {
-                        $hadMaster = (bool)$product->master_product_id;
-                        $this->handle($product);
-                        $hasNowMaster = (bool)$product->master_product_id;
+                $chunkSize,
+                function ($products) use (&$count, &$matchedCount, $bar, $command) {
+                    foreach ($products as $product) {
+                        try {
+                            $hadMaster = (bool)$product->master_product_id;
+                            $this->handle($product);
+                            $hasNowMaster = (bool)$product->master_product_id;
 
-                        if (!$hadMaster && $hasNowMaster) {
-                            $matchedCount++;
+                            if (!$hadMaster && $hasNowMaster) {
+                                $matchedCount++;
+                            }
+                        } catch (Exception $e) {
+                            $command->error("Error processing asset $product->id: {$e->getMessage()}");
                         }
-                    } catch (Exception $e) {
-                        $command->error("Error processing asset $product->id: {$e->getMessage()}");
+                        $count++;
+                        $bar->advance();
                     }
-                    $count++;
-                    $bar->advance();
                 }
-            }
-        );
+            );
 
         $bar->finish();
         $command->newLine();

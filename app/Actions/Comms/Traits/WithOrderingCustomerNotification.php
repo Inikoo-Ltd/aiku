@@ -10,7 +10,6 @@ namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Comms\Outbox;
@@ -44,7 +43,7 @@ trait WithOrderingCustomerNotification
             $shipment = $deliveryNote->shipments?->first();
 
             if ($shipment) {
-                return $shipment?->combined_label_url;
+                return $shipment->combined_label_url;
             }
         }
 
@@ -110,8 +109,7 @@ trait WithOrderingCustomerNotification
 
     public function getEmailBody(Customer $customer, OutboxCodeEnum $outboxCode): array
     {
-        $recipient       = $customer;
-        if (!$recipient->email) {
+        if (!$customer->email) {
             return [null, null];
         }
 
@@ -122,11 +120,9 @@ trait WithOrderingCustomerNotification
             return [null, null];
         }
 
-        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
-            'is_test'       => false,
+        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $customer, [
             'outbox_id'     => $outbox->id,
-            'email_address' => $recipient->email,
-            'provider'      => DispatchedEmailProviderEnum::SES
+            'email_address' => $customer->email,
         ]);
         $dispatchedEmail->refresh();
 

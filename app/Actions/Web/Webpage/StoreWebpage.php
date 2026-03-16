@@ -21,6 +21,7 @@ use App\Actions\Web\Website\Layouts\FetchUsedFamiliesWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedSubDepartmentsWebBlock;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -138,27 +139,29 @@ class StoreWebpage extends OrgAction
                 $usedSubDepartmentsTemplateCode = FetchUsedSubDepartmentsWebBlock::run($this->website);
 
                 if ($model instanceof Product) {
-                    $this->createWebBlock($webpage, $usedProductTemplateCode);
+                    $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::PRODUCT, $usedProductTemplateCode);
                     $this->createWebBlock($webpage, 'luigi-item-alternatives-1');
                     $this->createWebBlock($webpage, 'luigi-trends-1');
                     $this->createWebBlock($webpage, 'luigi-last-seen-1');
                 } elseif ($model instanceof Collection) {
                     $this->createWebBlock($webpage, 'collection-description-1');
-                    $this->createWebBlock($webpage, $usedFamiliesTemplateCode);
-                    $this->createWebBlock($webpage, $usedProductsTemplateCode);
+                    $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                    $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                 } elseif ($model instanceof ProductCategory) {
                     if ($model->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                         $this->createWebBlock($webpage, 'sub-department-description-1');
-                        $this->createWebBlock($webpage, $usedFamiliesTemplateCode);
-                        $this->createWebBlock($webpage, $usedProductsTemplateCode);
+                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
                         $this->createWebBlock($webpage, 'department-description-1');
-                        $this->createWebBlock($webpage, $usedSubDepartmentsTemplateCode);
-                        // $this->createWebBlock($webpage, $usedFamiliesTemplateCode); // Unused. Comfirmed by Arya, so I commented it out for now
-                        $this->createWebBlock($webpage, $usedProductsTemplateCode);
+                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
+                        if (data_get($modelData, 'layout_style') == 2) {
+                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                        }
+                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
                         $this->createWebBlock($webpage, 'family-1');
-                        $this->createWebBlock($webpage, $usedProductsTemplateCode);
+                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                         $this->createWebBlock($webpage, 'luigi-trends-1');
                         $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
                         $this->createWebBlock($webpage, 'luigi-last-seen-1');
@@ -221,6 +224,13 @@ class StoreWebpage extends OrgAction
         return $request->user()->authTo("web.{$this->shop->id}.edit");
     }
 
+    public function afterValidator($validator)
+    {
+        if ($validator->errors()->has('url') || $validator->errors()->has('code')) {
+            dd($validator);
+        }
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -267,7 +277,7 @@ class StoreWebpage extends OrgAction
             'model_id'           => ['sometimes', 'integer'],
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
-
+            'layout_style'       => ['sometimes', 'integer']
 
         ];
 
