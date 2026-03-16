@@ -203,6 +203,23 @@ const modalTitle = computed(() =>
 	</PageHeading>
 
 	<Table :resource="data" class="mt-5">
+		<template #cell(targets)="{ item }">
+			<div v-if="item.targets && item.targets.length > 0" class="flex flex-wrap gap-1">
+				<span
+					v-for="target in item.targets.slice(0, 3)"
+					:key="target.id"
+					class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+					{{ target.target_type === "Employee" ? employees.find((e) => e.value === target.target_id)?.label ?? target.target_id : jobPositions.find((j) => j.value === target.target_id)?.label ?? target.target_id }}
+					<span v-if="target.role" class="ml-1 text-indigo-600">({{ target.role }})</span>
+				</span>
+				<span
+					v-if="item.targets.length > 3"
+					class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+					+{{ item.targets.length - 3 }}
+				</span>
+			</div>
+			<span v-else class="text-gray-400 text-sm">{{ trans("No targets") }}</span>
+		</template>
 		<template #cell(action)="{ item }">
 			<div class="flex justify-end gap-2">
 				<Button
