@@ -10,22 +10,29 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
+use App\Actions\Catalogue\WithUpdateWebImages;
 use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterProductCategory;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterProductCategoryImages extends GrpAction
 {
     use WithActionUpdate;
+    use WithUpdateWebImages;
     use CanUpdateImages;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData, bool $updateDependants = false): MasterProductCategory
     {
         $this->updateImages($masterProductCategory, $modelData);
-
+        
         $this->update($masterProductCategory, $modelData);
+        
+        if(Arr::has($modelData, 'extra_desc_art1')) {
+            $this->updateWebImages($masterProductCategory);
+        }
 
         if ($updateDependants) {
             $this->updateDependants($masterProductCategory, $modelData);

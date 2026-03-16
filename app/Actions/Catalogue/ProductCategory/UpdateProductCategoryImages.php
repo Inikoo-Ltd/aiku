@@ -9,15 +9,18 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Catalogue\WithUpdateWebImages;
 use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductCategoryImages extends OrgAction
 {
     use WithActionUpdate;
+    use WithUpdateWebImages;
     use CanUpdateImages;
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
@@ -25,6 +28,10 @@ class UpdateProductCategoryImages extends OrgAction
         $this->updateImages($productCategory, $modelData);
 
         $this->update($productCategory, $modelData);
+
+        if (Arr::has($modelData, 'extra_desc_art1')) {
+            $this->updateWebImages($productCategory);
+        }
 
         UpdateProductCategoryWebImages::run($productCategory);
 
