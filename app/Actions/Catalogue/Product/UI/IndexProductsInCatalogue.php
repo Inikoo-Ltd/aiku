@@ -131,11 +131,9 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.units',
                 'products.unit',
                 'master_product_id',
-                'assets.health_rank',
             ])
             ->selectRaw("'{$shop->currency->code}'  as currency_code")
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id')
-            ->leftJoin('assets', 'products.asset_id', 'assets.id');
+            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
         if ($shop->type == ShopTypeEnum::EXTERNAL) {
             //  Add select, we need this to display SKU on Index Product. Add shop type check so it won't bother internal shop.
@@ -187,7 +185,6 @@ class IndexProductsInCatalogue extends OrgAction
             'available_quantity',
             'variant_slug',
             'discontinued_at',
-            'health_rank',
         ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

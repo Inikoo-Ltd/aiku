@@ -1,3 +1,4 @@
+import { Family2ExtraDescriptionWorkshop } from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue';
 import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
@@ -50,6 +51,7 @@ import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Ir
 import SeeAlso1Iris from "@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue"
 
 import family1Iris from "@/Components/CMS/Webpage/Family-1/family1Iris.vue"
+import family2Iris from "@/Components/CMS/Webpage/Family2/family2Iris.vue"
 import FamiliesIris1 from "@/Components/CMS/Webpage/Families1/FamiliesIris1.vue"
 import FamiliesIris2 from "@/Components/CMS/Webpage/Families2/FamiliesIris2.vue"
 import FamiliesIris3 from "@/Components/CMS/Webpage/Families3/FamiliesIris3.vue"
@@ -95,7 +97,7 @@ import CollectionDescriptionIris from "@/Components/CMS/Webpage/CollectionDescri
 import DepartmentDescriptionIris from "@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionIris.vue"
 import SubDepartmentDesciptionIris from "@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionIris.vue"
 import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
-
+import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({
@@ -131,6 +133,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'department-description-1' : DepartmentDescriptionIris,
 		'sub-department-description-1' : SubDepartmentDesciptionIris,
 		'family-1': family1Iris,
+		'family-2': family2Iris,
 
 		//sub-department	
 		"sub-departments-1": SubDepartment1Iris,
@@ -140,6 +143,9 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"families-1": FamiliesIris1,
 		"families-2": FamiliesIris2,
 		"families-3": FamiliesIris3,
+
+		 //family-extra-description
+		'family-2-extra-description' : Family2ExtraDescriptionIris,
 
 		//product
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,

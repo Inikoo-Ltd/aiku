@@ -105,6 +105,8 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
+import { useColorTheme } from "@/Composables/useStockList"
+import { computed } from 'vue'
 
 library.add(
 	faRainbow,
@@ -303,7 +305,13 @@ onMounted(() => {
 	setColorStyleRoot(layout?.app?.theme)
 })
 
+const fallbackTheme = useColorTheme[3]
 
+const safeTheme = computed(() => {
+	const t = layout?.app?.theme
+	
+	return (t && t.length >= 8) ? t : fallbackTheme
+})
 console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>
 
@@ -521,7 +529,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 .bottomNavigationActive {
 	@apply w-5/6 absolute h-0.5 rounded-full bottom-0 left-[50%] translate-x-[-50%] mx-auto transition-all duration-200 ease-in-out;
-	background-color: v-bind("layout.app.theme[4]");
+	background-color: v-bind("safeTheme[4]");
 }
 
 .bottomNavigation {
@@ -538,12 +546,12 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 .primaryLink {
 	background: v-bind(
-		'`linear-gradient(to top, ${layout.app.theme[6]}, ${layout.app.theme[6] + "77"})`'
+		'`linear-gradient(to top, ${safeTheme[6]}, ${safeTheme[6] + "77"})`'
 	);
 
 	&:hover,
 	&:focus {
-		color: v-bind("`${layout.app.theme[7]}`");
+		color: v-bind("`${safeTheme[7]}`");
 	}
 
 	@apply focus:ring-0 focus:outline-none focus:border-none
@@ -557,12 +565,12 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 .secondaryLink {
 	background: v-bind(
-		'`linear-gradient(to top, ${layout.app.theme[6] + "77"}, ${layout.app.theme[6] + "11"})`'
+		'`linear-gradient(to top, ${safeTheme[6] + "77"}, ${safeTheme[6] + "11"})`'
 	);
 
 	&:hover,
 	&:focus {
-		color: v-bind("`${layout.app.theme[7]}`");
+		color: v-bind("`${safeTheme[7]}`");
 	}
 
 	@apply focus:ring-0 focus:outline-none focus:border-none
@@ -576,10 +584,10 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 // For icon box in FlatTreemap
 .specialBoxActive {
 	background: v-bind(
-		'`linear-gradient(to top, ${layout.app.theme[0]}, ${layout.app.theme[0] + "AA"})`'
+		'`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`'
 	);
-	color: v-bind("`${layout.app.theme[1]}`");
-	border: v-bind('`2px solid ${layout.app.theme[0] + "99"}`') !important;
+	color: v-bind("`${safeTheme[1]}`");
+	border: v-bind('`2px solid ${safeTheme[0] + "99"}`') !important;
 
 	@apply rounded overflow-hidden
     cursor-pointer
@@ -592,14 +600,14 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
 .specialBox {
 	background: v-bind(
-		'`linear-gradient(to top, ${layout.app.theme[0]}, ${layout.app.theme[0] + "AA"})`'
+		'`linear-gradient(to top, ${safeTheme[0]}, ${safeTheme[0] + "AA"})`'
 	);
-	color: v-bind("`${layout.app.theme[0]}`");
-	border: v-bind('`2px solid ${layout.app.theme[0] + "99"}`') !important;
+	color: v-bind("`${safeTheme[0]}`");
+	border: v-bind('`2px solid ${safeTheme[0] + "99"}`') !important;
 
 	&:hover,
 	&:focus {
-		color: v-bind("`${layout.app.theme[1]}`");
+		color: v-bind("`${safeTheme[1]}`");
 	}
 
 	@apply rounded overflow-hidden

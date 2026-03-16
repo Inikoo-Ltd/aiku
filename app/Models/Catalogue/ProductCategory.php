@@ -14,6 +14,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
@@ -236,7 +237,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(ProductCategory::class, 'sub_department_id');
     }
 
-
     public function parent(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'parent_id');
@@ -314,9 +314,19 @@ class ProductCategory extends Model implements Auditable, HasMedia
 
     public function webpage(): MorphOne
     {
-        return $this->morphOne(Webpage::class, 'model');
+        $relation = $this->morphOne(Webpage::class, 'model');
+
+        if ($this->type === ProductCategoryTypeEnum::DEPARTMENT) {
+            $relation->where('url', $this->url);
+        }
+
+        return $relation;
     }
 
+    public function webpages(): MorphMany
+    {
+        return $this->morphMany(Webpage::class, 'model');
+    }
 
     public function masterProductCategory(): BelongsTo
     {
@@ -329,13 +339,41 @@ class ProductCategory extends Model implements Auditable, HasMedia
             ->where('trigger_type', class_basename(ProductCategory::class));
     }
 
-
-
     public function getGROffer(): HasOne
     {
         return $this->hasOne(Offer::class, 'trigger_id')
             ->where('trigger_type', class_basename(ProductCategory::class))
             ->where('state', OfferStateEnum::ACTIVE)
             ->where('type', 'Category Quantity Ordered Order Interval');
+    }
+
+    public function descArt1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art1');
+    }
+
+    public function descArt2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art2');
+    }
+
+    public function descArt3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art3');
+    }
+
+    public function descArt4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art4');
+    }
+
+    public function descArt5Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'desc_art5');
+    }
+
+    public function extraDescArt1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'extra_desc_art1');
     }
 }

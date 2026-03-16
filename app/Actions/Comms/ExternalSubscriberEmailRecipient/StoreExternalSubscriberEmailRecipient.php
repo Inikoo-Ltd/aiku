@@ -10,8 +10,8 @@ namespace App\Actions\Comms\ExternalSubscriberEmailRecipient;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Models\Catalogue\Shop;
 use App\Models\Comms\ExternalSubscriberEmailRecipient;
+use App\Models\SysAdmin\Group;
 
 class StoreExternalSubscriberEmailRecipient extends OrgAction
 {
@@ -20,12 +20,11 @@ class StoreExternalSubscriberEmailRecipient extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Shop $shop, array $modelData): ExternalSubscriberEmailRecipient
+    public function handle(Group $group, array $modelData): ExternalSubscriberEmailRecipient
     {
-        data_set($modelData, 'group_id', $shop->group_id);
+        data_set($modelData, 'group_id', $group->id);
 
         return ExternalSubscriberEmailRecipient::create($modelData);
-
     }
 
 
@@ -40,14 +39,14 @@ class StoreExternalSubscriberEmailRecipient extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Shop $shop, array $modelData, int $hydratorsDelay = 0, bool $strict = true): ExternalSubscriberEmailRecipient
+    public function action(Group $group, array $modelData, int $hydratorsDelay = 0, bool $strict = true): ExternalSubscriberEmailRecipient
     {
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
 
-        $this->initialisation($shop->organisation, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
-        return $this->handle($shop, $this->validatedData);
+        return $this->handle($group, $this->validatedData);
     }
 }

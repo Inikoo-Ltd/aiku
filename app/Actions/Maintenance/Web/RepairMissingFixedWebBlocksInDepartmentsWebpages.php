@@ -10,10 +10,13 @@ namespace App\Actions\Maintenance\Web;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
@@ -27,18 +30,37 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
     use WithRepairWebpages;
 
 
-    protected function handle(Webpage $webpage, Command $command): void
+    protected function handle(ProductCategory $department, Command $command): void
     {
-        if ($webpage->model_type == 'ProductCategory') {
-            /** @var ProductCategory $model */
-            $model = $webpage->model;
-            if ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                $this->processDepartmentWebpages($webpage, $command);
-            }
+        $baseQuery = Webpage::where('sub_type', 'department')
+            ->where('model_type', class_basename($department))
+            ->where('model_id', $department->id);
+        
+        $has2ndWebpage = $baseQuery->clone()->where('layout_style', 2)->exists();
+
+        if (!$has2ndWebpage) {
+            $webpageData = [
+                'title'         => $department->name,
+                'code'          => $department->code . '-ALT',
+                'url'           => strtolower($department->code) . '-alt',
+                'sub_type'      => WebpageSubTypeEnum::DEPARTMENT,
+                'type'          => WebpageTypeEnum::CATALOGUE,
+                'model_type'    => class_basename($department),
+                'model_id'      => $department->id,
+                'layout_style'  => 2
+            ];
+
+            StoreWebpage::make()->action($department->shop->website, $webpageData);
+        }
+
+        $webpages = $baseQuery->get();
+        
+        foreach ($webpages as $webpage) {
+            $this->processDepartmentWebpages($webpage, $command, $webpage->layout_style == 2);
         }
     }
 
-    protected function processDepartmentWebpages(Webpage $webpage, Command $command): void
+    protected function processDepartmentWebpages(Webpage $webpage, Command $command, $includeFamiliesWebBlock = false): void
     {
         /** @var ProductCategory $department */
         $department = $webpage->model;
@@ -104,12 +126,13 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             }
         }
 
-        // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
 
-        // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
-        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
-        // $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
+        if ($includeFamiliesWebBlock) {
+            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
+        } else {
+            $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
+        }
 
         $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
         if (count($countDepartmentDescriptionBlock) == 0) {
@@ -188,28 +211,32 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
     public function asCommand(Command $command): void
     {
-
-        $websiteId = false;
+        $shop = null;
         if ($command->argument('website')) {
             $website   = Website::where('slug', $command->argument('website'))->first();
-            $websiteId = $website->id;
+            $shop = $website->shop;
+        } else {
+
         }
 
-
-        $webpagesID = DB::table('webpages')
-            ->select('id')
-            ->where('sub_type', 'department')
+        $departmentIds = DB::table('product_categories')
+            ->leftJoin('shops', 'shops.id', 'product_categories.shop_id')
+            ->select('product_categories.id')
+            ->where('product_categories.type', 'department')
             ->when(
-                !empty($websiteId),
-                fn ($q) => $q->where('website_id', $websiteId)
+                $shop,
+                fn ($q) => $q->where('product_categories.shop_id', $shop->id),
+                fn ($q) => $q->where('shops.state', 'open')
             )
+            ->whereNull('product_categories.deleted_at')
             ->get();
 
 
-        foreach ($webpagesID as $webpageID) {
-            $webpage = Webpage::find($webpageID->id);
-            if ($webpage) {
-                $this->handle($webpage, $command);
+
+        foreach ($departmentIds as $departmentId) {
+            $department = ProductCategory::find($departmentId->id);
+            if ($department) {
+                $this->handle($department, $command);
             }
         }
     }

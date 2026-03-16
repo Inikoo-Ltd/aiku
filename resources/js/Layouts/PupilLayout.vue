@@ -58,11 +58,8 @@ const fallbackTheme = useColorTheme[3]   // default retina
 
 const safeTheme = computed(() => {
     const t = layout?.app?.theme
-    // console.log("t", t)
     return (t && t.length >= 8) ? t : fallbackTheme
 })
-// console.log("fallbackTheme", fallbackTheme)
-// console.log("pupillayout", safeTheme.value)
 </script>
 
 <template>
