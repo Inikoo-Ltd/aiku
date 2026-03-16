@@ -12,7 +12,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,13 +30,12 @@ class IndexCustomersInOfferTotal extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
-        $this->offerCampaign = $offerCampaign;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $offerCampaign);
+        return $this->handle($shop);
     }
 
-    public function handle(Shop $parent, OfferCampaign $offerCampaign, $prefix = null): LengthAwarePaginator
+    public function handle(Shop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -53,13 +51,12 @@ class IndexCustomersInOfferTotal extends OrgAction
         $queryBuilder = QueryBuilder::for(Customer::class);
         $queryBuilder->where('customers.shop_id', $parent->id);
 
-        $queryBuilder->whereIn('customers.id', function ($sub) use ($parent) {
-            $sub->select('orders.customer_id')
+        $queryBuilder->whereExists(function ($sub) {
+            $sub->selectRaw(1)
                 ->from('transaction_has_offer_allowances')
                 ->join('orders', 'orders.id', '=', 'transaction_has_offer_allowances.order_id')
-                ->where('orders.shop_id', $parent->id)
-                ->whereNull('orders.deleted_at')
-                ->distinct();
+                ->whereColumn('orders.customer_id', 'customers.id')
+                ->whereNull('orders.deleted_at');
         });
         
         $queryBuilder->with('tags');
@@ -116,11 +113,6 @@ class IndexCustomersInOfferTotal extends OrgAction
         };
     }
 
-    public function jsonResponse(LengthAwarePaginator $customers): AnonymousResourceCollection
-    {
-        return CustomersResource::collection($customers);
-    }
-
     public function htmlResponse(LengthAwarePaginator $customers, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -132,7 +124,7 @@ class IndexCustomersInOfferTotal extends OrgAction
                 ),
                 'title'       => __('Customers'),
                 'pageHead'    => [
-                    'title'      => $this->offerCampaign->name,
+                    'title'      => __('Customers'),
                     'model'      => __('offer campaign'),
                     'afterTitle' => [
                         'label' => __('Customers')
@@ -167,20 +159,6 @@ class IndexCustomersInOfferTotal extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.discounts.campaigns.totals.customers' =>
-            array_merge(
-                ShowOfferCampaign::make()->getBreadcrumbs(
-                    $this->offerCampaign,
-                    'grp.org.shops.show.discounts.campaigns.show',
-                    $routeParameters
-                ),
-                $headCrumb(
-                    [
-                        'name'       => 'grp.org.shops.show.discounts.campaigns.totals.customers',
-                        'parameters' => $routeParameters
-                    ]
-                )
-            ),
             default => []
         };
     }

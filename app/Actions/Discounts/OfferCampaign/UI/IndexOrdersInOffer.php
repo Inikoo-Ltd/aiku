@@ -61,7 +61,7 @@ class IndexOrdersInOffer extends OrgAction
                     ->where('transaction_has_offer_allowances.offer_campaign_id', $parent->id)
                     ->whereNull('orders.deleted_at');
         });
-
+        // dd($query->toSql(), $query->getBindings()); 
         return $query->defaultSort('-orders.date')
             ->select([
                 'orders.id',
@@ -76,7 +76,6 @@ class IndexOrdersInOffer extends OrgAction
                 'orders.is_premium_dispatch',
                 'orders.has_extra_packing',
                 'orders.has_insurance',
-                'orders.slug',
                 'orders.net_amount',
                 'orders.total_amount',
                 'orders.payment_amount',
@@ -91,8 +90,6 @@ class IndexOrdersInOffer extends OrgAction
                 'shops.slug as shop_slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                'customers.slug as customer_slug',
-                'customers.name as customer_name',
                 'orders.customer_notes',
                 'orders.internal_notes',
                 'orders.public_notes',

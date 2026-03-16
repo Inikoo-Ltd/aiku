@@ -76,7 +76,6 @@ class IndexOrdersInOfferTotal extends OrgAction
                 'orders.is_premium_dispatch',
                 'orders.has_extra_packing',
                 'orders.has_insurance',
-                'orders.slug',
                 'orders.net_amount',
                 'orders.total_amount',
                 'orders.payment_amount',
@@ -91,8 +90,6 @@ class IndexOrdersInOfferTotal extends OrgAction
                 'shops.slug as shop_slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                'customers.slug as customer_slug',
-                'customers.name as customer_name',
                 'orders.customer_notes',
                 'orders.internal_notes',
                 'orders.public_notes',
@@ -134,7 +131,7 @@ class IndexOrdersInOfferTotal extends OrgAction
                 ->withEmptyState(
                     [
                         'title' => $noResults,
-                        'count' => $stats->number_orders ?? 0
+                        'count' => 0
                     ]
                 );
 
