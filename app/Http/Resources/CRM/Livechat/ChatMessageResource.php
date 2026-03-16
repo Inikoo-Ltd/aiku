@@ -59,6 +59,7 @@ class ChatMessageResource extends JsonResource
                 'url'        => route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid])
             ] : null,
             'metadata' => $chatMessage->metadata,
+            'is_offline_message' => $chatMessage->metadata['is_offline_message'] ?? false,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'timestamp' => $chatMessage->created_at->timestamp

@@ -16,10 +16,9 @@ enum PostRoomsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE          = 'showcase';
-    case OUTBOXES            = 'outboxes';
-    case MAILSHOTS           = 'mailshots';
-    case DISPATCHED_EMAILS   = 'dispatched_emails';
+    case SHOWCASE = 'showcase';
+    case OUTBOXES = 'outboxes';
+    case MAILSHOTS = 'mailshots';
 
     public function blueprint(): array
     {
@@ -36,11 +35,6 @@ enum PostRoomsTabsEnum: string
                 'title' => __('Mailshots'),
                 'icon'  => 'fal fa-folder',
             ],
-            PostRoomsTabsEnum::DISPATCHED_EMAILS => [
-                'title' => __('Dispatched emails'),
-                'icon'  => 'fal fa-envelope',
-            ],
-
         };
     }
 }

@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBrands;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotesState;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDispatchedEmails;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrdersDispatchedToday;
@@ -130,6 +131,8 @@ class HydrateShops
         ShopHydrateTags::run($shop);
         ShopHydrateBrands::run($shop);
         ShopHydrateShippingCountries::run($shop);
+
+        ShopHydrateDispatchedEmails::run($shop->id);
 
 
         foreach (DeliveryNoteStateEnum::cases() as $case) {

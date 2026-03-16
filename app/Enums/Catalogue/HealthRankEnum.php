@@ -18,6 +18,7 @@ enum HealthRankEnum: string
     case B = 'B';
     case C = 'C';
     case D = 'D';
+    case Z = 'Z';
 
     public static function labels(): array
     {
@@ -25,7 +26,8 @@ enum HealthRankEnum: string
             'A' => __('Top Performer'),
             'B' => __('Good'),
             'C' => __('Average'),
-            'D' => __('Inactive'),
+            'D' => __('Dead'),
+            'Z' => __('Zombie'),
         ];
     }
 
@@ -33,44 +35,38 @@ enum HealthRankEnum: string
     {
         return [
             'A' => [
-                'tooltip' => __('Top Performer'),
-                'icon' => 'fal fa-star',
-                'class' => 'text-green-500',
-                'color' => 'green',
-                'app' => [
-                    'name' => 'star',
-                    'type' => 'font-awesome-5',
-                ],
+                'tooltip' => __('Top Performer | Covers the top 0–15% of revenue in last 90 days'),
+                'text'    => 'A',
+                'class'   => 'text-green-500',
+                'color'   => 'green',
             ],
             'B' => [
-                'tooltip' => __('Good'),
-                'icon' => 'fal fa-arrow-up',
-                'class' => 'text-blue-500',
-                'color' => 'blue',
-                'app' => [
-                    'name' => 'arrow-up',
-                    'type' => 'font-awesome-5',
-                ],
+                'tooltip' => __('Good | Covers 15–50% of revenue in last 90 days'),
+                'text'    => 'B',
+                'class'   => 'text-blue-500',
+                'color'   => 'blue',
             ],
             'C' => [
-                'tooltip' => __('Average'),
-                'icon' => 'fal fa-minus',
-                'class' => 'text-yellow-500',
-                'color' => 'yellow',
-                'app' => [
-                    'name' => 'minus',
+                'tooltip' => __('Average | Covers 50–100% of revenue in last 90 days'),
+                'text'    => 'C',
+                'class'   => 'text-yellow-500',
+                'color'   => 'yellow',
+            ],
+            'D' => [
+                'tooltip' => __('Dead | No sales and no stock in the last quarter'),
+                'icon'    => 'fal fa-tombstone',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
+                'app'     => [
+                    'name' => 'tombstone',
                     'type' => 'font-awesome-5',
                 ],
             ],
-            'D' => [
-                'tooltip' => __('Inactive'),
-                'icon' => 'fal fa-times-circle',
-                'class' => 'text-red-500',
-                'color' => 'red',
-                'app' => [
-                    'name' => 'times-circle',
-                    'type' => 'font-awesome-5',
-                ],
+            'Z' => [
+                'tooltip' => __('Zombie | No sales but has stock in the last quarter'),
+                'svg'     => 'zombie',
+                'class'   => 'w-5 h-5 mx-auto',
+                'color'   => 'orange',
             ],
         ];
     }

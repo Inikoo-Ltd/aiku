@@ -19,7 +19,7 @@ use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Comms\Outbox;
 
-class SendMailShotNow extends OrgAction
+class SendMailShot extends OrgAction
 {
     use AsCommand;
     use AsAction;

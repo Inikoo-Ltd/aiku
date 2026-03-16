@@ -23,6 +23,7 @@ trait WithUpdateWebImages
     {
         $webImagesData = [
             'main' => $this->getMainWebImageData($model),
+            'extraDescription'  => $this->getExtraDescriptionImageData($model),
             'all'  => $this->getAllWebImageData($model)
         ];
 
@@ -51,6 +52,28 @@ trait WithUpdateWebImages
         $media = null;
         if ($model->image_id) {
             $media = Media::find($model->image_id);
+        }
+
+        if (!$media) {
+            return [];
+        }
+
+        $imageOriginal  = $media->getImage();
+        $imageGallery   = $media->getImage()->resize(0, 600);
+        $imageThumbnail = $media->getImage()->resize(0, 48);
+
+        return [
+            'original'  => GetPictureSources::run($imageOriginal),
+            'gallery'   => GetPictureSources::run($imageGallery),
+            'thumbnail' => GetPictureSources::run($imageThumbnail),
+        ];
+    }
+
+    public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory $model): array
+    {
+        $media = null;
+        if ($model->extra_desc_art1) {
+            $media = Media::find($model->extra_desc_art1);
         }
 
         if (!$media) {

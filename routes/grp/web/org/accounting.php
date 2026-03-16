@@ -127,4 +127,3 @@ Route::get('/invoice-categories/{invoiceCategory}/edit', EditInvoiceCategory::cl
 Route::get('/customer-balances', [IndexCustomerBalances::class, 'inOrganisation'])->name('balances.index');
 
 Route::get('/credit-transactions', [IndexCreditTransactionsAll::class, 'inOrganisation'])->name('credit_transactions.index');
-
