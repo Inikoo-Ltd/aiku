@@ -16,6 +16,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -244,19 +245,20 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {--website_id=} {--webpage_id=} {--hide-description} {--a|alternative-design}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {website?} {--webpage_id=} {--hide-description} {--a|alternative-design}';
 
     public function asCommand(Command $command): void
     {
-        $websiteId       = $command->option('website_id');
         $singleWebpageId = $command->option('webpage_id');
 
         if ($singleWebpageId) {
             $webpagesID = collect([(object)['id' => (int)$singleWebpageId]]);
         } else {
-            $query = DB::table('webpages')->select('id')->where('sub_type', 'family');
-            if ($websiteId) {
-                $query->where('website_id', $websiteId);
+            $query = DB::table('webpages')->select('id')
+            ->where('sub_type', 'family');
+            if ($command->argument('website')) {
+                $website   = Website::where('slug', $command->argument('website'))->first();
+                $query->where('website_id', $website->id);
             }
             $webpagesID = $query->get();
         }
