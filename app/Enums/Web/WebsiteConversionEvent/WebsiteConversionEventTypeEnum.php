@@ -10,4 +10,5 @@ namespace App\Enums\Web\WebsiteConversionEvent;
 enum WebsiteConversionEventTypeEnum: string
 {
     case ADD_TO_BASKET = 'add_to_basket';
+    case REGISTRATION  = 'registration';
 }

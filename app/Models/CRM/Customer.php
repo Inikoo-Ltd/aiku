@@ -362,6 +362,11 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Invoice::class);
     }
 
+    public function interests(): HasOne
+    {
+        return $this->hasOne(CustomerInterest::class);
+    }
+
     public function webUsers(): HasMany
     {
         return $this->hasMany(WebUser::class);
