@@ -79,6 +79,7 @@ import {
 	faMinus as faMinusLight,
 	faTimesCircle as faTimesCircleLight,
 	faUserAlien,
+	faTombstone as faTombstoneLight,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses } from "@fad"
@@ -179,6 +180,7 @@ library.add(
 	faBadgePercent,
 	faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight,
 	faUserAlien,
+	faTombstoneLight,
 )
 
 provide("layout", useLayoutStore())

@@ -56,9 +56,15 @@ class OrgStockFamilyHydrateHealthRank implements ShouldBeUnique
                 CROSS JOIN total t
             ),
             final_ranks AS (
-                SELECT org_stock_family_id, 'D' AS health_rank
-                FROM stats
-                WHERE last_sale_date IS NULL OR last_sale_date < NOW() - INTERVAL '90 days'
+                SELECT
+                    s.org_stock_family_id,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM org_stocks os
+                        WHERE os.org_stock_family_id = s.org_stock_family_id
+                          AND os.quantity_in_locations > 0
+                    ) THEN 'Z' ELSE 'D' END AS health_rank
+                FROM stats s
+                WHERE s.last_sale_date IS NULL OR s.last_sale_date < NOW() - INTERVAL '90 days'
 
                 UNION ALL
 
@@ -79,7 +85,11 @@ class OrgStockFamilyHydrateHealthRank implements ShouldBeUnique
 
         DB::statement("
             UPDATE org_stock_families
-            SET health_rank = 'D'
+            SET health_rank = CASE WHEN EXISTS (
+                SELECT 1 FROM org_stocks os
+                WHERE os.org_stock_family_id = org_stock_families.id
+                  AND os.quantity_in_locations > 0
+            ) THEN 'Z' ELSE 'D' END
             WHERE NOT EXISTS (
                 SELECT 1
                 FROM invoice_transaction_has_org_stocks itos

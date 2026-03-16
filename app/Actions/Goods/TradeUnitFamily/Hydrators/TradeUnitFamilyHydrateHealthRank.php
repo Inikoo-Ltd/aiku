@@ -56,9 +56,18 @@ class TradeUnitFamilyHydrateHealthRank implements ShouldBeUnique
                 CROSS JOIN total t
             ),
             final_ranks AS (
-                SELECT trade_unit_family_id, 'D' AS health_rank
-                FROM stats
-                WHERE last_sale_date IS NULL OR last_sale_date < NOW() - INTERVAL '90 days'
+                SELECT
+                    s.trade_unit_family_id,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM invoice_transaction_has_trade_units prev_ittu
+                        JOIN model_has_trade_units mhtu ON mhtu.trade_unit_id = prev_ittu.trade_unit_id
+                            AND mhtu.model_type = 'OrgStock'
+                        JOIN org_stocks os ON os.id = mhtu.model_id
+                        WHERE prev_ittu.trade_unit_family_id = s.trade_unit_family_id
+                          AND os.quantity_in_locations > 0
+                    ) THEN 'Z' ELSE 'D' END AS health_rank
+                FROM stats s
+                WHERE s.last_sale_date IS NULL OR s.last_sale_date < NOW() - INTERVAL '90 days'
 
                 UNION ALL
 
