@@ -29,6 +29,8 @@ enum OutboxMergeTagsEnum: string
     case PAYMENT_NOTE = 'Payment Note';
     case PAYMENT_REASON = 'Payment Reason';
     case PAYMENT_TYPE = 'Payment Type';
+    case CHAT_LINK = 'Chat Link';
+    case CHAT_MESSAGE = 'Chat Message';
 
 
     public static function tags(): array
@@ -97,6 +99,14 @@ enum OutboxMergeTagsEnum: string
             [
                 'name'  => __('Payment Type'),
                 'value' => '[Payment Type]'
+            ],
+            [
+                'name'  => __('Chat Link'),
+                'value' => '[Chat Link]'
+            ],
+            [
+                'name'  => __('Chat Message'),
+                'value' => '[Chat Message]'
             ],
 
         ];
