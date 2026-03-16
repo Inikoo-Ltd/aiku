@@ -48,6 +48,9 @@ const toggleShowExtra = () => {
   showExtra.value = !showExtra.value
 }
 
+/* hide image in mobile */
+const showImage = computed(() => props.screenType !== "mobile")
+
 const bestOffer = computed(() => {
   return getBestOffer(props.fieldValue?.family?.offers_data)
 })
@@ -99,104 +102,63 @@ const images = computed(() => {
 
       <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
 
-        <!-- IMAGE -->
-        <div
-          class="relative w-full overflow-hidden"
+        <!-- IMAGE / CAROUSEL (hidden on mobile) -->
+        <div v-if="showImage" class="relative w-full overflow-hidden"
           :class="[imageOrder, images.length ? 'h-[250px] sm:h-[300px] md:h-[400px]' : '']"
-          :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
-        >
+          :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
 
           <!-- CUSTOM NAVIGATION -->
-          <div
-            v-if="images.length > 1"
-            class="swiper-btn-prev absolute left-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer"
-          >
-            <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-white text-3xl"/>
+          <div v-if="images.length > 1"
+            class="swiper-btn-prev absolute left-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer">
+            <FontAwesomeIcon icon="far fa-chevron-circle-left" class="text-gray-500 text-3xl" />
           </div>
 
-          <div
-            v-if="images.length > 1"
-            class="swiper-btn-next absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer"
-          >
-            <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-white text-3xl"/>
+          <div v-if="images.length > 1"
+            class="swiper-btn-next absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer">
+            <FontAwesomeIcon icon="far fa-chevron-circle-right" class="text-gray-500 text-3xl"/>
           </div>
 
           <!-- SWIPER -->
-          <Swiper
-            v-if="images.length > 1"
-            :modules="[Navigation]"
-            :slides-per-view="1"
-            :loop="true"
-            :navigation="{
-              prevEl: '.swiper-btn-prev',
-              nextEl: '.swiper-btn-next'
-            }"
-            :pagination="{ clickable: true }"
-            class="w-full h-full"
-          >
+          <Swiper v-if="images.length > 1" :modules="[Navigation]" :slides-per-view="1" :loop="true" :navigation="{
+            prevEl: '.swiper-btn-prev',
+            nextEl: '.swiper-btn-next'
+          }" :pagination="{ clickable: true }" class="w-full h-full">
             <SwiperSlide v-for="(img, i) in images" :key="i">
-              <div class="w-full h-full">
-                <Image
-                  :src="img.original"
-                  :alt="fieldValue?.image?.alt || 'Image preview'"
-                  :imgAttributes="fieldValue?.image?.attributes"
-                  :imageCover="true"
-                  class="w-full h-full object-fill"
-                />
+              <div class="w-full h-full flex items-center justify-center">
+                <Image :src="img.original" :alt="fieldValue?.image?.alt || 'Image preview'"
+                  :imgAttributes="fieldValue?.image?.attributes" :imageCover="false"
+                  class="w-auto h-full object-contain" />
               </div>
             </SwiperSlide>
           </Swiper>
 
           <!-- SINGLE IMAGE -->
-          <component
-            v-else
-            :is="fieldValue?.image?.link?.href ? LinkIris : 'div'"
-            :href="fieldValue?.image?.link?.href"
-            :target="fieldValue?.image?.link?.target"
-            :type="fieldValue?.image?.link?.type"
-            class="absolute inset-0"
-          >
-            <Image
-              :src="images[0]?.original"
-              :alt="fieldValue?.image?.alt || 'Image preview'"
-              :imgAttributes="fieldValue?.image?.attributes"
-              :imageCover="true"
-              class="w-full h-full object-fill"
-            />
-          </component>
+          <div v-else class="absolute inset-0">
+            <Image :src="images[0]?.original" :alt="fieldValue?.image?.alt || 'Image preview'"
+              :imgAttributes="fieldValue?.image?.attributes" :imageCover="false" class="w-full h-full object-contain" />
+          </div>
 
         </div>
 
         <!-- TEXT -->
-        <div
-          class="flex flex-col justify-center m-auto"
-          :class="textOrder"
-          :style="getStyles(fieldValue?.text_block?.properties, screenType)"
-        >
+        <div class="flex flex-col justify-center m-auto items-center md:items-start text-center md:text-left"
+          :class="textOrder" :style="getStyles(fieldValue?.text_block?.properties, screenType)">
 
           <div class="w-full max-w-xl">
 
-            <h1
-              v-if="fieldValue.family.name"
-              class="!text-[1.8rem] font-semibold"
-            >
+            <h1 v-if="fieldValue.family.name" class="!text-[1.8rem] font-semibold">
               {{ fieldValue.family.name }}
             </h1>
 
             <div v-html="cleanedDescription"></div>
 
-            <div class="flex justify-start mt-6">
+            <!-- BUTTON -->
+            <div class="flex justify-center md:justify-start mt-6">
 
-              <LinkIris
-                :href="fieldValue?.button?.link?.href"
-                :canonical_url="fieldValue?.button?.link?.canonical_url"
-                :target="fieldValue?.button?.link?.target"
-                :type="fieldValue?.button?.link?.type"
-              >
-                <Button
-                  :label="fieldValue?.button?.text"
-                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-                />
+              <LinkIris :href="fieldValue?.button?.link?.href" :canonical_url="fieldValue?.button?.link?.canonical_url"
+                :target="fieldValue?.button?.link?.target" :type="fieldValue?.button?.link?.type">
+                <Button :label="fieldValue?.button?.text"
+                  :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)" />
               </LinkIris>
 
             </div>
