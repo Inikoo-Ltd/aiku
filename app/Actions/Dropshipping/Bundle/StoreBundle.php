@@ -39,7 +39,7 @@ class StoreBundle extends OrgAction
             $productData = [];
             data_set($productData, 'exclusive_for_customer_id', $customerSalesChannel->customer_id);
             data_set($productData, 'trade_units', Product::where('shop_id', $customerSalesChannel->shop_id)
-                ->whereIn('id', Arr::get($modelData, 'products'))
+                ->whereIn('id', Arr::pluck($modelData['products'], 'product_id'))
                 ->get()
                 ->map(function ($product) {
                     return $product->tradeUnits->map(function (TradeUnit $tradeUnit) {
@@ -94,7 +94,8 @@ class StoreBundle extends OrgAction
             'price'       => ['required', 'numeric', 'min:0'],
             'rrp'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'products'    => ['required', 'array', 'min:1'],
-            'products.*'  => ['required', 'integer', 'exists:products,id'],
+            'products.*.product_id'  => ['required', 'integer', 'exists:products,id'],
+            'products.*.quantity'  => ['required', 'numeric', 'min:1'],
         ];
 
         if (!$this->strict) {

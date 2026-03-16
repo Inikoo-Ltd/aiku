@@ -87,6 +87,8 @@ class IndexRetinaBundles extends RetinaAction
                 'products.is_for_sale',
             );
 
+        // so in bundles data there are some ids that are in products table, i want to get all of those using SQL here
+
         return $query->defaultSort('-bundles.id')
             ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter(), $this->getForSaleFilter()])
             ->withPaginator($prefix, tableName: request()->route()->getName())
