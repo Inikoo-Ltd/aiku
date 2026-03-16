@@ -5,6 +5,7 @@ namespace App\Actions\Comms\Mailshot\Filters;
 use Illuminate\Support\Arr;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class FilterOrdersInBasket
 {
@@ -43,17 +44,21 @@ class FilterOrdersInBasket
                 }
             }
 
-            $query->whereHas('orders', function ($q) use ($options) {
-                $q->where('state', OrderStateEnum::CREATING);
+            $query->whereExists(function ($q) use ($options) {
+                $q->select(DB::raw(1))
+                    ->from('orders')
+                    ->whereColumn('orders.customer_id', 'customers.id') // adjust FK as needed
+                    ->where('orders.state', OrderStateEnum::CREATING->value);
+
                 if ($dateRange = Arr::get($options, 'date_range')) {
                     $startDate = Arr::get($dateRange, 'start');
                     $endDate   = Arr::get($dateRange, 'end');
 
                     if ($startDate) {
-                        $q->whereDate('updated_at', '>=', $startDate);
+                        $q->whereRaw('DATE(orders.updated_at) >= ?', [$startDate]);
                     }
                     if ($endDate) {
-                        $q->whereDate('updated_at', '<=', $endDate);
+                        $q->whereRaw('DATE(orders.updated_at) <= ?', [$endDate]);
                     }
                 }
 
@@ -62,10 +67,10 @@ class FilterOrdersInBasket
                     $max = Arr::get($amountRange, 'max');
 
                     if ($min !== null && $min !== '') {
-                        $q->where('org_net_amount', '>=', $min);
+                        $q->whereRaw('orders.org_net_amount >= ?', [$min]);
                     }
                     if ($max !== null && $max !== '') {
-                        $q->where('org_net_amount', '<=', $max);
+                        $q->whereRaw('orders.org_net_amount <= ?', [$max]);
                     }
                 }
             });
