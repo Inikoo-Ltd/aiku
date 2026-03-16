@@ -41,7 +41,7 @@ trait RepairInvoiceTransactionBridges
 
         $query->chunkById(self::CHUNK_SIZE, function ($invoiceTransactions) use ($bar) {
                 foreach ($invoiceTransactions as $invoiceTransaction) {
-                    $this->getJobClass()::dispatch($invoiceTransaction->id);
+                    $this->getJobClass()::run($invoiceTransaction->id);
                     $bar->advance();
                 }
             });
