@@ -44,8 +44,7 @@ class ProcessSendMailshot
                     [
                         'is_test'       => false,
                         'outbox_id'     => $outboxId,
-                        'email_address' => $customer->email,
-                        'provider'      => DispatchedEmailProviderEnum::SES
+                        'email_address' => $customer->email
                     ]
                 );
 
@@ -69,6 +68,9 @@ class ProcessSendMailshot
         );
 
         UpdateMailshotRecipientsStoredAt::run($mailshot, $totalCustomer);
+
+        // TODO: check another hydrator
+        // MailshotHydrateDispatchedEmails::run($mailshot);
 
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
     }

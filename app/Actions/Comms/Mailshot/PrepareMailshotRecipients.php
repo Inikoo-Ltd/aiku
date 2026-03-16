@@ -49,9 +49,6 @@ class PrepareMailshotRecipients
             $customerIds = $customers->pluck('id');
             ProcessSendMailshot::dispatch($mailshotId, $customerIds, $outboxId, $totalCustomers);
         });
-
-        // // TODO: check another hydrator
-        // MailshotHydrateDispatchedEmails::run($mailshot);
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';
