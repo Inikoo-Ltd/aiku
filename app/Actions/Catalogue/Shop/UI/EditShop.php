@@ -252,6 +252,19 @@ class EditShop extends OrgAction
                         ],
                     ]
                 ] : [],
+                $shop->website ? [
+                    'label'  => __('Website'),
+                    'icon'   => 'fal fa-browser',
+                    'fields' => [
+                        'family_webpage_split_description' => [
+                            'label'         => 'Split Family Page Description Web Block',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'website.family_webpage_split_description', false),
+                            'information'   => __('Description Web Block would be split into 2 parts that is editable'),
+                            'warningText'   => __('Changing this would change the current layout of families webpage (using second webpage styles). Some unsaved changes on the workshop might be discarded. Are you sure you want to change it?')
+                        ],
+                    ]
+                ] : [],
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',

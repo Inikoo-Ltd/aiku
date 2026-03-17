@@ -19,6 +19,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Actions\Web\Website\Hydrators\WebsiteReHydrateFamilyWebpage;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -98,6 +99,12 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'product_follow_master')) {
             data_set($modelData, 'settings.catalog.product_follow_master', Arr::pull($modelData, 'product_follow_master'));
+        }
+
+        $updateChildWebsite = false;
+        if (Arr::has($modelData, 'family_webpage_split_description')) { 
+            data_set($modelData, 'settings.website.family_webpage_split_description', Arr::pull($modelData, 'family_webpage_split_description'));
+            $updateChildWebsite = true;
         }
 
         foreach ($modelData as $key => $value) {
@@ -256,6 +263,10 @@ class UpdateShop extends OrgAction
             ShopHydrateUniversalSearch::dispatch($shop);
         }
 
+        if ($updateChildWebsite) {
+            WebsiteReHydrateFamilyWebpage::dispatch($shop->website);
+        }
+
         return $shop;
     }
 
@@ -387,6 +398,7 @@ class UpdateShop extends OrgAction
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
+            'family_webpage_split_description'                        => ['sometimes', 'boolean']
         ];
 
         $channelIds = SalesChannel::pluck('id');
