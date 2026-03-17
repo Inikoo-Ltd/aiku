@@ -42,7 +42,6 @@ class ProcessSendMailshot
                     $mailshot,
                     $customer,
                     [
-                        'is_test'       => false,
                         'outbox_id'     => $outboxId,
                         'email_address' => $customer->email
                     ]
