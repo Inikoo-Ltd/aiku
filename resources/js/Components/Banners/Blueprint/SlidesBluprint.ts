@@ -19,6 +19,12 @@ export default {
                     ]
                 },
                 {
+                    name: ["layout", "visibility"],
+                    type: "visibility",
+                    label: trans("Responsive Visibility"),
+                    value: ["layout", "visibility"],
+                },
+                {
                     name: "image",
                     type: "slideBackground",
                     label: trans("Image"),

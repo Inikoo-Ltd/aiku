@@ -187,10 +187,34 @@ const wrapperStyle = computed(() => {
     return style
 })
 
+const filteredComponents = computed(() => {
+   const view = props.view || 'desktop'
+
+   if (props.production) {
+      return props.data.components.filter(c =>
+         c.ulid &&
+         (c.layout?.visibility?.[view] !== false)
+      )
+   }
+
+   return props.data.components.filter(c => c.ulid)
+})
+
+const isHiddenInCurrentView = (component) => {
+   const view = props.view || 'desktop'
+   const vis = component.layout?.visibility
+
+   if (!vis) return false
+
+   return vis[view] === false
+}
+
 const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true
 })
+
+console.log("props prod", props.production)
 </script>
 
 <template>
@@ -202,14 +226,14 @@ onMounted(() => {
                 <Swiper class="w-full h-full" ref="swiperRef" :key="'banner' + intSwiperKey" :slideToClickedSlide="true"
                     :spaceBetween="get(data, ['common', 'spaceBetween']) ? data.common.spaceBetween : 0"
                     :slidesPerView="1" :centeredSlides="true"
-                    :loop="data.components.filter((item) => item.ulid).length > 1" :autoplay="true" :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
+                    :loop="filteredComponents.length > 1" :autoplay="filteredComponents.length > 1" :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
                         clickable: true,
                         renderBullet: (index, className) => {
                             return `<span class='${className}'></span>`
                         },
                     } : false" :navigation="!data.navigation || data.navigation?.sideNav?.value"
                     :modules="[Autoplay, Pagination, Navigation]">
-                    <SwiperSlide v-for="component in data.components.filter((item) => item.ulid)" :key="component.id"
+                    <SwiperSlide v-for="component in filteredComponents"
                         class="w-full h-full">
                         <!-- Slide: Image -->
                         <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"
@@ -230,6 +254,19 @@ onMounted(() => {
 
                         </div>
                         <div v-else :style="{ background: renderBackground(component) }" class="w-full h-full" />
+                        <div
+                            v-if="isHiddenInCurrentView(component)"
+                            class="absolute inset-0 bg-gray-900/70 z-[20] flex flex-col items-center justify-center text-center"
+                            >
+                            <FontAwesomeIcon
+                                icon="fas fa-eye-slash"
+                                class="text-orange-400 text-5xl mb-2"
+                            />
+
+                            <span class="text-orange-300 text-sm italic">
+                                Hidden on {{ props.view }}
+                            </span>
+                        </div>
                         <!-- Section: Not Visible (for workshop) -->
                         <div v-if="get(component, ['visibility'], true) === false"
                             class="absolute h-full w-full bg-gray-800/50 z-10 " />
@@ -243,7 +280,7 @@ onMounted(() => {
                             </span>
                         </div>
                         <!-- <FontAwesomeIcon v-if="!!component?.layout?.link" icon='far fa-external-link' class='text-gray-300/50 text-xl absolute top-2 right-2' aria-hidden='true' /> -->
-                        <a v-if="!!component?.layout?.link" :href="`https://${useRemoveHttps(component?.layout?.link)}`"
+                        <a v-if="!!component?.layout?.link && !isHiddenInCurrentView(component)" :href="`https://${useRemoveHttps(component?.layout?.link)}`"
                             target="_top" class="absolute bg-transparent w-full h-full" />
                         <SlideCorner v-for="(slideCorner, position) in filteredNulls(component?.layout?.corners)"
                             :position="position" :corner="slideCorner" :commonCorner="data.common.corners" />

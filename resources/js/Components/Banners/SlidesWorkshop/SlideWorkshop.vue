@@ -35,6 +35,12 @@ const current = ref(0);
 
 const getValue = (fieldData: string | string[]) => {
     const rawVal = get(props.modelValue, fieldData.name)
+     if (fieldData.type === "visibility") {
+        return typeof rawVal === 'object'
+            ? rawVal
+            : null
+    }
+
     const view = screenView.value!
     return rawVal?.[view] ?? rawVal?.desktop ?? rawVal ?? null
 }
@@ -58,6 +64,11 @@ const setValue = (fieldData: any, value: any) => {
         return
     }
 
+    if (fieldData.type === "visibility") {
+        set(cloned, fieldName, value)
+        emit("update:modelValue", cloned)
+        return
+    }
     // nested path array
     if (Array.isArray(fieldName)) {
         set(cloned, fieldName, value)

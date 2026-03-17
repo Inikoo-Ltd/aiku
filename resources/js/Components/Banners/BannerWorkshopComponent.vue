@@ -49,7 +49,6 @@ onMounted(() => {
   if (!containerRef.value) return
 
   containerWidth.value = containerRef.value.offsetWidth
-
   resizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
       containerWidth.value = entry.contentRect.width
@@ -77,6 +76,12 @@ const calculatedHeight = computed(() => {
   }
 
   return 0
+})
+
+const previewWidth = computed(() => {
+   if (screenView.value === 'mobile') return 375
+   if (screenView.value === 'tablet') return 768
+   return 1200
 })
 
 const scaleValue = computed(() => {
@@ -115,8 +120,11 @@ watch(
         <SliderSquare :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio />
       </div>
 
-      <div v-else ref="containerRef" class="w-full max-w-[1200px] mx-auto overflow-hidden relative"
-        :style="needsScale ? { height: '500px' } : {}">
+      <div v-else ref="containerRef"  class="mx-auto overflow-hidden relative"
+         :style="{
+          width: previewWidth + 'px',
+          height: needsScale ? '500px' : ''
+        }">
         <div :style="needsScale
           ? {
             transform: `scale(${scaleValue})`,
@@ -124,6 +132,8 @@ watch(
             width: '100%'
           }
           : {}">
+          
+          
           <SliderLandscape :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio="ratio" />
         </div>
       </div>
