@@ -97,7 +97,6 @@ const buttonJustifyClass = computed(() =>
       >
         <!-- IMAGE -->
         <div
-          v-if="!hideImageOnMobile"
           class="w-full h-full flex items-center justify-center"
           :class="[imageOrder]"
           :style="getStyles(fieldValue?.image?.container?.properties, screenType)"
