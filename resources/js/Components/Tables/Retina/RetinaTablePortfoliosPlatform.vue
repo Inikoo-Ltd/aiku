@@ -1336,6 +1336,7 @@ const percentageIncrease = ref(0);
 					trans("Selling Price")
 				}}</label>
 				<InputNumber
+					@update:modelValue="(value) => selectedEditProduct.customer_price = value"
 					:modelValue="selectedEditProduct?.customer_price"
 					inputId="edit-product-rrp"
 					mode="currency"
