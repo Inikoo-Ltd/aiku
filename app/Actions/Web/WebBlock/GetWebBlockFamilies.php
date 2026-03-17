@@ -98,6 +98,7 @@ class GetWebBlockFamilies
             $permissions = ['hidden'];
         }
 
+        data_set($webBlock, 'web_block.webpage_data.webpage_type', $webpage->model->type);
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
