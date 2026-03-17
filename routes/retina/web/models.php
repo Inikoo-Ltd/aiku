@@ -7,12 +7,14 @@
  */
 
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
+use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\Dropshipping\Allegro\Product\StoreRetinaNewProductToCurrentAllegro;
 use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
+use App\Actions\Dropshipping\Bundle\UpdateBundle;
 use App\Actions\Dropshipping\CustomerSalesChannel\RetinaDeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
@@ -345,6 +347,8 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
         Route::post('/', StoreRetinaBundle::class)->name('store');
+        Route::patch('{bundle}', UpdateBundle::class)->name('update');
+        Route::post('products/{product:id}/images', UploadImagesToProduct::class)->name('products.images.store')->withoutScopedBindings();
         Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
     });
 
