@@ -35,7 +35,8 @@ class NotPickedPalletFromReturn extends OrgAction
     {
         if ($palletReturnItem->type == 'Pallet') {
             $palletReturnItem = $this->update($palletReturnItem, [
-                'state' => PalletReturnItemStateEnum::NOT_PICKED
+                'state'          => PalletReturnItemStateEnum::NOT_PICKED,
+                'quantity_picked' => 0,
             ], ['data']);
 
             UpdatePallet::run($palletReturnItem->pallet, [

@@ -45,6 +45,7 @@ class PickWholePalletInPalletReturn extends OrgAction
             data_set($modelData, 'state', PalletReturnItemStateEnum::PICKED);
 
             if ($palletReturnItem->type == 'Pallet') {
+                data_set($modelData, 'quantity_picked', $palletReturnItem->quantity_ordered);
                 $this->update($palletReturnItem, $modelData);
             } else {
                 $storedItems = PalletReturnItem::where('pallet_return_id', $palletReturnItem->pallet_return_id)

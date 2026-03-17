@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
+use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\Pallet\ReturnPallet;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletReturn\Notifications\SendPalletReturnNotification;
@@ -73,6 +74,13 @@ class DispatchPalletReturn extends OrgAction
                 return $palletReturn;
             });
         }
+
+        $palletReturn->items()
+            ->where('state', '!=', PalletReturnItemStateEnum::CANCEL)
+            ->update([
+                'quantity_dispatched' => DB::raw('quantity_picked'),
+            ]);
+
         $this->update($palletReturn, $modelData);
 
         if ($recurringBill = $palletReturn->recurringBill) {
@@ -99,6 +107,7 @@ class DispatchPalletReturn extends OrgAction
 
         $pickingSessions = $palletReturn->pickingSessions()->get();
         foreach ($pickingSessions as $pickingSession) {
+            (new CalculateFulfilmentPickingSessionPicks())->action($pickingSession);
             (new AutoFinishPackingFulfilmentPickingSession())->action($pickingSession);
         }
 
