@@ -55,7 +55,9 @@ class SeedDispatchedEmailsRecipientsTables
                             ->where('web_user_id', $dispatchedEmail->recipient_id)
                             ->exists();
 
-                        if (!$exists) {
+                        $webUserExist = DB::table('web_users')->where('id', $dispatchedEmail->recipient_id)->exists();
+
+                        if (!$exists && $webUserExist) {
                             $insertData['web_user_id'] = $dispatchedEmail->recipient_id;
                             $webUserInserts[]          = $insertData;
                         }
@@ -114,8 +116,13 @@ class SeedDispatchedEmailsRecipientsTables
 
                 $changed = false;
                 if (!empty($webUserInserts)) {
-                    DB::table('web_user_has_dispatched_emails')->insert($webUserInserts);
-                    $changed = true;
+                    try {
+                        DB::table('web_user_has_dispatched_emails')->insert($webUserInserts);
+                        $changed = true;
+                    }catch (\Exception $e) {
+
+                        $command->error("Web user insert error: {$e->getMessage()}");
+                    }
                 }
 
                 if (!empty($customerInserts)) {
