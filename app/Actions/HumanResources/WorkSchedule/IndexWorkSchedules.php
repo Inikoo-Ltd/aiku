@@ -35,6 +35,16 @@ class IndexWorkSchedules extends OrgAction
                 'work_schedules.is_active',
                 'work_schedules.created_at',
             ])
+            ->with(['days' => function ($query) {
+                $query->select([
+                    'work_schedule_days.id',
+                    'work_schedule_days.work_schedule_id',
+                    'work_schedule_days.day_of_week',
+                    'work_schedule_days.is_working_day',
+                    'work_schedule_days.start_time',
+                    'work_schedule_days.end_time',
+                ])->orderBy('day_of_week');
+            }])
             ->allowedSorts(['name', 'type', 'is_active', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -87,6 +97,7 @@ class IndexWorkSchedules extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true)
                 ->column(key: 'is_active', label: __('Status'), canBeHidden: false, sortable: true)
+                ->column(key: 'time', label: __('Time'), canBeHidden: false)
                 ->column(key: 'actions', label: __('Actions'))
                 ->defaultSort('-created_at');
         };
