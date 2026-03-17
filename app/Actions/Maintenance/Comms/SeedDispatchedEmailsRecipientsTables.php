@@ -31,6 +31,7 @@ class SeedDispatchedEmailsRecipientsTables
             ->orderBy('id', 'desc')
             ->chunk($chunkSize, function ($dispatchedEmails) use ($command, &$processedCount) {
                 $webUserInserts                     = [];
+                $usersInserts                       = [];
                 $customerInserts                    = [];
                 $prospectInserts                    = [];
                 $externalSubscriberRecipientInserts = [];
@@ -80,7 +81,9 @@ class SeedDispatchedEmailsRecipientsTables
                             ->where('prospect_id', $dispatchedEmail->recipient_id)
                             ->exists();
 
-                        if (!$exists) {
+                        $prospect = DB::table('prospects')->where('id', $dispatchedEmail->recipient_id)->exists();
+
+                        if (!$exists && $prospect) {
                             $insertData['prospect_id'] = $dispatchedEmail->recipient_id;
                             $prospectInserts[]         = $insertData;
                         }
@@ -114,6 +117,16 @@ class SeedDispatchedEmailsRecipientsTables
                             $insertData['chat_email_recipient_id'] = $dispatchedEmail->recipient_id;
                             $chatEmailRecipientInserts[]           = $insertData;
                         }
+                    } elseif ($dispatchedEmail->recipient_type === 'User') {
+                        $exists = DB::table('user_has_dispatched_emails')
+                            ->where('dispatched_email_id', $dispatchedEmail->id)
+                            ->where('user_id', $dispatchedEmail->recipient_id)
+                            ->exists();
+
+                        if (!$exists) {
+                            $insertData['user_id'] = $dispatchedEmail->recipient_id;
+                            $usersInserts[]        = $insertData;
+                        }
                     }
                 }
 
@@ -121,6 +134,15 @@ class SeedDispatchedEmailsRecipientsTables
                 if (!empty($webUserInserts)) {
                     try {
                         DB::table('web_user_has_dispatched_emails')->insert($webUserInserts);
+                        $changed = true;
+                    } catch (\Exception $e) {
+                        //
+                    }
+                }
+
+                if (!empty($usersInserts)) {
+                    try {
+                        DB::table('user_has_dispatched_emails')->insert($webUserInserts);
                         $changed = true;
                     } catch (\Exception $e) {
                         //
