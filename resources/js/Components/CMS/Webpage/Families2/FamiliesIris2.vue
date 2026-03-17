@@ -206,6 +206,16 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
             <Swiper @swiper="(s) => (swiperInstance = s)" :modules="[Autoplay, Thumbs, FreeMode, Navigation]"
               :loop="true" slides-per-view="auto" :space-between="spaceBetween" :freeMode="true" navigation
               class="w-full swiper-inner">
+           <!--    <SwiperSlide class="!w-auto flex">
+                <div href="/your-view-all-url" class="h-full flex">
+                  <div
+                    class="h-full flex items-center justify-center px-4 py-3 rounded-xl border bg-white hover:bg-gray-50 transition-all whitespace-nowrap">
+                    <span class="text-sm font-medium">
+                      View All
+                    </span>
+                  </div>
+                </div>
+              </SwiperSlide> -->
               <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="!w-auto flex">
                 <LinkIris :href="item.url" :style="{ textDecoration: 'none' }" class="h-full flex">
                   <Family2Render class="family-item h-full flex items-center" :data="item" :style="{
