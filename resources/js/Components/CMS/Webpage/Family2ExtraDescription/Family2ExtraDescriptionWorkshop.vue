@@ -131,9 +131,9 @@ const saveDescription = debounce(async (key: string, value: string) => {
         </div>
 
         <!-- TEXT -->
-        <div class="flex flex-col justify-center m-auto p-4" :class="[textOrder, textAlignClass]"
+        <div class="flex flex-col justify-center m-auto p-4 mx-4" :class="[textOrder, textAlignClass]"
           :style="getStyles(modelValue?.text_block?.properties, screenType)">
-          <div class="w-full max-w-xl">
+          <div class="w-full">
             <EditorV2 v-model="description" placeholder="Family Description"
               @update:model-value="(e) => saveDescription('description_extra', e)" :uploadImageRoute="{
                 name: webpageData?.images_upload_route?.name,

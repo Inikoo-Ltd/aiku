@@ -61,7 +61,7 @@ const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
 
-if(layout?.rightbasket?.show) set(layout, ['rightbasket', 'show'], false)
+/* if(layout?.rightbasket?.show) set(layout, ['rightbasket', 'show'], false) */
 
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
