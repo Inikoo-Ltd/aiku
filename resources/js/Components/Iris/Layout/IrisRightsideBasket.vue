@@ -282,7 +282,7 @@ const stopDrag = () => {
 
 const basketRef = ref<HTMLElement | null>(null)
 
-const handleClickOutside = (e: MouseEvent) => {
+/* const handleClickOutside = (e: MouseEvent) => {
   if (!layout.rightbasket?.show) return
 
   const target = e.target as Node
@@ -291,18 +291,18 @@ const handleClickOutside = (e: MouseEvent) => {
     layout.rightbasket.show = false
   }
 }
-
+ */
 
 onMounted(() => {
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
-  document.addEventListener('mousedown', handleClickOutside)
+/*   document.addEventListener('mousedown', handleClickOutside) */
 })
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', onDrag)
   window.removeEventListener('mouseup', stopDrag)
-  document.removeEventListener('mousedown', handleClickOutside)
+  /* document.removeEventListener('mousedown', handleClickOutside) */
 })
 
 
