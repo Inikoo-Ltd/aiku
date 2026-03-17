@@ -24,6 +24,8 @@ defineProps<{
 }>()
 
 const locale = useLocaleStore()
+const selectedDate = ref(false);
+const isLoadingExport = ref(false);
 
 function invoiceRoute(invoice: Invoice) {
 
@@ -70,12 +72,32 @@ function channelRoute(invoice: {}) {
     }
 }
 
+const onExportPdf = () => {
+    if (!selectedDate.value) return
+    window.open(route('retina.dropshipping.invoices.export', { date: selectedDate.value }), '_blank')
+}
+
 </script>
 
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <div class="flex items-center gap-3 px-4 py-3">
+        <input type="date" 
+            v-model="selectedDate" 
+            class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+        <Button
+            :disabled="!selectedDate"
+            @click="onExportPdf"
+            label="Export invoices by date"
+            class="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+        >
+            <FontAwesomeIcon icon="fal fa-file-pdf" />
+            Export Pdf
+        </Button>
+
+    </div>
     <Table :resource="data" class="mt-5">
         <template #cell(reference)="{ item: invoice }">
             <Link :href="invoiceRoute(invoice)" class="primaryLink py-0.5">

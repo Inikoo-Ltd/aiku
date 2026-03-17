@@ -63,12 +63,12 @@ use App\Actions\Retina\Ebay\UpdateRetinaEbayUser;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Accounting\Invoice\ExportDropshippingInvoicesByDate;
 
 Route::get('select-products-for-empty-basket', IndexRetinaProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
 Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket::class)->name('select_products_for_basket');
 
 Route::get('export-template-portfolios', ExportTemplateRetinaPortfolios::class)->name('portfolio_template.export');
-
 
 Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function () {
     Route::get('{customerSalesChannel}/upload-portfolio-history', IndexRetinaRecentCustomerSalesChannelPortfolioUploads::class)
@@ -156,6 +156,7 @@ Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::cla
 
 Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');
+    Route::get('export', ExportDropshippingInvoicesByDate::class)->name('export');
     Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
     Route::get('{invoice}/pdf', RetinaPdfInvoice::class)->name('pdf');
 });
