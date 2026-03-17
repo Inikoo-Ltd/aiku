@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Intrastat\ExportIntrastatExcel;
+use App\Actions\Accounting\Intrastat\ExportIntrastatImportExcel;
 use App\Actions\Accounting\Intrastat\ExportIntrastatXml;
 use App\Actions\Accounting\Intrastat\ExportIntrastatXmlSlovakia;
 use App\Actions\Accounting\Intrastat\UI\IndexIntrastatExportReport;
@@ -34,8 +36,10 @@ Route::get('/sales', ShowOrganisationSalesReport::class)->name('sales');
 Route::get('/intrastat/exports', IndexIntrastatExportReport::class)->name('intrastat.exports');
 Route::get('/intrastat/exports/export-xml', ExportIntrastatXml::class)->name('intrastat.exports.export');
 Route::get('/intrastat/exports/export-slovakia', ExportIntrastatXmlSlovakia::class)->name('intrastat.exports.export-slovakia');
+Route::get('/intrastat/exports/export-excel', ExportIntrastatExcel::class)->name('intrastat.exports.export-excel');
 
 Route::get('/intrastat/imports', IndexIntrastatImportReport::class)->name('intrastat.imports');
+Route::get('/intrastat/imports/export-excel', ExportIntrastatImportExcel::class)->name('intrastat.imports.export-excel');
 
 Route::get('/sage-invoices', IndexSageInvoicesReport::class)->name('sage-invoices');
 Route::get('/sage-invoices/export', ExportSageInvoices::class)->name('sage-invoices.export');
