@@ -14,7 +14,6 @@ use App\Actions\Dropshipping\Allegro\Product\StoreRetinaNewProductToCurrentAlleg
 use App\Actions\Dropshipping\Amazon\Orders\GetRetinaOrdersFromAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
-use App\Actions\Dropshipping\Bundle\UpdateBundle;
 use App\Actions\Dropshipping\CustomerSalesChannel\RetinaDeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
@@ -63,6 +62,7 @@ use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductImages;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleDescription;
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleTitle;
 use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
+use App\Actions\Retina\Dropshipping\Bundle\UpdateRetinaBundle;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ImportBulkCustomerSalesChannelPortfolios;
@@ -347,7 +347,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
         Route::post('/', StoreRetinaBundle::class)->name('store');
-        Route::patch('{bundle}', UpdateBundle::class)->name('update');
+        Route::patch('{bundle}', UpdateRetinaBundle::class)->name('update');
         Route::post('products/{product:id}/images', UploadImagesToProduct::class)->name('products.images.store')->withoutScopedBindings();
         Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
     });
