@@ -40,9 +40,6 @@ class StoreDispatchedEmail extends OrgAction
             data_set($modelData, 'outbox_id', $outbox->id);
         }
 
-        //todo will be changed
-        data_set($modelData, 'recipient_type', class_basename($recipient));
-        data_set($modelData, 'recipient_id', $recipient->id);
 
         $emailAddress = StoreEmailAddress::run($parent->group, Arr::pull($modelData, 'email_address'));
         data_set($modelData, 'email_address_id', $emailAddress->id);
@@ -53,6 +50,9 @@ class StoreDispatchedEmail extends OrgAction
         } else {
             $dispatchedEmail = DispatchedEmail::create($modelData);
         }
+
+        $recipient->dispatchedEmails()->attach($dispatchedEmail);
+
 
         if (!$isTest) {
             OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(10);

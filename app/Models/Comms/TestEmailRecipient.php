@@ -10,6 +10,7 @@ namespace App\Models\Comms;
 
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -33,4 +34,9 @@ class TestEmailRecipient extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'test_email_recipient_has_dispatched_emails');
+    }
 }

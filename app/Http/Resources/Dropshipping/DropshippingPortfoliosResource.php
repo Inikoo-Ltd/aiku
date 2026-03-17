@@ -196,6 +196,7 @@ class DropshippingPortfoliosResource extends JsonResource
             ],
             'product_state'             => $this->product_state ?? null,
             'is_for_sale'               => $this->is_for_sale ?? null,
+            'product_rrp'               => $this->rrp,
             ...$shopifyUploadRoute,
             ...$wooUploadRoute,
             ...$ebayUploadRoute,
