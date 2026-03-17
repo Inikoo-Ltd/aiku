@@ -36,6 +36,7 @@ const props = defineProps<{
 
 const emits = defineEmits<{
     (e: "submit", val: {}[]): void
+    (e: "update:selected", val: {}[]): void
 }>()
 
 interface Portfolio {
@@ -144,6 +145,10 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
         getPortfoliosList()
     }
 })
+
+watch(selectedProduct, (val) => {
+    emits('update:selected', val)
+}, { deep: true })
 </script>
 
 <template>
