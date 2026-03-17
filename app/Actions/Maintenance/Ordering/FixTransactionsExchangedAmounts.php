@@ -79,13 +79,16 @@ class FixTransactionsExchangedAmounts
             if ($expectedGrp && $this->isDifferenceOverThreshold($transaction->grp_exchange, $expectedGrp)) {
                 $command->warn(
                     sprintf(
-                        'Transaction #%s: grp_exchange suspicious — stored: %s, expected: %s (%.1f%%) '.$date->format('Y-m-d'),
+                        'FIXING Transaction #%s: grp_exchange suspicious — stored: %s, expected: %s (%.1f%%) '.$date->format('Y-m-d'),
                         $transaction->id,
                         $transaction->grp_exchange,
                         round($expectedGrp, 4),
                         $this->percentageDifference($transaction->grp_exchange, $expectedGrp)
                     )
                 );
+                $transaction->update([
+                    'grp_exchange' => $expectedGrp
+                ]);
             }
         }
 
@@ -94,13 +97,16 @@ class FixTransactionsExchangedAmounts
             if ($expectedOrg && $this->isDifferenceOverThreshold($transaction->org_exchange, $expectedOrg)) {
                 $command->warn(
                     sprintf(
-                        'Transaction #%s: org_exchange suspicious — stored: %s, expected: %s (%.1f%%) '.$date->format('Y-m-d'),
+                        'FIXING Transaction #%s: org_exchange suspicious — stored: %s, expected: %s (%.1f%%) '.$date->format('Y-m-d'),
                         $transaction->id,
                         $transaction->org_exchange,
                         round($expectedOrg, 4),
                         $this->percentageDifference($transaction->org_exchange, $expectedOrg)
                     )
                 );
+                $transaction->update([
+                    'org_exchange' => $expectedOrg
+                ]);
             }
         }
     }

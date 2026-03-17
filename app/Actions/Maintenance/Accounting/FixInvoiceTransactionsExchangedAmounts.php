@@ -47,7 +47,7 @@ class FixInvoiceTransactionsExchangedAmounts
 
         $bar->finish();
         $command->newLine();
-        $command->info("Fixed {$total} invoice transactions.");
+        $command->info("Fixed $total invoice transactions.");
     }
 
     private function processInChunks(Builder $query, $bar, Command $command): void
@@ -79,13 +79,17 @@ class FixInvoiceTransactionsExchangedAmounts
             if ($expectedGrp && $this->isDifferenceOverThreshold($invoiceTransaction->grp_exchange, $expectedGrp)) {
                 $command->warn(
                     sprintf(
-                        'Invoice Transaction #%s: grp_exchange suspicious — stored: %s, expected: %s (%.1f%%) '.$date->format('Y-m-d'),
+                        'FIXING Invoice Transaction #%s: grp_exchange suspicious — stored: %s, expected: %s (%.1f%%) '.$date->format('Y-m-d'),
                         $invoiceTransaction->id,
                         $invoiceTransaction->grp_exchange,
                         round($expectedGrp, 4),
                         $this->percentageDifference($invoiceTransaction->grp_exchange, $expectedGrp)
                     )
                 );
+                $invoiceTransaction->update([
+                    'grp_exchange' => $expectedGrp
+                ]);
+
             }
         }
 
@@ -94,13 +98,16 @@ class FixInvoiceTransactionsExchangedAmounts
             if ($expectedOrg && $this->isDifferenceOverThreshold($invoiceTransaction->org_exchange, $expectedOrg)) {
                 $command->warn(
                     sprintf(
-                        'Invoice Transaction #%s: org_exchange suspicious — stored: %s, expected: %s (%.1f%%) '.$date->format('Y-m-d'),
+                        'FIXING Invoice Transaction #%s: org_exchange suspicious — stored: %s, expected: %s (%.1f%%) '.$date->format('Y-m-d'),
                         $invoiceTransaction->id,
                         $invoiceTransaction->org_exchange,
                         round($expectedOrg, 4),
                         $this->percentageDifference($invoiceTransaction->org_exchange, $expectedOrg)
                     )
                 );
+                $invoiceTransaction->update([
+                    'org_exchange' => $expectedOrg
+                ]);
             }
         }
     }
