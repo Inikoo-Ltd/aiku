@@ -37,7 +37,7 @@ class WebsiteReHydrateFamilyWebpage implements ShouldBeUnique
             ->where('sub_type', 'family')
             ->orderBy('id')
             ->get();
-        
+
         foreach ($webpages as $webpage) {
             $this->rehydrateWebBlock($webpage, $chosenOption);
         }
@@ -45,7 +45,7 @@ class WebsiteReHydrateFamilyWebpage implements ShouldBeUnique
 
     public function rehydrateWebBlock(Webpage $webpage, $familyDescriptionBlock = 'family-1')
     {
-        if($familyDescriptionBlock == 'family-1') {
+        if ($familyDescriptionBlock == 'family-1') {
             $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
             if (count($countFamilyDescriptionBlock) == 0) {
                 $this->createWebBlock($webpage, 'family-1');
@@ -80,7 +80,7 @@ class WebsiteReHydrateFamilyWebpage implements ShouldBeUnique
         $website = $webpage->website;
         $liveProductsSnapshot = $website->liveProductsSnapshot;
         $unpublishedProductsSnapshot = $website->unpublishedProductsSnapshot;
-        
+
         $usedWebBlockTemplateCodes = data_get($liveProductsSnapshot?->layout, 'code', data_get($unpublishedProductsSnapshot?->layout, 'code', array_first(WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes())));
 
         $productList = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes)->first()->model_has_web_blocks_id;

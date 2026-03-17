@@ -40,13 +40,13 @@ class PickFromMagicPlace extends OrgAction
         if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
             return null;
         }
-        
+
         $deliveryNoteItem->update(['locked_at'  => now()]);
 
         try {
 
             $toPickQuantity = $deliveryNoteItem->quantity_required - $deliveryNoteItem->quantity_picked - $deliveryNoteItem->quantity_not_picked;
-    
+
             if (Arr::has($modelData, 'quantity')) {
                 $quantity = Arr::get($modelData, 'quantity');
                 if ($quantity > $toPickQuantity) {
@@ -58,29 +58,29 @@ class PickFromMagicPlace extends OrgAction
             if ($quantity <= 0) {
                 return null;
             }
-    
+
             data_set($modelData, 'quantity', $quantity);
-    
+
             data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
             data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
             data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
             data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
             data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
-    
+
             data_set($modelData, 'engine', PickingEngineEnum::AIKU, false);
             data_set($modelData, 'type', PickingTypeEnum::MAGIC_PICK, false);
-    
+
             /** @var Picking $picking */
             $picking = $deliveryNoteItem->pickings()->create($modelData);
             $picking->refresh();
-    
-    
+
+
             CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
-    
+
             return $picking;
 
         } catch (Exception $e) {
-            
+
             $deliveryNoteItem->update(['locked_at'  => null]);
 
             return null;

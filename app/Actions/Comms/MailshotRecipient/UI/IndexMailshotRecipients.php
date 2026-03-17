@@ -13,7 +13,6 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
-use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -21,7 +20,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class IndexMailshotRecipients extends OrgAction
 {
     public function handle(Mailshot $mailshot, $prefix = null): LengthAwarePaginator
-
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -33,9 +31,9 @@ class IndexMailshotRecipients extends OrgAction
             ->leftJoin('email_addresses', 'dispatched_emails.email_address_id', '=', 'email_addresses.id');
 
 
-        if($mailshot->type == MailshotTypeEnum::NEWSLETTER->value || $mailshot->type == MailshotTypeEnum::MARKETING->value){
+        if ($mailshot->type == MailshotTypeEnum::NEWSLETTER->value || $mailshot->type == MailshotTypeEnum::MARKETING->value) {
             $queryBuilder->leftJoin('customers as recipient_model', 'mailshot_recipients.recipient_id', '=', 'recipient_model.id');
-        }else{
+        } else {
             $queryBuilder->leftJoin('prospects as recipient_model', 'mailshot_recipients.recipient_id', '=', 'recipient_model.id');
         }
 

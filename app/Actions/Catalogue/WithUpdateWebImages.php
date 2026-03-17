@@ -71,7 +71,7 @@ trait WithUpdateWebImages
 
     public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory|Product $model): array
     {
-        if($model instanceof Product){
+        if ($model instanceof Product) {
             return [];
         }
 

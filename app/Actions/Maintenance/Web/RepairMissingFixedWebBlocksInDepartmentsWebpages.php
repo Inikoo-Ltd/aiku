@@ -13,7 +13,6 @@ use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -35,7 +34,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $baseQuery = Webpage::where('sub_type', 'department')
             ->where('model_type', class_basename($department))
             ->where('model_id', $department->id);
-        
+
         $has2ndWebpage = $baseQuery->clone()->where('layout_style', 2)->exists();
 
         if (!$has2ndWebpage) {
@@ -54,7 +53,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         }
 
         $webpages = $baseQuery->get();
-        
+
         foreach ($webpages as $webpage) {
             $this->processDepartmentWebpages($webpage, $command, $webpage->layout_style == 2);
         }

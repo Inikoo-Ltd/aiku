@@ -40,7 +40,7 @@ class StoreNotPickPicking extends OrgAction
         if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
             return null;
         }
-        
+
         $deliveryNoteItem->update(['locked_at'  => now()]);
 
         try {
@@ -52,17 +52,17 @@ class StoreNotPickPicking extends OrgAction
             data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
             data_set($modelData, 'engine', PickingEngineEnum::AIKU);
             data_set($modelData, 'type', PickingTypeEnum::NOT_PICK);
-    
+
             /** @var Picking $picking */
             $picking = $deliveryNoteItem->pickings()->create($modelData);
             $picking->refresh();
-    
+
             CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
-    
+
             return $picking;
 
         } catch (Exception $e) {
-            
+
             $deliveryNoteItem->update(['locked_at'  => null]);
 
             return null;

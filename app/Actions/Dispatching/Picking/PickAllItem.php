@@ -17,7 +17,6 @@ use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -38,27 +37,27 @@ class PickAllItem extends OrgAction
         }
 
         $deliveryNoteItem->update(['locked_at'  => now()]);
-    
+
         try {
 
             $toPickQuantity = $deliveryNoteItem->quantity_required - $deliveryNoteItem->quantity_picked;
-    
-    
+
+
             $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
-    
-    
+
+
             data_set($modelData, 'quantity', min($toPickQuantity, $locationOrgStock->quantity));
-    
+
             $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
-    
+
             $deliveryNoteItem->update(['locked_at'  => null]);
-            
+
             return $picking;
 
         } catch (Exception $e) {
-            
+
             $deliveryNoteItem->update(['locked_at'  => null]);
-            
+
             return null;
 
         }

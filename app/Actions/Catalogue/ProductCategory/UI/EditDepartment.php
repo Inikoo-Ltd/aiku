@@ -65,14 +65,13 @@ class EditDepartment extends OrgAction
                 'warning' => [
                     'type'  => 'warning',
                     'title' => 'Warning',
-                    // 'text'  => __('Changing name or description may affect master department .'), // Isn't true anymore. Not neccessarily the case. Turned off
                     'text'  => __('This shop has enabled the Department force follow master setting. Updates made on master will overwrite local changes'),
                     'icon'  => ['fas', 'fa-exclamation-triangle'],
                 ]
             ];
         }
 
-        $webOptions = $department->webpages->mapWithKeys(fn($item) => [
+        $webOptions = $department->webpages->mapWithKeys(fn ($item) => [
             $item->id => [
                 'label' => $item->slug,
                 'id'    => $item->id

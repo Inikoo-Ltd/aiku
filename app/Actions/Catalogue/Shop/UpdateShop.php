@@ -102,7 +102,7 @@ class UpdateShop extends OrgAction
         }
 
         $updateChildWebsite = false;
-        if (Arr::has($modelData, 'family_webpage_split_description')) { 
+        if (Arr::has($modelData, 'family_webpage_split_description')) {
             data_set($modelData, 'settings.website.family_webpage_split_description', Arr::pull($modelData, 'family_webpage_split_description'));
             $updateChildWebsite = true;
         }

@@ -39,7 +39,7 @@ class UpsertPicking extends OrgAction
         $deliveryNoteItem->update(['locked_at'  => now()]);
 
         try {
-            
+
             $pickingID = Arr::pull($modelData, 'picking_id');
             $picking = null;
             if ($pickingID) {
@@ -54,15 +54,15 @@ class UpsertPicking extends OrgAction
             } else {
                 $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
             }
-    
+
             $deliveryNoteItem->update(['locked_at'  => null]);
-            
+
             return true;
 
         } catch (Exception $e) {
-            
+
             $deliveryNoteItem->update(['locked_at'  => null]);
-            
+
             return false;
 
         }
