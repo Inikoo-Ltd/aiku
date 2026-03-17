@@ -12,6 +12,7 @@ namespace App\Http\Resources\Fulfilment;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -51,8 +52,11 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
             'pallet_return_reference' => $this->pallet_return_reference ?? null,
             'pallet_return_slug'      => $this->pallet_return_slug ?? null,
             'pallet_return_type'      => $this->pallet_return_type ?? null,
+            'state_icon'              => $this->pallet_return_state
+                ? PalletReturnStateEnum::stateIcon()[$this->pallet_return_state]
+                : null,
             'total_quantity_ordered' => (int) ($this->total_quantity_ordered ?? 0),
-            'is_checked'             => (bool) $this->pallet_return_state === PalletStateEnum::IN_PROCESS->value ? $this->pallet_return_id : false,
+            'is_checked'             => (bool) $this->pallet_return_state === PalletReturnStateEnum::IN_PROCESS->value ? $this->pallet_return_id : false,
             'pallet_return_state'    => $this->pallet_return_state ?? null,
             'pallet_stored_items'    => $storedItem->palletStoredItems()
                 ->whereHas(
@@ -61,7 +65,7 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                     $q->where('state', PalletStateEnum::STORING)
                 )
                 ->when(
-                    in_array($this->pallet_return_state, [PalletStateEnum::PICKING->value, PalletStateEnum::PICKED->value, PalletStateEnum::DISPATCHED->value]),
+                    in_array($this->pallet_return_state, [PalletReturnStateEnum::PICKING->value, PalletReturnStateEnum::PICKED->value, PalletReturnStateEnum::DISPATCHED->value]),
                     fn ($query) => $query->where(function ($q) {
                         $q->where('state', '!=', PalletStoredItemStateEnum::RETURNED)
                         ->orWhereHas(

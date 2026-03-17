@@ -65,6 +65,9 @@ class FulfilmentPickingSessionPalletReturnsGroupedResource extends JsonResource
             'pallet_return_slug'      => $palletReturn->slug,
             'pallet_return_reference' => $palletReturn->reference,
             'pallet_return_state'     => $palletReturn->state?->value,
+            'state_icon'              => $palletReturn->state
+                ? $palletReturn->state->stateIcon()[$palletReturn->state->value]
+                : null,
             'pallet_return_type'      => $palletReturn->type?->value,
             'pallets'                 => $pallets,
         ];
