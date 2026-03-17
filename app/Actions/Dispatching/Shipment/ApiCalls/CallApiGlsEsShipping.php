@@ -257,7 +257,11 @@ class CallApiGlsEsShipping extends OrgAction
         $shipmentData["notes"]           = $shippingNotes;
         $shipmentData["nif"]             = "";
         $shipmentData["portage"]         = "P";
-        $shipmentData["RefC"]            = strtoupper($parent->reference).' V2';
+        if (app()->environment('local')) {
+            $shipmentData["RefC"] = 'test+'.rand(1000, 9999).' '.strtoupper($parent->reference).' V2';
+        } else {
+            $shipmentData["RefC"] = strtoupper($parent->reference).' V2';
+        }
 
 
         if (Arr::get($parentResource, 'cash_on_delivery')) {

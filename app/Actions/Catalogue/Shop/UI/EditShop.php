@@ -252,6 +252,19 @@ class EditShop extends OrgAction
                         ],
                     ]
                 ] : [],
+                $shop->website ? [
+                    'label'  => __('Website'),
+                    'icon'   => 'fal fa-browser',
+                    'fields' => [
+                        'family_webpage_split_description' => [
+                            'label'         => 'Split Family Page Description Web Block',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'website.family_webpage_split_description', false),
+                            'information'   => __('Description Web Block would be split into 2 parts that is editable'),
+                            'warningText'   => __('Changing this would change the current layout of families webpage (using second webpage styles). Some unsaved changes on the workshop might be discarded. Are you sure you want to change it?')
+                        ],
+                    ]
+                ] : [],
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
@@ -410,16 +423,9 @@ class EditShop extends OrgAction
                             'value' => (function () use ($shop): array {
                                 $savedColumns = Arr::get($shop->settings, 'invoicing.download_pdf_columns', []);
                                 $columns      = [
-                                    ['label' => __('Pro mode'), 'key' => 'pro_mode'],
-                                    ['label' => __('Recommended retail prices') . ' ' . __('(RRP)'), 'key' => 'rrp'],
-                                    ['label' => __('Parts'), 'key' => 'parts'],
-                                    ['label' => __('Commodity Codes'), 'key' => 'commodity_codes'],
-                                    ['label' => __('Barcode'), 'key' => 'barcode'],
-                                    ['label' => __('Weight'), 'key' => 'weight'],
                                     ['label' => __('Country of Origin'), 'key' => 'country_of_origin'],
-                                    ['label' => __('Hide Payment Status'), 'key' => 'hide_payment_status'],
-                                    ['label' => __('CPNP'), 'key' => 'cpnp'],
-                                    ['label' => __('Group by Tariff Code'), 'key' => 'group_by_tariff_code'],
+                                    ['label' => __('Weight'), 'key' => 'weight'],
+                                    ['label' => __('Commodity Codes'), 'key' => 'commodity_codes'],
                                 ];
 
                                 return array_map(fn ($col) => [

@@ -21,10 +21,17 @@ trait WithUpdateWebImages
 {
     public function updateWebImages(Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection $model): Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection
     {
+        if ($model instanceof MasterProductCategory || $model instanceof ProductCategory) {
+            $extraDescription = $this->getExtraDescriptionImageData($model);
+        } else {
+            $extraDescription = [];
+        }
+
+
         $webImagesData = [
-            'main' => $this->getMainWebImageData($model),
-            'extraDescription'  => $this->getExtraDescriptionImageData($model),
-            'all'  => $this->getAllWebImageData($model)
+            'main'             => $this->getMainWebImageData($model),
+            'extraDescription' => $extraDescription,
+            'all'              => $this->getAllWebImageData($model)
         ];
 
 

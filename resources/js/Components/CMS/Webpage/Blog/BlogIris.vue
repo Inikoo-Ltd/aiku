@@ -85,7 +85,9 @@ onMounted(async () => {
   headingElements.forEach((el) => observer.observe(el))
 })
 
-const shareUrl = encodeURIComponent(window.location.href)
+const shareUrl = typeof window !== 'undefined'
+  ? encodeURIComponent(window.location.href)
+  : ''
 
 const screenType = inject("screenType", "desktop")
 </script>

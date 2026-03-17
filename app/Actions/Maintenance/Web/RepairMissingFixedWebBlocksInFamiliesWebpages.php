@@ -215,7 +215,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $lastSeenWebBlockPosition   = $count + 103;
 
 
-        $runningPosition = 2;
+        $runningPosition = 4;
         foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
                 $webBlocks[$key] = 1;
