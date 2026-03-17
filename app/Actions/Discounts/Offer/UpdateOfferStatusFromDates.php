@@ -25,8 +25,20 @@ class UpdateOfferStatusFromDates extends OrgAction
     use WithActionUpdate;
 
 
-    public function handle(Offer $offer): Offer
+    public function handle(Offer $offer, ?Command $command = null): Offer
     {
+
+        if (!$offer->start_at) {
+            $command?->error("Offer {$offer->slug} has no start date");
+            return $offer;
+        }
+
+        if (!$offer->end_at) {
+            $command?->error("Offer {$offer->slug} has no end date");
+            return $offer;
+        }
+
+
         $currentStatus = $offer->status;
         $currentState  = $offer->state;
 
@@ -123,17 +135,22 @@ class UpdateOfferStatusFromDates extends OrgAction
 
     public function asCommand(Command $command): int
     {
-        if (!$command->argument('offer')) {
+        if ($command->argument('offer')) {
             $offer = Offer::where('slug', $command->argument('offer'))->firstOrFail();
 
-            $this->handle($offer);
+            $this->handle($offer, $command);
             return 0;
         }
 
         $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
 
-        foreach (Offer::whereIn('shop_id', $aikuShops)->where('duration',OfferDurationEnum::INTERVAL)->get() as $offer) {
-            $this->handle($offer);
+        foreach (Offer::whereIn('shop_id', $aikuShops)
+            ->whereIn('state', [
+                OfferStateEnum::ACTIVE,
+                OfferStateEnum::IN_PROCESS,
+            ])
+            ->where('duration', OfferDurationEnum::INTERVAL)->get() as $offer) {
+            $this->handle($offer, $command);
         }
 
 
