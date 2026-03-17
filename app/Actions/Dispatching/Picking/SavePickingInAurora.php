@@ -20,12 +20,6 @@ class SavePickingInAurora implements ShouldBeUnique
     use AsAction;
     use WithAuroraApi;
 
-    protected string $jobQueue = 'aurora';
-
-    public int $jobTries = 1;
-
-
-
     public function getJobUniqueId(Picking $picking): string
     {
         return $picking->id;
