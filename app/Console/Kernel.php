@@ -484,6 +484,15 @@ class Kernel extends ConsoleKernel
             type: 'job',
             scheduledAt: now()->format('H:i')
         );
+
+        $this->logSchedule(
+            $schedule->command(' offer:update_status_from_dates')->hourly()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'OfferUpdateStatusFromDates',
+            ),
+            name: 'OfferUpdateStatusFromDates',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void
