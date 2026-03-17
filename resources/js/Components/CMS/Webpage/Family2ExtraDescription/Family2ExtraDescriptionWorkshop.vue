@@ -120,15 +120,20 @@ const saveDescription = debounce(async (key: string, value: string) => {
     }">
       <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
         <!-- IMAGE -->
-        <div v-if="!hideImageOnMobile" class="relative w-full overflow-hidden cursor-pointer"
-          :class="[imageOrder, modelValue?.family?.extra_description_image ? 'h-full' : '']"
-          :style="getStyles(modelValue?.image?.container?.properties, screenType)">
-          <Image :src="modelValue?.family?.extra_description_image"
-            :alt="modelValue?.family?.extra_description_image?.alt || 'Image preview'" :imageCover="true"
-            class="absolute inset-0 w-full h-full object-cover"
-            :height="getStyles(modelValue?.image?.container?.properties, screenType, false)?.height"
-            :width="getStyles(modelValue?.image?.container?.properties, screenType, false)?.width" />
+            <div
+          v-if="!hideImageOnMobile"
+          class="w-full h-full flex items-center justify-center"
+          :class="[imageOrder]"
+          :style="getStyles(modelValue?.image?.container?.properties, screenType)"
+        >
+          <Image
+            :src="modelValue?.family?.extra_description_image"
+            :alt="modelValue?.family?.extra_description_image?.alt || 'Image preview'"
+            :imageCover="false"
+            class="max-h-full w-auto object-contain"
+          />
         </div>
+
 
         <!-- TEXT -->
         <div class="flex flex-col justify-center m-auto p-4 mx-4" :class="[textOrder, textAlignClass]"
