@@ -46,7 +46,7 @@ const props = defineProps<{
 const { modelValue, webpageData, blockData } = toRefs(props)
 
 const departmentEdit = ref(false)
-const name = ref(modelValue.value.department.description_title || modelValue.value.department.name)
+const name = ref(modelValue?.value?.department?.description_title || modelValue?.value?.department?.name)
 const showExtra = ref(false)
 const layout: any = inject("layout", {})
 

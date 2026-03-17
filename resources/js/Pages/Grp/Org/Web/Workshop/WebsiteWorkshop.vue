@@ -16,6 +16,7 @@ import ProductsBlockWorkshop from '@/Components/CMS/Website/ProductsBlock/Produc
 import SubDepartmentWorkshop from '@/Components/CMS/Website/SubDepartmentBlockWorkshop/SubDepartmentWorkshop.vue'
 import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import FamiliesOverviewBlockWorkshop from '@/Components/CMS/Website/FamiliesOverviewBlockWorkshop/FamiliesOverviewWorkshop.vue'
 
 import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -60,7 +61,7 @@ const component = computed(() => {
     website_layout: LayoutWorkshop,
     sub_department: SubDepartmentWorkshop,
     families: FamiliesBlockWorkshop,
-    families_overview: FamiliesBlockWorkshop,
+    families_overview: FamiliesOverviewBlockWorkshop,
     products: ProductsBlockWorkshop,
     product: ProductBlockWorkshop
   }

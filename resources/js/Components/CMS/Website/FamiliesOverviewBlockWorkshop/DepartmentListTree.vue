@@ -27,14 +27,14 @@ const emits = defineEmits<{
 
 const openIndex = ref<number | null>(null);
 const loading = ref(false);
-const subDepartments = ref<any[]>([]);
+const families = ref<any[]>([]);
 
 async function toggle(index: number) {
   const dept = props.dataList.data[index];
 
   if (openIndex.value === index) {
     openIndex.value = null;
-    subDepartments.value = [];
+    families.value = [];
     return;
   }
 
@@ -43,14 +43,14 @@ async function toggle(index: number) {
 
   try {
     const response = await axios.get(route(
-      dept.sub_departments_route.name,
-      dept.sub_departments_route.parameters
+      dept.families_route.name,
+      dept.families_route.parameters
     ));
-    subDepartments.value = response.data.data || [];
-    emits("changeDepartment", { ...dept, sub_departments: subDepartments.value });
+    families.value = response.data.data || [];
+    emits("changeDepartment", { ...dept, families: families.value });
   } catch (err) {
     console.error("Error fetching sub-departments", err);
-    subDepartments.value = [];
+    families.value = [];
   } finally {
     loading.value = false;
   }
@@ -80,9 +80,9 @@ async function toggle(index: number) {
 
         <transition name="fade">
           <div v-show="openIndex === index">
-            <ul v-if="subDepartments.length"
+            <ul v-if="families.length"
               class="px-6 py-2 bg-gray-50 border-t border-gray-100 rounded-b-lg space-y-2">
-              <li v-for="sub in subDepartments" :key="sub.key"
+              <li v-for="sub in families" :key="sub.key"
                 class="flex items-center gap-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
                 <FontAwesomeIcon :icon="faCircle" class="text-gray-400 w-2" />
                 <span>{{ sub.name }}</span>

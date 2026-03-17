@@ -1,4 +1,3 @@
-import { Families1Overview } from '@/Components/CMS/Webpage/Families1Overview/FamiliesOverviewIris1.vue';
 import type { Component } from 'vue'
 
 import WowsbarBanner from '@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerWorkshop.vue'

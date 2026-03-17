@@ -184,7 +184,7 @@ Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->n
 Route::get('brands', GetBrands::class)->name('brands.index');
 
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
-Route::get('workshop/department/{department}/families', GetFamiliesInDepartmentInWorkshop::class)->name('workshop.sub_departments.index');
+Route::get('workshop/department/{department}/families', GetFamiliesInDepartmentInWorkshop::class)->name('workshop.families_under_department.index');
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
 Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');

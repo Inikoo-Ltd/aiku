@@ -62,7 +62,7 @@ const createSnapshot = () => {
 
   if (snapshot.data?.fieldValue) {
     delete snapshot.data.fieldValue.department;
-    delete snapshot.data.fieldValue.sub_departments;
+    delete snapshot.data.fieldValue.families;
   }
 
   return snapshot;
@@ -103,12 +103,13 @@ const debouncedAutosave = debounce(autosave);
 
 const dataPicked = ref({
   department: null,
-  sub_departments: []
+  families: []
 });
 
 const onChangeDepartment = (value: any) => {
+  console.log('dfdf')
   dataPicked.value.department = value;
-  dataPicked.value.sub_departments = value?.sub_departments || [];
+  dataPicked.value.families = value?.families || [];
 
   if (layoutState.value.data?.fieldValue) {
     debouncedAutosave();
@@ -166,14 +167,16 @@ console.log("LAYOUT STATE:", layoutState);
           </div>
         </div>
         <div v-if="props.data.layout?.code" ref="rootRef" :class="['border-2 border-t-0', iframeClass]">
+       <!--   <pre>{{ dataPicked  }}</pre>  -->
           <component class="flex-1 overflow-auto active-block"
             :is="getComponent(props.data.layout.code, { shop_type: layout?.shopState?.type })" :screenType="currentView"
             :modelValue="{
               ...layoutState?.data?.fieldValue,
               department: dataPicked.department,
-              sub_departments: dataPicked.sub_departments
+              families: dataPicked.families
             }" :routeEditFamiliesOverview="props.data.update_sub_department_route" />
         </div>
+
         <div v-else
           class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]"
           style="height: 100%;">
