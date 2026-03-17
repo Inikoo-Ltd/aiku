@@ -9,6 +9,7 @@
 namespace App\Models\SysAdmin;
 
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Traits\HasEmail;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
@@ -318,6 +319,11 @@ class User extends Authenticatable implements HasMedia, Auditable
     public function chatAgent(): HasOne
     {
         return $this->hasOne(ChatAgent::class);
+    }
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'user_has_dispatched_emails');
     }
 
 
