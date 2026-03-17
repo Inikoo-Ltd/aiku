@@ -1,3 +1,4 @@
+import { Families1Overview } from '@/Components/CMS/Webpage/Families1Overview/FamiliesOverviewIris1.vue';
 import type { Component } from 'vue'
 
 import WowsbarBanner from '@/Components/CMS/Webpage/WowsbarBanner/WowsbarBannerWorkshop.vue'
@@ -72,6 +73,7 @@ import CollectionDescriptionWorkshop from '@/Components/CMS/Webpage/CollectionDe
 import DepartmentDescriptionWorkshop from '@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionWorkshop.vue'
 import SubDepartmentDesciptionWorkshop from '@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionWorkshop.vue'
 import Family2ExtraDescriptionWorkshop from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue'
+import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Families1OverviewWorkshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -108,6 +110,9 @@ const components = (shop_type?: string): Record<string, Component> => {
         'families-1' : Families1Workshop,
         'families-2' : Families2Workshop,
         'families-3' : Families3Workshop,
+
+        //family
+        "families-1-overview": Families1Overview,
 
         //family-extra-description
         'family-2-extra-description' : Family2ExtraDescriptionWorkshop ,
