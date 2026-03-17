@@ -48,10 +48,10 @@ class FilterByDepartment
                     $q->orWhereExists(function ($subQuery) use ($departmentIds) {
                         $subQuery->select(DB::raw(1))
                             ->from('orders')
-                            ->join('order_transactions', 'orders.id', '=', 'order_transactions.order_id')
+                            ->join('transactions', 'orders.id', '=', 'transactions.order_id')
                             ->whereRaw('orders.customer_id = customers.id')
                             ->where('orders.state', '!=', OrderStateEnum::CREATING)
-                            ->whereIn('order_transactions.department_id', $departmentIds)
+                            ->whereIn('transactions.department_id', $departmentIds)
                             ->whereNull('orders.deleted_at');
                     });
                 }
@@ -60,10 +60,10 @@ class FilterByDepartment
                     $q->orWhereExists(function ($subQuery) use ($departmentIds) {
                         $subQuery->select(DB::raw(1))
                             ->from('orders')
-                            ->join('order_transactions', 'orders.id', '=', 'order_transactions.order_id')
+                            ->join('transactions', 'orders.id', '=', 'transactions.order_id')
                             ->whereRaw('orders.customer_id = customers.id')
                             ->where('orders.state', OrderStateEnum::CREATING)
-                            ->whereIn('order_transactions.department_id', $departmentIds)
+                            ->whereIn('transactions.department_id', $departmentIds)
                             ->whereNull('orders.deleted_at');
                     });
                 }
