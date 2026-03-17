@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
 class RunMailshotSecondWave
 {
     use AsAction;
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'ses';
     public string $commandSignature = 'run-mailshot-second-wave';
 
     public function handle(): void

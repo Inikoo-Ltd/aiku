@@ -20,7 +20,7 @@ class PrepareNewsletterRecipients
 {
     use AsAction;
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'ses';
 
     public function tags(): array
     {
