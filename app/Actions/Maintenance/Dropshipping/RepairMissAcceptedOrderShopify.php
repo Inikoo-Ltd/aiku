@@ -14,7 +14,6 @@ use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 

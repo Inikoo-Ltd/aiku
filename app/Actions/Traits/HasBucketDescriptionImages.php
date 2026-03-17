@@ -7,14 +7,9 @@
  * copyright 2026
 */
 
-
 namespace App\Actions\Traits;
 
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Goods\TradeUnit;
-use App\Models\Masters\MasterAsset;
-use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 
 trait HasBucketDescriptionImages

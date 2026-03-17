@@ -18,6 +18,8 @@ use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\SysAdmin\User;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,23 +34,39 @@ class StoreNotPickPicking extends OrgAction
     private DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
-    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
+    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
     {
-        data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
-        data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
-        data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
-        data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
-        data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
-        data_set($modelData, 'engine', PickingEngineEnum::AIKU);
-        data_set($modelData, 'type', PickingTypeEnum::NOT_PICK);
+        // If locked, will skip the process
+        if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
+            return null;
+        }
 
-        /** @var Picking $picking */
-        $picking = $deliveryNoteItem->pickings()->create($modelData);
-        $picking->refresh();
+        $deliveryNoteItem->update(['locked_at'  => now()]);
 
-        CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
+        try {
 
-        return $picking;
+            data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
+            data_set($modelData, 'organisation_id', $deliveryNoteItem->organisation_id);
+            data_set($modelData, 'shop_id', $deliveryNoteItem->shop_id);
+            data_set($modelData, 'delivery_note_id', $deliveryNoteItem->delivery_note_id);
+            data_set($modelData, 'org_stock_id', $deliveryNoteItem->org_stock_id);
+            data_set($modelData, 'engine', PickingEngineEnum::AIKU);
+            data_set($modelData, 'type', PickingTypeEnum::NOT_PICK);
+
+            /** @var Picking $picking */
+            $picking = $deliveryNoteItem->pickings()->create($modelData);
+            $picking->refresh();
+
+            CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
+
+            return $picking;
+
+        } catch (Exception $e) {
+
+            $deliveryNoteItem->update(['locked_at'  => null]);
+
+            return null;
+        }
     }
 
     public function rules(): array
@@ -77,7 +95,7 @@ class StoreNotPickPicking extends OrgAction
         }
     }
 
-    public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): Picking
+    public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): ?Picking
     {
         $this->user             = $request->user();
         $this->deliveryNoteItem = $deliveryNoteItem;
@@ -86,7 +104,7 @@ class StoreNotPickPicking extends OrgAction
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Picking
+    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): ?Picking
     {
         $this->asAction         = true;
         $this->user             = $user;

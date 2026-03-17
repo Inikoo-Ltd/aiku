@@ -112,38 +112,38 @@ class SeedDispatchedEmailsRecipientsTables
                     }
                 }
 
-                $changed=false;
+                $changed = false;
                 if (!empty($webUserInserts)) {
                     DB::table('web_user_has_dispatched_emails')->insert($webUserInserts);
-                    $changed=true;
+                    $changed = true;
                 }
 
                 if (!empty($customerInserts)) {
                     DB::table('customer_has_dispatched_emails')->insert($customerInserts);
-                    $changed=true;
+                    $changed = true;
                 }
 
                 if (!empty($prospectInserts)) {
                     DB::table('prospect_has_dispatched_emails')->insert($prospectInserts);
-                    $changed=true;
+                    $changed = true;
                 }
 
                 if (!empty($externalSubscriberRecipientInserts)) {
                     DB::table('external_subscriber_email_recipient_has_dispatched_emails')->insert($externalSubscriberRecipientInserts);
-                    $changed=true;
+                    $changed = true;
                 }
 
                 if (!empty($testEmailRecipientInserts)) {
                     DB::table('test_email_recipient_has_dispatched_emails')->insert($testEmailRecipientInserts);
-                    $changed=true;
+                    $changed = true;
                 }
 
                 if (!empty($chatEmailRecipientInserts)) {
                     DB::table('chat_email_recipient_has_dispatched_emails')->insert($chatEmailRecipientInserts);
-                    $changed=true;
+                    $changed = true;
                 }
 
-                if( $changed) {
+                if ($changed) {
                     DB::table('dispatched_emails')
                         ->whereIn('id', $idsToUpdate)
                         ->update([

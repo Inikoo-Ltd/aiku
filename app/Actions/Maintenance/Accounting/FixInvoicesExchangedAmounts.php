@@ -2,39 +2,39 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 16 Mar 2026 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 17 Mar 2026 11:42:00 Central Indonesia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Maintenance\Ordering;
+namespace App\Actions\Maintenance\Accounting;
 
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Ordering\Order;
+use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 
-class FixOrdersNetAmounts
+class FixInvoicesExchangedAmounts
 {
     use WithActionUpdate;
 
-    public function handle(Order $order): void
+    public function handle(Invoice $invoice): void
     {
-        $order->update([
-            'grp_net_amount' => $order->net_amount * $order->grp_exchange,
-            'org_net_amount' => $order->net_amount * $order->org_exchange,
+        $invoice->update([
+            'grp_net_amount' => $invoice->net_amount * $invoice->grp_exchange,
+            'org_net_amount' => $invoice->net_amount * $invoice->org_exchange,
         ]);
     }
 
-    public string $commandSignature = 'orders:fix_net_amounts {ids?* : Order IDs to fix (leave empty to fix all)}';
+    public string $commandSignature = 'invoices:fix_net_amounts {ids?* : Invoice IDs to fix (leave empty to fix all)}';
 
     public function asCommand(Command $command): void
     {
         $ids = $command->argument('ids');
 
         $query = $ids
-            ? Order::whereIn('id', $ids)
-            : Order::query();
+            ? Invoice::whereIn('id', $ids)
+            : Invoice::query();
 
         $query->whereNull('deleted_at');
 
@@ -47,58 +47,58 @@ class FixOrdersNetAmounts
 
         $bar->finish();
         $command->newLine();
-        $command->info("Fixed {$total} orders.");
+        $command->info("Fixed {$total} invoices.");
     }
 
     private function processInChunks(Builder $query, $bar, Command $command): void
     {
         $query->with(['shop.currency', 'group.currency', 'organisation.currency'])
-            ->chunkById(500, function ($orders) use ($bar, $command) {
-                foreach ($orders as $order) {
-                    $this->checkSuspiciousExchange($order, $command);
-                    $this->handle($order);
+            ->chunkById(500, function ($invoices) use ($bar, $command) {
+                foreach ($invoices as $invoice) {
+                    $this->checkSuspiciousExchange($invoice, $command);
+                    $this->handle($invoice);
                     $bar->advance();
                 }
             });
     }
 
-    private function checkSuspiciousExchange(Order $order, Command $command): void
+    private function checkSuspiciousExchange(Invoice $invoice, Command $command): void
     {
-        $shopCurrency = $order->shop?->currency;
-        $date         = $order->date;
+        $shopCurrency = $invoice->shop?->currency;
+        $date         = $invoice->date;
 
         if (!$shopCurrency || !$date) {
             return;
         }
 
-        $groupCurrency = $order->group?->currency;
-        $orgCurrency   = $order->organisation?->currency;
+        $groupCurrency = $invoice->group?->currency;
+        $orgCurrency   = $invoice->organisation?->currency;
 
-        if ($groupCurrency && $order->grp_exchange) {
+        if ($groupCurrency && $invoice->grp_exchange) {
             $expectedGrp = GetHistoricCurrencyExchange::run($shopCurrency, $groupCurrency, $date);
-            if ($expectedGrp && $this->isDifferenceOverThreshold($order->grp_exchange, $expectedGrp)) {
+            if ($expectedGrp && $this->isDifferenceOverThreshold($invoice->grp_exchange, $expectedGrp)) {
                 $command->warn(
                     sprintf(
-                        'Order #%s: grp_exchange suspicious — stored: %s, expected: %s (%.1f%%)',
-                        $order->id,
-                        $order->grp_exchange,
+                        'Invoice #%s: grp_exchange suspicious — stored: %s, expected: %s (%.1f%%)',
+                        $invoice->id,
+                        $invoice->grp_exchange,
                         round($expectedGrp, 4),
-                        $this->percentageDifference($order->grp_exchange, $expectedGrp)
+                        $this->percentageDifference($invoice->grp_exchange, $expectedGrp)
                     )
                 );
             }
         }
 
-        if ($orgCurrency && $order->org_exchange) {
+        if ($orgCurrency && $invoice->org_exchange) {
             $expectedOrg = GetHistoricCurrencyExchange::run($shopCurrency, $orgCurrency, $date);
-            if ($expectedOrg && $this->isDifferenceOverThreshold($order->org_exchange, $expectedOrg)) {
+            if ($expectedOrg && $this->isDifferenceOverThreshold($invoice->org_exchange, $expectedOrg)) {
                 $command->warn(
                     sprintf(
-                        'Order #%s: org_exchange suspicious — stored: %s, expected: %s (%.1f%%)',
-                        $order->id,
-                        $order->org_exchange,
+                        'Invoice #%s: org_exchange suspicious — stored: %s, expected: %s (%.1f%%)',
+                        $invoice->id,
+                        $invoice->org_exchange,
                         round($expectedOrg, 4),
-                        $this->percentageDifference($order->org_exchange, $expectedOrg)
+                        $this->percentageDifference($invoice->org_exchange, $expectedOrg)
                     )
                 );
             }

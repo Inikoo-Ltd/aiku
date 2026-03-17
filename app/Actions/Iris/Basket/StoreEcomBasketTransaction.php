@@ -66,7 +66,12 @@ class StoreEcomBasketTransaction extends IrisAction
      */
     public function asController(Product $product, ActionRequest $request): Transaction
     {
-        $customer = $request->user()->customer;
+        $customer = $request->user()?->customer;
+
+        if (!$customer) {
+            abort(404);
+        }
+
         $this->initialisation($request);
 
         return $this->handle($customer, $product, $this->validatedData);

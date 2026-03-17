@@ -10,12 +10,12 @@ namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\Ses\SendSesEmail;
 use App\Models\Comms\DispatchedEmail;
-use App\Models\Comms\OutBoxHasSubscriber;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 trait WithSendBulkEmails
@@ -61,17 +61,22 @@ trait WithSendBulkEmails
         $originalPlaceholder = $placeholder;
         $placeholder         = Str::kebab(trim($placeholder));
 
-        if ($dispatchedEmail->recipient instanceof WebUser) {
-            $customerName = $dispatchedEmail->recipient->customer->name;
-        } elseif ($dispatchedEmail->recipient instanceof OutBoxHasSubscriber || $dispatchedEmail->recipient instanceof User) {
+        $webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id);
+        $userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id);
+        $customerHasDispatchedEmail = $this->getCustomerDispatch($dispatchedEmail->id);
+
+        // TODO:check later for outboxHasSubcriber
+        if ($webUserHasDispatchedEmail) {
+            $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)->customer->name;
+        } elseif ($userHasDispatchedEmail || $customerHasDispatchedEmail) {
             $customerName = Arr::get($additionalData, 'customer_name');
         } else {
-            $customerName = $dispatchedEmail->recipient->name ?? 'Customer name undefined';
+            $customerName = 'Customer name undefined';
         }
 
         /** @noinspection HtmlUnknownAttribute */
         return match ($placeholder) {
-            'username' => $this->getUsername($dispatchedEmail->recipient),
+            'username' => $this->getUsername($dispatchedEmail->id),
             'customer-name' => $customerName,
             'rejected-notes' => Arr::get($additionalData, 'rejected_notes'),
             'invoice_-url' => $invoiceUrl,
@@ -142,10 +147,14 @@ trait WithSendBulkEmails
         };
     }
 
-    public function getUsername(WebUser|Customer|Prospect|User $recipient): string
+    public function getUsername($dispatchedEmailId): string
     {
-        if ($recipient instanceof WebUser || $recipient instanceof User) {
-            return $recipient->username;
+        if ($webUserDispatch = $this->getWebUserDispatch($dispatchedEmailId)) {
+            return WebUser::find($webUserDispatch->web_user_id)?->username ?? '';
+        }
+
+        if ($userDispatch = $this->getUserDispatch($dispatchedEmailId)) {
+            return User::find($userDispatch->user_id)?->username ?? '';
         }
 
         return '';
@@ -160,5 +169,26 @@ trait WithSendBulkEmails
         } else {
             return $recipient->company_name ?? $recipient->username;
         }
+    }
+
+    private function getWebUserDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('web_user_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getUserDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('user_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getCustomerDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('customer_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
     }
 }
