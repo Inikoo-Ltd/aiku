@@ -9,7 +9,10 @@
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\Ses\SendSesEmail;
+use App\Models\Comms\ChatEmailRecipient;
 use App\Models\Comms\DispatchedEmail;
+use App\Models\Comms\ExternalSubscriberEmailRecipient;
+use App\Models\Comms\TestEmailRecipient;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
@@ -61,17 +64,20 @@ trait WithSendBulkEmails
         $originalPlaceholder = $placeholder;
         $placeholder         = Str::kebab(trim($placeholder));
 
-        $webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id);
-        $userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id);
-        $customerHasDispatchedEmail = $this->getCustomerDispatch($dispatchedEmail->id);
-
-        // TODO:check later for outboxHasSubcriber
-        if ($webUserHasDispatchedEmail) {
-            $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)->customer->name;
-        } elseif ($userHasDispatchedEmail || $customerHasDispatchedEmail) {
-            $customerName = Arr::get($additionalData, 'customer_name');
+        if ($webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id)) {
+            $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)?->customer?->name ?? '';
+        } elseif ($userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id)) {
+            $customerName = Arr::get($additionalData, 'customer_name') ?? User::find($userHasDispatchedEmail->user_id)?->contact_name ?? '';
+        } elseif ($customerHasDispatchedEmail = $this->getCustomerDispatch($dispatchedEmail->id)) {
+            $customerName = Customer::find($customerHasDispatchedEmail->customer_id)?->name ?? '';
+        } elseif ($externalSubscriberHasDispatchedEmail = $this->getExternalSubscriberDispatch($dispatchedEmail->id)) {
+            $customerName = ExternalSubscriberEmailRecipient::find($externalSubscriberHasDispatchedEmail->external_subscriber_email_recipient_id)?->name ?? '';
+        } elseif ($testEmailRecipientHasDispatchedEmail = $this->getTestEmailRecipientDispatch($dispatchedEmail->id)) {
+            $customerName = TestEmailRecipient::find($testEmailRecipientHasDispatchedEmail->test_email_recipient_id)?->name ?? '';
+        } elseif ($chatEmailRecipientHasDispatchedEmail = $this->getChatEmailRecipientDispatch($dispatchedEmail->id)) {
+            $customerName = ChatEmailRecipient::find($chatEmailRecipientHasDispatchedEmail->chat_email_recipient_id)?->name ?? '';
         } else {
-            $customerName = 'Customer name undefined';
+            $customerName = Arr::get($additionalData, 'customer_name') ?? 'Customer name undefined';
         }
 
         /** @noinspection HtmlUnknownAttribute */
@@ -188,6 +194,27 @@ trait WithSendBulkEmails
     private function getCustomerDispatch(int $dispatchedEmailId): ?object
     {
         return DB::table('customer_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getExternalSubscriberDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('external_subscriber_email_recipient_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getTestEmailRecipientDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('test_email_recipient_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getChatEmailRecipientDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('chat_email_recipient_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
     }
