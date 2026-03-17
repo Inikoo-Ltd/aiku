@@ -13,7 +13,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,8 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoicesInOffer extends OrgAction
 {
-    private Shop $parent;
-    private OfferCampaign $offerCampaign;
+    protected OfferCampaign $offerCampaign;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -31,14 +29,13 @@ class IndexInvoicesInOffer extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $shop;
         $this->offerCampaign = $offerCampaign;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $offerCampaign);
+        return $this->handle($offerCampaign);
     }
 
-    public function handle(Shop $parent, OfferCampaign $offerCampaign, $prefix = null): LengthAwarePaginator
+    public function handle(OfferCampaign $offerCampaign, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -53,14 +50,14 @@ class IndexInvoicesInOffer extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Invoice::class);
         $queryBuilder->where('invoices.type', InvoiceTypeEnum::INVOICE);
-        $queryBuilder->whereNot('invoices.in_process', true);
-        $queryBuilder->where('invoices.shop_id', $parent->id);
+        $queryBuilder->where('invoices.in_process', false);
+        $queryBuilder->where('invoices.shop_id', $this->shop->id);
 
         $queryBuilder->whereIn('invoices.id', function ($sub) use ($offerCampaign) {
             $sub->select('invoices.id')
                 ->from('transaction_has_offer_allowances')
-                ->join('orders', 'orders.id', '=', 'transaction_has_offer_allowances.order_id')
-                ->join('invoices', 'invoices.order_id', '=', 'orders.id')
+                ->join('invoice_transactions', 'invoice_transactions.transaction_id', '=', 'transaction_has_offer_allowances.transaction_id')
+                ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
                 ->where('transaction_has_offer_allowances.offer_campaign_id', $offerCampaign->id)
                 ->distinct();
         });
@@ -68,7 +65,6 @@ class IndexInvoicesInOffer extends OrgAction
         $queryBuilder->leftJoin('organisations', 'invoices.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('shops', 'invoices.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
-       
 
         return $queryBuilder
             ->defaultSort('-date')
@@ -96,7 +92,6 @@ class IndexInvoicesInOffer extends OrgAction
                 'customers.company_name as customer_company',
             ])
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
-            ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id')
             ->allowedSorts(['pay_status', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
@@ -104,9 +99,9 @@ class IndexInvoicesInOffer extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -117,7 +112,6 @@ class IndexInvoicesInOffer extends OrgAction
 
             $table
                 ->withModelOperations($modelOperations)
-                ->withLabelRecord([__('invoice'), __('invoices')])
                 ->withGlobalSearch()
                 ->withEmptyState([
                     'title' => __('No invoices found'),
@@ -130,11 +124,6 @@ class IndexInvoicesInOffer extends OrgAction
                 ->column(key: 'total_amount', label: __('Total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('-date');
         };
-    }
-
-    public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
-    {
-        return InvoicesResource::collection($invoices);
     }
 
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
@@ -163,7 +152,7 @@ class IndexInvoicesInOffer extends OrgAction
                 ],
                 'data' => InvoicesResource::collection($invoices),
             ]
-        )->table($this->tableStructure(parent: $this->parent));
+        )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

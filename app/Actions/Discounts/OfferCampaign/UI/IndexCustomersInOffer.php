@@ -12,7 +12,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,8 +19,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomersInOffer extends OrgAction
 {
-    private Shop $parent;
-    private OfferCampaign $offerCampaign;
+    protected OfferCampaign $offerCampaign;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -30,14 +28,13 @@ class IndexCustomersInOffer extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $shop;
         $this->offerCampaign = $offerCampaign;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $offerCampaign);
+        return $this->handle($offerCampaign);
     }
 
-    public function handle(Shop $parent, OfferCampaign $offerCampaign, $prefix = null): LengthAwarePaginator
+    public function handle(OfferCampaign $offerCampaign, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -51,16 +48,15 @@ class IndexCustomersInOffer extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Customer::class);
-        $queryBuilder->where('customers.shop_id', $parent->id);
-
-        $queryBuilder->whereIn('customers.id', function($sub) use ($offerCampaign) {
-            $sub->select('orders.customer_id')
+        $queryBuilder->where('customers.shop_id', $this->shop->id);
+        $queryBuilder->whereIn('customers.id', function ($sub) use ($offerCampaign) {
+            $sub->select('invoice_transactions.customer_id')
                 ->from('transaction_has_offer_allowances')
-                ->join('orders', 'orders.id', '=', 'transaction_has_offer_allowances.order_id')
+                ->join('invoice_transactions', 'invoice_transactions.transaction_id', '=', 'transaction_has_offer_allowances.transaction_id')
                 ->where('transaction_has_offer_allowances.offer_campaign_id', $offerCampaign->id)
                 ->distinct();
         });
-        
+
         $queryBuilder->with('tags');
 
         return $queryBuilder
@@ -87,18 +83,17 @@ class IndexCustomersInOffer extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
 
             $table
                 ->withModelOperations($modelOperations)
-                ->withLabelRecord([__('customer'), __('customers')])
                 ->withGlobalSearch()
                 ->withEmptyState([
                     'title' => __('No customers found'),
@@ -115,39 +110,30 @@ class IndexCustomersInOffer extends OrgAction
         };
     }
 
-    public function jsonResponse(LengthAwarePaginator $customers): AnonymousResourceCollection
-    {
-        return CustomersResource::collection($customers);
-    }
-
     public function htmlResponse(LengthAwarePaginator $customers, ActionRequest $request): Response
     {
         return Inertia::render(
             'Org/Shop/CRM/Customers',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
-                'title'       => __('Customers'),
-                'pageHead'    => [
-                    'title'      => $this->offerCampaign->name,
-                    'model'      => __('offer campaign'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'title' => __('Customers'),
+                'pageHead' => [
+                    'title' => $this->offerCampaign->name,
+                    'model' => __('Offer Campaign'),
                     'afterTitle' => [
-                        'label' => __('Customers')
+                        'label' => __('Customers'),
                     ],
-                    'iconRight'  => [
+                    'iconRight' => [
                         'icon' => 'fal fa-user',
                     ],
-                    'icon'       => [
-                        'icon'  => ['fal', 'fa-user'],
-                        'title' => __('Customers')
+                    'icon' => [
+                        'icon' => ['fal', 'fa-user'],
+                        'title' => __('Customers'),
                     ],
                 ],
-                'data'      => CustomersResource::collection($customers),
                 'customers' => CustomersResource::collection($customers),
             ]
-        )->table($this->tableStructure(parent: $this->parent));
+        )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -155,19 +141,18 @@ class IndexCustomersInOffer extends OrgAction
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
                         'label' => __('Customers'),
-                        'icon'  => 'fal fa-bars'
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.discounts.campaigns.customers' =>
-            array_merge(
+            'grp.org.shops.show.discounts.campaigns.customers' => array_merge(
                 ShowOfferCampaign::make()->getBreadcrumbs(
                     $this->offerCampaign,
                     'grp.org.shops.show.discounts.campaigns.show',
@@ -175,8 +160,8 @@ class IndexCustomersInOffer extends OrgAction
                 ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.discounts.campaigns.customers',
-                        'parameters' => $routeParameters
+                        'name' => 'grp.org.shops.show.discounts.campaigns.customers',
+                        'parameters' => $routeParameters,
                     ]
                 )
             ),
