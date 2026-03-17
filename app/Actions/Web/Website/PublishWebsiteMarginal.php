@@ -91,7 +91,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer','menu', 'sidebar', 'department', 'sub_department', 'family', 'product', 'products', 'collection'])) {
+        if (in_array($marginal, ['header', 'footer','menu', 'sidebar', 'department', 'sub_department', 'family', 'families_overview', 'product', 'products', 'collection'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"    => $snapshot->id,
                 "published_layout->$marginal"     => $snapshot->layout,

@@ -36,6 +36,7 @@ const props = defineProps<{
   product?: Record<string, any>
   website_layout: Record<string, any>
   families?: Record<string, any>
+  families_overview?: Record<string, any>
   products?: Record<string, any>
   settings: Record<string, any>
   department: Record<string, any>
@@ -59,6 +60,7 @@ const component = computed(() => {
     website_layout: LayoutWorkshop,
     sub_department: SubDepartmentWorkshop,
     families: FamiliesBlockWorkshop,
+    families_overview: FamiliesBlockWorkshop,
     products: ProductsBlockWorkshop,
     product: ProductBlockWorkshop
   }
