@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $parent_type MailShot|EmailBulkRun|EmailPush|EmailOngoingRun
  * @property int|null $parent_id
  * @property int|null $email_address_id
+ * @property string|null $provider_dispatch_id
  * @property string|null $recipient_type
  * @property int|null $recipient_id
  * @property DispatchedEmailStateEnum $state

@@ -225,6 +225,16 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
             :key="'item-' + index"
             class="flex h-auto"
           >
+          <!--   <SwiperSlide class="!w-auto flex">
+                <div href="/your-view-all-url" class="h-full flex">
+                  <div
+                    class="h-full flex items-center justify-center px-4 py-3 rounded-xl border bg-white hover:bg-gray-50 transition-all whitespace-nowrap">
+                    <span class="text-sm font-medium">
+                      View All
+                    </span>
+                  </div>
+                </div>
+              </SwiperSlide> --> 
             <LinkIris :href="item.url" class="w-full h-full flex">
               <Family3Render
                 class="family-item w-full h-full"

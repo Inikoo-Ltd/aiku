@@ -121,7 +121,6 @@ const saveDescription = debounce(async (key: string, value: string) => {
       <div class="grid w-full min-h-[250px] md:min-h-[400px] grid-cols-1" :class="gridClass">
         <!-- IMAGE -->
             <div
-          v-if="!hideImageOnMobile"
           class="w-full h-full flex items-center justify-center"
           :class="[imageOrder]"
           :style="getStyles(modelValue?.image?.container?.properties, screenType)"
