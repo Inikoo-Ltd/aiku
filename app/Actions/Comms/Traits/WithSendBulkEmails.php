@@ -63,11 +63,12 @@ trait WithSendBulkEmails
 
         $webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id);
         $userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id);
+        $customerHasDispatchedEmail = $this->getCustomerDispatch($dispatchedEmail->id);
 
         // TODO:check later for outboxHasSubcriber
         if ($webUserHasDispatchedEmail) {
             $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)->customer->name;
-        } elseif ($userHasDispatchedEmail) {
+        } elseif ($userHasDispatchedEmail || $customerHasDispatchedEmail) {
             $customerName = Arr::get($additionalData, 'customer_name');
         } else {
             $customerName = 'Customer name undefined';
@@ -180,6 +181,13 @@ trait WithSendBulkEmails
     private function getUserDispatch(int $dispatchedEmailId): ?object
     {
         return DB::table('user_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getCustomerDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('customer_has_dispatched_emails')
             ->where('dispatched_email_id', $dispatchedEmailId)
             ->first();
     }
