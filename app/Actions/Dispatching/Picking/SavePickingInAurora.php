@@ -20,6 +20,12 @@ class SavePickingInAurora implements ShouldBeUnique
     use AsAction;
     use WithAuroraApi;
 
+    protected string $jobQueue = 'aurora';
+
+    public int $jobTries = 1;
+
+
+
     public function getJobUniqueId(Picking $picking): string
     {
         return $picking->id;
@@ -59,8 +65,8 @@ class SavePickingInAurora implements ShouldBeUnique
 
         Http::withHeaders([
             'secret' => $auroraApiToken,
-        ])->withQueryParameters(
-            [
+        ])->timeout(45)->withQueryParameters(
+        [
                 'picker_name' => $picking->picker->contact_name,
                 'action' => 'aiku_picking',
                 'location_key' => $this->getAuroraObjectKey($picking->location),
