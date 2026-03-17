@@ -7,7 +7,6 @@
  */
 
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
-use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
 use App\Actions\Dropshipping\Allegro\Product\StoreRetinaNewProductToCurrentAllegro;
@@ -63,6 +62,7 @@ use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleDescriptio
 use App\Actions\Retina\Dropshipping\Bundle\GenerateRetinaProductBundleTitle;
 use App\Actions\Retina\Dropshipping\Bundle\StoreRetinaBundle;
 use App\Actions\Retina\Dropshipping\Bundle\UpdateRetinaBundle;
+use App\Actions\Retina\Dropshipping\Bundle\UploadRetinaBundleProductImages;
 use App\Actions\Retina\Dropshipping\Client\ImportRetinaClients;
 use App\Actions\Retina\Dropshipping\Client\UpdateRetinaCustomerClient;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ImportBulkCustomerSalesChannelPortfolios;
@@ -348,7 +348,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::prefix('{customerSalesChannel:id}/bundles')->name('bundles.')->group(function () {
         Route::post('/', StoreRetinaBundle::class)->name('store');
         Route::patch('{bundle}', UpdateRetinaBundle::class)->name('update');
-        Route::post('products/{product:id}/images', UploadImagesToProduct::class)->name('products.images.store')->withoutScopedBindings();
+        Route::post('products/{product:id}/images', UploadRetinaBundleProductImages::class)->name('products.images.store')->withoutScopedBindings();
         Route::post('calculate-bundle-product', CalculateRetinaBundleItemPriceDetails::class)->name('products.calculate');
     });
 
