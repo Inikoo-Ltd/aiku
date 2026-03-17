@@ -932,6 +932,11 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->morphMany(WorkSchedule::class, 'schedulable');
     }
 
+    public function getDefaultWorkSchedule(): ?WorkSchedule
+    {
+        return $this->workSchedules()->where('type', 'default')->where('is_active', true)->first();
+    }
+
     public function getDefaultAnnualLeaveDays(): int
     {
         return $this->settings['hr']['leave_quota']['annual_leave_days'] ?? 10;

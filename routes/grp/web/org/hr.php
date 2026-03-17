@@ -226,6 +226,14 @@ Route::prefix('analytics')->as('analytics.')->group(function () {
     Route::get('employees/{employee}', \App\Actions\HumanResources\EmployeeAnalytics\UI\ShowEmployeeAnalytics::class)->name('show');
 });
 
+Route::prefix('shift-schedules')->as('shift_schedules.')->group(function () {
+    Route::get('', \App\Actions\HumanResources\WorkSchedule\IndexWorkSchedules::class)->name('index');
+    Route::post('', \App\Actions\HumanResources\WorkSchedule\StoreWorkSchedule::class)->name('store');
+    Route::get('{workSchedule}/edit', \App\Actions\HumanResources\WorkSchedule\EditWorkSchedule::class)->name('edit');
+    Route::patch('{workSchedule}', \App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule::class)->name('update');
+    Route::delete('{workSchedule}', \App\Actions\HumanResources\WorkSchedule\DeleteWorkSchedule::class)->name('delete');
+});
+
 Route::prefix('employees')->as('employees.')->group(function () {
     Route::get('birthdays', GetEmployeesByBirthMonth::class)->name('birthdays');
     Route::patch('{employee}/adjust-leave', AdjustEmployeeLeaveBalance::class)->name('adjust-leave');

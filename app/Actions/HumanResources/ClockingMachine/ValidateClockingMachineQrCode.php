@@ -2,25 +2,27 @@
 
 namespace App\Actions\HumanResources\ClockingMachine;
 
-use App\Models\HumanResources\ClockingMachine;
-use App\Models\HumanResources\Clocking;
-use Illuminate\Support\Carbon;
-use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Exception;
-use Illuminate\Contracts\Encryption\DecryptException;
-use App\Enums\HumanResources\Clocking\ClockingActionEnum;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use App\Actions\HumanResources\Clocking\StoreClocking;
+use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
+use App\Enums\HumanResources\Clocking\ClockingActionEnum;
+use App\Models\HumanResources\Clocking;
+use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\WorkSchedule;
+use App\Notifications\LateClockInNotification;
+use Exception;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class ValidateClockingMachineQrCode
 {
     use AsAction;
 
-    public function handle(string $qrCodeToken, ?float $userLat = null, ?float $userLng = null): array
+    public function handle(string $qrCodeToken, ?float $userLat = null, ?float $userLng = null, ?int $workScheduleId = null): array
     {
         $clockingMachine = null;
 
@@ -65,8 +67,8 @@ class ValidateClockingMachineQrCode
 
             $workingHours = $this->getWorkingHours($clockingMachine);
 
-            $clockingResult = DB::transaction(function () use ($clockingMachine, $userLat, $userLng) {
-                return $this->processClocking($clockingMachine, $userLat, $userLng);
+            $clockingResult = DB::transaction(function () use ($clockingMachine, $userLat, $userLng, $workScheduleId) {
+                return $this->processClocking($clockingMachine, $userLat, $userLng, $workScheduleId);
             });
 
             return [
@@ -90,7 +92,7 @@ class ValidateClockingMachineQrCode
         }
     }
 
-    private function processClocking(ClockingMachine $machine, ?float $lat, ?float $lng): array
+    private function processClocking(ClockingMachine $machine, ?float $lat, ?float $lng, ?int $workScheduleId = null): array
     {
         $user = Auth::user();
         $employee = $user?->employees->first();
@@ -108,14 +110,30 @@ class ValidateClockingMachineQrCode
             throw new Exception(__('Scan too frequent. Please wait a moment.'));
         }
 
+        $clockedInAt = now();
+
+        $modelData = [
+            'clocked_at' => $clockedInAt,
+        ];
+
+        if ($workScheduleId) {
+            $modelData['work_schedule_id'] = $workScheduleId;
+        }
+
         $clocking = StoreClocking::run(
             generator: $employee,
             parent: $machine,
             subject: $employee,
-            modelData: [
-                'clocked_at' => now(),
-            ]
+            modelData: $modelData
         );
+
+        $isLate = $this->calculateLate($employee, $clockedInAt, $clocking->workSchedule);
+        $clocking->is_late = $isLate;
+        $clocking->saveQuietly();
+
+        if ($isLate && $clocking->workSchedule && $employee->user) {
+            $employee->user->notify(new LateClockInNotification($clocking));
+        }
 
         $timeTracker = null;
         if ($clocking->time_tracker_id) {
@@ -135,6 +153,33 @@ class ValidateClockingMachineQrCode
             'clocking' => $clocking,
             'action_type' => $actionType
         ];
+    }
+
+    private function calculateLate($employee, Carbon $clockedInAt, ?WorkSchedule $selectedSchedule = null): bool
+    {
+        if ($employee->type === EmployeeTypeEnum::PARTTIME) {
+            return false;
+        }
+
+        $gracePeriod = $employee->organisation->late_grace_period_minutes ?? 15;
+        $schedule = $selectedSchedule ?? $employee->organisation->getDefaultWorkSchedule();
+
+        if (!$schedule) {
+            return false;
+        }
+
+        $timezone = $schedule->timezone?->name ?? $employee->organisation->timezone?->name ?? config('app.timezone');
+        $todayIso = $clockedInAt->dayOfWeekIso;
+        $todaySchedule = $schedule->days()->where('day_of_week', $todayIso)->first();
+
+        if (!$todaySchedule || !$todaySchedule->is_working_day) {
+            return false;
+        }
+
+        $scheduledStart = Carbon::today($timezone)->setTimeFromTimeString($todaySchedule->start_time);
+        $allowedTime = $scheduledStart->copy()->addMinutes($gracePeriod);
+
+        return $clockedInAt->gt($allowedTime);
     }
 
     private function getWorkingHours(ClockingMachine $machine): ?array
@@ -204,9 +249,10 @@ class ValidateClockingMachineQrCode
         $token = $data['qr_code'];
         $lat   = $data['latitude'] ?? null;
         $lng   = $data['longitude'] ?? null;
+        $workScheduleId = $data['work_schedule_id'] ?? null;
 
         try {
-            $result = $this->handle($token, $lat, $lng);
+            $result = $this->handle($token, $lat, $lng, $workScheduleId);
             $machine = $result['machine'];
             $clocking = $result['clocking'];
             $actionType = $result['action_type'];
@@ -225,6 +271,7 @@ class ValidateClockingMachineQrCode
                     'clocked_at' => $clocking->clocked_at,
                     'id' => $clocking->id,
                     'type' => $actionType,
+                    'is_late' => $clocking->is_late,
                 ]
             ]);
         } catch (Exception $e) {
@@ -238,9 +285,10 @@ class ValidateClockingMachineQrCode
     public function rules(): array
     {
         return [
-            'qr_code'   => ['required', 'string'],
-            'latitude'  => ['nullable', 'numeric'],
-            'longitude' => ['nullable', 'numeric'],
+            'qr_code'          => ['required', 'string'],
+            'latitude'         => ['nullable', 'numeric'],
+            'longitude'        => ['nullable', 'numeric'],
+            'work_schedule_id' => ['nullable', 'integer', 'exists:work_schedules,id'],
         ];
     }
 }

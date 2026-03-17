@@ -66,7 +66,7 @@ class IndexLeaveConcurrencyRules extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
@@ -122,26 +122,26 @@ class IndexLeaveConcurrencyRules extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Leave concurrency rules'),
-                'pageHead'    => [
-                    'icon'           => ['fal', 'fa-project-diagram'],
-                    'title'          => __('Leave Concurrency Rules'),
-                    'subNavigation'  => $this->getLeaveSubNavigation($request),
-                    'actions'        => [
+                'title' => __('Leave concurrency rules'),
+                'pageHead' => [
+                    'icon' => ['fal', 'fa-project-diagram'],
+                    'title' => __('Leave Concurrency Rules'),
+                    'subNavigation' => $this->getLeaveSubNavigation($request),
+                    'actions' => [
                         [
-                            'type'  => 'button',
+                            'type' => 'button',
                             'style' => 'create',
-                            'key'   => 'leave concurrency rule',
+                            'key' => 'leave concurrency rule',
                             'label' => __('New Leave Concurrency Rule'),
-                            'icon'  => ['fal', 'fa-plus'],
+                            'icon' => ['fal', 'fa-plus'],
                         ],
                     ],
                 ],
-                'data'                   => $leaveConcurrencyRules,
-                'employees'              => $employees,
-                'jobPositions'           => $jobPositions,
-                'jobPositionEmployees'   => $jobPositionEmployees,
-                'ruleTypeOptions'       => collect(LeaveConcurrencyRuleTypeEnum::cases())
+                'data' => $leaveConcurrencyRules,
+                'employees' => $employees,
+                'jobPositions' => $jobPositions,
+                'jobPositionEmployees' => $jobPositionEmployees,
+                'ruleTypeOptions' => collect(LeaveConcurrencyRuleTypeEnum::cases())
                     ->map(fn ($case) => [
                         'value' => $case->value,
                         'label' => $case->label(),
@@ -151,7 +151,7 @@ class IndexLeaveConcurrencyRules extends OrgAction
                     ['value' => 'Employee', 'label' => __('Employee')],
                     ['value' => 'JobPosition', 'label' => __('Job Position')],
                 ],
-                'roleOptions'       => collect(LeaveConcurrencyTargetRoleEnum::cases())
+                'roleOptions' => collect(LeaveConcurrencyTargetRoleEnum::cases())
                     ->map(fn ($case) => [
                         'value' => $case->value,
                         'label' => $case->label(),
@@ -174,14 +174,14 @@ class IndexLeaveConcurrencyRules extends OrgAction
         $headCrumb = function (string $routeName, array $routeParameters) {
             return [
                 [
-                    'type'   => 'simple',
+                    'type' => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => $routeName,
+                            'name' => $routeName,
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Leave Concurrency Rules'),
-                        'icon'  => 'fal fa-bars',
+                        'icon' => 'fal fa-bars',
                     ],
                 ],
             ];

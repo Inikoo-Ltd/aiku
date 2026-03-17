@@ -255,6 +255,15 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
+                        [
+                            'label' => __('Shift Schedules'),
+                            'icon'  => ['fal', 'fa-calendar-check'],
+                            'root'  => 'grp.org.hr.shift_schedules.',
+                            'route' => [
+                                'name'       => 'grp.org.hr.shift_schedules.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
                     ],
                 ],
             ];
