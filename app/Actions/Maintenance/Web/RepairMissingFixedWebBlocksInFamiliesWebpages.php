@@ -102,7 +102,7 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         $countFamilyDescriptionBlock = null;
         $familyDescriptionBlock = 'family-1';
 
-        if($command->option('alternative-design')) {
+        if ($command->option('alternative-design')) {
             $familyDescriptionBlock = 'family-2';
 
             $countFamilyDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'family-2');

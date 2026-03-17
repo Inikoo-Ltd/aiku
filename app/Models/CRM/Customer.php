@@ -157,6 +157,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CustomerSalesChannel> $customerSalesChannels
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
+ * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
  * @property-read EbayUser|null $ebayUser
  * @property-read Collection<int, Product> $exclusiveProducts
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites

@@ -94,23 +94,36 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
  * @property HealthRankEnum|null $health_rank
+ * @property string|null $desc_video_url
+ * @property int|null $desc_art1
+ * @property int|null $desc_art2
+ * @property int|null $desc_art3
+ * @property int|null $desc_art4
+ * @property int|null $desc_art5
+ * @property int|null $extra_desc_art1
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
  * @property-read ProductCategory|null $department
+ * @property-read Media|null $descArt1Image
+ * @property-read Media|null $descArt2Image
+ * @property-read Media|null $descArt3Image
+ * @property-read Media|null $descArt4Image
+ * @property-read Media|null $descArt5Image
+ * @property-read Media|null $extraDescArt1Image
  * @property-read Group $group
- * @property-read \App\Models\Helpers\Media|null $image
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read MasterProductCategory|null $masterProductCategory
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Catalogue\ProductCategoryOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Catalogue\ProductCategoryOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
  * @property-read ProductCategory|null $parent
  * @property-read \App\Models\Catalogue\ProductCategorySalesIntervals|null $salesIntervals
- * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
  * @property-read ProductCategory|null $subDepartment
@@ -118,6 +131,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read mixed $translations
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
+ * @property-read LaravelCollection<int, Webpage> $webpages
  * @method static \Database\Factories\Catalogue\ProductCategoryFactory factory($count = null, $state = [])
  * @method static Builder<static>|ProductCategory newModelQuery()
  * @method static Builder<static>|ProductCategory newQuery()

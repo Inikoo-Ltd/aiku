@@ -27,10 +27,10 @@ class UpdateMasterProductCategoryImages extends GrpAction
     public function handle(MasterProductCategory $masterProductCategory, array $modelData, bool $updateDependants = false): MasterProductCategory
     {
         $this->updateImages($masterProductCategory, $modelData);
-        
+
         $this->update($masterProductCategory, $modelData);
-        
-        if(Arr::has($modelData, 'extra_desc_art1')) {
+
+        if (Arr::has($modelData, 'extra_desc_art1')) {
             $this->updateWebImages($masterProductCategory);
         }
 
