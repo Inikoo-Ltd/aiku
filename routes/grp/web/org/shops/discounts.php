@@ -26,12 +26,24 @@ use App\Actions\Discounts\OfferCampaign\StoreGiftsOffers;
 use App\Actions\Discounts\OfferCampaign\StoreVoucherOffers;
 use App\Actions\Discounts\OfferCampaign\StoreCategoryOffers;
 use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
+use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOffer;
+use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOffer;
+use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOffer;
+use App\Actions\Discounts\OfferCampaign\UI\IndexOrdersInOfferTotal;
+use App\Actions\Discounts\OfferCampaign\UI\IndexCustomersInOfferTotal;
+use App\Actions\Discounts\OfferCampaign\UI\IndexInvoicesInOfferTotal;
 
 Route::get('', ShowDiscountsDashboard::class)->name('dashboard');
 Route::name("campaigns.")->prefix('campaigns')
     ->group(function () {
         Route::get('', IndexOfferCampaigns::class)->name('index');
         Route::get('{offerCampaign}', ShowOfferCampaign::class)->name('show');
+        Route::get('{offerCampaign}/orders', IndexOrdersInOffer::class)->name('orders');
+        Route::get('{offerCampaign}/customers', IndexCustomersInOffer::class)->name('customers');
+        Route::get('{offerCampaign}/invoices', IndexInvoicesInOffer::class)->name('invoices');
+        Route::get('{offerCampaign}/totals/customers', IndexCustomersInOfferTotal::class)->name('totals.customers');
+        Route::get('{offerCampaign}/totals/orders', IndexOrdersInOfferTotal::class)->name('totals.orders');
+        Route::get('{offerCampaign}/totals/invoices', IndexInvoicesInOfferTotal::class)->name('totals.invoices');
 
         Route::name('offer.')->prefix('{offerCampaign}/offer')
             ->group(function () {
