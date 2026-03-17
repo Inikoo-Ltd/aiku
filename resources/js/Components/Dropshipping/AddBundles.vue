@@ -14,6 +14,7 @@ import PortfoliosStepEdit from '../Retina/Dropshipping/PortfoliosStepEdit.vue'
 import BundlesSelector from './BundlesSelector.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Textarea, Dialog, Checkbox } from "primevue"
+import { debounce } from 'lodash-es'
 
 const props = defineProps<{
     step: {
@@ -263,25 +264,6 @@ const selectedMedia = ref<string[]>([])
 
 const mediaGallery = ref<string[]>([])
 
-const fetchMediaGallery = async () => {
-    try {
-        isLoadingMedia.value = true
-
-        // TODO replace with real API
-        const { data } = await axios.get('/api/bundle/media')
-
-        mediaGallery.value = data
-    } catch (e) {
-        notify({
-            title: trans('Error'),
-            text: trans('Failed to load media'),
-            type: 'error'
-        })
-    } finally {
-        isLoadingMedia.value = false
-    }
-}
-
 const calculateBundle = async () => {
     try {
         const { data } = await axios.post(
@@ -290,10 +272,10 @@ const calculateBundle = async () => {
                 props.bundle_routes.calculate.parameters
             ),
             {
-                items: selectedProducts.value.map(p => ({
-                    id: p.id,
-                    quantity: p.quantity || 1
-                }))
+                // items: selectedProducts.value.map(p => ({
+                //     id: p.id,
+                //     quantity: p.quantity || 1
+                // }))
             }
         )
 
@@ -390,21 +372,62 @@ const generateAIImages = async () => {
     }
 }
 
+const fetchMediaGallery = async () => {
+    try {
+        isLoadingMedia.value = true
+
+        const { data } = await axios.get(
+            route(
+                props.bundle_routes.images.get.name,
+                props.bundle_routes.images.get.parameters
+            )
+        )
+
+        mediaGallery.value = data
+
+    } catch (e) {
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to load media'),
+            type: 'error'
+        })
+    } finally {
+        isLoadingMedia.value = false
+    }
+}
+
 const openUpload = () => {
     // TODO open file picker / dropzone
 }
 
+const onUpdateSelectedProducts = (products:any[]) => {
+    selectedProducts.value = products.map(p => ({
+        ...p,
+        quantity: p.quantity_selected || 1
+    }))
+}
+
 const submitBundle = async () => {
     try {
-        await axios.post('/api/bundles', {
-            description: bundleDescription.value,
-            media: selectedMedia.value,
-            items: portfoliosList.value
-        })
+        await axios.post(
+            route(
+                props.bundle_routes.store.name,
+                props.bundle_routes.store.parameters
+            ),
+            {
+                title: bundleTitle.value,
+                description: bundleDescription.value,
+                media: selectedMedia.value,
+                items: selectedProducts.value.map(p => ({
+                    id: p.id,
+                    quantity: p.quantity || 1
+                }))
+            }
+        )
 
         notify({
             title: trans('Success'),
-            text: trans('Bundle created'),
+            text: trans('Bundle created successfully'),
             type: 'success'
         })
 
@@ -419,6 +442,25 @@ const submitBundle = async () => {
     }
 }
 
+watch(selectedProducts, () => {
+    if(selectedProducts.value.length){
+        calculateBundle()
+    } else {
+        summary.value = {
+            cost_price: 0,
+            bundle_price: 0,
+            rrp: 0,
+            profit: 0,
+            profit_percent: 0
+        }
+    }
+}, { deep:true })
+
+const debouncedCalculate = debounce(calculateBundle, 400)
+
+watch(selectedProducts, () => {
+    debouncedCalculate()
+}, { deep:true })
 onMounted(() => {
     if (props.step.current > 0) {
         fetchIndexUnuploadedPortfolios()
@@ -447,22 +489,22 @@ onMounted(() => {
             <div class="w-[320px] text-sm space-y-2">
                 <div class="flex justify-between border-b pb-1">
                     <span class="text-gray-500">Cost Price (Individual Purchase)</span>
-                    <span class="font-medium">£10.50</span>
+                    <span class="font-medium">{{ summary.cost_price }}</span>
                 </div>
 
                 <div class="flex justify-between border-b pb-1">
                     <span class="text-gray-500">Bundle Price (-10%)</span>
-                    <span class="font-medium text-green-600">£8.70</span>
+                    <span class="font-medium text-green-600">{{ summary.bundle_price }}</span>
                 </div>
 
                 <div class="flex justify-between border-b pb-1">
                     <span class="text-gray-500">RRP</span>
-                    <span class="font-medium">£30.00</span>
+                    <span class="font-medium">{{ summary.rrp }}</span>
                 </div>
 
                 <div class="flex justify-between pt-1">
                     <span class="text-gray-500">Profit</span>
-                    <span class="font-semibold text-green-600">£22.00 (60%)</span>
+                    <span class="font-semibold text-green-600"> [{{ summary.profit_percent }}%] {{ summary.profit }}</span>
                 </div>
             </div>
         </div>
@@ -471,7 +513,7 @@ onMounted(() => {
 
         <!-- 0: Select Product -->
         <KeepAlive>
-            <BundlesSelector v-if="step.current === 0" xheadLabel="trans('Add products to portfolios')" :route-fetch="{
+            <BundlesSelector v-if="step.current === 0" xheadLabel="trans('Add products to portfolios')" @update:selected="onUpdateSelectedProducts" :route-fetch="{
                 name: props.routes.itemRoute.name,
                 parameters: {
                     ...props.routes.itemRoute.parameters,
