@@ -4,6 +4,7 @@ namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class FilterByInterest
 {
@@ -26,8 +27,13 @@ class FilterByInterest
         }
 
         if (!empty($tagIds)) {
-            $query->whereHas('tags', function (Builder $q) use ($tagIds) {
-                $q->whereIn('tags.id', $tagIds);
+            $query->whereExists(function ($q) use ($tagIds) {
+                $q->select(DB::raw(1))
+                    ->from('model_has_tags')
+                    ->whereColumn('model_has_tags.model_id', 'customers.id')
+                    ->where('model_has_tags.model_type', 'Customer');
+
+                $q->whereIn('model_has_tags.tag_id', $tagIds);
             });
         }
 

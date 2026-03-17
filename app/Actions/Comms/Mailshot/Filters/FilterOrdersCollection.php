@@ -4,6 +4,7 @@ namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class FilterOrdersCollection
 {
@@ -18,8 +19,12 @@ class FilterOrdersCollection
 
         if ($isCollectionActive) {
 
-            $query->whereHas('stats', function (Builder $q) {
-                $q->where('number_orders_handing_type_collection', '>', 0);
+            $query->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('customer_stats')
+                    ->whereColumn('customer_stats.customer_id', 'customers.id');
+
+                $q->where('customer_stats.number_orders_handing_type_collection', '>', 0);
             });
         }
 

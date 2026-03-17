@@ -4,6 +4,7 @@ namespace App\Actions\Comms\Mailshot\Filters;
 
 use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class FilterByShowroomOrders
 {
@@ -17,9 +18,12 @@ class FilterByShowroomOrders
         $isShowroomActive = is_array($showroomFilter) ? ($showroomFilter['value'] ?? false) : $showroomFilter;
 
         if ($isShowroomActive) {
+            $query->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('customer_stats')
+                    ->whereColumn('customer_stats.customer_id', 'customers.id');
 
-            $query->whereHas('stats', function (Builder $q) {
-                $q->where('number_orders_sales_channel_type_showroom', '>', 0);
+                $q->where('customer_stats.number_orders_sales_channel_type_showroom', '>', 0);
             });
         }
 
