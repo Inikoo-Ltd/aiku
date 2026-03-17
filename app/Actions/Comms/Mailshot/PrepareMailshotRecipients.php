@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
 use Exception;
@@ -42,10 +41,10 @@ class PrepareMailshotRecipients
         $mailshotId = $mailshot->id;
 
         $cloneQuery = $queryBuilder->clone();
-        $totalCustomers = $cloneQuery->count();
+        $totalCustomers = $cloneQuery->count('customers.id');
 
         // Process recipients in chunks of 250
-        $queryBuilder->chunk($chunkSize, function ($customers) use ($mailshotId, $outboxId, $totalCustomers) {
+        $queryBuilder->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $outboxId, $totalCustomers) {
             $customerIds = $customers->pluck('id');
             ProcessSendMailshot::dispatch($mailshotId, $customerIds, $outboxId, $totalCustomers);
         });
