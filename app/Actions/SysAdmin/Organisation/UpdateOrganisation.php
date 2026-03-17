@@ -83,9 +83,11 @@ class UpdateOrganisation extends OrgAction
         }
 
         if (Arr::has($modelData, 'working_hours')) {
-            data_set($modelData, "working_hours", Arr::pull($modelData, 'working_hours'));
-            UpdateWorkSchedule::run($organisation, $modelData);
-            data_forget($modelData, 'working_hours');
+            $workingHours = Arr::pull($modelData, 'working_hours');
+            $workSchedule = $organisation->workSchedules()->first();
+            if ($workSchedule) {
+                app(UpdateWorkSchedule::class)->action($organisation, $workSchedule, ['working_hours' => $workingHours]);
+            }
         }
 
         if (Arr::has($modelData, 'hr_annual_leave_days')) {

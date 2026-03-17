@@ -22,7 +22,7 @@ class StoreWorkSchedule extends OrgAction
             ]);
 
             if (Arr::has($data, 'working_hours')) {
-                app(UpdateWorkSchedule::class)->handle($parent, [
+                app(UpdateWorkSchedule::class)->handle($schedule, [
                     'working_hours' => $data['working_hours'],
                 ]);
             }
