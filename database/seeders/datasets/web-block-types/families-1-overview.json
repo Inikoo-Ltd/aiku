@@ -1,0 +1,14 @@
+{
+	"slug": "families-1-overview",
+	"scope": "webpage",
+	"code": "families-1-overview",
+	"name": "families",
+	"category": "families-overview",
+	"fixed": true,
+	"icon": ["fal", "folder"],
+	"website_type" : ["b2b","b2c","dropshipping"],
+	"is_in_test" : false,
+	"data": {
+		"fieldValue": {}
+	}
+}
