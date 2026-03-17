@@ -396,16 +396,16 @@ class IndexWarehousePalletReturns extends OrgAction
                     ]
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->column(key: 'platform_name', label: __('platform'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'platform_name', label: __('Platform'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'customer_reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'customer_reference', label: __('Customer reference'), canBeHidden: false, sortable: true, searchable: true);
 
             // if ($this->restriction == 'picking') {
             //     $table->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true);
             // } else {
             // }
-            $table->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-            ->column(key: 'number_stored_items', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'number_pallets', label: __('Pallets'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+            ->column(key: 'number_stored_items', label: __('Stored items'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             if ($this->restriction) {
                 switch ($this->restriction) {
