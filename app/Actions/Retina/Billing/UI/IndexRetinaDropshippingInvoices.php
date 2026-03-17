@@ -23,11 +23,20 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Carbon\Carbon;
 
 class IndexRetinaDropshippingInvoices extends RetinaAction
 {
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, ?string $date = null, $prefix = null): LengthAwarePaginator
     {
+        try{
+            if($date){
+                $date = Carbon::parse($date)->toDateString();
+            }
+        } catch (\Exception $e) {
+            // Handle invalid date format, maybe log the error or return a default value
+            $date = null; // or you could throw an exception or return an error response
+        }
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('reference', $value);
@@ -43,6 +52,9 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
 
         $queryBuilder->where('invoices.customer_id', $customer->id);
 
+        if ($date) {
+            $queryBuilder->whereDate('invoices.date', $date);
+        }
 
 
         $queryBuilder->defaultSort('-invoices.date')
@@ -88,7 +100,6 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
-
 
             $noResults = __("No invoices found");
 
@@ -169,7 +180,10 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer);
+        return $this->handle(
+            $this->customer,
+            $request->query('date')
+        );
     }
 
     public function getBreadcrumbs(): array

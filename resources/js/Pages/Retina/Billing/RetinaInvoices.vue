@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeadingTypes } from "@/types/PageHeading"
+import { ref, watch } from 'vue'
+
+import { PageHeadingTypes } from '@/types/PageHeading'
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { RecurringBill } from "@/types/recurring_bill"
@@ -23,8 +25,8 @@ defineProps<{
 
 }>()
 
-const locale = useLocaleStore()
-const selectedDate = ref(false);
+const locale = useLocaleStore();
+const selectedDate = ref('');
 const isLoadingExport = ref(false);
 
 function invoiceRoute(invoice: Invoice) {
@@ -71,6 +73,12 @@ function channelRoute(invoice: {}) {
                 ])
     }
 }
+
+watch(selectedDate, (newDate) => {
+    router.get(route('retina.dropshipping.invoices.index'), { date: newDate }, {
+        preserveState: true,
+    })
+})
 
 const onExportPdf = () => {
     if (!selectedDate.value) return
