@@ -32,9 +32,11 @@ class FetchBannerAnalytics
 
             /** @var \App\Models\Portfolio\PortfolioWebsite $portfolioWebsite */
             $analytics = GetAnalytics::run(config('services.analytics.property_id'), $portfolioWebsite->created_at);
+            $bannerUlids = collect($analytics->toArray())->pluck('bannerId')->filter()->unique();
+            $banner = Banner::whereIn('ulid', $bannerUlids)->get()->keyBy('ulid');
 
             foreach ($analytics->toArray() as $analytic) {
-                $banner = Banner::where('ulid', $analytic['bannerId'])->first();
+                $banner = $banner->get($analytic['bannerId']);
 
                 $banner?->stats()->update([
                     'number_views' => $analytic['pageViews'],

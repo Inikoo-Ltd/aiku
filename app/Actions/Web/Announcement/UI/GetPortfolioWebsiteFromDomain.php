@@ -10,7 +10,7 @@ class GetPortfolioWebsiteFromDomain extends OrgAction
 {
     use AsAction;
 
-    public function handle(string $domain): PortfolioWebsite
+    public function handle(?string $domain = null): PortfolioWebsite
     {
         $origin   = $domain ? preg_replace('/^(https?:\/\/)?(www\.)?([^\/]+).*/', '$3', $domain) : null;
 
