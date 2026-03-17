@@ -22,9 +22,9 @@ trait WithUpdateWebImages
     public function updateWebImages(Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection $model): Product|ProductCategory|Collection|MasterAsset|MasterProductCategory|MasterCollection
     {
         $webImagesData = [
-            'main' => $this->getMainWebImageData($model),
-            'extraDescription'  => $this->getExtraDescriptionImageData($model),
-            'all'  => $this->getAllWebImageData($model)
+            'main'             => $this->getMainWebImageData($model),
+            'extraDescription' => $this->getExtraDescriptionImageData($model),
+            'all'              => $this->getAllWebImageData($model)
         ];
 
 
@@ -69,8 +69,12 @@ trait WithUpdateWebImages
         ];
     }
 
-    public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory $model): array
+    public function getExtraDescriptionImageData(ProductCategory|MasterProductCategory|Product $model): array
     {
+        if($model instanceof Product){
+            return [];
+        }
+
         $media = null;
         if ($model->extra_desc_art1) {
             $media = Media::find($model->extra_desc_art1);
