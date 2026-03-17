@@ -48,12 +48,12 @@ class IndexDeliveryNoteItems extends OrgAction
             switch ($stateFilter) {
                 case DeliveryNoteItemStateEnum::PACKING:
                     $query->whereNull('packings.id')
-                        ->where('delivery_note_items.quantity_not_picked', '=', 0);
+                        ->where('delivery_note_items.quantity_picked', '!=', 0);
                     break;
                 default:
                     $query->where(function ($query) {
                         $query->whereNotNull('packings.id')
-                        ->orWhere('delivery_note_items.quantity_not_picked', '>', 0);
+                        ->orWhereColumn('delivery_note_items.quantity_picked', 'delivery_note_items.quantity_packed');
                     });
                     break;
             }

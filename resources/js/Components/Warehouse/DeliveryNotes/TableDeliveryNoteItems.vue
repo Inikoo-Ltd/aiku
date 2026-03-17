@@ -739,7 +739,7 @@ const submitTransactionAsWaiting = () => {
         </template>
 
          <template #cell(action)="{ item: item }">
-                <template class="" v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_not_picked == 0">
+                <template class="" v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked != 0">
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
                         type="secondary"

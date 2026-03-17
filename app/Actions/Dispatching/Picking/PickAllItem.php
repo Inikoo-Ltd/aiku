@@ -15,6 +15,9 @@ use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,16 +30,38 @@ class PickAllItem extends OrgAction
 
     protected DeliveryNoteItem $deliveryNoteItem;
 
-    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
+    public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
     {
-        $toPickQuantity = $deliveryNoteItem->quantity_required - $deliveryNoteItem->quantity_picked;
+        // If locked, will skip the process
+        if ($deliveryNoteItem->locked_at && (Carbon::parse($deliveryNoteItem->locked_at)->diffInSeconds(now()) < 3)) {
+            return null;
+        }
 
-        $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
+        $deliveryNoteItem->update(['locked_at'  => now()]);
+    
+        try {
 
+            $toPickQuantity = $deliveryNoteItem->quantity_required - $deliveryNoteItem->quantity_picked;
+    
+    
+            $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
+    
+    
+            data_set($modelData, 'quantity', min($toPickQuantity, $locationOrgStock->quantity));
+    
+            $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+    
+            $deliveryNoteItem->update(['locked_at'  => null]);
+            
+            return $picking;
 
-        data_set($modelData, 'quantity', min($toPickQuantity, $locationOrgStock->quantity));
+        } catch (Exception $e) {
+            
+            $deliveryNoteItem->update(['locked_at'  => null]);
+            
+            return null;
 
-        return StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+        }
     }
 
     public function rules(): array
@@ -70,7 +95,7 @@ class PickAllItem extends OrgAction
         $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
+    public function action(DeliveryNoteItem $deliveryNoteItem, array $modelData): ?Picking
     {
         $this->deliveryNoteItem = $deliveryNoteItem;
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
