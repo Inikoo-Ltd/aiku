@@ -59,6 +59,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property GenderEnum|null $gender
  * @property string|null $worker_number
  * @property string|null $job_title
+ * @property bool $allow_shift
  * @property EmployeeTypeEnum $type
  * @property EmployeeStateEnum $state
  * @property string|null $employment_start_at
@@ -137,6 +138,7 @@ class Employee extends Model implements HasMedia, Auditable
     use InteractsWithMedia;
 
     protected $casts = [
+        'allow_shift' => 'boolean',
         'week_working_hours' => 'decimal:2',
         'data' => 'array',
         'errors' => 'array',
@@ -285,6 +287,11 @@ class Employee extends Model implements HasMedia, Auditable
     public function clockings(): MorphMany
     {
         return $this->morphMany(Clocking::class, 'subject');
+    }
+
+    public function availableShifts()
+    {
+        return $this->organisation->workSchedules()->shifts()->where('is_active', true);
     }
 
     public function tasks(): MorphMany

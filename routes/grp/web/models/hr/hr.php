@@ -7,8 +7,13 @@
  */
 
 use App\Actions\HumanResources\Employee\ImportEmployees;
+use App\Actions\HumanResources\WorkSchedule\IndexShiftSchedules;
 use Illuminate\Support\Facades\Route;
 
 Route::name('employees.')->prefix('employees')->group(function () {
     Route::post('{organisation:id}/import', ImportEmployees::class)->name('import');
+});
+
+Route::prefix('work-schedule')->name('work-schedule.')->group(function () {
+    Route::get('/', IndexShiftSchedules::class)->name('index');
 });
