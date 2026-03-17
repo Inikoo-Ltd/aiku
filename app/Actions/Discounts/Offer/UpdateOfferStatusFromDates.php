@@ -16,6 +16,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use Illuminate\Console\Command;
 
@@ -42,7 +43,7 @@ class UpdateOfferStatusFromDates extends OrgAction
             list($statusFromDates, $stateFromDates) = $this->getStateFromDates($offer);
         }
 
-        if ($currentState == OfferStateEnum::SUSPENDED and $stateFromDates != OfferStateEnum::FINISHED) {
+        if ($currentState == OfferStateEnum::SUSPENDED && $stateFromDates != OfferStateEnum::FINISHED) {
             $status = false;
             $state  = OfferStateEnum::SUSPENDED;
         } else {
@@ -62,7 +63,7 @@ class UpdateOfferStatusFromDates extends OrgAction
         foreach ($offer->offerAllowances as $offerAllowance) {
             $currentOfferAllowanceState = $offerAllowance->state;
 
-            if ($currentOfferAllowanceState == OfferAllowanceStateEnum::SUSPENDED and $stateFromDates != OfferStateEnum::FINISHED) {
+            if ($currentOfferAllowanceState == OfferAllowanceStateEnum::SUSPENDED && $stateFromDates != OfferStateEnum::FINISHED) {
                 $status = false;
                 $state  = OfferAllowanceStateEnum::SUSPENDED;
             } else {
@@ -117,14 +118,24 @@ class UpdateOfferStatusFromDates extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'offer:update_status_from_dates {offer}';
+        return 'offer:update_status_from_dates {offer?}';
     }
 
     public function asCommand(Command $command): int
     {
-        $offer = Offer::where('slug', $command->argument('offer'))->firstOrFail();
+        if (!$command->argument('offer')) {
+            $offer = Offer::where('slug', $command->argument('offer'))->firstOrFail();
 
-        $this->handle($offer);
+            $this->handle($offer);
+            return 0;
+        }
+
+        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
+
+        foreach (Offer::whereIn('shop_id', $aikuShops)->where('duration',OfferDurationEnum::INTERVAL)->get() as $offer) {
+            $this->handle($offer);
+        }
+
 
         return 0;
     }
