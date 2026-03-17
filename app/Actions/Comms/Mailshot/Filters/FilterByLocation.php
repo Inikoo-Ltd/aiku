@@ -5,6 +5,7 @@ namespace App\Actions\Comms\Mailshot\Filters;
 use App\Services\GeocoderService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class FilterByLocation
@@ -56,7 +57,13 @@ class FilterByLocation
 
 
         if ($mode === 'direct' || (!empty($countryIds) || !empty($postalCodes))) {
-            return $query->whereHas('address', function (Builder $q) use ($countryIds, $postalCodes) {
+
+
+            return  $query->whereExists(function ($q) use ($countryIds, $postalCodes) {
+                $q->select(DB::raw(1))
+                    ->from('addresses')
+                    ->whereColumn('addresses.id', 'customers.address_id');
+
                 if (!empty($countryIds)) {
                     $q->whereIn('country_id', $countryIds);
                 }
@@ -90,7 +97,11 @@ class FilterByLocation
                     $west  = (float) min($bounds['west'], $bounds['east']);
                     $east  = (float) max($bounds['west'], $bounds['east']);
 
-                    return $query->whereHas('address', function (Builder $q) use ($south, $north, $west, $east) {
+                    return $query->whereExists(function (Builder $q) use ($south, $north, $west, $east) {
+                        $q->select(DB::raw(1))
+                            ->from('addresses')
+                            ->whereColumn('addresses.id', 'customers.address_id');
+
                         $q->whereNotNull('latitude')
                             ->whereNotNull('longitude')
                             ->where('latitude', '>=', $south)
@@ -102,7 +113,10 @@ class FilterByLocation
 
                 if (!empty($location)) {
                     $city = $location;
-                    return $query->whereHas('address', function (Builder $q) use ($city) {
+                    return $query->whereExists(function ($q) use ($city) {
+                        $q->select(DB::raw(1))
+                            ->from('addresses')
+                            ->whereColumn('addresses.id', 'customers.address_id');
                         $q->whereNotNull('latitude')
                             ->whereNotNull('longitude')
                             ->whereRaw("geocoding_metadata->>'city' = ?", [$city]);
@@ -115,7 +129,11 @@ class FilterByLocation
             $lat = $coordinates['latitude'];
             $lng = $coordinates['longitude'];
 
-            return $query->whereHas('address', function (Builder $q) use ($lat, $lng, $radiusKm) {
+            return $query->whereExists(function ($q) use ($lat, $lng, $radiusKm) {
+                $q->select(DB::raw(1))
+                    ->from('addresses')
+                    ->whereColumn('addresses.id', 'customers.address_id');
+
                 $q->whereNotNull('latitude')
                     ->whereNotNull('longitude')
                     ->whereRaw("
