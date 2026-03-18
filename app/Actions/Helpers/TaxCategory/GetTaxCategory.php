@@ -38,7 +38,7 @@ class GetTaxCategory
         $gbCountryId      = Country::where('code', 'GB')->first()->id;
         $taxableCountries = ['GB', 'IM'];
 
-        if(!$deliveryAddress){
+        if (!$deliveryAddress) {
             $deliveryAddress = $billingAddress;
         }
 
@@ -52,7 +52,7 @@ class GetTaxCategory
 
     protected function euTaxCategory(Country $country, Address $billingAddress, ?Address $deliveryAddress, ?TaxNumber $taxNumber, bool $isRe = false): TaxCategory
     {
-        if(!$deliveryAddress){
+        if (!$deliveryAddress) {
             $deliveryAddress = $billingAddress;
         }
 
