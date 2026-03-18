@@ -11,7 +11,7 @@ namespace App\Actions\Maintenance\Dispatching;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePicker;
-use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickingBays;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickedBays;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Catalogue\Shop;
@@ -22,7 +22,7 @@ class RepairDeliveryNotesTrolleysPickingBays
 {
     use AsCommand;
 
-    public string $commandSignature = 'repair:delivery_notes_trolleys_and_picking_bays';
+    public string $commandSignature = 'repair:delivery_notes_trolleys_and_picked_bays';
 
 
     public function asCommand(): void
@@ -39,7 +39,7 @@ class RepairDeliveryNotesTrolleysPickingBays
                 ]
             )->get() as $deliveryNote
         ) {
-            DeliveryNoteHydratePickingBays::run($deliveryNote->id);
+            DeliveryNoteHydratePickedBays::run($deliveryNote->id);
             DeliveryNoteHydrateTrolleys::run($deliveryNote->id);
             DeliveryNoteHydratePicker::run($deliveryNote->id);
             DeliveryNoteHydratePacker::run($deliveryNote->id);

@@ -13,6 +13,8 @@ use App\Actions\Accounting\IntrastatImportTimeSeries\ProcessIntrastatImportTimeS
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePicker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
@@ -62,6 +64,14 @@ class UpdateDeliveryNote extends OrgAction
                 ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
                 CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
                 CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
+            }
+
+            if (Arr::has($changes, 'picker_user_id')) {
+                DeliveryNoteHydratePicker::dispatch($deliveryNote->id);
+            }
+
+            if (Arr::has($changes, 'packer_user_id')) {
+                DeliveryNoteHydratePacker::dispatch($deliveryNote->id);
             }
 
             if (Arr::has($changes, 'collection_address_id')) {

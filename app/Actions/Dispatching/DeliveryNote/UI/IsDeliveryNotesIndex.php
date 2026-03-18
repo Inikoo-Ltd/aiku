@@ -260,9 +260,25 @@ trait IsDeliveryNotesIndex
             $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
+                $table->column(key: 'picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+            if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked') {
+                $table->column(key: 'trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+            if ($bucket == 'picked') {
+                $table->column(key: 'picked_bays', label: __('Picked bays'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+
+            if ($bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
+                $table->column(key: 'packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
             if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {
                 $table->column(key: 'delivery', label: __('Shipping'));
             }

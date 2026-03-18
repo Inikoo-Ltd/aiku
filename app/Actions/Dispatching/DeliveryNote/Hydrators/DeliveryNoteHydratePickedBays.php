@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class DeliveryNoteHydratePickingBays implements ShouldBeUnique
+class DeliveryNoteHydratePickedBays implements ShouldBeUnique
 {
     use AsAction;
     use WithActionUpdate;
@@ -52,9 +52,9 @@ class DeliveryNoteHydratePickingBays implements ShouldBeUnique
                 $data = $deliveryNote->data ?? [];
 
                 if (empty($pickedBays)) {
-                    unset($data['picking_bays']);
+                    unset($data['picked_bays']);
                 } else {
-                    $data['picking_bays'] = $pickedBays;
+                    $data['picked_bays'] = $pickedBays;
                 }
 
                 $deliveryNote->update(['data' => $data]);

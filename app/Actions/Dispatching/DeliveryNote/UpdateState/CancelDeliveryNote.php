@@ -10,7 +10,7 @@
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
-use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickingBays;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickedBays;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
@@ -128,7 +128,7 @@ class CancelDeliveryNote extends OrgAction
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::CANCELLED);
 
         DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
-        DeliveryNoteHydratePickingBays::dispatch($deliveryNote->id);
+        DeliveryNoteHydratePickedBays::dispatch($deliveryNote->id);
 
 
         return $deliveryNote;

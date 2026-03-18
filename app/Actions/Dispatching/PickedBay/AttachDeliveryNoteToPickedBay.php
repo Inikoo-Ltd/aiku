@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dispatching\PickedBay;
 
-use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickingBays;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickedBays;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -31,7 +31,7 @@ class AttachDeliveryNoteToPickedBay extends OrgAction
             ]
         ]);
         PickedBayHydrateNumberDeliveryNotes::run($pickedBay->id);
-        DeliveryNoteHydratePickingBays::dispatch($deliveryNote->id);
+        DeliveryNoteHydratePickedBays::dispatch($deliveryNote->id);
     }
 
 

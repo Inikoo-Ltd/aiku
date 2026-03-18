@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePicker;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\OrgAction;
@@ -65,11 +66,11 @@ class StartHandlingDeliveryNote extends OrgAction
                     ->where('delivery_note_id', $deliveryNote->id)
                     ->update(['state' => DeliveryNoteItemStateEnum::HANDLING->value]);
 
-                DeliveryNoteHydrateItems::dispatch($deliveryNote)->delay($this->hydratorsDelay);
 
                 return $deliveryNote;
             });
-
+            DeliveryNoteHydratePicker::dispatch($deliveryNote->id);
+            DeliveryNoteHydrateItems::dispatch($deliveryNote)->delay($this->hydratorsDelay);
 
             $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
             $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);

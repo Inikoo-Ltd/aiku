@@ -58,7 +58,6 @@ class DeliveryNotesResource extends JsonResource
         } else {
             $weight = round($this->estimated_weight / 1000).' Kg';
         }
-
         return [
             'id'                          => $this->id,
             'slug'                        => $this->slug,
@@ -89,7 +88,9 @@ class DeliveryNotesResource extends JsonResource
             'shipping_notes'              => $this->shipping_notes,
             'shipping_data'               => $this->shipping_data,
             'trolleys'                    => Arr::get($this->data, 'trolleys'),
-            'picking_bays'                => Arr::get($this->data, 'picking_bays'),
+            'picked_bays'                => Arr::get($this->data, 'picked_bays'),
+            'picker'                      => Arr::get($this->data, 'picker'),
+            'packer'                      => Arr::get($this->data, 'packer'),
             'number_of_days_in_warehouse' => round(\Carbon\Carbon::parse($this->in_warehouse_at)->diffInDays(now())),
             'employee_pick_route'         => [
                 'name'       => 'grp.models.delivery_note.employee.pick',
