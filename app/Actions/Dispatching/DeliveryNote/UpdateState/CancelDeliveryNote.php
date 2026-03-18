@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickedBays;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\Packing\DeletePacking;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
@@ -57,6 +58,11 @@ class CancelDeliveryNote extends OrgAction
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $modifyOrder) {
             $deliveryNote = $this->update($deliveryNote, $modelData);
+
+
+            foreach ($deliveryNote->packings as $packing) {
+                DeletePacking::make()->action($packing);
+            }
 
             foreach ($deliveryNote->pickings as $picking) {
                 $deliveryNoteItem = $picking->deliveryNoteItem;
