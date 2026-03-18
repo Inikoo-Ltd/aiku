@@ -90,7 +90,14 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
 
-            if (!$deliveryNote || ($deliveryNote->picker_user_id && $deliveryNote->picker_user_id != request()->user()->id)) {
+            $isPicker = $deliveryNote->packer_user_id && $deliveryNote->packer_user_id != request()->user()->id;
+            
+            // TODO REMOVE IS PRODUCTION CHECK LATER SO IT WORKS (LOCKED) ON PRODUCTION
+            if(app()->isLocal() || app()->isProduction()) {
+                $isPicker = true;
+            }
+
+            if (!$deliveryNote || !$isPicker) {
                 $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 

@@ -106,12 +106,18 @@ class IndexDeliveryNoteItems extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             
-            if (!$parent || ($parent->packer_user_id && $parent->packer_user_id != request()->user()->id)) {
+            $isPicker = $parent->packer_user_id && $parent->packer_user_id != request()->user()->id;
+            
+            // TODO REMOVE IS PRODUCTION CHECK LATER SO IT WORKS (LOCKED) ON PRODUCTION
+            if(app()->isLocal() || app()->isProduction()) {
+                $isPicker = true;
+            }
+
+            if (!$parent || !$isPicker) {
                 $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             } else {
-                
                 $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_packed', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
