@@ -113,7 +113,7 @@ trait IsDeliveryNotesIndex
         };
 
         // Subquery to concatenate picking session IDs for each delivery note
-        // Using STRING_AGG PostgreSQL function to concatenate values with comma separator
+        // Using STRING_AGG Postgres SQL function to concatenate values with comma separator
         // COALESCE is used to handle NULL values, returning an empty string if no picking sessions exist
         $pickingSessionIdsSubquery = function ($query) {
             $query->selectRaw("COALESCE(STRING_AGG(CAST(picking_session_id AS VARCHAR), ','), '')")
