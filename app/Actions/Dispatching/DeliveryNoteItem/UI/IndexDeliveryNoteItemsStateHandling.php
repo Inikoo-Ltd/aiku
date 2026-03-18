@@ -15,6 +15,7 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
@@ -68,9 +69,9 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure($prefix = null, ?DeliveryNote $deliveryNote = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $deliveryNote) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -79,7 +80,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
 
             $table
-                ->withLabelRecord([__('delivery note'),__('delivery notes')])
+                ->withLabelRecord([__('delivery note'), __('delivery notes')])
                 ->withEmptyState(
                     [
                         'title' => __("delivery note empty"),
@@ -88,8 +89,27 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-            $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
+
+
+            $allowAction = ($deliveryNote->picker_user_id && $deliveryNote->picker_user_id == request()->user()->id);
+
+
+            if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
+                $allowAction = $deliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
+            }
+
+           if (app()->isLocal()) {
+               $allowAction = true;
+           }
+
+            if (!$deliveryNote || !$allowAction) {
+                $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+
+            } else {
+                $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
+                $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
+            }
         };
     }
 

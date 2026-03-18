@@ -170,7 +170,6 @@ const generateRouteDeliveryNote = (id: string) => {
 </script>
 
 <template>
-    
 	<Table :resource="data" :name="tab" class="mt-5">
 		<template #cell(status)="{ item: deliveryNote }">
 			<!-- {{deliveryNote.state_icon}} -->
@@ -275,6 +274,56 @@ const generateRouteDeliveryNote = (id: string) => {
                 {{ deliveryNote.shipping_data }}
             </pre>
         </template> -->
+
+
+		  <template  #cell(packer)="{ item: deliveryNote }">
+            <div class="flex gap-x-4 items-center">
+                    <dl v-tooltip="trans('Packer name')"
+					  	class=" bg-indigo-100  flex items-center w-fit px-2 flex-none gap-x-1.5"
+                        xclass=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dd class="text-gray-500">
+                            {{ deliveryNote?.packer?.name }}
+                        </dd>
+                    </dl>
+            </div>
+		</template>
+
+
+		 <template  #cell(picker)="{ item: deliveryNote }">
+            <div class="flex gap-x-4 items-center">
+                    <dl
+                        class=" bg-indigo-100  flex items-center w-fit px-2 flex-none gap-x-1.5">
+                        <dd class="text-gray-500">
+                          {{ deliveryNote?.picker?.name }}
+                        </dd>
+                    </dl>
+            </div>
+		</template>
+
+
+
+		  <template  #cell(trolleys)="{ item: deliveryNote }">
+            <!-- Section: Trolleys -->
+            <dl>
+                <dd class="flex flex-wrap gap-y-0.5 gap-x-2 text-gray-500 align-middle px-2">
+                    <div v-for="trolley in deliveryNote.trolleys"
+                        class="bg-pink-400/30 rounded-sm px-1 text-pink-800 flex items-center">
+                          {{ trolley.name }}
+                    </div>
+                </dd>
+            </dl>
+        </template>
+
+		 <template #cell(picked_bays)="{ item: deliveryNote }">
+			<dl class="border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+				<dd v-if="deliveryNote?.picked_bays?.length" class="text-gray-500">
+					<span v-for="bay in deliveryNote?.picked_bays" :key="bay.id"
+						xclass="underline opacity-70 hover:opacity-100">
+						{{ bay?.name ?? '-' }}
+					</span>
+				</dd>
+			</dl>
+		</template>
 	</Table>
 
 	<Modal

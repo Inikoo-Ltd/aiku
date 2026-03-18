@@ -101,6 +101,7 @@ const props = defineProps<{
     timelines: {
         [key: string]: TSTimeline
     }
+	allowActions: boolean
     box_stats: {}
     quick_pickers: {}
     routes: {
@@ -141,11 +142,11 @@ const props = defineProps<{
 	}
 	shop_type : string
 	is_faire_order : boolean
+	showChangePickerPacker: boolean
 }>();
 
 
 const layout = inject('layout', layoutStructure)
-
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
@@ -561,6 +562,8 @@ onMounted(() => {
 	<!-- Section: Box Stats -->
 	<BoxStatsDeliveryNote
 		v-if="box_stats && pickingView"
+		:showChangePickerPacker="showChangePickerPacker"
+		:allowActions="allowActions"
 		:boxStats="box_stats"
 		:routes
 		:deliveryNote="delivery_note"
@@ -568,6 +571,7 @@ onMounted(() => {
 		:is_external_order
 		:shipments
 		:warehouse
+		:quick_pickers
 	/>
 
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />

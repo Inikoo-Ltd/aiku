@@ -18,9 +18,7 @@ use App\Actions\Traits\WithOrganisationSource;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class RepairOrderAmountsAfterMigrationAfterInvoicing

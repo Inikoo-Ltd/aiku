@@ -60,8 +60,8 @@ trait OfferCampaignVolumeDiscountTrait
 
                     ]
                 ];
-            }else{
-                $amnestyOffer=null;
+            } else {
+                $amnestyOffer = null;
             }
         }
 

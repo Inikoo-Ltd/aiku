@@ -60,7 +60,7 @@ class SavePickingInAurora implements ShouldBeUnique
         Http::withHeaders([
             'secret' => $auroraApiToken,
         ])->timeout(45)->withQueryParameters(
-        [
+            [
                 'picker_name' => $picking->picker->contact_name,
                 'action' => 'aiku_picking',
                 'location_key' => $this->getAuroraObjectKey($picking->location),

@@ -11,7 +11,6 @@ namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 
 class FetchSingleDeliveryNoteItem extends OrgAction

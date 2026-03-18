@@ -63,7 +63,7 @@ import { blueprint as LuigiLastSeen1  } from "@/Components/CMS/Webpage/LuigiLast
 import { blueprint as LuigiItemAlternatives1  } from "@/Components/CMS/Webpage/LuigiItemAlternatives1/Blueprint"
 import { blueprint as RecommendersCustomerRecentlyBought  } from "@/Components/CMS/Webpage/RecomendationRecentlyBought1/Blueprint"
 import SliderBlueprint  from "@/Components/CMS/Webpage/Slider-1/Blueprint"
-
+import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Blueprint'
 
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
@@ -98,6 +98,10 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"families-1": Families1Blueprint.blueprint,
 		"families-2": Families2Blueprint.blueprint,
 		"families-3": Families3Blueprint.blueprint,
+
+
+		// families list
+		"families-1-overview": Families1Overview.blueprint,
 
 		// products list
 		"products-1": data ? Mainbluprint.blueprint : ProductsList1Blueprint.blueprint,

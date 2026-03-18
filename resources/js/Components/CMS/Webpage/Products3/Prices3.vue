@@ -125,15 +125,18 @@ const _popoverProfit = ref(null)
         <div class="border-b pb-2 mb-2 flex items-center justify-between gap-1 whitespace-nowrap
                 text-[9px] sm:text-[10px] md:text-[11px]">
 
-            <div class="flex items-center gap-1">
-                <span>{{ trans("RRP") }}</span>
+            <div class="flex items-baseline gap-1 leading-none">
+                <span class="text-xs">
+                    {{ trans("RRP") }}:
+                </span>
+                <span class="text-xs font-medium relative top-[1px]">
+                    {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
+                </span>
             </div>
 
             <div class="flex items-center gap-1 justify-end whitespace-nowrap">
 
-                <span class="font-medium">
-                    {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
-                </span>
+              
 
                 <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
                     @mouseleave="_popoverProfit?.hide"

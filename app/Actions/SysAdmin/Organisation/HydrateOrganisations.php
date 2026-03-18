@@ -35,6 +35,8 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateHan
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateHandlingBlocked;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateInWarehouse;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStatePacked;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStatePacking;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStatePicked;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateSubmitted;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPostRooms;
@@ -177,6 +179,8 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateOrderStateInWarehouse::run($organisation->id);
             OrganisationHydrateOrderStateHandling::run($organisation->id);
             OrganisationHydrateOrderStateHandlingBlocked::run($organisation->id);
+            OrganisationHydrateOrderStatePicked::run($organisation->id);
+            OrganisationHydrateOrderStatePacking::run($organisation->id);
             OrganisationHydrateOrderStatePacked::run($organisation->id);
             OrganisationHydrateOrderStateFinalised::run($organisation->id);
             OrganisationHydrateOrdersDispatchedToday::run($organisation->id);
