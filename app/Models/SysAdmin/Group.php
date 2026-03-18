@@ -38,6 +38,7 @@ use App\Models\Comms\Email;
 use App\Models\Comms\EmailAddress;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailTemplate;
+use App\Models\Comms\ExternalSubscriberEmailRecipient;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
@@ -115,6 +116,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\HumanResources\WorkSchedule;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @property int $id
@@ -167,6 +170,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Email> $emails
  * @property-read LaravelCollection<int, Employee> $employees
  * @property-read LaravelCollection<int, ExternalLink> $externalLinks
+ * @property-read LaravelCollection<int, ExternalSubscriberEmailRecipient> $externalSubscriberEmailRecipients
  * @property-read LaravelCollection<int, FulfilmentCustomer> $fulfilmentCustomers
  * @property-read \App\Models\SysAdmin\GroupFulfilmentStats|null $fulfilmentStats
  * @property-read LaravelCollection<int, Fulfilment> $fulfilments
@@ -268,6 +272,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, WebUser> $webUsers
  * @property-read LaravelCollection<int, Webpage> $webpages
  * @property-read LaravelCollection<int, Website> $websites
+ * @property-read LaravelCollection<int, WorkSchedule> $workSchedules
  * @method static \Database\Factories\SysAdmin\GroupFactory factory($count = null, $state = [])
  * @method static Builder<static>|Group newModelQuery()
  * @method static Builder<static>|Group newQuery()
@@ -997,4 +1002,10 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->morphMany(WorkSchedule::class, 'schedulable');
     }
+
+    public function externalSubscriberEmailRecipients(): HasMany
+    {
+        return $this->hasMany(ExternalSubscriberEmailRecipient::class);
+    }
+
 }

@@ -55,9 +55,12 @@ class AssetHydrateHealthRank implements ShouldBeUnique
                 CROSS JOIN total t
             ),
             final_ranks AS (
-                SELECT asset_id, 'D' AS health_rank
-                FROM stats
-                WHERE last_sale_date IS NULL OR last_sale_date < NOW() - INTERVAL '90 days'
+                SELECT
+                    s.asset_id,
+                    CASE WHEN a.units > 0 THEN 'Z' ELSE 'D' END AS health_rank
+                FROM stats s
+                JOIN assets a ON a.id = s.asset_id
+                WHERE s.last_sale_date IS NULL OR s.last_sale_date < NOW() - INTERVAL '90 days'
 
                 UNION ALL
 
@@ -78,7 +81,7 @@ class AssetHydrateHealthRank implements ShouldBeUnique
 
         DB::statement("
             UPDATE assets
-            SET health_rank = 'D'
+            SET health_rank = CASE WHEN units > 0 THEN 'Z' ELSE 'D' END
             WHERE NOT EXISTS (
                 SELECT 1
                 FROM invoice_transactions it

@@ -13,7 +13,6 @@ use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
@@ -39,7 +38,6 @@ class SendResetPasswordEmail extends OrgAction
         $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $webUser, [
             'outbox_id'     => $outbox->id,
             'email_address' => $webUser->email,
-            'provider'      => DispatchedEmailProviderEnum::SES
         ]);
         $dispatchedEmail->refresh();
 

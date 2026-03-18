@@ -49,7 +49,6 @@ class GetProductImages
                 ],
             ],
             'images'              => ImagesResource::collection(IndexProductImages::run($product))->resolve(),
-
         ];
     }
 }

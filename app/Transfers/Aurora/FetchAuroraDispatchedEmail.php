@@ -9,7 +9,6 @@
 namespace App\Transfers\Aurora;
 
 use App\Actions\Comms\Mailshot\StoreMailshot;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunTypeEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
@@ -112,7 +111,6 @@ class FetchAuroraDispatchedEmail extends FetchAurora
 
 
         $this->parsedData['dispatchedEmail'] = [
-            'provider'             => DispatchedEmailProviderEnum::SES,
             'provider_dispatch_id' => $providerId,
             'email_address'        => $this->auroraModelData->{'Email Tracking Email'},
             'state'                => $state,

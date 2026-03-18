@@ -9,13 +9,16 @@
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\Ses\SendSesEmail;
+use App\Models\Comms\ChatEmailRecipient;
 use App\Models\Comms\DispatchedEmail;
-use App\Models\Comms\OutBoxHasSubscriber;
+use App\Models\Comms\ExternalSubscriberEmailRecipient;
+use App\Models\Comms\TestEmailRecipient;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 trait WithSendBulkEmails
@@ -61,17 +64,25 @@ trait WithSendBulkEmails
         $originalPlaceholder = $placeholder;
         $placeholder         = Str::kebab(trim($placeholder));
 
-        if ($dispatchedEmail->recipient instanceof WebUser) {
-            $customerName = $dispatchedEmail->recipient->customer->name;
-        } elseif ($dispatchedEmail->recipient instanceof OutBoxHasSubscriber || $dispatchedEmail->recipient instanceof User) {
-            $customerName = Arr::get($additionalData, 'customer_name');
+        if ($webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id)) {
+            $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)?->customer?->name ?? '';
+        } elseif ($userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id)) {
+            $customerName = Arr::get($additionalData, 'customer_name') ?? User::find($userHasDispatchedEmail->user_id)?->contact_name ?? '';
+        } elseif ($customerHasDispatchedEmail = $this->getCustomerDispatch($dispatchedEmail->id)) {
+            $customerName = Customer::find($customerHasDispatchedEmail->customer_id)?->name ?? '';
+        } elseif ($externalSubscriberHasDispatchedEmail = $this->getExternalSubscriberDispatch($dispatchedEmail->id)) {
+            $customerName = ExternalSubscriberEmailRecipient::find($externalSubscriberHasDispatchedEmail->external_subscriber_email_recipient_id)?->name ?? '';
+        } elseif ($testEmailRecipientHasDispatchedEmail = $this->getTestEmailRecipientDispatch($dispatchedEmail->id)) {
+            $customerName = TestEmailRecipient::find($testEmailRecipientHasDispatchedEmail->test_email_recipient_id)?->name ?? '';
+        } elseif ($chatEmailRecipientHasDispatchedEmail = $this->getChatEmailRecipientDispatch($dispatchedEmail->id)) {
+            $customerName = ChatEmailRecipient::find($chatEmailRecipientHasDispatchedEmail->chat_email_recipient_id)?->name ?? '';
         } else {
-            $customerName = $dispatchedEmail->recipient->name ?? 'Customer name undefined';
+            $customerName = Arr::get($additionalData, 'customer_name') ?? 'Customer name undefined';
         }
 
         /** @noinspection HtmlUnknownAttribute */
         return match ($placeholder) {
-            'username' => $this->getUsername($dispatchedEmail->recipient),
+            'username' => $this->getUsername($dispatchedEmail->id),
             'customer-name' => $customerName,
             'rejected-notes' => Arr::get($additionalData, 'rejected_notes'),
             'invoice_-url' => $invoiceUrl,
@@ -132,6 +143,8 @@ trait WithSendBulkEmails
             'payment-note' => Arr::get($additionalData, 'payment_note'),
             'payment-balance-preview' => Arr::get($additionalData, 'payment_balance_preview'),
             'preview-amount' => Arr::get($additionalData, 'preview_amount'),
+            'chat-link' => Arr::get($additionalData, 'chat_link'),
+            'chat-message' => Arr::get($additionalData, 'chat_message'),
             'invoice-date-change-blade' => Arr::get($additionalData, 'invoice_date_change_blade'),
             'delivery-note-link' => Arr::get($additionalData, 'delivery_note_link'),
             'delivery-note-reference' => Arr::get($additionalData, 'delivery_note_reference'),
@@ -140,10 +153,14 @@ trait WithSendBulkEmails
         };
     }
 
-    public function getUsername(WebUser|Customer|Prospect|User $recipient): string
+    public function getUsername($dispatchedEmailId): string
     {
-        if ($recipient instanceof WebUser || $recipient instanceof User) {
-            return $recipient->username;
+        if ($webUserDispatch = $this->getWebUserDispatch($dispatchedEmailId)) {
+            return WebUser::find($webUserDispatch->web_user_id)?->username ?? '';
+        }
+
+        if ($userDispatch = $this->getUserDispatch($dispatchedEmailId)) {
+            return User::find($userDispatch->user_id)?->username ?? '';
         }
 
         return '';
@@ -158,5 +175,47 @@ trait WithSendBulkEmails
         } else {
             return $recipient->company_name ?? $recipient->username;
         }
+    }
+
+    private function getWebUserDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('web_user_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getUserDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('user_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getCustomerDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('customer_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getExternalSubscriberDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('external_subscriber_email_recipient_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getTestEmailRecipientDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('test_email_recipient_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getChatEmailRecipientDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('chat_email_recipient_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
     }
 }

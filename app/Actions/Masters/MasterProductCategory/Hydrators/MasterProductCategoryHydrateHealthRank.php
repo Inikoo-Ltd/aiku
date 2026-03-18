@@ -62,9 +62,17 @@ class MasterProductCategoryHydrateHealthRank implements ShouldBeUnique
                 CROSS JOIN total t
             ),
             final_ranks AS (
-                SELECT category_id, 'D' AS health_rank
-                FROM stats
-                WHERE last_sale_date IS NULL OR last_sale_date < NOW() - INTERVAL '90 days'
+                SELECT
+                    s.category_id,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM invoice_transactions it2
+                        JOIN master_assets ma ON ma.id = it2.master_asset_id
+                        WHERE it2.{$fkColumn} = s.category_id
+                          AND it2.deleted_at IS NULL
+                          AND ma.units > 0
+                    ) THEN 'Z' ELSE 'D' END AS health_rank
+                FROM stats s
+                WHERE s.last_sale_date IS NULL OR s.last_sale_date < NOW() - INTERVAL '90 days'
 
                 UNION ALL
 

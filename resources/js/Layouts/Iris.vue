@@ -60,6 +60,9 @@ const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
+
+/* if(layout?.rightbasket?.show) set(layout, ['rightbasket', 'show'], false) */
+
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
         const irisData = localStorage.getItem('iris');
@@ -109,18 +112,22 @@ const getAnnouncements = async () => {
 provide('screenType', screenType)
 
 
+const handleTabFocus = () => {
+    if (document.visibilityState === 'visible') {
+        checkScreenType()
+        fetchHasInBasket()
+    }
+}
+
 onMounted(() => {
-    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())  // Luigi: to set customer_id
+    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())
 
     checkScreenType()
     setColorStyleRoot(theme?.color)
     layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 
-    // Print log only in local
-    if (layout.app.environment === 'local') {
-        console.log('----- Iris Layout -----', layout)
-    }
+    document.addEventListener('visibilitychange', handleTabFocus)
 
     irisStyleVariables(theme?.color)
 
@@ -129,10 +136,9 @@ onMounted(() => {
     }
 })
 
-
-
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
+    document.removeEventListener('visibilitychange', handleTabFocus)
 })
 
 const isSidebarFetching = ref(false)
@@ -188,6 +194,12 @@ fetchSidebarOnce()
 watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     if (typeof layout.rightbasket?.show === 'undefined') {
         set(layout, 'rightbasket.show', true)
+    }
+})
+
+watch(() => layout.iris_variables?.cart_count, (newVal) => {
+    if (newVal <= 0) {
+        set(layout, 'rightbasket.show', false)
     }
 })
 

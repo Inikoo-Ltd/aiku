@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
@@ -53,13 +52,9 @@ trait WithSendCustomerOutboxEmail
             return null;
         }
 
-
-
-        $recipient = $customer;
-        $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $recipient, [
+        $dispatchedEmail = StoreDispatchedEmail::run($parent ?? $outbox->emailOngoingRun, $customer, [
             'outbox_id'     => $outbox->id,
-            'email_address' => $recipient->email,
-            'provider'      => DispatchedEmailProviderEnum::SES
+            'email_address' => $customer->email,
         ]);
         $dispatchedEmail->refresh();
 

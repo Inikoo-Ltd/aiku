@@ -12,38 +12,34 @@ use App\Actions\Comms\EmailAddress\StoreEmailAddress;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailOngoingRun;
 use App\Models\Comms\EmailTemplate;
-use App\Models\Comms\ExternalEmailRecipient;
+use App\Models\Comms\ChatEmailRecipient;
+use App\Models\Comms\ExternalSubscriberEmailRecipient;
 use App\Models\Comms\Mailshot;
-use App\Models\Comms\OutBoxHasSubscriber;
+use App\Models\Comms\TestEmailRecipient;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
 
 class StoreDispatchedEmail extends OrgAction
 {
     use WithNoStrictRules;
 
 
-    public function handle(EmailOngoingRun|EmailBulkRun|Mailshot|EmailTemplate $parent, WebUser|Customer|Prospect|User|OutBoxHasSubscriber|ExternalEmailRecipient $recipient, array $modelData, bool $isTest = false): DispatchedEmail
+    public function handle(EmailOngoingRun|EmailBulkRun|Mailshot|EmailTemplate $parent, WebUser|Customer|Prospect|User|TestEmailRecipient|ExternalSubscriberEmailRecipient|ChatEmailRecipient $recipient, array $modelData, bool $isTest = false): DispatchedEmail
     {
         if (!$parent instanceof EmailTemplate) {
             $outbox = $parent->outbox;
             data_set($modelData, 'outbox_id', $outbox->id);
         }
 
-        data_set($modelData, 'recipient_type', class_basename($recipient));
-        data_set($modelData, 'recipient_id', $recipient->id);
-        data_set($modelData, 'uuid', Str::uuid());
 
         $emailAddress = StoreEmailAddress::run($parent->group, Arr::pull($modelData, 'email_address'));
         data_set($modelData, 'email_address_id', $emailAddress->id);
@@ -54,6 +50,9 @@ class StoreDispatchedEmail extends OrgAction
         } else {
             $dispatchedEmail = DispatchedEmail::create($modelData);
         }
+
+        $recipient->dispatchedEmails()->attach($dispatchedEmail);
+
 
         if (!$isTest) {
             OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(10);
@@ -66,7 +65,6 @@ class StoreDispatchedEmail extends OrgAction
     {
         $rules = [
             'email_address' => ['required', 'email'],
-            'provider'      => ['required', Rule::enum(DispatchedEmailProviderEnum::class)],
         ];
 
         if (!$this->strict) {

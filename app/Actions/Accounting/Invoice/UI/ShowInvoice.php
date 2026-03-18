@@ -203,44 +203,16 @@ class ShowInvoice extends OrgAction
 
         $columns = [
             [
-                'label' => __('Pro mode'),
-                'value' => 'pro_mode',
-            ],
-            [
-                'label' => __('Recommended retail prices') . ' ' . __('(RRP)'),
-                'value' => 'rrp',
-            ],
-            [
-                'label' => __('Parts'),
-                'value' => 'parts',
-            ],
-            [
-                'label' => __('Commodity Codes'),
-                'value' => 'commodity_codes',
-            ],
-            [
-                'label' => __('Barcode'),
-                'value' => 'barcode',
+                'label' => __('Country of Origin'),
+                'value' => 'country_of_origin',
             ],
             [
                 'label' => __('Weight'),
                 'value' => 'weight',
             ],
             [
-                'label' => __('Country of Origin'),
-                'value' => 'country_of_origin',
-            ],
-            [
-                'label' => __('Hide Payment Status'),
-                'value' => 'hide_payment_status',
-            ],
-            [
-                'label' => __('CPNP'),
-                'value' => 'cpnp',
-            ],
-            [
-                'label' => __('Group by Tariff Code'),
-                'value' => 'group_by_tariff_code',
+                'label' => __('Commodity Codes'),
+                'value' => 'commodity_codes',
             ],
         ];
 
@@ -261,8 +233,23 @@ class ShowInvoice extends OrgAction
                 'tooltip'    => __('Download PDF'),
                 'name'       => 'grp.org.accounting.invoices.download',
                 'parameters' => [
+                    'organisation'      => $invoice->organisation->slug,
+                    'invoice'           => $invoice->slug,
+                    'country_of_origin' => true,
+                    'weight'            => true,
+                    'commodity_codes'   => true,
+                ]
+            ],
+            [
+                'type'       => 'pdf',
+                'icon'       => 'fal fa-ellipsis-v',
+                'label'      => '',
+                'key'        => 'pdf_filter',
+                'tooltip'    => __('Download PDF with custom columns'),
+                'name'       => 'grp.org.accounting.invoices.download',
+                'parameters' => [
                     'organisation' => $invoice->organisation->slug,
-                    'invoice'      => $invoice->slug
+                    'invoice'      => $invoice->slug,
                 ]
             ]
         ];

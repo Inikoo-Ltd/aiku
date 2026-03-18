@@ -27,6 +27,7 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Crypt;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SendEmailDeliveryChannel
@@ -68,8 +69,11 @@ class SendEmailDeliveryChannel
                 return;
             }
 
+            $encryptedDispatchedEmailID = Crypt::encryptString($dispatchedEmail->id);
+
+
             // Send redirect URL
-            $unsubscribeUrl = route('grp.redirect_unsubscribe', $dispatchedEmail->uuid);
+            $unsubscribeUrl = route('grp.redirect_unsubscribe', $encryptedDispatchedEmailID);
 
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
 

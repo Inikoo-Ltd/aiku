@@ -21,6 +21,7 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -40,6 +41,12 @@ class UpdateProductCategory extends OrgAction
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
         $originalImageId = $productCategory->image_id;
+
+        if ($chosenMainWebpageId = Arr::pull($modelData, 'set_main_webpage')) {
+            $webpage = Webpage::find($chosenMainWebpageId);
+
+            data_set($modelData, 'url', $webpage->url);
+        }
 
         if (Arr::has($modelData, 'department_id')) {
             $departmentId = Arr::pull($modelData, 'department_id');
@@ -247,6 +254,7 @@ class UpdateProductCategory extends OrgAction
             'is_description_title_reviewed' => ['sometimes', 'boolean'],
             'is_description_reviewed' => ['sometimes', 'boolean'],
             'is_description_extra_reviewed' => ['sometimes', 'boolean'],
+            'set_main_webpage'  => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {

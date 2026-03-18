@@ -32,6 +32,7 @@ import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
 import ColumnWorkshop from '@/Components/CMS/Webpage/Column/ColumnWorkshop.vue'
 import DisclosureWorkshop from '@/Components/CMS/Webpage/Disclosure/DisclosureWorkshop.vue'
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Workshop.vue'
+import FamilyIris2 from '@/Components/CMS/Webpage/Family2/family2Workshop.vue'
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
 import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Dropshipping/Product1Workshop.vue'
@@ -70,7 +71,7 @@ import Slider1Workshop from '@/Components/CMS/Webpage/Slider-1/Slider1Workshop.v
 import CollectionDescriptionWorkshop from '@/Components/CMS/Webpage/CollectionDescription/CollectionDescriptionWorkshop.vue'
 import DepartmentDescriptionWorkshop from '@/Components/CMS/Webpage/DepartmentDescription/DepartmentDescriptionWorkshop.vue'
 import SubDepartmentDesciptionWorkshop from '@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionWorkshop.vue'
-
+import Family2ExtraDescriptionWorkshop from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionWorkshop.vue'
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -97,6 +98,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'department-description-1' : DepartmentDescriptionWorkshop,
         'sub-department-description-1' : SubDepartmentDesciptionWorkshop,
         'family-1': FamilyIris1,
+        'family-2': FamilyIris2,
 
         //sub-department
         'sub-departments-1' : SubDepartmentWorkshop1,
@@ -106,6 +108,9 @@ const components = (shop_type?: string): Record<string, Component> => {
         'families-1' : Families1Workshop,
         'families-2' : Families2Workshop,
         'families-3' : Families3Workshop,
+
+        //family-extra-description
+        'family-2-extra-description' : Family2ExtraDescriptionWorkshop ,
 
 
         //product
@@ -158,6 +163,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'carousel-image-background' : CarouselImageBackground,
         'step-2' : TimelineWorkshop2,
         'slider-1' : Slider1Workshop,
+
 
     }
 }

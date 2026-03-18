@@ -58,7 +58,8 @@ class UpdateShippingFaireOrder extends OrgAction
                 ]);
 
 
-                if (!$result['success']) {
+                if (!Arr::get($result,'success')) {
+                    Sentry::captureException($result);
                     return [
                         'status' => 'fail',
                         'msg'    => Arr::get($result, 'error.message')

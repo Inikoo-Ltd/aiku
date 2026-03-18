@@ -113,8 +113,7 @@ const showLeftBlock = computed(() => {
     return showMemberPrice.value || showDiscount.value
 })
 
-
-console.log('sdsd', layout.user)
+const _popoverQuestionCircle = ref(null)
 const _popoverProfit = ref(null)
 </script>
 
@@ -235,6 +234,27 @@ const _popoverProfit = ref(null)
                         {{ trans("GR Inactive") }}
                     </span>
 
+                    <span class="question-trigger" @click="_popoverQuestionCircle?.toggle($event)"
+                        @mouseenter="_popoverQuestionCircle?.show($event)" @mouseleave="_popoverQuestionCircle?.hide()"
+                        @blur="_popoverQuestionCircle?.hide()">
+                        <FontAwesomeIcon icon="fal fa-question-circle" fixed-width aria-hidden="true" />
+                    </span>
+
+                    <Popover ref="_popoverQuestionCircle" class="member-popover">
+                        <div class="popover-content">
+                            <p class="popover-title">{{ trans("VOLUME DISCOUNT") }}</p>
+
+                            <p class="popover-paragraph">
+                                {{ trans("You don't need Gold Reward status to access the lower price") }}.
+                            </p>
+
+                            <p class="popover-paragraph">
+                                {{ trans("Order the listed volume and the member price applies automatically at checkout") }}.
+                                {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
+                            </p>
+                        </div>
+                    </Popover>
+
                 </div>
 
                 <div class="text-primary font-bold text-right min-w-0">
@@ -300,5 +320,26 @@ const _popoverProfit = ref(null)
 .break-safe {
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+
+.question-trigger {
+    @apply cursor-pointer opacity-60 hover:opacity-100 ml-1 text-xs; 
+}
+
+.member-popover {
+    @apply max-w-[260px];
+}
+
+.popover-content {
+    width: 300px;
+    @apply text-xs;
+}
+
+.popover-title {
+    @apply font-bold mb-3;
+}
+
+.popover-paragraph {
+    @apply mb-2 text-justify;
 }
 </style>
