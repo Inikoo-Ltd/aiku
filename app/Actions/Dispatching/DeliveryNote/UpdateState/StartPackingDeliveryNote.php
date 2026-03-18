@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickingBays;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacking;
@@ -70,7 +71,7 @@ class StartPackingDeliveryNote extends OrgAction
                     ->where('delivery_note_id', $deliveryNote->id)->where('picked_bay_id', $pickedBay->id)->delete();
                 PickedBayHydrateNumberDeliveryNotes::run($pickedBay->id);
             }
-
+            DeliveryNoteHydratePickingBays::dispatch($deliveryNote->id);
 
             return $deliveryNote;
         });
