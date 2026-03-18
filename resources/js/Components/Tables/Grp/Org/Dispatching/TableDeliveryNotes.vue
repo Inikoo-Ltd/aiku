@@ -170,7 +170,6 @@ const generateRouteDeliveryNote = (id: string) => {
 </script>
 
 <template>
-    
 	<Table :resource="data" :name="tab" class="mt-5">
 		<template #cell(status)="{ item: deliveryNote }">
 			<!-- {{deliveryNote.state_icon}} -->
@@ -275,6 +274,47 @@ const generateRouteDeliveryNote = (id: string) => {
                 {{ deliveryNote.shipping_data }}
             </pre>
         </template> -->
+
+
+		  <template  #cell(packer)="{ item: deliveryNote }">
+            <div class="flex gap-x-4 items-center">
+                    <dl v-tooltip="trans('Packer name')"
+					  	class=" bg-indigo-100  flex items-center w-fit px-2 flex-none gap-x-1.5"
+                        xclass=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dd class="text-gray-500">
+                            {{ deliveryNote?.packer?.contact_name }}
+                        </dd>
+                    </dl>
+            </div>
+		</template>
+
+
+		 <template  #cell(picker)="{ item: deliveryNote }">
+            <div class="flex gap-x-4 items-center">
+                    <dl
+                        class=" bg-indigo-100  flex items-center w-fit px-2 flex-none gap-x-1.5">
+                        <dd class="text-gray-500">
+                          {{ deliveryNote?.picker?.contact_name }}
+                        </dd>
+                    </dl>
+            </div>
+		</template>
+
+
+
+		  <template  #cell(trolleys)="{ item: deliveryNote }">
+            <!-- Section: Trolleys -->
+            <dl
+                xclass="px-2 border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-1 py-0.5 flex-none gap-x-1.5"
+				class="px-2">
+                <dd class="flex flex-wrap gap-y-0.5 gap-x-2 text-gray-500 align-middle px-2">
+                    <div v-for="trolley in deliveryNote.trolleys"
+                        class="bg-pink-400/30 rounded-sm px-1 text-pink-800 flex items-center">
+                          {{ trolley.name }}
+                    </div>
+                </dd>
+            </dl>
+        </template>
 	</Table>
 
 	<Modal
