@@ -167,34 +167,55 @@ const isLoadingToQueue = ref(false);
 
 
 const onUpdatePicker = () => {
-    const isUnassigned = props.deliveryNote.state == 'unassigned';
+    const state = props.deliveryNote?.state;
+    const pickerId = selectedPicker.value?.id;
 
-    const routeName = isUnassigned ? props.routes.set_queue.name : props.routes.update.name;
+    if (!pickerId) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Picker is not selected"),
+            type: "error"
+        });
+        return;
+    }
+
+    const isUnassigned = state === 'unassigned';
+    const isPacked = state === 'packed';
+
+    const routeConfig = props.routes[isUnassigned ? 'set_queue' : 'update'];
+
+    const routeName = routeConfig.name;
     const routeParams = {
-        ...props.routes[isUnassigned ? 'set_queue' : 'update'].parameters,
-        ...(isUnassigned ? {user: selectedPicker.value.id} : {})
+        ...routeConfig.parameters,
+        ...(isUnassigned ? { user: pickerId } : {})
     };
-    const payload = isUnassigned ? {} : {picker_user_id: selectedPicker.value.id};
 
-    router.patch(
-        route(routeName, routeParams),
-        payload,
-        {
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: error.message,
-                    type: "error"
-                });
-            },
-            onSuccess: () => {
-                isModalToQueue.value = false;
-            },
-            onStart: () => isLoadingToQueue.value = true,
-            onFinish: () => isLoadingToQueue.value = false,
-            preserveScroll: true
-        }
-    );
+    let payload = {};
+    if (!isUnassigned) {
+        payload = isPacked
+            ? { packer_user_id: pickerId }
+            : { picker_user_id: pickerId };
+    }
+
+    router.patch(route(routeName, routeParams), payload, {
+        onError: (error) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: error?.message ?? trans("Unknown error"),
+                type: "error"
+            });
+        },
+        onSuccess: () => {
+            isModalToQueue.value = false;
+        },
+        onStart: () => {
+            isLoadingToQueue.value = true;
+        },
+        onFinish: () => {
+            isLoadingToQueue.value = false;
+        },
+        preserveScroll: true
+    });
 };
 
 const assignSelfTemporarily = () => {
@@ -507,7 +528,7 @@ console.log(layout)
 
                       <!--   <Link :href="()" > -->
                         <FontAwesomeIcon 
-                            v-if="boxStats?.picker?.id != layout?.user?.id" 
+                            v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'picked', 'packing'].includes(deliveryNote?.state)"  
                             v-tooltip="allowActions ? trans('Picking and packing is allowed') : trans('Only picker can edit this delivery note')" 
                             class="cursor-pointer" 
                             :icon="allowActions ? faUnlock : faLock" 
@@ -515,14 +536,17 @@ console.log(layout)
                         />
                      <!--    </Link> -->
 
-                        <Button @click="isModalToQueue = true" :label="trans('Change picker')" :icon="faExchangeAlt"
-                            type="tertiary" size="xs" />
+                        <Button
+                            v-if="['queued', 'packed', 'handling', 'picked', 'packing'].includes(deliveryNote?.state)"
+                            @click="isModalToQueue = true" :label="['picking', 'picked'].includes(deliveryNote?.state)
+                                ? trans('Change picker')
+                                : trans('Change packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
                      
                     </div>
 
                     <!-- Section: Trolleys -->
                     <ManageTrolleysInDeliveryNote
-                        v-if="!(['unassigned', 'queued'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
+                        v-if="!(['unassigned', 'queued', 'dispatched', 'packed'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
                         :deliveryNote
                         :trolleys="boxStats.trolleys"
                         :warehouse
@@ -830,8 +854,9 @@ console.log(layout)
 			<div class="mt-4 flex items-center w-full gap-x-1.5">
 				<dd class="flex-1">
 					<!-- Label for Picker -->
-					<div class="text-sm font-medium">
-						{{ trans("Select picker") }}
+					<div class="text-sm font-medium py-2">
+						{{ trans("Select picker") }} 
+                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="trans('Picked as my name')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
 					</div>
 					<PureMultiselectInfiniteScroll
 						v-model="selectedPicker"
@@ -848,7 +873,8 @@ console.log(layout)
 							disable == 'packing' ||
 							disable == 'packed' ||
 							disable == 'finalised' ||
-							disable == 'settled'
+							disable == 'settled' ||
+                            isLoadingToQueue
 						">
 						<template #singlelabel="{ value }">
 							<div
@@ -866,16 +892,16 @@ console.log(layout)
 					<!-- Quick Pickers -->
 					<div v-if="quick_pickers && quick_pickers.length > 0" class="mt-3">
 						<div class="flex flex-wrap justify-center gap-2">
-							<Button
+							<button
 								v-for="picker in quick_pickers"
 								:key="picker.id"
-								@click="selectedPicker = picker"
+								@click="()=>{selectedPicker = picker, onUpdatePicker()}"
 								class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
 								:class="{
 									'bg-blue-500 text-white': selectedPicker?.id === picker.id,
 								}">
 								{{ picker.contact_name }}
-							</Button>
+							</button>
 						</div>
 					</div>
 				</dd>

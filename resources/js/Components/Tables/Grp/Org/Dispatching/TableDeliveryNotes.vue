@@ -304,9 +304,7 @@ const generateRouteDeliveryNote = (id: string) => {
 
 		  <template  #cell(trolleys)="{ item: deliveryNote }">
             <!-- Section: Trolleys -->
-            <dl
-                xclass="px-2 border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-1 py-0.5 flex-none gap-x-1.5"
-				class="px-2">
+            <dl>
                 <dd class="flex flex-wrap gap-y-0.5 gap-x-2 text-gray-500 align-middle px-2">
                     <div v-for="trolley in deliveryNote.trolleys"
                         class="bg-pink-400/30 rounded-sm px-1 text-pink-800 flex items-center">
