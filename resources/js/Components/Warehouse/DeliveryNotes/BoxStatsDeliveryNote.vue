@@ -180,7 +180,6 @@ const onUpdatePicker = () => {
     }
 
     const isUnassigned = state === 'unassigned';
-    const isPacked = state === 'packed';
 
     const routeConfig = props.routes[isUnassigned ? 'set_queue' : 'update'];
 
@@ -192,7 +191,7 @@ const onUpdatePicker = () => {
 
     let payload = {};
     if (!isUnassigned) {
-        payload = isPacked
+        payload = ['packing', 'packed'].includes(props.deliveryNote?.state)
             ? { packer_user_id: pickerId }
             : { picker_user_id: pickerId };
     }
