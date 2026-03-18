@@ -25,26 +25,69 @@ const createDefaultValue = () => ({
   units: "mm"
 })
 
-// keep internal state
-const localValue = ref(props.modelValue ? { ...props.modelValue } : createDefaultValue())
+// Dapatkan faktor pengali berdasarkan unit
+const getFactor = (unit: string) => {
+  if (unit === 'cm') return 100
+  if (unit === 'mm') return 1000
+  if (unit === 'inch') return 39.3701 // 1 meter = 39.3701 inch
+  return 1 // default: meter
+}
 
-// update localValue if parent changes (but only if it's different)
+// Konversi nilai dari DB (Meter) ke tampilan UI sesuai unit yang dipilih
+const toDisplay = (val: any) => {
+  if (!val) return createDefaultValue()
+  const factor = getFactor(val.units)
+  return {
+    ...val,
+    h: val.h != null ? Number((val.h * factor).toFixed(2)) : null,
+    l: val.l != null ? Number((val.l * factor).toFixed(2)) : null,
+    w: val.w != null ? Number((val.w * factor).toFixed(2)) : null,
+  }
+}
+
+// Konversi nilai dari input UI kembali ke DB (Meter)
+const toDatabase = (val: any) => {
+  if (!val) return null
+  const factor = getFactor(val.units)
+  return {
+    ...val,
+    h: val.h != null ? Number((val.h / factor).toFixed(4)) : null,
+    l: val.l != null ? Number((val.l / factor).toFixed(4)) : null,
+    w: val.w != null ? Number((val.w / factor).toFixed(4)) : null,
+  }
+}
+
+// Keep internal state - Langsung konversi nilai prop ke angka UI
+const localValue = ref(toDisplay(props.modelValue))
+
+// Update localValue if parent changes (mencegah infinite loop dengan membandingkan nilai akhir)
 watch(
   () => props.modelValue,
-  (val) => {
-    if (val && JSON.stringify(val) !== JSON.stringify(localValue.value)) {
-      localValue.value = { ...val }
+  (newVal) => {
+    if (newVal) {
+      const convertedLocal = toDatabase(localValue.value)
+      
+      // Hanya timpa localValue jika nilainya benar-benar berbeda dari DB
+      if (
+        newVal.h !== convertedLocal?.h ||
+        newVal.l !== convertedLocal?.l ||
+        newVal.w !== convertedLocal?.w ||
+        newVal.type !== convertedLocal?.type ||
+        newVal.units !== convertedLocal?.units
+      ) {
+        localValue.value = toDisplay(newVal)
+      }
     }
   },
   { deep: true }
 )
 
-// emit when localValue changes
+// Emit when localValue changes
 watch(
   localValue,
   (val) => {
-    console.log(val)
-    emits("update:modelValue", { ...val })
+    // Saat user ngetik angka, lempar datanya ke parent dalam bentuk Meter
+    emits("update:modelValue", toDatabase(val))
   },
   { deep: true }
 )
