@@ -61,13 +61,13 @@ class StoreProductCategoryWebpage extends OrgAction
                 $productCategory->shop->website,
                 [
                     'title'      => $productCategory->name,
-                    'code'       => $productCategory->code . '-ALT',
-                    'url'        => strtolower($productCategory->code) . '-alt',
+                    'code'       => $productCategory->code . '-overview',
+                    'url'        => strtolower($productCategory->code) . '-overview',
                     'sub_type'   => WebpageSubTypeEnum::DEPARTMENT,
                     'type'       => WebpageTypeEnum::CATALOGUE,
                     'model_type' => class_basename($productCategory),
                     'model_id'   => $productCategory->id,
-                    'layout_style'               => 2,
+                    'layout_style'  => 'families-overview'
                 ]
             );
         }
