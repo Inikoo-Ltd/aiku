@@ -98,13 +98,12 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             }
 
             if (app()->isLocal()) {
-                //$allowAction = true;
+                $allowAction = true;
             }
 
             if (!$deliveryNote || !$allowAction) {
                 $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-
             } else {
                 $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
                 $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);

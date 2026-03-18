@@ -44,7 +44,6 @@ class IndexDeliveryNoteItems extends OrgAction
         });
 
         if ($stateFilter) {
-
             switch ($stateFilter) {
                 case DeliveryNoteItemStateEnum::PACKING:
                     $query->whereNull('packings.id')
@@ -53,7 +52,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 default:
                     $query->where(function ($query) {
                         $query->whereNotNull('packings.id')
-                        ->orWhereColumn('delivery_note_items.quantity_picked', 'delivery_note_items.quantity_packed');
+                            ->orWhereColumn('delivery_note_items.quantity_picked', 'delivery_note_items.quantity_packed');
                     });
                     break;
             }
@@ -112,7 +111,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 $allowAction = $parent->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
             }
             if (app()->isLocal()) {
-            //    $allowAction = true;
+                $allowAction = true;
             }
 
 
