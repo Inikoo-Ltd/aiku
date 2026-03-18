@@ -38,6 +38,10 @@ class GetTaxCategory
         $gbCountryId      = Country::where('code', 'GB')->first()->id;
         $taxableCountries = ['GB', 'IM'];
 
+        if(!$deliveryAddress){
+            $deliveryAddress = $billingAddress;
+        }
+
         if (in_array($billingAddress->country_code, $taxableCountries) && in_array($deliveryAddress->country_code, $taxableCountries)) {
             return TaxCategory::where('type', TaxCategoryTypeEnum::STANDARD)->where('country_id', $gbCountryId)->where('status', true)->first();
         }
@@ -48,6 +52,10 @@ class GetTaxCategory
 
     protected function euTaxCategory(Country $country, Address $billingAddress, ?Address $deliveryAddress, ?TaxNumber $taxNumber, bool $isRe = false): TaxCategory
     {
+        if(!$deliveryAddress){
+            $deliveryAddress = $billingAddress;
+        }
+
         if ($billingAddress->country_code == $country->code || $deliveryAddress->country->code == $country->code) {
             if ($country->code == 'ES') {
                 $esCountryId = Country::where('code', 'ES')->first()->id;
