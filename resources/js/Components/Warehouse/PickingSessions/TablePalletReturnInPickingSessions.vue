@@ -346,7 +346,7 @@ const palletRoute = (item: any) => {
                                     @finish="() => (isPickingLoading = false)"
                                     v-tooltip="trans('Undo picking')"
                                 >
-                                    <Button icon="fal fa-undo" type="tertiary" size="xs" :loading="isPickingLoading === pallet.id" class="py-0" />
+                                    <Button icon="fal fa-undo" label="Undo picking" type="tertiary" size="xs" :loading="isPickingLoading === pallet.id" class="py-0" />
                                 </Link>
 
                                 <div v-else-if="pallet.status === 'incident' && pallet.state === 'lost'" class="text-red-300 italic">
@@ -559,7 +559,7 @@ const palletRoute = (item: any) => {
                         @finish="() => (isPickingLoading = false)"
                         v-tooltip="trans('Undo picking')"
                     >
-                        <Button icon="fal fa-undo" type="tertiary" size="xs" :loading="isPickingLoading === item.id" class="py-0" />
+                        <Button icon="fal fa-undo" label="Undo picking" type="tertiary" size="xs" :loading="isPickingLoading === item.id" class="py-0" />
                     </Link>
 
                     <div v-else-if="item.status === 'incident' && item.state === 'lost'" class="text-red-300 italic">
