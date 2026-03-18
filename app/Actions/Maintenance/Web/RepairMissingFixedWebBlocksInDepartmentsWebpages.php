@@ -45,7 +45,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         if ($wrongWebpage) {
             DeleteWebpage::run($wrongWebpage);
         }
-        // TODO: UP UNTIL HERE 
+        // TODO: UP UNTIL HERE
 
         $hasOverviewPage = $baseQuery
             ->clone()
@@ -80,7 +80,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $department = $webpage->model;
 
         if ($layout_style == 'main_page') {
-            
+
             // Layout for Main Page
 
             $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'department');
@@ -88,37 +88,37 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 foreach ($countFamilyWebBlock as $webBlockData) {
                     DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
                     DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
-    
+
                     DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
                     DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
-    
+
                     DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
                 }
             }
-    
+
             $collectionsWebBlock = $this->getWebpageBlocksByType($webpage, 'collections-1');
             if (count($collectionsWebBlock) > 0) {
                 foreach ($collectionsWebBlock as $webBlockData) {
                     DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
                     DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
-    
+
                     DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
                     DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
-    
+
                     DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
                 }
             }
-    
+
             // NEW LOGIC, PREVENT MULTIPLE SAME SCOPED WEB BLOCK UNDER SAME PAGE (HANDLES TEMPLATES)
             $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
-    
+
             $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
-    
+
             if (count($countFamilyWebBlock) > 0) {
                 foreach ($countFamilyWebBlock as $webBlockData) {
                     $layout       = json_decode($webBlockData->layout, true);
                     $descriptions = Arr::get($layout, 'data.fieldValue.texts.values');
-    
+
                     $description = '';
                     foreach ($descriptions as $descriptionData) {
                         $text = Arr::get($descriptionData, 'text');
@@ -127,34 +127,34 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                         }
                     }
                     $description = trim($description);
-    
-    
+
+
                     if ($description) {
                         $command->line('D: '.$department->id.' Department description updated');
                         $department->update(['description' => $description]);
                     }
-    
+
                     DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
                     DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
-    
+
                     DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
                     DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
-    
+
                     DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
                 }
             }
-    
+
             $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
-    
+
             $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
-    
+
             $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
             if (count($countDepartmentDescriptionBlock) == 0) {
                 $this->createWebBlock($webpage, 'department-description-1');
             }
-    
+
             $webpage->refresh();
-    
+
             if (count($countDepartmentDescriptionBlock) == 0) {
                 $this->setDescriptionWebBlockOnTop($webpage);
             }
@@ -162,7 +162,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
                 $this->setDescriptionWebBlockHidden($webpage);
             }
             $webpage->refresh();
-        } else { 
+        } else {
             $this->deleteWebBlocksByCode($webpage, 'families-2');
             // Layout for Overview Page
             $countDepartmentDescriptionBlock = $this->getWebpageBlocksByType($webpage, 'department-description-1');
@@ -174,9 +174,9 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             if (count($countDepartmentDescriptionBlock) == 0) {
                 $this->createWebBlock($webpage, 'families-1-overview');
             }
-    
+
             $webpage->refresh();
-    
+
             if (count($countDepartmentDescriptionBlock) == 0) {
                 $this->setDescriptionWebBlockOnTop($webpage);
             }

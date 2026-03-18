@@ -56,7 +56,7 @@ class ShowWebpage extends OrgAction
         if ($shop != $webpage->shop) {
             abort(403);
         }
-        
+
         $this->initialisationFromShop($shop, $request)->withTab(WebpageTabsEnum::values());
         return $webpage;
     }

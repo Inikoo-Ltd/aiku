@@ -109,6 +109,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_sidebar_snapshot_id
  * @property int|null $live_sidebar_snapshot_id
  * @property string|null $published_sidebar_checksum
+ * @property int|null $unpublished_families_overview_snapshot_id
+ * @property int|null $live_families_overview_snapshot_id
+ * @property string|null $published_families_overview_checksum
  * @property-read Collection<int, Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
@@ -116,6 +119,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Media|null $favicon
  * @property-read Group $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read Snapshot|null $liveFamiliesOverviewSnapshot
  * @property-read Snapshot|null $liveFamilySnapshot
  * @property-read Snapshot|null $liveProductSnapshot
  * @property-read Snapshot|null $liveProductsSnapshot
@@ -133,6 +137,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedCollectionSnapshot
  * @property-read Snapshot|null $unpublishedDepartmentSnapshot
+ * @property-read Snapshot|null $unpublishedFamiliesOverviewSnapshot
  * @property-read Snapshot|null $unpublishedFamilySnapshot
  * @property-read Snapshot|null $unpublishedFooterSnapshot
  * @property-read Snapshot|null $unpublishedHeaderSnapshot
