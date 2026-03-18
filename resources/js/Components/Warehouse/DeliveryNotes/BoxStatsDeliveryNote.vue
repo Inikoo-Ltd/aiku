@@ -23,7 +23,7 @@ import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
 import Select from 'primevue/select';
-import { faExchangeAlt, faLock } from "@far"
+import { faExchangeAlt, faLock, faUnlock } from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
@@ -130,6 +130,7 @@ const props = defineProps<{
         pickers_list: routeType
         packers_list: routeType
         update: routeType
+        assignSelfTemporarily: routeType
     }
     deliveryNote: {
         state: string
@@ -140,6 +141,7 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
+    allowActions: boolean
     quick_pickers : any
 }>()
 
@@ -194,6 +196,35 @@ const onUpdatePicker = () => {
         }
     );
 };
+
+const assignSelfTemporarily = () => {
+    
+    const routeName = props.routes.assignSelfTemporarily.name;
+    const routeParams = {
+        ...props.routes.assignSelfTemporarily.parameters,
+    };
+    const payload = {picker_user_id: selectedPicker.value.id};
+
+    router.patch(
+        route(routeName, routeParams),
+        payload,
+        {
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
+                    type: "error"
+                });
+            },
+            onSuccess: () => {
+                isModalToQueue.value = false;
+            },
+            onStart: () => isLoadingToQueue.value = true,
+            onFinish: () => isLoadingToQueue.value = false,
+            preserveScroll: true
+        }
+    );
+}
 
 
 // Section: Parcels
@@ -475,7 +506,13 @@ console.log(layout)
                         </div>
 
                       <!--   <Link :href="()" > -->
-                              <FontAwesomeIcon class="cursor-pointer" v-tooltip="trans('only picker can edit this delivery note')" v-if="boxStats?.picker?.id != layout?.user?.id" :icon="faLock" />
+                        <FontAwesomeIcon 
+                            v-if="boxStats?.picker?.id != layout?.user?.id" 
+                            v-tooltip="allowActions ? trans('Picking and packing is allowed') : trans('Only picker can edit this delivery note')" 
+                            class="cursor-pointer" 
+                            :icon="allowActions ? faUnlock : faLock" 
+                            @click="assignSelfTemporarily()"
+                        />
                      <!--    </Link> -->
 
                         <Button @click="isModalToQueue = true" :label="trans('Change picker')" :icon="faExchangeAlt"

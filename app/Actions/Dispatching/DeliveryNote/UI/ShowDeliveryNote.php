@@ -712,6 +712,12 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT) {
             $model = __('Replacement Delivery Note');
         }
+        
+        $allowAction = ($deliveryNote->packer_user_id && $deliveryNote->packer_user_id != request()->user()->id);
+            
+        if ($tempPicker = session('temp_handling_delivery_note')) {
+            $allowAction = $deliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
+        }
 
         $props = [
             'title'         => __('delivery note'),
@@ -755,7 +761,7 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ],
 
-
+            'allowActions'        => $allowAction,
             'timelines'           => $this->getTimeline($deliveryNote),
             'box_stats'           => $this->getBoxStats($deliveryNote),
             'shop_type'           => $deliveryNote->shop->type,
@@ -794,6 +800,14 @@ class ShowDeliveryNote extends OrgAction
                         'invoice'      => $deliveryNote->slug
                     ]
                 ],
+                'assignSelfTemporarily'     => [
+                    'name'      => 'grp.org.shops.show.ordering.orders.show.delivery-note.temp-picker',
+                    'parameters' => [
+                        'organisation' => $deliveryNote->organisation->slug,
+                        'shop'         => $deliveryNote->shop->slug,
+                        'deliveryNote' => $deliveryNote->slug,
+                    ]
+                ]
             ],
             'delivery_note_state' => [
                 'value' => $deliveryNote->state,

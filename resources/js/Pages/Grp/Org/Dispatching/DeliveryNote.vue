@@ -101,6 +101,7 @@ const props = defineProps<{
     timelines: {
         [key: string]: TSTimeline
     }
+	allowActions: boolean
     box_stats: {}
     quick_pickers: {}
     routes: {
@@ -560,6 +561,7 @@ onMounted(() => {
 	<!-- Section: Box Stats -->
 	<BoxStatsDeliveryNote
 		v-if="box_stats && pickingView"
+		:allowActions="allowActions"
 		:boxStats="box_stats"
 		:routes
 		:deliveryNote="delivery_note"
