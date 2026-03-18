@@ -528,7 +528,7 @@ console.log(layout)
 
                       <!--   <Link :href="()" > -->
                         <FontAwesomeIcon 
-                            v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'picked', 'packing'].includes(deliveryNote?.state)"  
+                            v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
                             v-tooltip="allowActions ? trans('Picking and packing is allowed') : trans('Only picker can edit this delivery note')" 
                             class="cursor-pointer" 
                             :icon="allowActions ? faUnlock : faLock" 
@@ -537,10 +537,15 @@ console.log(layout)
                      <!--    </Link> -->
 
                         <Button
-                            v-if="['queued', 'packed', 'handling', 'picked', 'packing'].includes(deliveryNote?.state)"
-                            @click="isModalToQueue = true" :label="['picking', 'picked'].includes(deliveryNote?.state)
-                                ? trans('Change picker')
-                                : trans('Change packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+                            v-if="['handling'].includes(deliveryNote?.state)"
+                            @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
+
+
+                        <Button
+                            v-if="['packing', 'packed'].includes(deliveryNote?.state)"
+                            @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+
+
                      
                     </div>
 
@@ -856,7 +861,7 @@ console.log(layout)
 					<!-- Label for Picker -->
 					<div class="text-sm font-medium py-2">
 						{{ trans("Select picker") }} 
-                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="trans('Picked as my name')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
+                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="trans('I will do the picking myself')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
 					</div>
 					<PureMultiselectInfiniteScroll
 						v-model="selectedPicker"

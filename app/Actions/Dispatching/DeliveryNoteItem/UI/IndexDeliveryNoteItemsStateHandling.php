@@ -91,15 +91,16 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
 
-            $allowAction = ($deliveryNote->packer_user_id && $deliveryNote->packer_user_id != request()->user()->id);
-            
+            $allowAction = ($deliveryNote->picker_user_id && $deliveryNote->picker_user_id == request()->user()->id);
+
+
             if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
                 $allowAction = $deliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
             }
             // TODO REMOVE IS PRODUCTION CHECK LATER SO IT WORKS (LOCKED) ON PRODUCTION
-            if(app()->isLocal() || app()->isProduction()) {
-                $allowAction = true;
-            }
+//            if(app()->isLocal() || app()->isProduction()) {
+//                $allowAction = true;
+//            }
 
             if (!$deliveryNote || !$allowAction) {
                 $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

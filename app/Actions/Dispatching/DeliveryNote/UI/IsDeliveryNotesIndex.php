@@ -263,7 +263,6 @@ trait IsDeliveryNotesIndex
 
             if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
                 $table->column(key: 'picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);
-                $table->column(key: 'trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked') {
