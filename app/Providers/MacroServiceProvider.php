@@ -36,7 +36,7 @@ class MacroServiceProvider extends ServiceProvider
         Str::macro('possessive', function (string $string): string {
             return $string.'\''.(
                 Str::endsWith($string, ['s', 'S']) ? '' : 's'
-            );
+                );
         });
 
         InertiaResponse::macro('getQueryBuilderProps', function (): array {
@@ -53,47 +53,79 @@ class MacroServiceProvider extends ServiceProvider
             return $tableBuilder->applyTo($this);
         });
 
-        Builder::macro('whereAnyWordStartWith', function (string $column, string $value): Builder {
+        Builder::macro('whereAnyWordStartWith', function (string $column, string|array $value): Builder {
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+
             /** @var Builder $this */
             $quotedValue = DB::connection()->getPdo()->quote($value);
+
             return $this->where(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
                 ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
-
         });
 
-        Builder::macro('whereStartWith', function (string $column, string $value): Builder {
+        Builder::macro('whereStartWith', function (string $column, string|array $value): Builder {
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+
             /** @var Builder $this */
             return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", $value.'%');
         });
 
-        Builder::macro('whereEndWith', function (string $column, string $value): Builder {
+        Builder::macro('whereEndWith', function (string $column, string|array $value): Builder {
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+
             /** @var Builder $this */
             return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value);
         });
 
-        Builder::macro('whereWith', function (string $column, string $value): Builder {
+        Builder::macro('whereWith', function (string $column, string|array $value): Builder {
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+
             /** @var Builder $this */
             return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
         });
 
-        Builder::macro('orWhereAnyWordStartWith', function (string $column, string $value): Builder {
+        Builder::macro('orWhereAnyWordStartWith', function (string $column, string|array $value): Builder {
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
             /** @var Builder $this */
             $quotedValue = DB::connection()->getPdo()->quote($value);
+
             return $this->orWhere(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
                 ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
         });
 
-        Builder::macro('orWhereStartWith', function (string $column, string $value): Builder {
+        Builder::macro('orWhereStartWith', function (string $column, string|array $value): Builder {
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+
             /** @var Builder $this */
             return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", $value.'%');
         });
 
-        Builder::macro('orWhereEndWith', function (string $column, string $value): Builder {
+        Builder::macro('orWhereEndWith', function (string $column, string|array $value): Builder {
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+
             /** @var Builder $this */
             return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value);
         });
 
-        Builder::macro('orWhereWith', function (string $column, string $value): Builder {
+        Builder::macro('orWhereWith', function (string $column, string|array $value): Builder {
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+
             /** @var Builder $this */
             return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
         });
