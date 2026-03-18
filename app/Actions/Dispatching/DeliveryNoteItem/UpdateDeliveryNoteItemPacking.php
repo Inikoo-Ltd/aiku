@@ -47,7 +47,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
 
         if ($oldState != DeliveryNoteStateEnum::PACKED && $hasUnfinishedPackings->count() == 0) {
             foreach ($deliveryNote->trolleys as $trolley) {
-                DB::table('delivery_note_has_trolleys`')
+                DB::table('delivery_note_has_trolleys')
                     ->where('delivery_note_id', $deliveryNote->id)->where('trolley_id', $trolley->id)->delete();
                 $trolley->update(['current_delivery_note_id' => null]);
             }
