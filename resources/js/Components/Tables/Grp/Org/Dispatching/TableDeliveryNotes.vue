@@ -317,13 +317,10 @@ const generateRouteDeliveryNote = (id: string) => {
 		 <template #cell(picked_bays)="{ item: deliveryNote }">
 			<dl class="border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
 				<dd v-if="deliveryNote?.picked_bays?.length" class="text-gray-500">
-					<span v-for="bay in deliveryNote?.picked_bays" :key="bay.id" :to="`/bays/${bay.id}`"
+					<span v-for="bay in deliveryNote?.picked_bays" :key="bay.id"
 						xclass="underline opacity-70 hover:opacity-100">
 						{{ bay?.name ?? '-' }}
 					</span>
-				</dd>
-				<dd v-else class="text-gray-500">
-					-
 				</dd>
 			</dl>
 		</template>
