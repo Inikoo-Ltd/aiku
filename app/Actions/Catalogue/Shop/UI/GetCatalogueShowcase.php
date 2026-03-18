@@ -128,15 +128,6 @@ class GetCatalogueShowcase
             'icon'      => 'fal fa-folder-tree',
             'color'     => '#a3e635',
             'value'     => $shop->stats->number_current_departments,
-            'metaRight' => [
-                'tooltip' => __('Sub Departments'),
-                'icon'    => ['icon' => 'fal fa-folder-download', 'class' => ''],
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
-                    'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
-                ],
-                'count' => $shop->stats->number_current_sub_departments,
-            ],
             'metas' => [
                 [
                     'tooltip' => __('Active departments'),
@@ -189,15 +180,6 @@ class GetCatalogueShowcase
             'icon'      => 'fal fa-folder-download',
             'color'     => '#facc15',
             'value'     => $shop->stats->number_current_sub_departments,
-            'metaRight' => [
-                'tooltip' => __('Families'),
-                'icon'    => ['icon' => 'fal fa-folder', 'class' => ''],
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.catalogue.families.index',
-                    'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
-                ],
-                'count' => $shop->stats->number_current_families,
-            ],
             'metas' => [
                 [
                     'tooltip' => __('Active sub-departments'),
