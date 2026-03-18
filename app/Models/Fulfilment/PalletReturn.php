@@ -232,7 +232,7 @@ class PalletReturn extends Model implements HasMedia
 
     public function storedItems(): BelongsToMany
     {
-        return $this->belongsToMany(StoredItem::class, 'pallet_return_items')->withPivot('state', 'id', 'pallet_id', 'pallet_stored_item_id', 'quantity_ordered');
+        return $this->belongsToMany(StoredItem::class, 'pallet_return_items')->withPivot('state', 'id', 'pallet_id', 'pallet_stored_item_id', 'quantity_ordered', 'quantity_picked');
     }
 
     public function stats(): HasOne
