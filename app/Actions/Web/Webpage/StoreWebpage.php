@@ -133,9 +133,9 @@ class StoreWebpage extends OrgAction
             $templates = [];
 
             if ($this->strict) {
-                $usedProductsTemplateCode = FetchUsedProductsWebBlock::run($this->website);
-                $usedProductTemplateCode = FetchUsedProductWebBlock::run($this->website);
-                $usedFamiliesTemplateCode = FetchUsedFamiliesWebBlock::run($this->website);
+                $usedProductsTemplateCode       = FetchUsedProductsWebBlock::run($this->website);
+                $usedProductTemplateCode        = FetchUsedProductWebBlock::run($this->website);
+                $usedFamiliesTemplateCode       = FetchUsedFamiliesWebBlock::run($this->website);
                 $usedSubDepartmentsTemplateCode = FetchUsedSubDepartmentsWebBlock::run($this->website);
 
                 if ($model instanceof Product) {
