@@ -62,9 +62,7 @@ const _popoverInfoCircle = ref<InstanceType<any> | null>(null)
 const _popoverInfoGoldReward = ref<InstanceType<any> | null>(null)
 
 const cleanedDescription = computed(() => {
-  const html = props.fieldValue.collection.description || ''
-
-  // remove <h1>...</h1>
+  const html = props.fieldValue?.collection?.description || ''
   return html.replace(/<h1[^>]*>.*?<\/h1>/gis, '')
 })
 
