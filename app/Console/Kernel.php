@@ -495,8 +495,8 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->command('art clone:aurora_vol_gr_offers sk eu')->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'CloneAuroraVolGrOffers',
+            $schedule->command('art clone:aurora_vol_gr_offers sk eu')->twiceDailyAt(12, 18)->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'CloneAuroraVolGrOffers',
             ),
             name: 'CloneAuroraVolGrOffers',
             type: 'command',
