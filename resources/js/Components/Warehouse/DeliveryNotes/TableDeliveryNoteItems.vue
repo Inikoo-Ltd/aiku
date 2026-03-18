@@ -385,6 +385,23 @@ watch(modalResource, (val) => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+        <template #cell(quantity_packed_readonly)="{ item }">
+            <span v-tooltip="item.quantity_packed">
+            <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
+            <span v-else>{{ item.quantity_packed }}</span>
+            </span>
+        </template>
+        <template #cell(quantity_required_readonly)="{ item }">
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay v-if="item.quantity_required_fractional"
+                    :fractionData="item.quantity_required_fractional" />
+                <span v-else>{{ item.quantity_required }}</span>
+            </span>
+        </template>
+        <template #cell(quantity_picked_readonly)="{ item }">
+            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+            <span v-else>{{ item.quantity_picked }}</span>
+        </template>
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />

@@ -145,7 +145,6 @@ const props = defineProps<{
 
 
 const layout = inject('layout', layoutStructure)
-
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
@@ -568,6 +567,7 @@ onMounted(() => {
 		:is_external_order
 		:shipments
 		:warehouse
+		:quick_pickers
 	/>
 
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />

@@ -282,7 +282,7 @@ const generateRouteDeliveryNote = (id: string) => {
 					  	class=" bg-indigo-100  flex items-center w-fit px-2 flex-none gap-x-1.5"
                         xclass=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dd class="text-gray-500">
-                            {{ deliveryNote?.packer?.contact_name }}
+                            {{ deliveryNote?.packer?.name }}
                         </dd>
                     </dl>
             </div>
@@ -294,7 +294,7 @@ const generateRouteDeliveryNote = (id: string) => {
                     <dl
                         class=" bg-indigo-100  flex items-center w-fit px-2 flex-none gap-x-1.5">
                         <dd class="text-gray-500">
-                          {{ deliveryNote?.picker?.contact_name }}
+                          {{ deliveryNote?.picker?.name }}
                         </dd>
                     </dl>
             </div>
