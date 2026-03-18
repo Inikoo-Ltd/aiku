@@ -9,6 +9,8 @@
 
 namespace App\Actions\Maintenance\Dispatching;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePicker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickingBays;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -39,6 +41,10 @@ class RepairDeliveryNotesTrolleysPickingBays
         ) {
             DeliveryNoteHydratePickingBays::run($deliveryNote->id);
             DeliveryNoteHydrateTrolleys::run($deliveryNote->id);
+            DeliveryNoteHydratePicker::run($deliveryNote->id);
+            DeliveryNoteHydratePacker::run($deliveryNote->id);
+
+
         }
     }
 }

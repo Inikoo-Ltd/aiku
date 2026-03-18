@@ -51,10 +51,10 @@ class DeliveryNoteHydratePickingBays implements ShouldBeUnique
             $lock->block(5, function () use ($deliveryNote, $pickedBays) {
                 $data = $deliveryNote->data ?? [];
 
-                if (empty($trolleys)) {
+                if (empty($pickedBays)) {
                     unset($data['picking_bays']);
                 } else {
-                    $data['picking_bays'] = $trolleys;
+                    $data['picking_bays'] = $pickedBays;
                 }
 
                 $deliveryNote->update(['data' => $data]);
