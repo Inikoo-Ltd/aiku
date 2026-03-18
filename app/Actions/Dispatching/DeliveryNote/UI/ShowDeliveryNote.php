@@ -210,7 +210,7 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        if ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
+        /* if ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'save',
@@ -219,7 +219,7 @@ class ShowDeliveryNote extends OrgAction
                 'label'   => __('Change Picker'),
                 'key'     => 'change-picker',
             ];
-        }
+        } */
 
         if (in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
             $actions[] = [

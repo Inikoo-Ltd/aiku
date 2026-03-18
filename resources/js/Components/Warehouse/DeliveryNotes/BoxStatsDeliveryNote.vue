@@ -23,6 +23,8 @@ import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
 import Select from 'primevue/select';
+import { faExchangeAlt, faLock } from "@far"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -138,6 +140,7 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
+    quick_pickers : any
 }>()
 
 const emit = defineEmits<{
@@ -151,6 +154,46 @@ const locale = inject('locale', aikuLocaleStructure)
 const onReplaceAll = () => {
     emit('replace-all')
 }
+
+
+const isModalToQueue = ref(false);
+const selectedPicker = ref(props.boxStats.picker);
+const disable = ref(props.boxStats.state);
+const isLoading = ref<{ [key: string]: boolean }>({});
+const isLoadingToQueue = ref(false);
+
+
+
+const onUpdatePicker = () => {
+    const isUnassigned = props.deliveryNote.state == 'unassigned';
+
+    const routeName = isUnassigned ? props.routes.set_queue.name : props.routes.update.name;
+    const routeParams = {
+        ...props.routes[isUnassigned ? 'set_queue' : 'update'].parameters,
+        ...(isUnassigned ? {user: selectedPicker.value.id} : {})
+    };
+    const payload = isUnassigned ? {} : {picker_user_id: selectedPicker.value.id};
+
+    router.patch(
+        route(routeName, routeParams),
+        payload,
+        {
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
+                    type: "error"
+                });
+            },
+            onSuccess: () => {
+                isModalToQueue.value = false;
+            },
+            onStart: () => isLoadingToQueue.value = true,
+            onFinish: () => isLoadingToQueue.value = false,
+            preserveScroll: true
+        }
+    );
+};
 
 
 // Section: Parcels
@@ -253,6 +296,8 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
         parcel.weight = preset.weight
     }
 }
+
+console.log(layout)
 </script>
 
 <template>
@@ -428,6 +473,14 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
                                 </dd>
                             </dl>
                         </div>
+
+                      <!--   <Link :href="()" > -->
+                              <FontAwesomeIcon class="cursor-pointer" v-tooltip="trans('only picker can edit this delivery note')" v-if="boxStats?.picker?.id != layout?.user?.id" :icon="faLock" />
+                     <!--    </Link> -->
+
+                        <Button @click="isModalToQueue = true" :label="trans('Change picker')" :icon="faExchangeAlt"
+                            type="tertiary" size="xs" />
+                     
                     </div>
 
                     <!-- Section: Trolleys -->
@@ -730,6 +783,83 @@ const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: {
 
         <!-- Modal: change trolley -->
     </div>
+
+
+    <Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
+		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
+			<div class="mx-auto font-semibold text-lg">
+				{{ trans("Select Picker") }}
+			</div>
+			<div class="mt-4 flex items-center w-full gap-x-1.5">
+				<dd class="flex-1">
+					<!-- Label for Picker -->
+					<div class="text-sm font-medium">
+						{{ trans("Select picker") }}
+					</div>
+					<PureMultiselectInfiniteScroll
+						v-model="selectedPicker"
+						required
+						:fetchRoute="routes.pickers_list"
+						:placeholder="trans('Select picker')"
+						labelProp="contact_name"
+						valueProp="id"
+						object
+						clearOnBlur
+						:loading="isLoading['picker' + selectedPicker?.id]"
+						:disabled="
+							disable == 'picker_assigned' ||
+							disable == 'packing' ||
+							disable == 'packed' ||
+							disable == 'finalised' ||
+							disable == 'settled'
+						">
+						<template #singlelabel="{ value }">
+							<div
+								class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+								{{ value.contact_name }}
+							</div>
+						</template>
+						<template #option="{ option, isSelected, isPointed }">
+							<div class="w-full text-left text-sm whitespace-nowrap truncate">
+								{{ option.contact_name }}
+							</div>
+						</template>
+					</PureMultiselectInfiniteScroll>
+
+					<!-- Quick Pickers -->
+					<div v-if="quick_pickers && quick_pickers.length > 0" class="mt-3">
+						<div class="flex flex-wrap justify-center gap-2">
+							<Button
+								v-for="picker in quick_pickers"
+								:key="picker.id"
+								@click="selectedPicker = picker"
+								class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								:class="{
+									'bg-blue-500 text-white': selectedPicker?.id === picker.id,
+								}">
+								{{ picker.contact_name }}
+							</Button>
+						</div>
+					</div>
+				</dd>
+			</div>
+			<div class="w-full mt-2">
+				<Button
+					@click="onUpdatePicker()"
+					:label="
+						delivery_note_state === 'queued'
+							? trans('Change picker')
+							: trans('Set Picker')
+					"
+					:iconRight="['fas', 'fa-arrow-right']"
+					full
+					:loading="isLoadingToQueue"
+					:disabled="!selectedPicker"
+					v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
+				</Button>
+			</div>
+		</div>
+	</Modal>
 </template>
 
 <style scoped>
