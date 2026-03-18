@@ -260,6 +260,9 @@ trait IsDeliveryNotesIndex
             $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
             if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {
                 $table->column(key: 'delivery', label: __('Shipping'));
             }
