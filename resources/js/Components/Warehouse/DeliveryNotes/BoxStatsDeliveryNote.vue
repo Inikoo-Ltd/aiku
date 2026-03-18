@@ -143,6 +143,7 @@ const props = defineProps<{
     }
     allowActions: boolean
     quick_pickers : any
+    showChangePickerPacker: boolean
 }>()
 
 const emit = defineEmits<{
@@ -535,12 +536,12 @@ console.log(layout)
                         />
 
                         <Button
-                            v-if="['handling'].includes(deliveryNote?.state)"
+                            v-if="['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
                             @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
 
 
                         <Button
-                            v-if="['packing', 'packed'].includes(deliveryNote?.state)"
+                            v-if="['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
                             @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
 
 

@@ -142,6 +142,7 @@ const props = defineProps<{
 	}
 	shop_type : string
 	is_faire_order : boolean
+	showChangePickerPacker: boolean
 }>();
 
 
@@ -561,6 +562,7 @@ onMounted(() => {
 	<!-- Section: Box Stats -->
 	<BoxStatsDeliveryNote
 		v-if="box_stats && pickingView"
+		:showChangePickerPacker="showChangePickerPacker"
 		:allowActions="allowActions"
 		:boxStats="box_stats"
 		:routes

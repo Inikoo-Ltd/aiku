@@ -719,6 +719,8 @@ class ShowDeliveryNote extends OrgAction
             $allowAction = $deliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
         }
 
+        $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
+
         $props = [
             'title'         => __('delivery note'),
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -840,6 +842,8 @@ class ShowDeliveryNote extends OrgAction
             ],
 
             'is_faire_order' => ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE),
+
+            'showChangePickerPacker'    => $showChangePickerPacker,
 
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
                 fn() => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
