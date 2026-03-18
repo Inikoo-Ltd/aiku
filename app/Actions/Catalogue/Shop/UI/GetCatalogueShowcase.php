@@ -28,6 +28,7 @@ class GetCatalogueShowcase
             $stats = array_merge(
                 [
                     $this->buildDepartmentsStat($shop, $orgSlug, $shopSlug),
+                    $this->buildSubDepartmentsStat($shop, $orgSlug, $shopSlug),
                     $this->buildFamiliesStat($shop, $orgSlug, $shopSlug),
                 ],
                 $stats,
@@ -170,6 +171,67 @@ class GetCatalogueShowcase
                     'count'   => $shop->stats->number_departments_state_in_process,
                     'route'   => [
                         'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'in_process'],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    private function buildSubDepartmentsStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label' => __('Sub Departments'),
+            'route' => [
+                'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'      => 'fal fa-folder-download',
+            'color'     => '#facc15',
+            'value'     => $shop->stats->number_current_sub_departments,
+            'metaRight' => [
+                'tooltip' => __('Families'),
+                'icon'    => ['icon' => 'fal fa-folder', 'class' => ''],
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.catalogue.families.index',
+                    'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                ],
+                'count' => $shop->stats->number_current_families,
+            ],
+            'metas' => [
+                [
+                    'tooltip' => __('Active sub-departments'),
+                    'icon'    => ['tooltip' => 'active', 'icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
+                    'count'   => $shop->stats->number_sub_departments_state_active,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'active'],
+                    ],
+                ],
+                [
+                    'tooltip' => __('Discontinuing sub-departments'),
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
+                    'count'   => $shop->stats->number_sub_departments_state_discontinuing,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'discontinuing'],
+                    ],
+                ],
+                [
+                    'tooltip' => __('Discontinued sub-departments'),
+                    'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
+                    'count'   => $shop->stats->number_sub_departments_state_discontinued,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                        'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'discontinued'],
+                    ],
+                ],
+                [
+                    'tooltip' => __('In process'),
+                    'icon'    => ['icon' => 'fal fa-seedling', 'class' => 'text-green-500 animate-pulse'],
+                    'count'   => $shop->stats->number_sub_departments_state_in_process,
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
                         'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug, 'index_elements[state]' => 'in_process'],
                     ],
                 ],
