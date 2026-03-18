@@ -54,12 +54,13 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
                 $grpExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->group->currency);
 
                 $transactionData = [
-                    'historic_asset_id' => $product->current_historic_asset_id,
-                    'gross_amount'      => $netAmount,
-                    'net_amount'        => $netAmount,
-                    'family_id'         => $product->family_id,
-                    'department_id'     => $product->department_id,
-                    'sub_department_id' => $product->sub_department_id,
+                    'historic_asset_id'       => $product->current_historic_asset_id,
+                    'gross_amount'            => $netAmount,
+                    'net_amount'              => $netAmount,
+                    'current_discount_factor' => 1,
+                    'family_id'               => $product->family_id,
+                    'department_id'           => $product->department_id,
+                    'sub_department_id'       => $product->sub_department_id,
                 ];
 
                 data_set($transactionData, 'org_exchange', $orgExchange);
@@ -91,7 +92,7 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
 
             $newTotal = $order->total_amount;
             if ($oldTotal != $newTotal) {
-                $command->info("Order: $order->slug - old total: $oldTotal - new total: $newTotal");
+                $command->info("Order: $order->slug  {$order->shop->slug} - old total: $oldTotal - new total: $newTotal");
             }
         }
     }
