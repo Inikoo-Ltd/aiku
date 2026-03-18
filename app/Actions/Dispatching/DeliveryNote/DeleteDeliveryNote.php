@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 class DeleteDeliveryNote extends OrgAction
@@ -51,4 +52,21 @@ class DeleteDeliveryNote extends OrgAction
 
         return $this->handle($deliveryNote, $this->validatedData);
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'delete:delivery-note {delivery_note}';
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): string
+    {
+        $deliveryNote = DeliveryNote::where('slug', $command->argument('delivery_note'))->firstOrFail();
+        $this->handle($deliveryNote, []);
+
+        return 'Delivery note deleted';
+    }
+
 }
