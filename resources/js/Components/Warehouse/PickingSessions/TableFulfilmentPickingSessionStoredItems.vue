@@ -536,15 +536,25 @@ const getHiddenPallets = (storedItem: any) => {
         </template>
 
         <template #cell(actions)="{ item }">
-            <div v-if="isFirstReturnRow(item) && isPickingFinished()" class="flex justify-end">
+            <div v-if="isFirstReturnRow(item) && isPickingFinished()" class="flex justify-end gap-x-2">
                 <Link
                     v-if="canRowDispatch(item)"
                     as="div"
                     :href="route(getDispatchableReturn(item).dispatchRoute.name, getDispatchableReturn(item).dispatchRoute.parameters)"
-                    method="post"
+                    :method="getDispatchableReturn(item).dispatchRoute.method || 'post'"
                     preserveScroll
                 >
-                    <Button icon="fal fa-save" label="Set as dispatched" type="secondary" size="xs" class="py-0" />
+                    <Button icon="fal fa-save" :label="trans('Dispatch')" type="secondary" size="xs" class="py-0" />
+                </Link>
+
+                <Link
+                    v-if="getDispatchableReturn(item)?.cancelRoute?.name && item.pallet_return_state !== 'cancel'"
+                    as="div"
+                    :href="route(getDispatchableReturn(item).cancelRoute.name, getDispatchableReturn(item).cancelRoute.parameters)"
+                    :method="getDispatchableReturn(item).cancelRoute.method || 'patch'"
+                    preserveScroll
+                >
+                    <Button icon="far fa-times" :label="trans('Cancel')" type="negative" size="xs" class="py-0" />
                 </Link>
             </div>
             <div v-else class="-mt-px pt-px"></div>
