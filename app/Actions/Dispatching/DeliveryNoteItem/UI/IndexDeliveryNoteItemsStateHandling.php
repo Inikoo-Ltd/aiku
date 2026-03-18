@@ -93,7 +93,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
             $allowAction = ($deliveryNote->packer_user_id && $deliveryNote->packer_user_id != request()->user()->id);
             
-            if ($tempPicker = session('temp_handling_delivery_note')) {
+            if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
                 $allowAction = $deliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
             }
             // TODO REMOVE IS PRODUCTION CHECK LATER SO IT WORKS (LOCKED) ON PRODUCTION
