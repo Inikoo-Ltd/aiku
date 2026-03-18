@@ -15,7 +15,6 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Cache;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
@@ -98,9 +97,9 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 $allowAction = $deliveryNote->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
             }
 
-           if (app()->isLocal()) {
-               $allowAction = true;
-           }
+            if (app()->isLocal()) {
+                //$allowAction = true;
+            }
 
             if (!$deliveryNote || !$allowAction) {
                 $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

@@ -150,7 +150,7 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.public_notes',
                 'delivery_notes.shipping_notes',
                 'delivery_notes.shipping_data',
-                'orders.in_warehouse_at'
+                'orders.in_warehouse_at',
             ])
             ->selectRaw(
                 "
@@ -162,7 +162,21 @@ trait IsDeliveryNotesIndex
             )
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
-            ->allowedSorts(['reference', 'date', 'number_items', 'customer_name', 'type', 'effective_weight', 'picking_sessions_count', 'number_of_days_in_warehouse'])
+            ->allowedSorts([
+                'reference',
+                'date',
+                'number_items',
+                'customer_name',
+                'type',
+                'effective_weight',
+                'picking_sessions_count',
+                'number_of_days_in_warehouse',
+                'sort_picker',
+                'sort_packer',
+                'sort_trolleys',
+                'sort_picked_bays'
+
+            ])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -262,20 +276,20 @@ trait IsDeliveryNotesIndex
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
-                $table->column(key: 'picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'sort_picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked') {
-                $table->column(key: 'trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'sort_trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             if ($bucket == 'picked') {
-                $table->column(key: 'picked_bays', label: __('Picked bays'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'sort_picked_bays', label: __('Picked bays'), canBeHidden: false, sortable: true, searchable: true);
             }
 
 
             if ($bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
-                $table->column(key: 'packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'sort_packer', label: __('Packer'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             if (in_array($bucket, ['all', 'dispatched_today', 'dispatched'])) {

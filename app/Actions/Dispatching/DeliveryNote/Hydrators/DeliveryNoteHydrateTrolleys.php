@@ -36,14 +36,19 @@ class DeliveryNoteHydrateTrolleys implements ShouldBeUnique
             return;
         }
 
-        $trolleys = [];
-        foreach ($deliveryNote->trolleys as $trolley) {
-            $trolleys[] = [
+        $trolleys     = [];
+        $sortTrolleys = '';
+        foreach ($deliveryNote->trolleys()->orderByRaw('trolleys.name')->get() as $trolley) {
+            $trolleys[]   = [
                 'id'   => $trolley->id,
                 'slug' => $trolley->slug,
                 'name' => $trolley->name,
             ];
+            $sortTrolleys .= $trolley->name.' ';
         }
+        $deliveryNote->update([
+            'sort_trolleys' => trim($sortTrolleys)
+        ]);
 
         $lock = Cache::lock('delivery_note_data_update_'.$deliveryNoteId, 10);
 

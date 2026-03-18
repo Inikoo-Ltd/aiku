@@ -526,13 +526,13 @@ console.log(layout)
                             </dl>
                         </div>
 
-                            <!-- TODO Louis LOCK UNLOCK -->
-                        <FontAwesomeIcon 
+
+                        <FontAwesomeIcon
                             v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
-                            v-tooltip="allowActions ? trans('Picking and packing is allowed') : trans('Only picker can edit this delivery note')" 
-                            class="cursor-pointer" 
-                            :icon="allowActions ? faLockOpen : faLock" 
-                            @click="assignSelfTemporarily()"  
+                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                            class="cursor-pointer focus:outline-none"
+                            :icon="allowActions ? faLockOpen : faLock"
+                            @click="assignSelfTemporarily()"
                         />
 
                         <Button

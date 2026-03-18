@@ -16,7 +16,6 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Cache;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItems extends OrgAction
@@ -106,16 +105,15 @@ class IndexDeliveryNoteItems extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            
+
             $allowAction = ($parent->packer_user_id && $parent->packer_user_id == request()->user()->id);
-            
+
             if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
                 $allowAction = $parent->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
             }
-            
-           if (app()->isLocal()) {
-               $allowAction = true;
-           }
+            if (app()->isLocal()) {
+            //    $allowAction = true;
+            }
 
 
             if (!$parent || !$allowAction) {

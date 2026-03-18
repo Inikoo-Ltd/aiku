@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 18 Mar 2026 11:58:53 Central Indonesia Time, Kuala Lumpur, Malaysia
@@ -37,17 +38,20 @@ class DeliveryNoteHydratePicker implements ShouldBeUnique
         }
 
 
-        $picker = [];
-
+        $picker     = [];
+        $sortPicker = '';
         if ($deliveryNote->picker_user_id) {
             /** @var User $user */
-            $user   = $deliveryNote->pickerUser;
-            $picker = [
+            $user       = $deliveryNote->pickerUser;
+            $picker     = [
                 'id'   => $user->id,
                 'name' => $user->contact_name ?? $user->username,
             ];
+            $sortPicker = $user->contact_name ?? $user->username;
         }
-
+        $deliveryNote->update([
+            'sort_picker' => $sortPicker
+        ]);
 
         $lock = Cache::lock('delivery_note_data_update_'.$deliveryNoteId, 10);
 

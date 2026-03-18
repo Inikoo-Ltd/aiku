@@ -36,14 +36,19 @@ class DeliveryNoteHydratePickedBays implements ShouldBeUnique
             return;
         }
 
-        $pickedBays = [];
-        foreach ($deliveryNote->pickedBays as $pickedBay) {
-            $pickedBays[] = [
+        $pickedBays     = [];
+        $sortPickedBays = '';
+        foreach ($deliveryNote->pickedBays()->orderByRaw('picked_bays.code')->get() as $pickedBay) {
+            $pickedBays[]   = [
                 'id'   => $pickedBay->id,
                 'slug' => $pickedBay->slug,
                 'name' => $pickedBay->code,
             ];
+            $sortPickedBays .= $pickedBay->code.' ';
         }
+        $deliveryNote->update([
+            'sort_picked_bays' => trim($sortPickedBays)
+        ]);
 
         $lock = Cache::lock('delivery_note_data_update_'.$deliveryNoteId, 10);
 

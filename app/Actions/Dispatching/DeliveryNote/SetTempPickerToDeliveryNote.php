@@ -17,7 +17,6 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -36,7 +35,7 @@ class SetTempPickerToDeliveryNote extends OrgAction
             'value' => $deliveryNote->id,
             'expires_at' => now()->addMinutes(5),
         ]);
-        
+
         return $deliveryNote;
     }
 
@@ -46,7 +45,7 @@ class SetTempPickerToDeliveryNote extends OrgAction
             'picker_user_id'    => ['sometimes', Rule::exists('users', 'id')]
         ];
     }
-    
+
     public function asController(Organisation $organisation, Shop $shop, DeliveryNote $deliveryNote, ActionRequest $request, int $hydratorsDelay = 0): DeliveryNote
     {
         $this->deliveryNote   = $deliveryNote;
