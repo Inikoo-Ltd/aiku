@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, computed, nextTick, onMounted, watch, onBeforeUnmount } from "vue"
-
+import { trans } from "laravel-vue-i18n"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
@@ -33,6 +33,10 @@ const props = defineProps<{
     settings?: { per_row?: { desktop?: number, tablet?: number, mobile?: number } }
     container?: any
     chip?: any
+    webpage_data?: {
+      webpage_type : string
+      overview_url : string
+    }
   }
   webpageData?: any
   blockData?: Record<string, any>
@@ -178,7 +182,6 @@ console.log('families',props)
 </script>
 
 <template>
-  {{ fieldValue?.webpage_data?.webpage_type }}
   <div :id="fieldValue?.id ? fieldValue?.id : 'families-3'" component="families-3" :key="refreshTrigger"
     ref="containerRef">
     <div v-if="allItems.length" class="px-4 py-10" :style="{
@@ -206,9 +209,9 @@ console.log('families',props)
 
 
             <SwiperSlide class="flex !w-[220px]" v-if="fieldValue?.webpage_data?.webpage_type == 'department'" >
-              <LinkIris :href="fieldValue.web_block.webpage_data.overview_url" type="external" class="w-full h-full flex">
+              <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="w-full h-full flex">
                 <div
-                  class="family-item w-full h-full flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all"
+                  class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all"
                   :style="{
                     ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
                     fontWeight: 600,

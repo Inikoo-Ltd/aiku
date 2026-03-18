@@ -62,15 +62,24 @@ const idxSlideLoading = ref<string | null>(null)
             <div :class="['grid gap-8', responsiveGridClass]">
 
                 <!-- VIEW ALL CARD -->
-              <!--   <LinkIris href="/your-view-all-url" type="internal" class="relative">
-                    <div
-                        class="h-full flex flex-col items-center justify-center p-6 rounded-xl border bg-white hover:bg-gray-50 transition-all text-center cursor-pointer">
-                        <span class="text-base font-semibold">
-                            View All
-                        </span>
-                    </div>
-                </LinkIris>
- -->
+                <div class="flex !w-full" v-if="fieldValue?.webpage_data?.webpage_type == 'department'">
+                    <LinkIris :href="fieldValue?.webpage_data?.overview_url" type="internal" class="w-full h-full flex">
+                        <div class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all"
+                            :style="{
+                                ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
+                                fontWeight: 600,
+                                minHeight: maxHeight ? maxHeight + 'px' : undefined
+                            }">
+                            <!-- TOP AREA (fill space like image) -->
+                            <div class="flex-1 flex items-center justify-center bg-gray-100">
+                                <span class="text-sm font-semibold">
+                                    {{ trans("View All") }}
+                                </span>
+                            </div>
+                        </div>
+                    </LinkIris>
+                </div>
+
                 <!-- LOOP ITEMS -->
                 <LinkIris v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`"
                     type="internal" @start="() => idxSlideLoading = `family${index}`"

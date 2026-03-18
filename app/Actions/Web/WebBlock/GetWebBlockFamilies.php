@@ -100,16 +100,16 @@ class GetWebBlockFamilies
 
         $model = $webpage->model;
         $overview_url = null;
-        if ($model->type == 'department') {
-            $overview_url = $model->webpages()->where('webpages.layout_styles', 'families_overview')->first()?->url;
+        if ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            $overview_url = $model->webpages()->where('webpages.layout_style', 'families-overview')->first()?->url;
         }
 
-        data_set($webBlock, 'web_block.webpage_data.webpage_type', $model->type);
-        data_set($webBlock, 'web_block.webpage_data.overview_url', $overview_url);
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->toArray(request()));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_data.webpage_type', $model->type);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_data.overview_url', $overview_url);
 
         return $webBlock;
     }
