@@ -23,7 +23,7 @@ import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
 import Select from 'primevue/select';
-import { faExchangeAlt, faLock, faUnlock } from "@far"
+import { faExchangeAlt, faLocation, faLock, faUnlock , faLockOpen} from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
@@ -530,7 +530,7 @@ console.log(layout)
                             v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
                             v-tooltip="allowActions ? trans('Picking and packing is allowed') : trans('Only picker can edit this delivery note')" 
                             class="cursor-pointer" 
-                            :icon="allowActions ? faUnlock : faLock" 
+                            :icon="allowActions ? faLockOpen : faLock" 
                             @click="assignSelfTemporarily()"
                         />
                      <!--    </Link> -->
@@ -853,13 +853,13 @@ console.log(layout)
     <Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
 		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
 			<div class="mx-auto font-semibold text-lg">
-				{{ trans("Select Picker") }}
+				{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
 			</div>
 			<div class="mt-4 flex items-center w-full gap-x-1.5">
 				<dd class="flex-1">
 					<!-- Label for Picker -->
-					<div class="text-sm font-medium py-2">
-						{{ trans("Select picker") }} 
+					<div class="flex justify-between text-sm font-medium py-2">
+						{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
                         <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="trans('I will do the picking myself')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
 					</div>
 					<PureMultiselectInfiniteScroll
