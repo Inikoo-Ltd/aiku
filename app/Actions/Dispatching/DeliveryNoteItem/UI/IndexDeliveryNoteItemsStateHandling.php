@@ -90,9 +90,9 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
 
-            if (!$deliveryNote || $deliveryNote->picker_user_id != request()->user()->id) {
-                $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-                $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            if (!$deliveryNote || ($deliveryNote->picker_user_id && $deliveryNote->picker_user_id != request()->user()->id)) {
+                $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             } else {
                 $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
