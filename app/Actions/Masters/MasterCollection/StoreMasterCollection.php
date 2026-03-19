@@ -61,7 +61,6 @@ class StoreMasterCollection extends GrpAction
         $masterCollection = DB::transaction(function () use ($parent, $modelData, $imageData, $createChildren) {
             $masterCollection = MasterCollection::create($modelData);
             $masterCollection->stats()->create();
-            $masterCollection->salesIntervals()->create();
             $masterCollection->orderingStats()->create();
 
             if ($imageData['image']) {

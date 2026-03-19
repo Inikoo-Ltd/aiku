@@ -71,7 +71,6 @@ class StoreProductCategory extends OrgAction
         $productCategory = DB::transaction(function () use ($modelData) {
             $productCategory = ProductCategory::create($modelData);
             $productCategory->stats()->create();
-            $productCategory->orderingStats()->create();
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $productCategory->timeSeries()->create(
                     [

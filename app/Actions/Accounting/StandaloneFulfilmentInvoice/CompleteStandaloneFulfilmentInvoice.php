@@ -14,11 +14,8 @@ use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoi
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -66,11 +63,8 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
         }
 
         ShopHydrateInvoiceIntervals::dispatch($invoice->shop);
-        OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation);
-        GroupHydrateInvoiceIntervals::dispatch($invoice->group);
 
         if ($invoice->master_shop_id) {
-            MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
             MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
         }
 

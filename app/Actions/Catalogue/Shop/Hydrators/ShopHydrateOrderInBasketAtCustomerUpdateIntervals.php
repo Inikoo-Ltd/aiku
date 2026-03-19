@@ -36,17 +36,6 @@ class ShopHydrateOrderInBasketAtCustomerUpdateIntervals implements ShouldBeUniqu
         );
 
 
-        $shop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_by_customer_at', 'shop', $shop, $intervals, $doPreviousPeriods),
-        );
-
-        $shop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_by_customer_at', 'org', $shop, $intervals, $doPreviousPeriods),
-        );
-
-        $shop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_by_customer_at', 'grp', $shop, $intervals, $doPreviousPeriods),
-        );
     }
 
 }

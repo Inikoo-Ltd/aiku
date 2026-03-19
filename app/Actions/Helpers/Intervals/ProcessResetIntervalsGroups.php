@@ -7,13 +7,8 @@
 
 namespace App\Actions\Helpers\Intervals;
 
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrdersDispatchedToday;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateFinalised;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -34,34 +29,6 @@ class ProcessResetIntervalsGroups
                 GroupHydrateOrderStateFinalised::dispatch($group->id);
                 GroupHydrateOrdersDispatchedToday::dispatch($group->id);
             }
-
-            GroupHydrateInvoiceIntervals::dispatch(
-                group: $group,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-            GroupHydrateRegistrationIntervals::dispatch(
-                groupId: $group->id,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-
-            GroupHydrateOrderIntervals::dispatch(
-                group: $group,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-            GroupHydrateOrderInBasketAtCreatedIntervals::dispatch(
-                group: $group,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-
-            GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch(
-                group: $group,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
         }
     }
 

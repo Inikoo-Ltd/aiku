@@ -34,7 +34,6 @@ class GroupHydrateOrderInBasketAtCreatedIntervals implements ShouldBeUnique
         $group->orderingIntervals()->update(
             $this->getBasketCountStats('created_at', $group, $intervals, $doPreviousPeriods),
         );
-
     }
 
 }

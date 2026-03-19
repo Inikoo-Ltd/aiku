@@ -49,7 +49,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterShopMasterCollections
  * @property-read \App\Models\Masters\MasterShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterShopOrderingStats|null $orderingStats
- * @property-read \App\Models\Masters\MasterShopSalesIntervals|null $salesIntervals
  * @property-read LaravelCollection<int, Shop> $shops
  * @property-read \App\Models\Masters\MasterShopStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterShopTimeSeries> $timeSeries
@@ -131,11 +130,6 @@ class MasterShop extends Model implements Auditable
     public function orderingIntervals(): HasOne
     {
         return $this->hasOne(MasterShopOrderingIntervals::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(MasterShopSalesIntervals::class);
     }
 
     public function masterProductCategories(): HasMany

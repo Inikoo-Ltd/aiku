@@ -14,7 +14,6 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCre
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrders;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\Traits\WithNormalise;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
@@ -29,7 +28,6 @@ class HydrateMasterShopSales extends HydrateModel
 
     public function handle(MasterShop $masterShop): void
     {
-        MasterShopHydrateSalesIntervals::run($masterShop->id);
         MasterShopHydrateOrders::run($masterShop->id);
         MasterShopHydrateInvoiceIntervals::run($masterShop->id);
         MasterShopHydrateRegistrationIntervals::run($masterShop->id);

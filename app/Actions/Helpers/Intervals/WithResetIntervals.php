@@ -24,38 +24,22 @@ trait WithResetIntervals
 
     protected function resetOrganisations(): void
     {
-        ProcessResetIntervalsOrganisations::dispatch($this->intervals, $this->doPreviousPeriods);
+        ProcessResetIntervalsOrganisations::dispatch($this->intervals);
     }
 
-    protected function resetMasterShops(): void
-    {
-        ProcessResetIntervalsMasterShops::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
 
     protected function resetShops(): void
     {
         ProcessResetIntervalsShops::dispatch($this->intervals, $this->doPreviousPeriods);
     }
 
-    protected function resetPlatforms(): void
-    {
-        ProcessResetIntervalsPlatforms::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
 
-
-    protected function resetCollections(): void
-    {
-        ProcessResetIntervalsCollections::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
 
     public function handle(): void
     {
         $this->resetGroups();
         $this->resetOrganisations();
-        $this->resetMasterShops();
         $this->resetShops();
-        $this->resetPlatforms();
-        $this->resetCollections();
     }
 
 

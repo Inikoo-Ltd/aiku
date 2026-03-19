@@ -27,12 +27,9 @@ use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesInt
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesGrpCurrency;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesOrgCurrency;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\Masters\MasterShop\ProcessMasterShopTimeSeriesRecords;
 use App\Actions\Ordering\SalesChannel\ProcessSalesChannelTimeSeriesRecords;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\ProcessOrganisationTimeSeriesRecords;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -131,7 +128,6 @@ class RunInvoiceHydrators
 
         // --- Master shop ---
         if ($invoice->master_shop_id) {
-            $queueOrRun(MasterShopHydrateSalesIntervals::class, [$invoice->master_shop_id, $intervalsExceptHistorical, []]);
             $queueOrRun(MasterShopHydrateInvoiceIntervals::class, [$invoice->master_shop_id, $intervalsExceptHistorical, []]);
 
             // --- Master Shop Time Series ---
@@ -153,8 +149,6 @@ class RunInvoiceHydrators
 
         // --- Invoice Intervals ---
         $queueOrRun(ShopHydrateInvoiceIntervals::class, [$invoice->shop, $intervalsExceptHistorical, []]);
-        $queueOrRun(OrganisationHydrateInvoiceIntervals::class, [$invoice->organisation, $intervalsExceptHistorical, []]);
-        $queueOrRun(GroupHydrateInvoiceIntervals::class, [$invoice->group, $intervalsExceptHistorical, []]);
 
         // --- Platform intervals ---
         if ($invoice->platform_id) {

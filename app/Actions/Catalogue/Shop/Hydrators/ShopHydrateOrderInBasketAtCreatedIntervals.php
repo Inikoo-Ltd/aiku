@@ -35,17 +35,6 @@ class ShopHydrateOrderInBasketAtCreatedIntervals implements ShouldBeUnique
             $this->getBasketCountStats('created_at', $shop, $intervals, $doPreviousPeriods),
         );
 
-        $shop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('created_at', 'shop', $shop, $intervals, $doPreviousPeriods),
-        );
-
-        $shop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('created_at', 'org', $shop, $intervals, $doPreviousPeriods),
-        );
-
-        $shop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('created_at', 'grp', $shop, $intervals, $doPreviousPeriods),
-        );
     }
 
 }

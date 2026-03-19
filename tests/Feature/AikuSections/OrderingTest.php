@@ -20,11 +20,8 @@ use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsCollections;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsGroups;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsMasterShops;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsOrganisations;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsPlatforms;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
@@ -1325,8 +1322,5 @@ test('reset daily intervals action dispatches expected jobs', function () {
 
     ProcessResetIntervalsGroups::assertPushed(1);
     ProcessResetIntervalsOrganisations::assertPushed(1);
-    ProcessResetIntervalsMasterShops::assertPushed(1);
     ProcessResetIntervalsShops::assertPushed(1);
-    ProcessResetIntervalsPlatforms::assertPushed(1);
-    ProcessResetIntervalsCollections::assertPushed(1);
 });

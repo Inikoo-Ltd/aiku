@@ -24,9 +24,7 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationInterv
 use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
@@ -172,8 +170,6 @@ class StoreCustomer extends OrgAction
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
         ShopHydrateRegistrationIntervals::dispatch($customer->shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        GroupHydrateRegistrationIntervals::dispatch($customer->group_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         if ($customer->master_shop_id) {
             MasterShopHydrateRegistrationIntervals::dispatch($customer->master_shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         }

@@ -67,7 +67,6 @@ class StoreMasterProductCategory extends GrpAction
             $masterProductCategory = MasterProductCategory::create($modelData);
 
             $masterProductCategory->stats()->create();
-            $masterProductCategory->orderingStats()->create();
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $masterProductCategory->timeSeries()->create(
                     [

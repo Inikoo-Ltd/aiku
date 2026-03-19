@@ -166,10 +166,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterVariant|null $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
- * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
  * @property-read LaravelCollection<int, Product> $products
  * @property-read Media|null $rightImage
- * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
@@ -319,11 +317,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(MasterAssetStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(MasterAssetSalesIntervals::class);
     }
 
     public function orderingIntervals(): HasOne

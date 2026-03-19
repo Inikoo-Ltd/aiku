@@ -74,7 +74,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Model|\Eloquent $parent
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $parentMasterDepartments
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $parentMasterSubDepartments
- * @property-read \App\Models\Masters\MasterCollectionSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollectionTimeSeries> $timeSeries
@@ -160,10 +159,6 @@ class MasterCollection extends Model implements Auditable, HasMedia
         return $this->morphTo();
     }
 
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(MasterCollectionSalesIntervals::class);
-    }
 
     public function orderingIntervals(): HasOne
     {

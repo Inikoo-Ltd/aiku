@@ -41,9 +41,6 @@ class MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals implements ShouldB
         );
 
 
-        $masterShop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_at', 'grp', $masterShop, $intervals, $doPreviousPeriods),
-        );
     }
 
 }

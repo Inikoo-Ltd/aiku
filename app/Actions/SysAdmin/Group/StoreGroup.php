@@ -65,7 +65,6 @@ class StoreGroup
         $group->dropshippingStats()->create();
         $group->commsStats()->create();
         $group->discountsStats()->create();
-        $group->orderingIntervals()->create();
         $group->sysadminIntervals()->create();
 
         $group->outboxNewsletterIntervals()->create();
