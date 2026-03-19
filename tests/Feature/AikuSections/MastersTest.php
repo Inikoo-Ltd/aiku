@@ -41,7 +41,6 @@ use App\Models\Masters\MasterCollectionStats;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterProductCategoryStats;
 use App\Models\Masters\MasterShop;
-use App\Models\Masters\MasterShopOrderingIntervals;
 use App\Models\Masters\MasterShopOrderingStats;
 use App\Models\Masters\MasterShopStats;
 use Illuminate\Support\Facades\Bus;
@@ -104,7 +103,6 @@ test('create master shop', function () {
     expect($masterShop)->toBeInstanceOf(MasterShop::class)
         ->and($masterShop->stats)->toBeInstanceOf(MasterShopStats::class)
         ->and($masterShop->orderingStats)->toBeInstanceOf(MasterShopOrderingStats::class)
-        ->and($masterShop->orderingIntervals)->toBeInstanceOf(MasterShopOrderingIntervals::class)
         ->and($masterShop->timeSeries()->count())->toBe(5)
         ->and($masterShop)->not->toBeNull()
         ->and($masterShop->code)->toBe('SHOP1')

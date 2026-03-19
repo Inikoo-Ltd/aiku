@@ -40,7 +40,6 @@ class StoreMasterShop extends OrgAction
             $masterShop = $group->masterShops()->create($modelData);
             $masterShop->stats()->create();
             $masterShop->orderingStats()->create();
-            $masterShop->orderingIntervals()->create();
 
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $masterShop->timeSeries()->create(['frequency' => $frequency]);

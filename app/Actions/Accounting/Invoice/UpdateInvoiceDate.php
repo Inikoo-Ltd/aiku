@@ -6,13 +6,11 @@ use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceTransaction\ProcessInvoiceTransactionTimeSeries;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\Comms\Email\SendInvoiceDateChangedNotification;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\Ordering\SalesChannel\RedoSalesChannelTimeSeries;
 use App\Actions\OrgAction;
@@ -65,11 +63,8 @@ class UpdateInvoiceDate extends OrgAction
             OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
 
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-            ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
 
-            if ($invoice->master_shop_id) {
-                MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
-            }
+
 
             if ($invoice->invoiceCategory) {
                 InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);

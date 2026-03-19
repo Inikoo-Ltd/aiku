@@ -31,7 +31,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePicked;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateSubmitted;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateServices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingCountries;
@@ -58,7 +57,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTags;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopProductCategory;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopUps;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVariants;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateWebUsers;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -118,14 +116,12 @@ class HydrateShops
 
 
         ShopHydrateDeletedInvoices::run($shop);
-        ShopHydrateRegistrationIntervals::run($shop->id);
         ShopHydrateMailshots::run($shop);
         ShopHydrateEmailTemplates::run($shop);
         ShopHydrateFamiliesWithNoDepartment::run($shop);
         ShopHydrateProductsWithNoFamily::run($shop);
         ShopHydratePolls::run($shop);
         ShopHydrateWebUsers::run($shop);
-        ShopHydrateVisitorsIntervals::run($shop);
         ShopHydratePlatformStats::run($shop);
         ShopHydrateProspects::run($shop);
         ShopHydrateTags::run($shop);

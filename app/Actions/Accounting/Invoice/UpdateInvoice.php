@@ -13,10 +13,8 @@ use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoi
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Ordering\SalesChannel\RedoSalesChannelTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
@@ -121,12 +119,6 @@ class UpdateInvoice extends OrgAction
             }
 
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-            ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-
-            if ($invoice->master_shop_id) {
-                MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
-            }
-
             OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
 

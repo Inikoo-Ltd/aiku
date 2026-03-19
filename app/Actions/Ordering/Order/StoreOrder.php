@@ -8,14 +8,9 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
@@ -240,21 +235,6 @@ class StoreOrder extends OrgAction
         $this->orderHandlingHydrators($order, $order->state);
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-
-        ShopHydrateOrderIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
-
-        ShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
-
-        if ($order->master_shop_id) {
-            MasterShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
-        }
-
-        if ($order->updated_by_customer_at) {
-            ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
-            if ($order->master_shop_id) {
-                MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
-            }
-        }
 
         if ($order->customer_client_id) {
             CustomerClientHydrateOrders::dispatch($order->customerClient)->delay($this->hydratorsDelay);

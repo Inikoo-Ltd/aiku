@@ -11,9 +11,7 @@ namespace App\Actions\Accounting\StandaloneFulfilmentInvoice;
 
 use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
@@ -61,13 +59,6 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
         if ($invoice->invoiceCategory) {
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory);
         }
-
-        ShopHydrateInvoiceIntervals::dispatch($invoice->shop);
-
-        if ($invoice->master_shop_id) {
-            MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
-        }
-
 
         InvoiceRecordSearch::dispatch($invoice);
 

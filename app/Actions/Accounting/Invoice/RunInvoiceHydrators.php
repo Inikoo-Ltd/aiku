@@ -13,7 +13,6 @@ use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoi
 use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
@@ -26,7 +25,6 @@ use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesInt
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSales;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesGrpCurrency;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesOrgCurrency;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\ProcessMasterShopTimeSeriesRecords;
 use App\Actions\Ordering\SalesChannel\ProcessSalesChannelTimeSeriesRecords;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
@@ -128,7 +126,6 @@ class RunInvoiceHydrators
 
         // --- Master shop ---
         if ($invoice->master_shop_id) {
-            $queueOrRun(MasterShopHydrateInvoiceIntervals::class, [$invoice->master_shop_id, $intervalsExceptHistorical, []]);
 
             // --- Master Shop Time Series ---
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
@@ -148,7 +145,6 @@ class RunInvoiceHydrators
         }
 
         // --- Invoice Intervals ---
-        $queueOrRun(ShopHydrateInvoiceIntervals::class, [$invoice->shop, $intervalsExceptHistorical, []]);
 
         // --- Platform intervals ---
         if ($invoice->platform_id) {

@@ -9,10 +9,6 @@
 
 namespace App\Actions\Catalogue\Shop;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -31,10 +27,6 @@ class HydrateShopsSales
 
     public function handle(Shop $shop): void
     {
-        ShopHydrateInvoiceIntervals::run($shop);
-        ShopHydrateOrderIntervals::run($shop);
-        ShopHydrateOrderInBasketAtCreatedIntervals::run($shop);
-        ShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($shop);
 
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             ShopHydratePlatformSalesIntervals::run($shop);

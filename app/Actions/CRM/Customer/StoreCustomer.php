@@ -11,7 +11,6 @@ namespace App\Actions\CRM\Customer;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
@@ -20,7 +19,6 @@ use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustome
 use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
-use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationIntervals;
 use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
@@ -169,10 +167,6 @@ class StoreCustomer extends OrgAction
         OrganisationHydrateCustomers::dispatch($customer->organisation)->delay($this->hydratorsDelay);
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-        ShopHydrateRegistrationIntervals::dispatch($customer->shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        if ($customer->master_shop_id) {
-            MasterShopHydrateRegistrationIntervals::dispatch($customer->master_shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        }
 
         if ($customer->registered_at) {
             $registeredAtDate = Carbon::parse($customer->registered_at)->toDateString();
