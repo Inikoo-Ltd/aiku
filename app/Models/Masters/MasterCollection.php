@@ -110,7 +110,7 @@ class MasterCollection extends Model implements Auditable, HasMedia
         'state'           => MasterCollectionStateEnum::class,
         'health_rank'     => HealthRankEnum::class,
         'products_status' => MasterCollectionProductStatusEnum::class,
-        'web_images'     => 'array',
+        'web_images'      => 'array',
         'offers_data'     => 'array',
         'inactivated_at'  => 'datetime',
     ];
