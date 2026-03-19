@@ -102,7 +102,7 @@ class HydrateShops
         ShopHydrateRentals::run($shop);
         ShopHydrateCrmStats::run($shop);
         ShopHydrateAdjustments::run($shop);
-        ShopHydrateAverageClv::run($shop);
+        ShopHydrateAverageClv::run($shop->id);
         ShopHydrateTopProductCategory::run($shop);
 
         ShopHydrateOrderStateCreating::run($shop->id);
