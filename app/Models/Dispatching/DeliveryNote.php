@@ -11,6 +11,7 @@ namespace App\Models\Dispatching;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Helpers\NaturalLanguage;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
@@ -363,6 +364,26 @@ class DeliveryNote extends Model implements Auditable
     public function pickedBays(): BelongsToMany
     {
         return $this->belongsToMany(PickedBay::class, 'picked_bay_has_delivery_notes');
+    }
+
+    public function getBestWeight(): string
+    {
+        $weight     = 0;
+        $hasParcels = false;
+        foreach ($this->parcels as $parcel) {
+            $weight     += $parcel['weight'] * 1000;
+            $hasParcels = true;
+        }
+        if (!$hasParcels) {
+            $weight = $this->estimated_weight;
+        }
+
+        return NaturalLanguage::make()->weight($weight);
+    }
+
+    public function getNumberParcels(): int
+    {
+        return count($this->parcels);
     }
 
 }
