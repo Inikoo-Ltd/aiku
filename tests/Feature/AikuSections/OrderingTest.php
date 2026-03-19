@@ -26,8 +26,6 @@ use App\Actions\Helpers\Intervals\ProcessResetIntervalsMasterShops;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsOrganisations;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsPlatforms;
 use App\Actions\Helpers\Intervals\ProcessResetIntervalsShops;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsStockFamilies;
-use App\Actions\Helpers\Intervals\ProcessResetIntervalsStocks;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
@@ -1331,6 +1329,4 @@ test('reset daily intervals action dispatches expected jobs', function () {
     ProcessResetIntervalsShops::assertPushed(1);
     ProcessResetIntervalsPlatforms::assertPushed(1);
     ProcessResetIntervalsCollections::assertPushed(1);
-    ProcessResetIntervalsStocks::assertPushed(1);
-    ProcessResetIntervalsStockFamilies::assertPushed(1);
 });

@@ -48,26 +48,6 @@ trait WithResetIntervals
         ProcessResetIntervalsCollections::dispatch($this->intervals, $this->doPreviousPeriods);
     }
 
-    protected function resetStocks(): void
-    {
-        ProcessResetIntervalsStocks::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
-
-    protected function resetStockFamilies(): void
-    {
-        ProcessResetIntervalsStockFamilies::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
-
-    protected function resetOrgStocks(): void
-    {
-        ProcessResetIntervalsOrgStocks::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
-
-    protected function resetOrgStockFamilies(): void
-    {
-        ProcessResetIntervalsOrgStockFamilies::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
-
     public function handle(): void
     {
         $this->resetGroups();
@@ -76,8 +56,6 @@ trait WithResetIntervals
         $this->resetShops();
         $this->resetPlatforms();
         $this->resetCollections();
-        $this->resetStocks();
-        $this->resetStockFamilies();
     }
 
 
