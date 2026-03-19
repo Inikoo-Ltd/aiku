@@ -35,13 +35,6 @@ class OrganisationHydrateOrderInBasketAtCreatedIntervals implements ShouldBeUniq
             $this->getBasketCountStats('created_at', $organisation, $intervals, $doPreviousPeriods),
         );
 
-        $organisation->salesIntervals()->update(
-            $this->getBasketNetAmountStats('created_at', 'org', $organisation, $intervals, $doPreviousPeriods),
-        );
-
-        $organisation->salesIntervals()->update(
-            $this->getBasketNetAmountStats('created_at', 'grp', $organisation, $intervals, $doPreviousPeriods),
-        );
     }
 
 }

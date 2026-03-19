@@ -66,7 +66,6 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurchaseOrder
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProspects;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRecurringBills;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRentals;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateServices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurges;
@@ -116,7 +115,6 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydratePurges::run($organisation);
         OrganisationHydrateDeliveryNotes::run($organisation->id, DeliveryNoteTypeEnum::ORDER);
         OrganisationHydrateDeliveryNotes::run($organisation->id, DeliveryNoteTypeEnum::REPLACEMENT);
-        ;
 
         OrganisationHydratePurchaseOrders::run($organisation);
         OrganisationHydrateWebsites::run($organisation);
@@ -129,7 +127,6 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateInvoices::run($organisation);
         OrganisationHydrateInvoiceCategories::run($organisation);
         OrganisationHydrateOrderIntervals::run($organisation);
-        OrganisationHydrateSalesIntervals::run($organisation);
         OrganisationHydrateSubscription::run($organisation);
         OrganisationHydrateServices::run($organisation);
         OrganisationHydrateOrgPostRooms::run($organisation);

@@ -14,7 +14,6 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInterval
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrdersDispatchedToday;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateFinalised;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
@@ -37,12 +36,6 @@ class ProcessResetIntervalsOrganisations
                 OrganisationHydrateOrderStateFinalised::dispatch($organisation->id);
                 OrganisationHydrateOrdersDispatchedToday::dispatch($organisation->id);
             }
-
-            OrganisationHydrateSalesIntervals::dispatch(
-                organisation: $organisation,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
 
             OrganisationHydrateInvoiceIntervals::dispatch(
                 organisation: $organisation,

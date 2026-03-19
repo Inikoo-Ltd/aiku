@@ -24,7 +24,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -73,7 +72,6 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
         }
 
         ShopHydrateSalesIntervals::dispatch($invoice->shop);
-        OrganisationHydrateSalesIntervals::dispatch($invoice->organisation);
         GroupHydrateSalesIntervals::dispatch($invoice->group);
 
         ShopHydrateInvoiceIntervals::dispatch($invoice->shop);

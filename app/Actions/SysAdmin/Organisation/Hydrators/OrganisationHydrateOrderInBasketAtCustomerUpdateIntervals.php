@@ -35,13 +35,7 @@ class OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals implements Shoul
             $this->getBasketCountStats('updated_by_customer_at', $organisation, $intervals, $doPreviousPeriods),
         );
 
-        $organisation->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_by_customer_at', 'org', $organisation, $intervals, $doPreviousPeriods),
-        );
 
-        $organisation->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_by_customer_at', 'grp', $organisation, $intervals, $doPreviousPeriods),
-        );
     }
 
 }

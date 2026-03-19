@@ -38,7 +38,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\ProcessOrganisationTimeSeriesRecords;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -136,7 +135,6 @@ class RunInvoiceHydrators
 
         // --- Sales Intervals ---
         $queueOrRun(ShopHydrateSalesIntervals::class, [$invoice->shop, $intervalsExceptHistorical, []]);
-        $queueOrRun(OrganisationHydrateSalesIntervals::class, [$invoice->organisation, $intervalsExceptHistorical, []]);
         $queueOrRun(GroupHydrateSalesIntervals::class, [$invoice->group, $intervalsExceptHistorical, []]);
 
         // --- Master shop ---

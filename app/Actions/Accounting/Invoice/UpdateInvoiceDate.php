@@ -25,7 +25,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
@@ -73,7 +72,6 @@ class UpdateInvoiceDate extends OrgAction
             GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
             GroupHydrateInvoiceIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
 
-            OrganisationHydrateSalesIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
 
