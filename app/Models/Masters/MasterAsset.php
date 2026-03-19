@@ -218,14 +218,14 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'status'               => 'boolean',
         'variant_is_visible'   => 'boolean',
 
-        'fetched_at'           => 'datetime',
-        'last_fetched_at'      => 'datetime',
-        'discontinued_at'      => 'datetime',
-        'stocks_status'        => MasterAssetStocksStatusEnum::class,
-        'products_status'      => MasterAssetProductsStatusEnum::class,
-        'offers_data'          => 'array',
-        'web_images'           => 'array',
-        'tax_category'         => 'array',
+        'fetched_at'              => 'datetime',
+        'last_fetched_at'         => 'datetime',
+        'discontinued_at'         => 'datetime',
+        'stocks_status'           => MasterAssetStocksStatusEnum::class,
+        'products_status'         => MasterAssetProductsStatusEnum::class,
+        'offers_data'             => 'array',
+        'web_images'              => 'array',
+        'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
     ];
 
@@ -324,11 +324,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function salesIntervals(): HasOne
     {
         return $this->hasOne(MasterAssetSalesIntervals::class);
-    }
-
-    public function orderingStats(): HasOne
-    {
-        return $this->hasOne(MasterAssetOrderingStats::class);
     }
 
     public function orderingIntervals(): HasOne

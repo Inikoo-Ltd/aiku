@@ -37,30 +37,11 @@ trait WithResetIntervals
         ProcessResetIntervalsShops::dispatch($this->intervals, $this->doPreviousPeriods);
     }
 
-    protected function resetInvoiceCategories(): void
-    {
-        ProcessResetIntervalsInvoiceCategories::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
-
-    protected function resetProducts(): void
-    {
-        ProcessResetIntervalsProducts::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
-
-    protected function resetCharges(): void
-    {
-        ProcessResetIntervalsCharges::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
-
     protected function resetPlatforms(): void
     {
         ProcessResetIntervalsPlatforms::dispatch($this->intervals, $this->doPreviousPeriods);
     }
 
-    protected function resetProductCategories(): void
-    {
-        ProcessResetIntervalsProductCategories::dispatch($this->intervals, $this->doPreviousPeriods);
-    }
 
     protected function resetCollections(): void
     {
@@ -93,11 +74,7 @@ trait WithResetIntervals
         $this->resetOrganisations();
         $this->resetMasterShops();
         $this->resetShops();
-        $this->resetProducts();
-        $this->resetCharges();
         $this->resetPlatforms();
-        $this->resetInvoiceCategories();
-        $this->resetProductCategories();
         $this->resetCollections();
         $this->resetStocks();
         $this->resetStockFamilies();

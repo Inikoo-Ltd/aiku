@@ -220,16 +220,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->hasOne(ProductCategoryStats::class);
     }
 
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(ProductCategoryOrderingIntervals::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(ProductCategorySalesIntervals::class);
-    }
-
     public function orderingStats(): HasOne
     {
         return $this->hasOne(ProductCategoryOrderingStats::class);

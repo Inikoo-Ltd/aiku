@@ -42,7 +42,6 @@ class StoreGroup
     {
         data_set($modelData, 'ulid', Str::ulid());
 
-        /** @var Group $group */
         $group = Group::create($modelData);
 
         app()->instance('group', $group);

@@ -10,8 +10,6 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
 use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
 use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
@@ -112,8 +110,7 @@ class RunInvoiceHydrators
         // --- Invoice Category ---
         if ($invoice->invoiceCategory) {
             $queueOrRun(InvoiceCategoryHydrateInvoices::class, [$invoice->invoiceCategory]);
-            $queueOrRun(InvoiceCategoryHydrateSalesIntervals::class, [$invoice->invoiceCategory, $intervalsExceptHistorical, []]);
-            $queueOrRun(InvoiceCategoryHydrateOrderingIntervals::class, [$invoice->invoiceCategory, $intervalsExceptHistorical, []]);
+
 
             // --- Invoice Category Time Series ---
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {

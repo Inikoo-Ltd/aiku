@@ -103,7 +103,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats
  * @property-read MasterProductCategory|null $parent
  * @property-read LaravelCollection<int, ProductCategory> $productCategories
- * @property-read \App\Models\Masters\MasterProductCategorySalesIntervals|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
@@ -192,16 +191,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function productCategories(): HasMany
     {
         return $this->hasMany(ProductCategory::class, 'master_product_category_id');
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(MasterProductCategoryOrderingIntervals::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(MasterProductCategorySalesIntervals::class);
     }
 
     public function orderingStats(): HasOne

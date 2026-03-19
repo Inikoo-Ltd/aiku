@@ -21,7 +21,6 @@ use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
 use App\Actions\Inventory\Reports\DownloadPackagingReport;
 use App\Actions\Inventory\Reports\UI\IndexPackagingReport;
 use App\Actions\Reports\PostRoomRoutes;
-use App\Actions\Reports\ShowOrganisationSalesReport;
 use App\Actions\UI\Reports\IndexReports;
 use App\Stubs\UIDummies\IndexDummies;
 use Illuminate\Support\Facades\Route;
@@ -30,8 +29,6 @@ Route::get('/', IndexReports::class)->name('index');
 
 Route::get('/picker-performance', IndexPickerPerformanceReport::class)->name('picker-performance');
 Route::get('/packer-performance', IndexPackerPerformanceReport::class)->name('packer-performance');
-
-Route::get('/sales', ShowOrganisationSalesReport::class)->name('sales');
 
 Route::get('/intrastat/exports', IndexIntrastatExportReport::class)->name('intrastat.exports');
 Route::get('/intrastat/exports/export-xml', ExportIntrastatXml::class)->name('intrastat.exports.export');

@@ -51,11 +51,8 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
         $queryBuilder->join('master_collection_has_models', function ($join) {
             $join->on('master_product_categories.id', '=', 'master_collection_has_models.model_id')
                 ->where('master_collection_has_models.model_type', '=', 'MasterProductCategory');
-
         });
         $queryBuilder->where('master_collection_has_models.master_collection_id', '=', $masterCollection->id);
-        $queryBuilder->leftJoin('master_product_category_sales_intervals', 'master_product_category_sales_intervals.master_product_category_id', 'master_product_categories.id');
-        $queryBuilder->leftJoin('master_product_category_ordering_intervals', 'master_product_category_ordering_intervals.master_product_category_id', 'master_product_categories.id');
         $queryBuilder->leftJoin('master_product_category_stats', 'master_product_categories.id', 'master_product_category_stats.master_product_category_id');
 
         return $queryBuilder
@@ -109,7 +106,6 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
     public function htmlResponse(LengthAwarePaginator $masterFamilies, ActionRequest $request): Response
     {
         $navigation      = MasterProductCategoryTabsEnum::navigationExcept([MasterProductCategoryTabsEnum::SALES]);
-        $masterShop      = null;
         $subNavigation   = $this->getMasterCollectionSubNavigation($this->parent);
         $modelNavigation = [];
         $title           = $this->parent->name;
@@ -126,14 +122,14 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
         ];
 
         $baseData = [
-            'breadcrumbs' => $this->getBreadcrumbs(
+            'breadcrumbs'            => $this->getBreadcrumbs(
                 $this->parent,
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
-            'navigation'  => $modelNavigation,
-            'title'       => __('Master Families'),
-            'pageHead'    => [
+            'navigation'             => $modelNavigation,
+            'title'                  => __('Master Families'),
+            'pageHead'               => [
                 'title'         => $title,
                 'icon'          => $icon,
                 'model'         => $model,
@@ -141,14 +137,14 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                 'iconRight'     => $iconRight,
                 'subNavigation' => $subNavigation,
             ],
-            'hideCheckbox'             => true,
-            'accessedFromCollection'   => true,
-            'routes'      => [
+            'hideCheckbox'           => true,
+            'accessedFromCollection' => true,
+            'routes'                 => [
                 'dataList'     => [
                     'name'       => 'grp.json.master_shop.master_families_not_attached_to_master_collection',
                     'parameters' => [
-                        'masterShop'  => $this->parent->masterShop->slug,
-                        'scope' => $this->parent->slug
+                        'masterShop' => $this->parent->masterShop->slug,
+                        'scope'      => $this->parent->slug
                     ]
                 ],
                 'submitAttach' => [
@@ -180,7 +176,7 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
             'Masters/MasterFamilies',
             $baseData
         )
-        ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value));
+            ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value));
     }
 
     public function getBreadcrumbs(MasterCollection $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
@@ -221,7 +217,7 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
     public function asController(MasterShop $masterShop, MasterCollection $masterCollection, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterCollection;
-        $group = group();
+        $group        = group();
 
         $this->initialisation($group, $request)->withTab(MasterCollectionsTabsEnum::valuesExcept([MasterCollectionsTabsEnum::SALES]));
 
@@ -232,7 +228,7 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterCollection $masterCollection, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterCollection;
-        $group = group();
+        $group        = group();
 
         $this->initialisation($group, $request)->withTab(MasterCollectionsTabsEnum::valuesExcept([MasterCollectionsTabsEnum::SALES]));
 
@@ -243,7 +239,7 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
     public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterCollection $masterCollection, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterCollection;
-        $group = group();
+        $group        = group();
 
         $this->initialisation($group, $request)->withTab(MasterCollectionsTabsEnum::valuesExcept([MasterCollectionsTabsEnum::SALES]));
 
