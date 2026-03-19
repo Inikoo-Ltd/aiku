@@ -59,7 +59,6 @@ class StoreGroup
         $group->catalogueStats()->create();
         $group->fulfilmentStats()->create();
         $group->orderingStats()->create();
-        $group->salesIntervals()->create();
         $group->orderHandlingStats()->create();
         $group->mailshotsIntervals()->create();
         $group->manufactureStats()->create();

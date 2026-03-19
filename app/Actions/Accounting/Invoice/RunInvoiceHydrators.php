@@ -35,7 +35,6 @@ use App\Actions\Masters\MasterShop\ProcessMasterShopTimeSeriesRecords;
 use App\Actions\Ordering\SalesChannel\ProcessSalesChannelTimeSeriesRecords;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\ProcessOrganisationTimeSeriesRecords;
@@ -135,7 +134,6 @@ class RunInvoiceHydrators
 
         // --- Sales Intervals ---
         $queueOrRun(ShopHydrateSalesIntervals::class, [$invoice->shop, $intervalsExceptHistorical, []]);
-        $queueOrRun(GroupHydrateSalesIntervals::class, [$invoice->group, $intervalsExceptHistorical, []]);
 
         // --- Master shop ---
         if ($invoice->master_shop_id) {

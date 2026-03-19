@@ -21,7 +21,6 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
@@ -72,7 +71,6 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
         }
 
         ShopHydrateSalesIntervals::dispatch($invoice->shop);
-        GroupHydrateSalesIntervals::dispatch($invoice->group);
 
         ShopHydrateInvoiceIntervals::dispatch($invoice->shop);
         OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation);

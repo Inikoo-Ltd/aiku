@@ -14,7 +14,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrdersDispatchedToday;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateFinalised;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -36,11 +35,6 @@ class ProcessResetIntervalsGroups
                 GroupHydrateOrdersDispatchedToday::dispatch($group->id);
             }
 
-            GroupHydrateSalesIntervals::dispatch(
-                group: $group,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods,
-            );
             GroupHydrateInvoiceIntervals::dispatch(
                 group: $group,
                 intervals: $intervals,

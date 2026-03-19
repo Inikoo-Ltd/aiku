@@ -35,10 +35,6 @@ class GroupHydrateOrderInBasketAtCustomerUpdateIntervals implements ShouldBeUniq
             $this->getBasketCountStats('updated_by_customer_at', $group, $intervals, $doPreviousPeriods),
         );
 
-
-        $group->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_by_customer_at', 'grp', $group, $intervals, $doPreviousPeriods),
-        );
     }
 
 }
