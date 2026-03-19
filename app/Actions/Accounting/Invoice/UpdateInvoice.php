@@ -41,9 +41,10 @@ class UpdateInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
-
         if (Arr::has($modelData, 'date')) {
-            UpdateInvoiceDate::run($invoice, Arr::pull($modelData, 'date'));
+            UpdateInvoiceDate::run($invoice, [
+                'date' => Arr::pull($modelData, 'date')
+            ]);
         }
 
         $oldShippingZoneSchemaId = $invoice->shipping_zone_schema_id;
@@ -90,8 +91,6 @@ class UpdateInvoice extends OrgAction
 
 
         $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
-
-
 
 
         if (count($changes) > 0) {
