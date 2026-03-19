@@ -87,7 +87,7 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
             $order->refresh();
 
             if ($oldPayStatus != $order->pay_status) {
-                $command->info(" >> Order: $order->slug  Payment status: $oldPayStatus->value -> {$order->pay_status->value}");
+                $command->info(" >> Order: $order->slug  Payment status: $oldPayStatus?->value -> {$order->pay_status->value}");
             }
 
             $newTotal = $order->total_amount;
