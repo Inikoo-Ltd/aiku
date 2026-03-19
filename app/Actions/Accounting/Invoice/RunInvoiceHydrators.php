@@ -15,7 +15,6 @@ use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoi
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
@@ -129,8 +128,6 @@ class RunInvoiceHydrators
             }
         }
 
-        // --- Sales Intervals ---
-        $queueOrRun(ShopHydrateSalesIntervals::class, [$invoice->shop, $intervalsExceptHistorical, []]);
 
         // --- Master shop ---
         if ($invoice->master_shop_id) {

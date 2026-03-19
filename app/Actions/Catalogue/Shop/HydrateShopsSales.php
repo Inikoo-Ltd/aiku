@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedInterv
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -32,7 +31,6 @@ class HydrateShopsSales
 
     public function handle(Shop $shop): void
     {
-        ShopHydrateSalesIntervals::run($shop);
         ShopHydrateInvoiceIntervals::run($shop);
         ShopHydrateOrderIntervals::run($shop);
         ShopHydrateOrderInBasketAtCreatedIntervals::run($shop);

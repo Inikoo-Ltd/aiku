@@ -14,7 +14,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrdersDispatchedToday;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateFinalised;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervals;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -46,11 +45,6 @@ class ProcessResetIntervalsShops
                 ShopHydrateOrdersDispatchedToday::dispatch($shop->id);
             }
 
-            ShopHydrateSalesIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
 
             ShopHydrateInvoiceIntervals::dispatch(
                 shop: $shop,
@@ -103,11 +97,7 @@ class ProcessResetIntervalsShops
                 ShopStateEnum::CLOSING_DOWN
             ])->get() as $shop
         ) {
-            ShopHydrateSalesIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
+
 
             ShopHydrateInvoiceIntervals::dispatch(
                 shop: $shop,

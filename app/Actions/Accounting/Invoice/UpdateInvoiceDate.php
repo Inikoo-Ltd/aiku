@@ -8,7 +8,6 @@ use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceTransaction\ProcessInvoiceTransactionTimeSeries;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\Comms\Email\SendInvoiceDateChangedNotification;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
@@ -70,7 +69,6 @@ class UpdateInvoiceDate extends OrgAction
             OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
 
-            ShopHydrateSalesIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
             ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
 
