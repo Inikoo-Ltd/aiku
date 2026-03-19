@@ -183,9 +183,9 @@ class CustomerHydrateClv implements ShouldBeUnique
 
         $delay = rand(1, 1000) === 1 ? null : now()->addMinutes(15);
         if ($delay) {
-            ShopHydrateAverageClv::dispatch($customer->shop->id)->delay($delay);
+            ShopHydrateAverageClv::dispatch($customer->shop_id)->delay($delay);
         } else {
-            ShopHydrateAverageClv::dispatch($customer->shop->id);
+            ShopHydrateAverageClv::dispatch($customer->shop_id);
         }
     }
 
@@ -210,9 +210,9 @@ class CustomerHydrateClv implements ShouldBeUnique
         // --- Trigger shop average CLV update ---
         $delay = rand(1, 1000) === 1 ? null : now()->addMinutes(15);
         if ($delay) {
-            ShopHydrateAverageClv::dispatch($customer->shop)->delay($delay);
+            ShopHydrateAverageClv::dispatch($customer->shop_id)->delay($delay);
         } else {
-            ShopHydrateAverageClv::dispatch($customer->shop);
+            ShopHydrateAverageClv::dispatch($customer->shop_id);
         }
     }
 
