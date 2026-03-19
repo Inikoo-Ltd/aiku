@@ -45,6 +45,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -178,11 +179,13 @@ class StoreCustomer extends OrgAction
         }
 
         if ($customer->registered_at) {
-            $registeredAtDate = \Carbon\Carbon::parse($customer->registered_at)->toDateString();
-            RedoShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
-            RedoOrganisationTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+            $registeredAtDate = Carbon::parse($customer->registered_at)->toDateString();
+
+            RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+            RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+
             if ($customer->master_shop_id) {
-                RedoMasterShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate)->delay($this->hydratorsDelay);
+                RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
             }
         }
 

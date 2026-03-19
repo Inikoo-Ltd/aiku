@@ -18,13 +18,9 @@ use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrate
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
-use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
-use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
-use App\Actions\Dropshipping\Platform\RedoPlatformTimeSeries;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
-use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\Ordering\SalesChannel\RedoSalesChannelTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
@@ -33,7 +29,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
-use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -56,6 +51,11 @@ class UpdateInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
+
+        if (Arr::has($modelData, 'date')) {
+            UpdateInvoiceDate::run($invoice, Arr::pull($modelData, 'date'));
+        }
+
         $oldShippingZoneSchemaId = $invoice->shipping_zone_schema_id;
         $oldShippingZoneId       = $invoice->shipping_zone_id;
         $oldDate                 = $invoice->date;
@@ -65,9 +65,7 @@ class UpdateInvoice extends OrgAction
         $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
 
 
-
         $invoice = $this->update($invoice, $modelData, ['data']);
-
 
 
         if ($billingAddressData) {
@@ -103,10 +101,8 @@ class UpdateInvoice extends OrgAction
 
         $changes = Arr::except($invoice->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::has($modelData, 'date')) {
-            $invoice->invoiceTransactions()->update(['date' => $invoice->date]);
-            UpdateCustomerLastInvoicedDate::run($invoice->customer);
-        }
+
+
 
         if (count($changes) > 0) {
             $invoiceDate    = \Carbon\Carbon::parse($invoice->date);
@@ -114,12 +110,6 @@ class UpdateInvoice extends OrgAction
             $dateHasChanged = Arr::has($changes, 'date');
             $oldDateString  = $dateHasChanged ? \Carbon\Carbon::parse($oldDate)->toDateString() : null;
 
-            if ($invoice->platform_id) {
-                if ($dateHasChanged) {
-                    RedoPlatformTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
-                }
-                RedoPlatformTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
-            }
 
             if ($invoice->invoiceCategory) {
                 InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
@@ -143,29 +133,15 @@ class UpdateInvoice extends OrgAction
             ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
             ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
 
-            if ($dateHasChanged) {
-                RedoShopTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
-            }
-            RedoShopTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
-
             if ($invoice->master_shop_id) {
                 MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
                 MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
-
-                if ($dateHasChanged) {
-                    RedoMasterShopTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
-                }
-                RedoMasterShopTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
             }
 
             OrganisationHydrateSalesIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
             OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
 
-            if ($dateHasChanged) {
-                RedoOrganisationTimeSeries::dispatch($oldDateString, $oldDateString)->delay($this->hydratorsDelay);
-            }
-            RedoOrganisationTimeSeries::dispatch($newDateString, $newDateString)->delay($this->hydratorsDelay);
 
             GroupHydrateSalesIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
             GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
@@ -229,7 +205,7 @@ class UpdateInvoice extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference' => [
+            'reference'                => [
                 'sometimes',
                 'string',
                 'max:64',
@@ -241,10 +217,7 @@ class UpdateInvoice extends OrgAction
                     ]
                 ),
             ],
-
-            'payment_amount' => ['sometimes', 'numeric'],
-
-
+            'payment_amount'           => ['sometimes', 'numeric'],
             'date'                     => ['sometimes', 'date'],
             'tax_liability_at'         => ['sometimes', 'date'],
             'footer'                   => ['sometimes', 'string'],
