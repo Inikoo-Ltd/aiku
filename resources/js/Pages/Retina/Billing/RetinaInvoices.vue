@@ -26,7 +26,8 @@ defineProps<{
 }>()
 
 const locale = useLocaleStore();
-const selectedDate = ref('');
+const startDate = ref('');
+const endDate = ref('');
 const isLoadingExport = ref(false);
 
 function invoiceRoute(invoice: Invoice) {
@@ -74,15 +75,19 @@ function channelRoute(invoice: {}) {
     }
 }
 
-watch(selectedDate, (newDate) => {
-    router.get(route('retina.dropshipping.invoices.index'), { date: newDate }, {
+watch([startDate, endDate], ([newStartDate, newEndDate]) => {
+    router.get(route('retina.dropshipping.invoices.index'), {
+        startDate: newStartDate,
+        endDate: newEndDate
+    }, {
         preserveState: true,
+        replace: true,
     })
 })
 
 const onExportPdf = () => {
-    if (!selectedDate.value) return
-    window.open(route('retina.dropshipping.invoices.export', { date: selectedDate.value }), '_blank')
+    if (!startDate.value) return
+    window.open(route('retina.dropshipping.invoices.export', { startDate: startDate.value, endDate: endDate.value }), '_blank')
 }
 
 </script>
@@ -93,10 +98,13 @@ const onExportPdf = () => {
     <PageHeading :data="pageHead" />
     <div class="flex items-center gap-3 px-4 py-3">
         <input type="date" 
-            v-model="selectedDate" 
+            v-model="startDate" 
+            class="border border-gray-300 rounded px-3 py-1.5 text-sm">
+        <input type="date" 
+            v-model="endDate" 
             class="border border-gray-300 rounded px-3 py-1.5 text-sm">
         <Button
-            :disabled="!selectedDate"
+            :disabled="!startDate || !endDate || isLoadingExport"
             @click="onExportPdf"
             label="Export invoices by date"
             class="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"

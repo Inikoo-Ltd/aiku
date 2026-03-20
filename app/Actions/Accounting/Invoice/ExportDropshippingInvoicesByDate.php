@@ -16,21 +16,34 @@ class ExportDropshippingInvoicesByDate extends RetinaAction
 {
     use AsAction;
 
-    public function handle(Customer $customer, string $date) : Response
+    public function handle(Customer $customer, ?string $startDate = null, ?string $endDate = null) : Response
     {
-        try {
-            $date = Carbon::parse($date)->toDateString();
-        } catch (\Exception $e) {
-            return response('Invalid date format. Please use YYYY-MM-DD.', 400);
+        if(!$startDate){
+            return response()->json(['error' => 'Start date is required'], 400);
         }
 
-        $invoices = Invoice::where('customer_id', $customer->id)
-            ->whereDate('date', $date)
-            ->get();
-        
-        if($invoices->isEmpty()) {
-            return response('No invoices found for the given date.', 404);
+        $query = Invoice::where('invoices.customer_id', $customer->id);
+
+        if($startDate && $endDate){
+            $query->whereBetween('date',
+            [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay()
+            ]);
+            $fileName = 'invoices-' . $startDate . '_to_' . $endDate;
+
+        } 
+        else {
+            $query->whereDate('date', Carbon::parse($startDate)->toDateString());
+            $fileName = 'invoices-' . $startDate;    
         }
+
+        $invoices = $query->get();
+
+        if($invoices->isEmpty()) {
+            return response()->json(['error' => 'No invoices found for the given date range'], 404);
+        }
+
 
         $mpdf = new Mpdf([
             'margin_left'   => 8,
@@ -63,7 +76,7 @@ class ExportDropshippingInvoicesByDate extends RetinaAction
             $mpdf->WriteHTML($html);
         }
 
-        return response($mpdf->output('invoices-' . $date . '.pdf', 'S'), 200)
+        return response($mpdf->output('invoices-' . $fileName . '.pdf', 'S'), 200)
             ->header('Content-Type', 'application/pdf');
     }
 
@@ -73,7 +86,8 @@ class ExportDropshippingInvoicesByDate extends RetinaAction
         
         return $this->handle(
             $this->customer,
-            $request->query('date')
+            $request->query('startDate'),
+            $request->query('endDate')
         );
     }
 

@@ -27,15 +27,19 @@ use Carbon\Carbon;
 
 class IndexRetinaDropshippingInvoices extends RetinaAction
 {
-    public function handle(Customer $customer, ?string $date = null, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, ?string $startDate = null, ?string $endDate = null, $prefix = null): LengthAwarePaginator
     {
         try{
-            if($date){
-                $date = Carbon::parse($date)->toDateString();
+            if($startDate){
+                $startDate = Carbon::parse($startDate)->toDateString();
+            }
+            if($endDate){
+                $endDate = Carbon::parse($endDate)->toDateString();
             }
         } catch (\Exception $e) {
             // Handle invalid date format, maybe log the error or return a default value
-            $date = null; // or you could throw an exception or return an error response
+            $startDate = null; // or you could throw an exception or return an error response
+            $endDate = null;
         }
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -52,8 +56,13 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
 
         $queryBuilder->where('invoices.customer_id', $customer->id);
 
-        if ($date) {
-            $queryBuilder->whereDate('invoices.date', $date);
+        if ($startDate && $endDate) {
+            $queryBuilder->whereBetween('invoices.date', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay()
+            ]);
+        } elseif ($startDate) {
+            $queryBuilder->whereDate('invoices.date', Carbon::parse($startDate)->toDateString());
         }
 
 
@@ -182,7 +191,8 @@ class IndexRetinaDropshippingInvoices extends RetinaAction
 
         return $this->handle(
             $this->customer,
-            $request->query('date')
+            $request->query('startDate'),
+            $request->query('endDate')
         );
     }
 
