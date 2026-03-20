@@ -20,8 +20,6 @@ class GetPhysicalGoodShowcase
 
     public function handle(Product $product): array
     {
-        $sales = $product->asset->salesIntervals;
-        $stats = $this->getAllIntervalPercentage($sales, 'sales');
         return [
             'uploadImageRoute' => [
                 'name'       => 'grp.models.product.images.store',
@@ -38,7 +36,6 @@ class GetPhysicalGoodShowcase
                 ]
             ],
             'product' => ProductResource::make($product),
-            'stats' => $stats,
         ];
     }
 }

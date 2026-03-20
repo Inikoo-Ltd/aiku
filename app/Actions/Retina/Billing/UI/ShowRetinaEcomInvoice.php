@@ -11,8 +11,7 @@ namespace App\Actions\Retina\Billing\UI;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Retina\Accounting\Payment\UI\IndexRetinaPayments;
 use App\Actions\RetinaAction;
-use App\Enums\UI\Accounting\RetinaDropshippingInvoiceTabsEnum;
-use App\Enums\UI\Accounting\RetinaFulfilmentInvoiceTabsEnum;
+use App\Enums\UI\Accounting\RetinaEcomInvoiceTabsEnum;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\ItemizedInvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -39,7 +38,7 @@ class ShowRetinaEcomInvoice extends RetinaAction
 
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
-        $this->initialisation($request)->withTab(RetinaDropshippingInvoiceTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaEcomInvoiceTabsEnum::values());
 
         return $this->handle($invoice);
     }
@@ -71,22 +70,14 @@ class ShowRetinaEcomInvoice extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => RetinaDropshippingInvoiceTabsEnum::navigation()
+                    'navigation' => RetinaEcomInvoiceTabsEnum::navigation()
                 ],
 
                 'order_summary' => [
                     [
                         [
-                            'label'       => __('Services'),
-                            'price_total' => $invoice->services_amount
-                        ],
-                        [
                             'label'       => __('Physical Goods'),
                             'price_total' => $invoice->goods_amount
-                        ],
-                        [
-                            'label'       => __('Rental'),
-                            'price_total' => $invoice->rental_amount
                         ],
                     ],
                     [
@@ -117,26 +108,15 @@ class ShowRetinaEcomInvoice extends RetinaAction
                     ],
                 ],
 
-                 'exportPdfRoute'          => [
-                     'name'       => 'retina.dropshipping.invoices.pdf',
-                     'parameters' => [
-                         'invoice' => $invoice->slug
-                     ]
-                 ],
-                // 'exportTransactionsRoute' => [
-                //     'name'       => 'retina.fulfilment.billing.invoices.invoice-transactions.export',
-                //     'parameters' => [
-                //         'invoice' => $invoice->slug
-                //     ]
-                // ],
-                'box_stats'               => [
+                'exportPdfRoute' => [
+                    'name'       => 'retina.ecom.invoices.pdf',
+                    'parameters' => [
+                        'invoice' => $invoice->slug
+                    ]
+                ],
+
+                'box_stats' => [
                     'customer'    => [
-                        // 'route'        => [
-                        //     'name'       => 'retina.fulfilment.billing.invoices.show',
-                        //     'parameters' => [
-                        //         'invoice' => $invoice->slug,
-                        //     ]
-                        // ],
                         'slug'         => $invoice->customer->slug,
                         'reference'    => $invoice->customer->reference,
                         'contact_name' => $invoice->customer->contact_name,
@@ -145,47 +125,44 @@ class ShowRetinaEcomInvoice extends RetinaAction
                         'phone'        => $invoice->customer->phone,
                     ],
                     'information' => [
-                        // 'recurring_bill' => [
-                        //     'reference' => $invoice->reference
-                        // ],
-                        'routes'         => [
+                        'routes'      => [
                         ],
-                        'paid_amount'    => $invoice->payment_amount,
-                        'pay_amount'     => $toPayAmount
+                        'paid_amount' => $invoice->payment_amount,
+                        'pay_amount'  => $toPayAmount
                     ]
                 ],
 
                 'invoice' => InvoiceResource::make($invoice),
 
-                RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value
+                RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value => $this->tab == RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value
                     ?
-                    fn () => tap(
-                        ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value)),
+                    fn() => tap(
+                        ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value)),
                         function ($resource) {
-                            $resource->collection->map(fn (ItemizedInvoiceTransactionsResource $item) => $item->additional([
+                            $resource->collection->map(fn(ItemizedInvoiceTransactionsResource $item) => $item->additional([
                                 'isRetina' => true
                             ]));
                         }
                     )
                     : Inertia::lazy(
-                        fn () => tap(
-                            ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value)),
+                        fn() => tap(
+                            ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value)),
                             function ($resource) {
-                                $resource->collection->map(fn (ItemizedInvoiceTransactionsResource $item) => $item->additional([
+                                $resource->collection->map(fn(ItemizedInvoiceTransactionsResource $item) => $item->additional([
                                     'isRetina' => true
                                 ]));
                             }
                         )
                     ),
 
-                RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value => $this->tab == RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value ?
-                    fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
+                RetinaEcomInvoiceTabsEnum::PAYMENTS->value => $this->tab == RetinaEcomInvoiceTabsEnum::PAYMENTS->value ?
+                    fn() => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
+                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
 
 
             ]
-        )->table(IndexRetinaPayments::make()->tableStructure($invoice, [], RetinaFulfilmentInvoiceTabsEnum::PAYMENTS->value))
-            ->table(IndexInvoiceTransactions::make()->tableStructure(RetinaFulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value));
+        )->table(IndexRetinaPayments::make()->tableStructure($invoice, [], RetinaEcomInvoiceTabsEnum::PAYMENTS->value))
+            ->table(IndexInvoiceTransactions::make()->tableStructure(RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value));
     }
 
 
@@ -215,18 +192,18 @@ class ShowRetinaEcomInvoice extends RetinaAction
 
 
         return match ($routeName) {
-            'retina.dropshipping.invoices.show' =>
+            'retina.ecom.invoices.show' =>
             array_merge(
-                IndexRetinaDropshippingInvoices::make()->getBreadcrumbs(),
+                IndexRetinaEcomInvoices::make()->getBreadcrumbs(),
                 $headCrumb(
                     $invoice,
                     [
                         'index' => [
-                            'name'       => 'retina.dropshipping.invoices.index',
+                            'name'       => 'retina.ecom.invoices.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'retina.dropshipping.invoices.show',
+                            'name'       => 'retina.ecom.invoices.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -263,7 +240,7 @@ class ShowRetinaEcomInvoice extends RetinaAction
         }
 
         return match ($routeName) {
-            'retina.dropshipping.invoices.show' => [
+            'retina.ecom.invoices.show' => [
                 'label' => $invoice->reference,
                 'route' => [
                     'name'       => $routeName,

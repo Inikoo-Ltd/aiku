@@ -60,7 +60,7 @@ const exportExcel = () => {
                 </a>
                 <a :href="route('grp.org.reports.intrastat.exports.export-slovakia', route().params)" download target="_blank">
                     <Button
-                        :style="'tertiary'"
+                        :style="'secondary'"
                         icon="fal fa-file-export"
                         label="Export Slovakia XML"
                     />

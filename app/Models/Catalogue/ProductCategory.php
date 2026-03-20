@@ -118,11 +118,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read MasterProductCategory|null $masterProductCategory
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
- * @property-read \App\Models\Catalogue\ProductCategoryOrderingIntervals|null $orderingIntervals
- * @property-read \App\Models\Catalogue\ProductCategoryOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
  * @property-read ProductCategory|null $parent
- * @property-read \App\Models\Catalogue\ProductCategorySalesIntervals|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
@@ -218,21 +215,6 @@ class ProductCategory extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(ProductCategoryStats::class);
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(ProductCategoryOrderingIntervals::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(ProductCategorySalesIntervals::class);
-    }
-
-    public function orderingStats(): HasOne
-    {
-        return $this->hasOne(ProductCategoryOrderingStats::class);
     }
 
     public function timeSeries(): HasMany

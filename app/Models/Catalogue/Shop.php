@@ -206,7 +206,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, OfferCampaign> $offerCampaigns
  * @property-read LaravelCollection<int, Offer> $offers
  * @property-read \App\Models\Catalogue\ShopOrderHandlingStats|null $orderHandlingStats
- * @property-read \App\Models\Catalogue\ShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Catalogue\ShopOrderingStats|null $orderingStats
  * @property-read LaravelCollection<int, Order> $orders
  * @property-read OrgPaymentServiceProviderShop|null $pivot
@@ -237,7 +236,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
- * @property-read \App\Models\Catalogue\ShopSalesIntervals|null $salesIntervals
  * @property-read Shop|null $seederShop
  * @property-read SenderEmail|null $senderEmail
  * @property-read \App\Models\Helpers\Media|null $seoImage
@@ -365,16 +363,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function orderingStats(): HasOne
     {
         return $this->hasOne(ShopOrderingStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(ShopSalesIntervals::class);
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOrderingIntervals::class);
     }
 
     public function orderHandlingStats(): HasOne

@@ -82,7 +82,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\Product|null $product
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecurringBill> $recurringBills
  * @property-read Rental|null $rental
- * @property-read \App\Models\Catalogue\AssetSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Service|null $service
  * @property-read \App\Models\Catalogue\Shop|null $shop
@@ -146,11 +145,6 @@ class Asset extends Model implements HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(AssetStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(AssetSalesIntervals::class);
     }
 
     public function orderingStats(): HasOne

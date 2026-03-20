@@ -7,15 +7,8 @@
 
 namespace App\Actions\Helpers\Intervals;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrdersDispatchedToday;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateFinalised;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervals;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -46,47 +39,6 @@ class ProcessResetIntervalsShops
                 ShopHydrateOrdersDispatchedToday::dispatch($shop->id);
             }
 
-            ShopHydrateSalesIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-
-            ShopHydrateInvoiceIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-
-            ShopHydrateRegistrationIntervals::dispatch(
-                shopId: $shop->id,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-
-            ShopHydrateOrderIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-
-            ShopHydrateOrderInBasketAtCreatedIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-
-            ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
-
-            ShopHydrateVisitorsIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            );
 
             if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
                 ShopHydratePlatformSalesIntervals::dispatch(
@@ -103,48 +55,6 @@ class ProcessResetIntervalsShops
                 ShopStateEnum::CLOSING_DOWN
             ])->get() as $shop
         ) {
-            ShopHydrateSalesIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
-
-            ShopHydrateInvoiceIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
-
-            ShopHydrateRegistrationIntervals::dispatch(
-                shopId: $shop->id,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
-
-            ShopHydrateOrderIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
-
-            ShopHydrateOrderInBasketAtCreatedIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
-
-            ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
-
-            ShopHydrateVisitorsIntervals::dispatch(
-                shop: $shop,
-                intervals: $intervals,
-                doPreviousPeriods: $doPreviousPeriods
-            )->delay(now()->addMinute())->onQueue('low-priority');
-
             if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
                 ShopHydratePlatformSalesIntervals::dispatch(
                     shop: $shop,

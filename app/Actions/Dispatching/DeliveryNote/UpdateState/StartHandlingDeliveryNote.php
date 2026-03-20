@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePicker;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\OrgAction;
@@ -38,43 +39,42 @@ class StartHandlingDeliveryNote extends OrgAction
         $oldState = $deliveryNote->state;
 
         if (in_array($deliveryNote->state, [
-            DeliveryNoteStateEnum::CANCELLED,
-            DeliveryNoteStateEnum::DISPATCHED,
-            DeliveryNoteStateEnum::FINALISED,
+            DeliveryNoteStateEnum::QUEUED,
+            DeliveryNoteStateEnum::UNASSIGNED,
+            DeliveryNoteStateEnum::HANDLING_BLOCKED
+
 
         ])) {
-            return $deliveryNote;
-        }
-
-        if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED) {
-            $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $user);
-        }
-
-
-        data_set($modelData, 'handling_at', now());
-        data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING->value);
-        data_set($modelData, 'picker_user_id', $user->id);
-
-
-        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
-            $deliveryNote = UpdateDeliveryNote::run($deliveryNote, $modelData);
-
-            if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());
+            if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED) {
+                $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $user);
             }
 
-            DB::table('delivery_note_items')
-                ->where('delivery_note_id', $deliveryNote->id)
-                ->update(['state' => DeliveryNoteItemStateEnum::HANDLING->value]);
 
+            data_set($modelData, 'handling_at', now());
+            data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING->value);
+            data_set($modelData, 'picker_user_id', $user->id);
+
+
+            $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
+                $deliveryNote = UpdateDeliveryNote::run($deliveryNote, $modelData);
+
+                if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+                    UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());
+                }
+
+                DB::table('delivery_note_items')
+                    ->where('delivery_note_id', $deliveryNote->id)
+                    ->update(['state' => DeliveryNoteItemStateEnum::HANDLING->value]);
+
+
+                return $deliveryNote;
+            });
+            DeliveryNoteHydratePicker::dispatch($deliveryNote->id);
             DeliveryNoteHydrateItems::dispatch($deliveryNote)->delay($this->hydratorsDelay);
 
-            return $deliveryNote;
-        });
-
-
-        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+            $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+            $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+        }
 
         return $deliveryNote;
     }

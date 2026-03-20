@@ -493,6 +493,15 @@ class Kernel extends ConsoleKernel
             type: 'command',
             scheduledAt: now()->format('H:i')
         );
+
+        $this->logSchedule(
+            $schedule->command('art clone:aurora_vol_gr_offers sk eu')->twiceDailyAt(12, 18)->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CloneAuroraVolGrOffers',
+            ),
+            name: 'CloneAuroraVolGrOffers',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void
