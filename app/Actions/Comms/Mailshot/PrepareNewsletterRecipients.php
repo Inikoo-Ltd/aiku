@@ -48,7 +48,7 @@ class PrepareNewsletterRecipients
 
         $baseQuery->select('customers.id')->orderBy('customers.id')
             ->chunk($chunkSize, function ($customers) use ($mailshot, $totalCustomer) {
-                $customerIds = $customers->pluck('id');
+                $customerIds = $customers->pluck('id')->toArray();
                 ProcessSendMailshot::dispatch($mailshot->id, $customerIds, $totalCustomer);
             });
     }

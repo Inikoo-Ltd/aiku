@@ -34,14 +34,14 @@ class PrepareMailshotSecondWaveRecipients
 
     public function handle(Mailshot $mailshot): void
     {
-
-        $chunkSize = 50;
+        $chunkSize      = 50;
         $parentMailshot = $mailshot->parentMailshot;
 
         if (!$parentMailshot) {
             Log::warning('Mailshot does not have parent mailshot, skipping second wave processing', [
                 'mailshot_id' => $mailshot->id,
             ]);
+
             return;
         }
 
@@ -72,17 +72,14 @@ class PrepareMailshotSecondWaveRecipients
         }
         $baseQuery->groupBy('customers.id');
 
-        $cloneQuery = $baseQuery->clone();
+        $cloneQuery     = $baseQuery->clone();
         $totalCustomers = $cloneQuery->count('customers.id');
 
 
         $mailshotId = $mailshot->id;
-        // NOTE: for debug the SQl query
-        // \Log::info($queryBuilder->toRawSql());
 
-        // Process recipients in chunks of 250
         $baseQuery->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $totalCustomers) {
-            $customerIds = $customers->pluck('id');
+            $customerIds = $customers->pluck('id')->toArray();
             ProcessSendMailshot::dispatch($mailshotId, $customerIds, $totalCustomers);
         });
 

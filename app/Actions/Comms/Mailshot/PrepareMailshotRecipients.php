@@ -47,7 +47,7 @@ class PrepareMailshotRecipients
 
         // Process recipients in chunks of 250
         $queryBuilder->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $totalCustomers) {
-            $customerIds = $customers->pluck('id');
+            $customerIds = $customers->pluck('id')->toArray();
             ProcessSendMailshot::dispatch($mailshotId, $customerIds, $totalCustomers);
         });
     }
