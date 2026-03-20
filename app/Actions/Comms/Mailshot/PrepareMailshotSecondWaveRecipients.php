@@ -9,13 +9,11 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
-use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
 use Exception;
 use Illuminate\Console\Command;
@@ -38,22 +36,22 @@ class PrepareMailshotSecondWaveRecipients
     {
 
         $chunkSize = 100;
-        $parentMailshots = $mailshot->parentMailshot;
+        $parentMailshot = $mailshot->parentMailshot;
 
-        if (!$parentMailshots) {
+        if (!$parentMailshot) {
             Log::warning('Mailshot does not have parent mailshot, skipping second wave processing', [
                 'mailshot_id' => $mailshot->id,
             ]);
             return;
         }
 
-        $outboxId = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::INVITE)->value('id');
+        $outboxId = $parentMailshot->outbox->id;
 
         $baseQuery = DB::table('customers');
         $baseQuery->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
         $baseQuery->join('mailshot_recipients', 'customers.id', '=', 'mailshot_recipients.customer_id');
         $baseQuery->join('dispatched_emails', 'mailshot_recipients.dispatched_email_id', '=', 'dispatched_emails.id');
-        $baseQuery->where('mailshot_recipients.mailshot_id', $parentMailshots->id);
+        $baseQuery->where('mailshot_recipients.mailshot_id', $parentMailshot->id);
 
         $baseQuery->where('dispatched_emails.state', DispatchedEmailStateEnum::SENT->value);
         $baseQuery->whereNotNull('dispatched_emails.sent_at');
@@ -89,18 +87,10 @@ class PrepareMailshotSecondWaveRecipients
             ProcessSendMailshot::dispatch($mailshotId, $customerIds, $outboxId, $totalCustomers);
         });
 
-        // UpdateMailshot::run(
-        //     $mailshot,
-        //     [
-        //         'recipients_stored_at' => now()
-        //     ]
-        // );
-
-        // MailshotHydrateDispatchedEmails::run($mailshot);
-        // GroupHydrateMailshots::dispatch($mailshot->group);
-        // OrganisationHydrateMailshots::dispatch($mailshot->organisation);
-        // OutboxHydrateMailshots::dispatch($mailshot->outbox);
-        // ShopHydrateMailshots::dispatch($mailshot->shop);
+        GroupHydrateMailshots::dispatch($mailshot->group);
+        OrganisationHydrateMailshots::dispatch($mailshot->organisation);
+        OutboxHydrateMailshots::dispatch($mailshot->outbox);
+        ShopHydrateMailshots::dispatch($mailshot->shop);
     }
 
     public string $commandSignature = 'send:mailshot-second-wave {mailshot}';
