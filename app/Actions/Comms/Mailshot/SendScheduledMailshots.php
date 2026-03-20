@@ -9,10 +9,11 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SendMailshotScheduled
+class SendScheduledMailshots
 {
     use AsAction;
 
@@ -20,14 +21,17 @@ class SendMailshotScheduled
 
     public function handle(): void
     {
+        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
+
         $mailshots = Mailshot::where('state', MailshotStateEnum::SCHEDULED)
-            ->whereNotNull('ready_at')
+            ->whereIn('shop_id', $aikuShops)
+            ->whereNull('source_id')
             ->get();
 
 
         /** @var Mailshot $mailshot */
         foreach ($mailshots as $mailshot) {
-            if ($mailshot->ready_at->format('Y-m-d H:i') >= now()->format('Y-m-d H:i')) {
+            if ($mailshot->scheduled_at !== null && $mailshot->scheduled_at->lte(now())) {
                 SendMailShot::dispatch($mailshot);
             }
         }

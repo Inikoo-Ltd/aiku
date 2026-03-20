@@ -562,11 +562,11 @@ watch(
                     :description="trans('Please make sure your data or design is correct. This action will send an email to all customers')"
                     isFullLoading>
                     <template #default="{ isOpenModal, changeModel }">
-                        <Button :label="trans('send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
+                        <Button :label="trans('Send now')" :disabled="inProgress" class="!border-r-none !rounded-r-none"
                             icon="fal fa-paper-plane" type="secondary" @click="changeModel" />
                     </template>
                     <template #btn-yes>
-                        <Button :label="trans('send now')" :loading="inProgress" :disabled="inProgress"
+                        <Button :label="trans('Send now')" :loading="inProgress" :disabled="inProgress"
                             @click="handleSendNow" type="secondary" icon="fal fa-paper-plane" />
                     </template>
                 </ModalConfirmation>
