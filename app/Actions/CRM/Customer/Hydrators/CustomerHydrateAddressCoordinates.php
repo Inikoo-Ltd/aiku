@@ -129,7 +129,7 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
                 } else {
                     $this->handle($customer->id, $command);
                 }
-                $bar->advance();
+                //$bar->advance();
             }
         });
 
