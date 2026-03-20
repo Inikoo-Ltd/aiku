@@ -23,9 +23,8 @@ class ProcessSendMailshot
 
     public string $jobQueue = 'ses';
 
-    public function handle(?int $mailshotId, array $customerIds, int $totalCustomer): void
+    public function handle(?int $mailshotId, array $customerIds): void
     {
-
         if (!$mailshotId) {
             return;
         }
@@ -40,7 +39,6 @@ class ProcessSendMailshot
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
         foreach ($customerIds as $customerId) {
-
             $customer = Customer::find($customerId);
             if (!$customer) {
                 continue;
@@ -56,7 +54,7 @@ class ProcessSendMailshot
                     $mailshot,
                     $customer,
                     [
-                        'outbox_id'     => $outboxId,
+                        'outbox_id' => $outboxId,
                         'email_address' => $customer->email
                     ]
                 );
@@ -80,11 +78,8 @@ class ProcessSendMailshot
             ]
         );
 
-        $isAllRecipientsStored = UpdateMailshotRecipientsStoredAt::run($mailshot, $totalCustomer);
-
-        if ($isAllRecipientsStored) {
-            MailshotHydrateDispatchedEmails::run($mailshot);
-        }
+        UpdateMailshotRecipientsStoredAt::run($mailshot);
+        MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds());
 
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
     }

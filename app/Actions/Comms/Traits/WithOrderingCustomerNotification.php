@@ -114,7 +114,7 @@ trait WithOrderingCustomerNotification
             }
 
             return $baseUrl.'/invoice/'.$invoice->ulid;
-        }elseif ($shopType == ShopTypeEnum::B2B) {
+        } elseif ($shopType == ShopTypeEnum::B2B) {
 
             if (app()->isLocal()) {
                 $baseUrl = 'https://ecom.test';

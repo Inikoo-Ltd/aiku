@@ -18,8 +18,6 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ExportRetinaFulfilmentInvoiceTransactions extends RetinaAction
 {
-
-
     /**
      * @throws \Throwable
      */
