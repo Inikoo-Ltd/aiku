@@ -20,14 +20,22 @@ class MailshotHydrateDispatchedEmails implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'analytics';
 
-    public function getJobUniqueId(Mailshot $mailshot): string
+    public function getJobUniqueId(?int $mailshotId): string
     {
-        return $mailshot->id;
+        return $mailshotId ?? 'empty';
     }
 
-    public function handle(Mailshot $mailshot): void
+    public function handle(?int $mailshotId): void
     {
+        if (!$mailshotId) {
+            return;
+        }
+        $mailshot = Mailshot::find($mailshotId);
+        if (!$mailshot) {
+            return;
+        }
         $stats = [
             'number_dispatched_emails' => $mailshot->dispatchedEmails()->count()
         ];
