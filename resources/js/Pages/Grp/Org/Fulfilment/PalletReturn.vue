@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, useForm } from "@inertiajs/vue3"
+import { Head, useForm, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -38,6 +38,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import { Table as TableTS } from "@/types/Table"
+import Message from "primevue/message"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
 	faBuilding,
@@ -54,8 +55,10 @@ import {
 	faArrowAltLeft,
     faTrashAlt,
 	faShippingFast,
-	faWeight, faPrint,
+	faWeight,
+	faPrint,
 	faAlignSlash,
+	faExclamationTriangle,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -84,9 +87,10 @@ library.add(
 	faArrowAltLeft,
     faTrashAlt,
 	faShippingFast,
-	faWeight, 
+	faWeight,
 	faPrint,
-	faAlignSlash
+	faAlignSlash,
+	faExclamationTriangle,
 )
 
 const props = defineProps<{
@@ -141,11 +145,19 @@ const props = defineProps<{
 		submit_route: routeType
 		delete_route: routeType
 	}
+	warning?: {
+		text: string
+		picking_sessions: {
+			reference: string
+			route: routeType
+		}[]
+	}
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
 const layout = inject('layout', layoutStructure)
 const parsed_stored_items_count = ref(props.stored_items_count || 0)
+const showWarningMessage = ref(true)
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -340,7 +352,7 @@ provide("listError", listError.value)
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template v-if="timeline.state === 'picked' && (box_stats?.shipments?.length < 1)" #otherBefore>
-			<Button 
+			<Button
 				v-if="!data.data?.is_collection"
 				@click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
 				v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
@@ -646,6 +658,36 @@ provide("listError", listError.value)
 			<Icon :data="data.data.state_icon"/>
 		</template>
 	</PageHeading>
+
+	<div v-if="warning && showWarningMessage" class="p-1">
+		<Message
+			severity="warn"
+			class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800"
+			:closable="true"
+			@close="showWarningMessage = false">
+			<div class="flex items-start gap-3">
+				<FontAwesomeIcon
+					:icon="faExclamationTriangle"
+					class="text-yellow-500 w-4 h-4 flex-shrink-0" />
+
+				<div class="flex gap-2 flex-wrap items-center">
+					<div class="text-sm font-medium">
+						{{ warning?.text }}
+					</div>
+
+					<div class="flex flex-wrap items-center gap-2 font-bold underline">
+						<template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
+							<Link
+								:href="route(item.route.name, item.route.parameters)"
+								class="text-sm hover:underline">
+								{{ item.reference }}
+							</Link>
+						</template>
+					</div>
+				</div>
+			</div>
+		</Message>
+	</div>
 
 	<!-- Section: Note -->
 	<div class="h-fit lg:max-h-64 w-full flex lg:justify-center border-b border-gray-300">
