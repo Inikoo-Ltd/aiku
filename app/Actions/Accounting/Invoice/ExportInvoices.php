@@ -8,17 +8,14 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
 use App\Exports\Accounting\InvoicesExport;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ExportInvoices
+class ExportInvoices extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithExportData;
 
     /**
@@ -31,14 +28,21 @@ class ExportInvoices
         return $this->export(new InvoicesExport(), 'invoices', $type);
     }
 
+
+    public function rules(): array
+    {
+        return [
+            'type' => ['required', 'string', 'in:pdf,xlsx,csv'],
+
+        ];
+    }
+
     /**
      * @throws \Throwable
      */
     public function asController(ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
-
-        return $this->handle($request->all());
+        $this->initialisationFromGroup(group(), $request);
+        return $this->handle($this->validatedData);
     }
 }

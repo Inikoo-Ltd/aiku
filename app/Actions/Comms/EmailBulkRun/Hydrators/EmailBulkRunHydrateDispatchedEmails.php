@@ -21,16 +21,24 @@ class EmailBulkRunHydrateDispatchedEmails implements ShouldBeUnique
     use WithEnumStats;
 
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'analytics';
 
-    public function getJobUniqueId(EmailBulkRun $emailBulkRun): string
+    public function getJobUniqueId(?int $emailBulkRunId): string
     {
-        return $emailBulkRun->id;
+        return $emailBulkRunId ?? 'empty';
     }
 
 
-    public function handle(EmailBulkRun $emailBulkRun): void
+    public function handle(?int $emailBulkRunId): void
     {
+        if (!$emailBulkRunId) {
+            return;
+        }
+        $emailBulkRun = EmailBulkRun::find($emailBulkRunId);
+        if (!$emailBulkRun) {
+            return;
+        }
+
         $stats = [
             'number_dispatched_emails' => $emailBulkRun->dispatchedEmails()->count()
         ];

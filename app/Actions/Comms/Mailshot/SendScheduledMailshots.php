@@ -8,31 +8,31 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Comms\Traits\WithMailshotStateOps;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\AsCommand;
 
-class SendMailshotScheduled
+class SendScheduledMailshots
 {
-    use AsCommand;
     use AsAction;
-    use WithMailshotStateOps;
 
     public string $commandSignature = 'mailshot:send-scheduled';
 
     public function handle(): void
     {
-        $mailshots = Mailshot::query()
-            ->where('state', MailshotStateEnum::SCHEDULED)
-            ->whereNotNull('ready_at')
+        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
+
+        $mailshots = Mailshot::where('state', MailshotStateEnum::SCHEDULED)
+            ->whereIn('shop_id', $aikuShops)
+            ->whereNull('source_id')
             ->get();
 
 
+        /** @var Mailshot $mailshot */
         foreach ($mailshots as $mailshot) {
-            if ($mailshot->ready_at->format('Y-m-d H:i') >= now()->format('Y-m-d H:i')) {
-                ProcessSendMailshot::dispatch($mailshot);
+            if ($mailshot->scheduled_at !== null && $mailshot->scheduled_at->lte(now())) {
+                SendMailShot::dispatch($mailshot);
             }
         }
     }

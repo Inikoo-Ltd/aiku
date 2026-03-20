@@ -99,11 +99,11 @@ class SendEmailDeliveryChannel
         $model->refresh();
 
         if ($model instanceof Mailshot) {
-            MailshotHydrateDispatchedEmails::run($model);
+            MailshotHydrateDispatchedEmails::dispatch($model->id)->delay(now()->addSeconds());
             UpdateMailshotSentState::run($model);
         } elseif ($model instanceof EmailBulkRun) {
             EmailBulkRunHydrateCumulativeDispatchedEmails::run($model, DispatchedEmailStateEnum::SENT);
-            EmailBulkRunHydrateDispatchedEmails::run($model);
+            EmailBulkRunHydrateDispatchedEmails::dispatch($model->id);
             UpdateEmailBulkRunSentState::run($model);
         }
     }

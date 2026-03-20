@@ -18,6 +18,7 @@ class PrepareMailshotRecipients
     use AsAction;
 
     public string $jobQueue = 'default-long';
+    protected int $countRecipients = 0;
 
     public function tags(): array
     {
@@ -42,14 +43,26 @@ class PrepareMailshotRecipients
 
         $queryBuilder->orderBy('customers.id');
 
-        $cloneQuery     = $queryBuilder->clone();
-        $totalCustomers = $cloneQuery->count('customers.id');
 
-        // Process recipients in chunks of 250
-        $queryBuilder->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $totalCustomers) {
-            $customerIds = $customers->pluck('id');
-            ProcessSendMailshot::dispatch($mailshotId, $customerIds, $totalCustomers);
+        $queryBuilder->select('customers.id', 'customers.email')->chunk($chunkSize, function ($customers) use ($mailshotId) {
+            $customerIds    = [];
+            $numValidEmails = 0;
+            foreach ($customers as $customer) {
+                if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
+                    $customerIds[] = $customer->id;
+                    $numValidEmails++;
+                }
+            }
+
+            ProcessSendMailshot::dispatch($mailshotId, $customerIds);
+            $this->countRecipients += $numValidEmails;
         });
+
+        $mailshot->update([
+            'recipients_prepared_at' => now(),
+            'recipients_count'       => $this->countRecipients,
+        ]);
+        UpdateMailshotRecipientsStoredAt::run($mailshot);
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';

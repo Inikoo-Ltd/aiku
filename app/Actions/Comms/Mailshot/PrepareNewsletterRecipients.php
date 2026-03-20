@@ -19,6 +19,7 @@ class PrepareNewsletterRecipients
     use AsAction;
 
     public string $jobQueue = 'default-long';
+    protected int $countRecipients = 0;
 
     public function tags(): array
     {
@@ -39,18 +40,29 @@ class PrepareNewsletterRecipients
             ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
             ->where('customers.shop_id', $mailshot->shop_id)
             ->where('customer_comms.is_subscribed_to_newsletter', true)
-            ->whereNotNull('customers.email')
-            ->whereRaw("customers.email COLLATE \"C\" ~* '^[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,}$'"); // to replace FILTER_VALIDATE_EMAIL in the model level
+            ->whereNotNull('customers.email');
 
 
-        // Clone the query and get last
-        $totalCustomer = $baseQuery->count('customers.id');
+        $baseQuery->select('customers.id', 'customers.email')->orderBy('customers.id')
+            ->chunk($chunkSize, function ($customers) use ($mailshot) {
+                $customerIds    = [];
+                $numValidEmails = 0;
+                foreach ($customers as $customer) {
+                    if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
+                        $customerIds[] = $customer->id;
+                        $numValidEmails++;
+                    }
+                }
 
-        $baseQuery->select('customers.id')->orderBy('customers.id')
-            ->chunk($chunkSize, function ($customers) use ($mailshot, $totalCustomer) {
-                $customerIds = $customers->pluck('id');
-                ProcessSendMailshot::dispatch($mailshot->id, $customerIds, $totalCustomer);
+                ProcessSendMailshot::dispatch($mailshot->id, $customerIds);
+                $this->countRecipients += $numValidEmails;
             });
+
+        $mailshot->update([
+            'recipients_prepared_at' => now(),
+            'recipients_count'       => $this->countRecipients,
+        ]);
+        UpdateMailshotRecipientsStoredAt::run($mailshot);
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';

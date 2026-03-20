@@ -22,6 +22,7 @@ class CreateShipmentInDeliveryNoteInWarehouse extends OrgAction
     public function handle(DeliveryNote $deliveryNote, array $modelData): Shipment
     {
         $shipper = Shipper::find($modelData['shipper_id']);
+
         return StoreShipment::run($deliveryNote, $shipper, $modelData);
     }
 
@@ -29,9 +30,9 @@ class CreateShipmentInDeliveryNoteInWarehouse extends OrgAction
     public function rules(): array
     {
         return [
-            'tracking'       => ['sometimes', 'nullable', 'max:1000', 'string'],
+            'tracking'   => ['sometimes', 'nullable', 'max:1000', 'string'],
             'shipper_id' => ['required', Rule::exists(Shipper::class, 'id')->where('organisation_id', $this->organisation->id)],
-            'cost'  => ['sometimes', 'nullable', 'numeric'],
+            'cost'       => ['sometimes', 'nullable', 'numeric'],
         ];
     }
 

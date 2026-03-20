@@ -15,22 +15,20 @@ class UpdateMailshotRecipientsStoredAt
 {
     use AsAction;
 
-    public function handle(Mailshot $mailshot, $totalCustomer): bool
+    public function handle(Mailshot $mailshot): bool
     {
         $mailshot->refresh();
-        if (!$mailshot->recipients_stored_at) {
+        if (!$mailshot->recipients_stored_at && $mailshot->recipients_count !== null && $mailshot->recipients()->count() === $mailshot->recipients_count) {
+            UpdateMailshot::run(
+                $mailshot,
+                [
+                    'recipients_stored_at' => now()
+                ]
+            );
 
-            // if all recipients are stored
-            if ($mailshot->recipients()->count() === $totalCustomer) {
-                UpdateMailshot::run(
-                    $mailshot,
-                    [
-                        'recipients_stored_at' => now()
-                    ]
-                );
-                return true;
-            }
+            return true;
         }
+
         return false;
     }
 }

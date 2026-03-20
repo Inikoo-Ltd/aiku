@@ -285,7 +285,8 @@ class ShowMailshot extends OrgAction
                 'isHasParentMailshot' => $isHasParentMailshot,
                 'isSecondWave' => $mailshot->is_second_wave,
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
-
+                'mailshotId' => $mailshot->id,
+                'groupId' => $mailshot->group_id,
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(
