@@ -8,6 +8,7 @@ use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
+use App\Services\HumanResources\LeaveTypeResolver;
 use App\Services\EmployeeAnalyticsService;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
@@ -81,11 +82,7 @@ class ShowEmployeeAnalytics extends OrgAction
                     'end_date'   => $endDate->format('Y-m-d'),
                 ],
                 'analytics'      => $analytics,
-                'leaveTypes'     => [
-                    'annual'  => __('Annual Leave'),
-                    'medical' => __('Medical Leave'),
-                    'unpaid'  => __('Unpaid Leave'),
-                ],
+                'leaveTypes'     => LeaveTypeResolver::optionsForOrganisation($organisation->id, false, $organisation->country?->code),
             ]
         );
     }

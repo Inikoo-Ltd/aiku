@@ -30,6 +30,8 @@ use Spatie\MediaLibrary\HasMedia;
  * @property int|null $subject_id
  * @property int|null $time_tracker_id
  * @property int|null $clocking_machine_id
+ * @property int|null $work_schedule_id
+ * @property bool $is_late
  * @property \Illuminate\Support\Carbon $clocked_at
  * @property string|null $generator_type
  * @property int|null $generator_id
@@ -45,6 +47,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property string|null $source_id
  * @property-read \App\Models\HumanResources\ClockingMachine|null $clockingMachine
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\HumanResources\WorkSchedule|null $workSchedule
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
@@ -70,6 +73,7 @@ class Clocking extends Model implements HasMedia
     protected $casts = [
         'clocked_at'      => 'datetime:Y-m-d H:i:s',
         'type'            => ClockingTypeEnum::class,
+        'is_late'         => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
@@ -95,6 +99,11 @@ class Clocking extends Model implements HasMedia
     public function timesheet(): BelongsTo
     {
         return $this->belongsTo(Timesheet::class);
+    }
+
+    public function workSchedule(): BelongsTo
+    {
+        return $this->belongsTo(WorkSchedule::class);
     }
 
 

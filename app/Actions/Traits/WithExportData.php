@@ -10,6 +10,7 @@ namespace App\Actions\Traits;
 
 use App\Enums\Helpers\Export\ExportTypeEnum;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -23,9 +24,7 @@ trait WithExportData
     {
         $result = null;
 
-        $query = $callback->query();
-
-        if ($query->count() >= 20000) {
+        if ($callback instanceof FromQuery && $callback->query()->count() >= 20000) {
             $type = ExportTypeEnum::CSV->value;
         }
 
