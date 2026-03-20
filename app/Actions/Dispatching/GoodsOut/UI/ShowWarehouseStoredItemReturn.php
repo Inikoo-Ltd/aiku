@@ -123,6 +123,27 @@ class ShowWarehouseStoredItemReturn extends OrgAction
             'label' => '('.__("Customer's SKUs").')'
         ];
 
+        $warning = null;
+        if ($palletReturn->pickingSessions && $palletReturn->pickingSessions->isNotEmpty()) {
+            $pickingSessions = $palletReturn->pickingSessions->map(function ($pickingSession) {
+                return [
+                    'reference' => $pickingSession->reference,
+                    'route'     => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.fulfilment.show',
+                        'parameters' => [
+                            'organisation'   => $pickingSession->organisation->slug,
+                            'warehouse'      => $pickingSession->warehouse->slug,
+                            'pickingSession' => $pickingSession->slug,
+                        ],
+                    ],
+                ];
+            })->toArray();
+
+            $warning = [
+                'text'             => __('This stored items is being processed in picking session(s)'),
+                'picking_sessions' => $pickingSessions,
+            ];
+        }
 
         $actions = $this->getActions($palletReturn);
 
@@ -172,6 +193,7 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                     ]
                 ],
 
+                'warning' => $warning,
 
                 'tabs' => [
                     'current'    => $this->tab,
