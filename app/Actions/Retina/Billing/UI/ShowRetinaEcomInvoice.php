@@ -136,19 +136,19 @@ class ShowRetinaEcomInvoice extends RetinaAction
 
                 RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value => $this->tab == RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value
                     ?
-                    fn() => tap(
+                    fn () => tap(
                         ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value)),
                         function ($resource) {
-                            $resource->collection->map(fn(ItemizedInvoiceTransactionsResource $item) => $item->additional([
+                            $resource->collection->map(fn (ItemizedInvoiceTransactionsResource $item) => $item->additional([
                                 'isRetina' => true
                             ]));
                         }
                     )
                     : Inertia::lazy(
-                        fn() => tap(
+                        fn () => tap(
                             ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, RetinaEcomInvoiceTabsEnum::INVOICE_TRANSACTIONS->value)),
                             function ($resource) {
-                                $resource->collection->map(fn(ItemizedInvoiceTransactionsResource $item) => $item->additional([
+                                $resource->collection->map(fn (ItemizedInvoiceTransactionsResource $item) => $item->additional([
                                     'isRetina' => true
                                 ]));
                             }
@@ -156,8 +156,8 @@ class ShowRetinaEcomInvoice extends RetinaAction
                     ),
 
                 RetinaEcomInvoiceTabsEnum::PAYMENTS->value => $this->tab == RetinaEcomInvoiceTabsEnum::PAYMENTS->value ?
-                    fn() => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
-                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
+                    fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))
+                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexRetinaPayments::run($invoice))),
 
 
             ]
