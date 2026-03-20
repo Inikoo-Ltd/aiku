@@ -69,6 +69,9 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
         } else {
             $command?->error("Failed to geocode address for customer: $customer->name ($customer->id)");
         }
+        if ($command) {
+            usleep(1100000);
+        }
     }
 
     public function asCommand(Command $command): void
@@ -112,7 +115,6 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
                     $delayCounter++;
                 } else {
                     $this->handle($customer->id, $command);
-                    usleep(1100000);
                 }
                 $bar->advance();
             }
