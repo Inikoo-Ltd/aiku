@@ -34,7 +34,16 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
         }
 
         $address = $customer->address;
+
+        if ($address->failed_geo_location !== null) {
+            return;
+        }
+
         if ($address->latitude && $address->longitude) {
+            $address->update([
+                'failed_geo_location' => false
+            ]);
+
             return;
         }
 
@@ -61,13 +70,17 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
 
         if ($result) {
             $address->update([
-                'latitude'           => $result['latitude'],
-                'longitude'          => $result['longitude'],
-                'geocoding_metadata' => $result,
+                'latitude'            => $result['latitude'],
+                'longitude'           => $result['longitude'],
+                'geocoding_metadata'  => $result,
+                'failed_geo_location' => false
             ]);
             $command?->info("Hydrated coordinates for customer: $customer->name ($customer->id) Latitude: {$result['latitude']} Longitude: {$result['longitude']} ");
         } else {
             $command?->error("Failed to geocode address for customer: $customer->name ($customer->id)");
+            $address->update([
+                'failed_geo_location' => true
+            ]);
         }
         if ($command) {
             usleep(1100000);
