@@ -8,11 +8,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotesIntervals;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNoteTotalAmounts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
@@ -51,11 +49,6 @@ class StoreDeliveryNoteItem extends OrgAction
 
         /** @var DeliveryNoteItem $deliveryNoteItem */
         $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->create($modelData);
-
-        if ($deliveryNoteItem->transaction_id && $deliveryNoteItem->transaction->asset) {
-            $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-            AssetHydrateDeliveryNotesIntervals::dispatch($deliveryNoteItem->transaction->asset_id, $intervalsExceptHistorical, [])->delay(900);
-        }
 
         $deliveryNote->refresh();
         CalculateDeliveryNoteTotalAmounts::run($deliveryNote);

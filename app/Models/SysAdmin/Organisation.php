@@ -235,7 +235,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
- * @property-read \App\Models\SysAdmin\OrganisationSalesIntervals|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
  * @property-read LaravelCollection<int, Service> $services
@@ -389,11 +388,6 @@ class Organisation extends Model implements HasMedia, Auditable
     public function manufactureStats(): HasOne
     {
         return $this->hasOne(OrganisationManufactureStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationSalesIntervals::class);
     }
 
     public function orderingIntervals(): HasOne

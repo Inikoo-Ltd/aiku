@@ -190,10 +190,14 @@
             </div>
         </td>
         <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
-            @if($deliveryNote?->estimated_weight)
-                <div style="text-align: right">{{__('Weight')}}: <b>{{ $deliveryNote?->estimated_weight }} g</b></div>
+            @if($deliveryNote->getNumberParcels())
+                <div style="text-align: right">{{__('Boxes')}}: <b>{{ $deliveryNote->getNumberParcels() }}</b></div>
+            @endif
+            @if($deliveryNote)
+                <div style="text-align: right">{{__('Weight')}}: <b>{{ $deliveryNote->getBestWeight() }}</b></div>
             @endif
         </td>
+
     </tr>
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">

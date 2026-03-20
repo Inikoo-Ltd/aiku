@@ -60,23 +60,25 @@ class DepartmentHydrateBestFamilySeller implements ShouldBeUnique
             return;
         }
 
-        // Get top selling families directly with a query
-        $topFamilies = ProductCategory::query()
-            ->where('department_id', $department->id)
-            ->where('type', ProductCategoryTypeEnum::FAMILY)
-            ->join('product_category_sales_intervals', 'product_categories.id', '=', 'product_category_sales_intervals.product_category_id')
-            ->whereNotNull('product_category_sales_intervals.sales_all')
-            ->where('product_category_sales_intervals.sales_all', '>', 0)
-            ->orderBy('product_category_sales_intervals.sales_all', 'desc')
-            ->select('product_categories.id')
-            ->limit($topCount)
-            ->get();
+        //Todo: 6implement this using TimeSeries, top sellers (last 3 months)
 
-        // Update top families with their ranking
-        foreach ($topFamilies as $index => $family) {
-            ProductCategory::where('id', $family->id)
-                ->update(['top_seller' => $index + 1]);
-        }
+        // Get top-selling families directly with a query
+        //        $topFamilies = ProductCategory::query()
+        //            ->where('department_id', $department->id)
+        //            ->where('type', ProductCategoryTypeEnum::FAMILY)
+        //            ->join('product_category_sales_intervals', 'product_categories.id', '=', 'product_category_sales_intervals.product_category_id')
+        //            ->whereNotNull('product_category_sales_intervals.sales_all')
+        //            ->where('product_category_sales_intervals.sales_all', '>', 0)
+        //            ->orderBy('product_category_sales_intervals.sales_all', 'desc')
+        //            ->select('product_categories.id')
+        //            ->limit($topCount)
+        //            ->get();
+        //
+        //        // Update top families with their ranking
+        //        foreach ($topFamilies as $index => $family) {
+        //            ProductCategory::where('id', $family->id)
+        //                ->update(['top_seller' => $index + 1]);
+        //        }
     }
 
 }

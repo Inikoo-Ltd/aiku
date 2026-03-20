@@ -34,7 +34,7 @@ class ShowMailshotRecipients extends OrgAction
         $previewMailshot->recipients_recipe = $currentFilters;
 
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($previewMailshot);
-        $estimatedRecipients = $queryBuilder?->count() ?? 0;
+        $estimatedRecipients = $queryBuilder?->count('customers.id') ?? 0;
 
 
         $interestTags = Tag::query()

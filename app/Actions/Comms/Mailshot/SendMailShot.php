@@ -28,14 +28,6 @@ class SendMailShot extends OrgAction
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
 
-        // NOTE: For testing purposes, only available for Ukraine
-        if (!in_array($mailshot->shop_id, [
-            44, // Ukraine
-            // 42,// Bulgaria
-        ])) {
-            throw new \Exception('Action only available for specific shops');
-        }
-
         if ($mailshot->is_second_wave) {
             throw new \Exception('Action not available for second wave mailshot');
         }
@@ -55,9 +47,9 @@ class SendMailShot extends OrgAction
 
         // NOTE: dispatch process based on mailshot type
         if ($mailshot->type === MailshotTypeEnum::NEWSLETTER) {
-            ProcessSendNewsletter::dispatch($mailshot);
+            PrepareNewsletterRecipients::dispatch($mailshot);
         } elseif ($mailshot->type === MailshotTypeEnum::MARKETING) {
-            ProcessSendMailshot::dispatch($mailshot);
+            PrepareMailshotRecipients::dispatch($mailshot);
         }
 
         return $mailshot;

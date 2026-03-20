@@ -9,7 +9,6 @@
 namespace App\Actions\Goods\Stock;
 
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
-use App\Actions\Goods\Stock\Hydrators\StockHydrateSalesIntervals;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
@@ -28,7 +27,6 @@ class HydrateStocks
     public function handle(Stock $stock): void
     {
         StockHydrateGrossWeightFromTradeUnits::run($stock);
-        StockHydrateSalesIntervals::run($stock);
         ModelHydrateSingleTradeUnits::run($stock);
         StockHydrateStateFromOrgStocks::run($stock->id);
     }

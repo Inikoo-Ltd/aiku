@@ -63,7 +63,6 @@ class DeleteInvoice extends OrgAction
                 SendInvoiceDeletedNotification::dispatch($invoice);
                 $this->postDeleteInvoiceHydrators($invoice);
             }
-
         } catch (Throwable) {
             //
         }
@@ -102,15 +101,15 @@ class DeleteInvoice extends OrgAction
 
         $invoiceDate = \Carbon\Carbon::parse($invoice->date);
 
-        RedoShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
-        RedoOrganisationTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+        RedoShopTimeSeries::dispatch(shopId: $invoice->shop_id, from: $invoiceDate->toDateString(), to: $invoiceDate->toDateString())->delay(900);
+        RedoOrganisationTimeSeries::dispatch(organisationId: $invoice->organisation_id, from: $invoiceDate->toDateString(), to: $invoiceDate->toDateString())->delay(900);
 
         if ($invoice->platform_id) {
-            RedoPlatformTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            RedoPlatformTimeSeries::dispatch(platformId: $invoice->platform_id, from: $invoiceDate->toDateString(), to: $invoiceDate->toDateString())->delay(900);
         }
 
         if ($invoice->master_shop_id) {
-            RedoMasterShopTimeSeries::dispatch($invoiceDate->toDateString(), $invoiceDate->toDateString())->delay($this->hydratorsDelay);
+            RedoMasterShopTimeSeries::dispatch(masterShopId: $invoice->master_shop_id, from: $invoiceDate->toDateString(), to: $invoiceDate->toDateString())->delay(900);
         }
 
         $invoiceCategory = $invoice->invoiceCategory;
@@ -131,7 +130,6 @@ class DeleteInvoice extends OrgAction
         if ($invoice->shipping_zone_schema_id) {
             ShippingZoneSchemaHydrateUsageInInvoices::dispatch($invoice->shipping_zone_schema_id)->delay($this->hydratorsDelay);
         }
-
     }
 
     public function rules(): array

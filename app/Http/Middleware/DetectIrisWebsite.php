@@ -48,6 +48,9 @@ class DetectIrisWebsite
     {
         /** @var Website $website */
         $website = Website::where('domain', $domain)->where('status', true)->first();
+        if (!$website) {
+            abort(404, 'Not found');
+        }
         $shop    = $website->shop;
 
         return [

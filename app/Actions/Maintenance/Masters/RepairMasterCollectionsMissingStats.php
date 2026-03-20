@@ -24,10 +24,6 @@ class RepairMasterCollectionsMissingStats
             $masterCollection->stats()->create();
         }
 
-        if (!$masterCollection->salesIntervals) {
-            $masterCollection->salesIntervals()->create();
-        }
-
         if (!$masterCollection->orderingStats) {
             $masterCollection->orderingStats()->create();
         }
