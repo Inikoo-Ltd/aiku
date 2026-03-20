@@ -15,7 +15,7 @@ class UpdateMailshotRecipientsStoredAt
 {
     use AsAction;
 
-    public function handle(Mailshot $mailshot, $totalCustomer)
+    public function handle(Mailshot $mailshot, $totalCustomer): bool
     {
         $mailshot->refresh();
         if (!$mailshot->recipients_stored_at) {
@@ -28,7 +28,9 @@ class UpdateMailshotRecipientsStoredAt
                         'recipients_stored_at' => now()
                     ]
                 );
+                return true;
             }
         }
+        return false;
     }
 }

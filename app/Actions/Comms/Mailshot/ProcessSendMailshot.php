@@ -12,7 +12,7 @@ use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
+use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -66,10 +66,12 @@ class ProcessSendMailshot
             ]
         );
 
-        UpdateMailshotRecipientsStoredAt::run($mailshot, $totalCustomer);
+        $isAllRecipientsStored = UpdateMailshotRecipientsStoredAt::run($mailshot, $totalCustomer);
 
-        // TODO: check another hydrator
-        // MailshotHydrateDispatchedEmails::run($mailshot);
+        if ($isAllRecipientsStored) {
+            // TODO: check another hydrator
+            MailshotHydrateDispatchedEmails::run($mailshot);
+        }
 
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
     }
