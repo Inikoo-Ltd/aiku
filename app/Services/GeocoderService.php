@@ -7,6 +7,7 @@ use Geocoder\Query\ReverseQuery;
 use Geocoder\Provider\Nominatim\Nominatim;
 use Geocoder\StatefulGeocoder;
 use Http\Adapter\Guzzle7\Client as GuzzleAdapter;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Models\Helpers\Country;
@@ -45,10 +46,17 @@ class GeocoderService
     /**
      * Geocode address string to coordinates with Layered Fallback
      */
-    public function geocodeLayered(array $addressData): ?array
+    public function geocodeLayered(array $addressData, ?Command $command = null): ?array
     {
         $layers = $this->buildGeocodingLayers($addressData);
 
+        $command?->info(
+            '📍 Geocoding started'.json_encode([
+                'input'        => $addressData,
+                'total_layers' => count($layers),
+                'layers'       => array_map(fn($l) => $l['name'].': '.$l['query'], $layers),
+            ])
+        );
 
         //        Log::info('📍 Geocoding started', [
         //            'input' => $addressData,
@@ -69,7 +77,7 @@ class GeocoderService
             //            Sentry::captureMessage("🔄 Trying layer ".($index + 1)."/".count($layers).": ".$layer['name'].' - '.$layer['query']);
 
 
-            $result = $this->performLayeredGeocode($layer);
+            $result = $this->performLayeredGeocode($layer, $command);
 
             if ($result) {
                 //                Log::info('✅ Geocoding SUCCESS', [
@@ -214,13 +222,18 @@ class GeocoderService
     }
 
 
-    protected function performLayeredGeocode(array $layer): ?array
+    protected function performLayeredGeocode(array $layer, ?Command $command = null): ?array
     {
         try {
-            $query   = GeocodeQuery::create($layer['query']);
+            $query = GeocodeQuery::create($layer['query']);
+
             $results = $this->geocoder->geocodeQuery($query);
 
+
             if ($results->isEmpty()) {
+                $command?->warn('Geo Result empty for layer: '.$layer['name'].' - '.$layer['query'].' - Query: '.$layer['query']);
+
+
                 //                Log::info('⏭ Layer ga-gal', [
                 //                    'layer' => $layer['name'],
                 //                    'query' => $layer['query'],
@@ -256,6 +269,8 @@ class GeocoderService
                 ] : null,
             ];
         } catch (\Exception $e) {
+            $command?->error('Geocoding exception for layer: '.$e->getMessage().'  '.$layer['name'].' - '.$layer['query'].' - Query: '.$layer['query']);
+
             //            Log::debug('Geocoding exception for layer', [
             //                'layer' => $layer['name'],
             //                'query' => $layer['query'],

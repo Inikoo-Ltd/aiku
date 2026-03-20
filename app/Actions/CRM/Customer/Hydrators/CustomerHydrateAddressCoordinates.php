@@ -66,7 +66,7 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
 
 
         $geocoder = new GeocoderService();
-        $result   = $geocoder->geocodeLayered($addressData);
+        $result   = $geocoder->geocodeLayered($addressData,$command);
 
         if ($result) {
             $address->update([
