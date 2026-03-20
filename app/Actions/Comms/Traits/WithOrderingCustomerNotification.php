@@ -22,16 +22,22 @@ trait WithOrderingCustomerNotification
     {
         $shop     = $order->shop;
         $shopType = $shop->type;
+        $baseUrl  = 'https://'.$shop->website->domain;
+
         if ($shopType == ShopTypeEnum::DROPSHIPPING) {
-            $baseUrl = 'https://ds.test';
-            if (app()->isProduction()) {
-                $baseUrl = 'https://'.$shop->website->domain;
+            if (app()->isLocal()) {
+                $baseUrl = 'https://ds.test';
             }
 
             return $baseUrl.'/app/dropshipping/channels/'.$order->customerSalesChannel->slug.'/orders/'.$order->slug;
+        } elseif ($shopType == ShopTypeEnum::B2B) {
+            if (app()->isLocal()) {
+                $baseUrl = 'https://ecom.test';
+            }
+
+            return $baseUrl.'/app/orders/'.$order->slug;
         }
 
-        //todo for ecom and others
         return '';
     }
 
@@ -58,24 +64,29 @@ trait WithOrderingCustomerNotification
 
         $shop     = $invoice->shop;
         $shopType = $shop->type;
+        $baseUrl  = 'https://'.$shop->website->domain;
 
         if ($shopType == ShopTypeEnum::FULFILMENT) {
-            $baseUrl = 'https://fulfilment.test';
-            if (app()->isProduction()) {
-                $baseUrl = 'https://'.$shop->website->domain;
+            if (app()->isLocal()) {
+                $baseUrl = 'https://fulfilment.test';
             }
 
             return $baseUrl.'/app/fulfilment/billing/invoices/'.$invoice->slug;
         } elseif ($shopType == ShopTypeEnum::DROPSHIPPING) {
-            $baseUrl = 'https://ds.test';
-            if (app()->isProduction()) {
-                $baseUrl = 'https://'.$shop->website->domain;
+            if (app()->isLocal()) {
+                $baseUrl = 'https://ds.test';
             }
 
             return $baseUrl.'/app/dropshipping/invoices/'.$invoice->slug;
+        } elseif ($shopType == ShopTypeEnum::B2B) {
+            if (app()->isLocal()) {
+                $baseUrl = 'https://ecom.test';
+            }
+
+            return $baseUrl.'/app/invoices/'.$invoice->slug;
         }
 
-        //todo for ecom and others
+
         return '';
     }
 
@@ -87,18 +98,26 @@ trait WithOrderingCustomerNotification
 
         $shop     = $invoice->shop;
         $shopType = $shop->type;
+        $baseUrl = 'https://'.$shop->website->domain;
 
         if ($shopType == ShopTypeEnum::FULFILMENT) {
-            $baseUrl = 'https://fulfilment.test';
-            if (app()->isProduction()) {
-                $baseUrl = 'https://'.$shop->website->domain;
+
+            if (app()->isLocal()) {
+                $baseUrl = 'https://fulfilment.test';
             }
 
             return $baseUrl.'/invoice/'.$invoice->ulid;
         } elseif ($shopType == ShopTypeEnum::DROPSHIPPING) {
-            $baseUrl = 'https://ds.test';
-            if (app()->isProduction()) {
-                $baseUrl = 'https://'.$shop->website->domain;
+
+            if (app()->isLocal()) {
+                $baseUrl = 'https://ds.test';
+            }
+
+            return $baseUrl.'/invoice/'.$invoice->ulid;
+        }elseif ($shopType == ShopTypeEnum::B2B) {
+
+            if (app()->isLocal()) {
+                $baseUrl = 'https://ecom.test';
             }
 
             return $baseUrl.'/invoice/'.$invoice->ulid;
@@ -114,7 +133,7 @@ trait WithOrderingCustomerNotification
         }
 
         /** @var Outbox $outbox */
-        $outbox = $customer->shop->outboxes()->where('code', $outboxCode)->first();
+        $outbox       = $customer->shop->outboxes()->where('code', $outboxCode)->first();
         $liveSnapshot = $outbox->emailOngoingRun?->email?->liveSnapshot;
         if (!$liveSnapshot) {
             return [null, null];
@@ -127,8 +146,7 @@ trait WithOrderingCustomerNotification
         $dispatchedEmail->refresh();
 
 
-
-        return [$outbox->emailOngoingRun->email->liveSnapshot->compiled_layout,$dispatchedEmail];
+        return [$outbox->emailOngoingRun->email->liveSnapshot->compiled_layout, $dispatchedEmail];
     }
 
 
