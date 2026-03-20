@@ -45,11 +45,14 @@ class PrepareMailshotRecipients
         $cloneQuery     = $queryBuilder->clone();
         $totalCustomers = $cloneQuery->count('customers.id');
 
-        // Process recipients in chunks of 250
         $queryBuilder->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $totalCustomers) {
             $customerIds = $customers->pluck('id')->toArray();
             ProcessSendMailshot::dispatch($mailshotId, $customerIds, $totalCustomers);
         });
+
+        $mailshot->update([
+            'recipients_prepared_at' => now()
+        ]);
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';

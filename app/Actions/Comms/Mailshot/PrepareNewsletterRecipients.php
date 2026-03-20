@@ -51,6 +51,11 @@ class PrepareNewsletterRecipients
                 $customerIds = $customers->pluck('id')->toArray();
                 ProcessSendMailshot::dispatch($mailshot->id, $customerIds, $totalCustomer);
             });
+
+        $mailshot->update([
+            'recipients_prepared_at' => now()
+        ]);
+
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';
