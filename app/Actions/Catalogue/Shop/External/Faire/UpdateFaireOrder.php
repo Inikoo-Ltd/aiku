@@ -64,7 +64,7 @@ class UpdateFaireOrder extends OrgAction
                     );
 
                     /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
-                    $deliveryNote = $order->deliveryNotes()->whereNotIn('state',[
+                    $deliveryNote = $order->deliveryNotes()->whereNotIn('state', [
                         DeliveryNoteStateEnum::CANCELLED,
                         DeliveryNoteStateEnum::DISPATCHED,
                         DeliveryNoteStateEnum::FINALISED,
@@ -97,11 +97,11 @@ class UpdateFaireOrder extends OrgAction
 
                         $oldState = $deliveryNote->state;
 
-                        if(in_array($deliveryNote->state,[
+                        if (in_array($deliveryNote->state, [
                             DeliveryNoteStateEnum::PICKED,
                             DeliveryNoteStateEnum::PACKING,
                             DeliveryNoteStateEnum::PACKED,
-                        ])){
+                        ])) {
                             $deliveryNote->update([
                                 'state' => DeliveryNoteStateEnum::HANDLING,
                             ]);

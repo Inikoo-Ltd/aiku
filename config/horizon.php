@@ -42,7 +42,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This is the name of the Redis connection where Horizon will store the
-    | meta information required for it to function. It includes the list
+    | meta-information required for it to function. It includes the list
     | of supervisors, failed jobs, job metrics, and other information.
     |
     */
@@ -234,7 +234,7 @@ return [
         ],
         'urgent'           => [
             'connection'      => 'redis',
-            'queue'           => ['urgent'],
+            'queue'           => ['urgent','ses-first-class'],
             'balance'         => 'auto',
             'maxProcesses'    => 20,
             'maxTime'         => 0,
@@ -310,7 +310,7 @@ return [
         ],
         'ses'              => [
             'connection'      => 'redis',
-            'queue'           => ['ses'],
+            'queue'           => ['ses-priority','ses-analytics','ses-send', 'ses'],
             'balance'         => 'auto',
             'maxProcesses'    => 2,
             'maxTime'         => 0,

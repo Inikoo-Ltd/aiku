@@ -25,7 +25,7 @@ class HydrateMailshots
 
     public function handle(Mailshot $mailshot): void
     {
-        MailshotHydrateDispatchedEmails::run($mailshot);
+        MailshotHydrateDispatchedEmails::run($mailshot->id);
     }
 
 

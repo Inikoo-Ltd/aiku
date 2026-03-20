@@ -15,7 +15,7 @@ use App\Models\Accounting\Invoice;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 
-class PdfRetinaInvoice extends RetinaAction
+class PdfRetinaFulfilmentInvoice extends RetinaAction
 {
     use WithExportData;
     use WithInvoicesExport;

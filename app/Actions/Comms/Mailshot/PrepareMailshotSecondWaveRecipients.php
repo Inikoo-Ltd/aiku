@@ -26,6 +26,7 @@ class PrepareMailshotSecondWaveRecipients
     use AsAction;
 
     public string $jobQueue = 'ses';
+    protected int $countRecipients = 0;
 
     public function tags(): array
     {
@@ -34,18 +35,17 @@ class PrepareMailshotSecondWaveRecipients
 
     public function handle(Mailshot $mailshot): void
     {
-
-        $chunkSize = 100;
+        $chunkSize      = 50;
         $parentMailshot = $mailshot->parentMailshot;
 
         if (!$parentMailshot) {
             Log::warning('Mailshot does not have parent mailshot, skipping second wave processing', [
                 'mailshot_id' => $mailshot->id,
             ]);
+
             return;
         }
 
-        $outboxId = $parentMailshot->outbox->id;
 
         $baseQuery = DB::table('customers');
         $baseQuery->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
@@ -73,24 +73,37 @@ class PrepareMailshotSecondWaveRecipients
         }
         $baseQuery->groupBy('customers.id');
 
-        $cloneQuery = $baseQuery->clone();
-        $totalCustomers = $cloneQuery->count('customers.id');
 
 
         $mailshotId = $mailshot->id;
-        // NOTE: for debug the SQl query
-        // \Log::info($queryBuilder->toRawSql());
 
-        // Process recipients in chunks of 250
-        $baseQuery->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $outboxId, $totalCustomers) {
-            $customerIds = $customers->pluck('id');
-            ProcessSendMailshot::dispatch($mailshotId, $customerIds, $outboxId, $totalCustomers);
+        $baseQuery->select('customers.id', 'customers.email')->chunk($chunkSize, function ($customers) use ($mailshotId) {
+            $customerIds    = [];
+            $numValidEmails = 0;
+            foreach ($customers as $customer) {
+                if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
+                    $customerIds[] = $customer->id;
+                    $numValidEmails++;
+                }
+            }
+
+            ProcessSendMailshot::dispatch($mailshotId, $customerIds);
+            $this->countRecipients += $numValidEmails;
         });
+
+        $mailshot->update([
+            'recipients_prepared_at' => now(),
+            'recipients_count'       => $this->countRecipients,
+        ]);
+        UpdateMailshotRecipientsStoredAt::run($mailshot);
 
         GroupHydrateMailshots::dispatch($mailshot->group);
         OrganisationHydrateMailshots::dispatch($mailshot->organisation);
         OutboxHydrateMailshots::dispatch($mailshot->outbox);
         ShopHydrateMailshots::dispatch($mailshot->shop);
+
+
+
     }
 
     public string $commandSignature = 'send:mailshot-second-wave {mailshot}';

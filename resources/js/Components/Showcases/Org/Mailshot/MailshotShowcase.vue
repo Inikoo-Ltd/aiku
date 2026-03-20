@@ -47,23 +47,31 @@ const props = defineProps<{
         },
         compiled_layout: any
     }
+    liveStats?: any[]
 }>()
 
 const previewOpen = ref(false)
 const iframeClass = ref('w-full h-full')
 
-const totalValue = (props.data.mailshot.data.stats.map((item) => item.value || 0))
-    .reduce((acc, val) => acc + val, 0);
+const stats = computed(
+    () => props.liveStats && props.liveStats.length
+        ? props.liveStats
+        : props.data.mailshot.data.stats
+)
 
-const dataSet = {
-    labels: props.data.mailshot.data.stats.map((item) => item.label),
+const totalValue = computed(() =>
+    stats.value.map((item: any) => item.value || 0).reduce((acc: number, val: number) => acc + val, 0)
+)
+
+const dataSet = computed(() => ({
+    labels: stats.value.map((item: any) => item.label),
     datasets: [
         {
-            backgroundColor: props.data.mailshot.data.stats.map((item) => item.color),
-            data: props.data.mailshot.data.stats.map((item) => item.value || 0),
+            backgroundColor: stats.value.map((item: any) => item.color),
+            data: stats.value.map((item: any) => item.value || 0),
         },
     ],
-};
+}))
 
 const mailshotState = computed(() => props.data.mailshot.data.state)
 
@@ -85,7 +93,7 @@ const isLoadingVisit = ref(false)
             <!-- Horizontal compact stats -->
             <div v-if="!isReady" class="rounded-md bg-white border border-gray-200 overflow-hidden">
                 <div class="grid grid-cols-5 divide-x divide-y divide-gray-200">
-                    <div v-for="item in data.mailshot.data.stats" :key="item.label"
+                    <div v-for="item in stats" :key="item.label"
                         class="px-3 py-4 flex flex-col items-center justify-center hover:bg-gray-50 transition">
                         <div class="flex items-center justify-center gap-2 text-gray-700">
                             <FontAwesomeIcon :icon="item.icon" class="text-base" />

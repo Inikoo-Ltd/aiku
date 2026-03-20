@@ -90,7 +90,7 @@ class DeleteCustomer
         }
 
         //foreach ($customer->customerSalesChannels as $customerSalesChannel) {
-            // Todo delete customer sales channels
+        // Todo delete customer sales channels
         //}
         // Todo delete portfolios
 

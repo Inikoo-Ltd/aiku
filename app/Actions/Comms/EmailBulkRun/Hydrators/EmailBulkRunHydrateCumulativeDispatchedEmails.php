@@ -28,7 +28,7 @@ class EmailBulkRunHydrateCumulativeDispatchedEmails implements ShouldBeUnique
     public function handle(EmailBulkRun $emailBulkRun, DispatchedEmailStateEnum $state): void
     {
         if ($state == DispatchedEmailStateEnum::READY) {
-            EmailBulkRunHydrateDispatchedEmails::run($emailBulkRun);
+            EmailBulkRunHydrateDispatchedEmails::run($emailBulkRun->id);
 
             return;
         }

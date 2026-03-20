@@ -28,7 +28,7 @@ class ProcessSesNotification
     use AsAction;
     use WithActionUpdate;
 
-    public string $jobQueue = 'low-priority';
+    public string $jobQueue = 'ses-analytics';
 
     public function handle(SesNotification $sesNotification): ?array
     {
