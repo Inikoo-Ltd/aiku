@@ -263,7 +263,6 @@ onMounted(() => {
     ;(window as any).Echo
         .private(`grp.${props.groupId}.mailshots.${props.mailshotId}`)
         .listen(".mailshot.stats.updated", (e: any) => {
-            console.log('stats', e);
             const mailshotId = e.mailshot_id ?? e.data?.mailshot_id
             if (mailshotId && mailshotId !== props.mailshotId) {
                 return
