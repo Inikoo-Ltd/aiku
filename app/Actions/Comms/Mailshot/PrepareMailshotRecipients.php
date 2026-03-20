@@ -36,9 +36,11 @@ class PrepareMailshotRecipients
 
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot);
 
-        $outboxId = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->value('id');
+        $outboxId = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->value('id');
 
         $mailshotId = $mailshot->id;
+
+        $queryBuilder->orderBy('customers.id');
 
         $cloneQuery = $queryBuilder->clone();
         $totalCustomers = $cloneQuery->count('customers.id');

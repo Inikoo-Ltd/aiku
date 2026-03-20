@@ -105,7 +105,7 @@ class GetMailshotRecipientsQueryBuilder
         (new FilterByLocation())->apply($query, $filters);
 
         // NOTE: for debug log the SQL query
-        \Log::info($query->toRawSql());
+        // \Log::info($query->toRawSql());
 
         return $query;
     }
