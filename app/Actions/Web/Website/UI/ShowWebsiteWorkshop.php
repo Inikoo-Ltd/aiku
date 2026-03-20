@@ -73,6 +73,7 @@ class ShowWebsiteWorkshop extends OrgAction
             unset($navigation[WebsiteWorkshopTabsEnum::PRODUCTS->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
+            unset($navigation[WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value]);
         }
 
         $tabs = [
@@ -96,7 +97,12 @@ class ShowWebsiteWorkshop extends OrgAction
             : Inertia::lazy(
                 fn () => GetWebsiteWorkshopSubDepartment::run($website)
             );
-
+        $tabs[WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value] = $this->tab == WebsiteWorkshopTabsEnum::FAMILIES_OVERVIEW->value
+            ?
+            fn () => GetWebsiteWorkshopDepartment::run($website, 'families_overview')
+            : Inertia::lazy(
+                fn () => GetWebsiteWorkshopDepartment::run($website, 'families_overview')
+            );
         $tabs[WebsiteWorkshopTabsEnum::PRODUCTS->value] = $this->tab == WebsiteWorkshopTabsEnum::PRODUCTS->value
             ?
             fn () => GetWebsiteWorkshopFamily::run($website)
@@ -218,6 +224,13 @@ class ShowWebsiteWorkshop extends OrgAction
                         ]
                     ],
                     'families' =>  [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.website.publish.family',
+                        'parameters' => [
+                            'website' => $website->id
+                        ]
+                    ],
+                    'families_overview' =>  [
                         'method'     => 'post',
                         'name'       => 'grp.models.website.publish.family',
                         'parameters' => [

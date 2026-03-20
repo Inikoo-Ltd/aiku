@@ -48,6 +48,7 @@ use Illuminate\Support\Arr;
  * @property mixed $invoices
  * @property mixed $invoices_ly
  * @property mixed $current_interval
+ * @property mixed $health_rank
  */
 class CollectionsResource extends JsonResource
 {
@@ -126,6 +127,7 @@ class CollectionsResource extends JsonResource
             'invoices_ly'             => $this->invoices_ly ?? 0,
             'invoices_delta'          => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
             'current_interval'        => $this->current_interval ?? 'ytd',
+            'health_rank'             => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

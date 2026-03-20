@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
@@ -81,7 +82,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKED);
-
+        DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
         return $deliveryNote;
     }
 

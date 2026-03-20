@@ -19,8 +19,11 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Mailshot;
+use App\Models\CRM\Prospect;
+use Illuminate\Support\Facades\Crypt;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
+use Illuminate\Support\Facades\DB;
 
 class UnsubscribeMailshot
 {
@@ -28,22 +31,23 @@ class UnsubscribeMailshot
 
     public function handle(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
     {
-        if ($dispatchedEmail->is_test) {
-            return $dispatchedEmail;
-        }
+        //  TODO: update later for prospect
+        /** @var Customer|Prospect $recipient */
+        $customerDispatchedEmail =  DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
 
-        $recipient = $dispatchedEmail->recipient;
-        $parent = $dispatchedEmail->parent;
+        $recipient = Customer::find($customerDispatchedEmail->customer_id);
 
-        if (class_basename($recipient) == 'Prospect') {
+        if ($recipient instanceof Prospect) {
             UpdateProspectEmailUnsubscribed::run($recipient, now());
         }
 
-        if (class_basename($recipient) == class_basename(Customer::class)) {
+        if ($recipient instanceof Customer) {
 
-            if (class_basename($parent) == class_basename(Mailshot::class)) {
+            $hasMasilhot = DB::table('mailshot_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
 
-                $modelData = match ($parent->type) {
+            if ($hasMasilhot) {
+                $mailshot = Mailshot::find($hasMasilhot->mailshot_id);
+                $modelData = match ($mailshot->type) {
                     MailshotTypeEnum::NEWSLETTER => [
                         'is_subscribed_to_newsletter' => false,
                     ],
@@ -57,9 +61,12 @@ class UnsubscribeMailshot
                 UpdateCustomerComms::run($customerComms, $modelData, false);
             }
 
-            if (class_basename($parent) == class_basename(EmailBulkRun::class)) {
 
-                $modelData = match ($parent->outbox->code) {
+            $hasEmailBulkRun = DB::table('email_bulk_run_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+
+            if ($hasEmailBulkRun) {
+                $emailBulkRun = EmailBulkRun::find($hasEmailBulkRun->email_bulk_run_id);
+                $modelData = match ($emailBulkRun->outbox->code) {
                     OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => [
                         'is_subscribed_to_price_change_notification' => false,
                     ],
@@ -77,17 +84,17 @@ class UnsubscribeMailshot
         UpdateDispatchedEmail::run(
             $dispatchedEmail,
             [
-                'state'           => DispatchedEmailStateEnum::UNSUBSCRIBED,
+                'state'                => DispatchedEmailStateEnum::UNSUBSCRIBED,
                 'provoked_unsubscribe' => true
 
             ]
         );
 
         $eventData = [
-            'type' => EmailTrackingEventTypeEnum::UNSUBSCRIBED,
-            'group_id' => $dispatchedEmail->group_id,
-            'organisation_id' => $dispatchedEmail->organisation_id,
-            'data' => [
+            'type'            => EmailTrackingEventTypeEnum::UNSUBSCRIBED,
+            'group_id'        => $dispatchedEmail->outbox->group_id,
+            'organisation_id' => $dispatchedEmail->outbox->organisation_id,
+            'data'            => [
                 'ipAddress' => $request->ip(),
                 'userAgent' => $request->userAgent()
             ]
@@ -101,18 +108,27 @@ class UnsubscribeMailshot
         return $dispatchedEmail;
     }
 
-    public function asController(DispatchedEmail $dispatchedEmail, ActionRequest $request): DispatchedEmail
+    public function asController(string $encryptedDispatchedEmailID, ActionRequest $request): DispatchedEmail
     {
+        $dispatchedEmailID = Crypt::decryptString($encryptedDispatchedEmailID);
+        $dispatchedEmail   = DispatchedEmail::findOrFail($dispatchedEmailID);
+
         return $this->handle($dispatchedEmail, $request);
     }
 
     public function jsonResponse(DispatchedEmail $dispatchedEmail): array
     {
+        $customerDispatchedEmail =  DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
+        $recipientName = '';
+        if ($customerDispatchedEmail) {
+            $customer = Customer::find($customerDispatchedEmail->customer_id);
+            $recipientName = $customer->contact_name;
+        }
         return [
             'api_response_status' => 200,
-            'api_response_data' => [
+            'api_response_data'   => [
                 'recipient_email' => $dispatchedEmail->emailAddress?->email,
-                'recipient_name' => $dispatchedEmail->getName(),
+                'recipient_name'  => $recipientName,
             ]
         ];
     }

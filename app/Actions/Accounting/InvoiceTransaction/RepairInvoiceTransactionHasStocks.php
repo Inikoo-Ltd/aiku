@@ -8,54 +8,18 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
-use App\Models\Accounting\InvoiceTransaction;
-use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairInvoiceTransactionHasStocks
 {
     use AsAction;
+    use RepairInvoiceTransactionBridges;
 
     public string $commandSignature = 'accounting:repair-invoice-transaction-has-stocks';
     public string $commandDescription = 'Populate invoice_transaction_has_stocks from existing invoice_transactions';
 
-    public function handle(Command $command): void
+    protected function getJobClass(): string
     {
-        $query = InvoiceTransaction::where('model_type', 'Product')
-            ->whereNotNull('model_id')
-            ->whereNull('deleted_at');
-
-        $total = $query->count();
-
-        if ($total === 0) {
-            $command->info('No invoice transactions to repair.');
-
-            return;
-        }
-
-        $command->line("Found {$total} invoice transactions to process.");
-
-        $bar = $command->getOutput()->createProgressBar($total);
-        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
-        $bar->start();
-
-        $dispatched = 0;
-
-        $query->chunkById(500, function ($invoiceTransactions) use ($bar, &$dispatched) {
-            foreach ($invoiceTransactions as $invoiceTransaction) {
-                SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id);
-                $dispatched++;
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $command->newLine();
-        $command->info("Repair completed. Dispatched: {$dispatched} jobs.");
-    }
-
-    public function asCommand(Command $command): void
-    {
-        $this->handle($command);
+        return SyncInvoiceTransactionStockBridges::class;
     }
 }

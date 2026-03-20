@@ -40,6 +40,10 @@ class CreditTransactionsResource extends JsonResource
             'order_slug'        => $this->order_slug,
             'order_reference'   => $this->order_reference,
             'notes'             => $this->notes,
+            'customer_slug'     => $this->customer_slug,
+            'customer_ref'      => $this->customer_ref,
+            'shop_slug'         => $this->shop_slug,
+            'org_slug'          => $this->org_slug,
         ];
     }
 }

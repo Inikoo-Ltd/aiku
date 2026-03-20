@@ -15,11 +15,11 @@ class DimensionsFormatter
 {
     use AsObject;
 
-    public function dimensions(string $dimensionsData)
+    public function dimensions(string $dimensionsData): string
     {
         $data = json_decode($dimensionsData, true);
         if ($data) {
-            return match ($data['type']) {
+            return match (Arr::get($data, 'type')) {
                 'rectangular' => number(
                     convertUnits(
                         $data['l'] ?? 0,
@@ -82,6 +82,8 @@ class DimensionsFormatter
                 default => '',
             };
         }
+
+        return '';
     }
 
 }

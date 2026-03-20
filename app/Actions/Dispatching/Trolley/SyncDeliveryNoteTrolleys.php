@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Trolley;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -48,7 +49,7 @@ class SyncDeliveryNoteTrolleys extends OrgAction
             ]);
         }
 
-
+        DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
         return $deliveryNote;
     }
 

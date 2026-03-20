@@ -9,8 +9,6 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
@@ -48,14 +46,10 @@ class CategoriseInvoice extends OrgAction
         if ($invoice->wasChanged('invoice_category_id')) {
             if ($oldInvoiceCategory) {
                 InvoiceCategoryHydrateInvoices::dispatch($oldInvoiceCategory)->delay($this->hydratorsDelay);
-                InvoiceCategoryHydrateSalesIntervals::dispatch($oldInvoiceCategory)->delay($this->hydratorsDelay);
-                InvoiceCategoryHydrateOrderingIntervals::dispatch($oldInvoiceCategory)->delay($this->hydratorsDelay);
             }
 
             if ($invoice->invoiceCategory) {
                 InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-                InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-                InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             }
         }
         $invoice->refresh();

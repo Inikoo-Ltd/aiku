@@ -50,7 +50,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_sellable_in_organisation
  * @property bool $is_raw_material_in_organisation
  * @property OrgStockStateEnum $state
- * @property HealthRankEnum|null $health_rank
  * @property OrgStockQuantityStatusEnum|null $quantity_status
  * @property numeric|null $quantity_in_locations stock quantity in units
  * @property string $value_in_locations
@@ -76,6 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $source_quantity_to_be_picked
  * @property bool $is_on_demand
  * @property bool $has_been_in_warehouse
+ * @property HealthRankEnum|null $health_rank
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
@@ -87,7 +87,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
- * @property-read \App\Models\Inventory\OrgStockSalesInterval|null $salesIntervals
  * @property-read \App\Models\Inventory\OrgStockStats|null $stats
  * @property-read Stock|null $stock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockTimeSeries> $timeSeries
@@ -189,11 +188,6 @@ class OrgStock extends Model implements Auditable
         return $this->hasOne(OrgStockIntervals::class);
     }
 
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(OrgStockSalesInterval::class);
-    }
-
     public function orgSupplierProducts(): BelongsToMany
     {
         return $this->belongsToMany(OrgSupplierProduct::class, 'org_stock_has_org_supplier_products')
@@ -208,18 +202,6 @@ class OrgStock extends Model implements Auditable
     public function tradeUnits(): MorphToMany
     {
         return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
-        //        return $this->morphToMany(
-        //            TradeUnit::class,
-        //            'model',
-        //            'model_has_trade_units',
-        //            'model_id',
-        //            null,
-        //            null,
-        //            null,
-        //            'trade_units',
-        //        )
-        //            ->withPivot(['quantity', 'notes'])
-        //            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany

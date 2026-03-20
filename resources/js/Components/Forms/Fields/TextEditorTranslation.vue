@@ -155,6 +155,11 @@ const generateTranslateAI = async () => {
           <!-- Content -->
           <div class="text-sm text-gray-700 whitespace-pre-wrap leading-6 flex-1 bg-gray-50 p-4 rounded-md border"
             v-html="fieldData.main" />
+          <div class="h-6 w-6 flex items-center justify-center
+           rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
+            <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
+              class="h-3.5 w-3.5" />
+          </div>
         </div>
 
         <div class="relative p-3 rounded-md border bg-white">

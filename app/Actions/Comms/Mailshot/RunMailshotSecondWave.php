@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
 class RunMailshotSecondWave
 {
     use AsAction;
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'ses';
     public string $commandSignature = 'run-mailshot-second-wave';
 
     public function handle(): void
@@ -53,7 +53,8 @@ class RunMailshotSecondWave
         // NOTE: for debug the SQL query
         // \Log::info($secondWaveQuery->toRawSql());
         foreach ($secondWaveQuery->cursor() as $secondWave) {
-            ProcessSendMailshotSecondWave::dispatch($secondWave);
+            PrepareMailshotSecondWaveRecipients::dispatch($secondWave);
+
             $secondWave->update([
                 'state' => MailshotStateEnum::SENDING,
                 'start_sending_at' => Carbon::now()->utc()

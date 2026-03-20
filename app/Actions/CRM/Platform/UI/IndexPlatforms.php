@@ -70,7 +70,7 @@ class IndexPlatforms extends OrgAction
             ],
             frequency: TimeSeriesFrequencyEnum::DAILY->value,
             includeLY: false,
-            timeSeriesFilters: $parent instanceof Shop ? ['shop_id' => $parent->id] : []
+            recordsFilters: $parent instanceof Shop ? ['shop_id' => $parent->id] : []
         );
 
         $selects[] = $timeSeriesData['selectRaw']['channels'];

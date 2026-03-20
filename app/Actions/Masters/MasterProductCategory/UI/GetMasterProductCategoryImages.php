@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Traits\HasBucketDescriptionImages;
 use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Helpers\ImagesResource;
 use App\Models\Masters\MasterProductCategory;
@@ -19,12 +20,14 @@ class GetMasterProductCategoryImages
 {
     use AsObject;
     use HasBucketImages;
+    use HasBucketDescriptionImages;
 
     public function handle(MasterProductCategory $masterProductCategory): array
     {
         return [
             'id' => $masterProductCategory->id,
-            'images_category_box' => $this->getSingleImageData($masterProductCategory),
+            // 'images_category_box' => $this->getSingleImageData($masterProductCategory), // Old One
+            'images_category_box' => array_merge($this->getSingleImageData($masterProductCategory), $this->getDescriptionImages($masterProductCategory)),
             'images_update_route' => [
                 'method'     => 'patch',
                 'name'       => 'grp.models.master_product_category.update_images',

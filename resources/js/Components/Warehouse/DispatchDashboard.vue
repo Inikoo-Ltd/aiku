@@ -68,6 +68,7 @@ interface DashboardData {
     grand_total: {
         value: number
         icon?: string[]
+        route_target?: RouteTarget
     }
 }
 
@@ -240,10 +241,17 @@ const isWeakValue = (value: number | null | undefined) => {
                     {{ data.row_totals[row.key]?.value ?? '-' }}
                 </component>
 
-                <div v-if="data?.dimension"
-                    class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
-                    {{ data.grand_total?.value ?? '-' }}
-                </div>
+                <component
+    v-if="data?.dimension"
+    :is="getSafeRoute(data.grand_total?.route_target) ? Link : 'div'"
+    :href="getSafeRoute(data.grand_total?.route_target) ?? undefined"
+    :class="[
+        'h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200',
+        getSafeRoute(data.grand_total?.route_target) ? 'hover:underline cursor-pointer' : ''
+    ]"
+>
+    {{ data.grand_total?.value ?? '-' }}
+</component>
             </div>
 
         </div>

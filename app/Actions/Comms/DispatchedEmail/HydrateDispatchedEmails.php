@@ -18,7 +18,7 @@ class HydrateDispatchedEmails
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'hydrate:dispatched_emails {organisations?*} {--s|slugs=}';
+    public string $commandSignature = 'hydrate:dispatched_emails {organisations?*} {--i|ids=} {--s|slugs=}';
 
     public function __construct()
     {

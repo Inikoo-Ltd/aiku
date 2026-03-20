@@ -9,7 +9,6 @@
 namespace App\Transfers\Aurora;
 
 use App\Actions\Comms\Mailshot\StoreMailshot;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunTypeEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
@@ -17,6 +16,7 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Prospect;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraDispatchedEmail extends FetchAurora
@@ -99,9 +99,19 @@ class FetchAuroraDispatchedEmail extends FetchAurora
         $this->parsedData['parent']    = $parent;
 
 
+        $providerId = $this->auroraModelData->{'Email Tracking SES Id'};
+
+        if ($this->parseDatetime($this->auroraModelData->{'Email Tracking Sent Date'})) {
+            $date = Carbon::parse($this->parseDatetime($this->auroraModelData->{'Email Tracking Sent Date'}));
+
+            if ($date->lt(now()->subDays(60))) {
+                $providerId = null;
+            }
+        }
+
+
         $this->parsedData['dispatchedEmail'] = [
-            'provider'             => DispatchedEmailProviderEnum::SES,
-            'provider_dispatch_id' => $this->auroraModelData->{'Email Tracking SES Id'},
+            'provider_dispatch_id' => $providerId,
             'email_address'        => $this->auroraModelData->{'Email Tracking Email'},
             'state'                => $state,
             'fetched_at'           => now(),
@@ -131,16 +141,15 @@ class FetchAuroraDispatchedEmail extends FetchAurora
 
 
         if (!$mailshot) {
-
-            $sourceAltId = null;
-            $sourceAlt2Id = null;
-            $subject = '?';
+            $sourceAltId              = null;
+            $sourceAlt2Id             = null;
+            $subject                  = '?';
             $publishedEmailAuroraData = DB::connection('aurora')
                 ->table('Published Email Template Dimension')
                 ->where('Published Email Template Key', $this->auroraModelData->{'Email Tracking Published Email Template Key'})->first();
 
             if ($publishedEmailAuroraData) {
-                $subject = $publishedEmailAuroraData->{'Published Email Template Subject'};
+                $subject     = $publishedEmailAuroraData->{'Published Email Template Subject'};
                 $sourceAltId = $this->organisation->id.':'.$publishedEmailAuroraData->{'Published Email Template Key'};
             }
 
@@ -149,23 +158,22 @@ class FetchAuroraDispatchedEmail extends FetchAurora
                     ->table('Email Template Dimension')
                     ->where('Email Template Key', $this->auroraModelData->{'Email Tracking Email Template Key'})->first();
                 if ($emailAuroraData) {
-                    $subject = $emailAuroraData->{'Email Template Subject'};
+                    $subject      = $emailAuroraData->{'Email Template Subject'};
                     $sourceAlt2Id = $this->organisation->id.':'.$emailAuroraData->{'Email Template Key'};
                 } else {
                     return null;
                 }
-
             }
 
 
             $outbox = $recipient->shop->outboxes()->where('code', OutboxCodeEnum::INVITE)->first();
 
             $mailshotData = [
-                'subject'           => $subject,
-                'type'              => MailshotTypeEnum::INVITE,
-                'state'             => MailshotStateEnum::SENT,
-                'source_alt_id'     => $sourceAltId,
-                'source_alt2_id'     => $sourceAlt2Id,
+                'subject'        => $subject,
+                'type'           => MailshotTypeEnum::INVITE,
+                'state'          => MailshotStateEnum::SENT,
+                'source_alt_id'  => $sourceAltId,
+                'source_alt2_id' => $sourceAlt2Id,
 
                 'created_at'        => $this->parseDatetime($this->auroraModelData->{'Email Tracking Created Date'}),
                 'sent_at'           => $this->parseDatetime($this->auroraModelData->{'Email Tracking Sent Date'}),

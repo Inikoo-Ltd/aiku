@@ -179,16 +179,11 @@ class HydrateModels extends HydrateModel
     {
         $command->info('Catalogue section 📚');
         $command->call('hydrate:shops_sales');
-        $command->call('hydrate:departments_sales');
-        $command->call('hydrate:sub_departments_sales');
-        $command->call('hydrate:families_sales');
-        $command->call('hydrate:assets_sales');
     }
 
     protected function hydrateBillables(Command $command): void
     {
         $command->info('Billables section 💸');
-        $command->call('hydrate:charges');
         $command->call('hydrate:shipping_zone_schemas');
         $command->call('hydrate:shipping_zones');
     }

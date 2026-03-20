@@ -75,12 +75,15 @@ class CalculateOrderDiscounts
 
         foreach ($this->transactions as $transaction) {
             if (property_exists($transaction, 'with_offer')) {
+                $discountsRatio = 1 - $transaction->discounted_percentage ?? 0;
+
                 DB::table('transactions')->where('id', $transaction->id)
                     ->update(
                         [
-                            'gross_amount' => $transaction->gross_amount,
-                            'net_amount'   => $transaction->net_amount,
-                            'offers_data'  => [
+                            'gross_amount'            => $transaction->gross_amount,
+                            'net_amount'              => $transaction->net_amount,
+                            'current_discount_factor' => $discountsRatio,
+                            'offers_data'             => [
                                 'v' => 1,
                                 'o' => [
                                     'oc'  => $transaction->offer_campaign_id,

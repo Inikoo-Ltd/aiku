@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Dispatching;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -40,6 +41,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $public_notes
  * @property mixed $shipping_notes
  * @property mixed $shipping_data
+ * @property mixed $in_warehouse_at
+ * @property mixed $data
  *
  */
 class DeliveryNotesResource extends JsonResource
@@ -55,38 +58,41 @@ class DeliveryNotesResource extends JsonResource
         } else {
             $weight = round($this->estimated_weight / 1000).' Kg';
         }
-
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'reference'              => $this->reference,
-            'date'                   => $this->date,
-            'state'                  => $this->state,
-            'state_icon'             => $this->state->stateIcon()[$this->state->value],
-            'type'                   => $this->type,
-            'weight'                 => $this->weight / 1000,
-            'estimated_weight'       => $this->estimated_weight / 1000,
-            'effective_weight'       => $weight,
-            'created_at'             => $this->created_at,
-            'updated_at'             => $this->updated_at,
-            'shop_slug'              => $this->shop_slug,
-            'customer_slug'          => $this->customer_slug,
-            'customer_name'          => $this->customer_name,
-            'number_items'           => $this->number_items,
-            'organisation_name'      => $this->organisation_name,
-            'organisation_slug'      => $this->organisation_slug,
-            'shop_name'              => $this->shop_name,
-            'is_premium_dispatch'    => $this->is_premium_dispatch,
-            'has_extra_packing'      => $this->has_extra_packing,
-            'picking_sessions_count' => $this->picking_sessions_count,
-            'picking_session_ids'    => $this->picking_session_ids,
-            'customer_notes'         => $this->customer_notes,
-            'internal_notes'         => $this->internal_notes,
-            'public_notes'           => $this->public_notes,
-            'shipping_notes'         => $this->shipping_notes,
-            'shipping_data'          => $this->shipping_data,
-            'number_of_days_in_warehouse'   => round(\Carbon\Carbon::parse($this->in_warehouse_at)->diffInDays(now())),
-            'employee_pick_route'    => [
+            'id'                          => $this->id,
+            'slug'                        => $this->slug,
+            'reference'                   => $this->reference,
+            'date'                        => $this->date,
+            'state'                       => $this->state,
+            'state_icon'                  => $this->state->stateIcon()[$this->state->value],
+            'type'                        => $this->type,
+            'weight'                      => $this->weight / 1000,
+            'estimated_weight'            => $this->estimated_weight / 1000,
+            'effective_weight'            => $weight,
+            'created_at'                  => $this->created_at,
+            'updated_at'                  => $this->updated_at,
+            'shop_slug'                   => $this->shop_slug,
+            'customer_slug'               => $this->customer_slug,
+            'customer_name'               => $this->customer_name,
+            'number_items'                => $this->number_items,
+            'organisation_name'           => $this->organisation_name,
+            'organisation_slug'           => $this->organisation_slug,
+            'shop_name'                   => $this->shop_name,
+            'is_premium_dispatch'         => $this->is_premium_dispatch,
+            'has_extra_packing'           => $this->has_extra_packing,
+            'picking_sessions_count'      => $this->picking_sessions_count,
+            'picking_session_ids'         => $this->picking_session_ids,
+            'customer_notes'              => $this->customer_notes,
+            'internal_notes'              => $this->internal_notes,
+            'public_notes'                => $this->public_notes,
+            'shipping_notes'              => $this->shipping_notes,
+            'shipping_data'               => $this->shipping_data,
+            'trolleys'                    => Arr::get($this->data, 'trolleys'),
+            'picked_bays'                => Arr::get($this->data, 'picked_bays'),
+            'picker'                      => Arr::get($this->data, 'picker'),
+            'packer'                      => Arr::get($this->data, 'packer'),
+            'number_of_days_in_warehouse' => round(\Carbon\Carbon::parse($this->in_warehouse_at)->diffInDays(now())),
+            'employee_pick_route'         => [
                 'name'       => 'grp.models.delivery_note.employee.pick',
                 'parameters' => [
                     'deliveryNote' => $this->id

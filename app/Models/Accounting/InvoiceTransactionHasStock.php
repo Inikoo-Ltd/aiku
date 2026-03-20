@@ -26,11 +26,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Accounting\InvoiceTransaction $invoiceTransaction
  * @property-read Stock $stock
  * @property-read StockFamily|null $stockFamily
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasStock newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasStock newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceTransactionHasStock query()
- *
  * @mixin \Eloquent
  */
 class InvoiceTransactionHasStock extends Model

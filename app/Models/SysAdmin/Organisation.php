@@ -33,7 +33,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Subscription;
-use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
@@ -170,7 +169,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Customer> $customers
  * @property-read LaravelCollection<int, DeliveryNote> $deliveryNotes
  * @property-read \App\Models\SysAdmin\OrganisationDiscountsStats|null $discountsStats
- * @property-read LaravelCollection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\OrganisationDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, Employee> $employees
  * @property-read LaravelCollection<int, Favourite> $favourites
@@ -238,7 +236,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
- * @property-read \App\Models\SysAdmin\OrganisationSalesIntervals|null $salesIntervals
  * @property-read Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
  * @property-read LaravelCollection<int, Service> $services
@@ -392,11 +389,6 @@ class Organisation extends Model implements HasMedia, Auditable
     public function manufactureStats(): HasOne
     {
         return $this->hasOne(OrganisationManufactureStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(OrganisationSalesIntervals::class);
     }
 
     public function orderingIntervals(): HasOne
@@ -890,11 +882,6 @@ class Organisation extends Model implements HasMedia, Auditable
     public function adjustments(): HasMany
     {
         return $this->hasMany(Adjustment::class);
-    }
-
-    public function dispatchedEmails(): HasMany
-    {
-        return $this->hasMany(DispatchedEmail::class);
     }
 
     public function webUserRequests(): HasMany

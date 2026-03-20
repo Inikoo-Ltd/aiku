@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Trolley;
 
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
@@ -25,6 +26,7 @@ class DetachTrolleyFromDeliveryNote extends OrgAction
         UpdateTrolley::run($trolley, [
             'current_delivery_note_id' => null
         ]);
+        DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
     }
 
     public function asController(DeliveryNote $deliveryNote, Trolley $trolley, ActionRequest $request): void
