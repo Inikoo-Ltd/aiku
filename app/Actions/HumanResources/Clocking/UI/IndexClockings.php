@@ -59,7 +59,7 @@ class IndexClockings extends OrgAction
         }
 
         return $queryBuilder
-            ->defaultSort('clockings.clocked_at')
+            ->defaultSort('-clockings.clocked_at')
             ->select(
                 [
                     'clocked_at',
@@ -107,8 +107,8 @@ class IndexClockings extends OrgAction
                 )
                 ->column(key: 'media_slug', label: __('Photo'), canBeHidden: false)
                 ->column(key: 'clocked_at', label: __('Time'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: true, searchable: true)
-                ->defaultSort('slug');
+                ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: false, searchable: true)
+                ->defaultSort('clocked_at', 'desc');
 
             if ($showActions && class_basename($parent) == 'Timesheet') {
                 $table->column(key: 'actions', label: 'Actions');

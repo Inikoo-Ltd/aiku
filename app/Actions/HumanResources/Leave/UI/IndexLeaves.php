@@ -4,13 +4,13 @@ namespace App\Actions\HumanResources\Leave\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveBalanceResource;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
+use App\Services\HumanResources\LeaveTypeResolver;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -44,7 +44,7 @@ class IndexLeaves extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Leave::class)
             ->where('employee_id', $employee->id)
-            ->with(['media'])
+            ->with(['media', 'leaveType'])
             ->allowedFilters([$globalSearch, $statusFilter, $typeFilter])
             ->allowedSorts(['start_date', 'end_date', 'duration_days', 'created_at'])
             ->defaultSort('-created_at');
@@ -60,7 +60,6 @@ class IndexLeaves extends OrgAction
             [
                 'group_id'     => $employee->group_id,
                 'annual_days'  => 14,
-                'medical_days' => 14,
                 'unpaid_days'  => 0,
             ]
         );
@@ -68,6 +67,7 @@ class IndexLeaves extends OrgAction
         return [
             'leaves'  => $leaves,
             'balance' => $balance,
+            'type_options' => LeaveTypeResolver::optionsForOrganisation($employee->organisation_id),
         ];
     }
 
@@ -84,7 +84,7 @@ class IndexLeaves extends OrgAction
                 'title'    => __('Leave Management'),
                 'leaves'   => LeaveResource::collection($data['leaves']),
                 'balance'  => LeaveBalanceResource::make($data['balance']),
-                'type_options' => LeaveTypeEnum::labels(),
+                'type_options' => $data['type_options'],
                 'status_options' => LeaveStatusEnum::labels(),
             ]
         )->table($this->tableStructure());

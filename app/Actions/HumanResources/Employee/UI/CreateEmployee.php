@@ -91,9 +91,14 @@ class CreateEmployee extends OrgAction
                                     ]
                                 ],
                                 'emergency_contact'         => [
-                                    'type'  => 'textarea',
-                                    'label' => __('emergency contact'),
-                                    'value' => ''
+                                    'type'  => 'emergency_contact',
+                                    'label' => __('Emergency Contact'),
+                                    'value' => [
+                                        'contact' => '',
+                                        'phone_number' => '',
+                                        'address' => '',
+                                        'status'  => '',
+                                    ],
                                 ],
                                 'identity_document_type'         => [
                                     'type'  => 'input',

@@ -3,7 +3,7 @@
 namespace App\Http\Requests\HumanResources\Leave;
 
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,10 +16,26 @@ class ExportLeaveReportRequest extends FormRequest
 
     public function rules(): array
     {
+        $organisationId = null;
+        $organisation = $this->route('organisation');
+        if ($organisation instanceof Organisation) {
+            $organisationId = $organisation->id;
+        } elseif (is_numeric($organisation)) {
+            $organisationId = (int) $organisation;
+        }
+
         return [
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
-            'type' => ['nullable', 'string', Rule::in(LeaveTypeEnum::values())],
+            'type' => [
+                'nullable',
+                'string',
+                Rule::exists('leave_types', 'code')->where(function ($query) use ($organisationId) {
+                    if ($organisationId) {
+                        $query->where('organisation_id', $organisationId);
+                    }
+                }),
+            ],
             'status' => ['nullable', 'string', Rule::in(LeaveStatusEnum::values())],
             'department' => ['nullable', 'string', 'max:255'],
             'team' => ['nullable', 'string', 'max:255'],
