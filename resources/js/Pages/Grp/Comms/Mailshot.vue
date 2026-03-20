@@ -4,7 +4,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { Component } from "vue";
 import EmailPreview from "@/Components/Showcases/Org/Mailshot/EmailPreview.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
@@ -56,6 +56,8 @@ const props = defineProps<{
     isHasParentMailshot: boolean
     numberSecondWaveRecipients?: number
     isSecondWave: boolean
+    mailshotId: number
+    groupId: number
 }>();
 
 const currentTab = ref(props.tabs.current);
@@ -247,6 +249,42 @@ const cancelSchedule = () => {
 const formatNumber = (num: number | null | undefined) => {
     return new Intl.NumberFormat('en-GB').format(num ?? 0)
 }
+
+// Live stats for showcase (updated via broadcast)
+const liveStats = ref<any[]>(
+    (props.showcase as any)?.mailshot?.data?.stats ?? []
+)
+
+onMounted(() => {
+    if (!props.groupId || !props.mailshotId || !(window as any).Echo) {
+        return
+    }
+
+    ;(window as any).Echo
+        .private(`grp.${props.groupId}.mailshots.${props.mailshotId}`)
+        .listen(".mailshot.stats.updated", (e: any) => {
+            console.log('stats', e);
+            const mailshotId = e.mailshot_id ?? e.data?.mailshot_id
+            if (mailshotId && mailshotId !== props.mailshotId) {
+                return
+            }
+
+            const stats = e.stats ?? e.data?.stats
+            if (Array.isArray(stats)) {
+                liveStats.value = stats
+            }
+        })
+})
+
+onUnmounted(() => {
+    if (!props.groupId || !props.mailshotId || !(window as any).Echo) {
+        return
+    }
+
+    ;(window as any).Echo
+        .private(`grp.${props.groupId}.mailshots.${props.mailshotId}`)
+        .stopListening(".mailshot.stats.updated")
+})
 
 const component = computed(() => {
     const components: Component = {
@@ -665,5 +703,10 @@ watch(
         </div>
 
     </div>
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component
+        :is="component"
+        :data="props[currentTab as keyof typeof props]"
+        :tab="currentTab"
+        v-bind="currentTab === 'showcase' ? { liveStats } : {}"
+    />
 </template>
