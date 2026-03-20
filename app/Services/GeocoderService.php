@@ -30,10 +30,8 @@ class GeocoderService
                 $baseUrl = config('services.nominatim.url')
                     ?: 'https://nominatim.openstreetmap.org/';
 
-                $userAgent = config('services.nominatim.user_agent')
-                    ?: (config('app.name', 'aiku').' (noreply@inikoo.com)');
-
-                $provider = new Nominatim(
+                $userAgent = config('services.nominatim.user_agent') ?? 'Geocoder/1.0';
+                $provider  = new Nominatim(
                     $httpClient,
                     $baseUrl,
                     $userAgent
