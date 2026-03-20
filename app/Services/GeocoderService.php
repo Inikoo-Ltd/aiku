@@ -31,7 +31,7 @@ class GeocoderService
                     ?: 'https://nominatim.openstreetmap.org/';
 
                 $userAgent = config('services.nominatim.user_agent')
-                    ?: (config('app.name', 'aiku') . ' (noreply@inikoo.com)');
+                    ?: (config('app.name', 'aiku').' (noreply@inikoo.com)');
 
                 $provider = new Nominatim(
                     $httpClient,
@@ -52,50 +52,51 @@ class GeocoderService
         $layers = $this->buildGeocodingLayers($addressData);
 
 
-        Log::info('📍 Geocoding started', [
-            'input' => $addressData,
-            'total_layers' => count($layers),
-            'layers' => array_map(fn ($l) => $l['name'] . ': ' . $l['query'], $layers),
-        ]);
-        Sentry::captureMessage('📍 Geocoding started: ' . json_encode([
-            'input' => $addressData,
-            'total_layers' => count($layers),
-            'layers' => array_map(fn ($l) => $l['name'] . ': ' . $l['query'], $layers),
-        ]));
+        //        Log::info('📍 Geocoding started', [
+        //            'input' => $addressData,
+        //            'total_layers' => count($layers),
+        //            'layers' => array_map(fn ($l) => $l['name'] . ': ' . $l['query'], $layers),
+        //        ]);
+        //        Sentry::captureMessage('📍 Geocoding started:' . json_encode([
+        //            'input' => $addressData,
+        //            'total_layers' => count($layers),
+        //            'layers' => array_map(fn ($l) => $l['name'] . ': ' . $l['query'], $layers),
+        //        ]));
 
         foreach ($layers as $index => $layer) {
-            Log::info("🔄 Trying layer " . ($index + 1) . "/" . count($layers), [
-                'layer' => $layer['name'],
-                'query' => $layer['query'],
-            ]);
-            Sentry::captureMessage("🔄 Trying layer " . ($index + 1) . "/" . count($layers) . ": " . $layer['name'] . ' - ' . $layer['query']);
+            //            Log::info("🔄 Trying layer ".($index + 1)."/".count($layers), [
+            //                'layer' => $layer['name'],
+            //                'query' => $layer['query'],
+            //            ]);
+            //            Sentry::captureMessage("🔄 Trying layer ".($index + 1)."/".count($layers).": ".$layer['name'].' - '.$layer['query']);
 
-            // $cacheKey = 'geocode:layered:' . md5($layer['query']);
 
             $result = $this->performLayeredGeocode($layer);
 
             if ($result) {
-                Log::info('✅ Geocoding SUCCESS', [
-                    'layer' => $layer['name'],
-                    'query' => $layer['query'],
-                    'confidence' => $result['confidence_score'],
-                    'coordinates' => $result['latitude'] . ', ' . $result['longitude'],
-                ]);
-                Sentry::captureMessage('✅ Geocoding SUCCESS: ' . $layer['name'] . ' - ' . $layer['query'] . ' - Confidence: ' . $result['confidence_score'] . ' - Coordinates: ' . $result['latitude'] . ', ' . $result['longitude']);
+                //                Log::info('✅ Geocoding SUCCESS', [
+                //                    'layer'       => $layer['name'],
+                //                    'query'       => $layer['query'],
+                //                    'confidence'  => $result['confidence_score'],
+                //                    'coordinates' => $result['latitude'].', '.$result['longitude'],
+                //                ]);
+                //                Sentry::captureMessage('✅ Geocoding SUCCESS: '.$layer['name'].' - '.$layer['query'].' - Confidence: '.$result['confidence_score'].' - Coordinates: '.$result['latitude'].', '.$result['longitude']);
+
                 return $result;
             }
 
             usleep(150000);
         }
 
-        Log::warning('⏭ Geocoding FAILED for all layers', [
-            'address_data' => $addressData,
-            'layers_tried' => count($layers),
-        ]);
-        Sentry::captureMessage('⏭ Geocoding FAILED for all layers: ' . json_encode([
-            'address_data' => $addressData,
-            'layers_tried' => count($layers),
-        ]));
+        //        Log::warning('⏭ Geocoding FAILED for all layers', [
+        //            'address_data' => $addressData,
+        //            'layers_tried' => count($layers),
+        //        ]);
+        //        Sentry::captureMessage('⏭ Geocoding FAILED for all layers: '.json_encode([
+        //                'address_data' => $addressData,
+        //                'layers_tried' => count($layers),
+        //            ])
+        //        );
 
         return null;
     }
@@ -125,8 +126,8 @@ class GeocoderService
 
         if (!empty($parts['street']) && !empty($parts['locality']) && !empty($parts['administrative_area']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'full_specific',
-                'query' => $buildQuery([
+                'name'            => 'full_specific',
+                'query'           => $buildQuery([
                     $parts['street'],
                     $parts['locality'],
                     $parts['administrative_area'],
@@ -138,8 +139,8 @@ class GeocoderService
 
         if (!empty($parts['street']) && !empty($parts['locality']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'street_city_country',
-                'query' => $buildQuery([
+                'name'            => 'street_city_country',
+                'query'           => $buildQuery([
                     $parts['street'],
                     $parts['locality'],
                     $parts['country_name'],
@@ -150,8 +151,8 @@ class GeocoderService
 
         if (!empty($parts['dependent_locality']) && !empty($parts['locality']) && !empty($parts['administrative_area']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'district_level',
-                'query' => $buildQuery([
+                'name'            => 'district_level',
+                'query'           => $buildQuery([
                     $parts['dependent_locality'],
                     $parts['locality'],
                     $parts['administrative_area'],
@@ -163,8 +164,8 @@ class GeocoderService
 
         if (!empty($parts['locality']) && !empty($parts['administrative_area']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'city_province_level',
-                'query' => $buildQuery([
+                'name'            => 'city_province_level',
+                'query'           => $buildQuery([
                     $parts['locality'],
                     $parts['administrative_area'],
                     $parts['country_name'],
@@ -175,8 +176,8 @@ class GeocoderService
 
         if (!empty($parts['locality']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'city_only',
-                'query' => $buildQuery([
+                'name'            => 'city_only',
+                'query'           => $buildQuery([
                     $parts['locality'],
                     $parts['country_name'],
                 ]),
@@ -186,8 +187,8 @@ class GeocoderService
 
         if (!empty($parts['postal_code']) && !empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'postal_code_level',
-                'query' => $buildQuery([
+                'name'            => 'postal_code_level',
+                'query'           => $buildQuery([
                     $parts['postal_code'],
                     $parts['country_name'],
                 ]),
@@ -197,8 +198,8 @@ class GeocoderService
 
         if (!empty($parts['country_name'])) {
             $layers[] = [
-                'name' => 'country_level',
-                'query' => $parts['country_name'],
+                'name'            => 'country_level',
+                'query'           => $parts['country_name'],
                 'confidence_base' => 30,
             ];
         }
@@ -209,61 +210,62 @@ class GeocoderService
 
     protected function getCountryName(string $code): ?string
     {
-        return Cache::remember("country_name_{$code}", 86400, function () use ($code) {
+        return Cache::remember("country_name_$code", 86400, function () use ($code) {
             return Country::where('code', $code)->value('name');
         });
     }
 
 
-
     protected function performLayeredGeocode(array $layer): ?array
     {
         try {
-            $query = GeocodeQuery::create($layer['query']);
+            $query   = GeocodeQuery::create($layer['query']);
             $results = $this->geocoder->geocodeQuery($query);
 
             if ($results->isEmpty()) {
-                Log::info('⏭ Layer gagal', [
-                    'layer' => $layer['name'],
-                    'query' => $layer['query'],
-                ]);
-                Sentry::captureMessage('⏭ Layer gagal: ' . $layer['name'] . ' - ' . $layer['query']);
+                //                Log::info('⏭ Layer ga-gal', [
+                //                    'layer' => $layer['name'],
+                //                    'query' => $layer['query'],
+                //                ]);
+                //                Sentry::captureMessage('⏭ Layer ga-gal: '.$layer['name'].' - '.$layer['query']);
+
                 return null;
             }
 
-            $location = $results->first();
-            $coordinates = $location->getCoordinates();
+            $location        = $results->first();
+            $coordinates     = $location->getCoordinates();
             $confidenceScore = $this->calculateConfidenceScore($location, $layer['confidence_base']);
-            $bounds = $location->getBounds();
+            $bounds          = $location->getBounds();
 
             return [
-                'latitude' => $coordinates->getLatitude(),
-                'longitude' => $coordinates->getLongitude(),
-                'formatted_address' => $this->buildFormattedAddress($location),
-                'matched_layer' => $layer['name'],
-                'confidence_score' => $confidenceScore,
-                'street' => $location->getStreetName(),
-                'street_number' => $location->getStreetNumber(),
-                'city' => $location->getLocality() ?? $location->getSubLocality(),
-                'postal_code' => $location->getPostalCode(),
-                'country' => $location->getCountry()?->getName(),
-                'country_code' => $location->getCountry()?->getCode(),
+                'latitude'            => $coordinates->getLatitude(),
+                'longitude'           => $coordinates->getLongitude(),
+                'formatted_address'   => $this->buildFormattedAddress($location),
+                'matched_layer'       => $layer['name'],
+                'confidence_score'    => $confidenceScore,
+                'street'              => $location->getStreetName(),
+                'street_number'       => $location->getStreetNumber(),
+                'city'                => $location->getLocality() ?? $location->getSubLocality(),
+                'postal_code'         => $location->getPostalCode(),
+                'country'             => $location->getCountry()?->getName(),
+                'country_code'        => $location->getCountry()?->getCode(),
                 'administrative_area' => $location->getAdminLevels()->first()?->getName(),
-                'bounds' => $bounds ? [
+                'bounds'              => $bounds ? [
                     'south' => $bounds->getSouth(),
-                    'west' => $bounds->getWest(),
+                    'west'  => $bounds->getWest(),
                     'north' => $bounds->getNorth(),
-                    'east' => $bounds->getEast(),
+                    'east'  => $bounds->getEast(),
                 ] : null,
             ];
         } catch (\Exception $e) {
-            Log::debug('Geocoding exception for layer', [
-                'layer' => $layer['name'],
-                'query' => $layer['query'],
-                'error' => $e->getMessage(),
-            ]);
-            Sentry::captureMessage('Geocoding exception for layer: ' . $layer['name'] . ' - ' . $layer['query']);
-            Sentry::captureException($e);
+            //            Log::debug('Geocoding exception for layer', [
+            //                'layer' => $layer['name'],
+            //                'query' => $layer['query'],
+            //                'error' => $e->getMessage(),
+            //            ]);
+            //            Sentry::captureMessage('Geocoding exception for layer: '.$layer['name'].' - '.$layer['query']);
+            //            Sentry::captureException($e);
+
             return null;
         }
     }
@@ -281,13 +283,13 @@ class GeocoderService
         }
         if ($location->getPostalCode()) {
             $score += 5;
-        } // Poin plus untuk kode pos
+        }
         if ($location->getLocality()) {
             $score += 2;
         }
         if ($location->getSubLocality()) {
             $score += 3;
-        } // Poin plus untuk kecamatan/sub-district
+        }
 
         return max(0, min(100, $score));
     }
@@ -312,26 +314,27 @@ class GeocoderService
     {
         $address = preg_replace('/\s+/', ' ', $address);
         $address = preg_replace('/,+/', ',', $address);
+
         return trim($address, ', ');
     }
 
 
     public function reverseGeocode(float $lat, float $lng): ?array
     {
-        $cacheKey = 'reverse_geocode:' . $lat . ':' . $lng;
+        $cacheKey = 'reverse_geocode:'.$lat.':'.$lng;
 
         return Cache::remember($cacheKey, $this->cacheTime, function () use ($lat, $lng) {
             try {
-                $query = ReverseQuery::fromCoordinates($lat, $lng);
+                $query   = ReverseQuery::fromCoordinates($lat, $lng);
                 $results = $this->geocoder->reverseQuery($query);
 
                 if ($results->isEmpty()) {
                     return null;
                 }
 
-                $location = $results->first();
+                $location    = $results->first();
                 $coordinates = $location->getCoordinates();
-                $bounds = $location->getBounds();
+                $bounds      = $location->getBounds();
 
                 return [
                     'latitude'          => $coordinates->getLatitude(),
@@ -352,7 +355,8 @@ class GeocoderService
                     ] : null,
                 ];
             } catch (\Exception $e) {
-                Sentry::captureException($e);
+                //Sentry::captureException($e);
+
                 return null;
             }
         });
@@ -361,17 +365,15 @@ class GeocoderService
 
     public function geocode(string $address, bool $enableFallback = true): ?array
     {
-
         $queryText = trim($address);
         if (empty($queryText)) {
             return null;
         }
 
-        $cacheKey = 'geocode:simple:' . md5($queryText);
+        $cacheKey = 'geocode:simple:'.md5($queryText);
 
         return Cache::remember($cacheKey, $this->cacheTime, function () use ($queryText) {
             try {
-
                 $query = GeocodeQuery::create($queryText);
 
 
@@ -382,9 +384,9 @@ class GeocoderService
                 }
 
 
-                $location = $results->first();
+                $location    = $results->first();
                 $coordinates = $location->getCoordinates();
-                $bounds = $location->getBounds();
+                $bounds      = $location->getBounds();
 
 
                 return [
@@ -406,12 +408,12 @@ class GeocoderService
                     ] : null,
                 ];
             } catch (\Exception $e) {
-                Log::error('Simple geocoding failed', [
-                    'query' => $queryText,
-                    'error' => $e->getMessage()
-                ]);
-                Sentry::captureMessage('Simple geocoding failed: ' . $queryText);
-                Sentry::captureException($e);
+                //                Log::error('Simple geocoding failed', [
+                //                    'query' => $queryText,
+                //                    'error' => $e->getMessage()
+                //                ]);
+                //                Sentry::captureMessage('Simple geocoding failed: '.$queryText);
+                //                Sentry::captureException($e);
 
                 return null;
             }
@@ -432,6 +434,7 @@ class GeocoderService
                 return trim($matches[0]);
             }
         }
+
         return null;
     }
 }
