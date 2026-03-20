@@ -10,6 +10,8 @@ namespace App\Actions\Comms\Mailshot\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
+use App\Events\BroadcastMailshotStats;
+use App\Http\Resources\Mail\MailshotResource;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Mailshot;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -56,5 +58,17 @@ class MailshotHydrateDispatchedEmails implements ShouldBeUnique
 
         $mailshot->stats()->update($stats);
         MailshotHydrateCumulativeDispatchedEmails::run($mailshot);
+
+        $mailshot->refresh();
+
+        if ($mailshot->group) {
+            $resource = MailshotResource::make($mailshot)->toArray(request());
+
+            BroadcastMailshotStats::dispatch(
+                $mailshot->group,
+                $mailshot,
+                $resource['stats'] ?? []
+            );
+        }
     }
 }
