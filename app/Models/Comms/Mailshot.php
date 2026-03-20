@@ -101,19 +101,19 @@ class Mailshot extends Model implements Auditable
     use HasSlug;
 
     protected $casts = [
-        'recipients_recipe' => 'array',
-        'data'              => 'array',
-        'type'              => MailshotTypeEnum::class,
-        'state'             => MailshotStateEnum::class,
-        'date'              => 'datetime',
+        'recipients_recipe'      => 'array',
+        'data'                   => 'array',
+        'type'                   => MailshotTypeEnum::class,
+        'state'                  => MailshotStateEnum::class,
+        'date'                   => 'datetime',
         'ready_at'               => 'datetime',
         'scheduled_at'           => 'datetime',
         'recipients_prepared_at' => 'datetime',
         'recipients_stored_at'   => 'datetime',
         'start_sending_at'       => 'datetime',
-        'sent_at'           => 'datetime',
-        'cancelled_at'      => 'datetime',
-        'stopped_at'        => 'datetime',
+        'sent_at'                => 'datetime',
+        'cancelled_at'           => 'datetime',
+        'stopped_at'             => 'datetime',
     ];
 
     protected $attributes = [
