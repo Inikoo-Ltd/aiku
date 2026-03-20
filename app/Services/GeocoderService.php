@@ -224,12 +224,8 @@ class GeocoderService
 
     protected function performLayeredGeocode(array $layer, ?Command $command = null): ?array
     {
-        $lock = Cache::lock('geocoding_rate_limit', 1);
-
+        usleep(1500000);
         try {
-            $lock->block(2);
-
-            usleep(50000);
 
             $query = GeocodeQuery::create($layer['query']);
 
@@ -278,8 +274,6 @@ class GeocoderService
             Sentry::captureException($e);
 
             return null;
-        } finally {
-            $lock?->release();
         }
     }
 
