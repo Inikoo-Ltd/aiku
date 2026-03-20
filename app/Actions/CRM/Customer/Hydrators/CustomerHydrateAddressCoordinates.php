@@ -14,7 +14,7 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $commandSignature = 'hydrate:customers-address-coordinates {--shop_code= : Filter by Shop Code} {--a|async : Run asynchronously in background queue}';
+    public string $commandSignature = 'hydrate:customers-address-coordinates {--shop_slug= : Filter by Shop Slug} {--a|async : Run asynchronously in background queue}';
     public string $commandDescription = 'Hydrate latitude and longitude for customer addresses';
 
     public function getJobUniqueId(int|null $customerId): string
@@ -93,17 +93,17 @@ class CustomerHydrateAddressCoordinates implements ShouldBeUnique
 
         $query = Customer::has('address');
 
-        if ($shopCode = $command->option('shop_code')) {
-            $shop = Shop::where('code', $shopCode)->first();
+        if ($shopSlug = $command->option('shop_slug')) {
+            $shop = Shop::where('slug', $shopSlug)->first();
 
             if (!$shop) {
-                $command->error("Shop with code '$shopCode' not found.");
+                $command->error("Shop with slug '$shopSlug' not found.");
 
                 return;
             }
 
             $query->where('shop_id', $shop->id);
-            $command->info("Filtering by Shop: $shop->name ($shopCode)");
+            $command->info("Filtering by Shop: $shop->name ($shopSlug)");
         }
 
         $async = $command->option('async');
