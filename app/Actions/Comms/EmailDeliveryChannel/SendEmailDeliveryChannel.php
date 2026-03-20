@@ -35,7 +35,7 @@ class SendEmailDeliveryChannel
     use AsAction;
     use WithSendBulkEmails;
 
-    public string $jobQueue = 'ses';
+    public string $jobQueue = 'ses-send';
 
     public function handle(EmailDeliveryChannel $emailDeliveryChannel): void
     {

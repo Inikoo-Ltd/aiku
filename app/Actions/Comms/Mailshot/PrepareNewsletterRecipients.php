@@ -27,7 +27,7 @@ class PrepareNewsletterRecipients
 
     public function handle(Mailshot $mailshot): void
     {
-        $chunkSize = 100;
+        $chunkSize = 50;
 
         // NOTE: Ensure no second wave exists when the parent mailshot has the second wave disabled
         if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
@@ -51,8 +51,6 @@ class PrepareNewsletterRecipients
                 $customerIds = $customers->pluck('id');
                 ProcessSendMailshot::dispatch($mailshot->id, $customerIds, $totalCustomer);
             });
-
-
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';

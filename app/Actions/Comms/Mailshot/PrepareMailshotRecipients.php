@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
 use Exception;
 use Illuminate\Console\Command;
@@ -18,16 +17,19 @@ class PrepareMailshotRecipients
 {
     use AsAction;
 
-    public string $jobQueue = 'ses';
+    public string $jobQueue = 'default-long';
 
     public function tags(): array
     {
         return ['send_mailshot'];
     }
 
+    /**
+     * @throws \Exception
+     */
     public function handle(Mailshot $mailshot): void
     {
-        $chunkSize = 100;
+        $chunkSize = 50;
 
         // NOTE: Ensure no second wave exists when the parent mailshot has the second wave disabled
         if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
@@ -40,7 +42,7 @@ class PrepareMailshotRecipients
 
         $queryBuilder->orderBy('customers.id');
 
-        $cloneQuery = $queryBuilder->clone();
+        $cloneQuery     = $queryBuilder->clone();
         $totalCustomers = $cloneQuery->count('customers.id');
 
         // Process recipients in chunks of 250
@@ -52,6 +54,9 @@ class PrepareMailshotRecipients
 
     public string $commandSignature = 'mailshot:send {mailshot}';
 
+    /**
+     * @throws \Exception
+     */
     public function asCommand(Command $command): int
     {
         try {

@@ -310,7 +310,7 @@ return [
         ],
         'ses'              => [
             'connection'      => 'redis',
-            'queue'           => ['ses'],
+            'queue'           => ['ses-send', 'ses'],
             'balance'         => 'auto',
             'maxProcesses'    => 2,
             'maxTime'         => 0,
