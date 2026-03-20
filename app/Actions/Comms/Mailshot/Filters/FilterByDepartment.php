@@ -9,20 +9,17 @@
 namespace App\Actions\Comms\Mailshot\Filters;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
-use Illuminate\Database\Eloquent\Builder;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
+use Illuminate\Support\Facades\DB;
 
 class FilterByDepartment
 {
     /**
      * Apply the "By Department" filter.
      *
-     * @param SpatieQueryBuilder|Builder $query
-     * @param array $filters
-     * @return Builder
      */
-    public function apply($query, array $filters)
+    public function apply(Builder $query, array $filters): Builder
     {
         $deptFilter = Arr::get($filters, 'by_departments');
 
@@ -48,20 +45,26 @@ class FilterByDepartment
 
             $query->where(function ($q) use ($departmentIds, $behaviors) {
                 if (in_array('purchased', $behaviors)) {
-                    $q->orWhereHas('orders', function ($oq) use ($departmentIds) {
-                        $oq->where('state', '!=', OrderStateEnum::CREATING)
-                            ->whereHas('transactions', function ($tq) use ($departmentIds) {
-                                $tq->whereIn('department_id', $departmentIds);
-                            });
+                    $q->orWhereExists(function ($subQuery) use ($departmentIds) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('orders')
+                            ->join('transactions', 'orders.id', '=', 'transactions.order_id')
+                            ->whereRaw('orders.customer_id = customers.id')
+                            ->where('orders.state', '!=', OrderStateEnum::CREATING)
+                            ->whereIn('transactions.department_id', $departmentIds)
+                            ->whereNull('orders.deleted_at');
                     });
                 }
 
                 if (in_array('basket_not_purchased', $behaviors)) {
-                    $q->orWhereHas('orders', function ($oq) use ($departmentIds) {
-                        $oq->where('state', OrderStateEnum::CREATING)
-                            ->whereHas('transactions', function ($tq) use ($departmentIds) {
-                                $tq->whereIn('department_id', $departmentIds);
-                            });
+                    $q->orWhereExists(function ($subQuery) use ($departmentIds) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('orders')
+                            ->join('transactions', 'orders.id', '=', 'transactions.order_id')
+                            ->whereRaw('orders.customer_id = customers.id')
+                            ->where('orders.state', OrderStateEnum::CREATING)
+                            ->whereIn('transactions.department_id', $departmentIds)
+                            ->whereNull('orders.deleted_at');
                     });
                 }
             });

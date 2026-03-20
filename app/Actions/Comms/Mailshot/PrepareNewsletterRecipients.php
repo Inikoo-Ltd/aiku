@@ -8,21 +8,19 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Mailshot;
-use App\Models\CRM\Customer;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
-use App\Services\QueryBuilder;
+use Illuminate\Support\Facades\DB;
 
-class ProcessSendNewsletter
+class PrepareNewsletterRecipients
 {
     use AsAction;
 
-    public string $jobQueue = 'default-long';
+    public string $jobQueue = 'ses';
 
     public function tags(): array
     {
@@ -33,38 +31,34 @@ class ProcessSendNewsletter
     {
 
         $chunkSize = 100;
+
         // NOTE: Ensure no second wave exists when the parent mailshot has second wave disabled
         if ($mailshot->secondWave()->exists() && !$mailshot->is_second_wave_enabled) {
             DeleteMailshotSecondWave::run($mailshot->secondWave);
         }
 
-        $queryBuilder = QueryBuilder::for(Customer::class)
+        $outboxId = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->value('id');
+
+        $baseQuery = DB::table('customers')
             ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
-            ->where('shop_id', $mailshot->shop_id)
+            ->where('customers.shop_id', $mailshot->shop_id)
             ->where('customer_comms.is_subscribed_to_newsletter', true)
-            ->where('customers.email', '!=', null)
-            ->select('customers.id', 'customers.shop_id', 'customers.name', 'customers.email', 'customers.slug');
+            ->whereNotNull('customers.email')
+            // TODO: make sure this email filter
+            ->whereRaw("customers.email COLLATE \"C\" ~* '^[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,}$'"); // to replace FILTER_VALIDATE_EMAIL in the model level
 
-        $outbox = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::NEWSLETTER)->first();
-        // Process recipients in chunks of 250
-        $queryBuilder->chunk($chunkSize, function ($recipients) use ($mailshot, $outbox) {
+        // \Log::info($baseQuery->toRawSql());
+        // Clone the query and get last
+        $totalCustomer = $baseQuery->count('customers.id');
 
-            $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
-
-            AddRecipientsToMailshot::run($mailshot, $recipients, $emailDeliveryChannel, $outbox);
-
-
-        });
-
-        UpdateMailshot::run(
-            $mailshot,
-            [
-                'recipients_stored_at' => now()
-            ]
-        );
+        $baseQuery->select('customers.id')->orderBy('customers.id')
+            ->chunk($chunkSize, function ($customers) use ($mailshot, $outboxId, $totalCustomer) {
+                $customerIds = $customers->pluck('id');
+                ProcessSendMailshot::dispatch($mailshot->id, $customerIds, $outboxId, $totalCustomer);
+            });
 
         // TODO: check another hydrator
-        MailshotHydrateDispatchedEmails::run($mailshot);
+        // MailshotHydrateDispatchedEmails::run($mailshot);
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';
