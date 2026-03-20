@@ -18,7 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $sorting_code
  * @property string $postal_code
  * @property string $country_code
- * @property integer $country_id
+ * @property int $country_id
  * @property string $locality
  * @property string $dependent_locality
  * @property string $administrative_area
