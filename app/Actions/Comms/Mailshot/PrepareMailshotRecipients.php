@@ -36,8 +36,6 @@ class PrepareMailshotRecipients
 
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot);
 
-        $outboxId = $mailshot->shop->outboxes()->where('code', OutboxCodeEnum::MARKETING)->value('id');
-
         $mailshotId = $mailshot->id;
 
         $queryBuilder->orderBy('customers.id');
@@ -46,9 +44,9 @@ class PrepareMailshotRecipients
         $totalCustomers = $cloneQuery->count('customers.id');
 
         // Process recipients in chunks of 250
-        $queryBuilder->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $outboxId, $totalCustomers) {
+        $queryBuilder->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $totalCustomers) {
             $customerIds = $customers->pluck('id');
-            ProcessSendMailshot::dispatch($mailshotId, $customerIds, $outboxId, $totalCustomers);
+            ProcessSendMailshot::dispatch($mailshotId, $customerIds, $totalCustomers);
         });
     }
 

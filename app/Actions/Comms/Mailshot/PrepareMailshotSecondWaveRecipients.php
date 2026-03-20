@@ -35,7 +35,7 @@ class PrepareMailshotSecondWaveRecipients
     public function handle(Mailshot $mailshot): void
     {
 
-        $chunkSize = 100;
+        $chunkSize = 50;
         $parentMailshot = $mailshot->parentMailshot;
 
         if (!$parentMailshot) {
@@ -45,7 +45,6 @@ class PrepareMailshotSecondWaveRecipients
             return;
         }
 
-        $outboxId = $parentMailshot->outbox->id;
 
         $baseQuery = DB::table('customers');
         $baseQuery->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
@@ -82,9 +81,9 @@ class PrepareMailshotSecondWaveRecipients
         // \Log::info($queryBuilder->toRawSql());
 
         // Process recipients in chunks of 250
-        $baseQuery->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $outboxId, $totalCustomers) {
+        $baseQuery->select('customers.id')->chunk($chunkSize, function ($customers) use ($mailshotId, $totalCustomers) {
             $customerIds = $customers->pluck('id');
-            ProcessSendMailshot::dispatch($mailshotId, $customerIds, $outboxId, $totalCustomers);
+            ProcessSendMailshot::dispatch($mailshotId, $customerIds, $totalCustomers);
         });
 
         GroupHydrateMailshots::dispatch($mailshot->group);

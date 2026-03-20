@@ -23,14 +23,28 @@ class ProcessSendMailshot
 
     public string $jobQueue = 'ses';
 
-    public function handle($mailshotId, $customerIds, $outboxId, $totalCustomer)
+    public function handle(?int $mailshotId, array $customerIds, int $totalCustomer): void
     {
+
+        if (!$mailshotId) {
+            return;
+        }
         $mailshot = Mailshot::find($mailshotId);
+        if (!$mailshot) {
+            return;
+        }
+
+
+        $outboxId = $mailshot->outbox_id;
+
         $emailDeliveryChannel = StoreEmailDeliveryChannel::run($mailshot);
 
         foreach ($customerIds as $customerId) {
 
             $customer = Customer::find($customerId);
+            if (!$customer) {
+                continue;
+            }
 
             $recipientExists = $mailshot->recipients()
                 ->where('recipient_id', $customer->id)
@@ -69,7 +83,6 @@ class ProcessSendMailshot
         $isAllRecipientsStored = UpdateMailshotRecipientsStoredAt::run($mailshot, $totalCustomer);
 
         if ($isAllRecipientsStored) {
-            // TODO: check another hydrator
             MailshotHydrateDispatchedEmails::run($mailshot);
         }
 
