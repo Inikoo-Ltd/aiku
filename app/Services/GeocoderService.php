@@ -249,19 +249,11 @@ class GeocoderService
             $bounds          = $location->getBounds();
 
             return [
-                'latitude'            => $coordinates->getLatitude(),
-                'longitude'           => $coordinates->getLongitude(),
-                'formatted_address'   => $this->buildFormattedAddress($location),
-                'matched_layer'       => $layer['name'],
-                'confidence_score'    => $confidenceScore,
-                'street'              => $location->getStreetName(),
-                'street_number'       => $location->getStreetNumber(),
-                'city'                => $location->getLocality() ?? $location->getSubLocality(),
-                'postal_code'         => $location->getPostalCode(),
-                'country'             => $location->getCountry()?->getName(),
-                'country_code'        => $location->getCountry()?->getCode(),
-                'administrative_area' => $location->getAdminLevels()->first()?->getName(),
-                'bounds'              => $bounds ? [
+                'latitude'         => $coordinates->getLatitude(),
+                'longitude'        => $coordinates->getLongitude(),
+                'matched_layer'    => $layer['name'],
+                'confidence_score' => $confidenceScore,
+                'bounds'           => $bounds ? [
                     'south' => $bounds->getSouth(),
                     'west'  => $bounds->getWest(),
                     'north' => $bounds->getNorth(),
@@ -277,7 +269,7 @@ class GeocoderService
             //                'error' => $e->getMessage(),
             //            ]);
             //            Sentry::captureMessage('Geocoding exception for layer: '.$layer['name'].' - '.$layer['query']);
-            //            Sentry::captureException($e);
+            Sentry::captureException($e);
 
             return null;
         }
@@ -368,7 +360,7 @@ class GeocoderService
                     ] : null,
                 ];
             } catch (\Exception $e) {
-                //Sentry::captureException($e);
+                Sentry::captureException($e);
 
                 return null;
             }
@@ -403,17 +395,10 @@ class GeocoderService
 
 
                 return [
-                    'latitude'          => $coordinates->getLatitude(),
-                    'longitude'         => $coordinates->getLongitude(),
-                    'formatted_address' => $this->buildFormattedAddress($location),
-                    'matched_layer'     => 'simple_query',
-                    'confidence_score'  => 80,
-                    'street'            => $location->getStreetName(),
-                    'city'              => $location->getLocality() ?? $location->getSubLocality(),
-                    'postal_code'       => $location->getPostalCode(),
-                    'country'           => $location->getCountry()?->getName(),
-                    'country_code'      => $location->getCountry()?->getCode(),
-                    'bounds'            => $bounds ? [
+                    'latitude'      => $coordinates->getLatitude(),
+                    'longitude'     => $coordinates->getLongitude(),
+                    'matched_layer' => 'simple_query',
+                    'bounds'        => $bounds ? [
                         'south' => $bounds->getSouth(),
                         'west'  => $bounds->getWest(),
                         'north' => $bounds->getNorth(),
@@ -426,7 +411,7 @@ class GeocoderService
                 //                    'error' => $e->getMessage()
                 //                ]);
                 //                Sentry::captureMessage('Simple geocoding failed: '.$queryText);
-                //                Sentry::captureException($e);
+                Sentry::captureException($e);
 
                 return null;
             }
