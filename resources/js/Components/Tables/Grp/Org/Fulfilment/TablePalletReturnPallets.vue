@@ -169,9 +169,9 @@ const onCheckTable = async (item: {}) => {
                 text: 'Failed to select the data',
                 type: 'error',
             })
-            
+
         }
-        
+
     } else {
         // console.log('pppp', item.deleteFromReturnRoute?.name)
         try {
@@ -179,7 +179,7 @@ const onCheckTable = async (item: {}) => {
                 throw new Error('Delete route is not defined')
             }
             axios.delete(
-                route(item.deleteFromReturnRoute.name, {palletReturn : props.palletReturn.id , pallet : item.pallet_id })   
+                route(item.deleteFromReturnRoute.name, {palletReturn : props.palletReturn.id , pallet : item.pallet_id })
             )
 
             debounceReloadBoxStats()
@@ -190,10 +190,10 @@ const onCheckTable = async (item: {}) => {
                 text: 'Failed to unselect the data',
                 type: 'error',
             })
-            
+
         }
     }
-    
+
 }
 
 const onSaved = async (pallet: { form: {} }, fieldName: string) => {
@@ -250,23 +250,20 @@ onBeforeMount(() => {
 });
 
 // Generate link to pallet
-const generateLinkPallet = (pallet: {}) => {
+const generateLinkPallet = (pallet: any) => {
     if (!pallet.slug) {
         return null
     }
 
     switch (route().current()) {
-        case 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show':
-            return route(
-                'grp.org.fulfilments.show.crm.customers.show.pallets.show',
-                {
-                    organisation: route().params['organisation'],
-                    fulfilment: route().params['fulfilment'],
-                    fulfilmentCustomer: route().params['fulfilmentCustomer'],
-                    pallet: pallet.slug,
-                });
+        case "grp.org.warehouses.show.dispatching.pallet-returns.show":
+            return route("grp.org.warehouses.show.inventory.pallets.current.show", [
+                route().params["organisation"],
+                route().params["warehouse"],
+                pallet.slug,
+            ])
         default:
-            null
+            return null
     }
 }
 </script>
@@ -366,7 +363,7 @@ const generateLinkPallet = (pallet: {}) => {
             <!-- State: Pick or not-picked -->
             <div v-if="props.state == 'picking' && layout.app.name == 'Aiku'" class="flex gap-x-2 ">
                 <!-- {{ pallet.state }} -->
-                
+
                 <!-- 1. Picking -> Able to pick / set it as not picked due to reasons (Will set pallet to lost)
                 2. Picked -> Undo picking
                 3. Lost -> Display text that pallet is lost
@@ -443,7 +440,7 @@ const generateLinkPallet = (pallet: {}) => {
                     </div> -->
                     <Button icon="fal fa-backspace" type="warning" :loading="isPickingLoading === pallet.id" class="py-0" />
                 </Link>
-                
+
                 <!-- Button: Undo picking -->
                 <Link v-if="pallet.state === 'picked'" as="div"
                     :href="route(pallet.undoPickingRoute.name, pallet.undoPickingRoute.parameters)"
@@ -459,15 +456,15 @@ const generateLinkPallet = (pallet: {}) => {
 
                 <div v-else-if="pallet.state === 'lost'" class="text-red-300 italic">
                     {{ trans("Pallet lost") }}
-                </div>  
+                </div>
             </div>
         </template>
-        
+
         <template #cell(actions)="{ item: pallet }" v-else>
             <div v-if="pallet.pivot_state == 'cancel'" class="text-red-300 italic" >
                 {{ trans("Pallet set back to storing") }}
             </div>
-        </template> 
+        </template>
 
 
     </Table>
