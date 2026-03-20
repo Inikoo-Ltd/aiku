@@ -91,7 +91,7 @@ class GeocoderService
                 return $result;
             }
 
-            usleep(150000);
+
         }
 
         //        Log::warning('⏭ Geocoding FAILED for all layers', [
@@ -224,7 +224,13 @@ class GeocoderService
 
     protected function performLayeredGeocode(array $layer, ?Command $command = null): ?array
     {
+        $lock = Cache::lock('geocoding_rate_limit', 1);
+
         try {
+            $lock->block(2);
+
+            usleep(50000);
+
             $query = GeocodeQuery::create($layer['query']);
 
             $results = $this->geocoder->geocodeQuery($query);
@@ -272,6 +278,8 @@ class GeocoderService
             Sentry::captureException($e);
 
             return null;
+        } finally {
+            $lock?->release();
         }
     }
 
@@ -380,8 +388,6 @@ class GeocoderService
         return Cache::remember($cacheKey, $this->cacheTime, function () use ($queryText) {
             try {
                 $query = GeocodeQuery::create($queryText);
-
-
                 $results = $this->geocoder->geocodeQuery($query);
 
                 if ($results->isEmpty()) {
