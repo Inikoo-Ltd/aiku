@@ -32,6 +32,7 @@ use Illuminate\Support\Arr;
  * @property mixed $status
  * @property mixed $has_active_webpage
  * @property mixed $web_images
+ * @property mixed $health_rank
  *
  */
 class MasterCollectionsResource extends JsonResource
@@ -92,6 +93,7 @@ class MasterCollectionsResource extends JsonResource
 
             'has_active_webpage' => $this->has_active_webpage,
             'image_thumbnail'    => Arr::get($this->web_images, 'main.thumbnail'),
+            'health_rank'   => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

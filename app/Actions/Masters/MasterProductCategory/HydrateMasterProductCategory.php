@@ -16,6 +16,8 @@ use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHyd
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateFamilies;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterSubDepartmentHydrateSubDepartment;
 use App\Actions\Traits\WithNormalise;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Console\Command;
@@ -34,10 +36,12 @@ class HydrateMasterProductCategory extends HydrateModel
         MasterDepartmentHydrateMasterAssets::run($masterProductCategory);
         MasterDepartmentHydrateDepartments::run($masterProductCategory);
         MasterDepartmentHydrateMasterSubDepartments::run($masterProductCategory);
+        MasterSubDepartmentHydrateSubDepartment::run($masterProductCategory);
         MasterFamilyHydrateMasterAssets::run($masterProductCategory);
         MasterFamilyHydrateFamilies::run($masterProductCategory);
         MasterFamilyHydrateStatus::run($masterProductCategory);
         UpdateMasterProductCategoryWebImages::run($masterProductCategory);
+        MasterProductCategoryHydrateMasterCollections::run($masterProductCategory);
 
     }
 

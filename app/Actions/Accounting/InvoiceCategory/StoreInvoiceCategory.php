@@ -43,9 +43,6 @@ class StoreInvoiceCategory extends OrgAction
             /** @var InvoiceCategory $invoiceCategory */
             $invoiceCategory = $parent->invoiceCategories()->create($modelData);
             $invoiceCategory->stats()->create();
-            $invoiceCategory->orderingIntervals()->create();
-            $invoiceCategory->salesIntervals()->create();
-
             return $invoiceCategory;
         });
 

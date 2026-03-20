@@ -8,14 +8,11 @@
 
 namespace App\Actions\Ordering\Transaction;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -34,10 +31,6 @@ class DeleteTransaction extends OrgAction
             OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order);
             OrderHydrateTransactions::dispatch($order);
-            $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-            AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-            AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
-
         }
 
 

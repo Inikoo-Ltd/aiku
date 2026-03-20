@@ -255,9 +255,7 @@ onMounted(() => {
         </template>
 
         <template #button-assign="{ action }">
-            <Button v-if="currentTab === 'products'" :icon="action.icon" :label="action.label" @click="openModal()"
-                :style="action.style" />
-            <div v-else></div>
+            <Button :disabled="tableData.data.length == 0" v-tooltip="tableData.data.length == 0 ? trans('Product already exists on all shops under this master shop') : ''" :icon="action.icon" :label="action.label" @click="openModal()" :style="action.style"/>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />

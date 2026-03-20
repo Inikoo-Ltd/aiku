@@ -87,7 +87,7 @@ class IndexFamiliesInMasterFamilies extends OrgAction
         return $this->handle(parent: $masterFamily, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
-    public function inMasterSubDepartment(MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterFamily;
         $this->initialisationFromGroup($masterFamily->group, $request)->withTab(ProductCategoryTabsEnum::values());
@@ -219,7 +219,7 @@ class IndexFamiliesInMasterFamilies extends OrgAction
                 ->defaultSort('code')
                 ->withEmptyState(
                     [
-                        'title' => __("No families found under this master families"),
+                        'title' => __("No families found under this master family"),
                         'count' => $parent->stats->number_families,
                     ]
                 )
@@ -244,10 +244,10 @@ class IndexFamiliesInMasterFamilies extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $families, ActionRequest $request): Response
     {
+        $modelNavigation = [];
         $navigation = ProductCategoryTabsEnum::navigationExcept([ProductCategoryTabsEnum::SALES]);
         $subNavigation = $this->getMasterFamilySubNavigation($this->parent);
 
-        $modelNavigation = [];
 
         $title           = $this->parent->name;
         $model           = '';

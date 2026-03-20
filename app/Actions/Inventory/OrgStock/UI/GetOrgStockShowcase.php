@@ -8,17 +8,17 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
-use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Models\Goods\TradeUnit;
-use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Actions\Traits\HasBucketImages;
 
 class GetOrgStockShowcase
 {
     use AsObject;
+    use HasBucketImages;
 
     public function handle(Warehouse $warehouse, OrgStock $orgStock): \Illuminate\Support\Collection
     {
@@ -28,10 +28,8 @@ class GetOrgStockShowcase
             $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
         }
 
-        // dd($orgStock);
         return collect(
             [
-                // 'stock_data'                => $this->orgStockData($orgStock),
                 'trade_units'               => $dataTradeUnits,
                 'stocks_management'         => [
                     'routes'         => [
@@ -67,6 +65,12 @@ class GetOrgStockShowcase
                         'set_location_as_picking_priority_route'      => [],  // TODO
                         'add_parts_location_note'      => [],  // TODO
                     ],
+                    'stock_cost'     => [
+                            'cost_stock_price_per_unit' => $orgStock->cost_price,
+                            'cost_stock_price_outer' => $orgStock->cost_price * $orgStock->quantity_available,
+                            'cost_current_price_per_unit' => $orgStock->cost_price,
+                            'cost_current_price_outer' => $orgStock->cost_price * $orgStock->quantity_available,
+                        ],
                     'summary'        => [
                         'quantity_in_locations'        => [
                             'icon_state' => [
@@ -120,9 +124,7 @@ class GetOrgStockShowcase
             // 'stock_in_locations' => $orgStock->quantity_in_locations,
             'stock_in_process'   => $orgStock->stats->number_stock_deliveries_state_in_process,
             'stock_in_picked'    => $orgStock->stats->number_stock_deliveries_state_ready_to_ship,
-            'stock_available'    => $orgStock->quantity_in_locations -
-                ($orgStock->stats->number_stock_deliveries_state_in_process +
-                    $orgStock->stats->number_stock_deliveries_state_ready_to_ship),
+            'stock_available'    => $orgStock->quantity_in_locations - ($orgStock->stats->number_stock_deliveries_state_in_process +  $orgStock->stats->number_stock_deliveries_state_ready_to_ship),
             'stock_value'        => $orgStock->value_in_locations,
             'current_cost'       => $orgStock->unit_cost,
             // 'locations'          => $locationData
@@ -132,7 +134,15 @@ class GetOrgStockShowcase
     private function getDataTradeUnit($tradeUnits): array
     {
         return $tradeUnits->map(function (TradeUnit $tradeUnit) {
-            return GetTradeUnitShowcase::run($tradeUnit);
+            return [
+                'slug' => $tradeUnit->slug,
+                'status' => $tradeUnit->status,
+                'code' => $tradeUnit->code,
+                'id' => $tradeUnit->id,
+                'stock' => $tradeUnit->orgStocks->sum('quantity_in_locations'),
+                'name' => $tradeUnit->name,
+                'images' => $this->getImagesData($tradeUnit),
+            ];
         })->toArray();
     }
 }

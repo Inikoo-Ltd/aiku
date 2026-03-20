@@ -66,16 +66,19 @@ class IndexClockings extends OrgAction
                     'clockings.id',
                     'clockings.type',
                     'clockings.notes',
+                    'clockings.organisation_id',
                     'workplaces.slug as workplace_slug',
                     'clocking_machines.slug as clocking_machine_slug',
                     'clocking_machine_id',
                     'media.slug as media_slug',
-                    'media.id as media_id'
+                    'media.id as media_id',
+                    'organisations.code as organisation_code'
                 ]
             )
             ->leftJoin('workplaces', 'clockings.workplace_id', 'workplaces.id')
             ->leftJoin('media', 'clockings.image_id', 'media.id')
             ->leftJoin('clocking_machines', 'clockings.clocking_machine_id', 'clocking_machines.id')
+            ->leftJoin('organisations', 'clockings.organisation_id', 'organisations.id')
             ->allowedSorts(['clocked_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

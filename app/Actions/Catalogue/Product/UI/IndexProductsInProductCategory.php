@@ -89,11 +89,12 @@ class IndexProductsInProductCategory extends OrgAction
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
         $queryBuilder->leftJoin('currencies', 'currencies.id', 'shops.currency_id');
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
+        // $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
+        // $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->leftJoin('variants as variant', 'variant.id', '=', 'products.variant_id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
+        $queryBuilder->leftJoin('assets', 'products.asset_id', 'assets.id');
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('products.department_id', $productCategory->id);
@@ -134,6 +135,7 @@ class IndexProductsInProductCategory extends OrgAction
             'variant.code as variant_code',
             'products.is_variant_leader as is_variant_leader',
             'products.master_product_id',
+            'assets.health_rank',
         ];
 
         if ($prefix === 'sales') {
@@ -177,6 +179,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'customers_invoiced',
                 'sales_grp_currency_external',
                 'invoices',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -220,7 +223,8 @@ class IndexProductsInProductCategory extends OrgAction
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);

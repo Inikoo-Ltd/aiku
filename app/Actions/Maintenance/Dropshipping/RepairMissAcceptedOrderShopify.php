@@ -34,9 +34,16 @@ class RepairMissAcceptedOrderShopify
 
     protected function processFulfillmentOrders(ShopifyUser $shopifyUser, array $fulfillmentOrders): array
     {
+        $fulfillmentOrdersCatched = [];
         foreach ($fulfillmentOrders as $edge) {
             $fulfillmentOrder = $edge['node'];
-            CreateFulfilmentOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
+            $fulfillmentOrdersCatched[] = $fulfillmentOrder;
+
+            try {
+                CreateFulfilmentOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
+            } catch (\Throwable $e) {
+                // dd($e->getMessage());
+            }
         }
 
         return [];
@@ -44,7 +51,7 @@ class RepairMissAcceptedOrderShopify
 
     public function getCommandSignature(): string
     {
-        return 'repair:shopify_miss_accepted_order {customerSalesChannel} {portfolio?}';
+        return 'repair:shopify_miss_accepted_order {customerSalesChannel}';
     }
 
     public function asCommand(Command $command): void

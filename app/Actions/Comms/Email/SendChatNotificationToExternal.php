@@ -8,25 +8,25 @@
 
 namespace App\Actions\Comms\Email;
 
+use App\Actions\Comms\Traits\WithSendChatOutboxEmail;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Comms\ChatEmailRecipient;
 use App\Models\Comms\DispatchedEmail;
-use App\Actions\Comms\Traits\WithSendExternalOutboxEmail;
 use App\Models\Catalogue\Shop;
-use App\Models\Comms\ExternalEmailRecipient;
 use App\Models\Comms\Outbox;
 
 class SendChatNotificationToExternal extends OrgAction
 {
-    use WithSendExternalOutboxEmail;
+    use WithSendChatOutboxEmail;
 
     public string $jobQueue = 'low-priority';
 
-    public function handle(ExternalEmailRecipient $externalEmailRecipient, Shop $shop, array $additionalData = []): DispatchedEmail|null
+    public function handle(ChatEmailRecipient $chatEmailRecipient, Shop $shop, array $additionalData = []): DispatchedEmail|null
     {
         /** @var Outbox $outbox */
         $outbox = $shop->outboxes()->where('code', OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER->value)->first();
 
-        return $this->sendOutboxEmailToExternal($externalEmailRecipient, $outbox, $additionalData);
+        return $this->sendOutboxEmailToChatRecipient($chatEmailRecipient, $outbox, $additionalData);
     }
 }

@@ -93,7 +93,6 @@ class ShowOrgStock extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrgStockTabsEnum::navigation()
                 ],
-
                 'master'      => $hasMaster,
                 'masterRoute' => $hasMaster ? [
                     'name'       => 'grp.goods.stocks.show',
@@ -101,8 +100,6 @@ class ShowOrgStock extends OrgAction
                         'stock' => $orgStock->stock->slug
                     ]
                 ] : null,
-
-
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)
                     : Inertia::lazy(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),

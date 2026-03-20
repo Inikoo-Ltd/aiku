@@ -52,7 +52,7 @@ class StorePicking extends OrgAction
 
 
         if (app()->environment('production')) {
-            SavePickingInAurora::Dispatch($picking);
+            SavePickingInAurora::dispatch($picking);
         }
 
         $orgStockMovement = StoreOrgStockMovement::run(

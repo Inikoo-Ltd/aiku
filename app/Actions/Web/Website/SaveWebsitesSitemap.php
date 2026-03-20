@@ -10,27 +10,38 @@
 
 namespace App\Actions\Web\Website;
 
-use App\Actions\OrgAction;
-use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class SaveWebsitesSitemap extends OrgAction
+class SaveWebsitesSitemap
 {
+    use AsAction;
+
+    public int $jobTries = 1;
+
     public function handle(?Command $command = null): void
     {
         /** @var Website $website */
-        foreach (Website::where('state', WebpageStateEnum::LIVE)->get() as $website) {
-            $numberItems = SaveWebsiteSitemap::run($website);
-            $command?->info("Sitemap for website ID $website->domain has been saved. ($numberItems)");
+        foreach (Website::where('state', WebsiteStateEnum::LIVE)->where('migrated', true)->get() as $website) {
+
+            if ($command) {
+                $command->info("Creating Sitemap for website $website->domain.");
+                SaveWebsiteSitemap::run($website, $command);
+            } else {
+                SaveWebsiteSitemap::dispatch($website);
+            }
+
         }
     }
 
     public string $commandSignature = 'sitemaps:create';
 
-    public function asCommand(Command $command): void
+    public function asCommand(Command $command): int
     {
-
         $this->handle($command);
+
+        return 0;
     }
 }

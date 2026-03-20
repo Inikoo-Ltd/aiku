@@ -90,7 +90,7 @@ class FetchAuroraInvoice extends FetchAurora
             $salesChannel = $this->parseSalesChannel($this->organisation->id.':'.$this->auroraModelData->{'Invoice Source Key'});
         }
 
-        if ($salesChannel->type == SalesChannelTypeEnum::SHOWROOM && $shop->type == ShopTypeEnum::DROPSHIPPING) {
+        if ($salesChannel && $salesChannel->type == SalesChannelTypeEnum::SHOWROOM && $shop->type == ShopTypeEnum::DROPSHIPPING) {
             $salesChannel = $shop->group->salesChannels()->where('type', SalesChannelTypeEnum::OTHER)->first();
         }
 

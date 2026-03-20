@@ -70,6 +70,7 @@ class StoreProductToAllegro extends RetinaAction
 
                 $allegroProductId = Arr::get($proposedProduct, 'id');
             } catch (\Exception $e) {
+                dd($e);
                 $res = Str::contains($e->getMessage(), ['Produkt z takimi danymi już istnieje. Skontaktuj się z autorem aplikacji.']);
 
                 if ($res) {

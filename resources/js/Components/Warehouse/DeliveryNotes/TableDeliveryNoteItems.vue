@@ -15,9 +15,9 @@ import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
-import { ref, onMounted, reactive, inject, computed } from "vue";
+import { ref, onMounted, reactive, inject, computed, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -30,6 +30,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import axios from "axios";
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic);
 
 
@@ -327,10 +328,80 @@ const submitTransactionAsWaiting = () => {
         }
     )
 }
+
+const isModalPackingInfo = ref(false)
+const selectedPackingItem = ref<any>(null)
+
+const packingDetailRows = ref<any[]>([])
+const isLoadingPackingDetail = ref(false)
+
+const openPackingModal = async (item: any) => {
+    selectedPackingItem.value = item
+    // console.log("selectedPackingItem",selectedPackingItem.value)
+    isModalPackingInfo.value = true
+    isLoadingPackingDetail.value = true
+
+    // console.log("modalResource NOW", modalResource.value)
+    try {
+        const res = await axios.get(
+            route("grp.json.fetch_single_delivery_note_item", {
+                deliveryNoteItem: item.data.id
+            })
+        )
+        // console.log("res",res)
+        packingDetailRows.value = res.data
+        // console.log("packingDetailRows",packingDetailRows.value)
+    } catch (e) {
+        console.log(e)
+        packingDetailRows.value = []
+    } finally {
+        isLoadingPackingDetail.value = false
+    }
+}
+
+const closePackingModal = () => {
+    isModalPackingInfo.value = false
+    setTimeout(() => {
+        selectedPackingItem.value = null
+    }, 200)
+}
+
+const modalResource = computed(() => {
+    if (!selectedPackingItem.value) return null
+
+    return {
+        ...props.data,
+        data: props.data.data.filter(
+            r => r.id === selectedPackingItem.value.id
+        )
+    }
+})
+
+watch(modalResource, (val) => {
+    // console.log("modalResource", val)
+}, { deep: true })
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+        <template #cell(quantity_packed_readonly)="{ item }">
+            <span v-tooltip="item.quantity_packed">
+            <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
+            <span v-else>{{ item.quantity_packed }}</span>
+            </span>
+        </template>
+        <template #cell(quantity_required_readonly)="{ item }">
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay v-if="item.quantity_required_fractional"
+                    :fractionData="item.quantity_required_fractional" />
+                <span v-else>{{ item.quantity_required }}</span>
+            </span>
+        </template>
+        <template #cell(quantity_picked_readonly)="{ item }">
+            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+            <span v-else>{{ item.quantity_picked }}</span>
+        </template>
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -738,25 +809,97 @@ const submitTransactionAsWaiting = () => {
 
         </template>
 
-         <template #cell(action)="{ item: item }">
-                <template class="" v-if="state === 'packing' && layout.app.environment === 'local' && props.shop_type !== 'dropshipping'">
+        <template #cell(action)="{ item: item }">
+                <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_not_picked == 0" >
+                    
+                    <div class="flex justify-start items-center">
                     <ButtonWithLink
+                        v-if="!item.is_done_packing"
                         type="secondary"
-                        v-tooltip="trans('Click to packing the item')"
                         :label="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :key="screenType"
                         :bindToLink="{preserveScroll: true}"
                         :routeTarget="{
                             name: 'grp.models.delivery_note_item.packing.store',
+                            method: 'patch',
                             parameters: {
                                 deliveryNoteItem: item.id
                             }
                         }"
                     />
+                    <ButtonWithLink
+                        v-else
+                        type="negative"
+                        :size="screenType == 'desktop' ? 'xs' : 'lg'"
+                        :bindToLink="{preserveScroll: true}"
+                        :routeTarget="{
+                            name: 'grp.models.delivery_note_item.packing.delete',
+                            method: 'delete',
+                            parameters: {
+                                deliveryNoteItem: item.id
+                            }
+                        }"
+                        :icon="faUndo"
+                    />
+                     <Button
+                     v-if="layout.app.environment === 'local' && !item.is_done_packing"
+                        type="negative"
+                        class="ml-4"
+                        icon="fal fa-debug"
+                        :size="screenType == 'desktop' ? 'xs' : 'lg'"
+                        v-tooltip="'Packing info'"
+                        @click="openPackingModal(item)"
+                    />
+                    </div>
                 </template>
         </template>
     </Table>
+
+    <Modal
+        :isOpen="isModalPackingInfo"
+        @onClose="closePackingModal"
+        width="w-full max-w-4xl"
+    >
+        <div class="text-center text-xl font-semibold mb-4">
+            Packing Info — {{ selectedPackingItem?.org_stock_code }}
+        </div>
+        <Table :resource="modalResource" :name="tab" class="mt-5" rowAlignTop>
+            <!-- Column: state -->
+            <template #cell(state)="{ item }">
+                <Icon :data="item.state_icon" />
+            </template>
+
+            <!-- Column: Reference -->
+            <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
+                <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
+                {{ deliveryNoteItem.org_stock_code }}
+                </Link>
+            </template>
+
+            <template #cell(action)="{ item: item }">
+                <!-- {{ item.not_picking_route }} -->
+                <!-- icon="fal fa-debug" -->
+                <ButtonWithLink
+                    type="negative"
+                    tooltip="No quantity to pick. Click to ignore."
+                             label="Click to ignore"
+                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                            :routeTarget="item.not_picking_route"
+                            :bindToLink="{preserveScroll: true}"
+                             @success="closePackingModal"
+                        />
+                    
+            </template>
+        </Table>
+       
+        <Button
+            class="mt-6"
+            full
+            label="Close"
+            @click="closePackingModal"
+        />
+    </Modal>
 
     <Modal :isOpen="isModalLocation" @onClose="() => onCloseModal()" width="w-full max-w-2xl" :dialogStyle="{
         background: '#ffffff'

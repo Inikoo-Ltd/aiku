@@ -76,6 +76,7 @@ class SendOrderToWarehouse extends OrgAction
             'contact_name'              => $this->getContactName($order),
             'shipping_zone_schema_id'   => $order->shipping_zone_schema_id,
             'shipping_zone_id'          => $order->shipping_zone_id,
+            'internal_notes'            => $order->internal_notes,
 
         ];
 
@@ -105,13 +106,12 @@ class SendOrderToWarehouse extends OrgAction
 
 
                 foreach ($product->orgStocks as $orgStock) {
-                    $quantity             = $orgStock->pivot->quantity * ($transaction->quantity_ordered+$transaction->quantity_bonus);
+                    $quantity             = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
                     $deliveryNoteItemData = [
                         'org_stock_id'               => $orgStock->id,
                         'transaction_id'             => $transaction->id,
                         'quantity_required'          => $quantity,
                         'original_quantity_required' => $quantity,
-                        'xx'                         => $orgStock->organisation_id
                     ];
 
                     StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Comms\Email\SendUnDispatchedOrderEmailToSubscribers;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\OrgAction;
@@ -47,6 +48,8 @@ class UndispatchDeliveryNote extends OrgAction
                 RollbackDispatchedOrder::make()->action($order, true);
             }
         }
+
+        SendUnDispatchedOrderEmailToSubscribers::dispatch($deliveryNote);
     }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void

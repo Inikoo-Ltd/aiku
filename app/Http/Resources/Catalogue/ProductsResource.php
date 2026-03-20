@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -54,6 +55,8 @@ use Illuminate\Support\Arr;
  * @property mixed $variant_code
  * @property mixed $webpage
  * @property mixed $is_for_sale
+ * @property mixed $discontinued_at
+ * @property mixed $health_rank
  *
  * @method imageSources(int $int, int $int1)
  */
@@ -81,6 +84,8 @@ class ProductsResource extends JsonResource
         if ($product->relationLoaded('orgStocks')) {
             data_set($extraField, 'org_stocks', $this->getDataPickingFactor($product->orgStocks));
         }
+
+
 
         return [
             'id'                        => $this->id,
@@ -129,15 +134,21 @@ class ProductsResource extends JsonResource
             'variant_code'              => $this->variant_code,
             'iris_url'                  => $this->webpage?->canonical_url,
             'is_for_sale'               => $this->is_for_sale,
+            'health_rank'          => $this->health_rank ? HealthRankEnum::from($this->health_rank)->stateIcon()[HealthRankEnum::from($this->health_rank)->value] : null,
             ...$extraField
         ];
     }
 
     private function getDataPickingFactor($orgStocks): ?array
     {
+
+
         return $orgStocks->map(function ($orgStock) {
+
+
+
             return [
-                'pick_fractional'   => ($orgStock->pivot->quantity && $orgStock->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)), $orgStock->packed_in) : [],
+                'pick_fractional'   => ($orgStock->pivot->quantity && $orgStock->packed_in) ? riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->pivot->quantity)), $orgStock->packed_in) : null,
             ];
         })->toArray();
     }

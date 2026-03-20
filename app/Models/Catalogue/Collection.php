@@ -10,6 +10,7 @@ namespace App\Models\Catalogue;
 
 use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Models\Masters\MasterCollection;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -63,6 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $description_i8n
  * @property string|null $description_title_i8n
  * @property string|null $description_extra_i8n
+ * @property HealthRankEnum|null $health_rank
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
@@ -79,7 +81,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Shop> $parentShops
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $parentSubDepartments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $products
- * @property-read \App\Models\Catalogue\CollectionSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
@@ -109,6 +110,7 @@ class Collection extends Model implements Auditable, HasMedia
         'data'            => 'array',
         'web_images'      => 'array',
         'state'           => CollectionStateEnum::class,
+        'health_rank'     => HealthRankEnum::class,
         'products_status' => CollectionProductsStatusEnum::class,
         'offers_data'     => 'array',
         'inactivated_at'  => 'datetime',
@@ -142,11 +144,6 @@ class Collection extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(CollectionStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(CollectionSalesIntervals::class);
     }
 
     public function orderingIntervals(): HasOne

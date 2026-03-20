@@ -78,14 +78,14 @@ watch(() => props.locations, (newValue) => {
 <template>
     <div>
         <div @click="() => emits('onClickBackground')" class="cursor-pointer fixed inset-0 bg-black/40 z-30" />
-        <div class="relative bg-white z-40 xpy-2 xpx-3 space-y-1">
+        <div class="relative bg-white z-40 py-2 px-3 space-y-1">
             <div class="text-center">Stock check</div>
             <div v-for="(location, idx) in cloneLocations" class="grid grid-cols-7 gap-x-3 items-center gap-2">
                 <div class="col-span-3 flex items-center gap-x-2">
                     {{ location.code }}
                 </div>
 
-                <div v-tooltip="trans('Last audit :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 text-right">
+                <div v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 text-right">
                     {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
                     <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>

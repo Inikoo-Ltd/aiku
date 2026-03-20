@@ -56,12 +56,28 @@ class StoreProductCategoryWebpage extends OrgAction
                 'model_type' => class_basename($productCategory),
                 'model_id'   => $productCategory->id
             ];
+
+            StoreWebpage::make()->action(
+                $productCategory->shop->website,
+                [
+                    'title'        => $productCategory->name,
+                    'code'         => $productCategory->code.'-overview',
+                    'url'          => strtolower($productCategory->code).'-overview',
+                    'sub_type'     => WebpageSubTypeEnum::DEPARTMENT,
+                    'type'         => WebpageTypeEnum::CATALOGUE,
+                    'model_type'   => class_basename($productCategory),
+                    'model_id'     => $productCategory->id,
+                    'layout_style' => 'families-overview'
+                ]
+            );
         }
 
-        return StoreWebpage::make()->action(
+        $webpage = StoreWebpage::make()->action(
             $productCategory->shop->website,
             $webpageData
         );
+
+        return $webpage;
     }
 
     public function htmlResponse(Webpage $webpage): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse

@@ -10,6 +10,7 @@
 
 namespace App\Models\Masters;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\MasterCollection\MasterCollectionProductStatusEnum;
 use App\Enums\Catalogue\MasterCollection\MasterCollectionStateEnum;
 use App\Models\Catalogue\Collection;
@@ -57,6 +58,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property HealthRankEnum|null $health_rank
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, Collection> $childrenCollections
  * @property-read Group $group
@@ -72,7 +74,6 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Model|\Eloquent $parent
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $parentMasterDepartments
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $parentMasterSubDepartments
- * @property-read \App\Models\Masters\MasterCollectionSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollectionTimeSeries> $timeSeries
@@ -106,8 +107,9 @@ class MasterCollection extends Model implements Auditable, HasMedia
         'data'            => 'array',
         'status'          => 'boolean',
         'state'           => MasterCollectionStateEnum::class,
+        'health_rank'     => HealthRankEnum::class,
         'products_status' => MasterCollectionProductStatusEnum::class,
-        'web_images'     => 'array',
+        'web_images'      => 'array',
         'offers_data'     => 'array',
         'inactivated_at'  => 'datetime',
     ];
@@ -157,10 +159,6 @@ class MasterCollection extends Model implements Auditable, HasMedia
         return $this->morphTo();
     }
 
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(MasterCollectionSalesIntervals::class);
-    }
 
     public function orderingIntervals(): HasOne
     {

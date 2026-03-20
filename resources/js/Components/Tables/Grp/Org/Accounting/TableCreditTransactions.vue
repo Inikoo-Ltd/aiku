@@ -45,6 +45,21 @@ function paymentRoute(credit_transaction?: CreditTransaction) {
               customer: (route().params as RouteParams).customer
             }
         );
+    } else if ((route().current() == 'grp.org.shops.show.dashboard.payments.accounting.credit_transactions.index' || route().current() == 'grp.org.accounting.credit_transactions.index') && (
+        credit_transaction?.payment_id &&
+        credit_transaction?.org_slug &&
+        credit_transaction?.shop_slug &&
+        credit_transaction?.customer_slug
+    )) {
+        return route(
+            "grp.org.shops.show.crm.customers.show.payments.show", 
+            {
+                payment: credit_transaction.payment_id,
+                organisation: credit_transaction?.org_slug,
+                shop: credit_transaction?.shop_slug,
+                customer: credit_transaction?.customer_slug
+            }
+        );
     }
 
     return '';
@@ -52,7 +67,7 @@ function paymentRoute(credit_transaction?: CreditTransaction) {
 
 function orderRoute(credit_transaction?: CreditTransaction){
 
-    if(route().current()=='grp.org.shops.show.crm.customers.show' && credit_transaction?.order_slug){
+    if (route().current()=='grp.org.shops.show.crm.customers.show' && credit_transaction?.order_slug){
         return route(
             "grp.org.shops.show.crm.customers.show.orders.show", 
             {
@@ -62,9 +77,42 @@ function orderRoute(credit_transaction?: CreditTransaction){
                 customer: (route().params as RouteParams).customer
             }
         );
+    } else if ((route().current() == 'grp.org.shops.show.dashboard.payments.accounting.credit_transactions.index' || route().current() == 'grp.org.accounting.credit_transactions.index') && (
+        credit_transaction?.order_slug &&
+        credit_transaction?.org_slug &&
+        credit_transaction?.shop_slug &&
+        credit_transaction?.customer_slug
+    )) {
+        return route(
+            "grp.org.shops.show.crm.customers.show.orders.show", 
+            {
+                order: credit_transaction?.order_slug,
+                organisation: credit_transaction?.org_slug,
+                shop: credit_transaction?.shop_slug,
+                customer: credit_transaction?.customer_slug
+            }
+        );
     }
     
     return '';
+}
+
+function customerRoute(credit_transaction?: CreditTransaction){
+
+    if ((route().current() == 'grp.org.shops.show.dashboard.payments.accounting.credit_transactions.index' || route().current() == 'grp.org.accounting.credit_transactions.index') && (
+        credit_transaction?.org_slug &&
+        credit_transaction?.shop_slug &&
+        credit_transaction?.customer_slug
+    )) {
+        return route(
+            "grp.org.shops.show.crm.customers.show", 
+            {
+                organisation: credit_transaction?.org_slug,
+                shop: credit_transaction?.shop_slug,
+                customer: credit_transaction?.customer_slug
+            }
+        );
+    }
 }
 
 // Function to open refund modal
@@ -112,6 +160,11 @@ function createRefundRoute(transaction: CreditTransaction) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(customer_ref)="{ item: credit_transaction }">
+            <Link :href="(customerRoute(credit_transaction) as string)" class="primaryLink">
+                {{ credit_transaction.customer_ref }}
+            </Link>
+        </template>
         <template #cell(payment_reference)="{ item: credit_transaction }">
             <Link v-if="credit_transaction?.payment_id" :href="(paymentRoute(credit_transaction) as string)" class="primaryLink">
                 {{ credit_transaction.payment_reference }}

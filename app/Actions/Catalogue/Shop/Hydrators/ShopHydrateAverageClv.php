@@ -16,20 +16,32 @@ class ShopHydrateAverageClv implements ShouldBeUnique
 {
     use AsAction;
 
-    public function getJobUniqueId(Shop $shop): string
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(?int $shopId): string
     {
-        return $shop->id;
+        return $shopId ?? 'empty';
     }
 
-    public function handle(Shop $shop): void
+    public function handle(?int $shopId): void
     {
+        if (!$shopId) {
+            return;
+        }
+        $shop = Shop::find($shopId);
+        if (!$shop) {
+            return;
+        }
+
         $clvData = DB::table('customers as c')
             ->join('customer_stats as cs', 'c.id', '=', 'cs.customer_id')
             ->where('c.shop_id', $shop->id)
-            ->selectRaw('
+            ->selectRaw(
+                '
                 AVG(CASE WHEN cs.total_clv_amount > 0 THEN cs.total_clv_amount ELSE 0 END) as avg_clv,
                 AVG(CASE WHEN cs.historic_clv_amount > 0 THEN cs.historic_clv_amount ELSE 0 END) as avg_historic_clv
-            ')
+            '
+            )
             ->first();
 
         $stats = [

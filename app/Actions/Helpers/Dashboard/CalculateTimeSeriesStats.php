@@ -71,8 +71,8 @@ class CalculateTimeSeriesStats
         $now = now();
 
         if ($from_date && $to_date) {
-            $start = Carbon::parse($from_date);
-            $end = Carbon::parse($to_date);
+            $start = Carbon::parse($from_date)->startOfDay();
+            $end = Carbon::parse($to_date)->endOfDay();
             foreach ($metricsMapping as $outputKey => $column) {
                 $selects[] = "SUM(CASE WHEN \"from\" >= ? AND \"from\" <= ? THEN $column ELSE 0 END) as {$outputKey}_ctm";
                 $bindings[] = $start;

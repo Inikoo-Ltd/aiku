@@ -67,8 +67,6 @@ class IndexFamiliesWithNoDepartment extends OrgAction
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
-        $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->where('product_categories.shop_id', $shop->id);
         $queryBuilder->whereNull('product_categories.department_id');
 
@@ -90,8 +88,6 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                'product_category_sales_intervals.sales_grp_currency_all as sales_all',
-                'product_category_ordering_intervals.invoices_all as invoices_all',
 
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
@@ -146,50 +142,50 @@ class IndexFamiliesWithNoDepartment extends OrgAction
         unset($navigation[ProductCategoryTabsEnum::SALES->value]);
 
 
-        $title      = __('Stray families');
-        $model      = '';
-        $icon       = [
+        $title     = __('Stray families');
+        $model     = '';
+        $icon      = [
             'icon'  => ['fal', 'fa-folder'],
             'title' => __('Family')
         ];
-        $iconRight  = null;
-        $routes     = null;
+        $iconRight = null;
+        $routes    = null;
 
 
         return Inertia::render(
             'Org/Catalogue/Families',
             [
-                'breadcrumbs'                         => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                               => $title,
-                'pageHead'                            => [
-                    'title'      => $title,
-                    'icon'       => $icon,
-                    'model'      => $model,
-                    'iconRight'  => $iconRight,
+                'title'       => $title,
+                'pageHead'    => [
+                    'title'     => $title,
+                    'icon'      => $icon,
+                    'model'     => $model,
+                    'iconRight' => $iconRight,
                 ],
-                'routes'                              => $routes,
-                'data'                                => FamiliesResource::collection($families),
-                'tabs'                                => [
+                'routes'      => $routes,
+                'data'        => FamiliesResource::collection($families),
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
 
-                'routes' => [
+                'routes'                              => [
                     'departments_route' => [
-                        'name' => 'grp.json.shop.departments',
+                        'name'       => 'grp.json.shop.departments',
                         'parameters' => [
                             'shop' => $this->shop->slug
                         ]
                     ],
-                    'submit_route' => [
-                        'name' => 'grp.models.department.move_families',
+                    'submit_route'      => [
+                        'name'       => 'grp.models.department.move_families',
                         'parameters' => []
                     ]
                 ],
-                'is_orphan_families' => true,
+                'is_orphan_families'                  => true,
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => FamiliesResource::collection($families)
                     : Inertia::lazy(fn () => FamiliesResource::collection($families)),

@@ -9,7 +9,6 @@
 namespace App\Actions\Inventory\OrgStockFamily;
 
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
-use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\OrgStockFamily;
 
@@ -26,7 +25,6 @@ class HydrateOrgStockFamily
     public function handle(OrgStockFamily $orgStockFamily): void
     {
         OrgStockFamilyHydrateOrgStocks::run($orgStockFamily);
-        OrgStockFamilyHydrateSalesIntervals::run($orgStockFamily);
     }
 
 

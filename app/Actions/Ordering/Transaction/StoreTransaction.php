@@ -8,15 +8,12 @@
 
 namespace App\Actions\Ordering\Transaction;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrdersStats;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Actions\Web\WebsiteConversionEvent\StoreWebsiteConversionEvent;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -116,11 +113,6 @@ class StoreTransaction extends OrgAction
             OrderHydrateTransactions::dispatch($order);
         }
 
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-        AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        AssetHydrateOrdersStats::dispatch($transaction->asset_id)->delay($this->hydratorsDelay);
-
-
         if (request()->hasSession() && request()->input('website')) {
             StoreWebsiteConversionEvent::dispatch(
                 sessionId: request()->session()->getId(),
@@ -131,11 +123,6 @@ class StoreTransaction extends OrgAction
                 quantity: 1
             );
         }
-
-        if ($transaction->submitted_at && $transaction->asset) {
-            $transaction->asset->orderingStats()->update(['last_order_submitted_at' => $transaction->submitted_at]);
-        }
-
 
         return $transaction;
     }
