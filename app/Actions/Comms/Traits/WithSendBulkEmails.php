@@ -25,8 +25,19 @@ trait WithSendBulkEmails
 {
     use WithProcessEmailStyles;
 
-    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null, bool $isTest = false, bool $debug=false): DispatchedEmail
-    {
+    public function sendEmailWithMergeTags(
+        DispatchedEmail $dispatchedEmail,
+        string $sender,
+        string $subject,
+        string $emailHtmlBody,
+        ?string $unsubscribeUrl = null,
+        ?string $passwordToken = null,
+        ?string $invoiceUrl = null,
+        array $additionalData = [],
+        ?string $senderName = null,
+        bool $isTest = false,
+        bool $debug = false
+    ): DispatchedEmail {
         if ($debug) {
             print "Hi start sendEmailWithMergeTags ".now()->toDateTimeString()."\n";
         }
@@ -38,6 +49,15 @@ trait WithSendBulkEmails
         if ($debug) {
             print "Hi html gathered  ".now()->toDateTimeString()."\n";
         }
+
+        // Remove MSO conditional comments temporarily
+        $msoComments = [];
+        $html        = preg_replace_callback('/<!--\[if mso\]>.*?<!\[endif\]-->/s', function ($matches) use (&$msoComments) {
+            $placeholder               = '___MSO_COMMENT_'.count($msoComments).'___';
+            $msoComments[$placeholder] = $matches[0];
+
+            return $placeholder;
+        }, $html);
 
         if (preg_match_all("/{{(.*?)}}/", $html, $matches)) {
             foreach ($matches[1] as $i => $placeholder) {
@@ -57,6 +77,14 @@ trait WithSendBulkEmails
             }
         }
 
+        // Restore MSO conditional comments
+        foreach ($msoComments as $placeholder => $comment) {
+            $html = str_replace($placeholder, $comment, $html);
+        }
+
+        if ($debug) {
+            print "Preg replacing".now()->toDateTimeString()."\n";
+        }
         $html = preg_replace('/\R+/', '', $html);
 
         if ($debug) {
@@ -80,26 +108,30 @@ trait WithSendBulkEmails
         $originalPlaceholder = $placeholder;
         $placeholder         = Str::kebab(trim($placeholder));
 
-        if ($webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id)) {
-            $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)?->customer?->name ?? '';
-        } elseif ($userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id)) {
-            $customerName = Arr::get($additionalData, 'customer_name') ?? User::find($userHasDispatchedEmail->user_id)?->contact_name ?? '';
-        } elseif ($customerHasDispatchedEmail = $this->getCustomerDispatch($dispatchedEmail->id)) {
-            $customerName = Customer::find($customerHasDispatchedEmail->customer_id)?->name ?? '';
-        } elseif ($externalSubscriberHasDispatchedEmail = $this->getExternalSubscriberDispatch($dispatchedEmail->id)) {
-            $customerName = ExternalSubscriberEmailRecipient::find($externalSubscriberHasDispatchedEmail->external_subscriber_email_recipient_id)?->name ?? '';
-        } elseif ($testEmailRecipientHasDispatchedEmail = $this->getTestEmailRecipientDispatch($dispatchedEmail->id)) {
-            $customerName = TestEmailRecipient::find($testEmailRecipientHasDispatchedEmail->test_email_recipient_id)?->name ?? '';
-        } elseif ($chatEmailRecipientHasDispatchedEmail = $this->getChatEmailRecipientDispatch($dispatchedEmail->id)) {
-            $customerName = ChatEmailRecipient::find($chatEmailRecipientHasDispatchedEmail->chat_email_recipient_id)?->name ?? '';
-        } else {
-            $customerName = Arr::get($additionalData, 'customer_name') ?? 'Customer name undefined';
+        if ($placeholder === 'customer-name') {
+            if ($webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id)) {
+                $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)?->customer?->name ?? '';
+            } elseif ($userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id)) {
+                $customerName = Arr::get($additionalData, 'customer_name') ?? User::find($userHasDispatchedEmail->user_id)?->contact_name ?? '';
+            } elseif ($customerHasDispatchedEmail = $this->getCustomerDispatch($dispatchedEmail->id)) {
+                $customerName = Customer::find($customerHasDispatchedEmail->customer_id)?->name ?? '';
+            } elseif ($externalSubscriberHasDispatchedEmail = $this->getExternalSubscriberDispatch($dispatchedEmail->id)) {
+                $customerName = ExternalSubscriberEmailRecipient::find($externalSubscriberHasDispatchedEmail->external_subscriber_email_recipient_id)?->name ?? '';
+            } elseif ($testEmailRecipientHasDispatchedEmail = $this->getTestEmailRecipientDispatch($dispatchedEmail->id)) {
+                $customerName = TestEmailRecipient::find($testEmailRecipientHasDispatchedEmail->test_email_recipient_id)?->name ?? '';
+            } elseif ($chatEmailRecipientHasDispatchedEmail = $this->getChatEmailRecipientDispatch($dispatchedEmail->id)) {
+                $customerName = ChatEmailRecipient::find($chatEmailRecipientHasDispatchedEmail->chat_email_recipient_id)?->name ?? '';
+            } else {
+                $customerName = Arr::get($additionalData, 'customer_name') ?? 'Customer name undefined';
+            }
+
+            return $customerName;
         }
+
 
         /** @noinspection HtmlUnknownAttribute */
         return match ($placeholder) {
             'username' => $this->getUsername($dispatchedEmail->id),
-            'customer-name' => $customerName,
             'rejected-notes' => Arr::get($additionalData, 'rejected_notes'),
             'invoice_-url' => $invoiceUrl,
             'reset_-password_-u-r-l' => $passwordToken,
