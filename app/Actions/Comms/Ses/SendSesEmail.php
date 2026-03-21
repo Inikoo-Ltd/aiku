@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
+use Sentry;
 
 class SendSesEmail
 {
@@ -128,9 +129,10 @@ class SendSesEmail
 
 
                 if ($dispatchedEmail->recipient && $dispatchedEmail->recipient_type == 'Prospect') {
-                    UpdateProspectEmailSent::run($dispatchedEmail->recipient);
+                    UpdateProspectEmailSent::dispatch($dispatchedEmail->recipient);
                 }
             } catch (AwsException $e) {
+                Sentry::captureException($e);
                 if ($e->getAwsErrorCode() == 'Throttling' && $attempt < $numberAttempts - 1) {
                     $attempt++;
                     usleep(rand(200, 300) + pow(2, $attempt));
@@ -173,7 +175,7 @@ class SendSesEmail
         } while ($attempt < $numberAttempts);
 
 
-        OutboxHydrateDispatchedEmails::run($dispatchedEmail->outbox_id);
+        OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(900);
 
 
         return $dispatchedEmail;
