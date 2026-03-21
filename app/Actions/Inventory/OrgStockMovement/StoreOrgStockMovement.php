@@ -82,11 +82,9 @@ class StoreOrgStockMovement extends OrgAction
                     ]
                 );
             }
+            OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
+            OrgStockHydrateHasBeenInWarehouse::dispatch($orgStock)->delay($this->hydratorsDelay);
         }
-
-        OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
-        OrgStockHydrateHasBeenInWarehouse::dispatch($orgStock)->delay($this->hydratorsDelay);
-
 
         return $orgStockMovement;
     }

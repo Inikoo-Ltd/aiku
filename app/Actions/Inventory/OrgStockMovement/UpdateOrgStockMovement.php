@@ -23,15 +23,11 @@ class UpdateOrgStockMovement extends OrgAction
     }
 
 
-
     public function rules(): array
     {
-        $rules = [
-
-        ];
+        $rules = [];
 
         if (!$this->strict) {
-
             $rules['last_fetched_at'] = ['sometimes', 'date'];
         }
 
