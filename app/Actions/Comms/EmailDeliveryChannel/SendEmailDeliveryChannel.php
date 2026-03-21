@@ -41,8 +41,7 @@ class SendEmailDeliveryChannel
 
     public function handle(EmailDeliveryChannel $emailDeliveryChannel, bool $debug = false): void
     {
-
-        if(!$debug) {
+        if (!$debug) {
             if ($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY) {
                 return;
             }
@@ -110,16 +109,17 @@ class SendEmailDeliveryChannel
 
             $additionalData = $dispatchedEmail->data['additional_data'] ?? [];
 
-            if($recipient->recipient_type=='Customer'){
-                $recipientData=DB::table('customers')->select('name')->where('id',$recipient->recipient_id)->first();
-                if($recipientData){
-                    $additionalData['customer_name']=$recipientData->name;
+            if ($recipient->recipient_name) {
+                $additionalData['customer_name'] = $recipient->recipient_name;
+            } elseif ($recipient->recipient_type == 'Customer') {
+                $recipientData = DB::table('customers')->select('name')->where('id', $recipient->recipient_id)->first();
+                if ($recipientData) {
+                    $additionalData['customer_name'] = $recipientData->name;
                 }
-
             }
 
             if ($debug) {
-                print "------------>   ".Arr::get($additionalData,'customer_name')."\n";
+                print "------------>   ".Arr::get($additionalData, 'customer_name')."\n";
             }
 
             $this->sendEmailWithMergeTags(
