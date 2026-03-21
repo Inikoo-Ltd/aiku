@@ -8,6 +8,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Traits\InWarehouse;
@@ -62,6 +63,7 @@ class OrgStockMovement extends Model
         'data'       => 'array',
         'type'       => OrgStockMovementTypeEnum::class,
         'flow'       => OrgStockMovementFlowEnum::class,
+        'class'      => OrgStockMovementClassEnum::class,
         'date'       => 'datetime',
         'quantity'   => 'decimal:3',
         'amount'     => 'decimal:3',
