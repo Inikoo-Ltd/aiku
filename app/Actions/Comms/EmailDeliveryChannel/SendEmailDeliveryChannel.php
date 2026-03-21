@@ -25,9 +25,7 @@ use App\Models\Comms\EmailBulkRunRecipient;
 use App\Models\Comms\EmailDeliveryChannel;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
-use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -39,16 +37,10 @@ class SendEmailDeliveryChannel
 
     public string $jobQueue = 'ses-send';
 
-    public function handle(EmailDeliveryChannel $emailDeliveryChannel, bool $debug = false): void
+    public function handle(EmailDeliveryChannel $emailDeliveryChannel, bool $runOnlyInReady = true): void
     {
-        if (!$debug) {
-            if ($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY) {
-                return;
-            }
-        }
-
-        if ($debug) {
-            print "Start sending delivery channel  to $emailDeliveryChannel->id ".now()->toDateTimeString()."\n";
+        if ($runOnlyInReady && ($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY)) {
+            return;
         }
 
         /** @var Mailshot|EmailBulkRun $model */
@@ -65,9 +57,7 @@ class SendEmailDeliveryChannel
             );
         }
 
-        if ($debug) {
-            print "Start sending delivery channel XX to $emailDeliveryChannel->id ".now()->toDateTimeString()."\n";
-        }
+
         /** @var EmailBulkRunRecipient|MailshotRecipient $recipient */
         foreach ($model->recipients()->where('channel', $emailDeliveryChannel->id)->get() as $recipient) {
             /** @var DispatchedEmail $dispatchedEmail */
@@ -91,9 +81,6 @@ class SendEmailDeliveryChannel
                 return;
             }
 
-            if ($debug) {
-                print "Start DE   to $dispatchedEmail->id ".now()->toDateTimeString()."\n";
-            }
 
             $encryptedDispatchedEmailID = Crypt::encryptString($dispatchedEmail->id);
 
@@ -103,9 +90,6 @@ class SendEmailDeliveryChannel
 
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
 
-            if ($debug) {
-                print "Start DE (AA)  to $dispatchedEmail->id ".now()->toDateTimeString()."\n";
-            }
 
             $additionalData = $dispatchedEmail->data['additional_data'] ?? [];
 
@@ -118,9 +102,6 @@ class SendEmailDeliveryChannel
                 }
             }
 
-            if ($debug) {
-                print "------------>   ".Arr::get($additionalData, 'customer_name')."\n";
-            }
 
             $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
@@ -129,13 +110,8 @@ class SendEmailDeliveryChannel
                 $emailHtmlBody,
                 $unsubscribeUrl,
                 additionalData: $additionalData,
-                senderName: $model->senderName(),
-                debug: $debug
+                senderName: $model->senderName()
             );
-
-            if ($debug) {
-                print "Finish  DE (AA)  to $dispatchedEmail->id ".now()->toDateTimeString()."\n";
-            }
         }
 
 
@@ -176,7 +152,7 @@ class SendEmailDeliveryChannel
     public function asCommand(Command $command): int
     {
         $emailDeliveryChannel = EmailDeliveryChannel::findOrFail($command->argument('channel'));
-        $this->handle($emailDeliveryChannel, true);
+        $this->handle($emailDeliveryChannel, false);
 
 
         return 0;
