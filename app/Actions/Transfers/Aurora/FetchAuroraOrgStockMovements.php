@@ -18,13 +18,17 @@ use Illuminate\Support\Facades\DB;
 
 class FetchAuroraOrgStockMovements extends FetchAuroraAction
 {
-    public string $commandSignature = 'fetch:stock_movements {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new} ';
+    public string $commandSignature = 'fetch:stock_movements {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OrgStockMovement
     {
-        if ($orgStockMovementData = $organisationSource->fetchOrgStockMovement($organisationSourceId)) {
+        $orgStockMovementData = $organisationSource->fetchOrgStockMovement($organisationSourceId);
+
+        if ($orgStockMovementData) {
             if ($orgStockMovement = OrgStockMovement::where('source_id', $orgStockMovementData['orgStockMovement']['source_id'])
                 ->first()) {
+
+
                 $orgStockMovement = UpdateOrgStockMovement::make()->action(
                     $orgStockMovement,
                     modelData: $orgStockMovementData['orgStockMovement'],
@@ -32,22 +36,24 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
                     strict: false
                 );
             } else {
-                try {
-                    $orgStockMovement = StoreOrgStockMovement::make()->action(
-                        orgStock: $orgStockMovementData['orgStock'],
-                        location: $orgStockMovementData['location'],
-                        modelData: $orgStockMovementData['orgStockMovement'],
-                        hydratorsDelay: 10,
-                        strict: false
-                    );
+
+                //    try {
+                $orgStockMovement = StoreOrgStockMovement::make()->action(
+                    orgStock: $orgStockMovementData['orgStock'],
+                    location: $orgStockMovementData['location'],
+                    modelData: $orgStockMovementData['orgStockMovement'],
+                    hydratorsDelay: 10,
+                    strict: false
+                );
 
 
-                    $this->recordNew($organisationSource);
-                } catch (Exception $e) {
-                    $this->recordError($organisationSource, $e, $orgStockMovementData['orgStockMovement'], 'orgStockMovement', 'store');
-
-                    return null;
-                }
+                print "New org stock movement: {$orgStockMovement->id}";
+                $this->recordNew($organisationSource);
+                //                } catch (Exception $e) {
+                //                    $this->recordError($organisationSource, $e, $orgStockMovementData['orgStockMovement'], 'orgStockMovement', 'store');
+                //
+                //                    return null;
+                //                }
             }
             $sourceData = explode(':', $orgStockMovement->source_id);
 
@@ -71,7 +77,12 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
         }
-        $query->orderBy('Date');
+        if ($this->fromDays) {
+            $query->where('Date', '>=', now()->subDays($this->fromDays)->format('Y-m-d'));
+        }
+
+        $query->orderBy('Date', $this->orderDesc ? 'desc' : 'asc');
+
 
         return $query;
     }
