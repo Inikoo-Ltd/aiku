@@ -32,7 +32,7 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
                 $orgStockMovement = UpdateOrgStockMovement::make()->action(
                     $orgStockMovement,
                     modelData: $orgStockMovementData['orgStockMovement'],
-                    hydratorsDelay: 10,
+                    hydratorsDelay: 1800,
                     strict: false
                 );
             } else {
@@ -42,12 +42,10 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
                     orgStock: $orgStockMovementData['orgStock'],
                     location: $orgStockMovementData['location'],
                     modelData: $orgStockMovementData['orgStockMovement'],
-                    hydratorsDelay: 10,
+                    hydratorsDelay: 1800,
                     strict: false
                 );
 
-
-                print "New org stock movement: {$orgStockMovement->id}";
                 $this->recordNew($organisationSource);
                 //                } catch (Exception $e) {
                 //                    $this->recordError($organisationSource, $e, $orgStockMovementData['orgStockMovement'], 'orgStockMovement', 'store');
@@ -94,6 +92,9 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
             ->whereIn('Inventory Transaction Record Type', ['Movement', 'Helper', 'Info']);
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
+        }
+        if ($this->fromDays) {
+            $query->where('Date', '>=', now()->subDays($this->fromDays)->format('Y-m-d'));
         }
 
         return $query->count();
