@@ -59,27 +59,29 @@ trait WithSendBulkEmails
             return $placeholder;
         }, $html);
 
-        if (preg_match_all("/{{(.*?)}}/", $html, $matches)) {
-            foreach ($matches[1] as $i => $placeholder) {
-                $placeholder = $this->replaceMergeTags($placeholder, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
-                $html        = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
+        $mergeTagCache = [];
+        $callback      = function ($matches) use ($dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData, &$mergeTagCache) {
+            $fullTag    = $matches[0];
+            $tagContent = $matches[1];
+
+            if (! array_key_exists($fullTag, $mergeTagCache)) {
+                $mergeTagCache[$fullTag] = (string) $this->replaceMergeTags($tagContent, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
             }
-        }
+
+            return $mergeTagCache[$fullTag];
+        };
+
+        $html = preg_replace_callback('/{{(.*?)}}/', $callback, $html);
 
         if ($debug) {
-            print "Hi merge tagging  ".now()->toDateTimeString()."\n";
+            print 'Hi merge tagging  '.now()->toDateTimeString()."\n";
         }
 
-        if (preg_match_all("/\[(.*?)]/", $html, $matches)) {
-            foreach ($matches[1] as $i => $tag) {
-                $placeholder = $this->replaceMergeTags($tag, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
-                $html        = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
-            }
-        }
+        $html = preg_replace_callback('/\[(.*?)]/', $callback, $html);
 
         // Restore MSO conditional comments
-        foreach ($msoComments as $placeholder => $comment) {
-            $html = str_replace($placeholder, $comment, $html);
+        if ($msoComments) {
+            $html = str_replace(array_keys($msoComments), array_values($msoComments), $html);
         }
 
         if ($debug) {
@@ -109,6 +111,10 @@ trait WithSendBulkEmails
         $placeholder         = Str::kebab(trim($placeholder));
 
         if ($placeholder === 'customer-name') {
+            if (Arr::get($additionalData, 'customer_name')) {
+                return Arr::get($additionalData, 'customer_name');
+            }
+
             if ($webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id)) {
                 $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)?->customer?->name ?? '';
             } elseif ($userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id)) {

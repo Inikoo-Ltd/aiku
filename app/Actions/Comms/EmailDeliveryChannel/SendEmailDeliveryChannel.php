@@ -27,7 +27,9 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SendEmailDeliveryChannel
@@ -41,7 +43,7 @@ class SendEmailDeliveryChannel
     {
 
         if(!$debug) {
-            if (($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY)) {
+            if ($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY) {
                 return;
             }
         }
@@ -106,13 +108,27 @@ class SendEmailDeliveryChannel
                 print "Start DE (AA)  to $dispatchedEmail->id ".now()->toDateTimeString()."\n";
             }
 
+            $additionalData = $dispatchedEmail->data['additional_data'] ?? [];
+
+            if($recipient->recipient_type=='Customer'){
+                $recipientData=DB::table('customers')->select('name')->where('id',$recipient->recipient_id)->first();
+                if($recipientData){
+                    $additionalData['customer_name']=$recipientData->name;
+                }
+
+            }
+
+            if ($debug) {
+                print "------------>   ".Arr::get($additionalData,'customer_name')."\n";
+            }
+
             $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
                 $model->sender(),
                 $subject,
                 $emailHtmlBody,
                 $unsubscribeUrl,
-                additionalData: $dispatchedEmail->data['additional_data'] ?? [],
+                additionalData: $additionalData,
                 senderName: $model->senderName(),
                 debug: $debug
             );
