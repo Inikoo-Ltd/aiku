@@ -25,6 +25,7 @@ use App\Models\Comms\EmailBulkRunRecipient;
 use App\Models\Comms\EmailDeliveryChannel;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +46,14 @@ class SendEmailDeliveryChannel
 
         /** @var Mailshot|EmailBulkRun $model */
         $model = $emailDeliveryChannel->model;
+
+        try {
+            $locale = $model->shop->language->code;
+            app()->setLocale($locale);
+        } catch (Exception) {
+            //
+        }
+
         $emailHtmlBody = GetHtmlLayout::run($model);
 
         if ($model instanceof Mailshot) {

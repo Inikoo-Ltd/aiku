@@ -38,17 +38,10 @@ trait WithSendBulkEmails
         bool $isTest = false,
         bool $debug = false
     ): DispatchedEmail {
-        if ($debug) {
-            print "Hi start sendEmailWithMergeTags ".now()->toDateTimeString()."\n";
-        }
+
 
         $html = $emailHtmlBody;
-
         $html = $this->processStyles($html);
-
-        if ($debug) {
-            print "Hi html gathered  ".now()->toDateTimeString()."\n";
-        }
 
         // Remove MSO conditional comments temporarily
         $msoComments = [];
@@ -73,9 +66,6 @@ trait WithSendBulkEmails
 
         $html = preg_replace_callback('/{{(.*?)}}/', $callback, $html);
 
-        if ($debug) {
-            print 'Hi merge tagging  '.now()->toDateTimeString()."\n";
-        }
 
         $html = preg_replace_callback('/\[(.*?)]/', $callback, $html);
 
@@ -84,14 +74,7 @@ trait WithSendBulkEmails
             $html = str_replace(array_keys($msoComments), array_values($msoComments), $html);
         }
 
-        if ($debug) {
-            print "Preg replacing".now()->toDateTimeString()."\n";
-        }
         $html = preg_replace('/\R+/', '', $html);
-
-        if ($debug) {
-            print "Calling SendSesEmail".now()->toDateTimeString()."\n";
-        }
 
         return SendSesEmail::run(
             subject: $subject,
