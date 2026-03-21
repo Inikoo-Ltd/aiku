@@ -37,8 +37,16 @@ class SendEmailDeliveryChannel
 
     public string $jobQueue = 'ses-send';
 
-    public function handle(EmailDeliveryChannel $emailDeliveryChannel): void
+    public function handle(EmailDeliveryChannel $emailDeliveryChannel, bool $debug = false): void
     {
+        if ($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY) {
+            return;
+        }
+
+        if ($debug) {
+            print "Start sending delivery channel  to $emailDeliveryChannel->id ".now()->toDateTimeString()."\n";
+        }
+
         /** @var Mailshot|EmailBulkRun $model */
         $model = $emailDeliveryChannel->model;
         $emailHtmlBody = GetHtmlLayout::run($model);
@@ -51,10 +59,18 @@ class SendEmailDeliveryChannel
             ]
         );
 
+        if ($debug) {
+            print "Start sending delivery channel XX to $emailDeliveryChannel->id ".now()->toDateTimeString()."\n";
+        }
         /** @var EmailBulkRunRecipient|MailshotRecipient $recipient */
         foreach ($model->recipients()->where('channel', $emailDeliveryChannel->id)->get() as $recipient) {
             /** @var DispatchedEmail $dispatchedEmail */
             $dispatchedEmail = $recipient->dispatchedEmail;
+
+            if ($dispatchedEmail->state != DispatchedEmailStateEnum::READY) {
+                continue;
+            }
+
             $model->refresh();
 
 
@@ -69,6 +85,10 @@ class SendEmailDeliveryChannel
                 return;
             }
 
+            if ($debug) {
+                print "Start DE   to $dispatchedEmail->id ".now()->toDateTimeString()."\n";
+            }
+
             $encryptedDispatchedEmailID = Crypt::encryptString($dispatchedEmail->id);
 
 
@@ -77,6 +97,10 @@ class SendEmailDeliveryChannel
 
             $subject = ($model instanceof EmailBulkRun) ? $model->outbox->emailOngoingRun->email->subject : $model->subject;
 
+            if ($debug) {
+                print "Start DE (AA)  to $dispatchedEmail->id ".now()->toDateTimeString()."\n";
+            }
+
             $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
                 $model->sender(),
@@ -84,8 +108,13 @@ class SendEmailDeliveryChannel
                 $emailHtmlBody,
                 $unsubscribeUrl,
                 additionalData: $dispatchedEmail->data['additional_data'] ?? [],
-                senderName: $model->senderName()
+                senderName: $model->senderName(),
+                debug: $debug
             );
+
+            if ($debug) {
+                print "Finish  DE (AA)  to $dispatchedEmail->id ".now()->toDateTimeString()."\n";
+            }
         }
 
 
@@ -120,27 +149,13 @@ class SendEmailDeliveryChannel
     }
 
 
-    public string $commandSignature = 'mailshot:send-channel {mailshot} {?channel}';
+    public string $commandSignature = 'mailshot:send-channel {channel}';
 
 
     public function asCommand(Command $command): int
     {
-        try {
-            $mailshot = Mailshot::where('slug', $command->argument('mailshot'))->firstOrFail();
-        } catch (Exception) {
-            $command->error('Mailshot not found');
-
-            return 1;
-        }
-
-        $chanelQuery = $mailshot->channels();
-        if ($command->argument('channel')) {
-            $chanelQuery->where('channel.id', $command->argument('channel'));
-        }
-
-        foreach ($chanelQuery->get() as $channel) {
-            $this->handle($channel);
-        }
+        $emailDeliveryChannel = EmailDeliveryChannel::firstOrFail($command->argument('channel'));
+        $this->handle($emailDeliveryChannel, true);
 
 
         return 0;

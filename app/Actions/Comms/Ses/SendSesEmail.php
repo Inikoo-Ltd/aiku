@@ -20,6 +20,7 @@ use Aws\Exception\AwsException;
 use Aws\Result;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -32,13 +33,16 @@ class SendSesEmail
 
     public mixed $message;
 
-    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false): DispatchedEmail
+    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false, bool $debug = false): DispatchedEmail
     {
         if ($dispatchedEmail->state != DispatchedEmailStateEnum::READY) {
             return $dispatchedEmail;
         }
 
-        $emailTo = $dispatchedEmail->emailAddress->email;
+        if ($debug) {
+            print "Start sending email to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
+        }
+        $emailTo = $dispatchedEmail->emailAddress?->email;
 
         $actuallySend = false;
         if (app()->isProduction()) {
@@ -57,8 +61,8 @@ class SendSesEmail
             UpdateDispatchedEmail::run(
                 $dispatchedEmail,
                 [
-                    'state'                => DispatchedEmailStateEnum::SENT,
-                    'sent_at'              => now(),
+                    'state'   => DispatchedEmailStateEnum::SENT,
+                    'sent_at' => now(),
                 ]
             );
 
@@ -92,15 +96,29 @@ class SendSesEmail
         $numberAttempts = 12;
         $attempt        = 0;
 
+        if ($debug) {
+            print "Start try to send  process to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
+        }
+
         do {
             try {
+
+
+                if ($debug) {
+                    print "Start try to send   attempt $attempt  Start  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
+                }
+
                 $result = $this->sendEmail($emailData);
+
+                if ($debug) {
+                    print "Start try to send  attempt $attempt  End  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
+                }
 
                 $dispatchedEmail = UpdateDispatchedEmail::run(
                     $dispatchedEmail,
                     [
-                        'state'                => DispatchedEmailStateEnum::SENT,
-                        'sent_at'              => now(),
+                        'state'   => DispatchedEmailStateEnum::SENT,
+                        'sent_at' => now(),
                     ]
                 );
 
@@ -131,6 +149,11 @@ class SendSesEmail
                 if ($dispatchedEmail->recipient && $dispatchedEmail->recipient_type == 'Prospect') {
                     UpdateProspectEmailSent::dispatch($dispatchedEmail->recipient);
                 }
+
+                if ($debug) {
+                    print "Post  attempt $attempt    to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
+                }
+
             } catch (AwsException $e) {
                 Sentry::captureException($e);
                 if ($e->getAwsErrorCode() == 'Throttling' && $attempt < $numberAttempts - 1) {
@@ -175,6 +198,9 @@ class SendSesEmail
         } while ($attempt < $numberAttempts);
 
 
+        if ($debug) {
+            print "Finish  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
+        }
         OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(900);
 
 

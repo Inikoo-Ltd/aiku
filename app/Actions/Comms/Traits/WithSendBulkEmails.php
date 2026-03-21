@@ -25,7 +25,7 @@ trait WithSendBulkEmails
 {
     use WithProcessEmailStyles;
 
-    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null, bool $isTest = false): DispatchedEmail
+    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null, bool $isTest = false, bool $debug=false): DispatchedEmail
     {
         $html = $emailHtmlBody;
 
@@ -55,7 +55,8 @@ trait WithSendBulkEmails
             sender: $sender,
             unsubscribeUrl: $unsubscribeUrl,
             senderName: $senderName,
-            isTest: $isTest
+            isTest: $isTest,
+            debug: $debug
         );
     }
 
