@@ -39,8 +39,11 @@ class SendEmailDeliveryChannel
 
     public function handle(EmailDeliveryChannel $emailDeliveryChannel, bool $debug = false): void
     {
-        if ($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY) {
-            return;
+
+        if(!$debug) {
+            if (($emailDeliveryChannel->state != EmailDeliveryChannelStateEnum::READY)) {
+                return;
+            }
         }
 
         if ($debug) {
@@ -51,13 +54,15 @@ class SendEmailDeliveryChannel
         $model = $emailDeliveryChannel->model;
         $emailHtmlBody = GetHtmlLayout::run($model);
 
-        UpdateEmailDeliveryChannel::run(
-            $emailDeliveryChannel,
-            [
-                'start_sending_at' => now(),
-                'state'            => EmailDeliveryChannelStateEnum::SENDING
-            ]
-        );
+        if ($emailDeliveryChannel->state == EmailDeliveryChannelStateEnum::READY) {
+            UpdateEmailDeliveryChannel::run(
+                $emailDeliveryChannel,
+                [
+                    'start_sending_at' => now(),
+                    'state'            => EmailDeliveryChannelStateEnum::SENDING
+                ]
+            );
+        }
 
         if ($debug) {
             print "Start sending delivery channel XX to $emailDeliveryChannel->id ".now()->toDateTimeString()."\n";
@@ -154,7 +159,7 @@ class SendEmailDeliveryChannel
 
     public function asCommand(Command $command): int
     {
-        $emailDeliveryChannel = EmailDeliveryChannel::firstOrFail($command->argument('channel'));
+        $emailDeliveryChannel = EmailDeliveryChannel::findOrFail($command->argument('channel'));
         $this->handle($emailDeliveryChannel, true);
 
 

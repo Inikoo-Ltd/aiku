@@ -27,14 +27,27 @@ trait WithSendBulkEmails
 
     public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null, bool $isTest = false, bool $debug=false): DispatchedEmail
     {
+        if ($debug) {
+            print "Hi start sendEmailWithMergeTags ".now()->toDateTimeString()."\n";
+        }
+
         $html = $emailHtmlBody;
 
         $html = $this->processStyles($html);
+
+        if ($debug) {
+            print "Hi html gathered  ".now()->toDateTimeString()."\n";
+        }
+
         if (preg_match_all("/{{(.*?)}}/", $html, $matches)) {
             foreach ($matches[1] as $i => $placeholder) {
                 $placeholder = $this->replaceMergeTags($placeholder, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
                 $html        = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
             }
+        }
+
+        if ($debug) {
+            print "Hi merge tagging  ".now()->toDateTimeString()."\n";
         }
 
         if (preg_match_all("/\[(.*?)]/", $html, $matches)) {
@@ -46,7 +59,9 @@ trait WithSendBulkEmails
 
         $html = preg_replace('/\R+/', '', $html);
 
-
+        if ($debug) {
+            print "Calling SendSesEmail".now()->toDateTimeString()."\n";
+        }
 
         return SendSesEmail::run(
             subject: $subject,
