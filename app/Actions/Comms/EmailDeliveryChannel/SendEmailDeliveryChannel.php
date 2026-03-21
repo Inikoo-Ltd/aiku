@@ -47,6 +47,10 @@ class SendEmailDeliveryChannel
         $model = $emailDeliveryChannel->model;
         $emailHtmlBody = GetHtmlLayout::run($model);
 
+        if ($model instanceof Mailshot) {
+            $emailHtmlBody = EnsureEmailHasUnsubscribeLink::run($emailHtmlBody);
+        }
+
         if ($emailDeliveryChannel->state == EmailDeliveryChannelStateEnum::READY) {
             UpdateEmailDeliveryChannel::run(
                 $emailDeliveryChannel,
@@ -56,7 +60,6 @@ class SendEmailDeliveryChannel
                 ]
             );
         }
-
 
         /** @var EmailBulkRunRecipient|MailshotRecipient $recipient */
         foreach ($model->recipients()->where('channel', $emailDeliveryChannel->id)->get() as $recipient) {
