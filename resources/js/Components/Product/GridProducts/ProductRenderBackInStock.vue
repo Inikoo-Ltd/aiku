@@ -7,8 +7,8 @@ import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { faEnvelope, faHeart } from '@far'
-import { faCircle, faHeart as fasHeart, faMedal } from '@fas'
+import { faHeart } from '@far'
+import { faHeart as fasHeart, faMedal } from '@fas'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fal"

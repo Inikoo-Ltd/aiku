@@ -14,7 +14,6 @@ import { router, usePage } from "@inertiajs/vue3"
 import { debounce, forEach, findKey } from 'lodash-es'
 import qs from 'qs'
 import { trans } from 'laravel-vue-i18n'
-import { notify } from '@kyvg/vue3-notification'
 
 
 // Table Components
@@ -26,7 +25,6 @@ import Image from '@/Components/Image.vue'
 
 // Product Components
 import RecordCounter from './RecordCounter.vue'
-import ProductCard from './ProductCard.vue'
 import EmptyState from './EmptyState.vue'
 import ProductRenderEcom from '@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue'
 
