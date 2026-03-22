@@ -29,7 +29,7 @@ const locale = useLocaleStore()
 const props = withDefaults(defineProps<{
     product: ProductResource
     attachToFavouriteRoute?: routeType
-    dettachToFavouriteRoute?: routeType
+    detachToFavouriteRoute?: routeType
     attachBackInStockRoute?: routeType
     detachBackInStockRoute?: routeType
 
@@ -37,7 +37,7 @@ const props = withDefaults(defineProps<{
     attachToFavouriteRoute: () => ({
         name: 'retina.models.favourites.store',
     }),
-    dettachToFavouriteRoute: () => ({
+    detachToFavouriteRoute: () => ({
         name: 'retina.models.favourites.delete',
     }),
     attachBackInStockRoute: () => ({
@@ -94,7 +94,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
     // Section: Submit
     router.delete(
-        route(props.dettachToFavouriteRoute.name, {
+        route(props.detachToFavouriteRoute.name, {
             product: product.id
         }),
         {

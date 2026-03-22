@@ -98,7 +98,7 @@ class IndexRetinaEcomFavourites extends RetinaAction
                 'attachToFavouriteRoute' => [
                     'name' => 'retina.models.product.favourite'
                 ],
-                'dettachToFavouriteRoute' => [
+                'detachToFavouriteRoute' => [
                     'name' => 'retina.models.product.unfavourite'
                 ],
                 'attachBackInStockRoute' => [
