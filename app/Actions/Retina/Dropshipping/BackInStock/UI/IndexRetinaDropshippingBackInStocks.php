@@ -8,10 +8,10 @@
 
 namespace App\Actions\Retina\Dropshipping\BackInStock\UI;
 
-use App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
+use App\Actions\Comms\BackInStockReminder\UI\IndexRetinaCustomerBackInStockReminders;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Http\Resources\CRM\CustomerBackInStockRemindersResource;
+use App\Http\Resources\CRM\RetinaCustomerBackInStockRemindersResource;
 use App\Models\CRM\Customer;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -23,12 +23,12 @@ class IndexRetinaDropshippingBackInStocks extends RetinaAction
 {
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
-        return IndexCustomerBackInStockReminders::run($customer, $prefix);
+        return IndexRetinaCustomerBackInStockReminders::run($customer, $prefix);
     }
 
     public function tableStructure(Customer $customer, $prefix = null): Closure
     {
-        return IndexCustomerBackInStockReminders::make()->tableStructure($customer, $prefix);
+        return IndexRetinaCustomerBackInStockReminders::make()->tableStructure($customer, $prefix);
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
@@ -45,12 +45,12 @@ class IndexRetinaDropshippingBackInStocks extends RetinaAction
             'Dropshipping/RetinaDropshippingBackInStocks',
             [
                 'breadcrumbs'               => $this->getBreadcrumbs(),
-                'title'                     => __('Back In Stocks'),
+                'title'                     => __('Back In Stock Reminders'),
                 'pageHead'                  => [
-                    'title' => __('Back In Stocks'),
+                    'title' => __('Back In Stock Reminders'),
                     'icon'  => 'fal fa-heart',
                 ],
-                'data'                      => CustomerBackInStockRemindersResource::collection($productFavorites),
+                'data'                      => RetinaCustomerBackInStockRemindersResource::collection($productFavorites),
                 'basketTransactions'        => [],
                 'attachToFavouriteRoute'    => [
                     'name' => 'retina.models.product.favourite'

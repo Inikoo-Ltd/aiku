@@ -120,9 +120,9 @@ class ShowCustomer extends OrgAction
                     'previous' => $this->getPrevious($customer, $request),
                     'next'     => $this->getNext($customer, $request),
                 ],
-                'sales_channels' => GetSalesChannelOptions::make()->getOptions($customer->shop),
-                'can_add_order'  => $this->shop->type == ShopTypeEnum::B2B,
-                'gr_data'        => $grData,
+                'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
+                'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B,
+                'gr_data'          => $grData,
                 'pageHead'         => [
                     'title'         => $customer->name,
                     'icon'          => [
@@ -181,37 +181,37 @@ class ShowCustomer extends OrgAction
                     'balance'             => $customer->balance,
                     'credit_transactions' => $customer->stats->number_credit_transactions
                 ],
-                'shop_data'         => [
-                    'id' => $customer->shop->id,
+                'shop_data'        => [
+                    'id'   => $customer->shop->id,
                     'name' => $customer->shop->name,
                     'slug' => $customer->shop->slug,
                     'type' => $customer->shop->type,
                 ],
 
-                $tabs::SHOWCASE->value => $this->tab == $tabs::SHOWCASE->value ?
-                    fn () => GetCustomerShowcase::run($customer)
-                    : Inertia::lazy(fn () => GetCustomerShowcase::run($customer)),
+                $tabs::SHOWCASE->value            => $this->tab == $tabs::SHOWCASE->value ?
+                    fn() => GetCustomerShowcase::run($customer)
+                    : Inertia::lazy(fn() => GetCustomerShowcase::run($customer)),
                 $tabs::CREDIT_TRANSACTIONS->value => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
-                    fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
-                    : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
+                    fn() => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
+                    : Inertia::lazy(fn() => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
                 $tabs::PAYMENTS->value            => $this->tab == $tabs::PAYMENTS->value ?
-                    fn () => PaymentsResource::collection(IndexPayments::run($customer, $tabs::PAYMENTS->value))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($customer))),
+                    fn() => PaymentsResource::collection(IndexPayments::run($customer, $tabs::PAYMENTS->value))
+                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run($customer))),
                 $tabs::FAVOURITES->value          => $this->tab == $tabs::FAVOURITES->value ?
-                    fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
-                    : Inertia::lazy(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
+                    fn() => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
+                    : Inertia::lazy(fn() => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
                 $tabs::REMINDERS->value           => $this->tab == $tabs::REMINDERS->value ?
-                    fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))
-                    : Inertia::lazy(fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))),
+                    fn() => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))
+                    : Inertia::lazy(fn() => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))),
                 $tabs::ATTACHMENTS->value         => $this->tab == $tabs::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($customer))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($customer))),
+                    fn() => AttachmentsResource::collection(IndexAttachments::run($customer))
+                    : Inertia::lazy(fn() => AttachmentsResource::collection(IndexAttachments::run($customer))),
                 $tabs::DISPATCHED_EMAILS->value   => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
-                    fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
-                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
+                    fn() => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
+                    : Inertia::lazy(fn() => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
                 $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($customer))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($customer))),
+                    fn() => HistoryResource::collection(IndexHistory::run($customer))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($customer))),
 
 
             ]
@@ -244,16 +244,8 @@ class ShowCustomer extends OrgAction
                     "bgColor"     => "#FF7DBD",
                     "field"       => "internal_notes"
                 ],
-                // [
-                //     "label"       => __("Public") . ' (' . __("Will be deleted") . ')',
-                //     "note"        => $customer->warehouse_public_notes ?? '',
-                //     "information" => __("This note will be visible to public, both staff and the customer can see."),
-                //     "editable"    => true,
-                //     "bgColor"     => "#94DB84",
-                //     "field"       => "warehouse_public_notes"
-                // ],
                 [
-                    "label"       => __("Sticky Note For Delivery Notes") . ' (' . __("Private") . ')',
+                    "label"       => __("Sticky Note For Delivery Notes").' ('.__("Private").')',
                     "note"        => $customer->warehouse_internal_notes ?? '',
                     "information" => __("Will be put as Order private note everytime the Order submitted. Visible only to customer service and warehouse's staff."),
                     "editable"    => true,

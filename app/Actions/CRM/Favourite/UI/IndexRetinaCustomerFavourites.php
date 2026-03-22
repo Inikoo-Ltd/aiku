@@ -11,7 +11,7 @@ namespace App\Actions\CRM\Favourite\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
-use App\Http\Resources\CRM\CustomerFavouritesResource;
+use App\Http\Resources\CRM\RetinaCustomerFavouritesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
@@ -21,12 +21,13 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexCustomerFavourites extends OrgAction
+class IndexRetinaCustomerFavourites extends OrgAction
 {
     use WithCRMAuthorisation;
 
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
+        $basket = $parent->orderInBasket;
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('products.code', $value)
@@ -43,7 +44,21 @@ class IndexCustomerFavourites extends OrgAction
         $query->where('favourites.customer_id', $parent->id);
         $query->leftJoin('products', 'favourites.product_id', '=', 'products.id');
         $select = [];
+        if ($basket) {
+            $query->leftJoin('transactions', function ($join) use ($basket) {
+                $join->on('products.id', '=', 'transactions.model_id')
+                    ->where('transactions.model_type', '=', 'Product')
+                    ->where('transactions.order_id', '=', $basket->id)
+                    ->whereNull('transactions.deleted_at');
+            });
+            $select[] = 'transactions.id as transaction_id';
+            $select[] = 'transactions.quantity_ordered as quantity_ordered';
+        }
 
+        $query->leftJoin('webpages', function ($join) {
+            $join->on('products.id', '=', 'webpages.model_id')
+                ->where('webpages.model_type', '=', 'Product');
+        });
 
         $query->whereNull('favourites.unfavourited_at');
         $select = array_merge($select, [
@@ -66,6 +81,9 @@ class IndexCustomerFavourites extends OrgAction
                 'products.top_seller',
                 'products.web_images',
                 'products.slug',
+                'webpages.canonical_url',
+                'products.offers_data as product_offers_data'
+
         ]);
 
         return $query->defaultSort('products.code')
@@ -112,7 +130,7 @@ class IndexCustomerFavourites extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $favourites): AnonymousResourceCollection
     {
-        return CustomerFavouritesResource::collection($favourites);
+        return RetinaCustomerFavouritesResource::collection($favourites);
     }
 
 }

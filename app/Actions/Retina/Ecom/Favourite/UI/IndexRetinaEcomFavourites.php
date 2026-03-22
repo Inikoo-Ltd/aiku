@@ -10,13 +10,12 @@
 
 namespace App\Actions\Retina\Ecom\Favourite\UI;
 
-use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
+use App\Actions\CRM\Favourite\UI\IndexRetinaCustomerFavourites;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Http\Resources\CRM\CustomerFavouritesResource;
+use App\Actions\Retina\Traits\HasBasketTransactions;
+use App\Http\Resources\CRM\RetinaCustomerFavouritesResource;
 use App\Models\CRM\Customer;
-use App\Models\Ordering\Order;
-use App\Models\Ordering\Transaction;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -25,59 +24,25 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexRetinaEcomFavourites extends RetinaAction
 {
+    use HasBasketTransactions;
+
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
-        return IndexCustomerFavourites::run($customer, $prefix);
+        return IndexRetinaCustomerFavourites::run($customer, $prefix);
     }
 
     public function tableStructure(Customer $customer, $prefix = null): Closure
     {
-        return IndexCustomerFavourites::make()->tableStructure($customer, $prefix);
-    }
-
-    private function getBasketTransactions(Customer $customer): array
-    {
-        if (!$customer->current_order_in_basket_id) {
-            return [];
-        }
-
-        $order = Order::find($customer->current_order_in_basket_id);
-        if (!$order) {
-            return [];
-        }
-
-        // Get transactions the same way as ShowRetinaEcomBasket
-        $transactions = $order->transactions()
-            ->whereIn('model_type', ['Product', 'Service'])
-            ->with(['asset.product'])
-            ->get();
-
-        $basketTransactions = [];
-        /** @var Transaction $transaction */
-        foreach ($transactions as $transaction) {
-            // Use product ID as a key to match with favorites data (products.id)
-            $productId = $transaction->asset?->product?->id;
-
-            if ($productId) {
-                $basketTransactions[$productId] = [
-                    'id' => $transaction->id,
-                    'quantity_ordered' => (int) $transaction->quantity_ordered,
-                    'asset_id' => $transaction->asset_id,
-                    'product_id' => $productId,
-                ];
-            }
-        }
-
-        return $basketTransactions;
+        return IndexRetinaCustomerFavourites::make()->tableStructure($customer, $prefix);
     }
 
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+
         return $this->handle($this->customer);
     }
-
 
 
     public function htmlResponse(LengthAwarePaginator $productFavorites, ActionRequest $request): Response
@@ -87,32 +52,32 @@ class IndexRetinaEcomFavourites extends RetinaAction
         return Inertia::render(
             'Ecom/Favourites',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Favourites'),
-                'pageHead' => [
-                    'title'         => __('Favourites'),
-                    'icon'          => 'fal fa-heart',
+                'breadcrumbs'               => $this->getBreadcrumbs(),
+                'title'                     => __('Favourites'),
+                'pageHead'                  => [
+                    'title' => __('Favourites'),
+                    'icon'  => 'fal fa-heart',
                 ],
-                'data'     => CustomerFavouritesResource::collection($productFavorites),
-                'basketTransactions' => $basketTransactions,
-                'attachToFavouriteRoute' => [
+                'data'                      => RetinaCustomerFavouritesResource::collection($productFavorites),
+                'basketTransactions'        => $basketTransactions,
+                'attachToFavouriteRoute'    => [
                     'name' => 'retina.models.product.favourite'
                 ],
-                'detachToFavouriteRoute' => [
+                'detachToFavouriteRoute'    => [
                     'name' => 'retina.models.product.unfavourite'
                 ],
-                'attachBackInStockRoute' => [
+                'attachBackInStockRoute'    => [
                     'name' => 'retina.models.remind_back_in_stock.store'
                 ],
-                'detachBackInStockRoute' => [
+                'detachBackInStockRoute'    => [
                     'name' => 'retina.models.remind_back_in_stock.delete'
                 ],
-                'addToBasketRoute' => [
-                    'name' => 'retina.models.product.add-to-basket',
+                'addToBasketRoute'          => [
+                    'name'   => 'retina.models.product.add-to-basket',
                     'method' => 'post'
                 ],
                 'updateBasketQuantityRoute' => [
-                    'name' => 'retina.models.transaction.update',
+                    'name'   => 'retina.models.transaction.update',
                     'method' => 'patch'
                 ]
             ]
@@ -129,8 +94,6 @@ class IndexRetinaEcomFavourites extends RetinaAction
                 ]
             );
     }
-
-
 
 
 }
