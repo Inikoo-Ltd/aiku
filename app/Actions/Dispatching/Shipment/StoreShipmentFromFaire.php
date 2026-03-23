@@ -10,6 +10,7 @@ use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -36,11 +37,16 @@ class StoreShipmentFromFaire extends OrgAction
 
 
             if (!$shipper) {
-                $shipper = StoreShipper::make()->action($order->organisation, [
-                    'code'     => Arr::get($faireShipment, 'carrier').'-faire',
-                    'name'     => Arr::get($faireShipment, 'carrier')." (Faire)",
-                    'trade_as' => Arr::get($faireShipment, 'carrier')
-                ]);
+                $shipper = StoreShipper::make()->action(
+                    organisation: $order->organisation,
+                    modelData: [
+                        'code'     => Arr::get($faireShipment, 'carrier').'-faire',
+                        'name'     => Arr::get($faireShipment, 'carrier')." (Faire)",
+                        'trade_as' => Arr::get($faireShipment, 'carrier')
+                    ],
+                    strict: false
+
+                );
             }
 
             $shipment = StoreShipment::make()->action($deliveryNote, $shipper, [
