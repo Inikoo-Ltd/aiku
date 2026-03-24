@@ -30,8 +30,6 @@ use Spatie\MediaLibrary\HasMedia;
  * @property int|null $subject_id
  * @property int|null $time_tracker_id
  * @property int|null $clocking_machine_id
- * @property int|null $work_schedule_id
- * @property bool $is_late
  * @property \Illuminate\Support\Carbon $clocked_at
  * @property string|null $generator_type
  * @property int|null $generator_id
@@ -45,9 +43,10 @@ use Spatie\MediaLibrary\HasMedia;
  * @property string|null $deleted_by_type
  * @property int|null $deleted_by_id
  * @property string|null $source_id
+ * @property int|null $work_schedule_id
+ * @property bool $is_late
  * @property-read \App\Models\HumanResources\ClockingMachine|null $clockingMachine
  * @property-read \App\Models\SysAdmin\Group $group
- * @property-read \App\Models\HumanResources\WorkSchedule|null $workSchedule
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
@@ -55,6 +54,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read Media|null $seoImage
  * @property-read Model|\Eloquent|null $subject
  * @property-read \App\Models\HumanResources\Timesheet|null $timesheet
+ * @property-read \App\Models\HumanResources\WorkSchedule|null $workSchedule
  * @property-read \App\Models\HumanResources\Workplace|null $workplace
  * @method static Builder<static>|Clocking newModelQuery()
  * @method static Builder<static>|Clocking newQuery()

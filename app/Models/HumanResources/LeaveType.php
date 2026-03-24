@@ -17,15 +17,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $description
  * @property LeaveCategoryEnum $category
  * @property bool $requires_approval
- * @property numeric|null $max_days_per_year
+ * @property int|null $max_days_per_year
  * @property array<array-key, mixed>|null $settings
  * @property bool $is_active
- * @property bool $ignore_concurrency_leave_rules
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $region_code
+ * @property bool $ignore_concurrency_leave_rules
+ * @property-read string $short_code
  * @property-read \App\Models\SysAdmin\Group $group
- * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\Leave> $leaves
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveType newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveType newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveType query()

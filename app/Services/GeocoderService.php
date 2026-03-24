@@ -54,7 +54,7 @@ class GeocoderService
             '📍 Geocoding started'.json_encode([
                 'input'        => $addressData,
                 'total_layers' => count($layers),
-                'layers'       => array_map(fn($l) => $l['name'].': '.$l['query'], $layers),
+                'layers'       => array_map(fn ($l) => $l['name'].': '.$l['query'], $layers),
             ])
         );
 

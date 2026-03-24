@@ -15,19 +15,19 @@ use Carbon\Carbon;
  * @property string $schedulable_type
  * @property int $schedulable_id
  * @property string $name
- * @property string $type
  * @property int|null $timezone_id
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\WorkScheduleDay> $days
  * @property-read Model|\Eloquent $schedulable
  * @property-read Timezone|null $timezone
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule defaults()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule shifts()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkSchedule defaults()
  * @mixin \Eloquent
  */
 class WorkSchedule extends Model

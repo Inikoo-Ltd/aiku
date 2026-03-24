@@ -11,16 +11,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $year
  * @property int $annual_days
  * @property float $annual_used
- * @property int $unpaid_days
- * @property float $unpaid_used
  * @property int $medical_days
  * @property float $medical_used
+ * @property int $unpaid_days
+ * @property float $unpaid_used
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\HumanResources\Employee $employee
  * @property-read float $annual_remaining
- * @property-read float $unpaid_remaining
  * @property-read float $medical_remaining
+ * @property-read float $unpaid_remaining
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmployeeLeaveBalance query()

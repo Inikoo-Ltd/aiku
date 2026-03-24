@@ -145,6 +145,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $colour
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property array<array-key, mixed> $opening_hours
+ * @property int $late_grace_period_minutes
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
@@ -177,6 +178,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read \App\Models\SysAdmin\OrganisationFulfilmentStats|null $fulfilmentStats
  * @property-read LaravelCollection<int, Fulfilment> $fulfilments
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read LaravelCollection<int, HolidayYear> $holidayYears
  * @property-read LaravelCollection<int, Holiday> $holidays
  * @property-read \App\Models\SysAdmin\OrganisationHumanResourcesStats|null $humanResourcesStats
  * @property-read Media|null $image

@@ -18,8 +18,7 @@ class LeaveConcurrencyService
         Carbon     $startDate,
         Carbon     $endDate,
         ?LeaveType $leaveType = null
-    ): array
-    {
+    ): array {
         $exemptLeaveTypes = ['sick-leave', 'meeting', 'late-for-work'];
 
         if ($leaveType && $leaveType->ignore_concurrency_leave_rules) {
@@ -66,8 +65,7 @@ class LeaveConcurrencyService
         LeaveConcurrencyRule $rule,
         Employee             $employee,
         string               $leaveTypeCode
-    ): bool
-    {
+    ): bool {
         foreach ($rule->targets as $target) {
             $matches = false;
 
@@ -97,8 +95,7 @@ class LeaveConcurrencyService
         string               $leaveTypeCode,
         Carbon               $startDate,
         Carbon               $endDate
-    ): ?array
-    {
+    ): ?array {
         $allTargets = $rule->targets;
         foreach ($allTargets as $target) {
             $partnerEmployees = $this->getEmployeesByTarget($target, $employee->organisation_id);
@@ -135,8 +132,7 @@ class LeaveConcurrencyService
         Carbon               $startDate,
         Carbon               $endDate,
         ?LeaveType           $leaveType = null
-    ): ?array
-    {
+    ): ?array {
         $ruleType = $rule->rule_type->value;
 
         if ($ruleType === LeaveConcurrencyRuleTypeEnum::QUOTA->value) {
@@ -160,8 +156,7 @@ class LeaveConcurrencyService
         string               $leaveTypeCode,
         Carbon               $startDate,
         Carbon               $endDate
-    ): ?array
-    {
+    ): ?array {
         $limit = $rule->limit ?? 1;
         $maxOverlapDays = $rule->max_overlap_days ?? 0;
 
@@ -273,8 +268,7 @@ class LeaveConcurrencyService
         string               $leaveTypeCode,
         Carbon               $startDate,
         Carbon               $endDate
-    ): ?array
-    {
+    ): ?array {
         $subjectTargets = $rule->targets->where('role', LeaveConcurrencyTargetRoleEnum::SUBJECT->value);
 
         foreach ($subjectTargets as $target) {

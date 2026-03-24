@@ -59,12 +59,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property GenderEnum|null $gender
  * @property string|null $worker_number
  * @property string|null $job_title
- * @property bool $allow_shift
  * @property EmployeeTypeEnum $type
  * @property EmployeeStateEnum $state
  * @property string|null $employment_start_at
  * @property string|null $employment_end_at
- * @property string|null $emergency_contact
+ * @property array<array-key, mixed>|null $emergency_contact
  * @property array<array-key, mixed>|null $salary
  * @property array<array-key, mixed>|null $working_hours
  * @property numeric $week_working_hours
@@ -85,24 +84,28 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $location
  * @property string|null $notes
  * @property int|null $probation_period_days
- * @property string|null $bank_account_number
  * @property string|null $bank_account_name
+ * @property string|null $bank_account_number
  * @property string|null $insurance_number
  * @property string|null $religion
  * @property \Illuminate\Support\Carbon|null $contract_start_date
  * @property \Illuminate\Support\Carbon|null $contract_end_date
  * @property string|null $identity_document_issued_by
+ * @property bool $allow_shift
  * @property-read \App\Models\Helpers\Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Address> $addresses
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \App\Models\HumanResources\Clocking> $clockings
+ * @property-read string|null $department
  * @property-read Group $group
+ * @property-read Collection<int, \App\Models\HumanResources\HRAnnouncement> $hrAnnouncements
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \App\Models\HumanResources\EmployeeHasJobPositions|null $pivot
  * @property-read Collection<int, \App\Models\HumanResources\JobPosition> $jobPositions
  * @property-read \App\Models\HumanResources\EmployeeAnalytics|null $latestAnalytics
+ * @property-read \App\Models\HumanResources\EmployeeLeaveBalance|null $leaveBalance
  * @property-read MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
  * @property-read \App\Models\Helpers\Media|null $seoImage

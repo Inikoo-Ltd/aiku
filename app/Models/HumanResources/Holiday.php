@@ -29,6 +29,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Holiday forDateRange($startDate, $endDate)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Holiday forYear($year)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Holiday newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Holiday newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Holiday query()

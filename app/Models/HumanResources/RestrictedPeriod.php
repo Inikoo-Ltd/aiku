@@ -9,6 +9,31 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $organisation_id
+ * @property int|null $holiday_year_id
+ * @property string $label
+ * @property \Illuminate\Support\Carbon $start_date
+ * @property \Illuminate\Support\Carbon $end_date
+ * @property string $strictness
+ * @property bool $is_active
+ * @property bool $allow_superuser_override
+ * @property int|null $created_by_id
+ * @property int|null $updated_by_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read User|null $createdBy
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\RestrictedException> $exceptions
+ * @property-read \App\Models\HumanResources\HolidayYear|null $holidayYear
+ * @property-read Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\HumanResources\RestrictedPeriodTarget> $targets
+ * @property-read User|null $updatedBy
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedPeriod newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedPeriod newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedPeriod query()
+ * @mixin \Eloquent
+ */
 class RestrictedPeriod extends Model
 {
     protected $guarded = [];

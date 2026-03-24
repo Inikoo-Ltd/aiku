@@ -10,7 +10,6 @@ use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -45,7 +44,6 @@ class StoreShipmentFromFaire extends OrgAction
                         'trade_as' => Arr::get($faireShipment, 'carrier')
                     ],
                     strict: false
-
                 );
             }
 

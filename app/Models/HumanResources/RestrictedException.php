@@ -7,6 +7,26 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $organisation_id
+ * @property int|null $restricted_period_id
+ * @property int $employee_id
+ * @property \Illuminate\Support\Carbon $from_date
+ * @property \Illuminate\Support\Carbon $to_date
+ * @property int|null $approved_by_id
+ * @property string|null $note
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read User|null $approvedBy
+ * @property-read \App\Models\HumanResources\Employee $employee
+ * @property-read Organisation $organisation
+ * @property-read \App\Models\HumanResources\RestrictedPeriod|null $restrictedPeriod
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedException newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedException newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RestrictedException query()
+ * @mixin \Eloquent
+ */
 class RestrictedException extends Model
 {
     protected $guarded = [];

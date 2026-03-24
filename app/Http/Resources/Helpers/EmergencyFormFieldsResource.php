@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Resources\Helpers;
 
 use App\Http\Resources\HasSelfCall;

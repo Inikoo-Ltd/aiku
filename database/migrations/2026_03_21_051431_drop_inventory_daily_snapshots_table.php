@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 21 Mar 2026 13:18:53 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -20,6 +21,6 @@ return new class () extends Migration {
 
     public function down(): void
     {
-       // Dropped table no need to rollback
+        // Dropped table no need to rollback
     }
 };

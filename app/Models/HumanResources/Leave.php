@@ -17,13 +17,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int $organisation_id
  * @property int $employee_id
  * @property string $employee_name
- * @property string $type
- * @property int|null $leave_type_id
  * @property \Illuminate\Support\Carbon $start_date
  * @property \Illuminate\Support\Carbon $end_date
  * @property int $duration_days
- * @property bool $is_half_day
- * @property string $session
  * @property string|null $reason
  * @property LeaveStatusEnum $status
  * @property int|null $approved_by
@@ -33,10 +29,14 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property bool $is_half_day
+ * @property string $session
+ * @property string $type
+ * @property int|null $leave_type_id
  * @property-read User|null $approver
  * @property-read \App\Models\HumanResources\Employee $employee
- * @property-read LeaveType|null $leaveType
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\HumanResources\LeaveType|null $leaveType
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave newModelQuery()
