@@ -36,8 +36,6 @@ use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
-use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
-use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
@@ -94,8 +92,6 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('submitted', SubmitOrder::class)->name('submitted');
         Route::patch('cancelled', CancelOrder::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
-        Route::patch('handling', UpdateOrderStateToHandling::class)->name('handling');
-        Route::patch('packed', UpdateOrderStateToPacked::class)->name('packed');
         Route::patch('finalise', FinaliseOrder::class)->name('finalise');
         Route::patch('dispatched', DispatchOrder::class)->name('dispatched');
     });

@@ -24,7 +24,10 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Accounting\Invoice;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
@@ -49,8 +52,12 @@ class GenerateInvoiceFromOrder extends OrgAction
         return DB::transaction(function () use ($order) {
             $billingAddress = $order->billingAddress;
             $updatedData    = [];
+
+            /** @var DeliveryNote $deliveryNote */
+            $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->first();
+
             if ($order->deliveryNotes) {
-                $updatedData = $this->recalculateTotals($order);
+                $updatedData = $this->recalculateTotals($order, $deliveryNote);
             }
 
             $order->update([
@@ -116,7 +123,7 @@ class GenerateInvoiceFromOrder extends OrgAction
                 } elseif ($transaction->model_type == 'ShippingZone') {
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
                 } else {
-                    $invoiceTransactionData = $this->recalculateTransactionTotals($transaction);
+                    $invoiceTransactionData = $this->recalculateTransactionTotals($transaction, $deliveryNote);
                     StoreInvoiceTransaction::make()->action($invoice, $transaction, $invoiceTransactionData);
                     $transaction->update(
                         [
@@ -172,13 +179,13 @@ class GenerateInvoiceFromOrder extends OrgAction
         });
     }
 
-    public function recalculateTotals(Order $order): array
+    public function recalculateTotals(Order $order, DeliveryNote $deliveryNote): array
     {
         $itemsNet   = 0;
         $itemsGross = 0;
 
         foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
-            $totals     = $this->recalculateTransactionTotals($transaction);
+            $totals     = $this->recalculateTransactionTotals($transaction, $deliveryNote);
             $itemsNet   += $totals['net_amount'];
             $itemsGross += $totals['gross_amount'];
         }
@@ -199,13 +206,13 @@ class GenerateInvoiceFromOrder extends OrgAction
         ];
     }
 
-    public function recalculateTransactionTotals(Transaction $transaction): array
+    public function recalculateTransactionTotals(Transaction $transaction, DeliveryNote $deliveryNote): array
     {
         $historicAsset = $transaction->historicAsset;
 
 
         $pickings = [];
-        foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
+        foreach ($transaction->deliveryNoteItems()->where('delivery_note_items.delivery_note_id', $deliveryNote->id) as $deliveryNoteItem) {
             if ($deliveryNoteItem->quantity_required == 0) {
                 $ratioOfPicking = 1;
             } else {

@@ -62,7 +62,7 @@ class UnpackDeliveryNote extends OrgAction
         if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
             $order = $deliveryNote->orders->first();
 
-            UpdateOrderStateToPacking::make()->action($order, true);
+            UpdateOrderStateToPacking::make()->action($order);
         }
 
         $deliveryNote = $this->update($deliveryNote, $modelData);

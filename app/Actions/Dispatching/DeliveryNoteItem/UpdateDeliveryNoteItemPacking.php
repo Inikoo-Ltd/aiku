@@ -13,7 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\Packing\StorePacking;
-use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -69,7 +69,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
             DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
+                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first());
             }
             $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
             $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKED);
