@@ -96,13 +96,15 @@ class StoreOrgStockMovement extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'date'         => ['sometimes', 'date'],
-            'quantity'     => ['required', 'numeric'],
-            'org_amount'   => ['sometimes', 'numeric'],
-            'data'         => ['sometimes', 'array'],
-            'type'         => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
-            'is_delivered' => ['sometimes', 'boolean'],
-            'is_received'  => ['sometimes', 'boolean'],
+            'date'             => ['sometimes', 'date'],
+            'quantity'         => ['sometimes', 'nullable', 'numeric'],
+            'audited_quantity' => ['sometimes', 'nullable', 'numeric'],
+            'org_amount'       => ['sometimes', 'numeric'],
+            'data'             => ['sometimes', 'array'],
+            'type'             => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
+            'is_delivered'     => ['sometimes', 'boolean'],
+            'is_received'      => ['sometimes', 'boolean'],
+            'fixed'            => ['sometimes', 'boolean'],
         ];
         if (!$this->strict) {
             $rules['fetched_at'] = ['sometimes', 'date'];
