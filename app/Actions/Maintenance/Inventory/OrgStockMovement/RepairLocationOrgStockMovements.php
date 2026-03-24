@@ -161,7 +161,7 @@ class RepairLocationOrgStockMovements
 
     public function fixLastDisassociate(Location $location, OrgStock $orgStock, array $errorData, ?Command $command = null): void
     {
-        $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'type', 'class')
+        $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class')
             ->where('location_id', $location->id)->where('org_stock_id', $orgStock->id)
             ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
             ->where('date', Arr::get($errorData, 'date'))
@@ -189,7 +189,7 @@ class RepairLocationOrgStockMovements
                 //                    );
                 //                $command?->warn("Move disassociate forward  $movement->id");
             } elseif ($movement->type == OrgStockMovementTypeEnum::AUDIT->value) {
-                if ($movement->quantity == 0) {
+                if ($movement->audited_quantity == 0) {
                     DB::table('org_stock_movements')->where('id', $movement->id)
                         ->update(
                             [
@@ -301,7 +301,7 @@ class RepairLocationOrgStockMovements
 
     public function fixFirstAssociate(Location $location, OrgStock $orgStock, array $errorData, ?Command $command = null): void
     {
-        $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'type', 'class')
+        $movements = DB::table('org_stock_movements')->select('date', 'id', 'quantity', 'audited_quantity', 'type', 'class')
             ->where('location_id', $location->id)->where('org_stock_id', $orgStock->id)
             ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO])
             ->where('date', Arr::get($errorData, 'date'))
@@ -329,7 +329,7 @@ class RepairLocationOrgStockMovements
                     );
                 $command?->warn("Move disassociate forward  $movement->id");
             } elseif ($movement->type == OrgStockMovementTypeEnum::AUDIT->value) {
-                if ($movement->quantity == 0) {
+                if ($movement->audited_quantity == 0) {
                     DB::table('org_stock_movements')->where('id', $movement->id)
                         ->update(
                             [
