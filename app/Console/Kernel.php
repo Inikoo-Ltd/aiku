@@ -41,6 +41,34 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule): void
     {
+
+        $this->logSchedule(
+            $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunNewsletterScheduled',
+            ),
+            name: 'RunNewsletterScheduled',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunMailshotScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunMailshotScheduled',
+            ),
+            name: 'RunMailshotScheduled',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunMailshotSecondWave',
+            ),
+            name: 'RunMailshotSecondWave',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
 
         $schedule->command('queue:prune-failed --hours=168')->daily();
@@ -188,6 +216,16 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'FetchAuroraStockLocationsAroma',
             ),
             name: 'FetchAuroraStockLocationsAroma',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+
+        $this->logSchedule(
+            $schedule->command('fetch:stock_movements aroma -N -D 2')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'FetchAuroraStockMovements',
+            ),
+            name: 'FetchAuroraStockMovements',
             type: 'command',
             scheduledAt: now()->format('H:i')
         );
@@ -411,34 +449,6 @@ class Kernel extends ConsoleKernel
         );
 
 
-        if (app()->environment('local')) {
-            $this->logSchedule(
-                $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunNewsletterScheduled',
-                ),
-                name: 'RunNewsletterScheduled',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(RunMailshotScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunMailshotScheduled',
-                ),
-                name: 'RunMailshotScheduled',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunMailshotSecondWave',
-                ),
-                name: 'RunMailshotSecondWave',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-        }
 
         // $this->logSchedule(
         //     $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
@@ -493,11 +503,20 @@ class Kernel extends ConsoleKernel
             type: 'command',
             scheduledAt: now()->format('H:i')
         );
+
+        $this->logSchedule(
+            $schedule->command('art clone:aurora_vol_gr_offers sk eu')->twiceDailyAt(12, 18)->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CloneAuroraVolGrOffers',
+            ),
+            name: 'CloneAuroraVolGrOffers',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

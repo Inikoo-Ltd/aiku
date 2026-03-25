@@ -238,7 +238,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
- * @property-read \App\Models\SysAdmin\GroupSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, Service> $services
  * @property-read LaravelCollection<int, ShippingZoneSchema> $shippingZoneSchemas
@@ -408,11 +407,6 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function orderingStats(): HasOne
     {
         return $this->hasOne(GroupOrderingStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(GroupSalesIntervals::class);
     }
 
     public function orderHandlingStats(): HasOne

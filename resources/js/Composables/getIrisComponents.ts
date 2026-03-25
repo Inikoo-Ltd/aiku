@@ -98,6 +98,7 @@ import DepartmentDescriptionIris from "@/Components/CMS/Webpage/DepartmentDescri
 import SubDepartmentDesciptionIris from "@/Components/CMS/Webpage/SubDepartmentDesciption/SubDepartmentDesciptionIris.vue"
 import ProductRenderEcom3 from "@/Components/CMS/Webpage/Products3/ProductRenderEcom3.vue"
 import Family2ExtraDescriptionIris from '@/Components/CMS/Webpage/Family2ExtraDescription/Family2ExtraDescriptionIris.vue'
+import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/FamiliesOverviewIris1.vue'
 
 const async = (loader: () => Promise<Component>) =>
 	defineAsyncComponent({
@@ -143,6 +144,10 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"families-1": FamiliesIris1,
 		"families-2": FamiliesIris2,
 		"families-3": FamiliesIris3,
+
+
+		//family
+		"families-1-overview": Families1Overview,
 
 		 //family-extra-description
 		'family-2-extra-description' : Family2ExtraDescriptionIris,

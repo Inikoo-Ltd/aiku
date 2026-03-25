@@ -46,13 +46,12 @@ class DeleteCustomer
     public function handle(Customer $customer, array $deletedData = [], bool $skipHydrate = false): Customer
     {
         $registeredAt = $customer->registered_at;
-        $masterShopId = $customer->master_shop_id;
 
         $this->deletedDependants = [
-            'clients'          => $customer->clients()->count(),
-            'webUsers'         => $customer->webUsers()->count(),
-            'products'         => $customer->products()->count(),
-            'orders'           => $customer->orders()->count(),
+            'clients'  => $customer->clients()->count(),
+            'webUsers' => $customer->webUsers()->count(),
+            'products' => $customer->products()->count(),
+            'orders'   => $customer->orders()->count(),
         ];
 
         $dependantDeletedData = [
@@ -90,7 +89,10 @@ class DeleteCustomer
             );
         }
 
-
+        //foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+        // Todo delete customer sales channels
+        //}
+        // Todo delete portfolios
 
 
         $customer->delete();
@@ -101,10 +103,10 @@ class DeleteCustomer
 
             if ($registeredAt) {
                 $registeredAtDate = Carbon::parse($registeredAt)->toDateString();
-                RedoShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate);
-                RedoOrganisationTimeSeries::dispatch($registeredAtDate, $registeredAtDate);
-                if ($masterShopId) {
-                    RedoMasterShopTimeSeries::dispatch($registeredAtDate, $registeredAtDate);
+                RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                if ($customer->master_shop_id) {
+                    RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
                 }
             }
         }

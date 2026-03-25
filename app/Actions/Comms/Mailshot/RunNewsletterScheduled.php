@@ -30,11 +30,6 @@ class RunNewsletterScheduled
         $newsletterQuery->where('type', MailshotTypeEnum::NEWSLETTER);
         $newsletterQuery->where('state', MailshotStateEnum::SCHEDULED);
 
-        // NOTE: For testing purposes, only available for Ukraine
-        $newsletterQuery->whereIn('shop_id', [
-            44, // Ukraine
-            // 42,// Bulgaria
-        ]);
         $newsletterQuery->whereNull('deleted_at');
         $newsletterQuery->whereNull('cancelled_at');
         $newsletterQuery->whereNull('stopped_at');
@@ -46,8 +41,8 @@ class RunNewsletterScheduled
         $newsletterQuery->whereRaw("scheduled_at AT TIME ZONE 'UTC' <= ?", [$currentDateTime]); // make sure have save time zone before compare
 
         foreach ($newsletterQuery->cursor() as $newsletter) {
-            ProcessSendNewsletter::dispatch($newsletter);
-            //TODO: update the mailshot state to Sending
+            PrepareNewsletterRecipients::dispatch($newsletter);
+
             $newsletter->update([
                 'state' => MailshotStateEnum::SENDING,
                 'start_sending_at' => Carbon::now()->utc(), // maybe need to convert to local timezone

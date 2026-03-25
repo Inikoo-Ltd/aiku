@@ -24,19 +24,20 @@ class SeedDispatchedEmailsRecipientsTables
         $command->info('Starting to seed dispatched emails recipients pivot tables...');
 
         $processedCount = 0;
-        $chunkSize      = 1000;
+        $chunkSize      = 500;
 
         DB::table('dispatched_emails')
             ->whereNotNull('recipient_type')
             ->orderBy('id', 'desc')
             ->chunk($chunkSize, function ($dispatchedEmails) use ($command, &$processedCount) {
-                $webUserInserts                    = [];
-                $customerInserts                   = [];
-                $prospectInserts                   = [];
+                $webUserInserts                     = [];
+                $usersInserts                       = [];
+                $customerInserts                    = [];
+                $prospectInserts                    = [];
                 $externalSubscriberRecipientInserts = [];
-                $testEmailRecipientInserts         = [];
-                $chatEmailRecipientInserts         = [];
-                $idsToUpdate                       = [];
+                $testEmailRecipientInserts          = [];
+                $chatEmailRecipientInserts          = [];
+                $idsToUpdate                        = [];
 
                 foreach ($dispatchedEmails as $dispatchedEmail) {
                     if (!$dispatchedEmail->recipient_id) {
@@ -55,7 +56,9 @@ class SeedDispatchedEmailsRecipientsTables
                             ->where('web_user_id', $dispatchedEmail->recipient_id)
                             ->exists();
 
-                        if (!$exists) {
+                        $webUserExist = DB::table('web_users')->where('id', $dispatchedEmail->recipient_id)->exists();
+
+                        if (!$exists && $webUserExist) {
                             $insertData['web_user_id'] = $dispatchedEmail->recipient_id;
                             $webUserInserts[]          = $insertData;
                         }
@@ -65,7 +68,10 @@ class SeedDispatchedEmailsRecipientsTables
                             ->where('customer_id', $dispatchedEmail->recipient_id)
                             ->exists();
 
-                        if (!$exists) {
+                        $customer = DB::table('customers')->where('id', $dispatchedEmail->recipient_id)->exists();
+
+
+                        if (!$exists && $customer) {
                             $insertData['customer_id'] = $dispatchedEmail->recipient_id;
                             $customerInserts[]         = $insertData;
                         }
@@ -75,7 +81,9 @@ class SeedDispatchedEmailsRecipientsTables
                             ->where('prospect_id', $dispatchedEmail->recipient_id)
                             ->exists();
 
-                        if (!$exists) {
+                        $prospect = DB::table('prospects')->where('id', $dispatchedEmail->recipient_id)->exists();
+
+                        if (!$exists && $prospect) {
                             $insertData['prospect_id'] = $dispatchedEmail->recipient_id;
                             $prospectInserts[]         = $insertData;
                         }
@@ -87,7 +95,7 @@ class SeedDispatchedEmailsRecipientsTables
 
                         if (!$exists) {
                             $insertData['external_subscriber_email_recipient_id'] = $dispatchedEmail->recipient_id;
-                            $externalSubscriberRecipientInserts[]                = $insertData;
+                            $externalSubscriberRecipientInserts[]                 = $insertData;
                         }
                     } elseif ($dispatchedEmail->recipient_type === 'TestEmailRecipient') {
                         $exists = DB::table('test_email_recipient_has_dispatched_emails')
@@ -109,13 +117,36 @@ class SeedDispatchedEmailsRecipientsTables
                             $insertData['chat_email_recipient_id'] = $dispatchedEmail->recipient_id;
                             $chatEmailRecipientInserts[]           = $insertData;
                         }
+                    } elseif ($dispatchedEmail->recipient_type === 'User') {
+                        $exists = DB::table('user_has_dispatched_emails')
+                            ->where('dispatched_email_id', $dispatchedEmail->id)
+                            ->where('user_id', $dispatchedEmail->recipient_id)
+                            ->exists();
+
+                        if (!$exists) {
+                            $insertData['user_id'] = $dispatchedEmail->recipient_id;
+                            $usersInserts[]        = $insertData;
+                        }
                     }
                 }
 
                 $changed = false;
                 if (!empty($webUserInserts)) {
-                    DB::table('web_user_has_dispatched_emails')->insert($webUserInserts);
-                    $changed = true;
+                    try {
+                        DB::table('web_user_has_dispatched_emails')->insert($webUserInserts);
+                        $changed = true;
+                    } catch (\Exception $e) {
+                        //
+                    }
+                }
+
+                if (!empty($usersInserts)) {
+                    try {
+                        DB::table('user_has_dispatched_emails')->insert($webUserInserts);
+                        $changed = true;
+                    } catch (\Exception $e) {
+                        //
+                    }
                 }
 
                 if (!empty($customerInserts)) {

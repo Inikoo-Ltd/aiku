@@ -13,7 +13,6 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateHasBeenInWarehouse;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSalesIntervals;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateValueInLocations;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
@@ -38,7 +37,6 @@ class HydrateOrgStock
         OrgStockHydrateValueInLocations::run($orgStock);
         OrgStockHydrateMovements::run($orgStock);
         OrgStockHydrateHasBeenInWarehouse::run($orgStock);
-        OrgStockHydrateSalesIntervals::run($orgStock);
         OrgStockHydratePackedIn::run($orgStock);
         ModelHydrateSingleTradeUnits::run($orgStock);
     }

@@ -208,10 +208,10 @@ class IndexMasterDepartments extends OrgAction
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sub_departments', label: __('M. Sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'collections', label: __('M. Collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'families', label: __('M. Families'), tooltip: __('current master families'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'products', label: __('M. Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'sub_departments', label: __('M. Sub-departments'), tooltip: __('Current sub departments'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'collections', label: __('M. Collections'), tooltip: __('Current collections'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'families', label: __('M. Families'), tooltip: __('Current master families'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'products', label: __('M. Products'), tooltip: __('Current master products'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
     }

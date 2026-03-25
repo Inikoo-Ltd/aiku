@@ -64,7 +64,7 @@ class UpdateDeliveryNoteItemUnpack extends OrgAction
                 'state' => DeliveryNoteStateEnum::PACKING->value,
             ]);
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first(), true);
+                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first());
             }
             $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
             $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKING);

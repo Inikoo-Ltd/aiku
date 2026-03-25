@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $latitude Latitude coordinate (WGS84)
  * @property string|null $longitude Longitude coordinate (WGS84)
  * @property string|null $geocoding_metadata
+ * @property bool|null $failed_geo_location
  * @property-read \App\Models\Helpers\Country|null $country
  * @property-read string $formatted_address
  * @property-read Model|\Eloquent $owner

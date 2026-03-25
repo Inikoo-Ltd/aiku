@@ -43,7 +43,10 @@ Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('/orders', [IndexOrders::class, 'inCustomer'])->name('.orders.index');
     Route::get('/orders/{order}', [ShowOrder::class, 'inCustomerInShop'])->name('.orders.show');
     Route::get('/orders/{order}/invoices/{invoice}', [ShowInvoice::class, 'inOrderInCustomerInShop'])->name('.orders.show.invoices.show');
-    Route::get('/orders/{order}/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceinOrderInCustomerInShop'])->name('.orders.show.invoices.show.refunds.show');
+    Route::get('/orders/{order}/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInOrderInCustomerInShop'])->name('.orders.show.invoices.show.refunds.show');
+
+    Route::get('/orders/{order}/refunds/{refund}', [ShowRefund::class, 'inOrderInCustomerInShop'])->name('.orders.show.refunds.show');
+
     Route::get('/orders/{order}/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerInShop'])->name('.orders.show.delivery-note.show');
     Route::get('/payments/{payment}', [ShowPayment::class, 'inCustomer'])->name('.payments.show');
     Route::get('/refunds/{payment}', [ShowRefundPayment::class, 'inCustomer'])->name('.refunds.show');
@@ -71,7 +74,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
                     Route::get('', [IndexOrders::class, 'inCustomerClient'])->name('.index');
                     Route::get('{order}', [ShowOrder::class, 'inCustomerClient'])->name('.show');
                     Route::get('{order}/invoices/{invoice}', [ShowInvoice::class, 'inOrderInCustomerClientInCustomerInShop'])->name('.show.invoices.show');
-                    Route::get('{order}/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'InInvoiceinOrderInCustomerClientInCustomerInShop'])->name('.show.invoices.show.refunds.show');
+                    Route::get('{order}/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'InInvoiceInOrderInCustomerClientInCustomerInShop'])->name('.show.invoices.show.refunds.show');
                     Route::get('{order}/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerClientInCustomerInShop'])->name('.show.delivery-note.show');
 
                 });
@@ -85,7 +88,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
                 Route::get('', IndexOrdersInCustomerSalesChannel::class)->name('.index');
                 Route::get('/{order}', [ShowOrder::class, 'inPlatformInCustomer'])->name('.show');
                 Route::get('{order}/invoices/{invoice}', [ShowInvoice::class, 'inOrderInPlatformInCustomerInShop'])->name('.show.invoices.show');
-                Route::get('{order}/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'InInvoiceinOrderInPlatformInCustomerInShop'])->name('.show.invoices.show.refunds.show');
+                Route::get('{order}/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'InInvoiceInOrderInPlatformInCustomerInShop'])->name('.show.invoices.show.refunds.show');
                 Route::get('{order}/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInPlatformInCustomerInShop'])->name('.show.delivery-note.show');
 
             });

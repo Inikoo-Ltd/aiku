@@ -17,6 +17,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
+use App\Models\Comms\TestEmailRecipient;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
@@ -55,7 +56,7 @@ class SendTestEmail extends OrgAction
 
         $email = $modelData['email'];
 
-        $testEmailRecipient = $shop->testEmailRecipients()->where('email', $email)->first();
+        $testEmailRecipient = TestEmailRecipient::where('email', $email)->first();
 
         if (!$testEmailRecipient) {
             $testEmailRecipient = StoreTestEmailRecipient::make()->action($shop, [

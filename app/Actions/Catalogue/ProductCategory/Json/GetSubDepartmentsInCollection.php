@@ -46,8 +46,6 @@ class GetSubDepartmentsInCollection extends OrgAction
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
-        $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->join('model_has_collections', function ($join) use ($collection) {
             $join->on('product_categories.id', '=', 'model_has_collections.model_id')
                     ->where('model_has_collections.model_type', '=', 'ProductCategory')
@@ -69,8 +67,6 @@ class GetSubDepartmentsInCollection extends OrgAction
                 'product_categories.image_id',
                 'product_categories.updated_at',
                 'product_category_stats.number_current_products',
-                'product_category_sales_intervals.sales_grp_currency_all as sales_all',
-                'product_category_ordering_intervals.invoices_all as invoices_all',
 
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')

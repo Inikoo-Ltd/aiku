@@ -80,6 +80,13 @@ class DeliveryNoteItemsResource extends JsonResource
             'expiry_date'                    => $this->expiry_date,
             'packed_in_message'              => $packedInMessage,
             'is_done_packing'                => (bool) $this->packing_id,
+            'not_picking_route'  => [
+                'name'       => 'grp.models.delivery_note_item.not_picking.store',
+                'parameters' => [
+                    'deliveryNoteItem' => $this->id
+                ],
+                'method'     => 'post'
+            ],
         ];
     }
 }
