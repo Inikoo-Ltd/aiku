@@ -37,6 +37,7 @@ use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaProductsForEmptyBasket;
 use App\Actions\Retina\Dropshipping\BackInStock\UI\IndexRetinaDropshippingBackInStocks;
+use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBulkProductImages;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -66,6 +67,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('select-products-for-empty-basket', IndexRetinaProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
 Route::get('select-products-for-basket/{order:id}', IndexRetinaProductsForBasket::class)->name('select_products_for_basket');
+
+Route::get('bulk-products-images', IndexRetinaBulkProductImages::class)->name('products.images.index');
 
 Route::get('export-template-portfolios', ExportTemplateRetinaPortfolios::class)->name('portfolio_template.export');
 
