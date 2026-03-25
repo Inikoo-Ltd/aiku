@@ -278,6 +278,7 @@ const handleTabUpdate = (tabSlug: string) =>
 const component = computed(() => {
     const components: Component = {
         templates: TableEmailTemplate,
+        other_store_templates: TableEmailTemplate,
         previous_mailshots: TablePreviousMailshots,
         other_store_mailshots: TableOtherStoreMailshots,
     };
