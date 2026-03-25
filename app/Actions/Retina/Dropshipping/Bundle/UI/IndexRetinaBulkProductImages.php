@@ -8,38 +8,17 @@
 
 namespace App\Actions\Retina\Dropshipping\Bundle\UI;
 
+use App\Actions\Catalogue\Product\UI\IndexBulkProductImages;
 use App\Actions\RetinaAction;
-use App\Http\Resources\Helpers\ImagesResource;
-use App\InertiaTable\InertiaTable;
-use App\Models\Helpers\Media;
-use App\Services\QueryBuilder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class IndexRetinaBulkProductImages extends RetinaAction
 {
     public function handle(array $modelData, $prefix = null): Collection
     {
-        if ($prefix) {
-            InertiaTable::updateQueryBuilderParameters($prefix);
-        }
-
-        $queryBuilder = QueryBuilder::for(Media::class);
-        $queryBuilder->leftJoin('model_has_media', 'media.id', 'model_has_media.media_id');
-        $queryBuilder->whereIn('model_has_media.model_id', Arr::get($modelData, 'product_ids'));
-        $queryBuilder->where('model_has_media.model_type', 'Product');
-
-
-        $queryBuilder
-            ->defaultSort('media.id')
-            ->select([
-                'media.*',
-                'model_has_media.sub_scope as sub_scope',
-            ]);
-
-        return $queryBuilder->allowedSorts(['size', 'name'])->get();
+        return IndexBulkProductImages::run($modelData, $prefix);
     }
 
     public function rules(): array
@@ -59,6 +38,6 @@ class IndexRetinaBulkProductImages extends RetinaAction
 
     public function jsonResponse(Collection $images): AnonymousResourceCollection
     {
-        return ImagesResource::collection($images);
+        return IndexBulkProductImages::make()->jsonResponse($images);
     }
 }
