@@ -33,7 +33,7 @@ class GenerateRetinaProductBundleDescription extends RetinaAction
     {
         return [
             'prompt' => ['required', 'string'],
-            'images' => ['required', 'array']
+            'images' => ['nullable', 'array']
         ];
     }
 
