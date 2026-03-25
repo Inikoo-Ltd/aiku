@@ -8,12 +8,7 @@
 
 namespace App\Actions\Comms\Outbox;
 
-use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
-use App\Actions\Comms\EmailBulkRun\StoreEmailBulkRunRecipient;
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRun;
-use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
-use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
-use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Services\QueryBuilder;
 use App\Actions\Traits\WithActionUpdate;
@@ -27,7 +22,6 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Arr;
 
 class RunBasketLowStockEmailBulkRuns
 {
@@ -39,6 +33,7 @@ class RunBasketLowStockEmailBulkRuns
 
     public function handle(): void
     {
+        $chuckSize = 50;
         $queryOutbox = QueryBuilder::for(Outbox::class);
         $queryOutbox->whereIn('code', [OutboxCodeEnum::BASKET_LOW_STOCK]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
@@ -68,7 +63,7 @@ class RunBasketLowStockEmailBulkRuns
             $productClass = class_basename(Product::class);
 
             //  Check another condition
-            $baseQuery = QueryBuilder::for(Customer::class);
+            $baseQuery = DB::table('customers');
             $baseQuery->where('customers.shop_id', $outbox->shop_id);
 
             // check customer comms
@@ -80,8 +75,8 @@ class RunBasketLowStockEmailBulkRuns
             // check Order
             $baseQuery->join('orders', function ($join) {
                 $join->on('customers.id', '=', 'orders.customer_id');
-                $join->where('orders.state', OrderStateEnum::CREATING);
-                $join->where('orders.status', OrderStatusEnum::CREATING);
+                $join->where('orders.state', OrderStateEnum::CREATING->value);
+                $join->where('orders.status', OrderStatusEnum::CREATING->value);
                 $join->whereNull('orders.deleted_at');
             });
 
@@ -97,8 +92,8 @@ class RunBasketLowStockEmailBulkRuns
                 $join->where('products.is_for_sale', true);
                 $join->where('products.available_quantity_updated_at', '>', $intervalInHours);
                 $join->whereIn('products.state', [
-                    ProductStateEnum::ACTIVE,
-                    ProductStateEnum::DISCONTINUING,
+                    ProductStateEnum::ACTIVE->value,
+                    ProductStateEnum::DISCONTINUING->value,
                 ]);
                 $join->where('products.available_quantity', '<=', $outboxThreshold);
 
@@ -118,7 +113,7 @@ class RunBasketLowStockEmailBulkRuns
 
             $baseQuery->orderBy('customers.id');
 
-            $totalItems = $baseQuery->clone()->count();
+            $totalItems = (clone $baseQuery)->count();
 
             // Log the query for debugging
             // \Log::info($baseQuery->toRawSql());
@@ -130,46 +125,21 @@ class RunBasketLowStockEmailBulkRuns
             }
 
 
-            $baseQuery->chunk(250, function ($customers) use ($emailBulkRun, $outbox) {
+            $baseQuery->chunk($chuckSize, function ($customers) use ($emailBulkRun, $outbox) {
+                $customerData = $customers->map(function ($customer) {
+                    
+                    return [
+                        'id' => $customer->id,
+                        'email' => $customer->email,
+                        'product_ids' => $customer->product_ids
+                    ];
+                })->toArray();
 
-                $emailDeliveryChannel = StoreEmailDeliveryChannel::run($emailBulkRun);
-
-                foreach ($customers as $customer) {
-
-                    if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) {
-
-                        $dispatchedEmail = StoreDispatchedEmail::run(
-                            $emailBulkRun,
-                            $customer,
-                            [
-                                'outbox_id'     => $outbox->id,
-                                'email_address' => $customer->email,
-                                'data->additional_data' => [
-                                    'products' => $this->generateProductLinks($customer->product_ids)
-                                ]
-                            ]
-                        );
-
-                        StoreEmailBulkRunRecipient::run(
-                            $emailBulkRun,
-                            [
-                                'dispatched_email_id' => $dispatchedEmail->id,
-                                'recipient_type'      => class_basename($customer),
-                                'recipient_id'        => $customer->id,
-                                'channel'             => $emailDeliveryChannel->id,
-                            ]
-                        );
-                    }
-                }
-
-                // After processing the chunk, update and dispatch the delivery channel
-                UpdateEmailDeliveryChannel::run(
-                    $emailDeliveryChannel,
-                    [
-                        'number_emails' => $emailBulkRun->recipients()->where('channel', $emailDeliveryChannel->id)->count()
-                    ]
+                ProcessBasketLowStockCustomers::dispatch(
+                    $emailBulkRun->id,
+                    $outbox->id,
+                    $customerData
                 );
-                SendEmailDeliveryChannel::dispatch($emailDeliveryChannel);
             });
 
             UpdateEmailBulkRun::run(
@@ -187,104 +157,5 @@ class RunBasketLowStockEmailBulkRuns
     public function asCommand(): void
     {
         $this->run();
-    }
-
-    public function generateProductLinks(string $productIds): string
-    {
-        try {
-            $productIds = explode(',', $productIds);
-        } catch (\Throwable $th) {
-            \Log::error('Error parsing product IDs: ' . $th->getMessage());
-            return '';
-        }
-
-        $date = Carbon::now()->format('d M y');
-        $totalProducts = count($productIds);
-        $displayProducts = array_slice($productIds, 0, 5);
-        $remainingCount = $totalProducts - 5;
-
-        $html = '';
-
-        $html .= '<table width="100%" cellpadding="8" cellspacing="0"
-        style="font-family: Helvetica, Arial, sans-serif;
-               font-size: 14px;
-               border-collapse: collapse;">';
-
-
-        $html .= '
-        <tr style="border-bottom:1px solid #e5e7eb;">
-            <th align="left" style="color:#555;">' . __('Product') . '</th>
-            <th align="center" style="color:#555;">' . __('Available Quantity') . ' (' . $date . ')</th>
-        </tr>';
-
-        foreach ($displayProducts as $productId) {
-            $dataProduct = Product::find($productId);
-
-            if (!$dataProduct) {
-                continue;
-            }
-
-            $productImage = Arr::get(
-                $dataProduct->imageSources(200, 200),
-                'png'
-            );
-
-            $availableQuantity = $dataProduct->available_quantity ?? 0;
-
-
-            if ($dataProduct->webpage) {
-                $url  = $dataProduct->webpage->getCanonicalUrl();
-                $name = $dataProduct->name;
-
-                $html .= '
-                <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="vertical-align:middle;">
-                        <table cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="padding-right:12px;">';
-
-                if ($productImage) {
-                    $html .= '
-                    <img src="' . $productImage . '"
-                         width="60"
-                         height="60"
-                         style="display:block;
-                                border-radius:6px;
-                                object-fit:cover;" />';
-                }
-
-                $html .= '
-                                </td>
-                                <td style="vertical-align:middle;">
-                                    <a ses:no-track href="' . $url . '"
-                                       style="color:#2563eb;
-                                        text-decoration:underline;
-                                        font-weight:600;">'
-                    . $name .
-                    '</a>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-
-                    <td align="center"
-                        style="font-weight:600;
-                               color:#16a34a;">'
-                    . $availableQuantity .
-                    '</td>
-                </tr>';
-            }
-        }
-
-        $html .= '</table>';
-
-        // Add "and X more" text if there are remaining products
-        if ($remainingCount > 0) {
-            $html .= '<p style="font-family: Helvetica, Arial, sans-serif; font-size: 14px; color: #555; margin-top: 12px;">';
-            $html .= 'and ' . $remainingCount . ' more' . ($remainingCount > 1 ? 's' : '');
-            $html .= '</p>';
-        }
-
-        return $html;
     }
 }
