@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\OrgAction;
 use App\Http\Resources\CRM\ProductsForPortfolioSelectResource;
+use App\Http\Resources\CRM\SelectedProductsForBundleResource;
 use App\Http\Resources\Helpers\ImagesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -30,7 +31,8 @@ class IndexBulkProductImages extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->whereIn('id', Arr::get($modelData, 'product_ids'));
+        $queryBuilder->whereIn('id', Arr::get($modelData, 'product_ids'))
+                    ->with('images');
 
         $queryBuilder
             ->defaultSort('products.id');
@@ -48,6 +50,6 @@ class IndexBulkProductImages extends OrgAction
 
     public function jsonResponse(Collection $images): AnonymousResourceCollection
     {
-        return ProductsForPortfolioSelectResource::collection($images);
+        return SelectedProductsForBundleResource::collection($images);
     }
 }
