@@ -28,7 +28,7 @@ class GetGeneratedImages extends OrgAction
 
             $response = $client->images()->edit([
                 'model' => 'dall-e-2',
-                'image' => $processedImages,
+                'image' => $processedImages[0],
                 'prompt' => $prompt,
                 'n' => $n,
                 'size' => $size,
