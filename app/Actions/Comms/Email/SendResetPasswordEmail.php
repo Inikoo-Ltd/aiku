@@ -44,8 +44,8 @@ class SendResetPasswordEmail extends OrgAction
         $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
 
         $additionalData = [
-            'username'      => $webUser->email ?? $webUser->username,
-            'customer_name' => ($webUser->customer?->name ?? $webUser->username),
+            'username'      => $webUser->username ?? $webUser->email,
+            'customer_name' => ($webUser->contact_name ?? $webUser->customer?->name),
         ];
 
         return $this->sendEmailWithMergeTags(
@@ -59,6 +59,4 @@ class SendResetPasswordEmail extends OrgAction
             senderName: $outbox->emailOngoingRun->senderName()
         );
     }
-
-
 }
