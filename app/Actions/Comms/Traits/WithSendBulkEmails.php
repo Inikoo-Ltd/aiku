@@ -38,8 +38,6 @@ trait WithSendBulkEmails
         bool $isTest = false,
         bool $debug = false
     ): DispatchedEmail {
-
-
         $html = $emailHtmlBody;
         $html = $this->processStyles($html);
 
@@ -57,8 +55,8 @@ trait WithSendBulkEmails
             $fullTag    = $matches[0];
             $tagContent = $matches[1];
 
-            if (! array_key_exists($fullTag, $mergeTagCache)) {
-                $mergeTagCache[$fullTag] = (string) $this->replaceMergeTags($tagContent, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
+            if (!array_key_exists($fullTag, $mergeTagCache)) {
+                $mergeTagCache[$fullTag] = (string)$this->replaceMergeTags($tagContent, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
             }
 
             return $mergeTagCache[$fullTag];
@@ -120,7 +118,7 @@ trait WithSendBulkEmails
 
         /** @noinspection HtmlUnknownAttribute */
         return match ($placeholder) {
-            'username' => $this->getUsername($dispatchedEmail->id),
+            'username' => $this->getUsername($additionalData, $dispatchedEmail->id),
             'rejected-notes' => Arr::get($additionalData, 'rejected_notes'),
             'invoice_-url' => $invoiceUrl,
             'reset_-password_-u-r-l' => $passwordToken,
@@ -190,8 +188,12 @@ trait WithSendBulkEmails
         };
     }
 
-    public function getUsername($dispatchedEmailId): string
+    public function getUsername(array $additionalData, int $dispatchedEmailId): string
     {
+        if (Arr::get($additionalData, 'username')) {
+            return Arr::get($additionalData, 'username');
+        }
+
         if ($webUserDispatch = $this->getWebUserDispatch($dispatchedEmailId)) {
             return WebUser::find($webUserDispatch->web_user_id)?->username ?? '';
         }
