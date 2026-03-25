@@ -69,6 +69,9 @@ class IndexNewsletterMailshots extends OrgAction
                     'actions' => $actions,
                 ]),
                 'data'        => NewsletterMailshotsResource::collection($mailshots),
+                'groupId'     => $this->parent instanceof Group
+                    ? $this->parent->id
+                    : $this->parent->group_id,
             ]
         )->table($this->tableStructure($this->parent));
     }
