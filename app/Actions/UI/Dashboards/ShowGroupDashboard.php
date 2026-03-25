@@ -98,7 +98,7 @@ class ShowGroupDashboard extends OrgAction
                             'tables'      => GroupDashboardSalesTableTabsEnum::tables($group, $timeSeriesData, true),
                         ]
                     ],
-                    'tabs_box'  => [
+                    'tabs_box'    => [
                         'current'    => $this->tab,
                         'navigation' => $tabsBox
                     ],

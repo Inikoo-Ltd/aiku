@@ -113,15 +113,6 @@ class UpdateMasterCollection extends GrpAction
         return $masterCollection;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("sysadmin.grp.{$this->group->id}.edit");
-    }
-
     public function rules(): array
     {
         $rules = [

@@ -51,11 +51,11 @@ class RetinaLogin
 
             $webUser = WebUser::where('website_id', $websiteId)
                 ->where('status', true)
-                ->where('username', $handle)->first();
+                ->whereRaw('LOWER(username) = ?', [strtolower($handle)])->first();
             if (!$webUser) {
                 $webUser = WebUser::where('website_id', $websiteId)
                     ->where('status', true)
-                    ->where('email', $handle)->first();
+                    ->whereRaw('LOWER(email) = ?', [strtolower($handle)])->first();
             }
 
             if ($webUser && $webUser->auth_type == WebUserAuthTypeEnum::AURORA) {
@@ -83,7 +83,7 @@ class RetinaLogin
                 // try now with email
                 data_set($credentials, 'email', $credentials['username']);
                 data_forget($credentials, 'username');
-
+                // Note we're using custom CaseInsensitiveEloquentUserProvider for case insensitive username
                 $authorised = Auth::guard('retina')->attempt($credentials, $rememberMe);
             }
         }

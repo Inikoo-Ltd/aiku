@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
@@ -46,17 +47,20 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
             foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
                 StorePacking::make()->action($item, $this->user, []);
             }
-            $defaultParcel = [
-                [
-                    'weight'     => $deliveryNote->effective_weight / 1000,
-                    'dimensions' => [5, 5, 5]
-                ]
-            ];
 
-            data_set($modelData, 'parcels', $defaultParcel);
+            if (count($deliveryNote->parcels) == 0) {
+                $defaultParcel = [
+                    [
+                        'weight'     => $deliveryNote->effective_weight / 1000,
+                        'dimensions' => [5, 5, 5]
+                    ]
+                ];
+
+                data_set($modelData, 'parcels', $defaultParcel);
+            }
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
+                UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), $deliveryNote);
             }
 
             $deliveryNote = $this->update($deliveryNote, $modelData);
@@ -78,7 +82,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKED);
-
+        DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
         return $deliveryNote;
     }
 

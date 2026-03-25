@@ -21,8 +21,14 @@ class GetDispatchHubExternalWidget
         $organisation = $warehouse->organisation;
 
         return [
+            'slug'             => 'marketplaces',
             'label'            => __('Marketplaces'),
             'tooltip'          => __('Marketplaces Delivery Notes'),
+            'total_route'      => [
+                // 'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.shop',
+                 'name'       => 'grp.org.warehouses.show.dispatching.in_warehouse.delivery-notes.shop',
+                'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::EXTERNAL->value]
+            ],
             'cases'            => [
                 'todo'             => [
                     'route' => [
@@ -48,6 +54,18 @@ class GetDispatchHubExternalWidget
                         'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::EXTERNAL->value]
                     ],
                 ],
+                'picked'           => [
+                    'route' => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.picked.delivery-notes.shop',
+                        'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::EXTERNAL->value]
+                    ],
+                ],
+                'packing'          => [
+                    'route' => [
+                        'name'       => 'grp.org.warehouses.show.dispatching.packing.delivery-notes.shop',
+                        'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::EXTERNAL->value]
+                    ],
+                ],
                 'packed'           => [
                     'route' => [
                         'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
@@ -65,14 +83,16 @@ class GetDispatchHubExternalWidget
             'queued'           => $organisation->orderingStats->number_external_shop_delivery_notes_state_queued,
             'handling'         => $organisation->orderingStats->number_external_shop_delivery_notes_state_handling,
             'handling_blocked' => $organisation->orderingStats->number_external_shop_delivery_notes_state_handling_blocked,
+            'picked'           => $organisation->orderingStats->number_external_shop_delivery_notes_state_picked,
+            'packing'          => $organisation->orderingStats->number_external_shop_delivery_notes_state_packing,
             'packed'           => $organisation->orderingStats->number_external_shop_delivery_notes_state_packed,
             'finalised'        => $organisation->orderingStats->number_external_shop_delivery_notes_state_finalised,
             'total'            => $organisation->orderingStats->number_external_shop_delivery_notes_state_unassigned
-                                    + $organisation->orderingStats->number_external_shop_delivery_notes_state_queued
-                                    + $organisation->orderingStats->number_external_shop_delivery_notes_state_handling
-                                    + $organisation->orderingStats->number_external_shop_delivery_notes_state_handling_blocked
-                                    + $organisation->orderingStats->number_external_shop_delivery_notes_state_packed
-                                    + $organisation->orderingStats->number_external_shop_delivery_notes_state_finalised,
+                + $organisation->orderingStats->number_external_shop_delivery_notes_state_queued
+                + $organisation->orderingStats->number_external_shop_delivery_notes_state_handling
+                + $organisation->orderingStats->number_external_shop_delivery_notes_state_handling_blocked
+                + $organisation->orderingStats->number_external_shop_delivery_notes_state_packed
+                + $organisation->orderingStats->number_external_shop_delivery_notes_state_finalised,
         ];
     }
 }

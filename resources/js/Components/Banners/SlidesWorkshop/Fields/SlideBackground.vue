@@ -22,6 +22,7 @@ const props = defineProps<{
     fieldData: any
     bannerType: string
     uploadRoutes: routeType
+    ratio : string
 }>()
 
 const emit = defineEmits(["update:modelValue"])
@@ -36,7 +37,7 @@ const isOpenCropModal = ref(false)
 const fileInput = ref<any>(null)
 const addFiles = ref<any[]>([])
 
-const ratio = ref(props.bannerType === 'square' ? [1/1] : [ 4/1, null])
+const ratio = ref([props.ratio])
 const backgroundColorList = useBannerBackgroundColor()
 
 const closeModal = () => isOpen.value = false
@@ -84,34 +85,21 @@ const onPickImage = (res:any) => {
                 :data="addFiles"
                 :imagesUploadRoute="route(uploadRoutes.name, uploadRoutes.parameters)"
                 :response="uploadImageRespone"
-                :ratio="ratio"
+                :ratio="screenView == 'mobile' ? 1 : ratio"
             />
         </Modal>
 
 
         <!-- Preview -->
         <div class="flex justify-center w-full">
-            <div
-                class="w-fit max-h-20 lg:max-h-32 border border-gray-300 rounded-md overflow-hidden shadow"
-                :class="[
-                    bannerType === 'square'
-                        ? 'aspect-square'
-                        : `aspect-[${ratio.w}/${ratio.h}]`
-                ]"
-            >
-                <div class="h-full relative flex items-center">
-
-                    <!-- IMAGE -->
-                    <div
-                        class="h-full relative"
-                    >
-                        <Image
-                            :src="get(props.modelValue,'source')"
-                            :alt="props.modelValue?.image?.name"
-                            :imageCover="true"
-                        />
-                    </div>
-
+            <div class="w-full max-w-xs lg:max-w-sm border border-gray-300 rounded-md overflow-hidden shadow" :class="[
+                bannerType === 'square'
+                    ? 'aspect-square'
+                    : `aspect-[${ratio.w}/${ratio.h}]`
+            ]">
+                <div class="w-full h-full flex">
+                    <Image :src="get(props.modelValue, 'source')" :alt="props.modelValue?.image?.name"
+                        class="w-full h-full object-cover" :imageCover="true" />
                 </div>
             </div>
         </div>

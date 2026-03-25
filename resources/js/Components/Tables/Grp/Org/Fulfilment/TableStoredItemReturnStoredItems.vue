@@ -17,13 +17,14 @@ import Tag from '@/Components/Tag.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheck, faUndoAlt, faArrowDown } from '@fal'
+import { faCheck, faUndoAlt, faArrowDown, faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { Collapse } from 'vue-collapsed'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import axios from 'axios'
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
+import { faQuestionCircle } from '@fas';
 library.add(faCheck, faUndoAlt, faArrowDown)
 
 const props = defineProps<{
@@ -270,7 +271,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                     {{ trans("Stocks in pallet") }}: {{ pallet_stored_item.quantity_in_pallet }}
                                 </div>
                             </div>
-    
+
                             <div class="flex items-center flex-nowrap gap-x-2">
                                 <!-- {{ state === 'picked' || state === 'dispatched' }} -->
                                 <ModalConfirmation
@@ -414,7 +415,6 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                         <!-- <p v-if="pallet_stored_item.error" class="text-xs text-red-500 italic">*{{ pallet_stored_item.error }}</p> -->
                                     </div>
                                 </template>
-    
                                 <div v-else class="flex flex-nowrap gap-x-1 items-center tabular-nums">
                                     <!-- <ButtonWithLink
                                         
@@ -435,11 +435,14 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                         :loading="get(isLoadingUndoPick, [`row${value.rowIndex}`, `id${pallet_stored_item.id}`], false)"
                                         type="tertiary"
                                     />
+                                    <span v-if="pallet_stored_item.state == 'cancel'" class="pr-2 mr-1 text-red-500 border-r-2 border-gray-300" v-tooltip="trans('Item quantity on storage left untouched')">
+                                        <FontAwesomeIcon :icon="faTimes" />
+                                        {{ trans('Cancelled') }}
+                                    </span>
                                     {{ locale.number(pallet_stored_item.picked_quantity) }}/{{ locale.number(pallet_stored_item.selected_quantity) }}
                                     <FontAwesomeIcon v-if="pallet_stored_item.state == 'picked'" v-tooltip="trans('Picked')" icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />
                                 </div>
     
-                                
                             </div>
                             <!-- {{ get(isLoadingUndoPick, [`row${value.rowIndex}.id${pallet_stored_item.id}`], '000') }} --  -->
                             <!-- {{ pallet_stored_item.isLoadingUndo }} -->

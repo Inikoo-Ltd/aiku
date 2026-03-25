@@ -58,7 +58,6 @@ class StoreOrgStock extends OrgAction
             $orgStock = $this->associateTradeUnits($orgStock);
             $orgStock->stats()->create();
             $orgStock->intervals()->create();
-            $orgStock->salesIntervals()->create();
 
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $orgStock->timeSeries()->create(['frequency' => $frequency]);
@@ -112,6 +111,7 @@ class StoreOrgStock extends OrgAction
             'state'           => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
             'unit_cost'       => ['sometimes', 'numeric', 'min:0'],
             'quantity_status' => ['sometimes', 'nullable', Rule::enum(OrgStockQuantityStatusEnum::class)],
+            'packed_in'       => ['sometimes', 'integer']
         ];
 
         if (!$this->strict) {

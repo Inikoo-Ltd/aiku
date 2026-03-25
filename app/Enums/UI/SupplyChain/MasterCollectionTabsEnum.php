@@ -21,36 +21,35 @@ enum MasterCollectionTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case IMAGES = 'images';
     case SALES = 'sales';
 
-    case PRODUCTS = 'products';
-    case FAMILIES = 'families';
-    case COLLECTIONS = 'collections';
+    // case PRODUCTS = 'products';
+    // case FAMILIES = 'families';
+    // case COLLECTIONS = 'collections';
 
     case HISTORY = 'history';
-
-    case IMAGES = 'images';
-    case SHOP_COLLECTIONS = 'shop_collections';
+    // case SHOP_COLLECTIONS = 'shop_collections';
 
 
-    public static function navigationWithStats(MasterCollection $masterCollection): array
-    {
-        return collect(self::cases())->mapWithKeys(function ($case) use ($masterCollection) {
-            $blueprint = $case->blueprint();
+    // public static function navigationWithStats(MasterCollection $masterCollection): array
+    // {
+    //     return collect(self::cases())->mapWithKeys(function ($case) use ($masterCollection) {
+    //         $blueprint = $case->blueprint();
 
-            if ($case == self::PRODUCTS) {
-                $blueprint['number'] = $masterCollection->stats->number_current_master_products;
-            } elseif ($case == self::FAMILIES) {
-                $blueprint['number'] = $masterCollection->stats->number_current_master_families;
-            } elseif ($case == self::COLLECTIONS) {
-                $blueprint['number'] = $masterCollection->stats->number_current_master_collections;
-            } elseif ($case == self::SHOP_COLLECTIONS) {
-                $blueprint['number'] = $masterCollection->stats->number_collections;
-            }
+    //         if ($case == self::PRODUCTS) {
+    //             $blueprint['number'] = $masterCollection->stats->number_current_master_products;
+    //         } elseif ($case == self::FAMILIES) {
+    //             $blueprint['number'] = $masterCollection->stats->number_current_master_families;
+    //         } elseif ($case == self::COLLECTIONS) {
+    //             $blueprint['number'] = $masterCollection->stats->number_current_master_collections;
+    //         } elseif ($case == self::SHOP_COLLECTIONS) {
+    //             $blueprint['number'] = $masterCollection->stats->number_collections;
+    //         }
 
-            return [$case->value => $blueprint];
-        })->all();
-    }
+    //         return [$case->value => $blueprint];
+    //     })->all();
+    // }
 
     public function blueprint(): array
     {
@@ -66,23 +65,23 @@ enum MasterCollectionTabsEnum: string
                 'icon'  => 'fal fa-clock',
 
             ],
-            MasterCollectionTabsEnum::FAMILIES => [
-                'title' => __('Master Families'),
-                'icon'  => 'fal fa-folder',
-            ],
-            MasterCollectionTabsEnum::PRODUCTS => [
-                'title' => __('Master Products'),
-                'icon'  => 'fal fa-cube',
-            ],
-            MasterCollectionTabsEnum::COLLECTIONS => [
-                'title' => __('Master Collections'),
-                'icon'  => 'fal fa-album-collection',
-            ],
-            MasterCollectionTabsEnum::SHOP_COLLECTIONS => [
-                'align' => 'right',
-                'title' => __('Shop Collections'),
-                'icon'  => 'fal fa-store',
-            ],
+            // MasterCollectionTabsEnum::FAMILIES => [
+            //     'title' => __('Master Families'),
+            //     'icon'  => 'fal fa-folder',
+            // ],
+            // MasterCollectionTabsEnum::PRODUCTS => [
+            //     'title' => __('Master Products'),
+            //     'icon'  => 'fal fa-cube',
+            // ],
+            // MasterCollectionTabsEnum::COLLECTIONS => [
+            //     'title' => __('Master Collections'),
+            //     'icon'  => 'fal fa-album-collection',
+            // ],
+            // MasterCollectionTabsEnum::SHOP_COLLECTIONS => [
+            //     'align' => 'right',
+            //     'title' => __('Shop Collections'),
+            //     'icon'  => 'fal fa-store',
+            // ],
             MasterCollectionTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
@@ -91,8 +90,6 @@ enum MasterCollectionTabsEnum: string
             MasterCollectionTabsEnum::IMAGES => [
                'title' => __('Media'),
                'icon'  => 'fal fa-camera-retro',
-               'type'  => 'icon',
-               'align' => 'right',
             ],
         };
     }

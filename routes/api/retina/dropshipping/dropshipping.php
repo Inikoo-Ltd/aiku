@@ -62,7 +62,9 @@ Route::prefix('products')->as('products.')->group(function () {
 });
 
 Route::prefix('images')->as('images.')->group(function () {
-    Route::get('{image:id}', GetImage::class)->name('show');
+    Route::get('{image:id}', GetImage::class)
+    ->whereNumber('image')
+    ->name('show');
     Route::get('', GetImages::class)->name('index');
 });
 

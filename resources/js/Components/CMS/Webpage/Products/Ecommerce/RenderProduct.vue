@@ -29,7 +29,7 @@ const props = withDefaults(defineProps<{
     hasInBasketList?: any
     basketButton?: boolean
     attachToFavouriteRoute?: routeType
-    dettachToFavouriteRoute?: routeType
+    detachToFavouriteRoute?: routeType
     attachBackInStockRoute?: routeType
     detachBackInStockRoute?: routeType
     addToBasketRoute?: routeType
@@ -52,7 +52,7 @@ const props = withDefaults(defineProps<{
     attachToFavouriteRoute: {
         name: 'iris.models.favourites.store',
     },
-    dettachToFavouriteRoute: {
+    detachToFavouriteRoute: {
         name: 'iris.models.favourites.delete',
     },
     attachBackInStockRoute: {
@@ -117,7 +117,7 @@ const onAddFavourite = (product: ProductResource) => {
 
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
-        route(props.dettachToFavouriteRoute.name, {
+        route(props.detachToFavouriteRoute.name, {
             product: product.id
         }),
         {
@@ -314,7 +314,6 @@ onBeforeUnmount(() => {
         basketButton
         :isLoadingFavourite
         :isLoadingRemindBackInStock
-        :button
         :bestSeller="bestSeller"
         :screenType
         :ref="(e)=> _render_components = e"

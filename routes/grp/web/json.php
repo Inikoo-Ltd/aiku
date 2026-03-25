@@ -33,6 +33,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
+use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInDepartmentInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
@@ -54,6 +55,7 @@ use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
 use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
+use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
@@ -81,6 +83,7 @@ use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
@@ -181,6 +184,7 @@ Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->n
 Route::get('brands', GetBrands::class)->name('brands.index');
 
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
+Route::get('workshop/department/{department}/families', GetFamiliesInDepartmentInWorkshop::class)->name('workshop.families_under_department.index');
 Route::get('workshop/sub-department/{subDepartment}/families', GetFamiliesInWorkshop::class)->name('workshop.families.index');
 
 Route::get('workshop/product-category/{productCategory:id}/products', GetProductsInProductCategory::class)->name('product_category.products.index');
@@ -211,6 +215,8 @@ Route::get('products-for-portfolio-select/{customerSalesChannel:id}', GetProduct
 
 Route::get('mini-delivery-note/{deliveryNote:id}', GetMiniDeliveryNote::class)->name('mini_delivery_note');
 Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNoteShipments::class)->name('mini_delivery_note_shipments');
+
+Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 
@@ -262,6 +268,7 @@ Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::c
 Route::post('variant/{variant}/products', GetGrpProductOfVariant::class)->name('variant.products');
 
 Route::get('product/{product}/trade-units', GetExternalProductTradeUnits::class)->name('product.external.trade-units-linked');
+Route::post('master-product/{masterAsset}/check-org-stocks-existence', CheckMasterAssetTradeUnitOrgStockExistence::class)->name('master_product.check_org_stock_existence');
 
 Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');

@@ -27,7 +27,7 @@ defineOptions({
             v-bind="$attrs"
             ref="_dp"
             :modelValue="modelValue"
-            :enableTimePicker="false"
+            :enableTimePicker="timePicker"
             :format="format ?? undefined"
             auto-apply
             :clearable="!$attrs.required || false"

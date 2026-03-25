@@ -8,6 +8,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Traits\InWarehouse;
@@ -23,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $warehouse_id
  * @property int|null $warehouse_area_id
  * @property \Illuminate\Support\Carbon $date
- * @property string $class
+ * @property OrgStockMovementClassEnum $class
  * @property OrgStockMovementTypeEnum $type
  * @property OrgStockMovementFlowEnum $flow
  * @property bool $is_delivered
@@ -44,6 +45,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property string|null $source_id
+ * @property string|null $fixed
+ * @property numeric|null $audited_quantity
+ * @property string|null $running_quantity running quantity on org_stock/location
+ * @property string|null $running_quantity_org_stock running quantity on org_stock
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock $orgStock
@@ -58,13 +63,17 @@ class OrgStockMovement extends Model
 {
     use InWarehouse;
 
+    protected $dateFormat = 'Y-m-d H:i:s.uP';
+
     protected $casts = [
         'data'       => 'array',
         'type'       => OrgStockMovementTypeEnum::class,
         'flow'       => OrgStockMovementFlowEnum::class,
+        'class'      => OrgStockMovementClassEnum::class,
         'date'       => 'datetime',
-        'quantity'   => 'decimal:3',
-        'amount'     => 'decimal:3',
+        'quantity'         => 'decimal:3',
+        'audited_quantity' => 'decimal:6',
+        'amount'           => 'decimal:3',
         'grp_amount' => 'decimal:3',
         'org_amount' => 'decimal:3',
     ];

@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\PickingSession;
 
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -42,9 +43,11 @@ class StartPickPickingSession extends OrgAction
 
         }
 
-        return $this->update($pickingSession, $modelData);
+        $pickingSession = $this->update($pickingSession, $modelData);
 
+        WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
 
+        return $pickingSession;
     }
 
     /**

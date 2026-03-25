@@ -15,9 +15,9 @@ import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
-import { ref, onMounted, reactive, inject, computed } from "vue";
+import { ref, onMounted, reactive, inject, computed, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -30,6 +30,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import axios from "axios";
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic);
 
 
@@ -327,10 +328,80 @@ const submitTransactionAsWaiting = () => {
         }
     )
 }
+
+const isModalPackingInfo = ref(false)
+const selectedPackingItem = ref<any>(null)
+
+const packingDetailRows = ref<any[]>([])
+const isLoadingPackingDetail = ref(false)
+
+const openPackingModal = async (item: any) => {
+    selectedPackingItem.value = item
+    // console.log("selectedPackingItem",selectedPackingItem.value)
+    isModalPackingInfo.value = true
+    isLoadingPackingDetail.value = true
+
+    // console.log("modalResource NOW", modalResource.value)
+    try {
+        const res = await axios.get(
+            route("grp.json.fetch_single_delivery_note_item", {
+                deliveryNoteItem: item.data.id
+            })
+        )
+        // console.log("res",res)
+        packingDetailRows.value = res.data
+        // console.log("packingDetailRows",packingDetailRows.value)
+    } catch (e) {
+        console.log(e)
+        packingDetailRows.value = []
+    } finally {
+        isLoadingPackingDetail.value = false
+    }
+}
+
+const closePackingModal = () => {
+    isModalPackingInfo.value = false
+    setTimeout(() => {
+        selectedPackingItem.value = null
+    }, 200)
+}
+
+const modalResource = computed(() => {
+    if (!selectedPackingItem.value) return null
+
+    return {
+        ...props.data,
+        data: props.data.data.filter(
+            r => r.id === selectedPackingItem.value.id
+        )
+    }
+})
+
+watch(modalResource, (val) => {
+    // console.log("modalResource", val)
+}, { deep: true })
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+        <template #cell(quantity_packed_readonly)="{ item }">
+            <span v-tooltip="item.quantity_packed">
+            <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
+            <span v-else>{{ item.quantity_packed }}</span>
+            </span>
+        </template>
+        <template #cell(quantity_required_readonly)="{ item }">
+            <span v-tooltip="item.quantity_required">
+                <FractionDisplay v-if="item.quantity_required_fractional"
+                    :fractionData="item.quantity_required_fractional" />
+                <span v-else>{{ item.quantity_required }}</span>
+            </span>
+        </template>
+        <template #cell(quantity_picked_readonly)="{ item }">
+            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+            <span v-else>{{ item.quantity_picked }}</span>
+        </template>
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -513,41 +584,48 @@ const submitTransactionAsWaiting = () => {
                     <!-- Action: decrease and increase quantity -->
                     <div class="mb-3 w-full flex justify-between gap-x-6 xitems-center">
                         <div class="">
-                            <Transition name="spin-to-right">
+                            <Transition name="spin-to-down">
                                 <div :key="findLocation(itemValue.locations, proxyItem.org_stock_id).location_code">
-                                    <span v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)">
-                                        <Link v-tooltip="`${itemValue.warehouse_area}`"
-                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.org_stock_id))"
-                                            class="secondaryLink">
-                                        {{ findLocation(itemValue.locations, proxyItem.org_stock_id).location_code }}
-                                        </Link>
-                                    </span>
-                                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
-                                        ({{ trans("Unknown") }})
-                                    </span>
-                                    <span
-                                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.org_stock_id)?.location_code || '' })"
-                                        class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1"
-                                    >
-                                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
-                                            aria-hidden="true" />
-                                        <FractionDisplay
-                                            v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional"
-                                            :fractionData="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional" />
-                                        <template v-else>{{
-                                            locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id).quantity)
-                                            }}</template>
-                                    </span>
 
+                                    <!-- Section: number of locations available to pick -->
                                     <span v-if="itemValue.locations?.length > 1" @click="() => {
                                             isModalLocation = true;
                                             selectedItemValue = itemValue;
                                             selectedItemProxy = proxyItem;
                                         }" v-tooltip="`Other ${itemValue.locations?.length - 1} locations`"
-                                        class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
-                                        <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width
+                                        class="mr-1 cursor-pointer hover:bg-orange-50 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
+                                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
                                         {{ itemValue.locations?.length - 1 }}
+                                    </span>
+
+                                    <span v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)" class="text-base">
+                                        <Link v-tooltip="`${itemValue.warehouse_area}`"
+                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.org_stock_id))"
+                                            class="secondaryLink">
+                                            {{ findLocation(itemValue.locations, proxyItem.org_stock_id).location_code }}
+                                        </Link>
+                                    </span>
+                                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
+                                        ({{ trans("Unknown") }})
+                                    </span>
+                                    
+                                    <!-- Section: number of stocks -->
+                                    <span
+                                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity || 0), stockLocation: findLocation(itemValue.locations, proxyItem.org_stock_id)?.location_code || '' })"
+                                        class="align-middle whitespace-nowrap text-base py-0.5 xopacity-70 tabular-nums xborder border-gray-300 rounded xpx-1"
+                                    >
+                                        <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1 text-base" fixed-width aria-hidden="true" /> -->
+                                        (<span class="text-lg font-bold">
+                                            <FractionDisplay
+                                                v-if="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional"
+                                                :fractionData="findLocation(itemValue.locations, proxyItem.org_stock_id)?.quantity_fractional"
+                                            />
+                                            <template v-else>
+                                                {{ locale.number(findLocation(itemValue.locations, proxyItem.org_stock_id).quantity) }}
+                                            </template>
+                                        </span>
+                                        <span class="text-sm ml-1">stocks</span>)
                                     </span>
                                 </div>
                             </Transition>
@@ -731,35 +809,112 @@ const submitTransactionAsWaiting = () => {
 
         </template>
 
-         <template #cell(action)="{ item: item }">
-                <template class="" v-if="state === 'packing' && layout.app.environment === 'local' && props.shop_type === 'b2b'">
+        <template #cell(action)="{ item: item }">
+                <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_not_picked == 0" >
+                    
+                    <div class="flex justify-start items-center">
                     <ButtonWithLink
+                        v-if="!item.is_done_packing"
                         type="secondary"
-                        tooltip="pack order"
-                        icon="fal fa-hand-holding-box"
-                        label="Packing order"
-                        :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                        :label="ctrans('Packing')"
+                        :size="screenType == 'desktop' ? 'xs' : 'lg'"
+                        :key="screenType"
                         :bindToLink="{preserveScroll: true}"
-                        :routeTarget="item.packing_route"
+                        :routeTarget="{
+                            name: 'grp.models.delivery_note_item.packing.store',
+                            method: 'patch',
+                            parameters: {
+                                deliveryNoteItem: item.id
+                            }
+                        }"
                     />
+                    <ButtonWithLink
+                        v-else
+                        type="negative"
+                        :size="screenType == 'desktop' ? 'xs' : 'lg'"
+                        :bindToLink="{preserveScroll: true}"
+                        :routeTarget="{
+                            name: 'grp.models.delivery_note_item.packing.delete',
+                            method: 'delete',
+                            parameters: {
+                                deliveryNoteItem: item.id
+                            }
+                        }"
+                        :icon="faUndo"
+                    />
+                     <Button
+                     v-if="layout.app.environment === 'local' && !item.is_done_packing"
+                        type="negative"
+                        class="ml-4"
+                        icon="fal fa-debug"
+                        :size="screenType == 'desktop' ? 'xs' : 'lg'"
+                        v-tooltip="'Packing info'"
+                        @click="openPackingModal(item)"
+                    />
+                    </div>
                 </template>
         </template>
     </Table>
 
+    <Modal
+        :isOpen="isModalPackingInfo"
+        @onClose="closePackingModal"
+        width="w-full max-w-4xl"
+    >
+        <div class="text-center text-xl font-semibold mb-4">
+            Packing Info — {{ selectedPackingItem?.org_stock_code }}
+        </div>
+        <Table :resource="modalResource" :name="tab" class="mt-5" rowAlignTop>
+            <!-- Column: state -->
+            <template #cell(state)="{ item }">
+                <Icon :data="item.state_icon" />
+            </template>
+
+            <!-- Column: Reference -->
+            <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
+                <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
+                {{ deliveryNoteItem.org_stock_code }}
+                </Link>
+            </template>
+
+            <template #cell(action)="{ item: item }">
+                <!-- {{ item.not_picking_route }} -->
+                <!-- icon="fal fa-debug" -->
+                <ButtonWithLink
+                    type="negative"
+                    tooltip="No quantity to pick. Click to ignore."
+                             label="Click to ignore"
+                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                            :routeTarget="item.not_picking_route"
+                            :bindToLink="{preserveScroll: true}"
+                             @success="closePackingModal"
+                        />
+                    
+            </template>
+        </Table>
+       
+        <Button
+            class="mt-6"
+            full
+            label="Close"
+            @click="closePackingModal"
+        />
+    </Modal>
+
     <Modal :isOpen="isModalLocation" @onClose="() => onCloseModal()" width="w-full max-w-2xl" :dialogStyle="{
-        background: '#ffffffcc'
+        background: '#ffffff'
     }">
         <div class="text-center font-semibold text-2xl">
             Location list for {{ selectedItemValue?.org_stock_code }}:
         </div>
         <div class="mb-4 italic opacity-60 xtext-sm text-center">
-            Total stocks on all locations: <span class="font-bold">{{ countStockInAllLocations(selectedItemValue?.locations) }}</span> stocks
+            {{ ctrans("Total stocks on all locations") }}: <span class="font-bold">{{ locale.number(countStockInAllLocations(selectedItemValue?.locations)) }}</span> {{ trans("stocks") }}
         </div>
 
-        <div class="rounded p-1 grid grid-cols-3 justify-between gap-x-6 items-center divide-x divide-gray-300">
+        <div class="rounded p-1 grid grid-cols-3 justify-between gap-x-6 items-center xdivide-x xdivide-gray-300">
             <div v-for="location in selectedItemValue?.locations"
-                class="bg-white rounded mb-3 w-full xeven:bg-black/5 flex gap-x-3 items-center px-2 py-1">
-                <label :for="location.location_code">
+                class="xbg-gray-100 border border-gray-300 rounded mb-3 w-full xeven:bg-black/5 flex justify-between gap-x-3 items-center px-2 xpy-2">
+                <label :for="location.location_code" class="flex flex-wrap cursor-pointer w-full py-2">
                     <span v-if="location.location_code"
                         v-tooltip="location.quantity <= 0 ? 'Location has no stock' : ''"
                         :class="location.quantity <= 0 ? 'text-gray-400' : ''">
@@ -774,11 +929,11 @@ const submitTransactionAsWaiting = () => {
 
                     <span
                         v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(Number(location.quantity) || 0), location_code: location.location_code || ''})"
-                        class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
-                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                        <FractionDisplay v-if="location.quantity_fractional"
+                        class="ml-1 whitespace-nowrap text-gray-400 tabular-nums xborder border-gray-300 rounded xpx-1">
+                        <!-- <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" /> -->
+                        (<FractionDisplay v-if="location.quantity_fractional"
                             :fractionData="location.quantity_fractional" />
-                        <template v-else>{{ location.quantity }}</template>
+                        <template v-else>{{ location.quantity }}</template> stocks)
                     </span>
                 </label>
                 <RadioButton v-model="selectedItemProxy.org_stock_id" @update:modelValue="() => {

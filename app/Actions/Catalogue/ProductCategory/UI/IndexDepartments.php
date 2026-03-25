@@ -114,6 +114,7 @@ class IndexDepartments extends OrgAction
             'currencies.code as currency_code',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
+            'product_categories.health_rank',
         ];
 
         if ($prefix === ProductCategoryTabsEnum::SALES->value) {
@@ -124,7 +125,10 @@ class IndexDepartments extends OrgAction
                 foreignKey: 'product_category_id',
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'invoices'           => 'invoices'
+                    'invoices'                    => 'invoices',
+                    'dropshippers'                => 'dropshippers',
+                    'listings'                    => 'listings',
+                    'sold'                        => 'sold',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
@@ -132,9 +136,12 @@ class IndexDepartments extends OrgAction
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
-            $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+            $selects[] = $timeSeriesData['selectRaw']['listings'];
+            $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
 
         $queryBuilder->select($selects);
@@ -153,6 +160,10 @@ class IndexDepartments extends OrgAction
                 'number_current_sub_departments',
                 'sales_grp_currency_external',
                 'invoices',
+                'dropshippers',
+                'listings',
+                'sold',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -211,10 +222,13 @@ class IndexDepartments extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
+                ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 if (class_basename($parent) == 'MasterProductCategory') {
                     $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
@@ -236,6 +250,7 @@ class IndexDepartments extends OrgAction
                 if (class_basename($parent) == 'Collection') {
                     $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
                 }
+
             }
         };
     }

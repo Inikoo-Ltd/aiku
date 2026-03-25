@@ -36,7 +36,8 @@ class UpdateBanner extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'required','string','max:255']
+            'name' => ['sometimes', 'required','string','max:255'],
+            'ratio' => ['sometimes', 'string', 'regex:/\d+\/\d+/'],
         ];
     }
 

@@ -12,7 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Dispatching\Packing\DeletePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
-use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -39,7 +39,7 @@ class UnpackDeliveryNote extends OrgAction
         $oldState = $deliveryNote->state;
         data_set($modelData, 'packed_at', null);
         data_set($modelData, 'packer_user_id', null);
-        data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING->value);
+        data_set($modelData, 'state', DeliveryNoteStateEnum::PACKING->value);
 
         data_set($modelData, 'parcels', []);
 
@@ -62,7 +62,7 @@ class UnpackDeliveryNote extends OrgAction
         if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
             $order = $deliveryNote->orders->first();
 
-            UpdateOrderStateToHandling::make()->action($order);
+            UpdateOrderStateToPacking::make()->action($order);
         }
 
         $deliveryNote = $this->update($deliveryNote, $modelData);
@@ -74,7 +74,7 @@ class UnpackDeliveryNote extends OrgAction
         }
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKING);
 
         return $deliveryNote;
     }

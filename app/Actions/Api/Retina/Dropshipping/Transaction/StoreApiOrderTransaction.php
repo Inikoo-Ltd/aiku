@@ -20,7 +20,6 @@ use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Illuminate\Support\Facades\Log;
 
 class StoreApiOrderTransaction extends RetinaApiAction
 {
@@ -47,7 +46,7 @@ class StoreApiOrderTransaction extends RetinaApiAction
             ], 404);
         }
 
-        if($order->itemTransactions()->where('model_id', $portfolio->item_id)->exists()) {
+        if ($order->itemTransactions()->where('model_id', $portfolio->item_id)->exists()) {
             return response()->json([
                 'message' => "Unable to create transaction for under this order. Another transaction with same the same product already exists.",
             ], 409);
@@ -74,8 +73,10 @@ class StoreApiOrderTransaction extends RetinaApiAction
 
     public function jsonResponse(Transaction|JsonResponse $result)
     {
-        if($result instanceof JsonResponse) return $result;
-        
+        if ($result instanceof JsonResponse) {
+            return $result;
+        }
+
         return TransactionApiResource::make($result)
             ->additional([
                 'message' => __('Transaction created successfully'),

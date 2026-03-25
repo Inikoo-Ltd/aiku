@@ -6,7 +6,9 @@
 
 <script setup lang="ts">
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import {Head, Link} from "@inertiajs/vue3";
+import {Head, Link, router} from "@inertiajs/vue3";
+import axios from "axios";
+import { notify } from "@kyvg/vue3-notification";
 import {computed, ref} from "vue";
 import type {Component} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
@@ -37,7 +39,7 @@ import {
     faDraftingCompass,
     faEnvelope,
     faArrowCircleLeft,
-    faTrashAlt, faExpandArrows, faTruck, faAddressCard, faReceipt, faShapes
+    faTrashAlt, faExpandArrows, faTruck, faAddressCard, faReceipt, faShapes, faExclamationTriangle
 } from "@fal";
 import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck, faOmega, faExclamationCircle, faCheckCircle } from "@fas";
 import {faCheck} from "@far";
@@ -57,9 +59,11 @@ import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
 import Icon from "@/Components/Icon.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
+import ListColumnToDownload from "../../Invoices/ListColumnToDownload.vue"
+import { Icon as IconType } from "@/types/Utils/Icon"
 
 
-library.add(faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird);
+library.add(faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle);
 
 
 
@@ -132,6 +136,10 @@ const props = defineProps<{
     }
     routes: {
         delivery_note: routeType
+        updateInvoiceDateRoute: routeType
+    }
+    can: {
+        editInvoiceDate: boolean
     }
     invoiceExportOptions: {
         type: string
@@ -139,7 +147,12 @@ const props = defineProps<{
         label: string
         parameters: any
         tooltip: string
-        icon: Icon
+        icon: IconType
+    }[]
+    download_pdf_column: {
+        label: string
+        value: string
+        is_checked: boolean
     }[]
 }>();
 
@@ -217,6 +230,42 @@ const generateShowOrderRoute = () => {
         order: props.invoice_pay.order_slug
     });
 };
+
+// Section: Download invoice
+const isOpenModalProforma = ref(false)
+const selectedRouteToDownloadInvoice = ref('')
+
+// Section: Edit invoice date
+const isModalEditDate = ref(false)
+const isModalConfirmEditDate = ref(false)
+const editingDate = ref('')
+const isSubmittingDate = ref(false)
+
+const openEditDateModal = () => {
+    editingDate.value = props.invoice.date ? props.invoice.date.substring(0, 10) : ''
+    isModalEditDate.value = true
+}
+
+const confirmEditDate = () => {
+    if (!editingDate.value) return
+    isModalConfirmEditDate.value = true
+}
+
+const submitEditDate = async () => {
+    isSubmittingDate.value = true
+    try {
+        await axios.patch(
+            route(props.routes.updateInvoiceDateRoute.name, props.routes.updateInvoiceDateRoute.parameters),
+            { date: editingDate.value }
+        )
+        isModalEditDate.value = false
+        isModalConfirmEditDate.value = false
+        notify({ type: 'success', title: trans('Invoice date updated'), text: trans('Invoice date has been successfully updated.') })
+        router.reload({ only: ['invoice'] })
+    } finally {
+        isSubmittingDate.value = false
+    }
+}
 </script>
 
 
@@ -229,19 +278,38 @@ const generateShowOrderRoute = () => {
         <template #otherBefore>
             <div v-if="props.invoiceExportOptions?.length"
                  class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
-                <a v-for="exportOption in props.invoiceExportOptions"
-                   :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
-                   target="_blank"
-                   class="w-auto mt-0 sm:flex-none text-base"
-                   v-tooltip="exportOption.tooltip"
-                >
-                    <Button
-                        :label="exportOption.label"
-                        :icon="exportOption.icon"
-                        type="tertiary"
-                        class="rounded-none border-transparent"
+                <div v-for="exportOption in props.invoiceExportOptions" class="w-auto mt-0 sm:flex-none text-base flex items-center">
+                    <template v-if="exportOption.key === 'pdf_filter'">
+                        <div
+                            @click="() => (isOpenModalProforma = true, selectedRouteToDownloadInvoice = exportOption.name ? exportOption : null)"
+                            v-tooltip="exportOption.tooltip"
+                            class="cursor-pointer h-full flex items-center px-2 hover:bg-gray-100"
+                        >
+                            <FontAwesomeIcon :icon="exportOption.icon" fixed-width aria-hidden="true" />
+                        </div>
+                    </template>
+                    <template v-else>
+                        <a
+                            :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
+                            target="_blank"
+                            v-tooltip="exportOption.tooltip"
+                        >
+                            <Button
+                                :label="exportOption.label"
+                                :icon="exportOption.icon"
+                                type="tertiary"
+                                class="rounded-none border-transparent"
+                            />
+                        </a>
+                    </template>
+                </div>
+
+                <Modal :isOpen="isOpenModalProforma" @onClose="isOpenModalProforma = false" width="w-full max-w-lg">
+                    <ListColumnToDownload
+                        :routeDownload="selectedRouteToDownloadInvoice"
+                        :listColumn="download_pdf_column"
                     />
-                </a>
+                </Modal>
             </div>
         </template>
 
@@ -307,7 +375,7 @@ const generateShowOrderRoute = () => {
                 </template>
             </div>
         </template>
-        
+
         <template #wrapped-delete-booked-in="{ action }">
             <ModalConfirmationDelete
                 :routeDelete="action.route"
@@ -387,9 +455,9 @@ const generateShowOrderRoute = () => {
                 </dt>
                 <dd class="text-base text-gray-500 flex items-center gap-x-2">
                     <span>{{ invoice.tax_number }}</span>
-                    <FontAwesomeIcon 
+                    <FontAwesomeIcon
                         :icon="getStatusIcon(invoice.tax_number_status, invoice.tax_number_valid)"
-                        :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)" 
+                        :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)"
                         size="xs"
                         v-tooltip="taxNumberStatusText"
                     />
@@ -434,13 +502,21 @@ const generateShowOrderRoute = () => {
                 </dl>
 
                 <!-- Section: Invoice date -->
-                <dl
-                    class="flex items-center flex-none gap-x-2 w-fit">
+                <dl class="flex items-center flex-none gap-x-2 w-fit">
                     <dt v-tooltip="trans('Invoice date')" class="flex-none">
                         <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" class="text-gray-500"/>
                     </dt>
                     <dd class="text-base text-gray-500">
                         {{ useFormatTime(props.invoice.date) }}
+                    </dd>
+                    <dd v-if="props.can?.editInvoiceDate">
+                        <FontAwesomeIcon
+                            icon="fal fa-pencil"
+                            class="text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
+                            v-tooltip="trans('Edit invoice date')"
+                            @click="openEditDateModal"
+                            aria-hidden="true"
+                        />
                     </dd>
                 </dl>
 
@@ -551,6 +627,43 @@ const generateShowOrderRoute = () => {
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate"/>
     <component :is="component" :data="props[currentTab]" :tab="currentTab"/>
+
+    <!-- Modal: Edit invoice date -->
+    <Modal :isOpen="isModalEditDate" @onClose="isModalEditDate = false" width="w-full max-w-sm">
+        <div class="p-4 flex flex-col gap-4">
+            <h2 class="text-base font-semibold text-gray-700">{{ trans('Edit invoice date') }}</h2>
+            <input
+                v-model="editingDate"
+                type="date"
+                class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400"
+            />
+            <div class="flex justify-end gap-2">
+                <Button type="tertiary" :label="trans('Cancel')" @click="isModalEditDate = false" />
+                <Button type="primary" :label="trans('Save')" :disabled="!editingDate" @click="confirmEditDate" />
+            </div>
+        </div>
+    </Modal>
+
+    <!-- Modal: Confirm edit invoice date -->
+    <Modal :isOpen="isModalConfirmEditDate" @onClose="isModalConfirmEditDate = false" width="w-full max-w-sm">
+        <div class="p-4 flex flex-col gap-4">
+            <div class="flex items-start gap-3">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-600" fixed-width aria-hidden="true" />
+                </div>
+                <div>
+                    <h2 class="text-base font-semibold text-gray-700">{{ trans('Are you sure?') }}</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        {{ trans('You are about to change the invoice date. This action will also update all related transaction dates.') }}
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <Button type="tertiary" :label="trans('Cancel')" :disabled="isSubmittingDate" @click="isModalConfirmEditDate = false" />
+                <Button type="secondary" :label="trans('Yes, update date')" :loading="isSubmittingDate" @click="submitEditDate" />
+            </div>
+        </div>
+    </Modal>
 
     <Modal :isOpen="isModalSendInvoice" @onClose="isModalSendInvoice = false" width="w-[600px]">
         <div>

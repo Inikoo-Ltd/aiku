@@ -60,48 +60,50 @@ class StoreOrderFromShopify extends OrgAction
         }
 
         if ($shopifyUserHasProductExists) {
-            $order = StoreOrder::make()->action($customerClient, [
-                'platform_id'               => $shopifyUser->platform_id,
-                'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
-                'date'                      => $modelData['created_at'],
-                'delivery_address'          => new Address($deliveryAddress),
-                'data'                      => ['shopify_data' => $modelData],
-                'platform_order_id'         => Arr::get($modelData, 'id'),
+            $order = DB::transaction(function () use ($shopifyUser, $customerClient, $modelData, $deliveryAddress, $shopifyProducts) {
+                $order = StoreOrder::make()->action($customerClient, [
+                    'platform_id'               => $shopifyUser->platform_id,
+                    'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
+                    'date'                      => $modelData['created_at'],
+                    'delivery_address'          => new Address($deliveryAddress),
+                    'data'                      => ['shopify_data' => $modelData],
+                    'platform_order_id'         => Arr::get($modelData, 'id'),
 
-            ]);
+                ]);
 
-            foreach ($shopifyProducts as $shopifyProduct) {
-                /** @var Portfolio $portfolio */
-                $portfolio = $shopifyUser->customerSalesChannel->portfolios()
-                    ->where('platform_product_id', $shopifyProduct['product_id'])->first();
+                foreach ($shopifyProducts as $shopifyProduct) {
+                    /** @var Portfolio $portfolio */
+                    $portfolio = $shopifyUser->customerSalesChannel->portfolios()
+                        ->where('platform_product_id', $shopifyProduct['product_id'])->first();
 
-                if ($portfolio) {
-                    /** @var Product $product */
-                    $product = $portfolio->item;
-                    if (!$product) {
-                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
-                        continue;
+                    if ($portfolio) {
+                        /** @var Product $product */
+                        $product = $portfolio->item;
+                        if (!$product) {
+                            \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
+                            continue;
+                        }
+
+                        /** @var HistoricAsset $product */
+                        $historicAsset = $product->asset?->historicAsset;
+                        if (!$historicAsset) {
+                            \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a historic asset');
+                            continue;
+                        }
+
+                        StoreTransaction::make()->action(
+                            order: $order,
+                            historicAsset: $historicAsset,
+                            modelData: [
+                                'quantity_ordered'        => $shopifyProduct['quantity'],
+                                'platform_transaction_id' => $shopifyProduct['id'],
+                            ]
+                        );
                     }
-
-                    /** @var HistoricAsset $product */
-                    $historicAsset = $product->asset?->historicAsset;
-                    if (!$historicAsset) {
-                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a historic asset');
-                        continue;
-                    }
-
-                    StoreTransaction::make()->action(
-                        order: $order,
-                        historicAsset: $historicAsset,
-                        modelData: [
-                            'quantity_ordered'        => $shopifyProduct['quantity'],
-                            'platform_transaction_id' => $shopifyProduct['id'],
-                        ]
-                    );
                 }
-            }
 
-            $order->refresh();
+                return $order->refresh();
+            });
 
             try {
                 PayOrderAsync::run($order);
@@ -136,7 +138,7 @@ class StoreOrderFromShopify extends OrgAction
                 'reference'    => $reference,
                 'email'        => Arr::get($shopifyOrderData, 'customer.email'),
                 'contact_name' => Arr::get($receiverDetail, 'firstName').' '.Arr::get($receiverDetail, 'lastName'),
-                'phone'        => Arr::get($receiverDetail, 'phone'),
+                'phone'        => $this->sanitizePhone(Arr::get($receiverDetail, 'phone')),
                 'address'      => $deliveryAddress,
                 'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
             ]);
@@ -145,7 +147,7 @@ class StoreOrderFromShopify extends OrgAction
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
                 'email'        => Arr::get($shopifyOrderData, 'customer.email'),
                 'contact_name' => Arr::get($receiverDetail, 'firstName').' '.Arr::get($receiverDetail, 'lastName'),
-                'phone'        => Arr::get($receiverDetail, 'phone'),
+                'phone'        => $this->sanitizePhone(Arr::get($receiverDetail, 'phone')),
                 'address'      => $deliveryAddress,
                 'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
             ]);
@@ -154,4 +156,12 @@ class StoreOrderFromShopify extends OrgAction
         return $customerClient;
     }
 
+    private function sanitizePhone($phone): array|string|null
+    {
+        // Extract only digits
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+
+        // Ensure minimum 10 digits
+        return strlen($digits) >= 10 ? $digits : str_pad($digits, 10, '0', STR_PAD_RIGHT);
+    }
 }

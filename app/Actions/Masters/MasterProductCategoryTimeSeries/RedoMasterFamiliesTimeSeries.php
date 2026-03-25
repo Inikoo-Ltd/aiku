@@ -8,22 +8,26 @@
 
 namespace App\Actions\Masters\MasterProductCategoryTimeSeries;
 
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Models\Masters\MasterProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class RedoMasterFamiliesTimeSeries implements ShouldBeUnique
 {
-    use AsAction;
-    use WithRedoMasterProductCategoryTimeSeries;
+    use WithHydrateCommand, WithRedoMasterProductCategoryTimeSeries {
+        WithRedoMasterProductCategoryTimeSeries::asCommand insteadof WithHydrateCommand;
+        WithRedoMasterProductCategoryTimeSeries::asJob insteadof WithHydrateCommand;
+    }
 
-    protected ?MasterProductCategoryTypeEnum $restriction;
+    protected ?MasterProductCategoryTypeEnum $categoryType;
 
-    public string $jobQueue = 'default-long';
-    public string $commandSignature = 'master-families:redo_time_series {--a|async : Run asynchronously}';
+    public string $jobQueue         = 'default-long';
+    public string $commandSignature = 'master-families:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
-        $this->restriction = MasterProductCategoryTypeEnum::FAMILY;
+        $this->model        = MasterProductCategory::class;
+        $this->categoryType = MasterProductCategoryTypeEnum::FAMILY;
     }
 }

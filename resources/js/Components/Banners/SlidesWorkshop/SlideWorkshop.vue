@@ -25,6 +25,7 @@ const props = defineProps<{
     common: any
     bannerType?: string
     uploadRoutes: routeType
+    ratio : string
 }>()
 
 const emit = defineEmits(["update:modelValue"])
@@ -146,7 +147,7 @@ defineExpose({
                             <component :is="getComponent(fieldData.type)" :model-value="getValue(fieldData)"
                                 @update:modelValue="setValue(fieldData, $event)" :fieldName="fieldData.name"
                                 :fieldData="fieldData" :key="fieldData.type + index + fieldData.label" :counter="false"
-                                :common="common" :uploadRoutes="uploadRoutes" :bannerType="bannerType" />
+                                :common="common" :uploadRoutes="uploadRoutes" :bannerType="bannerType" :ratio />
                         </div>
                     </dd>
                 </dl>

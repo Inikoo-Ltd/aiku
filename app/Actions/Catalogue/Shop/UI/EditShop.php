@@ -252,6 +252,19 @@ class EditShop extends OrgAction
                         ],
                     ]
                 ] : [],
+                $shop->website ? [
+                    'label'  => __('Website'),
+                    'icon'   => 'fal fa-browser',
+                    'fields' => [
+                        'family_webpage_split_description' => [
+                            'label'         => 'Split Family Page Description Web Block',
+                            'type'          => 'toggle',
+                            'value'         => data_get($shop->settings, 'website.family_webpage_split_description', false),
+                            'information'   => __('Description Web Block would be split into 2 parts that is editable'),
+                            'warningText'   => __('Changing this would change the current layout of families webpage (using second webpage styles). Some unsaved changes on the workshop might be discarded. Are you sure you want to change it?')
+                        ],
+                    ]
+                ] : [],
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
@@ -376,6 +389,18 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
+                    'label'  => __('Proforma footer'),
+                    'icon'   => 'fa-light fa-shoe-prints',
+                    'fields' => [
+                        'proforma_footer' => [
+                            'type'  => 'textEditor',
+                            'label' => __('Proforma footer'),
+                            'full'  => true,
+                            'value' => $shop->proforma_footer
+                        ],
+                    ],
+                ],
+                                [
                     'label'  => __('Invoices footer'),
                     'icon'   => 'fa-light fa-shoe-prints',
                     'fields' => [
@@ -384,6 +409,31 @@ class EditShop extends OrgAction
                             'label' => __('Invoice footer'),
                             'full'  => true,
                             'value' => $shop->invoice_footer
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Invoice PDF columns'),
+                    'icon'   => 'fal fa-columns',
+                    'fields' => [
+                        'download_pdf_columns' => [
+                            'type'  => 'checkbox',
+                            'label' => __('Data to display in PDF'),
+                            'information' => __('Default data to include in invoice PDF'),
+                            'value' => (function () use ($shop): array {
+                                $savedColumns = Arr::get($shop->settings, 'invoicing.download_pdf_columns', []);
+                                $columns      = [
+                                    ['label' => __('Country of Origin'), 'key' => 'country_of_origin'],
+                                    ['label' => __('Weight'), 'key' => 'weight'],
+                                    ['label' => __('Commodity Codes'), 'key' => 'commodity_codes'],
+                                ];
+
+                                return array_map(fn ($col) => [
+                                    'label' => $col['label'],
+                                    'key'   => $col['key'],
+                                    'value' => (bool) Arr::get($savedColumns, $col['key'], false),
+                                ], $columns);
+                            })(),
                         ],
                     ],
                 ],

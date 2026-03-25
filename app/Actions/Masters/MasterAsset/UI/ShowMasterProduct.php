@@ -18,6 +18,7 @@ use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterAsset\GetMasterProductImages;
+use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
@@ -43,6 +44,7 @@ class ShowMasterProduct extends GrpAction
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
     use WithMasterProductNavigation;
+    use WithMasterProductSubNavigation;
 
     private MasterShop|Group|MasterAsset|MasterProductCategory $parent;
 
@@ -205,21 +207,19 @@ class ShowMasterProduct extends GrpAction
                             'class'   => 'text-red-400'
                         ],
                     'actions'   => [
+                        $masterAsset->mismatch_detected ? [
+                            'key'   => 'repair-mismatch',
+                            'type'  => 'button',
+                            'style' => 'delete',
+                            'route' => [
+                                'name'       => 'grp.models.master_asset.repair_mismatch_trade_units',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
                         [
                             'key'   => 'edit',
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('Edit'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ],
-                        [
-                            'key'   => 'assign',
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Add to Other Shop'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -233,8 +233,19 @@ class ShowMasterProduct extends GrpAction
                                 'name'       => 'shops.show.assets.remove',
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false
+                        ] : false,
+                        [
+                            'key'   => 'assign',
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('Add to Other Shop'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ],
                     ],
+                    'subNavigation'        => $this->getMasterProductsSubNavigation($masterAsset),
                 ],
                 'masterAsset'          => $masterAsset,
                 'currency'             => $masterAsset->group->currency,
@@ -248,6 +259,8 @@ class ShowMasterProduct extends GrpAction
                 ],
                 'masterVariant'        => $masterAsset->masterVariant,
                 'is_variant_leader'    => $masterAsset->is_variant_leader,
+                'mismatch_detected'    => $masterAsset->mismatch_detected,
+                'products'             => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset)),
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductShowcase::run($masterAsset)
@@ -274,12 +287,13 @@ class ShowMasterProduct extends GrpAction
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterAsset, MasterAssetTabsEnum::HISTORY->value))),
 
 
-                MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))),
+                // MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
+                //     fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))
+                //     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset, MasterAssetTabsEnum::PRODUCTS->value))),
 
             ]
-        )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value, masterAsset: $masterAsset))
+        )
+            // ->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value, masterAsset: $masterAsset))
             ->table(IndexMasterAssetTimeSeries::make()->tableStructure(MasterAssetTabsEnum::SALES->value))
             ->table(IndexMailshots::make()->tableStructure($masterAsset))
             ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value))
@@ -329,6 +343,24 @@ class ShowMasterProduct extends GrpAction
                         ],
                         'model' => [
                             'name'       => 'grp.masters.master_shops.show.master_products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_products.mismatch_detected.show' =>
+            array_merge(
+                ShowMasterShop::make()->getBreadcrumbs($masterAsset->masterShop),
+                $headCrumb(
+                    $masterAsset,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_products.mismatch_detected.index',
+                            'parameters' => $routeParameters,
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_products.mismatch_detected.show',
                             'parameters' => $routeParameters
                         ]
                     ],

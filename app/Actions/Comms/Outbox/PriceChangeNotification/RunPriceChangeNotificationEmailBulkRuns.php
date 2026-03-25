@@ -18,7 +18,6 @@ use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
@@ -143,10 +142,8 @@ class RunPriceChangeNotificationEmailBulkRuns
                             $emailBulkRun,
                             $customer,
                             [
-                                'is_test'       => false,
                                 'outbox_id'     => $outbox->id,
                                 'email_address' => $customer->email,
-                                'provider'      => DispatchedEmailProviderEnum::SES,
                                 'data->additional_data' => [
                                     'products' => $this->generateProductLinks($customer->product_ids)
                                 ]
@@ -226,7 +223,7 @@ class RunPriceChangeNotificationEmailBulkRuns
 
             $productImage = Arr::get(
                 $dataProduct->imageSources(200, 200),
-                'original'
+                'png'
             );
 
             $currency = $dataProduct->currency;

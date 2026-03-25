@@ -24,6 +24,7 @@ const props = defineProps<{
         },
         icon?: string
         icon_left?: IconTS
+        icon_right?: IconTS
     }
     interval: Intervals
 }>()
@@ -101,14 +102,18 @@ const getIntervalStateColor = (state?: string) => {
             :alt="cell.icon"
             v-tooltip="cell?.tooltip ?? cell.icon"
         />
-        <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value }}</span>
+        <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value === 'NA' ? '--' : cell?.formatted_value }}</span>
+        <Icon
+            v-if="cell.icon_right"
+            :data="cell.icon_right"
+        />
         <FontAwesomeIcon
             v-if="cell?.delta_icon?.change"
-            :icon="getIntervalChangesIcon(cell?.delta_icon?.change)?.icon"
+            :icon="cell?.formatted_value === 'NA' ? faEquals : getIntervalChangesIcon(cell?.delta_icon?.change)?.icon"
             class="text-xxs md:text-sm"
             :class="[
-                getIntervalChangesIcon(cell?.delta_icon?.change)?.class,
-                getIntervalStateColor(cell?.delta_icon?.state),
+                cell?.formatted_value === 'NA' ? '' : getIntervalChangesIcon(cell?.delta_icon?.change)?.class,
+                cell?.formatted_value === 'NA' ? 'text-gray-400' : getIntervalStateColor(cell?.delta_icon?.state),
             ]"
             fixed-width
             aria-hidden="true"

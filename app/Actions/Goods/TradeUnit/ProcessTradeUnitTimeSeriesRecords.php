@@ -12,7 +12,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitTimeSeries;
-use App\Traits\BuildsInvoiceTransactionHasTradeUnitTimeSeriesQuery;
+use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -20,7 +20,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
-    use BuildsInvoiceTransactionHasTradeUnitTimeSeriesQuery;
+    use BuildsInvoiceTransactionTimeSeriesQuery;
+
+    public string $jobQueue = 'sales';
 
     public function getJobUniqueId(int $tradeUnitId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
@@ -53,11 +55,16 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
-        $query = DB::table('invoice_transaction_has_trade_units')
-            ->where('trade_unit_id', $timeSeries->trade_unit_id)
-            ->where('in_process', false)
-            ->where('date', '>=', $from)
-            ->where('date', '<=', $to);
+        $query = DB::table('invoice_transactions')
+            ->whereExists(function ($query) use ($timeSeries) {
+                $query->select(DB::raw(1))
+                      ->from('invoice_transaction_has_trade_units')
+                      ->whereColumn('invoice_transaction_has_trade_units.invoice_transaction_id', 'invoice_transactions.id')
+                      ->where('invoice_transaction_has_trade_units.trade_unit_id', $timeSeries->trade_unit_id);
+            })
+            ->where('invoice_transactions.date', '>=', $from)
+            ->where('invoice_transactions.date', '<=', $to)
+            ->whereNull('invoice_transactions.deleted_at');
 
         $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
 

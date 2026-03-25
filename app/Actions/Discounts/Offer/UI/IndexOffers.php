@@ -50,7 +50,7 @@ class IndexOffers extends OrgAction
         ];
     }
 
-    public function handle(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Shop|OfferCampaign|ProductCategory $parent, $prefix = null, $filterByOfferType = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -107,6 +107,7 @@ class IndexOffers extends OrgAction
             'offers.state',
             'offers.code',
             'offers.name',
+            'offers.type',
             'offer_campaigns.slug as offer_campaign_slug',
             'shops.slug as shop_slug',
             'shops.name as shop_name',
@@ -132,9 +133,17 @@ class IndexOffers extends OrgAction
         $selects[] = $timeSeriesData['selectRaw']['invoices'];
         $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
 
+        if ($filterByOfferType) {
+            if ($filterByOfferType == 'offer_only') {
+                $query->whereNotIn('offers.type', ['VolGr Gift', 'GR Amnesty']);
+            } else {
+                $query->where('offers.type', $filterByOfferType);
+            }
+        }
+
         return $query->defaultSort('offers.id')
             ->select($selects)
-            ->allowedSorts(['id','code', 'name', 'orders', 'invoices', 'sales_grp_currency_external'])
+            ->allowedSorts(['id','code', 'created_at', 'name', 'orders', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

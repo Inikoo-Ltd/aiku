@@ -24,8 +24,10 @@ use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\BackInStockReminder;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -61,6 +63,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -141,6 +144,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
+ * @property-read Collection<int, AllegroUser> $allegroUsers
  * @property-read Collection<int, AmazonUser> $amazonUsers
  * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
  * @property-read MediaCollection<int, Media> $attachments
@@ -153,6 +157,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CustomerSalesChannel> $customerSalesChannels
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
+ * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
  * @property-read EbayUser|null $ebayUser
  * @property-read Collection<int, Product> $exclusiveProducts
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
@@ -161,6 +166,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
+ * @property-read \App\Models\CRM\CustomerInterest|null $interests
  * @property-read Collection<int, Invoice> $invoices
  * @property-read Collection<int, MagentoUser> $magentoUsers
  * @property-read MediaCollection<int, Media> $media
@@ -360,6 +366,11 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Invoice::class);
     }
 
+    public function interests(): HasOne
+    {
+        return $this->hasOne(CustomerInterest::class);
+    }
+
     public function webUsers(): HasMany
     {
         return $this->hasMany(WebUser::class);
@@ -463,6 +474,11 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(TiktokUser::class);
     }
 
+    public function allegroUsers(): HasMany
+    {
+        return $this->hasMany(AllegroUser::class);
+    }
+
     public function amazonUsers(): HasMany
     {
         return $this->hasMany(AmazonUser::class);
@@ -536,5 +552,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function tags(): MorphToMany
     {
         return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
+    }
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'customer_has_dispatched_emails');
     }
 }

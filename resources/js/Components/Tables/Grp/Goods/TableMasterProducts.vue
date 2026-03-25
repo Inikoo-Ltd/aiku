@@ -15,13 +15,14 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
 import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
-import { faXmark } from "@fortawesome/free-solid-svg-icons"
+import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import { faCheck, faMinus, faTimes } from "@fal"
 import { trans } from "laravel-vue-i18n"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@/Components/Image.vue"
 import { faShapes, faStar, faTriangle, faEquals } from "@fas"
 import { routeType } from "@/types/route"
+import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 
 const props = defineProps<{
     data: {}
@@ -87,6 +88,14 @@ function masterProductRoute(masterProduct: MasterProduct) {
             {
                 masterShop: (route().params as RouteParams).masterShop,
                 masterFamily: (route().params as RouteParams).masterFamily,
+                masterProduct: masterProduct.slug
+            }
+        )
+    } else if (route().current() == "grp.masters.master_shops.show.master_products.mismatch_detected.index") {
+        return route(
+            "grp.masters.master_shops.show.master_products.mismatch_detected.show",
+            {
+                masterShop: (route().params as RouteParams).masterShop,
                 masterProduct: masterProduct.slug
             }
         )
@@ -317,6 +326,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     class="secondaryLink whitespace-nowrap w-max inline-block">
                     {{ masterProduct.code }}
                 </Link>
+                <FontAwesomeIcon v-if="masterProduct.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch found in products under this master. Please update the master product trade units.')"/>
             </div>
         </template>
 
@@ -351,23 +361,29 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     </span>
                 </span>
             </Link>
-            <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
+<!--             <span v-else class="inline-flex items-center gap-1.5 px-2 py-1
                rounded-md text-medium font-medium
                border transition-colors duration-150 cursor-normal" v-tooltip="trans('Not in a Variant')">
                 -
-            </span>
+            </span> -->
         </template>
 
         <template #cell(name)="{ item: masterProduct }">
-            <div>
-                <ProductUnitLabel
+            <div class="flex items-center">
+
+                <div v-if="masterProduct.trade_units" class="text-xxs shrink-0">
+                    <LabelSKU :product="masterProduct" :trade_units="masterProduct.trade_units" />
+                </div>
+
+                <div class="xtruncate">
+                <!-- <ProductUnitLabel
                     v-if="masterProduct?.units"
                     :units="masterProduct?.units"
                     :unit="masterProduct?.unit"
                     class="!py-0 !px-1 !rounded-sm !text-sm mr-1"
-                />
-
-                {{ masterProduct["name"] }}
+                /> -->
+                    {{ masterProduct.name }}
+                </div>
 
             </div>
         </template>
@@ -413,6 +429,10 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
             </div>
 
+        </template>
+
+        <template #cell(sold)="{ item }">
+            <div class="inline" v-tooltip="'Number if outers sold'">{{ item.sold }}</div>
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: product }">

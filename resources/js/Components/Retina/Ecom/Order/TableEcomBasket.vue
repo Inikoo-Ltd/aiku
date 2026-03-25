@@ -61,7 +61,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
                         set(listState.value, [idTransaction, "quantity"], null)
                     }, 3000)
             },
-            only: ["transactions", "summary", "total_to_pay", "balance", "iris"],
+            only: ["transactions", "summary", "total_to_pay", "balance", "iris", "gr_gifts"],
             preserveScroll: true
         }
     )
@@ -100,6 +100,7 @@ const debounceUpdateQuantity = debounce(
 
         <!-- Column: Name -->
         <template #cell(asset_name)="{ item }">
+          <!--  <pre> {{ item }}</pre> -->
             <div>
                 <a v-if="item.webpage_url" :href="item.webpage_url" class="primaryLink -ml-1 italic text-xs">
                     {{ item.asset_code }}
@@ -113,8 +114,7 @@ const debounceUpdateQuantity = debounce(
                     <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                 </div>
                 <div v-else class="text-gray-400 italic text-xs">
-                    {{ trans('Stock :xquantityx available', { xquantityx: locale.number(item.available_quantity || 0) })
-                    }}
+                    {{ trans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ trans('available') }}
                 </div>
 
                 <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
@@ -185,10 +185,7 @@ const debounceUpdateQuantity = debounce(
                                     <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                                 </div>
                                 <div v-else class="text-gray-400 italic text-xs">
-                                    {{ trans('Stock :xquantityx available', {
-                                        xquantityx:
-                                            locale.number(item.available_quantity || 0) })
-                                    }}
+                                     {{ trans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ trans('available') }}
                                 </div>
                             </div>
                         </div>

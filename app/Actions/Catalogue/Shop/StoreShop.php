@@ -130,11 +130,9 @@ class StoreShop extends OrgAction
             $shop->commsStats()->create();
             $shop->crmStats()->create();
             $shop->orderingStats()->create();
-            $shop->salesIntervals()->create();
             $shop->orderHandlingStats()->create();
             $shop->mailshotsIntervals()->create();
             $shop->discountsStats()->create();
-            $shop->orderingIntervals()->create();
 
             $shop->outboxNewsletterIntervals()->create();
             $shop->outboxMarketingIntervals()->create();

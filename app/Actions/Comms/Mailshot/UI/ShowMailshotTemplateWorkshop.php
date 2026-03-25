@@ -120,6 +120,16 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     ],
                 ],
 
+                'sendTestRoute' => [
+                    'name' => 'grp.org.shops.show.marketing.templates.send-test',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop' => $this->shop->slug,
+                        'emailTemplate' => $emailTemplate->slug
+                    ],
+                    'method' => 'post'
+                ],
+
                 'mergeTags' => GetMailshotMergeTags::run(),
                 'organisationSlug' => $this->organisation->slug,
             ]

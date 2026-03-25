@@ -15,8 +15,13 @@ use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
+use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
+use App\Actions\Web\Website\Layouts\FetchUsedProductWebBlock;
+use App\Actions\Web\Website\Layouts\FetchUsedFamiliesWebBlock;
+use App\Actions\Web\Website\Layouts\FetchUsedSubDepartmentsWebBlock;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Enums\Web\Webpage\WebpageSeoStructureTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -125,30 +130,49 @@ class StoreWebpage extends OrgAction
                 ]);
             }
 
+            $templates = [];
 
             if ($this->strict) {
+                $usedProductsTemplateCode       = FetchUsedProductsWebBlock::run($this->website);
+                $usedProductTemplateCode        = FetchUsedProductWebBlock::run($this->website);
+                $usedFamiliesTemplateCode       = FetchUsedFamiliesWebBlock::run($this->website);
+                $usedSubDepartmentsTemplateCode = FetchUsedSubDepartmentsWebBlock::run($this->website);
+
                 if ($model instanceof Product) {
-                    $this->createWebBlock($webpage, 'product-1');
+                    $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::PRODUCT, $usedProductTemplateCode);
                     $this->createWebBlock($webpage, 'luigi-item-alternatives-1');
                     $this->createWebBlock($webpage, 'luigi-trends-1');
                     $this->createWebBlock($webpage, 'luigi-last-seen-1');
                 } elseif ($model instanceof Collection) {
                     $this->createWebBlock($webpage, 'collection-description-1');
-                    $this->createWebBlock($webpage, 'families-1');
-                    $this->createWebBlock($webpage, 'products-1');
+                    $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                    $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                 } elseif ($model instanceof ProductCategory) {
                     if ($model->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                         $this->createWebBlock($webpage, 'sub-department-description-1');
-                        $this->createWebBlock($webpage, 'families-1');
-                        $this->createWebBlock($webpage, 'products-1');
+                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                        $this->createWebBlock($webpage, 'department-description-1');
-                        $this->createWebBlock($webpage, 'sub-departments-1');
-                        $this->createWebBlock($webpage, 'products-1');
-                        $this->createWebBlock($webpage, 'families-1');
+                        if (data_get($modelData, 'layout_style') == 'families-overview') {
+                            $this->createWebBlock($webpage, 'department-description-1');
+                            $this->createWebBlock($webpage, 'families-1-overview');
+                        } else {
+                            $this->createWebBlock($webpage, 'department-description-1');
+                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS, $usedSubDepartmentsTemplateCode);
+                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
+                            $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+                        }
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
-                        $this->createWebBlock($webpage, 'family-1');
-                        $this->createWebBlock($webpage, 'products-1');
+                        $splitDescription = data_get($webpage->shop->settings, 'website.family_webpage_split_description', false);
+                        if ($splitDescription) {
+                            $this->createWebBlock($webpage, 'family-2');
+                        } else {
+                            $this->createWebBlock($webpage, 'family-1');
+                        }
+                        $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::LIST_PRODUCTS, $usedProductsTemplateCode);
+                        if ($splitDescription) {
+                            $this->createWebBlock($webpage, 'family-2-extra-description');
+                        }
                         $this->createWebBlock($webpage, 'luigi-trends-1');
                         $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
                         $this->createWebBlock($webpage, 'luigi-last-seen-1');
@@ -257,7 +281,7 @@ class StoreWebpage extends OrgAction
             'model_id'           => ['sometimes', 'integer'],
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
-
+            'layout_style'       => ['sometimes', 'string']
 
         ];
 

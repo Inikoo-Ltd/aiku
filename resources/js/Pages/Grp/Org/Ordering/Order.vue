@@ -94,6 +94,7 @@ import order from "@/Pages/Grp/Org/Ordering/Order.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import { Icon as IconTS } from "@/types/Utils/Icon"
+import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt)
 
@@ -277,6 +278,7 @@ const props = defineProps<{
         name: string
         icon: string
     }
+    is_faire_order: boolean
 }>()
 
 
@@ -286,10 +288,6 @@ const locale = inject("locale", aikuLocaleStructure)
 const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-
-console.log("dispatched_emails", props.dispatched_emails)
-
-console.log("props", props)
 
 const component = computed(() => {
     const components: Component = {
@@ -1154,10 +1152,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </template>
 
         <template #button-cancel="{ action }">
-            <div class="relative">
+            <div class="relative" v-if="!is_faire_order">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="cancelLoading"
                     @click="() => confirm2(action)" :key="`ActionButton${action.label}${action.style}`"
                     :tooltip="action.tooltip" />
+            </div>
+            <div class="relative" v-else>
             </div>
         </template>
 
@@ -1611,9 +1611,6 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     :currencyCode="currency.code" :toBePaidBy="data?.data?.to_be_paid_by"
                                     :order="data?.data" :handleTabUpdate="handleTabUpdate">
                                     <template #default>
-
-
-
                                     </template>
                                 </NeedToPayV2>
 
@@ -1644,6 +1641,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
                                         type="secondary" size="xxs" />
                                 </div>
+                                
 
                                 <div v-if="Number(box_stats.products.payment.pay_amount) > 0"
                                     class="my-2 xpt-2 xborder-t border-gray-300 text-xxs">
@@ -1680,9 +1678,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     </p>
 
                                     <ButtonWithLink
-                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
+                                        v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name && layout.app?.environment === 'local'"
                                         :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
-                                        xicon="far fa-plus"
                                         :label="trans('Move :cus_balance to customer balance', { cus_balance: locale.currencyFormat(currency.code, Math.abs(Number(box_stats.products.excesses_payment?.amount))) })"
                                         size="xs" type="primary" full />
                                 </div>
@@ -1750,10 +1747,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 v-if="getShipmentFromPlatform(note) && ['packed', 'finalised', 'dispatched'].includes(note.state) && props.delivery_address_management.addresses.is_shipping_by_external && !note?.shipments?.length"
                                 class="flex items-center gap-2 text-sm mb-1"
                             >
+
                                 <ButtonWithLink
                                     :label="getShipmentFromPlatform(note)?.label"
                                     method="post"
-                                    :url="(route(getShipmentFromPlatform(note)?.name, getShipmentFromPlatform(note)?.parameters) as string)"
+                                    :url="(route(getShipmentFromPlatform(note)?.routeShipment?.name, getShipmentFromPlatform(note)?.routeShipment?.parameters) as string)"
                                     icon="fas fa-plus"
                                     size="xs"
                                     type="dashed"
@@ -1788,6 +1786,24 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     </ul>
                                 </div>
                             </div>
+
+                            <dl v-if="['packed', 'finalised', 'dispatched'].includes(note?.state) && !props.delivery_address_management.addresses.is_shipping_by_external && note.shipments"
+                                class="flex items-xcenter w-full pr-3 flex-none gap-x-1.5">
+                                <dt class="flex-none mt-1">
+                                    <FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width aria-hidden="true" class="text-gray-500" />
+                                </dt>
+                                <dd class="text-gray-500 w-full">
+                                    <ShipmentSection
+                                        :shipping_fields="note.shipping_fields"
+                                        :shipping_fields_update_route="note.shipping_fields_update_route"
+                                        :shipments="note.shipments"
+                                        :shipments_routes="note.shipments_routes"
+                                        :address="note.shipping_fields.address"
+                                        :currencyCode="box_stats?.currency?.data.code"
+                                        :external_shop="box_stats?.external_shop"
+                                    />
+                                </dd>
+                            </dl>
 
                             <!--                            <div v-else class="mt-1 text-xs italic text-gray-400">
                                 {{ trans('No shipments') }}
@@ -1850,12 +1866,30 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         <!-- Box: Order summary -->
         <BoxStatPallet class="pb-4 border-t lg:border-t-0 border-gray-300">
             <div class="text-xs md:text-sm">
-                <!-- <div class="px-3 font-semibold xmb-2 text-base">
-                    {{ trans("Summary") }}
-                </div> -->
+                <div class="pt-2 px-3 flex justify-between items-center">
+                    <div class="font-semibold xmb-2 text-base">
+                        {{ trans("Summary") }}
+                    </div>
 
+                    <div v-if="props.external_shop?.engine_value === 'faire'">
+                        <ButtonWithLink
+                            :label="trans('Refresh Faire data')"
+                            size="xs"
+                            type="tertiary"
+                            key="2"
+                            icon="fal fa-sync-alt"
+                            :routeTarget="{
+                                name: 'grp.models.order.update_faire',
+                                parameters: {
+                                    order: props.data?.data?.id
+                                },
+                                method: 'post'
+                            }"
+                        />
+                    </div>
+                </div>
 
-                <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-4 lg:mt-0">
+                <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-2 sm:px-4 lg:mt-0">
                     <div class="border-b border-gray-300 mb-2 pb-2">
                         <!-- Field: weight -->
                         <dl class="flex w-full items-center">
@@ -1960,7 +1994,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         aria-hidden='true' />
 
                                     <span
-                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state) && !is_shop_external"
+                                        v-if="!['cancelled', 'dispatched', 'finalised'].includes(state)"
                                         @click="_shipping_price_method?.toggle"
                                         v-tooltip="trans('Edit shipping method')"
                                         class="text-gray-500 hover:text-blue-500 cursor-pointer ml-2">
@@ -1972,7 +2006,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
 
                                 <!-- Popover: Select shipping price method -->
-                                <PopoverPrimevue v-if="!is_shop_external" ref="_shipping_price_method">
+                                <PopoverPrimevue  ref="_shipping_price_method">
                                     <div class="relative flex flex-col gap-2">
                                         <div class="text-sm">
                                             {{ trans("Select to change shipping price method") }}:

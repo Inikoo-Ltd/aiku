@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
@@ -8,11 +8,11 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tag from "@/Components/Tag.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { faEdit, faCalendarCheck, faMedkit, faCalendarTimes } from "@fal"
+import { faEdit, faCalendarCheck, faMedkit, faCalendarTimes, faClock } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faEdit, faCalendarCheck, faMedkit, faCalendarTimes)
+library.add(faEdit, faCalendarCheck, faMedkit, faCalendarTimes, faClock)
 
 type LeaveBalanceSummary = {
 	annual_days: number
@@ -31,6 +31,11 @@ const props = defineProps<{
 	tab?: string
 	organisation?: string | null
 	balance?: LeaveBalanceSummary | { data?: LeaveBalanceSummary }
+	typeOptions?: Record<string, string> | null
+	annualSubmittedDays?: number | null
+	annualRemainingAfterSubmission?: number | null
+	medicalRequestCount?: number | null
+	unpaidRequestCount?: number | null
 	isRequestLeaveModalOpen: boolean
 }>()
 
@@ -107,25 +112,99 @@ const balanceSummary = computed(() => {
 	}
 })
 
-const typeOptions = [
-	{ value: "annual", label: trans("Annual Leave") },
-	{ value: "medical", label: trans("Medical Leave") },
-	{ value: "unpaid", label: trans("Unpaid Leave") },
-]
+const displayedMedicalCount = computed(() => {
+	if (
+		typeof props.medicalRequestCount === "number" &&
+		Number.isFinite(props.medicalRequestCount)
+	) {
+		return props.medicalRequestCount
+	}
+
+	return balanceSummary.value?.medical_used ?? 0
+})
+
+const annualSubmitted = computed(() => {
+	if (
+		typeof props.annualSubmittedDays === "number" &&
+		Number.isFinite(props.annualSubmittedDays)
+	) {
+		return props.annualSubmittedDays
+	}
+
+	return balanceSummary.value?.annual_used ?? 0
+})
+
+const annualRemaining = computed(() => {
+	if (
+		typeof props.annualRemainingAfterSubmission === "number" &&
+		Number.isFinite(props.annualRemainingAfterSubmission)
+	) {
+		return props.annualRemainingAfterSubmission
+	}
+
+	return balanceSummary.value?.annual_remaining ?? 0
+})
+
+const displayedUnpaidCount = computed(() => {
+	if (typeof props.unpaidRequestCount === "number" && Number.isFinite(props.unpaidRequestCount)) {
+		return props.unpaidRequestCount
+	}
+
+	return balanceSummary.value?.unpaid_used ?? 0
+})
+
+const fallbackTypeOptions: Record<string, { label: string, category?: string }> = {
+	'annual': { label: 'Annual Leave', category: 'annual' },
+	'personal': { label: 'Personal Leave', category: 'personal' },
+	'medical': { label: 'Medical Leave', category: 'medical' },
+	'special': { label: 'Special Leave', category: 'special' },
+}
+
+const fixedHalfDayTypes: Record<string, "Morning" | "Afternoon"> = {
+	"halfday-morning": "Morning",
+	"halfday-afternoon": "Afternoon",
+}
+
+const typeOptions = computed(() => {
+	const options = props.typeOptions && Object.keys(props.typeOptions).length > 0
+		? props.typeOptions
+		: fallbackTypeOptions
+
+	return Object.entries(options).map(([value, data]) => ({
+		value,
+		label: typeof data === 'string' ? data : data.label,
+		category: typeof data === 'string' ? null : data.category,
+	}))
+})
 
 const leaveForm = useForm<{
 	type: string
 	start_date: string
 	end_date: string
+	is_half_day: boolean
+	session: "Morning" | "Afternoon" | "Full"
 	reason: string
 	attachments: File[]
 }>({
-	type: "annual",
+	type: "",
 	start_date: "",
 	end_date: "",
+	is_half_day: false,
+	session: "Full",
 	reason: "",
 	attachments: [],
 })
+
+watch(
+	typeOptions,
+	(options) => {
+		const hasSelectedType = options.some((option) => option.value === leaveForm.type)
+		if (!hasSelectedType) {
+			leaveForm.type = options[0]?.value ?? ""
+		}
+	},
+	{ immediate: true }
+)
 
 const editForm = useForm<{
 	attachments: File[]
@@ -133,16 +212,18 @@ const editForm = useForm<{
 	attachments: [],
 })
 
+const isMedicalType = computed(() => {
+	const selectedOption = typeOptions.value.find(opt => opt.value === leaveForm.type);
+	return selectedOption?.category === 'medical';
+})
+
 const canSubmitLeave = computed(() => {
 	if (!balanceSummary.value) return true
-	switch (leaveForm.type) {
-		case "annual":
-			return balanceSummary.value.annual_remaining > 0
-		case "medical":
-			return balanceSummary.value.medical_remaining > 0
-		default:
-			return true
+	if (leaveForm.type === "annual") {
+		return annualRemaining.value > 0
 	}
+
+	return true
 })
 
 const getStatusTheme = (status: string): number => {
@@ -167,6 +248,7 @@ const submitLeave = () => {
 	leaveForm
 		.transform((data) => ({
 			...data,
+			end_date: data.is_half_day && data.start_date ? data.start_date : data.end_date,
 			organisation: props.organisation ?? undefined,
 		}))
 		.post(route("grp.clocking_employees.leaves.store"), {
@@ -188,7 +270,37 @@ const submitLeave = () => {
 const closeCreateModal = () => {
 	emit("update:isRequestLeaveModalOpen", false)
 	leaveForm.reset()
+	leaveForm.is_half_day = false
+	leaveForm.session = "Full"
 }
+
+// Watch for changes in leave type to reset half-day settings when switching between types
+watch(
+	() => leaveForm.type,
+	(newValue) => {
+		const halfDaySession = fixedHalfDayTypes[newValue]
+		if (halfDaySession) {
+			leaveForm.is_half_day = true
+			leaveForm.session = halfDaySession
+			if (leaveForm.start_date) {
+				leaveForm.end_date = leaveForm.start_date
+			}
+			return
+		}
+
+		leaveForm.is_half_day = false
+		leaveForm.session = "Full"
+	}
+)
+
+watch(
+	() => leaveForm.start_date,
+	(newStartDate) => {
+		if (leaveForm.is_half_day && newStartDate) {
+			leaveForm.end_date = newStartDate
+		}
+	}
+)
 
 const openEditModal = (leave: any) => {
 	selectedLeave.value = leave
@@ -238,12 +350,12 @@ const submitEdit = () => {
 					<div>
 						<p class="text-sm text-gray-500">{{ trans("Annual Leave") }}</p>
 						<p class="text-2xl font-bold text-blue-600">
-							{{ balanceSummary.annual_remaining }}
+							{{ annualRemaining }}
 						</p>
 						<p class="text-xs text-gray-400">
 							{{
-								trans(":used of :total days used", {
-									used: balanceSummary.annual_used,
+								trans(":submitted of :total days submitted", {
+									submitted: annualSubmitted,
 									total: balanceSummary.annual_days,
 								})
 							}}
@@ -260,15 +372,10 @@ const submitEdit = () => {
 					<div>
 						<p class="text-sm text-gray-500">{{ trans("Medical Leave") }}</p>
 						<p class="text-2xl font-bold text-red-600">
-							{{ balanceSummary.medical_remaining }}
+							{{ displayedMedicalCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{
-								trans(":used of :total days used", {
-									used: balanceSummary.medical_used,
-									total: balanceSummary.medical_days,
-								})
-							}}
+							{{ trans("Requests Submitted") }}
 						</p>
 					</div>
 					<div class="text-3xl text-red-200">
@@ -282,15 +389,10 @@ const submitEdit = () => {
 					<div>
 						<p class="text-sm text-gray-500">{{ trans("Unpaid Leave") }}</p>
 						<p class="text-2xl font-bold text-gray-600">
-							{{ balanceSummary.unpaid_remaining }}
+							{{ displayedUnpaidCount }}
 						</p>
 						<p class="text-xs text-gray-400">
-							{{
-								trans(":used of :total days used", {
-									used: balanceSummary.unpaid_used,
-									total: balanceSummary.unpaid_days,
-								})
-							}}
+							{{ trans("requests submitted") }}
 						</p>
 					</div>
 					<div class="text-3xl text-gray-200">
@@ -320,6 +422,16 @@ const submitEdit = () => {
 					</span>
 				</template>
 
+				<template #cell(duration)="{ item: leave }">
+					<span class="whitespace-nowrap block sm:inline">
+						<FontAwesomeIcon
+							v-if="leave.is_half_day"
+							icon="fal fa-clock"
+							class="mr-1 text-blue-500" />
+						{{ leave.is_half_day ? `Half Day (${leave.session})` : "Full Day" }}
+					</span>
+				</template>
+
 				<template #cell(status_label)="{ item: leave }">
 					<Tag :theme="getStatusTheme(leave.status)" size="xs" :label="leave.status">
 						<template #label>
@@ -342,7 +454,7 @@ const submitEdit = () => {
 				</template>
 
 				<template #cell(actions)="{ item: leave }">
-					<div v-if="leave.status === 'pending' && leave.type === 'medical'">
+					<div v-if="leave.status === 'pending' && typeOptions.find(opt => opt.value === leave.type)?.category === 'medical'">
 						<Button
 							@click="openEditModal(leave)"
 							:label="trans('Edit')"
@@ -370,6 +482,7 @@ const submitEdit = () => {
 					<select
 						v-model="leaveForm.type"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+						<option value="" disabled> {{ trans("Please Select Your Leave Type!") }} </option>
 						<option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
 							{{ opt.label }}
 						</option>
@@ -400,12 +513,17 @@ const submitEdit = () => {
 						<input
 							v-model="leaveForm.end_date"
 							type="date"
+							:disabled="leaveForm.is_half_day"
 							class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
 						<p v-if="leaveForm.errors.end_date" class="mt-1 text-sm text-red-600">
 							{{ leaveForm.errors.end_date }}
 						</p>
 					</div>
 				</div>
+
+				<p v-if="leaveForm.is_half_day" class="text-xs text-gray-500">
+					{{ trans("Half day leave is applied to one date only.") }}
+				</p>
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">{{
@@ -421,7 +539,7 @@ const submitEdit = () => {
 					</p>
 				</div>
 
-				<div v-if="leaveForm.type === 'medical'">
+				<div v-if="isMedicalType">
 					<label class="block text-sm font-medium text-gray-700">{{
 						trans("Medical Certificate")
 					}}</label>
@@ -440,21 +558,27 @@ const submitEdit = () => {
 					</p>
 				</div>
 
-				<p v-if="!canSubmitLeave" class="text-sm text-red-600">
-					{{ trans("Insufficient leave balance for the selected type.") }}
-				</p>
+					<p
+						v-if="leaveForm.type === 'annual' && !canSubmitLeave"
+						class="text-sm text-red-600">
+						{{ trans("Insufficient leave balance for the selected type.") }}
+					</p>
 
-				<div class="mt-6 flex justify-end gap-2">
-					<Button @click="closeCreateModal" :label="trans('Cancel')" type="tertiary" />
-					<Button
-						type="save"
-						nativeType="submit"
-						:label="trans('Submit Request')"
-						:loading="isSubmitting"
-						:disabled="!canSubmitLeave" />
-				</div>
-			</form>
-		</Modal>
+					<div class="mt-6 flex justify-end gap-2">
+						<Button
+							@click="closeCreateModal"
+							:label="trans('Cancel')"
+							type="tertiary"
+							nativeType="button" />
+						<Button
+							type="save"
+							nativeType="submit"
+							:label="trans('Submit Request')"
+							:loading="isSubmitting"
+							:disabled="leaveForm.type === 'annual' && !canSubmitLeave" />
+					</div>
+				</form>
+			</Modal>
 
 		<Modal :isOpen="isEditModalOpen" @onClose="closeEditModal" width="w-full max-w-md">
 			<h2 class="text-lg font-semibold text-gray-800 mb-4">
@@ -485,17 +609,21 @@ const submitEdit = () => {
 					<p v-if="editForm.errors.attachments" class="mt-1 text-sm text-red-600">
 						{{ editForm.errors.attachments }}
 					</p>
-				</div>
+					</div>
 
-				<div class="mt-6 flex justify-end gap-2">
-					<Button @click="closeEditModal" :label="trans('Cancel')" type="tertiary" />
-					<Button
-						@click="submitEdit"
-						type="save"
-						:label="trans('Save')"
-						:loading="isSubmitting" />
-				</div>
-			</form>
-		</Modal>
-	</div>
-</template>
+					<div class="mt-6 flex justify-end gap-2">
+						<Button
+							@click="closeEditModal"
+							:label="trans('Cancel')"
+							type="tertiary"
+							nativeType="button" />
+						<Button
+							type="save"
+							nativeType="submit"
+							:label="trans('Save')"
+							:loading="isSubmitting" />
+					</div>
+				</form>
+			</Modal>
+		</div>
+	</template>

@@ -18,14 +18,13 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
-import Icon from "@/Components/Icon.vue"
 import { faMoneyBill1Wave } from "@fortawesome/free-solid-svg-icons"
-// import EditTrolley from "@/Components/DeliveryNote/EditTrolley.vue"
 import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
+import Select from 'primevue/select';
+import { faExchangeAlt, faLocation, faLock, faUnlock , faLockOpen} from "@far"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -42,6 +41,10 @@ const props = defineProps<{
         is_collection?: boolean
         is_replacement?: boolean
         is_create_replacement?: boolean
+        currency_code: string
+        external_shop: {
+
+        } | null
         delivery_note: {
             reference?: string
             route: routeType
@@ -127,6 +130,7 @@ const props = defineProps<{
         pickers_list: routeType
         packers_list: routeType
         update: routeType
+        assignSelfTemporarily: routeType
     }
     deliveryNote: {
         state: string
@@ -137,6 +141,9 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
+    allowActions: boolean
+    quick_pickers : any
+    showChangePickerPacker: boolean
 }>()
 
 const emit = defineEmits<{
@@ -149,6 +156,95 @@ const locale = inject('locale', aikuLocaleStructure)
 // Section: Replace All functionality
 const onReplaceAll = () => {
     emit('replace-all')
+}
+
+
+const isModalToQueue = ref(false);
+const selectedPicker = ref(props.boxStats.picker);
+const disable = ref(props.boxStats.state);
+const isLoading = ref<{ [key: string]: boolean }>({});
+const isLoadingToQueue = ref(false);
+
+
+
+const onUpdatePicker = () => {
+    const state = props.deliveryNote?.state;
+    const pickerId = selectedPicker.value?.id;
+
+    if (!pickerId) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Picker is not selected"),
+            type: "error"
+        });
+        return;
+    }
+
+    const isUnassigned = state === 'unassigned';
+
+    const routeConfig = props.routes[isUnassigned ? 'set_queue' : 'update'];
+
+    const routeName = routeConfig.name;
+    const routeParams = {
+        ...routeConfig.parameters,
+        ...(isUnassigned ? { user: pickerId } : {})
+    };
+
+    let payload = {};
+    if (!isUnassigned) {
+        payload = ['packing', 'packed'].includes(props.deliveryNote?.state)
+            ? { packer_user_id: pickerId }
+            : { picker_user_id: pickerId };
+    }
+
+    router.patch(route(routeName, routeParams), payload, {
+        onError: (error) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: error?.message ?? trans("Unknown error"),
+                type: "error"
+            });
+        },
+        onSuccess: () => {
+            isModalToQueue.value = false;
+        },
+        onStart: () => {
+            isLoadingToQueue.value = true;
+        },
+        onFinish: () => {
+            isLoadingToQueue.value = false;
+        },
+        preserveScroll: true
+    });
+};
+
+const assignSelfTemporarily = () => {
+    
+    const routeName = props.routes.assignSelfTemporarily.name;
+    const routeParams = {
+        ...props.routes.assignSelfTemporarily.parameters,
+    };
+    const payload = {picker_user_id: selectedPicker.value.id};
+
+    router.patch(
+        route(routeName, routeParams),
+        payload,
+        {
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error.message,
+                    type: "error"
+                });
+            },
+            onSuccess: () => {
+                isModalToQueue.value = false;
+            },
+            onStart: () => isLoadingToQueue.value = true,
+            onFinish: () => isLoadingToQueue.value = false,
+            preserveScroll: true
+        }
+    );
 }
 
 
@@ -230,6 +326,30 @@ const updateCollection = async (e: Event) => {
     }
 }
 
+const parcelPresets = [
+    { label: '40 × 40 × 40 cm', weight: null, dimensions: [40, 40, 40] },
+    { label: '60 × 40 × 30 cm', weight: null, dimensions: [60, 40, 30] },
+    { label: '60 × 50 × 40 cm', weight: null, dimensions: [60, 50, 40] },
+    { label: '60 × 60 × 40 cm', weight: null, dimensions: [60, 60, 40] },
+    { label: '41 × 24 × 31 cm', weight: null, dimensions: [41, 24, 31] },
+    { label: '94 × 48 × 37 cm', weight: null, dimensions: [94, 48, 37] },
+    { label: '94 × 48 × 43 cm', weight: null, dimensions: [94, 48, 43] },
+    { label: '22 × 19 × 17 cm', weight: null, dimensions: [22, 19, 17] },
+    { label: '68 × 68 × 44 cm', weight: null, dimensions: [68, 68, 44] },
+]
+
+const applyParcelPreset = (parcel: { dimensions: any[]; weight: any }, preset: { dimensions: any; weight: any }) => {
+
+    if (!preset) return
+
+    parcel.dimensions = [...preset.dimensions]
+
+    if (preset.weight) {
+        parcel.weight = preset.weight
+    }
+}
+
+console.log(layout)
 </script>
 
 <template>
@@ -405,20 +525,40 @@ const updateCollection = async (e: Event) => {
                                 </dd>
                             </dl>
                         </div>
+
+
+                        <FontAwesomeIcon
+                            v-if="boxStats?.picker?.id != layout?.user?.id && ['queued', 'packed', 'handling', 'packing'].includes(deliveryNote?.state)"
+                            v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
+                            class="cursor-pointer focus:outline-none"
+                            :icon="allowActions ? faLockOpen : faLock"
+                            @click="assignSelfTemporarily()"
+                        />
+
+                        <Button
+                            v-if="['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
+
+
+                        <Button
+                            v-if="['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
+                            @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+
+
+                     
                     </div>
 
                     <!-- Section: Trolleys -->
                     <ManageTrolleysInDeliveryNote
-                        v-if="!(['unassigned', 'queued'].includes(deliveryNote.state))"
+                        v-if="!(['unassigned', 'queued', 'dispatched', 'packed'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
                         :deliveryNote
                         :trolleys="boxStats.trolleys"
                         :warehouse
                     />
                     
                     <!-- Section: Picked Bays -->
-                    <div v-if="['handling', 'picked', 'packing'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
-                        <dl v-tooltip="trans('Picked bay name')"
-                            class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                    <div v-if="[ 'picked'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
+                        <dl class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
                                 {{ trans("Picked bays") }}:
                             </dt>
@@ -438,7 +578,7 @@ const updateCollection = async (e: Event) => {
                         </dl>
 
                         <ChangePickedBays
-                            v-if="['handling', 'picked', 'packing'].includes(deliveryNote.state)"
+                            v-if="['picked'].includes(deliveryNote.state)"
                             :warehouse="warehouse"
                             :deliveryNote="deliveryNote"
                             :pickedBays="boxStats?.picked_bays"
@@ -447,15 +587,6 @@ const updateCollection = async (e: Event) => {
                     
                     <div class="!mt-2 border-t border-gray-300 w-full" />
 
-                    <!-- Current State -->
-                    <!-- <dl xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
-                        <dt class="flex-none">
-                            <Icon :data="boxStats?.state_icon" />
-                        </dt>
-                        <dd class="text-gray-500">
-                            {{ boxStats.state_label }}
-                        </dd>
-                    </dl> -->
 
                     <!-- Total Items -->
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -548,6 +679,8 @@ const updateCollection = async (e: Event) => {
                                 :shipments_routes="boxStats.shipments_routes"
                                 :address="boxStats.address"
                                 :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
+                                :currencyCode="boxStats?.currency_code"
+                                :external_shop="boxStats?.external_shop"
                             />
                         </dd>
                     </dl>
@@ -575,7 +708,7 @@ const updateCollection = async (e: Event) => {
         </BoxStatPallet>
 
         <!-- Modal: Parcels -->
-        <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg">
+        <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-2xl">
             <div class="text-center font-bold mb-4">
                 {{ trans('Add shipment') }}
             </div>
@@ -599,33 +732,33 @@ const updateCollection = async (e: Event) => {
                     </div>
 
                     <!-- Field: row parcels -->
-                    <div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
+                    <div class="grid gap-y-1 max-h-64 overflow-y-auto">
                         <TransitionGroup v-if="parcelsCopy?.length" name="list">
                             <div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex"
-                                class="grid grid-cols-12 items-center gap-x-6">
-                                <div @click="() => onDeleteParcel(parcelIndex)" class="flex justify-center">
+                                class="grid grid-cols-12 items-center gap-x-1">
+                                <div @click="() => onDeleteParcel(parcelIndex)" class="col-span-1 flex justify-center pr-2">
                                     <FontAwesomeIcon icon="fal fa-trash-alt"
                                         class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width
                                         aria-hidden="true" />
                                 </div>
-                                <div class="col-span-2 flex items-center space-x-2">
+                               
+                                <div class="col-span-1 flex justify-center">
                                     <InputNumber
                                         v-model="parcel.weight"
                                         :min="0.001"
-                                        inputClass="!w-16 !text-sm !py-2 !px-1.5 !text-center"
+                                        inputClass="!text-xs !w-6 sm:!w-12 sm:!text-sm !py-3 sm:!py-2 !px-1.5 !text-center"
                                         size="small"
                                         placeholder="0"
-                                        fluid
                                         :locale="locale.locale_iso"
                                         :max-fraction-digits="3"
                                     />
                                 </div>
 
-                                <div class="col-span-9 flex items-center gap-x-1 font-light">
+                                <div class="col-span-7 sm:col-span-5 flex justify-center items-center gap-x-1 sm:gap-x-2 font-light ml-1 sm:ml-2">
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[0]"
-                                        class="w-16"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
                                         fluid
@@ -636,7 +769,7 @@ const updateCollection = async (e: Event) => {
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[1]"
-                                        class="w-16"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
                                         fluid
@@ -647,7 +780,7 @@ const updateCollection = async (e: Event) => {
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[2]"
-                                        class="w-16"
+                                        class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
                                         fluid
@@ -673,6 +806,19 @@ const updateCollection = async (e: Event) => {
                                             </div>
                                         </template>
                                     </Popover> -->
+                                </div>
+
+                                 <div class="col-span-3 sm:col-span-5 pl-1 sm:pl-0">
+                                    <Select
+                                        :modelValue="parcelPresets.find(p =>
+                                            p.dimensions.every((d,i)=>d===parcel.dimensions[i])
+                                        )"
+                                        :options="parcelPresets"
+                                        optionLabel="label"
+                                        placeholder="Preset Size"
+                                        class="w-20 sm:w-full text-xs sm:text-sm"
+                                        @change="(e)=>applyParcelPreset(parcel,e.value)"
+                                    />
                                 </div>
                             </div>
                         </TransitionGroup>
@@ -702,6 +848,85 @@ const updateCollection = async (e: Event) => {
 
         <!-- Modal: change trolley -->
     </div>
+
+
+    <Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
+		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
+			<div class="mx-auto font-semibold text-lg">
+				{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
+			</div>
+			<div class="mt-4 flex items-center w-full gap-x-1.5">
+				<dd class="flex-1">
+					<!-- Label for Picker -->
+					<div class="flex justify-between text-sm font-medium py-2">
+						{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
+                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="trans('I will do the picking myself')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
+					</div>
+					<PureMultiselectInfiniteScroll
+						v-model="selectedPicker"
+						required
+						:fetchRoute="routes.pickers_list"
+						:placeholder="trans('Select picker')"
+						labelProp="contact_name"
+						valueProp="id"
+						object
+						clearOnBlur
+						:loading="isLoading['picker' + selectedPicker?.id]"
+						:disabled="
+							disable == 'picker_assigned' ||
+							disable == 'packing' ||
+							disable == 'packed' ||
+							disable == 'finalised' ||
+							disable == 'settled' ||
+                            isLoadingToQueue
+						">
+						<template #singlelabel="{ value }">
+							<div
+								class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+								{{ value.contact_name }}
+							</div>
+						</template>
+						<template #option="{ option, isSelected, isPointed }">
+							<div class="w-full text-left text-sm whitespace-nowrap truncate">
+								{{ option.contact_name }}
+							</div>
+						</template>
+					</PureMultiselectInfiniteScroll>
+
+					<!-- Quick Pickers -->
+					<div v-if="quick_pickers && quick_pickers.length > 0" class="mt-3">
+						<div class="flex flex-wrap justify-center gap-2">
+							<button
+								v-for="picker in quick_pickers"
+								:key="picker.id"
+								@click="()=>{selectedPicker = picker, onUpdatePicker()}"
+								class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								:class="{
+									'bg-blue-500 text-white': selectedPicker?.id === picker.id,
+								}">
+								{{ picker.contact_name }}
+							</button>
+						</div>
+					</div>
+				</dd>
+			</div>
+			<div class="w-full mt-2">
+				<Button
+					@click="onUpdatePicker()"
+					:label="
+						delivery_note_state === 'queued'
+							? trans('Change picker')
+							: trans('Set Picker')
+					"
+					:iconRight="['fas', 'fa-arrow-right']"
+					full
+					:loading="isLoadingToQueue"
+					:disabled="!selectedPicker"
+					v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
+				</Button>
+			</div>
+		</div>
+	</Modal>
 </template>
 
 <style scoped>

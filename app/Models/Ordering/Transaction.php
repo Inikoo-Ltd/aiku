@@ -96,6 +96,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $profit_amount
  * @property string|null $margin
  * @property bool $is_cut_view
+ * @property bool $is_gift
+ * @property string|null $submitted_gross_amount
+ * @property string|null $submitted_net_amount
+ * @property float $submitted_discount_factor
+ * @property float $current_discount_factor
  * @property-read Asset|null $asset
  * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE

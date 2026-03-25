@@ -75,6 +75,11 @@ const props = defineProps<{
     shop_data: {
         type: string
     }
+    gr_data: {
+        gr_label: string
+        meter: number[]
+        customer_is_gr: boolean
+    }
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -143,8 +148,14 @@ const component = computed(() => {
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :handleTabUpdate
-        :detachRoute="attachmentRoutes.detachRoute" />
+    <component
+        :is="component"
+        :data="props[currentTab as keyof typeof props]"
+        :tab="currentTab"
+        :gr_data
+        :handleTabUpdate
+        :detachRoute="attachmentRoutes.detachRoute"
+    />
 
   <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',

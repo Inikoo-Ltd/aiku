@@ -41,7 +41,6 @@ class BannerResourceForWorkshop extends JsonResource
             $unpublishedSnapshot = SnapshotResource::make($snapshot)->getArray();
         }
 
-        // dd($banner->unpublishedSnapshot->compiledLayout());
         return [
             'id'                 => $banner->id,
             'type'               => $banner->type?->value,
@@ -64,6 +63,7 @@ class BannerResourceForWorkshop extends JsonResource
                 'name'       => 'customer.banners.banners.workshop',
                 'parameters' => [$banner->slug]
             ],
+            'ratio'              =>  $banner->ratio,
             'last_saved_at'      => $banner->unpublishedSnapshot->updated_at,
             'compiled_layout'    => $banner->unpublishedSnapshot->compiledLayout(),
             'delivery_url'       => config('app.delivery_url').'/banners/'.$banner->ulid,

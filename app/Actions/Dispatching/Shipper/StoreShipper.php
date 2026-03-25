@@ -56,12 +56,12 @@ class StoreShipper extends OrgAction
         $rules = [
             'code'         => [
                 'required',
-                'between:2,16',
-                'alpha_dash',
+                'between:2,32',
+                $this->strict ? 'alpha_dash' : 'string',
                 new IUnique(
                     table: 'shippers',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->organisation->group_id],
+                        ['column' => 'organisation_id', 'value' => $this->organisation->id],
                     ]
                 ),
             ],

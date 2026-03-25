@@ -18,8 +18,14 @@ class GetDispatchHubFulfilmentWidget
     public function handle(Warehouse $warehouse): array
     {
         return [
+            'slug'     => 'fulfilment',
             'label'    => __('Fulfilment'),
             'tooltip'  => __('Fulfilment Delivery Notes'),
+            'total_route' => [
+                // 'name'       => 'grp.org.warehouses.show.dispatching.pallet-returns.index',
+                'name'       => 'grp.org.warehouses.show.dispatching.in_warehouse.delivery-notes.shop',
+                'parameters' => request()->route()->originalParameters()
+            ],
             'cases'    => [
                 'todo'    => [
                     'route' => [

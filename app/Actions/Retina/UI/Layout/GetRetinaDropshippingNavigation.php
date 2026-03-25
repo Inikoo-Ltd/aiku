@@ -269,7 +269,7 @@ class GetRetinaDropshippingNavigation
         ];
 
         $groupNavigation['back-in-stocks'] = [
-                'label'   => __('Back In Stocks'),
+                'label'   => __('Back In Stock Reminders'),
                 'icon'    => ['fas', 'fa-envelope-circle-check'],
                 'root'    => 'retina.dropshipping.back_in_stock.',
                 'route'   => [

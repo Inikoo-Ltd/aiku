@@ -44,7 +44,6 @@ class StoreOrgStockFamily extends OrgAction
         $orgStockFamily = $stockFamily->orgStockFamilies()->create($modelData);
         $orgStockFamily->stats()->create();
         $orgStockFamily->intervals()->create();
-        $orgStockFamily->salesIntervals()->create();
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             $orgStockFamily->timeSeries()->create(['frequency' => $frequency]);
@@ -62,7 +61,7 @@ class StoreOrgStockFamily extends OrgAction
     public function rules(ActionRequest $request): array
     {
         return [
-            'source_id' => 'nullable|string',
+            'source_id' => 'sometimes|nullable|string',
         ];
     }
 

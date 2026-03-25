@@ -16,7 +16,7 @@ use App\Actions\Dispatching\Picking\UpsertPicking;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem:id}')->group(function () {
-    Route::post('packing', StorePacking::class)->name('packing.store')->withoutScopedBindings();
+    // Route::post('packing', StorePacking::class)->name('packing.store')->withoutScopedBindings();
     Route::post('picking', StorePicking::class)->name('picking.store');
     Route::post('picking', UpsertPicking::class)->name('picking.upsert');
     Route::post('picking-all', PickAllItem::class)->name('picking_all.store')->withoutScopedBindings();

@@ -38,7 +38,7 @@ class GetProductsForVolGrGift extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->where('products.shop_id', $parent->id);
-        $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
+        $queryBuilder->where('products.state', '!=', ProductStateEnum::DISCONTINUED);
         $queryBuilder->select([
             'products.id',
             'products.code',

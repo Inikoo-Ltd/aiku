@@ -23,13 +23,21 @@ class SetTradeUnitsForFaireShops
     use WithActionUpdate;
 
 
-    public function handle(Product $product, Shop $seederShop, Command $command): void
+    public function handle(Product $product, Command $command): void
     {
-        $code = $product->code;
+        $code       = $product->code;
+        $seederShop = $product->shop->seederShop;
+        if (!$seederShop) {
+            return;
+        }
 
         $seederProduct = Product::whereRaw("lower(code) = lower(?)", [$code])->where('shop_id', $seederShop->id)->first();
 
+
         if ($seederProduct && $seederProduct->units == $product->units) {
+
+
+
             $tradeUnitsData = [];
             foreach ($seederProduct->tradeUnits as $tradeUnit) {
                 $tradeUnitsData[] = [
@@ -37,13 +45,14 @@ class SetTradeUnitsForFaireShops
                     'quantity' => $tradeUnit->pivot->quantity
                 ];
             }
+
+
+
             if (!empty($tradeUnitsData)) {
                 UpdateTradeUnitsForExternalProduct::make()->action($product, [
                     'trade_units' => $tradeUnitsData
                 ]);
             }
-
-
         } elseif (!$seederProduct) {
             $command->error("Product not found in seeder ".$product->code);
         } else {
@@ -52,14 +61,24 @@ class SetTradeUnitsForFaireShops
     }
 
 
-    public string $commandSignature = 'repair:set_trade_units_for_faire_shops {seeder} {faire_shop}';
+    public string $commandSignature = 'repair:set_trade_units_for_faire_shops {faire_shop} {--in_process=false}';
 
     public function asCommand(Command $command): int
     {
         $faireShop  = Shop::where('slug', $command->argument('faire_shop'))->firstOrFail();
-        $seederShop = Shop::where('slug', $command->argument('seeder'))->firstOrFail();
+        $seederShop = $faireShop->seederShop;
+        if (!$seederShop) {
+            $command->error("Seeder shop not found for ".$faireShop->name);
 
-        $count = Product::where('shop_id', $faireShop->id)->where('state', ProductStateEnum::IN_PROCESS)->count();
+            return 1;
+        }
+
+        $countQuery = Product::where('shop_id', $faireShop->id);
+        if ($command->option('in_process')) {
+            $countQuery->where('state', ProductStateEnum::IN_PROCESS);
+        }
+
+        $count = $countQuery->count();
 
         ProgressBar::setFormatDefinition(
             'aiku_eta',
@@ -69,10 +88,15 @@ class SetTradeUnitsForFaireShops
         $bar->setFormat('aiku_eta');
         $bar->start();
 
-        Product::where('shop_id', $faireShop->id)->where('state', ProductStateEnum::IN_PROCESS)->orderBy('id')
-            ->chunk(100, function (Collection $products) use ($seederShop, $bar, $command) {
+        $query = Product::where('shop_id', $faireShop->id);
+        if ($command->option('in_process')) {
+            $query->where('state', ProductStateEnum::IN_PROCESS);
+        }
+
+        $query->orderBy('id')
+            ->chunk(100, function (Collection $products) use ($bar, $command) {
                 foreach ($products as $product) {
-                    $this->handle($product, $seederShop, $command);
+                    $this->handle($product, $command);
                     $bar->advance();
                 }
             });

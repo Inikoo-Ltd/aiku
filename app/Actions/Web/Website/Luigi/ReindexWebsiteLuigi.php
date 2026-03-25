@@ -8,25 +8,36 @@
 
 namespace App\Actions\Web\Website\Luigi;
 
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Website;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexWebsiteLuigi
+class ReindexWebsiteLuigi implements ShouldBeUnique
 {
     use AsAction;
     use WithLuigis;
 
+    public string $jobQueue = 'default-long';
+
     public string $commandSignature = 'luigis:reindex_website {website?}';
+    public int $jobTries = 1;
+
+    public function getJobUniqueId(Website $website): string
+    {
+        return $website->id;
+    }
 
     /**
      * @throws \Exception
      */
     public function handle(Website $website, ?Command $command = null): void
     {
+
         $command?->info("Reindexing website ".$website->domain);
 
         $accessToken = $this->getAccessToken($website);
@@ -46,26 +57,36 @@ class ReindexWebsiteLuigi
             ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
             ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
             ->chunk(1000, function ($webpages) use ($website, $command) {
-                $objects = [];
-                foreach ($webpages as $webpage) {
-                    $object = $this->getObjectFromWebpage($webpage);
-                    if ($object) {
-                        $objects[] = $object;
+
+                if ($command) {
+                    $objects = [];
+                    foreach ($webpages as $webpage) {
+                        $object = $this->getObjectFromWebpage($webpage);
+                        if ($object) {
+                            $objects[] = $object;
+                        }
                     }
+
+                    $body       = [
+                        'objects' => $objects
+                    ];
+                    $compressed = count($objects) >= 1000;
+                    $command?->info("Reindexing webpages $website->domain with ".count($objects)." objects");
+                    try {
+                        $this->request($website, '/v1/content', $body, 'post', $compressed);
+                    } catch (Exception $e) {
+                        print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
+
+                        return;
+                    }
+                } else {
+                    foreach ($webpages as $webpage) {
+                        ReindexWebpageLuigi::dispatch($webpage);
+                    }
+
                 }
 
-                $body       = [
-                    'objects' => $objects
-                ];
-                $compressed = count($objects) >= 1000;
-                $command?->info("Reindexing webpages $website->domain with ".count($objects)." objects");
-                try {
-                    $this->request($website, '/v1/content', $body, 'post', $compressed);
-                } catch (Exception $e) {
-                    print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
 
-                    return;
-                }
             });
     }
 

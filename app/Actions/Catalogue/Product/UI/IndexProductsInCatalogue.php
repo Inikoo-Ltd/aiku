@@ -123,12 +123,13 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.rrp',
                 'products.created_at',
                 'products.updated_at',
+                'products.discontinued_at',
                 'products.slug',
                 'products.web_images',
                 'available_quantity',
                 'products.is_for_sale',
-                'units',
-                'unit',
+                'products.units',
+                'products.unit',
                 'master_product_id',
             ])
             ->selectRaw("'{$shop->currency->code}'  as currency_code")
@@ -182,7 +183,8 @@ class IndexProductsInCatalogue extends OrgAction
             'rrp',
             'units',
             'available_quantity',
-            'variant_slug'
+            'variant_slug',
+            'discontinued_at',
         ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -256,6 +258,11 @@ class IndexProductsInCatalogue extends OrgAction
             } elseif ($bucket !== 'discontinued') {
                 $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
+
+            if ($bucket == 'discontinued') {
+                $table->column(key: 'discontinued_at', label: __('Discontinued At'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+            }
+
         };
     }
 

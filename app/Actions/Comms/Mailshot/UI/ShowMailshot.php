@@ -12,7 +12,7 @@ use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Comms\Mailshot\GetMailshotRecipientsQueryBuilder;
 use App\Actions\Comms\MailshotRecipient\UI\IndexMailshotRecipients;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Actions\UI\Marketing\MarketingHub;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
@@ -35,7 +35,7 @@ use App\Models\Web\Website;
  */
 class ShowMailshot extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithMarketingAuthorisation;
 
     public function handle(Mailshot $mailshot): Mailshot
     {
@@ -68,7 +68,7 @@ class ShowMailshot extends OrgAction
         $isShowResume = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::STOPPED]);
 
         $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
-            ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count() ?? 0)
+            ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('customers.id') ?? 0)
             : 0;
 
         $isSecondWaveActive = $mailshot->secondWave()->exists() && $mailshot->is_second_wave_enabled;
@@ -232,7 +232,7 @@ class ShowMailshot extends OrgAction
                 'indexRoute' => [
                     'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.index',
-                        MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshot.index',
+                        MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.index',
                     },
                     'parameters' => [
                         'organisation' => $this->organisation->slug,
@@ -285,7 +285,8 @@ class ShowMailshot extends OrgAction
                 'isHasParentMailshot' => $isHasParentMailshot,
                 'isSecondWave' => $mailshot->is_second_wave,
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
-
+                'mailshotId' => $mailshot->id,
+                'groupId' => $mailshot->group_id,
             ]
         )->table(
             IndexDispatchedEmails::make()->tableStructure(

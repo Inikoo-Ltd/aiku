@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -19,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItems extends OrgAction
 {
-    public function handle(DeliveryNote $parent, $prefix = null): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, DeliveryNoteItemStateEnum|null $stateFilter = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -38,6 +39,25 @@ class IndexDeliveryNoteItems extends OrgAction
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
 
+        $query->leftJoin('packings', function ($join) use ($parent) {
+            $join->on('packings.delivery_note_item_id', 'delivery_note_items.id');
+        });
+
+        if ($stateFilter) {
+            switch ($stateFilter) {
+                case DeliveryNoteItemStateEnum::PACKING:
+                    $query->whereNull('packings.id')
+                        ->where('delivery_note_items.quantity_picked', '!=', 0);
+                    break;
+                default:
+                    $query->where(function ($query) {
+                        $query->whereNotNull('packings.id')
+                            ->orWhereColumn('delivery_note_items.quantity_picked', 'delivery_note_items.quantity_packed');
+                    });
+                    break;
+            }
+        }
+
         return $query->defaultSort('delivery_note_items.id')
             ->select([
                 'delivery_note_items.id',
@@ -47,6 +67,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.quantity_packed',
                 'delivery_note_items.quantity_dispatched',
+                'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.is_handled',
                 'delivery_note_items.batch_code',
                 'delivery_note_items.expiry_date',
@@ -54,7 +75,8 @@ class IndexDeliveryNoteItems extends OrgAction
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.slug as org_stock_slug',
-                'org_stocks.packed_in as packed_in'
+                'org_stocks.packed_in as packed_in',
+                'packings.id as packing_id',
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
             ->allowedFilters([$globalSearch])
@@ -82,10 +104,27 @@ class IndexDeliveryNoteItems extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'quantity_packed', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false);
+
+            $allowAction = ($parent->packer_user_id && $parent->packer_user_id == request()->user()->id);
+
+            if (!$allowAction && $tempPicker = session('temp_handling_delivery_note')) {
+                $allowAction = $parent->id == data_get($tempPicker, 'value') && now()->lt(data_get($tempPicker, 'expires_at'));
+            }
+            if (app()->isLocal()) {
+                $allowAction = true;
+            }
+
+
+            if (!$parent || !$allowAction) {
+                $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            } else {
+                $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'quantity_packed', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
+            }
         };
     }
 

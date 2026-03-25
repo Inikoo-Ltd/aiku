@@ -21,6 +21,8 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { routeType } from "@/types/route";
+import { remove as loRemove } from 'lodash-es'
+import { faWarning } from "@fortawesome/free-solid-svg-icons";
 
 const props = withDefaults(defineProps<{
     data: object
@@ -60,7 +62,7 @@ function familyRoute(masterFamily: MasterFamily) {
                 masterDepartment: (route().params as RouteParams).masterDepartment,
                 masterFamily: masterFamily.slug
             });
-    } else if (route().current() == "grp.masters.master_shops.show.master_gr.index") {
+    } else if (route().current() == "grp.masters.master_shops.show.master_gr.index" || route().current() == 'grp.masters.master_shops.show.master_collections.show') {
         return route(
             "grp.masters.master_shops.show.master_families.show",
             {
@@ -73,6 +75,10 @@ function familyRoute(masterFamily: MasterFamily) {
     } else if (route().current() == "grp.masters.master_shops.show.master_families.index") {
         return route(
             "grp.masters.master_shops.show.master_families.show",
+            { ...route().params, masterFamily: masterFamily.slug });
+    } else if (route().current() == "grp.masters.master_shops.show.master_family.mismatch_detected.index") {
+        return route(
+            "grp.masters.master_shops.show.master_family.mismatch_detected.show",
             { ...route().params, masterFamily: masterFamily.slug });
     } else if (route().current() == "grp.masters.master_shops.show.master_sub_departments.master_families.index") {
         return route(
@@ -264,6 +270,10 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </Link>
         </template>
 
+        <template #cell(sold)="{ item }">
+            <div class="inline" v-tooltip="'Number if outers sold'">{{ item.sold }}</div>
+        </template>
+
         <template #cell(sales_grp_currency_external)="{ item: family }">
             <span class="tabular-nums">{{ locale.currencyFormat(family.currency_code, family.sales_grp_currency_external) }}</span>
         </template>
@@ -304,6 +314,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <Link :href="familyRoute(family)" class="primaryLink">
                 {{ family["code"] }}
             </Link>
+            <FontAwesomeIcon v-if="family.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch detected in products linked to this master family. Please modify the master family trade units to fix the issue.')"/>
         </template>
 
         <template #cell(products)="{ item: family }">
@@ -317,8 +328,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 :href="route(routes.detach.name, { ...routes.detach.parameters, family: item.id })"
                 :method="routes.detach.method" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
                 @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
-            <Button icon="fal fa-times" type="negative" size="xs"
-                :loading="isLoadingDetach.includes('detach' + item.id)" />
+                <Button icon="fal fa-times" type="negative" size="xs"
+                    :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
         </template>
     </Table>

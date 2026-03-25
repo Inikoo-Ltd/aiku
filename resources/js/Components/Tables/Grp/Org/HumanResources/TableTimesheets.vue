@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
-import { useFormatTime, useSecondsToMS } from '@/Composables/useFormatTime'
+import { useFormatTime, useSecondsToMS, useHMAP } from '@/Composables/useFormatTime'
 import { Timesheet } from "@/types/timesheet"
 import { useLocaleStore } from '@/Stores/locale'
 
@@ -52,7 +52,7 @@ const timesheetRoute = (timesheet: Timesheet) => {
         <template #cell(date)="{ item: timesheet }">
             <div class="text-gray-500">
                 <Link :href="timesheetRoute(timesheet)" class="whitespace-nowrap primaryLink">
-                    {{ useFormatTime(timesheet.date, { localeCode: locale.language.code }) }}
+                    {{ useFormatTime(timesheet.start_at, { localeCode: locale.language.code }) }}
                 </Link>
             </div>
         </template>
@@ -74,14 +74,14 @@ const timesheetRoute = (timesheet: Timesheet) => {
         <!-- Column: Start at -->
         <template #cell(start_at)="{ item: user }">
             <div class="whitespace-nowrap">
-                {{ useFormatTime(user.start_at, { formatTime: 'hh:mm', localeCode: locale.language.code }) }}
+                 {{ useHMAP(user.start_at) }}
             </div>
         </template>
 
         <!-- Column: End at -->
         <template #cell(end_at)="{ item: user }">
             <div class="whitespace-nowrap">
-                {{ useFormatTime(user.end_at, { localeCode: locale.language.code }) }}
+               {{ useHMAP(user.end_at) }}
             </div>
         </template>
 

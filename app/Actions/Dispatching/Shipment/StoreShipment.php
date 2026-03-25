@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Shipment;
 
+use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
@@ -19,6 +20,7 @@ use App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping;
 use App\Actions\Dispatching\Shipment\Hydrators\ShipmentHydrateUniversalSearch;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
@@ -100,6 +102,19 @@ class StoreShipment extends OrgAction
                 OrderHydrateShipments::dispatch($orderData->order_id);
             }
         }
+        $faireFeedback = null;
+        if ($parent instanceof DeliveryNote) {
+            $order = $parent->orders()->first();
+            if ($order && $order->shop->type == ShopTypeEnum::EXTERNAL && $order->external_id && !$order->is_shipping_by_external) {
+                $faireFeedback = UpdateShippingFaireOrder::run($parent);
+            }
+        }
+
+        $shipmentData                   = $shipment->data;
+        $shipmentData['faire_feedback'] = $faireFeedback;
+        $shipment->update([
+            'data' => $shipmentData
+        ]);
 
         return $shipment;
     }
@@ -107,9 +122,10 @@ class StoreShipment extends OrgAction
     public function rules(): array
     {
         return [
-            'reference' => ['sometimes', 'max:1000', 'string'],
-            'tracking'  => ['sometimes', 'max:1000', 'string'],
+            'reference'          => ['sometimes', 'max:1000', 'string'],
+            'tracking'           => ['sometimes', 'max:1000', 'string'],
             'combined_label_url' => ['sometimes', 'max:1000', 'string'],
+            'cost'               => ['sometimes', 'nullable', 'numeric'],
         ];
     }
 

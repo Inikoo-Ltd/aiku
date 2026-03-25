@@ -57,6 +57,7 @@ trait WithFamilyNavigation
         /** @var ProductCategory $family */
         $family = $model;
 
+
         return match ($routeName) {
             'grp.org.shops.show.catalogue.departments.show.families.index',
             'grp.org.shops.show.catalogue.departments.show.families.show',
@@ -69,7 +70,9 @@ trait WithFamilyNavigation
             ],
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.edit' => [
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.edit',
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.index'
+            => [
                 'organisation'  => $family->organisation->slug,
                 'shop'          => $family->shop->slug,
                 'department'    => $family->department->slug,

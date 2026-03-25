@@ -24,21 +24,23 @@ trait WithRedoProductCategoryTimeSeries
         return "{$from}_{$to}";
     }
 
-    public function handle(ProductCategory $productCategory, bool $async = true): void
+    public function handle(ProductCategory $productCategory, bool $async = false, ?string $from = null, ?string $to = null): void
     {
         if ($productCategory->state == ProductCategoryStateEnum::IN_PROCESS) {
             return;
         }
 
-        $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->restriction->value}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
-        $lastInvoicedDate  = DB::table('invoice_transactions')->where("{$this->restriction->value}_id", $productCategory->id)->whereNull('deleted_at')->max('date');
+        if (!$from || !$to) {
+            $firstInvoicedDate = DB::table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::table('invoice_transactions')->where("{$this->categoryType->value}_id", $productCategory->id)->whereNull('deleted_at')->max('date');
 
-        if (!$firstInvoicedDate) {
-            return;
+            if (!$firstInvoicedDate) {
+                return;
+            }
+
+            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
+            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
         }
-
-        $from = Carbon::parse($firstInvoicedDate)->toDateString();
-        $to   = Carbon::parse($lastInvoicedDate ?? now())->toDateString();
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
@@ -51,9 +53,21 @@ trait WithRedoProductCategoryTimeSeries
 
     public function asJob(string $from, string $to): void
     {
-        ProductCategory::where('type', $this->restriction)->get()->each(function (ProductCategory $productCategory) use ($from, $to) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessProductCategoryTimeSeriesRecords::run($productCategory->id, $frequency, $from, $to);
+        $tableName = (new $this->model())->getTable();
+        $query     = DB::table($tableName)->select('id')->where('type', $this->categoryType->value)->orderBy('id', 'desc');
+
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($from, $to) {
+            foreach ($modelsData as $modelId) {
+                $instance = ProductCategory::find($modelId->id);
+                if (!$instance) {
+                    continue;
+                }
+
+                try {
+                    $this->handle($instance, false, $from, $to);
+                } catch (Throwable $e) {
+                    report($e);
+                }
             }
         });
     }
@@ -61,23 +75,31 @@ trait WithRedoProductCategoryTimeSeries
     public function asCommand(Command $command): int
     {
         $command->info($command->getName());
-
-        $async = (bool) $command->option('async');
-
-        $productCategories = ProductCategory::where('type', $this->restriction)->get();
-
-        $bar = $command->getOutput()->createProgressBar($productCategories->count());
+        $tableName = (new $this->model())->getTable();
+        $query     = $this->prepareQuery($tableName, $command);
+        $query->where('type', $this->categoryType->value);
+        $count = $query->count();
+        $bar       = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');
         $bar->start();
 
-        foreach ($productCategories as $productCategory) {
-            try {
-                $this->handle($productCategory, $async);
-            } catch (Throwable $e) {
-                $command->error($e->getMessage());
+        $query->chunk(1000, function (\Illuminate\Support\Collection $modelsData) use ($bar, $command) {
+            foreach ($modelsData as $modelId) {
+                $instance = ProductCategory::find($modelId->id);
+                if (!$instance) {
+                    $bar->advance();
+                    continue;
+                }
+
+                try {
+                    $this->handle($instance, (bool) $command->option('async'), $command->option('from'), $command->option('to'));
+                } catch (Throwable $e) {
+                    $command->error($e->getMessage());
+                }
+
+                $bar->advance();
             }
-            $bar->advance();
-        }
+        });
 
         $bar->finish();
         $command->info('');

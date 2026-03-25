@@ -66,6 +66,7 @@ const props = defineProps<{
     top_seller: any[]
     families: FamilyData[]
     family: FamilyData
+    type_shop : string
   }
   currency: {
     code: string
@@ -216,7 +217,7 @@ onMounted(() => {
           >
             <component
               class="flex-1 overflow-auto active-block"
-              :is="getComponent(data.layout.code, { shop_type: layout?.shopState?.type })"
+              :is="getComponent(data.layout.code, { shop_type: data.type_shop })"
               :code="data.layout.code"
               :screenType="currentView"
               :modelValue="previewData"

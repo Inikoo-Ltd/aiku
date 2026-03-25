@@ -107,11 +107,13 @@ const showIntervalOffer = computed(() => {
 })
 
 const showMemberPrice = computed(() => {
-    return layout?.user?.gr_data?.customer_is_gr
+    return layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr
 })
 
 const showDiscount = computed(() => {
-    return !props.product.is_coming_soon  && !layout?.user?.gr_data?.customer_is_gr
+    if (props.product?.is_coming_soon) return false
+    if (layout?.user?.gr_data?.amnesty) return false
+    return !layout?.user?.gr_data?.customer_is_gr
 })
 
 const showLeftBlock = computed(() => {
@@ -169,15 +171,12 @@ const _popoverProfit = ref(null)
             <!-- Price: Gold Member -->
             <div v-if="product.discounted_price" class="text-primary font-bold text-sm break-safe mt-2">
                 <span v-if="product.units == 1">
-                    {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/
-                    <span class="font-normal">{{ product.unit }}</span>
+                    {{ locale.currencyFormat(currency?.code, product.discounted_price) }}/<span class="font-normal">{{ product.unit }}</span>
                 </span>
                 <span v-else>
                     {{ locale.currencyFormat(currency?.code, product.discounted_price) }}
                     <span class="text-xs">
-                        <!-- ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }} -->
-                        ({{ product.discounted_price_per_unit }}/
-                        <span class="font-normal">{{ product.unit }}</span>)
+                        ({{ product.discounted_price_per_unit }}/<span class="font-normal">{{ product.unit }}</span>)
                     </span>
                 </span>
             </div>
@@ -191,7 +190,7 @@ const _popoverProfit = ref(null)
 
                 <div :class="showLeftBlock ? 'col-span-2' : 'col-span-1'">
                     <NonMemberPriceLabel :product
-                        v-if="!layout?.user?.gr_data?.customer_is_gr && product.product_offers_data?.number_offers > 0" />
+                        v-if="!(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty ) && product.product_offers_data?.number_offers > 0" />
                 </div>
 
 
@@ -225,10 +224,10 @@ const _popoverProfit = ref(null)
                     </div>
 
                     <div class="font-bold text-green-700 text-xs break-safe">
-                        ({{ layout?.user?.gr_data?.customer_is_gr ? product?.discounted_margin : product?.margin }})
+                        ({{ (layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) ? product?.discounted_margin : product?.margin }})
                     </div>
 
-                    <Popover ref="_popoverProfit" :style="{ width: '385px' }" class="py-1 px-2 text-xxs">
+                    <Popover ref="_popoverProfit" class="py-1 px-2 text-xxs max-w-[90vw] md:max-w-none">
                         <ProfitCalculationList :product="product" />
                     </Popover>
                 </div>

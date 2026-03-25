@@ -81,6 +81,7 @@ class IndexMasterCollections extends OrgAction
             'master_shops.slug as master_shop_slug',
             'master_shops.code as master_shop_code',
             'master_shops.name as master_shop_name',
+            'master_collections.health_rank',
         ];
 
         if ($prefix === MasterCollectionsTabsEnum::SALES->value) {
@@ -179,7 +180,8 @@ class IndexMasterCollections extends OrgAction
                 'number_current_master_products',
                 'number_current_master_collections',
                 'sales_grp_currency_external',
-                'invoices'
+                'invoices',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -213,7 +215,8 @@ class IndexMasterCollections extends OrgAction
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon');
                 /*   $table->column(key: 'parents', label: __('Parents'), canBeHidden: false); */

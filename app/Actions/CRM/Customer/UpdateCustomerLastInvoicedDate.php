@@ -59,7 +59,7 @@ class UpdateCustomerLastInvoicedDate
 
         $this->handle($customer, Carbon::parse($command->argument('date')));
 
-        $command->info("Updated last invoiced date for customer $customer->reference");
+        $command->info("Updated last invoiced date for customer $customer->reference". " " .$customer->last_invoiced_at);
     }
 
 }

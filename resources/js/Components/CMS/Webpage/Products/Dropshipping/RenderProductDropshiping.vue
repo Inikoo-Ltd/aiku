@@ -24,7 +24,7 @@ const locale = useLocaleStore()
 const props = withDefaults(defineProps<{
     product: ProductResource
     attachToFavouriteRoute?: routeType
-    dettachToFavouriteRoute?: routeType
+    detachToFavouriteRoute?: routeType
     attachBackInStockRoute?: routeType
     detachBackInStockRoute?: routeType
     bestSeller?: any
@@ -38,7 +38,7 @@ const props = withDefaults(defineProps<{
     attachToFavouriteRoute: {
         name: 'iris.models.favourites.store',
     },
-    dettachToFavouriteRoute: {
+    detachToFavouriteRoute: {
         name: 'iris.models.favourites.delete',
     },
     attachBackInStockRoute: {
@@ -99,7 +99,7 @@ const onAddFavourite = (product: ProductResource) => {
 }
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
-        route(props.dettachToFavouriteRoute.name, {
+        route(props.detachToFavouriteRoute.name, {
             product: product.id
         }),
         {

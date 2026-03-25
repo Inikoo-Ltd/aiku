@@ -50,7 +50,7 @@ class RedirectOutboxWorkshopLink extends OrgAction
             'name'       => 'grp.org.fulfilments.show.operations.comms.outboxes.workshop',
             'parameters' => [
                 'organisation' => $organisation->slug,
-                'shop'         => $shop->fulfilment->slug,
+                'fulfilment'   => $shop->fulfilment->slug,
                 'outbox'       => $outbox->slug
             ]
         ];
@@ -64,5 +64,4 @@ class RedirectOutboxWorkshopLink extends OrgAction
 
         return $this->handle($outbox);
     }
-
 }

@@ -28,16 +28,14 @@ class EmailBulkRunHydrateCumulativeDispatchedEmails implements ShouldBeUnique
     public function handle(EmailBulkRun $emailBulkRun, DispatchedEmailStateEnum $state): void
     {
         if ($state == DispatchedEmailStateEnum::READY) {
-            EmailBulkRunHydrateDispatchedEmails::run($emailBulkRun);
+            EmailBulkRunHydrateDispatchedEmails::run($emailBulkRun->id);
 
             return;
         }
 
         /** @noinspection PhpUncoveredEnumCasesInspection */
-        $query = DB::table('dispatched_emails')
-            ->where('parent_type', 'EmailBulkRun')
-            ->where('parent_id', $emailBulkRun->id)
-            ->where('is_test', false);
+        $query = DB::table('dispatched_emails')->leftJoin('email_bulk_run_has_dispatched_emails', 'dispatched_emails.id', '=', 'email_bulk_run_has_dispatched_emails.dispatched_email_id')
+            ->where('email_bulk_run_id', $emailBulkRun->id);
 
 
 

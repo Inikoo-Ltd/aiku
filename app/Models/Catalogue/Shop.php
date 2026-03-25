@@ -30,10 +30,11 @@ use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\EmailTemplate;
-use App\Models\Comms\ExternalEmailRecipient;
+use App\Models\Comms\ChatEmailRecipient;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
+use App\Models\Comms\TestEmailRecipient;
 use App\Models\CRM\Appointment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
@@ -160,6 +161,9 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $external_shop_connection_error
  * @property int|null $migration_pivot
  * @property string|null $product_price_currency_exchange
+ * @property int|null $seeder_shop_id
+ * @property string|null $proforma_footer
+ * @property \Illuminate\Support\Carbon|null $migrated_to_aiku_on
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -171,6 +175,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read LaravelCollection<int, Brand> $brands
  * @property-read LaravelCollection<int, Charge> $charges
+ * @property-read LaravelCollection<int, ChatEmailRecipient> $chatEmailRecipients
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read Address|null $collectionAddress
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -186,7 +191,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read \App\Models\Catalogue\ShopDiscountsStats|null $discountsStats
  * @property-read \App\Models\Catalogue\ShopDropshippingStat|null $dropshippingStats
  * @property-read LaravelCollection<int, EmailTemplate> $emailTemplates
- * @property-read LaravelCollection<int, ExternalEmailRecipient> $externalEmailRecipients
  * @property-read LaravelCollection<int, InvoiceTransactionHasFeedback> $feedbackBridges
  * @property-read Fulfilment|null $fulfilment
  * @property-read Group $group
@@ -202,7 +206,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, OfferCampaign> $offerCampaigns
  * @property-read LaravelCollection<int, Offer> $offers
  * @property-read \App\Models\Catalogue\ShopOrderHandlingStats|null $orderHandlingStats
- * @property-read \App\Models\Catalogue\ShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Catalogue\ShopOrderingStats|null $orderingStats
  * @property-read LaravelCollection<int, Order> $orders
  * @property-read OrgPaymentServiceProviderShop|null $pivot
@@ -233,7 +236,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
- * @property-read \App\Models\Catalogue\ShopSalesIntervals|null $salesIntervals
+ * @property-read Shop|null $seederShop
  * @property-read SenderEmail|null $senderEmail
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read LaravelCollection<int, SerialReference> $serialReferences
@@ -246,6 +249,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Tag> $tags
  * @property-read LaravelCollection<int, Task> $tasks
  * @property-read TaxNumber|null $taxNumber
+ * @property-read LaravelCollection<int, TestEmailRecipient> $testEmailRecipients
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopTimeSeries> $timeSeries
  * @property-read Timezone $timezone
  * @property-read LaravelCollection<int, TopUp> $topUps
@@ -289,6 +293,7 @@ class Shop extends Model implements HasMedia, Auditable
         'engine'                       => ShopEngineEnum::class,
         'fetched_at'                   => 'datetime',
         'last_fetched_at'              => 'datetime',
+        'migrated_to_aiku_on'          => 'date',
         'offers_data'                  => 'array',
         'opening_hours'                => 'array'
     ];
@@ -358,16 +363,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function orderingStats(): HasOne
     {
         return $this->hasOne(ShopOrderingStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(ShopSalesIntervals::class);
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(ShopOrderingIntervals::class);
     }
 
     public function orderHandlingStats(): HasOne
@@ -453,6 +448,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function masterShop(): BelongsTo
     {
         return $this->belongsTo(MasterShop::class);
+    }
+
+    public function seederShop(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'seeder_shop_id');
     }
 
     public function currency(): BelongsTo
@@ -824,8 +824,13 @@ class Shop extends Model implements HasMedia, Auditable
         ];
     }
 
-    public function externalEmailRecipients(): HasMany
+    public function chatEmailRecipients(): HasMany
     {
-        return $this->hasMany(ExternalEmailRecipient::class);
+        return $this->hasMany(ChatEmailRecipient::class);
+    }
+
+    public function testEmailRecipients(): HasMany
+    {
+        return $this->hasMany(TestEmailRecipient::class);
     }
 }

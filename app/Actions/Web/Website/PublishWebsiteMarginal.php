@@ -52,6 +52,8 @@ class PublishWebsiteMarginal extends OrgAction
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedProductsSnapshot->layout[$marginal];
         } elseif ($marginal == 'collection') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedCollectionSnapshot->layout[$marginal];
+        } elseif ($marginal == 'families_overview') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFamiliesOverviewSnapshot->layout[$marginal];
         }
 
         $firstCommit = true;
@@ -89,7 +91,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer','menu', 'sidebar', 'department', 'sub_department', 'family', 'product', 'products', 'collection'])) {
+        if (in_array($marginal, ['header', 'footer','menu', 'sidebar', 'department', 'sub_department', 'family', 'families_overview', 'product', 'products', 'collection'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"    => $snapshot->id,
                 "published_layout->$marginal"     => $snapshot->layout,
@@ -102,7 +104,7 @@ class PublishWebsiteMarginal extends OrgAction
         }
 
         $website->update($updateData);
-        if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products'])) {
+        if (in_array($marginal, ['department', 'sub_department', 'family', 'product', 'products', 'families_overview'])) {
             // Update webpage, web_blocks & their snapshots (unpublished/published)
             UpdateWebBlockToWebsiteAndChild::dispatch($website, WebBlockType::find(data_get($layout, "id")), $marginal, data_get($layout, 'data.fieldValue'));
         }

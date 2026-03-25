@@ -99,6 +99,16 @@ class EditMasterShop extends OrgAction
                                     'required'    => true,
                                     'value'       => $masterShop->price_rrp_ratio,
                                     'min'         => 0
+                                ],
+                                'price_rrp_warning_ratio'  => [
+                                    'type'        => 'input_number',
+                                    'label'       => __('Price rrp warning ratio'),
+                                    'bind'        => [
+                                         'suffix'      => '%',
+                                    ],
+                                    'required'    => false,
+                                    'value'       => $masterShop->price_rrp_warning_ratio,
+                                    'min'         => 0,
                                 ]
                             ]
                         ]

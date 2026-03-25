@@ -86,6 +86,7 @@ class IndexMasterDepartments extends OrgAction
             'master_product_category_stats.number_current_master_product_categories_type_sub_department as sub_departments',
             'master_product_category_stats.number_collections_state_active as collections',
             'currencies.code as currency_code',
+            'master_product_categories.health_rank',
         ];
 
         if ($prefix === MasterProductCategoryTabsEnum::SALES->value) {
@@ -96,7 +97,10 @@ class IndexMasterDepartments extends OrgAction
                 foreignKey: 'master_product_category_id',
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
-                    'invoices'                    => 'invoices'
+                    'invoices'                    => 'invoices',
+                    'dropshippers'                => 'dropshippers',
+                    'listings'                    => 'listings',
+                    'sold'                        => 'sold',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
@@ -104,9 +108,12 @@ class IndexMasterDepartments extends OrgAction
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
-            $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
+            $selects[] = $timeSeriesData['selectRaw']['listings'];
+            $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
 
         $queryBuilder->select($selects);
@@ -138,9 +145,19 @@ class IndexMasterDepartments extends OrgAction
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
             ->allowedSorts([
-                'code', 'name', 'used_in', 'sub_departments', 'collections', 'families', 'products',
+                'code',
+                'name',
+                'used_in',
+                'sub_departments',
+                'collections',
+                'families',
+                'products',
                 'sales_grp_currency_external',
                 'invoices',
+                'dropshippers',
+                'listings',
+                'sold',
+                'health_rank',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -178,20 +195,23 @@ class IndexMasterDepartments extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
+                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
-                    ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
                     ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sub_departments', label: __('M. Sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'collections', label: __('M. Collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'families', label: __('M. Families'), tooltip: __('current master families'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'products', label: __('M. Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'sub_departments', label: __('M. Sub-departments'), tooltip: __('Current sub departments'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'collections', label: __('M. Collections'), tooltip: __('Current collections'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'families', label: __('M. Families'), tooltip: __('Current master families'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'products', label: __('M. Products'), tooltip: __('Current master products'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
     }

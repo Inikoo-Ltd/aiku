@@ -196,6 +196,32 @@ class ShowInvoice extends OrgAction
         ];
     }
 
+    public function getDownloadPdfColumns(Invoice $invoice): array
+    {
+        $shopSettings = $invoice->shop->settings ?? [];
+        $savedColumns = Arr::get($shopSettings, 'invoicing.download_pdf_columns', []);
+
+        $columns = [
+            [
+                'label' => __('Country of Origin'),
+                'value' => 'country_of_origin',
+            ],
+            [
+                'label' => __('Weight'),
+                'value' => 'weight',
+            ],
+            [
+                'label' => __('Commodity Codes'),
+                'value' => 'commodity_codes',
+            ],
+        ];
+
+        return array_map(function (array $column) use ($savedColumns) {
+            $column['is_checked'] = (bool) Arr::get($savedColumns, $column['value'], false);
+            return $column;
+        }, $columns);
+    }
+
     public function getExportOptions(Invoice $invoice): array
     {
         $options = [
@@ -203,11 +229,27 @@ class ShowInvoice extends OrgAction
                 'type'       => 'pdf',
                 'icon'       => 'fas fa-file-pdf',
                 'label'      => 'PDF',
+                'key'        => 'pdf',
                 'tooltip'    => __('Download PDF'),
                 'name'       => 'grp.org.accounting.invoices.download',
                 'parameters' => [
+                    'organisation'      => $invoice->organisation->slug,
+                    'invoice'           => $invoice->slug,
+                    'country_of_origin' => true,
+                    'weight'            => true,
+                    'commodity_codes'   => true,
+                ]
+            ],
+            [
+                'type'       => 'pdf',
+                'icon'       => 'fal fa-ellipsis-v',
+                'label'      => '',
+                'key'        => 'pdf_filter',
+                'tooltip'    => __('Download PDF with custom columns'),
+                'name'       => 'grp.org.accounting.invoices.download',
+                'parameters' => [
                     'organisation' => $invoice->organisation->slug,
-                    'invoice'      => $invoice->slug
+                    'invoice'      => $invoice->slug,
                 ]
             ]
         ];
@@ -323,9 +365,16 @@ class ShowInvoice extends OrgAction
 
                 'invoiceExportOptions' => $exportInvoiceOptions,
                 'routes'               => [
-                    'delivery_note' => $deliveryNoteRoute
+                    'delivery_note'          => $deliveryNoteRoute,
+                    'updateInvoiceDateRoute' => [
+                        'name'       => 'grp.models.invoice.update.date',
+                        'parameters' => [$invoice->id]
+                    ],
                 ],
-
+                //  Todo: Edit restriction
+                'can'                  => [
+                    'editInvoiceDate' => app()->isLocal() && $request->user()->authTo("accounting.{$this->organisation->id}.edit"),
+                ],
                 'box_stats'    => $this->getBoxStats($invoice),
                 'list_refunds' => RefundResource::collection($invoice->refunds),
                 'invoice'      => InvoiceResource::make($invoice),
@@ -333,7 +382,7 @@ class ShowInvoice extends OrgAction
                     'state'          => $invoice->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER->value)->first()?->state->value,
                     'workshop_route' => $this->getOutboxRoute($invoice)
                 ],
-
+                'download_pdf_column'    => $this->getDownloadPdfColumns($invoice),
                 InvoiceTabsEnum::REFUNDS->value => $this->tab == InvoiceTabsEnum::REFUNDS->value
                     ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))
                     : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),

@@ -82,8 +82,8 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             $orgStocksData['shop_currency'] = $shop->currency->code;
             $orgStocksData['shop_cost']     = $shopCost;
             $orgStocksData['id']            = $shop->id;
-            $orgStocksData['price']         = $price;
-            $orgStocksData['rrp']           = $rrp;
+            $orgStocksData['price']         = $price ?? 0.01;
+            $orgStocksData['rrp']           = $rrp ?? 0.01;
             $orgStocksData['gross_weight']  = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
             $organisationsData['images']    = $shop->organisation->media->map(fn ($media) => [
                 'id'  => $media->id,

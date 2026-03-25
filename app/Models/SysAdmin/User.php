@@ -9,6 +9,7 @@
 namespace App\Models\SysAdmin;
 
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Traits\HasEmail;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasRoles;
@@ -31,7 +32,6 @@ use App\Models\Traits\WithPushNotifications;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Actions\SysAdmin\User\SendLinkResetPassword;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -88,6 +88,7 @@ use App\Models\Traits\HasNotificationSettings;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Shop> $authorisedShops
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Warehouse> $authorisedWarehouses
  * @property-read ChatAgent|null $chatAgent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DispatchedEmail> $dispatchedEmails
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $employees
  * @property-read \App\Models\Notifications\FcmToken|null $fcmToken
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Notifications\FcmToken> $fcmTokens
@@ -189,12 +190,6 @@ class User extends Authenticatable implements HasMedia, Auditable
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128);
-    }
-
-
-    public function sendPasswordResetNotification($token): void
-    {
-        SendLinkResetPassword::run($token, $this);
     }
 
     public function routeNotificationForFcm(): array
@@ -327,6 +322,11 @@ class User extends Authenticatable implements HasMedia, Auditable
     public function chatAgent(): HasOne
     {
         return $this->hasOne(ChatAgent::class);
+    }
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'user_has_dispatched_emails');
     }
 
 

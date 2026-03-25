@@ -45,7 +45,7 @@ const props = defineProps<{
 const slidesPerView = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
     return {
-        desktop: perRow.desktop ?? 6,
+        desktop: perRow.desktop ?? 5,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
     }[props.screenType] ?? 5
@@ -70,7 +70,7 @@ const fetchRecommenders = async () => {
             )
 
             listProducts.value = response.data.data
-            console.log('Final listProducts value:', listProducts.value)
+            /* console.log('Final listProducts value:', listProducts.value) */
         } catch (error: any) {
             console.error('Error on fetching recommendations:', error)
         } finally {
@@ -91,7 +91,7 @@ onMounted(() => {
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
     }">
-        <template v-if="!isFetched || listProducts?.length">
+        <template v-if="!isFetched || listProducts?.length > 3">
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-2xl md:text-3xl font-semibold">
@@ -107,7 +107,6 @@ onMounted(() => {
                     :pagination="{ clickable: true }"
                     :modules="[Autoplay]"
                     class="w-full"
-                    xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
                     spaceBetween="12"
                     autoHeight
                 >

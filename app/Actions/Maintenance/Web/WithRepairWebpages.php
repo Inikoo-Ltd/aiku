@@ -29,9 +29,11 @@ trait WithRepairWebpages
     }
 
     //
-    protected function normalizeWebBlockByType(Webpage $webpage, array $webBlockTemplateCodes, string $scope): void
+    protected function normalizeWebBlockByType(Webpage $webpage, array $webBlockTemplateCodes, WebBlockTemplateEnum $webBlockTemplateType): void
     {
         $website = $webpage->website;
+
+        $scope = $webBlockTemplateType->value;
 
         if (!in_array($scope, WebBlockTemplateEnum::values()) || !$website) {
             return;
@@ -48,12 +50,7 @@ trait WithRepairWebpages
                 fn ($webBlockTemplateCode) => $webBlockTemplateCode != $usedWebBlockTemplateCodes
             );
 
-            $countWebBlockWebBlock = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes);
-            if (count($countWebBlockWebBlock) == 0) {
-                $this->createWebBlock($webpage, $usedWebBlockTemplateCodes);
-            }
-
-            // Remove multiple WebBlock if it exists (besides  the used one)
+            // Remove multiple WebBlock if it exists (besides the used one)
             foreach ($unusedWebBlockTemplateCodes as $unusedWebBlockCode) {
                 $unusedWebBlock = $this->getWebpageBlocksByType($webpage, $unusedWebBlockCode);
                 if (count($unusedWebBlock) > 0) {
@@ -66,9 +63,61 @@ trait WithRepairWebpages
                         ->webBlocks()
                         ->whereIn('web_blocks.id', $unusedWebBlock->pluck('id'))
                         ->delete();
-
                 }
             }
+
+            $usedWebBlocks = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes);
+            if (count($usedWebBlocks) == 0) {
+                $this->createWebBlockFromSavedTemplate($webpage, $webBlockTemplateType, $usedWebBlockTemplateCodes);
+            } elseif (count($usedWebBlocks) > 1) {
+                $usedWebBlocks->pop();
+
+                foreach ($usedWebBlocks as $webBlock) {
+                    $webpage
+                        ->modelHasWebBlocks()
+                        ->where('id', data_get($webBlock, 'model_has_web_blocks_id'))
+                        ->delete();
+
+                    $webpage
+                        ->webBlocks()
+                        ->where('web_blocks.id', data_get($webBlock, 'id'))
+                        ->delete();
+                }
+            }
+        }
+    }
+
+    protected function deleteWebBlocksByType(Webpage $webpage, WebBlockTemplateEnum $scope)
+    {
+        foreach ($scope->templateCodes() as $unusedWebBlockCode) {
+            $unusedWebBlock = $this->getWebpageBlocksByType($webpage, $unusedWebBlockCode);
+            if (count($unusedWebBlock) > 0) {
+                $webpage
+                    ->modelHasWebBlocks()
+                    ->whereIn('id', $unusedWebBlock->pluck('model_has_web_blocks_id'))
+                    ->delete();
+
+                $webpage
+                    ->webBlocks()
+                    ->whereIn('web_blocks.id', $unusedWebBlock->pluck('id'))
+                    ->delete();
+            }
+        }
+    }
+
+    protected function deleteWebBlocksByCode(Webpage $webpage, string $scope)
+    {
+        $unusedWebBlock = $this->getWebpageBlocksByType($webpage, $scope);
+        if (count($unusedWebBlock) > 0) {
+            $webpage
+                ->modelHasWebBlocks()
+                ->whereIn('id', $unusedWebBlock->pluck('model_has_web_blocks_id'))
+                ->delete();
+
+            $webpage
+                ->webBlocks()
+                ->whereIn('web_blocks.id', $unusedWebBlock->pluck('id'))
+                ->delete();
         }
     }
 

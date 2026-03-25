@@ -172,7 +172,7 @@ class ShowTimesheet extends OrgAction
                                     'label' => __('Timesheets')
                                 ],
                                 'model' => [
-                                    'label' => $timesheet->date->format('Y-m-d'),
+                                    'label' => $timesheet->start_at->format('Y-m-d'),
                                 ],
                             ],
                             'suffix'         => $suffix,

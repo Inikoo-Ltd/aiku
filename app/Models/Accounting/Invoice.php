@@ -126,6 +126,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $commission_amount
  * @property string $profit_amount
  * @property string|null $margin
+ * @property string $amount_off
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress

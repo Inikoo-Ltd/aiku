@@ -8,43 +8,61 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Product;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Throwable;
 
 class RedoProductTimeSeries implements ShouldBeUnique
 {
-    use AsAction;
-
-    public string $jobQueue = 'default-long';
-    public string $commandSignature = 'products:redo_time_series {--a|async : Run asynchronously}';
-
-    public function getJobUniqueId(string $from, string $to): string
-    {
-        return "{$from}_{$to}";
+    use WithHydrateCommand;
+    use WithTimeSeriesRedo {
+        WithTimeSeriesRedo::asCommand insteadof WithHydrateCommand;
     }
 
-    public function handle(Product $product, bool $async = false): void
+    public string $jobQueue = 'default-long';
+    public string $commandSignature = 'products:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
+
+    public function __construct()
     {
+        $this->model = Product::class;
+    }
+
+    public function getJobUniqueId(?int $productId, ?string $from, ?string $to): string
+    {
+        return $productId ?? 'empty'.'_'.$from.'_'.$to;
+    }
+
+    public function handle(?int $productId, ?string $from = null, ?string $to = null, bool $async = false): void
+    {
+        if (!$productId) {
+            return;
+        }
+        $product = Product::find($productId);
+        if (!$product) {
+            return;
+        }
+
+
         if ($product->state == ProductStateEnum::IN_PROCESS) {
             return;
         }
 
-        $firstInvoicedDate = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->min('date');
-        $lastInvoicedDate  = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->max('date');
+        if (!$from || !$to) {
+            $firstInvoicedDate = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->min('date');
+            $lastInvoicedDate  = DB::table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->max('date');
 
-        if (!$firstInvoicedDate) {
-            return;
+            if (!$firstInvoicedDate) {
+                return;
+            }
+
+            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
+            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
         }
-
-        $from = Carbon::parse($firstInvoicedDate)->toDateString();
-        $to   = Carbon::parse($lastInvoicedDate ?? now())->toDateString();
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             if ($async) {
@@ -55,39 +73,5 @@ class RedoProductTimeSeries implements ShouldBeUnique
         }
     }
 
-    public function asJob(string $from, string $to): void
-    {
-        Product::all()->each(function (Product $product) use ($from, $to) {
-            foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
-                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
-            }
-        });
-    }
 
-    public function asCommand(Command $command): int
-    {
-        $command->info($command->getName());
-
-        $async = (bool) $command->option('async');
-
-        $products = Product::all();
-
-        $bar = $command->getOutput()->createProgressBar($products->count());
-        $bar->setFormat('debug');
-        $bar->start();
-
-        foreach ($products as $product) {
-            try {
-                $this->handle($product, $async);
-            } catch (Throwable $e) {
-                $command->error($e->getMessage());
-            }
-            $bar->advance();
-        }
-
-        $bar->finish();
-        $command->info('');
-
-        return 0;
-    }
 }

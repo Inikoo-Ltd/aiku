@@ -29,6 +29,7 @@ import ColumnLayout3Blueprint from "@/Components/CMS/Webpage/Column3/Blueprint"
 import ColumnLayout4Blueprint from "@/Components/CMS/Webpage/Column4/Blueprint"
 import DisclosureBlueprint from "@/Components/CMS/Webpage/Disclosure/Blueprint"
 import FamilyBluprint from "@/Components/CMS/Webpage/Family-1/Blueprint"
+import FamilyBluprint2 from "@/Components/CMS/Webpage/Family2/Blueprint"
 import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
 import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blueprint"
@@ -51,8 +52,7 @@ import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
 import CollectionDescription from '@/Components/CMS/Webpage/CollectionDescription/Blueprint'
 import DepartmentDescription from "@/Components/CMS/Webpage/DepartmentDescription/Blueprint"
 import SubDepartmentDesciption from "@/Components/CMS/Webpage/SubDepartmentDesciption/Blueprint"
-
-
+import { Mainbluprint } from '@/Components/CMS/Webpage/Product1/BlueprintWebpages'
 import Product1EcomBlueprint from '@/Components/CMS/Webpage/Product1/Ecommerce/Blueprint'
 import Product1DSBlueprint from '@/Components/CMS/Webpage/Product1/Dropshipping/Blueprint'
 
@@ -63,7 +63,7 @@ import { blueprint as LuigiLastSeen1  } from "@/Components/CMS/Webpage/LuigiLast
 import { blueprint as LuigiItemAlternatives1  } from "@/Components/CMS/Webpage/LuigiItemAlternatives1/Blueprint"
 import { blueprint as RecommendersCustomerRecentlyBought  } from "@/Components/CMS/Webpage/RecomendationRecentlyBought1/Blueprint"
 import SliderBlueprint  from "@/Components/CMS/Webpage/Slider-1/Blueprint"
-
+import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Blueprint'
 
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
@@ -92,14 +92,19 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'department-description-1' : DepartmentDescription.blueprint,
 		'sub-department-description-1' : SubDepartmentDesciption.blueprint,
 		'family-1': FamilyBluprint.blueprint,
+		'family-2': FamilyBluprint2.blueprint,
 
 		// families list
 		"families-1": Families1Blueprint.blueprint,
 		"families-2": Families2Blueprint.blueprint,
 		"families-3": Families3Blueprint.blueprint,
 
+
+		// families list
+		"families-1-overview": Families1Overview.blueprint,
+
 		// products list
-		"products-1": ProductsList1Blueprint.blueprint,
+		"products-1": data ? Mainbluprint.blueprint : ProductsList1Blueprint.blueprint,
 		"products-2": ProductsList2Blueprint.blueprint,
 
 		//BestSeller

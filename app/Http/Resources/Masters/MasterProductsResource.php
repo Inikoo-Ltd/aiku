@@ -9,9 +9,12 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\HasSelfCall;
+use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $code
@@ -34,6 +37,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $rrp
  * @property mixed $price
  * @property mixed $status
+ * @property mixed $health_rank
  */
 class MasterProductsResource extends JsonResource
 {
@@ -57,6 +61,14 @@ class MasterProductsResource extends JsonResource
                 }
             }
             data_set($extraField, 'allChildHasWebpage', $hasValidProduct && $allChildHasWeb);
+        }
+
+        /** @var MasterAsset $masterAsset */
+        $masterAsset = $this->resource;
+
+        // Don't worry, won't run if relationship is not eager loaded. Will only present from IndexMasterProduct
+        if ($masterAsset->relationLoaded('tradeUnits')) {
+            data_set($extraField, 'trade_units', $this->getDataTradeUnit($masterAsset->tradeUnits));
         }
 
         return [
@@ -90,6 +102,9 @@ class MasterProductsResource extends JsonResource
             'invoices'               => $this->invoices ?? 0,
             'invoices_ly'            => $this->invoices_ly ?? 0,
             'invoices_delta'         => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'dropshippers'           => $this->dropshippers ?? 0,
+            'listings'               => $this->listings ?? 0,
+            'sold'                   => $this->sold ?? 0,
             'image_thumbnail'        => $this->web_images,
             'status_icon'            => $this->status ? [
                 'tooltip' => __('Active'),
@@ -103,6 +118,8 @@ class MasterProductsResource extends JsonResource
             'variant_slug'           => $this->variant_slug,
             'is_variant_leader'      => $this->is_variant_leader,
             'variant_code'           => $this->variant_code,
+            'mismatch_detected'      => $this->mismatch_detected,
+            'health_rank'       => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
             ...$extraField
         ];
     }
@@ -121,5 +138,17 @@ class MasterProductsResource extends JsonResource
             'is_positive' => $delta > 0,
             'is_negative' => $delta < 0,
         ];
+    }
+
+    private function getDataTradeUnit($tradeUnits): array
+    {
+        $packedIn = $tradeUnits->pluck('pivot.quantity', 'id');
+
+        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
+            return array_merge(
+                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / Arr::get($packedIn, $tradeUnit->id, 1))), Arr::get($packedIn, $tradeUnit->id, 1))],
+                GetTradeUnitShowcase::run($tradeUnit)
+            );
+        })->toArray();
     }
 }

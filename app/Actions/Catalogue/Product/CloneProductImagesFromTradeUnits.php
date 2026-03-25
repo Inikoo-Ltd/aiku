@@ -58,25 +58,35 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
         $this->syncProductImages($tradeUnit, $product);
     }
 
-    public string $commandSignature = 'catalogue:product:clone-images-from-trade-units {product?}';
+    public string $commandSignature = 'catalogue:product:clone-images-from-trade-units  {parent?} {slug?}';
 
     public function asCommand(Command $command): int
     {
-        if ($command->argument('product')) {
-            /** @var Product $product */
-            $product = Product::where('slug', $command->argument('product'))
-                ->firstOrFail();
+        $shopsIds = null;
 
-            $this->handle($product);
+        if ($command->argument('parent')) {
+            if ($command->argument('parent') == 'product' || $command->argument('parent') == 'p') {
+                /** @var Product $product */
+                $product = Product::where('slug', $command->argument('slug'))
+                    ->firstOrFail();
 
-            $command->info("Images cloned from trade units for product: $product->code");
+                $this->handle($product);
 
-            return 0;
+                $command->info("Images cloned from trade units for product: $product->code");
+
+                return 0;
+            }
+            if ($command->argument('parent') == 'shop' || $command->argument('parent') == 's') {
+                $shop     = Shop::where('slug', $command->argument('slug'))->firstOrFail();
+                $shopsIds = [$shop->id];
+            }
         }
 
-        $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
+        if ($shopsIds === null) {
+            $shopsIds = Shop::where('is_aiku', true)->pluck('id')->toArray();
+        }
 
-        $query = Product::whereIn('shop_id', $aikuShops);
+        $query = Product::whereIn('shop_id', $shopsIds);
         $total = $query->count();
 
         $command->getOutput()->progressStart($total);

@@ -32,7 +32,6 @@ class DeleteOrgStock extends OrgAction
         DB::transaction(function () use ($orgStock) {
             $orgStock->stats()?->delete();
             $orgStock->intervals()?->delete();
-            $orgStock->salesIntervals()?->delete();
             $orgStock->timeSeries()->delete();
 
             // Detach pivots

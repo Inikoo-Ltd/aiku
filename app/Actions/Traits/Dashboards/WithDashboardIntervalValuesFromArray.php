@@ -108,25 +108,37 @@ trait WithDashboardIntervalValuesFromArray
 
         if (str_ends_with($columnFingerprint, '_minified')) {
             $columnFingerprint = substr($columnFingerprint, 0, -strlen('_minified'));
-            $dataType = DashboardDataType::NUMBER_MINIFIED;
-        }
-
-        if (str_ends_with($columnFingerprint, '_delta')) {
+            $dataType          = DashboardDataType::NUMBER_MINIFIED;
+        } elseif (str_ends_with($columnFingerprint, '_delta')) {
             $columnFingerprint = substr($columnFingerprint, 0, -strlen('_delta'));
-            $dataType = DashboardDataType::DELTA_LAST_YEAR;
+            $dataType          = DashboardDataType::DELTA_LAST_YEAR;
+        } elseif (str_ends_with($columnFingerprint, '_currency')) {
+            $dataType = $dataType == DashboardDataType::NUMBER_MINIFIED ? DashboardDataType::CURRENCY_MINIFIED : DashboardDataType::CURRENCY;
         }
 
-        if (str_contains($columnFingerprint, '_currency')) {
-            if ($dataType != DashboardDataType::DELTA_LAST_YEAR) {
-                $dataType = $dataType == DashboardDataType::NUMBER_MINIFIED
-                    ? DashboardDataType::CURRENCY_MINIFIED
-                    : DashboardDataType::CURRENCY;
-            }
-        }
-
-        if (str_contains($columnFingerprint, '_org_currency')) {
+        if (str_ends_with($columnFingerprint, '_shop_currency')) {
+            $options['currency'] = $data['shop_currency_code'] ?? 'GBP';
+            $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_shop_currency'));
+        } elseif (str_ends_with($columnFingerprint, '_invoice_category_currency')) {
+            $options['currency'] = $data['group_currency_code'] ?? 'GBP';
+            $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_invoice_category_currency'));
+        } elseif (str_ends_with($columnFingerprint, '_org_currency_external')) {
             $options['currency'] = $data['organisation_currency_code'] ?? 'GBP';
-        } elseif (str_contains($columnFingerprint, '_grp_currency')) {
+            if ($dataType === DashboardDataType::NUMBER) {
+                $dataType = DashboardDataType::CURRENCY;
+            } elseif ($dataType === DashboardDataType::NUMBER_MINIFIED) {
+                $dataType = DashboardDataType::CURRENCY_MINIFIED;
+            }
+        } elseif (str_ends_with($columnFingerprint, '_grp_currency_external')) {
+            $options['currency'] = $data['group_currency_code'] ?? 'GBP';
+            if ($dataType === DashboardDataType::NUMBER) {
+                $dataType = DashboardDataType::CURRENCY;
+            } elseif ($dataType === DashboardDataType::NUMBER_MINIFIED) {
+                $dataType = DashboardDataType::CURRENCY_MINIFIED;
+            }
+        } elseif (str_ends_with($columnFingerprint, '_org_currency')) {
+            $options['currency'] = $data['organisation_currency_code'] ?? 'GBP';
+        } elseif (str_ends_with($columnFingerprint, '_grp_currency')) {
             $options['currency'] = $data['group_currency_code'] ?? 'GBP';
         }
 

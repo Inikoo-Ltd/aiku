@@ -27,7 +27,7 @@ Route::middleware('guest')->group(function () {
     Route::post('reset/password/link', PasswordResetLink::class)->name('password.email');
     Route::patch('reset/password/email', UpdateUserPasswordViaEmail::class)->name('reset-password.email.update');
 
-    Route::get('redirect-unsubscribe/{dispatchedEmail:uuid}', RedirectUnsubscribe::class)->name('redirect_unsubscribe');
+    Route::get('redirect-unsubscribe/{encryptedDispatchedEmailID}', RedirectUnsubscribe::class)->name('redirect_unsubscribe');
 });
 
 Route::middleware('auth')->group(function () {

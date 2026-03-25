@@ -28,7 +28,7 @@ class UpdateApiOrderTransaction extends RetinaApiAction
     public function handle(Transaction $transaction, array $modelData): Transaction|JsonResponse
     {
         $order = $transaction->order;
-        
+
         if ($transaction->customer_id != $this->customer->id || $order->shop_id != $this->shop->id) {
             return response()->json([
                 'message' => "Unable to make modifications for this order",
@@ -40,28 +40,28 @@ class UpdateApiOrderTransaction extends RetinaApiAction
                 'message' => "This order is already in the '{$order->state->value}' state and cannot be updated.",
             ], 409);
         }
-        
-        if($transaction->model_type != class_basename(Product::class)){
+
+        if ($transaction->model_type != class_basename(Product::class)) {
             return response()->json([
                 'message' => 'Unable to modify this transaction data. Only able to modify product transaction data.',
             ], 422);
         }
-        
+
         return UpdateTransaction::make()->action($transaction, $modelData);
     }
 
     public function rules(): array
     {
-        $rules = [
-            'quantity_ordered'    => ['sometimes', 'numeric', 'min:0']
+        return [
+            'quantity_ordered' => ['sometimes', 'numeric', 'min:0']
         ];
-
-        return $rules;
     }
 
     public function jsonResponse(Transaction|JsonResponse $result)
     {
-        if($result instanceof JsonResponse) return $result;
+        if ($result instanceof JsonResponse) {
+            return $result;
+        }
 
         return TransactionApiResource::make($result)
             ->additional([

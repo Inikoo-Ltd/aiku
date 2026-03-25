@@ -29,6 +29,15 @@ enum BannerTypeEnum: string
         ];
     }
 
+    public function defaultRatio(): string
+    {
+        return match ($this) {
+            BannerTypeEnum::SQUARE => '1/1',
+            BannerTypeEnum::LANDSCAPE => '4/1',
+            default => ''
+        };
+    }
+
     public static function count(Website $parent): array
     {
         $stats = $parent->webStats;

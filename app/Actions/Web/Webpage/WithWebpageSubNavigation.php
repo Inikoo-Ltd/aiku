@@ -75,7 +75,7 @@ trait WithWebpageSubNavigation
                     "tooltip" => __("Content pages"),
                 ],
             ],
-            [
+           /*  [
                 "number"   => $website->webStats->number_webpages_type_info,
                 "label"    => __("Info"),
                 "route"    => [
@@ -98,7 +98,7 @@ trait WithWebpageSubNavigation
                     "icon"    => ["fal", "fa-sign-in-alt"],
                     "tooltip" => __("Operations webpages"),
                 ],
-            ],
+            ], */
 
             // [
             //     "number"   => $website->webStats->number_webpages_type_blog,

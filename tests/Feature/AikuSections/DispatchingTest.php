@@ -103,6 +103,7 @@ beforeEach(function () {
 
     if (!isset($this->employee)) {
         $employeeData                  = Employee::factory()->definition();
+        $employeeData['alias']         = Str::random(6);
         $employeeData['worker_number'] .= Str::random(6);
 
         $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
@@ -624,6 +625,7 @@ test('start picking a picking session', function () {
 });
 
 test('picking session calculate picks', function (PickingSession $pickingSession) {
+    /** @var DeliveryNote $deliveryNote */
     $deliveryNote = $pickingSession->deliveryNotes()->first();
     if (!$deliveryNote->deliveryNoteItems()->exists()) {
         $historicAsset = HistoricAsset::find(1);
@@ -651,6 +653,7 @@ test('picking session calculate picks', function (PickingSession $pickingSession
         'quantity_packed'   => 0,
     ]);
 
+    /** @var DeliveryNoteItem $deliveryNoteItem */
     $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->first();
     $deliveryNoteItem->update([
         'picking_session_id' => $pickingSession->id,
@@ -696,7 +699,7 @@ test("UI Index dispatching picking sessions", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page
-                    ->where("title", "Picking sessions")
+                    ->where("title", "Picking Sessions")
                     ->etc()
             )
             ->has("data");

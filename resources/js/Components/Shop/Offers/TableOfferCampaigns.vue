@@ -38,9 +38,15 @@ function campaignRoute(campaign: {}) {
             <Icon :data="campaign.status_icon" />
         </template>
 
-        <template #cell(code)="{ item: campaign }">
+        <!-- <template #cell(code)="{ item: campaign }">
             <Link :href="campaignRoute(campaign)" class="primaryLink">
             {{ campaign.code }}
+            </Link>
+        </template> -->
+
+         <template #cell(name)="{ item: campaign }">
+            <Link :href="campaignRoute(campaign)" class="primaryLink">
+            {{ campaign.name }}
             </Link>
         </template>
 

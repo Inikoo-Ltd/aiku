@@ -28,9 +28,6 @@ class DeleteMasterAsset extends OrgAction
             $masterAsset->stats->delete();
         }
 
-        if ($masterAsset->salesIntervals) {
-            $masterAsset->salesIntervals->delete();
-        }
 
         DB::table('assets')->where('master_asset_id', $masterAsset->id)->delete();
         DB::table('products')->where('master_product_id', $masterAsset->id)->delete();

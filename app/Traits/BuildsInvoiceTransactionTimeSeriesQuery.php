@@ -19,10 +19,14 @@ trait BuildsInvoiceTransactionTimeSeriesQuery
             DB::raw('SUM(net_amount) as sales_external'),
             DB::raw('SUM(org_net_amount) as sales_org_currency_external'),
             DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
+            DB::raw('SUM(CASE WHEN is_refund = true THEN net_amount ELSE 0 END) as lost_revenue'),
+            DB::raw('SUM(CASE WHEN is_refund = true THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
+            DB::raw('SUM(CASE WHEN is_refund = true THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
             DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-            DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN id END) as invoices'),
-            DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN id END) as refunds'),
+            DB::raw('COUNT(DISTINCT CASE WHEN is_refund = false THEN invoice_id END) as invoices'),
+            DB::raw('COUNT(DISTINCT CASE WHEN is_refund = true THEN invoice_id END) as refunds'),
             DB::raw('COUNT(DISTINCT order_id) as orders'),
+            DB::raw('CAST(SUM(CASE WHEN is_refund = false THEN quantity ELSE 0 END) AS INTEGER) as sold'),
         ];
     }
 

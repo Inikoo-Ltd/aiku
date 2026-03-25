@@ -32,7 +32,7 @@ class UpdateOrderPaymentsStatus extends OrgAction
         $this->model = Order::class;
     }
 
-    protected function handle(Order $order): Order
+    protected function handle(Order $order, bool $applyCutOffDate = true): Order
     {
         $runningPaymentsAmount = 0;
         $payStatus             = OrderPayStatusEnum::UNPAID;
@@ -42,19 +42,22 @@ class UpdateOrderPaymentsStatus extends OrgAction
             $runningPaymentsAmount += $payment->amount;
         }
         $runningPaymentsAmount = round($runningPaymentsAmount, 2);
-        $totalAmount =  $order->total_amount;
-
-        if ($runningPaymentsAmount >= $totalAmount) {
-            $payStatus = OrderPayStatusEnum::PAID;
-        }
+        $totalAmount           = $order->total_amount;
 
 
-        if ($runningPaymentsAmount > $totalAmount) {
-            $payDetailedStatus = OrderPayDetailedStatusEnum::OVERPAID;
-        } elseif ($runningPaymentsAmount == $totalAmount) {
-            $payDetailedStatus = OrderPayDetailedStatusEnum::PAID;
-        } elseif ($runningPaymentsAmount > 0) {
-            $payDetailedStatus = OrderPayDetailedStatusEnum::PARTIALLY_PAID;
+        if ($totalAmount != 0) {
+            if ($runningPaymentsAmount >= $totalAmount) {
+                $payStatus = OrderPayStatusEnum::PAID;
+            }
+
+
+            if ($runningPaymentsAmount > $totalAmount) {
+                $payDetailedStatus = OrderPayDetailedStatusEnum::OVERPAID;
+            } elseif ($runningPaymentsAmount == $totalAmount) {
+                $payDetailedStatus = OrderPayDetailedStatusEnum::PAID;
+            } elseif ($runningPaymentsAmount > 0) {
+                $payDetailedStatus = OrderPayDetailedStatusEnum::PARTIALLY_PAID;
+            }
         }
 
 
@@ -63,7 +66,7 @@ class UpdateOrderPaymentsStatus extends OrgAction
             $cutOffDate = Carbon::parse($cutOffDate);
         }
 
-        if ($runningPaymentsAmount == 0 && $cutOffDate && $order->created_at->lt($cutOffDate)) {
+        if ($applyCutOffDate && $runningPaymentsAmount == 0 && $cutOffDate && $order->created_at->lt($cutOffDate) && $totalAmount != 0) {
             $payStatus         = OrderPayStatusEnum::UNKNOWN;
             $payDetailedStatus = OrderPayDetailedStatusEnum::UNKNOWN;
         }

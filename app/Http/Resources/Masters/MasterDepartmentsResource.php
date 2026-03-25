@@ -30,6 +30,7 @@ use Illuminate\Support\Arr;
  * @property mixed $sub_departments
  * @property mixed $collections
  * @property mixed $web_images
+ * @property mixed $health_rank
  */
 class MasterDepartmentsResource extends JsonResource
 {
@@ -67,6 +68,10 @@ class MasterDepartmentsResource extends JsonResource
             'invoices'         => $this->invoices ?? 0,
             'invoices_ly'      => $this->invoices_ly ?? 0,
             'invoices_delta'   => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'dropshippers'     => $this->dropshippers ?? 0,
+            'listings'         => $this->listings ?? 0,
+            'sold'             => $this->sold ?? 0,
+            'health_rank' => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];
     }
 

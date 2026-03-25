@@ -8,22 +8,26 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Traits\Catalogue\ProductCategory\WithRedoProductCategoryTimeSeries;
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class RedoDepartmentsTimeSeries implements ShouldBeUnique
 {
-    use AsAction;
-    use WithRedoProductCategoryTimeSeries;
+    use WithHydrateCommand, WithRedoProductCategoryTimeSeries {
+        WithRedoProductCategoryTimeSeries::asCommand insteadof WithHydrateCommand;
+        WithRedoProductCategoryTimeSeries::asJob insteadof WithHydrateCommand;
+    }
 
-    protected ?ProductCategoryTypeEnum $restriction;
+    protected ?ProductCategoryTypeEnum $categoryType;
 
-    public string $jobQueue = 'default-long';
-    public string $commandSignature = 'departments:redo_time_series {--a|async : Run asynchronously}';
+    public string $jobQueue         = 'default-long';
+    public string $commandSignature = 'departments:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {
-        $this->restriction = ProductCategoryTypeEnum::DEPARTMENT;
+        $this->model        = ProductCategory::class;
+        $this->categoryType = ProductCategoryTypeEnum::DEPARTMENT;
     }
 }
