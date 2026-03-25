@@ -60,7 +60,7 @@ const portfoliosList = ref<Portfolio[]>([])
 const portfoliosMeta = ref()
 const portfoliosLinks = ref()
 const getPortfoliosList = async (url?: string) => {
-    // console.log('getPortfoliosList', url)
+    console.log('getPortfoliosList', url)
     isLoadingFetch.value = true
     try {
         const urlToFetch = url || route(props.routeFetch.name, {
@@ -120,6 +120,7 @@ const selectAllProducts = () => {
             !currentSelectedIds.includes(item.id)
         )
         selectedProduct.value = [...selectedProduct.value, ...productsToAdd]
+        console.log("selectedProduct", selectedProduct.value)
     }
 }
 
