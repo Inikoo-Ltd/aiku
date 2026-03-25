@@ -88,10 +88,10 @@ class CheckOrderDetailFromShopify extends OrgAction
                                 name
                                 currentQuantity
                                 nonFulfillableQuantity
-                                variant {
+                                product {
                                     id
                                 }
-                                product {
+                                variant {
                                     id
                                 }
                             }
