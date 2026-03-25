@@ -60,6 +60,7 @@ class IndexProducts extends OrgAction
             'products.created_at',
             'products.updated_at',
             'products.slug',
+            'assets.health_rank',
         ];
 
         if ($prefix === 'sales') {
@@ -119,7 +120,8 @@ class IndexProducts extends OrgAction
         $queryBuilder
             ->defaultSort('products.code')
             ->select($selects)
-            ->selectRaw("'{$shop->currency->code}' as currency_code");
+            ->selectRaw("'{$shop->currency->code}' as currency_code")
+            ->leftJoin('assets', 'products.asset_id', 'assets.id');
 
         $allowedSorts = [
             'code',
@@ -133,6 +135,7 @@ class IndexProducts extends OrgAction
             'dropshippers',
             'listings',
             'sold',
+            'health_rank',
         ];
 
         return $queryBuilder->allowedSorts($allowedSorts)
@@ -191,7 +194,8 @@ class IndexProducts extends OrgAction
                 ->column(key: 'refunds', label: __('Refunds'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right');
+                ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
         };
     }
 }

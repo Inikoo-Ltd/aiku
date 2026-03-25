@@ -14,9 +14,8 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexIndexTransactionsInBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Actions\Traits\HasBasketDetails;
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Charge\ChargeStateEnum;
-use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\BasketTabsEnum;
 use App\Helpers\NaturalLanguage;
@@ -38,6 +37,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingBasket extends RetinaAction
 {
+    use HasBasketDetails;
     use GetPlatformLogo;
 
     public function handle(Order $order): Order
@@ -67,9 +67,10 @@ class ShowRetinaDropshippingBasket extends RetinaAction
     {
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $premiumDispatch = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $extraPacking    = $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $insurance       = $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $charges = $this->getBasketCharges($order);
+        $premiumDispatch = $charges['premium_dispatch'];
+        $extraPacking    = $charges['extra_packing'];
+        $insurance       = $charges['insurance'];
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingBasket',
@@ -299,7 +300,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'price_total' => $order->net_amount
                     ],
                     [
-                        'label'       => $taxCategory->name,
+                        'label'       => $taxCategory->getLocalizedName(),
                         'information' => '',
                         'price_total' => $order->tax_amount
                     ]

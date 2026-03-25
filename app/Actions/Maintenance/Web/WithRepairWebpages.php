@@ -29,9 +29,11 @@ trait WithRepairWebpages
     }
 
     //
-    protected function normalizeWebBlockByType(Webpage $webpage, array $webBlockTemplateCodes, string $scope): void
+    protected function normalizeWebBlockByType(Webpage $webpage, array $webBlockTemplateCodes, WebBlockTemplateEnum $webBlockTemplateType): void
     {
         $website = $webpage->website;
+
+        $scope = $webBlockTemplateType->value;
 
         if (!in_array($scope, WebBlockTemplateEnum::values()) || !$website) {
             return;
@@ -66,7 +68,7 @@ trait WithRepairWebpages
 
             $usedWebBlocks = $this->getWebpageBlocksByType($webpage, $usedWebBlockTemplateCodes);
             if (count($usedWebBlocks) == 0) {
-                $this->createWebBlock($webpage, $usedWebBlockTemplateCodes);
+                $this->createWebBlockFromSavedTemplate($webpage, $webBlockTemplateType, $usedWebBlockTemplateCodes);
             } elseif (count($usedWebBlocks) > 1) {
                 $usedWebBlocks->pop();
 
@@ -82,6 +84,40 @@ trait WithRepairWebpages
                         ->delete();
                 }
             }
+        }
+    }
+
+    protected function deleteWebBlocksByType(Webpage $webpage, WebBlockTemplateEnum $scope)
+    {
+        foreach ($scope->templateCodes() as $unusedWebBlockCode) {
+            $unusedWebBlock = $this->getWebpageBlocksByType($webpage, $unusedWebBlockCode);
+            if (count($unusedWebBlock) > 0) {
+                $webpage
+                    ->modelHasWebBlocks()
+                    ->whereIn('id', $unusedWebBlock->pluck('model_has_web_blocks_id'))
+                    ->delete();
+
+                $webpage
+                    ->webBlocks()
+                    ->whereIn('web_blocks.id', $unusedWebBlock->pluck('id'))
+                    ->delete();
+            }
+        }
+    }
+
+    protected function deleteWebBlocksByCode(Webpage $webpage, string $scope)
+    {
+        $unusedWebBlock = $this->getWebpageBlocksByType($webpage, $scope);
+        if (count($unusedWebBlock) > 0) {
+            $webpage
+                ->modelHasWebBlocks()
+                ->whereIn('id', $unusedWebBlock->pluck('model_has_web_blocks_id'))
+                ->delete();
+
+            $webpage
+                ->webBlocks()
+                ->whereIn('web_blocks.id', $unusedWebBlock->pluck('id'))
+                ->delete();
         }
     }
 

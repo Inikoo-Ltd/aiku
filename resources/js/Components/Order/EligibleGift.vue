@@ -3,7 +3,7 @@ import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
 import { Popover } from 'primevue'
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -11,6 +11,8 @@ import { faCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from '../Image.vue'
 import { Image as ImageTS } from '@/types/Image'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 library.add(faCircle)
 
 interface Gift {
@@ -28,7 +30,11 @@ const props = defineProps<{
     routeUpdate: routeType
     // selectedGift: Gift | null
     giftOptions: Gift[]
+    meter: number[]
 }>()
+
+const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout', retinaLayoutStructure)
 
 // const selectedGift = ref(props.selectedGift ?? null)
 const compSelectedGift = computed(() => {
@@ -37,11 +43,11 @@ const compSelectedGift = computed(() => {
 const _popover = ref<InstanceType<typeof Popover> | null>(null)
 
 // Section: Charge Priority Dispatch
-const isLoadingChanged = ref(false)
+const isLoadingChanged = ref<number|null>(null)
 const onChangeGift = async (val: Gift) => {
 
     try {
-        isLoadingChanged.value = true
+        isLoadingChanged.value = val.id
 
         const response = await axios.patch(
             route(
@@ -70,24 +76,54 @@ const onChangeGift = async (val: Gift) => {
             type: 'error'
         })
     } finally {
-        isLoadingChanged.value = false
+        isLoadingChanged.value = null
     }
+}
+
+// Method: convert "15.26" to 15.26
+const convertToFloat2 = (val: any) => {
+    const num = parseFloat(val)
+    if (isNaN(num)) return 0.00
+    return parseFloat(num.toFixed(2))
 }
 </script>
 
 <template>
     <div class="flex gap-x-2">
         <div>{{ trans("You are eligible to receive a gift") }}:</div>
-        <div v-if="!compSelectedGift" @click="_popover?.toggle" class="cursor-pointer text-blue-600 underline">
+
+        <!-- Section: meter -->
+        <div v-if="!(convertToFloat2(props.meter?.[0]) >= convertToFloat2(props.meter?.[1]))"
+            v-tooltip="trans(`:xcurrent of :xtarget products amount. Add :amountLeft to get free gift`, {
+                xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[0])),
+                xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[1])),
+                amountLeft: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[1]) - convertToFloat2(props.meter?.[0]))
+            })" class="w-64 flex items-center">
+            <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
+                <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
+                    :class="convertToFloat2(props.meter?.[0]) < convertToFloat2(props.meter?.[1]) ? 'shimmer bg-green-400' : 'bg-green-500'"
+                    :style="{
+                        width: convertToFloat2(props.meter?.[1]) ? convertToFloat2(props.meter?.[0])/convertToFloat2(props.meter?.[1]) * 100 + '%' : '100%'
+                    }"
+                />
+            </div>
+        </div>
+
+        <div v-else-if="!compSelectedGift" @click="_popover?.toggle" class="cursor-pointer text-blue-600 underline">
             {{ trans("Select gift") }}
         </div>
         <div v-else class="relative text-right">
-            <span @click="_popover?.toggle" class="underline cursor-pointer">
+            <div @click="_popover?.toggle" class="relative underline cursor-pointer inline-block">
                 <span class="font-bold">
                     {{ compSelectedGift.code }}
                 </span>
                 {{ compSelectedGift.name }}
-            </span>
+                <div v-if="isLoadingChanged" class="absolute w-full h-full top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                    <div class="skeleton w-full h-full">
+
+                    </div>
+                </div>
+            </div>
             <span @click="_popover?.toggle" class="ml-2 cursor-pointer text-blue-500 underline">{{ trans("change") }}</span>
             <span v-if="isLoadingChanged" class="absolute top-1/2 -translate-y-1/2 w-4 h-4 xtext-blue-600">
                 <LoadingIcon />
@@ -100,7 +136,7 @@ const onChangeGift = async (val: Gift) => {
                     v-for="gift in giftOptions"
                     :key="gift.id"
                     class="flex items-center gap-2 cursor-pointer"
-                    @click.prevent="() => (_popover?.hide(), onChangeGift(gift))"
+                    @click.prevent="() => ('_popover?.hide()', onChangeGift(gift))"
                 >
                     <!-- <input
                         type="radio"
@@ -112,6 +148,7 @@ const onChangeGift = async (val: Gift) => {
                     /> -->
                     <span>
                         <FontAwesomeIcon v-if="gift.id === compSelectedGift?.id" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
+                        <LoadingIcon v-else-if="isLoadingChanged === gift.id" class="" />
                         <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
                     </span>
                     <div class="w-14 aspect-square h-14 border border-gray-300">

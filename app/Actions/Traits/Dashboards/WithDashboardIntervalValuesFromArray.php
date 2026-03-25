@@ -122,6 +122,20 @@ trait WithDashboardIntervalValuesFromArray
         } elseif (str_ends_with($columnFingerprint, '_invoice_category_currency')) {
             $options['currency'] = $data['group_currency_code'] ?? 'GBP';
             $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_invoice_category_currency'));
+        } elseif (str_ends_with($columnFingerprint, '_org_currency_external')) {
+            $options['currency'] = $data['organisation_currency_code'] ?? 'GBP';
+            if ($dataType === DashboardDataType::NUMBER) {
+                $dataType = DashboardDataType::CURRENCY;
+            } elseif ($dataType === DashboardDataType::NUMBER_MINIFIED) {
+                $dataType = DashboardDataType::CURRENCY_MINIFIED;
+            }
+        } elseif (str_ends_with($columnFingerprint, '_grp_currency_external')) {
+            $options['currency'] = $data['group_currency_code'] ?? 'GBP';
+            if ($dataType === DashboardDataType::NUMBER) {
+                $dataType = DashboardDataType::CURRENCY;
+            } elseif ($dataType === DashboardDataType::NUMBER_MINIFIED) {
+                $dataType = DashboardDataType::CURRENCY_MINIFIED;
+            }
         } elseif (str_ends_with($columnFingerprint, '_org_currency')) {
             $options['currency'] = $data['organisation_currency_code'] ?? 'GBP';
         } elseif (str_ends_with($columnFingerprint, '_grp_currency')) {

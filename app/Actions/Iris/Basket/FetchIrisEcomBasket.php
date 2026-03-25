@@ -10,11 +10,9 @@
 
 namespace App\Actions\Iris\Basket;
 
+use App\Actions\Traits\HasBasketDetails;
 use App\Actions\IrisAction;
-use App\Enums\Catalogue\Charge\ChargeStateEnum;
-use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class FetchIrisEcomBasket extends IrisAction
 {
+    use HasBasketDetails;
     public function handle(ActionRequest $request): Order|null
     {
         $customer = $request->user()?->customer;
@@ -53,57 +52,15 @@ class FetchIrisEcomBasket extends IrisAction
             'has_insurance'       => $order->has_insurance,
         ];
 
-        $premiumDispatch = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $extraPacking    = $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $insurance       = $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $charges = $this->getBasketCharges($order);
+        $premiumDispatch = $charges['premium_dispatch'];
+        $extraPacking    = $charges['extra_packing'];
+        $insurance       = $charges['insurance'];
 
         $hasDiscounts = $order->goods_amount != $order->gross_amount;
 
 
-        $grGifts = [
-            'is_eligible' => false,
-            'gifts'    => []
-        ];
-        if ($order) {
-            $offersData = $order->shop->offers_data;
-
-            $grGifts = Arr::get($offersData, 'gr.gifts_products');
-
-            $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
-            if ($selectedGrGift) {
-                foreach ($grGifts as $key => $gift) {
-                    $product = Product::find($gift['id']);
-                    if ($product) {
-                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
-                    }
-
-                    $grGifts[$key]['id'] = $gift['id'];
-                    $grGifts[$key]['name'] = $gift['name'];
-
-                    if ($gift['id'] == $selectedGrGift) {
-                        $grGifts[$key]['selected'] = true;
-                    } else {
-                        $grGifts[$key]['selected'] = false;
-                    }
-                }
-            } else {
-                foreach ($grGifts as $key => $gift) {
-                    $product = Product::find($gift['id']);
-                    if ($product) {
-                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
-                    }
-                    
-                    $grGifts[$key]['id'] = $gift['id'];
-                    $grGifts[$key]['name'] = $gift['name'];
-                    $grGifts[$key]['selected'] = Arr::get($gift, 'default', false);
-                }
-            }
-
-            $grGifts = [
-                'is_eligible' => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
-                'gifts'    => $grGifts
-            ];
-        }
+        $grGifts = $this->getGrGifts($order);
 
 
         if ($hasDiscounts) {
@@ -165,7 +122,7 @@ class FetchIrisEcomBasket extends IrisAction
                     'price_total' => $order->net_amount
                 ],
                 [
-                    'label'       => __('Tax').' ('.$taxCategory->name.')',
+                    'label'       => __('Tax').' ('.$taxCategory->getLocalizedName().')',
                     'information' => '',
                     'price_total' => $order->tax_amount
                 ]

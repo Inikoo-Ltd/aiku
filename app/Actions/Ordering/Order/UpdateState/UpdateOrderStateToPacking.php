@@ -15,7 +15,6 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
-use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderStateToPacking extends OrgAction
 {
@@ -25,17 +24,19 @@ class UpdateOrderStateToPacking extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(Order $order, bool $fromDeliveryNote = false): Order
+    public function handle(Order $order): Order
     {
         $oldState = $order->state;
         $data     = [
             'state' => OrderStateEnum::PACKING
         ];
 
-        if (in_array($order->state, [
-                OrderStateEnum::PICKED,
-            ])
-            || $fromDeliveryNote) {
+        if (!in_array($order->state, [
+            OrderStateEnum::CANCELLED,
+            OrderStateEnum::DISPATCHED,
+            OrderStateEnum::CREATING,
+            OrderStateEnum::SUBMITTED,
+        ])) {
             foreach ($order->transactions()->where('model_type', 'Product')
                 ->where('transactions.state', TransactionStateEnum::PICKED)->get() as $transaction) {
                 $transaction->update(
@@ -65,21 +66,13 @@ class UpdateOrderStateToPacking extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function action(Order $order, bool $fromDeliveryNote): Order
+    public function action(Order $order): Order
     {
         $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
 
-        return $this->handle($order, $fromDeliveryNote);
-    }
-
-    /**
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function asController(Order $order, ActionRequest $request): Order
-    {
-        $this->initialisationFromShop($order->shop, $request);
-
         return $this->handle($order);
     }
+
+
 }

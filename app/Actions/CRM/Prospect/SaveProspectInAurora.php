@@ -35,8 +35,6 @@ class SaveProspectInAurora implements ShouldBeUnique
      */
     public function handle(Prospect $prospect): void
     {
-
-
         if (!$prospect->shop->is_aiku) {
             return;
         }
@@ -47,8 +45,15 @@ class SaveProspectInAurora implements ShouldBeUnique
         }
 
 
-        $apiUrl       = $this->getApiUrl($prospect->organisation);
-        $shopSourceId = explode(':', $prospect->shop->source_id);
+        $apiUrl = $this->getApiUrl($prospect->organisation);
+
+        $shopSourceIdData = $prospect->shop->source_id;
+        if (!$shopSourceIdData) {
+            return;
+        }
+
+
+        $shopSourceId = explode(':', $shopSourceIdData);
 
         $prospectAuroraId = null;
 

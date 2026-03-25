@@ -7,6 +7,7 @@ use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\OvertimeRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -18,32 +19,49 @@ class UpdateEmployeeOvertimeRequest extends OrgAction
 {
     protected ?Employee $employee = null;
 
-    public function prepareForValidation(ActionRequest $request): void
+    private function resolveEmployee(Request $request): ?Employee
     {
-        $date = $this->get('requested_date');
+        $user = $request->user();
 
-        if ($date) {
-            $timezone = $this->organisation->timezone->name ?? null;
-            $date = Carbon::parse($date, $timezone)->startOfDay();
+        if (!$user) {
+            return null;
         }
 
-        $startHour = (int)$this->get('start_hour', 0);
-        $startMinute = (int)$this->get('start_minute', 0);
-        $durationHour = (int)$this->get('duration_hours', 0);
-        $durationMinute = (int)$this->get('duration_minutes', 0);
+        $organisationScope = $request->input('organisation') ?? $request->route('organisation');
 
-        $durationMinutes = ($durationHour * 60) + $durationMinute;
+        if (is_object($organisationScope)) {
+            $organisationScope = $organisationScope->slug ?? $organisationScope->id ?? null;
+        }
 
-        if ($date) {
-            $startAt = $date->copy()->setTime($startHour, $startMinute);
-            $this->set('requested_start_at', $startAt);
+        if ($organisationScope) {
+            $organisationScope = (string) $organisationScope;
+            $isNumericOrganisationId = ctype_digit($organisationScope);
 
-            if ($durationMinutes > 0) {
-                $this->set('requested_end_at', $startAt->copy()->addMinutes($durationMinutes));
+            $employee = $user->employees()
+                ->whereHas('organisation', function ($query) use ($organisationScope, $isNumericOrganisationId) {
+                    $query->where('slug', $organisationScope);
+
+                    if ($isNumericOrganisationId) {
+                        $query->orWhere('id', (int) $organisationScope);
+                    }
+                })
+                ->first();
+
+            if ($employee) {
+                return $employee;
             }
         }
 
-        $this->set('requested_duration_minutes', $durationMinutes);
+        return $user->employees()->first();
+    }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if (!$this->has('recorded_start_at') || is_null($this->get('recorded_start_at'))) {
+            $this->set('recorded_start_at', $this->get('requested_start_at'));
+            $this->set('recorded_end_at', $this->get('requested_end_at'));
+            $this->set('recorded_duration_minutes', $this->get('requested_duration_minutes'));
+        }
     }
 
     public function rules(): array
@@ -83,6 +101,13 @@ class UpdateEmployeeOvertimeRequest extends OrgAction
 
         if ($overtimeRequest->status !== OvertimeRequestStatusEnum::PENDING) {
             abort(403, __('Only pending overtime requests can be edited.'));
+        }
+
+        if (isset($modelData['requested_start_at'])) {
+            $modelData['requested_start_at'] = Carbon::parse($modelData['requested_start_at'])->setTimezone('UTC');
+        }
+        if (isset($modelData['requested_end_at'])) {
+            $modelData['requested_end_at'] = Carbon::parse($modelData['requested_end_at'])->setTimezone('UTC');
         }
 
         $overtimeRequest->update([

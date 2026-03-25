@@ -13,7 +13,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Catalogue\Shop\External\Faire\CancelFaireOrder;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
-use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
+use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
 use App\Actions\Dropshipping\Tiktok\Order\CancelFulfillOrderTiktok;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
@@ -114,9 +114,9 @@ class CancelOrder extends OrgAction
         }
 
         if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
-            if ($order->customerSalesChannel?->user && app()->isProduction()) {
+            if ($order->customerSalesChannel?->user) {
                 match ($order->customerSalesChannel->platform->type) {
-                    PlatformTypeEnum::SHOPIFY => CancelFulfillOrderToShopify::run($order),
+                    PlatformTypeEnum::SHOPIFY => CloseFulfillOrderToShopify::run($order),
                     PlatformTypeEnum::TIKTOK => CancelFulfillOrderTiktok::run($order),
                     default => null,
                 };

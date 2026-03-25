@@ -14,6 +14,10 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash-es'
 import { inject, ref } from 'vue'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faGift } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faGift)
 
 const props = defineProps<{
     data: any[] | TableTS
@@ -106,7 +110,13 @@ const debounceUpdateQuantity = debounce(
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
             <div class="flex items-center justify-end">
-                <div v-if="state === 'creating' || state === 'xsubmitted'" class="w-fit">
+                <div v-if="item.is_gift" >
+                    {{ locale.number(item.quantity_bonus) }}
+                    <span v-tooltip="ctrans('Quantity of free gift')">
+                        <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
+                    </span>
+                </div>
+                <div v-else-if="state === 'creating' || state === 'xsubmitted'" class="w-fit">
                     <NumberWithButtonSave
                         :modelValue="item.quantity_ordered"
                         :routeSubmit="item.updateRoute"
@@ -150,9 +160,22 @@ const debounceUpdateQuantity = debounce(
         </template>
 
         
+        <!-- Column: Price -->
+        <template #cell(price)="{ item }">
+            <div v-if="item.is_gift">
+                
+            </div>
+            <div v-else class="text-right">
+                {{ locale.currencyFormat(item.currency_code || '', item.price) }}
+            </div>
+        </template>
+        
         <!-- Column: Net Amount -->
         <template #cell(net_amount)="{ item }">
-            <div class="text-right">
+            <div v-if="item.is_gift">
+                
+            </div>
+            <div v-else class="text-right">
                 <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
                     <span v-if="item.gross_amount != item.net_amount" class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                     <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>

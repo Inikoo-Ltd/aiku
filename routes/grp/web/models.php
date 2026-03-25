@@ -76,7 +76,7 @@ use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\Mailshot\PublishMailShot;
 use App\Actions\Comms\Mailshot\ResumeMailshot;
-use App\Actions\Comms\Mailshot\SendMailShotNow;
+use App\Actions\Comms\Mailshot\SendMailShot;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\Mailshot\StopMailshot;
 use App\Actions\Comms\Mailshot\SetMailshotSecondWaveStatus;
@@ -107,6 +107,8 @@ use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\Dispatching\Box\StoreBox;
 use App\Actions\Dispatching\Box\UpdateBox;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemUnpack;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
@@ -240,6 +242,7 @@ use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
 use App\Actions\HumanResources\Employee\DeleteEmployee;
+use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
 use App\Actions\HumanResources\JobPosition\DeleteJobPosition;
@@ -388,6 +391,7 @@ Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notificat
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inEmployee'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inEmployee'])->name('attachment.detach')->withoutScopedBindings();
+    Route::patch('contract/upload', UploadEmployeeContract::class)->name('contract.upload');
     Route::patch('', UpdateEmployee::class)->name('update');
     Route::delete('', DeleteEmployee::class)->name('.delete');
 });
@@ -794,11 +798,11 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('workshop', UpdateWorkshopOutbox::class)->name('workshop.update')->withoutScopedBindings();
         Route::post('send/test', [SendTestEmail::class, 'asControllerOutbox'])->name('send.test')->withoutScopedBindings();
         Route::post('workshop/template', StoreWorkshopOutboxTemplate::class)->name('workshop.store.template')->withoutScopedBindings();
-        Route::post('newsletter/{mailshot:id}/send', SendMailShotNow::class)->name('newsletter.send')->withoutScopedBindings();
+        Route::post('newsletter/{mailshot:id}/send', SendMailShot::class)->name('newsletter.send')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('newsletter.schedule')->withoutScopedBindings();
         Route::post('newsletter/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('newsletter.cancel-schedule')->withoutScopedBindings();
 
-        Route::post('mailshot/{mailshot:id}/send', SendMailShotNow::class)->name('mailshot.send')->withoutScopedBindings();
+        Route::post('mailshot/{mailshot:id}/send', SendMailShot::class)->name('mailshot.send')->withoutScopedBindings();
         Route::post('mailshot/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('mailshot.schedule')->withoutScopedBindings();
         Route::post('mailshot/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('mailshot.cancel-schedule')->withoutScopedBindings();
 
@@ -1148,6 +1152,8 @@ Route::post('master-product-category/{masterProductCategory:id}/master-variant',
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
+Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');
+Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
 
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
     Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');

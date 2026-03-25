@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 
@@ -94,6 +94,19 @@ const handleTabUpdate = (newTabSlug: string) => {
         return
     }
 
+    // Clocking tab navigates to separate route
+    if (newTabSlug === 'clocking') {
+        layout.stackedComponents = []
+        router.visit(route('grp.clocking_employees.index'))
+        return
+    }
+
+    const tab = dataProfile.value?.tabs?.navigation[newTabSlug]
+    if (tab?.route?.name) {
+        router.visit(route(tab.route.name, tab.route.parameters))
+        return
+    }
+
     fetchTabData(newTabSlug)
 }
 const isTabLoading = ref(false)
@@ -112,7 +125,7 @@ const fetchTabData = async (tabSlug: string) => {
         case 'kpi':
             routeName = 'grp.profile.kpis.index'
             break
-        case 'visit_logs':
+		case 'visit_logs':
             routeName = 'grp.profile.visit-logs.index'
             break
         case 'timesheets':

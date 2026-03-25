@@ -39,7 +39,7 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
                         $products = $masterProduct->products;
                         foreach ($products as $product) {
 
-                            if ($masterProduct->mismatch_detected = true) {
+                            if ($masterProduct->mismatch_detected == true) {
                                 continue;
                             }
 

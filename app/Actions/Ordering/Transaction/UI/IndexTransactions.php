@@ -79,6 +79,7 @@ class IndexTransactions extends OrgAction
                 'transactions.net_amount',
                 'transactions.model_type as model_type',
                 'transactions.created_at',
+                'transactions.is_gift',
                 'transactions.discretionary_offer',
                 'transactions.discretionary_offer_label',
                 'transactions.is_cut_view',

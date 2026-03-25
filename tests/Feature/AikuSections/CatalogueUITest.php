@@ -168,6 +168,7 @@ test('UI create department', function () {
 });
 
 test('UI edit department', function () {
+    $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.catalogue.departments.edit', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page

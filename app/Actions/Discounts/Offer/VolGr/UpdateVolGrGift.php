@@ -8,12 +8,14 @@
 
 namespace App\Actions\Discounts\Offer\VolGr;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffersData;
 use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Actions\OrgAction;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -23,7 +25,6 @@ class UpdateVolGrGift extends OrgAction
 
     public function handle(Offer $offer, $modelData): Offer
     {
-
         if (Arr::has($modelData, 'amount')) {
             data_set(
                 $offerData,
@@ -32,26 +33,40 @@ class UpdateVolGrGift extends OrgAction
                     'min_amount' => Arr::pull($modelData, 'amount'),
                 ]
             );
+            $offer->update($offerData);
         }
 
 
-        if (Arr::hasAny($modelData, ['products','default'])) {
+        if (Arr::has($modelData, 'products')) {
             /** @var OfferAllowance $offerAllowance */
             $offerAllowance = $offer->offerAllowances()->first();
 
             $allowanceData = $offerAllowance->data;
+
+            $oldProducts    = Arr::get($allowanceData, 'products', []);
+            $oldProductsIds = Arr::pluck($oldProducts, 'id');
+            $newProductsIds = [];
             if (Arr::has($allowanceData, 'products')) {
-                $modelData['products'] = $allowanceData['products'];
-            }
-            if (Arr::has($allowanceData, 'default')) {
-                $modelData['default'] = $allowanceData['default'];
+                $allowanceData['products'] = Arr::get($modelData, 'products');
+                $newProductsIds            = Arr::pluck($allowanceData['products'], 'id');
             }
 
             UpdateOfferAllowance::run($offerAllowance, [
-                'data' => $modelData,
+                'data' => $allowanceData,
             ]);
 
+            $deletedProductsIds = array_diff($oldProductsIds, $newProductsIds);
+            foreach ($deletedProductsIds as $deletedProductId) {
+                $offer->shop->orders()->where(function ($query) use ($deletedProductId) {
+                    $query->whereJsonContains('data->gr->selected_gift', $deletedProductId);
+                })->update([
+                    'data->gr->selected_gift' => null
+                ]);
+            }
         }
+
+
+        ShopHydrateOffersData::run($offer->shop_id);
 
         return $offer;
     }
@@ -59,9 +74,10 @@ class UpdateVolGrGift extends OrgAction
     public function rules(): array
     {
         return [
-            'amount'   => ['sometimes','numeric', 'required'],
-            'products' => ['sometimes', 'array'],
-            'default'  => ['sometimes', 'nullable', 'integer']
+            'amount'             => ['sometimes', 'numeric', 'required'],
+            'products'           => ['sometimes', 'array'],
+            'products.*.id'      => ['required', 'integer', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
+            'products.*.default' => ['sometimes', 'boolean'],
         ];
     }
 

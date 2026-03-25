@@ -37,8 +37,8 @@ class GroupHydrateOrderStatePacking implements ShouldBeUnique
         $stats = [
 
 
-            'number_orders_state_packing'              => $group->orderFromActiveShops()->where('state', OrderStateEnum::PACKED)->count(),
-            'orders_state_packing_amount_grp_currency' => $group->orderFromActiveShops()->where('state', OrderStateEnum::PACKED)->sum('grp_net_amount'),
+            'number_orders_state_packing'              => $group->orderFromActiveShops()->where('state', OrderStateEnum::PACKING)->count(),
+            'orders_state_packing_amount_grp_currency' => $group->orderFromActiveShops()->where('state', OrderStateEnum::PACKING)->sum('grp_net_amount'),
             'number_orders_packing_today'              => $group->orderFromActiveShops()->whereDate('packing_at', Carbon::today())->count(),
             'orders_packing_today_amount_grp_currency' => $group->orderFromActiveShops()->whereDate('packing_at', Carbon::today())->sum('grp_net_amount'),
 

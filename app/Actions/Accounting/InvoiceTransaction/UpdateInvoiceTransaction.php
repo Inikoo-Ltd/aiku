@@ -8,16 +8,12 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomersIntervals;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesCustomersStats;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicesStats;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\InvoiceTransaction;
+use Carbon\Carbon;
+use Illuminate\Support\Arr;
 
 class UpdateInvoiceTransaction extends OrgAction
 {
@@ -27,22 +23,21 @@ class UpdateInvoiceTransaction extends OrgAction
 
     public function handle(InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
+        $oldDate = $invoiceTransaction->date;
+
         $invoiceTransaction = $this->update($invoiceTransaction, $modelData, ['data']);
+
+        $changes = $invoiceTransaction->getChanges();
 
         SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id);
         SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id);
+        SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id);
 
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-
-        if ($invoiceTransaction->asset_id) {
-            AssetHydrateSalesIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-            AssetHydrateInvoiceIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-            AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-            AssetHydrateInvoicesCustomersStats::dispatch($invoiceTransaction->asset_id)->delay($this->hydratorsDelay);
-            AssetHydrateInvoicesStats::dispatch($invoiceTransaction->asset_id)->delay($this->hydratorsDelay);
+        if (Arr::has($changes, 'date')) {
+            ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, Carbon::parse($oldDate)->toDateString())->delay($this->hydratorsDelay);
         }
 
-        ProcessInvoiceTransactionTimeSeries::run($invoiceTransaction);
+        ProcessInvoiceTransactionTimeSeries::dispatch($invoiceTransaction, Carbon::parse($invoiceTransaction->date)->toDateString())->delay($this->hydratorsDelay);
 
         return $invoiceTransaction;
     }

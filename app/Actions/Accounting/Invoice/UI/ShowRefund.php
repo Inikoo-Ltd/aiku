@@ -113,7 +113,7 @@ class ShowRefund extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inInvoiceinOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
+    public function inInvoiceInOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
@@ -121,7 +121,8 @@ class ShowRefund extends OrgAction
         return $this->handle($refund);
     }
 
-    public function InInvoiceinOrderInCustomerClientInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
+    /** @noinspection PhpUnusedParameterInspection */
+    public function InInvoiceInOrderInCustomerClientInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
@@ -129,7 +130,8 @@ class ShowRefund extends OrgAction
         return $this->handle($refund);
     }
 
-    public function InInvoiceinOrderInPlatformInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
+    /** @noinspection PhpUnusedParameterInspection */
+    public function InInvoiceInOrderInPlatformInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
@@ -170,6 +172,16 @@ class ShowRefund extends OrgAction
     {
         $this->parent = $fulfilmentCustomer;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
+
+        return $this->handle($refund);
+    }
+
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, Invoice $refund, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(RefundTabsEnum::values());
 
         return $this->handle($refund);
     }

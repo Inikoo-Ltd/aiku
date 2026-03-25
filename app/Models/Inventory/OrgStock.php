@@ -8,6 +8,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
@@ -74,10 +75,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $source_quantity_to_be_picked
  * @property bool $is_on_demand
  * @property bool $has_been_in_warehouse
+ * @property HealthRankEnum|null $health_rank
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\InventoryDailySnapshot> $inventoryDailySnapshots
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
@@ -85,7 +86,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
- * @property-read \App\Models\Inventory\OrgStockSalesInterval|null $salesIntervals
  * @property-read \App\Models\Inventory\OrgStockStats|null $stats
  * @property-read Stock|null $stock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockTimeSeries> $timeSeries
@@ -115,6 +115,7 @@ class OrgStock extends Model implements Auditable
         'discontinuing_in_organisation_at' => 'datetime',
         'discontinued_in_organisation_at'  => 'datetime',
         'state'                            => OrgStockStateEnum::class,
+        'health_rank'                      => HealthRankEnum::class,
         'quantity_status'                  => OrgStockQuantityStatusEnum::class,
         'fetched_at'                       => 'datetime',
         'last_fetched_at'                  => 'datetime',
@@ -186,47 +187,20 @@ class OrgStock extends Model implements Auditable
         return $this->hasOne(OrgStockIntervals::class);
     }
 
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(OrgStockSalesInterval::class);
-    }
-
     public function orgSupplierProducts(): BelongsToMany
     {
         return $this->belongsToMany(OrgSupplierProduct::class, 'org_stock_has_org_supplier_products')
             ->withPivot(['status', 'local_priority'])->withTimestamps();
     }
 
-    public function getMainOrgSupplierProduct(): OrgSupplierProduct
-    {
-        return $this->orgSupplierProducts()->where('status', true)->orderBy('local_priority', 'desc')->first();
-    }
-
     public function tradeUnits(): MorphToMany
     {
         return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
-        //        return $this->morphToMany(
-        //            TradeUnit::class,
-        //            'model',
-        //            'model_has_trade_units',
-        //            'model_id',
-        //            null,
-        //            null,
-        //            null,
-        //            'trade_units',
-        //        )
-        //            ->withPivot(['quantity', 'notes'])
-        //            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany
     {
         return $this->hasMany(OrgStockTimeSeries::class);
-    }
-
-    public function inventoryDailySnapshots(): HasMany
-    {
-        return $this->hasMany(InventoryDailySnapshot::class);
     }
 
     public function products(): BelongsToMany

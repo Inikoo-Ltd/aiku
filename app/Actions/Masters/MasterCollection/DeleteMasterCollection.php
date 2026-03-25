@@ -51,9 +51,6 @@ class DeleteMasterCollection extends GrpAction
                     $masterCollection->stats->delete();
                 }
 
-                if ($masterCollection->salesIntervals) {
-                    $masterCollection->salesIntervals->delete();
-                }
 
                 if ($masterCollection->orderingStats) {
                     $masterCollection->orderingStats->delete();

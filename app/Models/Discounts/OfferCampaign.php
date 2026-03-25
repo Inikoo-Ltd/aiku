@@ -78,10 +78,10 @@ class OfferCampaign extends Model implements Auditable
 
 
     protected $casts = [
-        'data'     => 'array',
-        'settings' => 'array',
+        'data'         => 'array',
+        'settings'     => 'array',
         'offers_state' => OfferCampaignOffersStateEnum::class,
-        'type'     => OfferCampaignTypeEnum::class
+        'type'         => OfferCampaignTypeEnum::class
     ];
 
     protected $attributes = [

@@ -16,7 +16,9 @@ class StoreMailshotRecipient extends OrgAction
 {
     public function handle(Mailshot $mailshot, array $modelData): MailshotRecipient
     {
-        $result =  $mailshot->recipients()->create($modelData);
-        return $result;
+        /** @var MailshotRecipient $mailshotRecipient */
+        $mailshotRecipient = $mailshot->recipients()->create($modelData);
+
+        return $mailshotRecipient;
     }
 }

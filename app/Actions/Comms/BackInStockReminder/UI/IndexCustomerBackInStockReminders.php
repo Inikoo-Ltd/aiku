@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 16-10-2024-10h-54m
- * github: https://github.com/KirinZero0
- * copyright 2024
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 22 Mar 2026 12:06:36 Central Indonesia Time, Bali Airport, Indonesia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Comms\BackInStockReminder\UI;
 
@@ -27,7 +26,6 @@ class IndexCustomerBackInStockReminders extends OrgAction
 
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
-        $basket = $parent->orderInBasket;
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('products.code', $value)
@@ -47,21 +45,8 @@ class IndexCustomerBackInStockReminders extends OrgAction
         $query->leftJoin('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
 
         $select = [];
-        if ($basket) {
-            $query->leftJoin('transactions', function ($join) use ($basket) {
-                $join->on('products.id', '=', 'transactions.model_id')
-                    ->where('transactions.model_type', '=', 'Product')
-                    ->where('transactions.order_id', '=', $basket->id)
-                    ->whereNull('transactions.deleted_at');
-            });
-            $select[] = 'transactions.id as transaction_id';
-            $select[] = 'transactions.quantity_ordered as quantity_ordered';
-        }
 
-        $query->leftJoin('webpages', function ($join) {
-            $join->on('products.id', '=', 'webpages.model_id')
-                ->where('webpages.model_type', '=', 'Product');
-        });
+
 
         return $query->defaultSort('products.code')
             ->select(array_merge($select, [
@@ -85,8 +70,6 @@ class IndexCustomerBackInStockReminders extends OrgAction
                 'products.unit',
                 'products.top_seller',
                 'products.web_images',
-                'webpages.canonical_url',
-                'products.offers_data as product_offers_data'
             ]))
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])

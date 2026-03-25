@@ -27,6 +27,7 @@ use App\Actions\Helpers\Intervals\ResetQuarterlyIntervals;
 use App\Actions\Helpers\Intervals\ResetWeeklyIntervals;
 use App\Actions\Helpers\Intervals\ResetYearIntervals;
 use App\Actions\Helpers\Isdoc\DeleteTempIsdoc;
+use App\Actions\HydrateHealthRank;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -40,6 +41,34 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule): void
     {
+
+        $this->logSchedule(
+            $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunNewsletterScheduled',
+            ),
+            name: 'RunNewsletterScheduled',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunMailshotScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunMailshotScheduled',
+            ),
+            name: 'RunMailshotScheduled',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'RunMailshotSecondWave',
+            ),
+            name: 'RunMailshotSecondWave',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
 
         $schedule->command('queue:prune-failed --hours=168')->daily();
@@ -191,6 +220,16 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+
+        $this->logSchedule(
+            $schedule->command('fetch:stock_movements aroma -N -D 2')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'FetchAuroraStockMovements',
+            ),
+            name: 'FetchAuroraStockMovements',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
         $this->logSchedule(
             $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'FetchDispatchedEmails',
@@ -319,7 +358,7 @@ class Kernel extends ConsoleKernel
         );
 
         $this->logSchedule(
-            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('19:00')->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'SaveWebsitesSitemap',
             ),
             name: 'SaveWebsitesSitemap',
@@ -410,34 +449,6 @@ class Kernel extends ConsoleKernel
         );
 
 
-        if (app()->environment('local')) {
-            $this->logSchedule(
-                $schedule->job(RunNewsletterScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunNewsletterScheduled',
-                ),
-                name: 'RunNewsletterScheduled',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(RunMailshotScheduled::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunMailshotScheduled',
-                ),
-                name: 'RunMailshotScheduled',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RunMailshotSecondWave',
-                ),
-                name: 'RunMailshotSecondWave',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-        }
 
         // $this->logSchedule(
         //     $schedule->job(RunPriceChangeNotificationEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->withoutOverlapping()->sentryMonitor(
@@ -466,11 +477,46 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+        $this->logSchedule(
+            $schedule->command('dispatched-email:clean-provider-dispatch-id')->dailyAt('3:30')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CleanProviderDispatchID',
+            ),
+            name: 'CleanProviderDispatchID',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->job(HydrateHealthRank::makeJob())->dailyAt('04:00')->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'HydrateHealthRank',
+            ),
+            name: 'HydrateHealthRank',
+            type: 'job',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command(' offer:update_status_from_dates')->hourly()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'OfferUpdateStatusFromDates',
+            ),
+            name: 'OfferUpdateStatusFromDates',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
+        $this->logSchedule(
+            $schedule->command('art clone:aurora_vol_gr_offers sk eu')->twiceDailyAt(12, 18)->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'CloneAuroraVolGrOffers',
+            ),
+            name: 'CloneAuroraVolGrOffers',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
     }
 
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

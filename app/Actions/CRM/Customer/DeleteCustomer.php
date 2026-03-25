@@ -10,12 +10,16 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
+use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\Dropshipping\CustomerClient\DeleteCustomerClient;
+use App\Actions\Masters\MasterShop\RedoMasterShopTimeSeries;
 use App\Actions\Ordering\Order\DeleteOrder;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationArgument;
 use App\Models\CRM\Customer;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Console\Command;
 
@@ -41,11 +45,13 @@ class DeleteCustomer
 
     public function handle(Customer $customer, array $deletedData = [], bool $skipHydrate = false): Customer
     {
+        $registeredAt = $customer->registered_at;
+
         $this->deletedDependants = [
-            'clients'          => $customer->clients()->count(),
-            'webUsers'         => $customer->webUsers()->count(),
-            'products'         => $customer->products()->count(),
-            'orders'           => $customer->orders()->count(),
+            'clients'  => $customer->clients()->count(),
+            'webUsers' => $customer->webUsers()->count(),
+            'products' => $customer->products()->count(),
+            'orders'   => $customer->orders()->count(),
         ];
 
         $dependantDeletedData = [
@@ -83,7 +89,10 @@ class DeleteCustomer
             );
         }
 
-
+        //foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+        // Todo delete customer sales channels
+        //}
+        // Todo delete portfolios
 
 
         $customer->delete();
@@ -91,6 +100,15 @@ class DeleteCustomer
 
         if (!$skipHydrate) {
             ShopHydrateCustomers::dispatch($customer->shop);
+
+            if ($registeredAt) {
+                $registeredAtDate = Carbon::parse($registeredAt)->toDateString();
+                RedoShopTimeSeries::dispatch(shopId: $customer->shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                RedoOrganisationTimeSeries::dispatch(organisationId: $customer->organisation_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                if ($customer->master_shop_id) {
+                    RedoMasterShopTimeSeries::dispatch(masterShopId: $customer->master_shop_id, from: $registeredAtDate, to: $registeredAtDate)->delay(900);
+                }
+            }
         }
 
         return $customer;

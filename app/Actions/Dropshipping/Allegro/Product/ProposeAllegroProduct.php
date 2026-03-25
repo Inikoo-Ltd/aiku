@@ -57,7 +57,7 @@ class ProposeAllegroProduct
                         'items' => [
                             [
                                 'type'    => 'TEXT',
-                                'content' => $portfolio->customer_description ?? ''
+                                'content' => $allegroUser->sanitizeAllegroDescription($portfolio->customer_description)
                             ]
                         ]
                     ]
@@ -192,7 +192,7 @@ class ProposeAllegroProduct
             'width'       => $l,
             'height'      => $h,
             'depth'       => $product->depth ?? null,
-            'material'    => $product->material ?? null,
+            'material'    => 'Mix',
             'model'       => $product->family?->name ?? null,
             'mpn'         => $product->mpn ?? null,         // Manufacturer Part Number
             'sku'         => $product->code ?? null,
@@ -211,7 +211,7 @@ class ProposeAllegroProduct
             'width'    => ['width', 'szerokosc', 'szerokość'],
             'height'   => ['height', 'wysokosc', 'wysokość'],
             'depth'    => ['depth', 'glebokosc', 'głębokość', 'length', 'dlugosc'],
-            'material' => ['material', 'materiał'],
+            'material'   => ['material', 'materiał', 'skład', 'sklad', 'composition', 'ingredients'],
             'model'    => ['model', 'nazwa handlowa'],
             'mpn'      => ['mpn', 'part number', 'numer katalogowy'],
             'sku'      => ['sku', 'code', 'reference'],

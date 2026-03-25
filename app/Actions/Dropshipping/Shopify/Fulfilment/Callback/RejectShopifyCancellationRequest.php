@@ -25,11 +25,11 @@ class RejectShopifyCancellationRequest extends OrgAction
         try {
             $mutation = <<<'MUTATION'
                     mutation rejectCancellationRequest($id: ID!, $message: String!) {
-                            fulfillmentOrderRejectCancellationRequest(
-                                id: $id
-                                message: $message
-                            ) {
-                                fulfillmentOrder {
+                        fulfillmentOrderRejectCancellationRequest(
+                            id: $id
+                            message: $message
+                        ) {
+                            fulfillmentOrder {
                                 status
                                 requestStatus
                             }

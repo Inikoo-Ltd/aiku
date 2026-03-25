@@ -24,6 +24,8 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
 
+    public string $jobQueue = 'sales';
+
     public function getJobUniqueId(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): string
     {
         return "$assetId:$frequency->value:$from:$to";
@@ -31,6 +33,7 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
+
         $from .= ' 00:00:00';
         $to   .= ' 23:59:59';
 

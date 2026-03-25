@@ -13,7 +13,6 @@ use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
@@ -36,27 +35,28 @@ class SendResetPasswordEmail extends OrgAction
             return null;
         }
 
-        $recipient       = $webUser;
-        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
-            'is_test'       => false,
+        $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $webUser, [
             'outbox_id'     => $outbox->id,
-            'email_address' => $recipient->email,
-            'provider'      => DispatchedEmailProviderEnum::SES
+            'email_address' => $webUser->email,
         ]);
         $dispatchedEmail->refresh();
 
         $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
 
+        $additionalData = [
+            'username'      => $webUser->username ?? $webUser->email,
+            'customer_name' => ($webUser->contact_name ?? $webUser->customer?->name),
+        ];
+
         return $this->sendEmailWithMergeTags(
-            $dispatchedEmail,
-            $outbox->emailOngoingRun->sender(),
-            $outbox->emailOngoingRun?->email?->subject,
-            $emailHtmlBody,
-            '',
+            dispatchedEmail: $dispatchedEmail,
+            sender: $outbox->emailOngoingRun->sender(),
+            subject: $outbox->emailOngoingRun?->email?->subject,
+            emailHtmlBody: $emailHtmlBody,
+            unsubscribeUrl: '',
             passwordToken: $modelData['url'],
-            senderName: $outbox->emailOngoingRun->senderName(),
+            additionalData: $additionalData,
+            senderName: $outbox->emailOngoingRun->senderName()
         );
     }
-
-
 }

@@ -22,37 +22,29 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditVolGrGift extends OrgAction
 {
-    public function handle(OfferCampaign $offerCampaign): Response
+    public function handle(Offer $offer): Response
     {
-        $giftOffer     = null;
-        $giftAllowance = null;
-        $giftOfferId   = Arr::get($offerCampaign->data, 'vol_gr_gift_offer_id');
-        if ($giftOfferId) {
-            $giftOffer = Offer::find($giftOfferId);
-            /** @var OfferAllowance $giftAllowance */
-            $giftAllowance = $giftOffer->offerAllowances()->first();
-        }
 
+        $offerCampaign = $offer->offerCampaign;
 
-        if (!$giftOffer) {
-            abort(404);
-        }
-        if (!$giftAllowance) {
-            abort(423);
-        }
+        $giftOffer = $offer;
+        /** @var OfferAllowance $giftAllowance */
+        $giftAllowance = $giftOffer->offerAllowances()->first();
 
         $productOptions = [];
-        foreach (Arr::get($giftAllowance->data, 'products', []) as $product) {
-            $product = Product::find($product['id']);
+
+        foreach (Arr::get($giftAllowance->data, 'products', []) as $productData) {
+            $product = Product::find($productData['id']);
             if ($product) {
                 $productOptions[] = [
                     'id' => $product->id,
                     'code' => $product->code,
                     'name' => $product->name,
-                    'default' => Arr::get($product, 'default', false),
+                    'default' => Arr::get($productData, 'default', false),
                 ];
             }
         }
+
 
 
         return Inertia::render(
@@ -110,10 +102,6 @@ class EditVolGrGift extends OrgAction
                                     ],
                                     "value"      => $productOptions,
                                 ],
-                                // 'default'  => [
-                                //     'hidden' => true,
-                                //     'value'  => Arr::get($giftAllowance->data, 'default')
-                                // ]
                             ],
                         ],
                     ],
@@ -136,7 +124,33 @@ class EditVolGrGift extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($offerCampaign);
+        $giftOffer     = null;
+        $giftAllowance = null;
+        $giftOfferId   = Arr::get($offerCampaign->data, 'vol_gr_gift_offer_id');
+        if ($giftOfferId) {
+            $giftOffer = Offer::find($giftOfferId);
+            /** @var OfferAllowance $giftAllowance */
+            $giftAllowance = $giftOffer->offerAllowances()->first();
+        }
+
+
+        if (!$giftOffer) {
+            abort(404);
+        }
+        if (!$giftAllowance) {
+            abort(423);
+        }
+
+
+
+        return $this->handle($giftOffer);
+    }
+
+    public function inOffer(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, Offer $offer, ActionRequest $request): Response
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($offer);
     }
 
     public function getBreadcrumbs(OfferCampaign $offerCampaign, string $routeName, array $routeParameters): array

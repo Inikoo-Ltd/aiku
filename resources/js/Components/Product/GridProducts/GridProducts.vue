@@ -14,7 +14,6 @@ import { router, usePage } from "@inertiajs/vue3"
 import { debounce, forEach, findKey } from 'lodash-es'
 import qs from 'qs'
 import { trans } from 'laravel-vue-i18n'
-import { notify } from '@kyvg/vue3-notification'
 
 
 // Table Components
@@ -26,7 +25,6 @@ import Image from '@/Components/Image.vue'
 
 // Product Components
 import RecordCounter from './RecordCounter.vue'
-import ProductCard from './ProductCard.vue'
 import EmptyState from './EmptyState.vue'
 import ProductRenderEcom from '@/Components/CMS/Webpage/Products1/Ecommerce/ProductRenderEcom.vue'
 
@@ -449,13 +447,6 @@ watch(queryBuilderData, async () => {
     }
 }, { deep: true })
 
-// ============================================================================
-// PRODUCT ACTIONS
-// ============================================================================
-
-
-
-
 
 
 </script>
@@ -499,7 +490,7 @@ watch(queryBuilderData, async () => {
                 <div v-for="(item, index) in compResourceData" :key="`product-${index}`">
                     <slot name="card" :item="item">
                         <ProductRenderEcom :product="item" :key="index" :hasInBasket="item"
-                            :dettach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
+                            :detach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
                             :attach-to-favourite-route="{ name: 'retina.models.product.favourite' }"
                             :add-to-basket-route="{ name: 'retina.models.product.add-to-basket' }"
                             :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update', method: 'patch' }"

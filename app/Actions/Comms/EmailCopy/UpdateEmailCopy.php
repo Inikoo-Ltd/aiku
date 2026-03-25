@@ -43,7 +43,7 @@ class UpdateEmailCopy extends OrgAction
         $this->strict         = $strict;
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($emailCopy->dispatchedEmail->organisation, $modelData);
+        $this->initialisation($emailCopy->dispatchedEmail->outbox->organisation, $modelData);
 
         return $this->handle($emailCopy, $this->validatedData);
     }

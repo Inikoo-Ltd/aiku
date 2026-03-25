@@ -54,8 +54,6 @@ class DashboardMasterShopSalesInGroupResource extends JsonResource
         $columns = array_merge(
             $columns,
             $this->getDashboardColumnsFromArray($data, [
-                'baskets_created_grp_currency',
-                'baskets_created_grp_currency_minified',
                 'invoices',
                 'invoices_minified',
                 'invoices_delta',
@@ -88,7 +86,7 @@ class DashboardMasterShopSalesInGroupResource extends JsonResource
                         $withoutOrders = $data["registrations_without_orders_{$interval}"] ?? 0;
 
                         $columns[$columnKey][$interval]['tooltip'] = sprintf(
-                            'With orders: %s | Without orders: %s',
+                            'With product in basket: %s | With empty basket: %s',
                             number_format($withOrders),
                             number_format($withoutOrders)
                         );

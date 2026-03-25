@@ -4,9 +4,9 @@ namespace App\Actions\HumanResources\Leave;
 
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Leave;
+use App\Services\HumanResources\LeaveTypeResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Redirect;
@@ -60,8 +60,9 @@ class UpdateLeave extends OrgAction
         }
 
         $this->initialisation($leave->organisation, $request);
+        $leave->loadMissing('leaveType');
 
-        if ($leave->type !== LeaveTypeEnum::MEDICAL) {
+        if (!LeaveTypeResolver::isMedical($leave->leaveType, $leave->type)) {
             abort(403, __('Only medical leave can be edited.'));
         }
 

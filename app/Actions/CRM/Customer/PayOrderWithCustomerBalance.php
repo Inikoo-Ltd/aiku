@@ -34,7 +34,6 @@ class PayOrderWithCustomerBalance extends OrgAction
      */
     public function handle(Order $order): array
     {
-
         $toPayAmount = $order->total_amount - $order->payment_amount;
 
         if ($toPayAmount <= 0) {
@@ -44,15 +43,14 @@ class PayOrderWithCustomerBalance extends OrgAction
             ];
         }
 
-
-
-
-        if ($order->customer->balance < $toPayAmount) {
+        if ($order->customer->balance <= 0) {
             return [
                 'success' => false,
-                'reason'  => 'Insufficient balance',
+                'reason'  => 'Customer has no balance',
             ];
         }
+
+        $balance = $order->customer->balance;
 
         $paymentAccountShop = PaymentAccountShop::where('shop_id', $order->shop_id)->where('type', 'account')->where('state', 'active')->first();
         if (!$paymentAccountShop) {
@@ -63,6 +61,11 @@ class PayOrderWithCustomerBalance extends OrgAction
         }
 
         $customer = $order->customer;
+
+
+        $toPayAmount = min($toPayAmount, $balance);
+
+
 
         $paymentData = [
             'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),

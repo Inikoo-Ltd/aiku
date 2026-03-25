@@ -12,19 +12,16 @@ namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
+use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\InteractsWithOrderInBasket;
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Charge\ChargeStateEnum;
-use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Http\Resources\Sales\OrderResource;
-use App\Models\Catalogue\Product;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -33,6 +30,7 @@ class ShowRetinaEcomBasket extends RetinaAction
 {
     use IsOrder;
     use InteractsWithOrderInBasket;
+    use HasBasketDetails;
 
     public function handle(Customer $customer): Order|null
     {
@@ -56,9 +54,18 @@ class ShowRetinaEcomBasket extends RetinaAction
         $isOrder = $order instanceof Order;
 
 
-        $premiumDispatch = $order?->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $extraPacking    = $order?->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
-        $insurance       = $order?->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
+        if ($order) {
+            $charges         = $this->getBasketCharges($order);
+            $premiumDispatch = $charges['premium_dispatch'];
+            $extraPacking    = $charges['extra_packing'];
+            $insurance       = $charges['insurance'];
+        } else {
+            $premiumDispatch = null;
+            $extraPacking    = null;
+            $insurance       = null;
+        }
+
+
 
         $isUnableDispatch = false;
 
@@ -67,47 +74,12 @@ class ShowRetinaEcomBasket extends RetinaAction
         }
 
         $grGifts = [
+            'status'      => false,
             'is_eligible' => false,
-            'gifts'    => []
+            'gifts'       => []
         ];
         if ($order) {
-            $offersData = $order->shop->offers_data;
-
-            $grGifts = Arr::get($offersData, 'gr.gifts_products');
-
-            $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
-            if ($selectedGrGift) {
-                foreach ($grGifts as $key => $gift) {
-                    $product = Product::find($gift['id']);
-                    if ($product) {
-                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
-                    }
-
-                    $grGifts[$key]['id'] = $gift['id'];
-                    $grGifts[$key]['name'] = $gift['name'];
-                    if ($gift['id'] == $selectedGrGift) {
-                        $grGifts[$key]['selected'] = true;
-                    } else {
-                        $grGifts[$key]['selected'] = false;
-                    }
-                }
-            } else {
-                foreach ($grGifts as $key => $gift) {
-                    $product = Product::find($gift['id']);
-                    if ($product) {
-                        $grGifts[$key]['web_images_main'] = $product->web_images['main'];
-                    }
-
-                    $grGifts[$key]['id'] = $gift['id'];
-                    $grGifts[$key]['name'] = $gift['name'];
-                    $grGifts[$key]['selected'] = Arr::get($gift, 'default', false);
-                }
-            }
-
-            $grGifts = [
-                'is_eligible' => Arr::get($offersData, 'gr.gifts') && ($order->gross_amount >= Arr::get($offersData, 'gr.gifts_min_amount', 0)),
-                'gifts'    => $grGifts
-            ];
+            $grGifts = $this->getGrGifts($order);
         }
 
         return Inertia::render(

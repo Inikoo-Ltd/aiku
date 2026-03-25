@@ -43,7 +43,7 @@ class SaveShopDataAllegroChannel
                 if (! Arr::get($allegroUser->settings, 'shipping.id')) {
                     try {
                         $deliveryMethods = $allegroUser->getDeliveryMethods();
-                        $deliveryMethod = collect(Arr::get($deliveryMethods, 'deliveryMethods'))->firstWhere('destinationCountry', 'GB');
+                        $deliveryMethod = collect(Arr::get($deliveryMethods, 'deliveryMethods'))->firstWhere('destinationCountry', $shop->country->code);
 
                         $shipping = $allegroUser->createShippingRates([
                             'name' => 'Shipping-rates-'.$allegroUser->customerSalesChannel->slug,

@@ -28,7 +28,6 @@ class StorePlatform extends GrpAction
         /** @var Platform $platform */
         $platform = $group->platforms()->create($modelData);
         $platform->stats()->create();
-        $platform->salesIntervals()->create();
 
         return $platform;
     }

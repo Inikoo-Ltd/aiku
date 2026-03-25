@@ -8,6 +8,7 @@
 
 namespace App\Models\Goods;
 
+use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Barcode;
@@ -123,6 +124,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $scpn_number
  * @property bool $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property HealthRankEnum|null $health_rank
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -185,6 +187,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     protected $casts = [
         'status'               => TradeUnitStatusEnum::class,
+        'health_rank'          => HealthRankEnum::class,
         'data'                 => 'array',
         'marketing_dimensions' => 'array',
         'sources'              => 'array',
