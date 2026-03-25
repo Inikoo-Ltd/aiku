@@ -9,8 +9,7 @@
 namespace App\Actions\Comms\Mailshot\Filters;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
-use Illuminate\Database\Eloquent\Builder;
-use Spatie\QueryBuilder\QueryBuilder as SpatieQueryBuilder;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 
 class FilterByFamily
@@ -18,11 +17,8 @@ class FilterByFamily
     /**
      * Apply the "By Family " filter to the query.
      *
-     * @param Builder|SpatieQueryBuilder $query
-     * @param int|string $familyId
-     * @return Builder|SpatieQueryBuilder
      */
-    public function apply($query, ?array $filters)
+    public function apply(Builder $query, ?array $filters): Builder
     {
 
         $options = Arr::get($filters, 'by_family');
@@ -50,25 +46,40 @@ class FilterByFamily
 
             $query->where(function ($q) use ($familyIds, $behaviours) {
                 if (in_array('purchased', $behaviours)) {
-                    $q->orWhereHas('orders', function ($oq) use ($familyIds) {
-                        $oq->where('state', '!=', OrderStateEnum::CREATING)
-                            ->whereHas('transactions', function ($tq) use ($familyIds) {
-                                $tq->whereIn('family_id', $familyIds);
+                    $q->orWhereExists(function ($sub) use ($familyIds) {
+                        $sub->selectRaw('1')
+                            ->from('orders')
+                            ->whereRaw('orders.customer_id = customers.id')
+                            ->where('state', '!=', OrderStateEnum::CREATING)
+                            ->whereExists(function ($tsub) use ($familyIds) {
+                                $tsub->selectRaw('1')
+                                    ->from('transactions')
+                                    ->whereRaw('transactions.order_id = orders.id')
+                                    ->whereIn('family_id', $familyIds);
                             });
                     });
                 }
 
                 if (in_array('favourited', $behaviours)) {
-                    $q->orWhereHas('favourites', function ($favouriteQuery) use ($familyIds) {
-                        $favouriteQuery->whereIn('family_id', $familyIds);
+                    $q->orWhereExists(function ($fsub) use ($familyIds) {
+                        $fsub->selectRaw('1')
+                            ->from('favourites')
+                            ->whereRaw('favourites.customer_id = customers.id')
+                            ->whereIn('family_id', $familyIds);
                     });
                 }
 
                 if (in_array('basket_not_purchased', $behaviours)) {
-                    $q->orWhereHas('orders', function ($oq) use ($familyIds) {
-                        $oq->where('state', OrderStateEnum::CREATING)
-                            ->whereHas('transactions', function ($tq) use ($familyIds) {
-                                $tq->whereIn('family_id', $familyIds);
+                    $q->orWhereExists(function ($sub) use ($familyIds) {
+                        $sub->selectRaw('1')
+                            ->from('orders')
+                            ->whereRaw('orders.customer_id = customers.id')
+                            ->where('state', '=', OrderStateEnum::CREATING)
+                            ->whereExists(function ($tsub) use ($familyIds) {
+                                $tsub->selectRaw('1')
+                                    ->from('transactions')
+                                    ->whereRaw('transactions.order_id = orders.id')
+                                    ->whereIn('family_id', $familyIds);
                             });
                     });
                 }

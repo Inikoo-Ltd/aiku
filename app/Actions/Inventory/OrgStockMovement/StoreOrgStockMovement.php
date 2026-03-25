@@ -45,7 +45,11 @@ class StoreOrgStockMovement extends OrgAction
         data_set($modelData, 'grp_amount', Arr::get($modelData, 'org_amount') * GetCurrencyExchange::run($orgStock->organisation->currency, $orgStock->group->currency), overwrite: false);
 
         $class = OrgStockMovementClassEnum::MOVEMENT;
-        if (in_array($modelData['type'], [OrgStockMovementTypeEnum::ASSOCIATE, OrgStockMovementTypeEnum::DISASSOCIATE])) {
+        if (in_array($modelData['type'], [
+            OrgStockMovementTypeEnum::ASSOCIATE,
+            OrgStockMovementTypeEnum::DISASSOCIATE,
+            OrgStockMovementTypeEnum::AUDIT
+        ])) {
             $class = OrgStockMovementClassEnum::HELPER;
         }
 
@@ -82,11 +86,9 @@ class StoreOrgStockMovement extends OrgAction
                     ]
                 );
             }
+            OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
+            OrgStockHydrateHasBeenInWarehouse::dispatch($orgStock)->delay($this->hydratorsDelay);
         }
-
-        OrgStockHydrateMovements::dispatch($orgStock)->delay($this->hydratorsDelay);
-        OrgStockHydrateHasBeenInWarehouse::dispatch($orgStock)->delay($this->hydratorsDelay);
-
 
         return $orgStockMovement;
     }
@@ -94,13 +96,15 @@ class StoreOrgStockMovement extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'date'         => ['sometimes', 'date'],
-            'quantity'     => ['required', 'numeric'],
-            'org_amount'   => ['sometimes', 'numeric'],
-            'data'         => ['sometimes', 'array'],
-            'type'         => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
-            'is_delivered' => ['sometimes', 'boolean'],
-            'is_received'  => ['sometimes', 'boolean'],
+            'date'             => ['sometimes', 'date'],
+            'quantity'         => ['sometimes', 'nullable', 'numeric'],
+            'audited_quantity' => ['sometimes', 'nullable', 'numeric'],
+            'org_amount'       => ['sometimes', 'numeric'],
+            'data'             => ['sometimes', 'array'],
+            'type'             => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
+            'is_delivered'     => ['sometimes', 'boolean'],
+            'is_received'      => ['sometimes', 'boolean'],
+            'fixed'            => ['sometimes', 'boolean'],
         ];
         if (!$this->strict) {
             $rules['fetched_at'] = ['sometimes', 'date'];

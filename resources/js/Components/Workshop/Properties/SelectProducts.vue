@@ -273,7 +273,7 @@ const listType = [
         value: 'current-family',
         information: trans('Displays random products from the current family (:_family)', { _family: props.family?.name || '' })
     },
-    {
+  /*   {
         label: trans('Luigi: Top Trending'),
         value: 'luigi-trends',
         show_new_until: '2025-09-27',
@@ -296,7 +296,7 @@ const listType = [
         value: 'luigi-item_detail_alternatives',
         show_new_until: '2025-09-27',
         is_disabled: true
-    }
+    } */
 ]
 </script>
 

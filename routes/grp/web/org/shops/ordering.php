@@ -9,6 +9,7 @@
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
 use App\Actions\Catalogue\Shop\External\Faire\GetFairePackingPdfSlip;
+use App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
@@ -37,6 +38,7 @@ Route::get('/orders/', IndexOrders::class)->name('orders.index');
 
 Route::get('/orders/delivery_notes', IndexDeliveryNotesInOrdering::class)->name('delivery-notes.index');
 Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderingInShop'])->name('delivery-notes.show');
+Route::patch('delivery-note/{deliveryNote}/set-temp-picker', SetTempPickerToDeliveryNote::class)->name('orders.show.delivery-note.temp-picker');
 
 Route::prefix('orders/{order}')->group(function () {
     Route::get('', ShowOrder::class)->name('orders.show');

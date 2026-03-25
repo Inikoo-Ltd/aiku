@@ -97,16 +97,16 @@ class StoreEmployee extends OrgAction
                 StoreUser::make()->action(
                     $employee,
                     [
-                        'username'          => Arr::get($credentials, 'username'),
-                        'password'          => Arr::get(
+                        'username' => Arr::get($credentials, 'username'),
+                        'password' => Arr::get(
                             $credentials,
                             'password',
                             (app()->isLocal() ? 'hello' : wordwrap(Str::random(), 4, '-', true))
                         ),
-                        'contact_name'      => $employee->contact_name,
-                        'email'             => $employee->work_email,
-                        'reset_password'    => Arr::get($credentials, 'reset_password', true),
-                        'status'            => $status,
+                        'contact_name' => $employee->contact_name,
+                        'email' => $employee->work_email,
+                        'reset_password' => Arr::get($credentials, 'reset_password', true),
+                        'status' => $status,
                         'user_model_status' => $status
                     ],
                 );
@@ -138,7 +138,7 @@ class StoreEmployee extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'worker_number'                           => [
+            'worker_number' => [
                 'required',
                 'max:64',
                 'alpha_dash',
@@ -150,8 +150,8 @@ class StoreEmployee extends OrgAction
                 ),
 
             ],
-            'employment_start_at'                     => ['sometimes', 'nullable', 'date'],
-            'work_email'                              => [
+            'employment_start_at' => ['sometimes', 'nullable', 'date'],
+            'work_email' => [
                 'sometimes',
                 'nullable',
                 'email',
@@ -162,7 +162,7 @@ class StoreEmployee extends OrgAction
                     ]
                 )
             ],
-            'alias'                                   => [
+            'alias' => [
                 'required',
                 'string',
                 $this->strict ? 'max:24' : 'max:255',
@@ -173,19 +173,19 @@ class StoreEmployee extends OrgAction
                     ]
                 ),
             ],
-            'contact_name'                            => ['required', 'string', 'max:256'],
-            'date_of_birth'                           => ['sometimes', 'nullable', 'date', 'before_or_equal:today'],
-            'job_title'                               => ['sometimes', 'nullable', 'string', 'max:256'],
-            'state'                                   => ['required', Rule::enum(EmployeeStateEnum::class)],
-            'positions'                               => ['sometimes', 'array'],
-            'positions.*.slug'                        => ['sometimes', 'string'],
-            'positions.*.scopes'                      => ['sometimes', 'array'],
+            'contact_name' => ['required', 'string', 'max:256'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before_or_equal:today'],
+            'job_title' => ['sometimes', 'nullable', 'string', 'max:256'],
+            'state' => ['required', Rule::enum(EmployeeStateEnum::class)],
+            'positions' => ['sometimes', 'array'],
+            'positions.*.slug' => ['sometimes', 'string'],
+            'positions.*.scopes' => ['sometimes', 'array'],
             'positions.*.scopes.organisations.slug.*' => ['sometimes', Rule::exists('organisations', 'slug')->where('group_id', $this->organisation->group_id)],
-            'positions.*.scopes.warehouses.slug.*'    => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
-            'positions.*.scopes.fulfilments.slug.*'   => ['sometimes', Rule::exists('fulfilments', 'slug')->where('organisation_id', $this->organisation->id)],
-            'positions.*.scopes.shops.slug.*'         => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
-            'email'                                   => ['sometimes', 'nullable', 'email'],
-            'username'                                => [
+            'positions.*.scopes.warehouses.slug.*' => ['sometimes', Rule::exists('warehouses', 'slug')->where('organisation_id', $this->organisation->id)],
+            'positions.*.scopes.fulfilments.slug.*' => ['sometimes', Rule::exists('fulfilments', 'slug')->where('organisation_id', $this->organisation->id)],
+            'positions.*.scopes.shops.slug.*' => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
+            'email' => ['sometimes', 'nullable', 'email'],
+            'username' => [
                 'nullable',
                 new AlphaDashDot(),
                 new IUnique(
@@ -195,15 +195,19 @@ class StoreEmployee extends OrgAction
                     ]
                 )
             ],
-            'password'                                => ['exclude_if:username,null', 'required', 'max:255', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)],
-            'reset_password'                          => ['exclude_if:username,null', 'sometimes', 'boolean'],
-            'user_model_status'                       => ['exclude_if:username,null', 'sometimes', 'boolean'],
-            'emergency_contact'                       => ['sometimes', 'nullable', 'string', 'max:1024'],
-            'type'                                    => ['required', Rule::enum(EmployeeTypeEnum::class)],
-            'contact_address'                         => ['sometimes', 'nullable', new ValidAddress()],
-            'notes'                                   => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'identity_document_type'                  => ['sometimes', 'nullable', 'string', 'max:256'],
-            'identity_document_number'                => ['sometimes', 'nullable', 'string', 'max:256'],
+            'password' => ['exclude_if:username,null', 'required', 'max:255', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)],
+            'reset_password' => ['exclude_if:username,null', 'sometimes', 'boolean'],
+            'user_model_status' => ['exclude_if:username,null', 'sometimes', 'boolean'],
+            'emergency_contact' => ['sometimes', 'nullable', 'array'],
+            'emergency_contact.contact' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'emergency_contact.phone_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'emergency_contact.address' => ['sometimes', 'nullable', 'string', 'max:512'],
+            'emergency_contact.status' => ['sometimes', 'nullable', 'string', 'max:512'],
+            'type' => ['required', Rule::enum(EmployeeTypeEnum::class)],
+            'contact_address' => ['sometimes', 'nullable', new ValidAddress()],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'identity_document_type' => ['sometimes', 'nullable', 'string', 'max:256'],
+            'identity_document_number' => ['sometimes', 'nullable', 'string', 'max:256'],
         ];
 
         if (!$this->strict) {
@@ -221,8 +225,8 @@ class StoreEmployee extends OrgAction
         if (!$audit) {
             Employee::disableAuditing();
         }
-        $this->asAction       = true;
-        $this->strict         = $strict;
+        $this->asAction = true;
+        $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         if (class_basename($parent) === 'Workplace') {
             $organisation = $parent->organisation;
@@ -250,7 +254,7 @@ class StoreEmployee extends OrgAction
     {
         return Redirect::route('grp.org.hr.employees.show', [
             'organisation' => $employee->organisation->slug,
-            'employee'     => $employee->slug,
+            'employee' => $employee->slug,
         ]);
     }
 }

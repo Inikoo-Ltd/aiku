@@ -10,6 +10,7 @@ namespace App\Models\Comms;
 
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $email
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TestEmailRecipient newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TestEmailRecipient newQuery()
@@ -33,4 +35,9 @@ class TestEmailRecipient extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'test_email_recipient_has_dispatched_emails');
+    }
 }

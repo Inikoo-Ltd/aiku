@@ -79,7 +79,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\InventoryDailySnapshot> $inventoryDailySnapshots
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
@@ -87,7 +86,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
- * @property-read \App\Models\Inventory\OrgStockSalesInterval|null $salesIntervals
  * @property-read \App\Models\Inventory\OrgStockStats|null $stats
  * @property-read Stock|null $stock
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockTimeSeries> $timeSeries
@@ -189,20 +187,10 @@ class OrgStock extends Model implements Auditable
         return $this->hasOne(OrgStockIntervals::class);
     }
 
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(OrgStockSalesInterval::class);
-    }
-
     public function orgSupplierProducts(): BelongsToMany
     {
         return $this->belongsToMany(OrgSupplierProduct::class, 'org_stock_has_org_supplier_products')
             ->withPivot(['status', 'local_priority'])->withTimestamps();
-    }
-
-    public function getMainOrgSupplierProduct(): OrgSupplierProduct
-    {
-        return $this->orgSupplierProducts()->where('status', true)->orderBy('local_priority', 'desc')->first();
     }
 
     public function tradeUnits(): MorphToMany
@@ -213,11 +201,6 @@ class OrgStock extends Model implements Auditable
     public function timeSeries(): HasMany
     {
         return $this->hasMany(OrgStockTimeSeries::class);
-    }
-
-    public function inventoryDailySnapshots(): HasMany
-    {
-        return $this->hasMany(InventoryDailySnapshot::class);
     }
 
     public function products(): BelongsToMany

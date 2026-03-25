@@ -60,6 +60,9 @@ const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
+
+/* if(layout?.rightbasket?.show) set(layout, ['rightbasket', 'show'], false) */
+
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
         const irisData = localStorage.getItem('iris');
@@ -130,7 +133,6 @@ onMounted(() => {
 
     if(layout?.iris?.is_logged_in){
         fetchHasInBasket()
-        if(layout.rightbasket) set(layout, ['rightbasket', 'show'], false)
     }
 })
 
@@ -192,6 +194,12 @@ fetchSidebarOnce()
 watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     if (typeof layout.rightbasket?.show === 'undefined') {
         set(layout, 'rightbasket.show', true)
+    }
+})
+
+watch(() => layout.iris_variables?.cart_count, (newVal) => {
+    if (newVal <= 0) {
+        set(layout, 'rightbasket.show', false)
     }
 })
 

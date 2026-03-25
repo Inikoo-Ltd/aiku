@@ -47,7 +47,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Inventory\OrgStockFamilyIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStock> $orgStocks
  * @property-read Organisation $organisation
- * @property-read \App\Models\Inventory\OrgStockFamilySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Inventory\OrgStockFamilyStats|null $stats
  * @property-read StockFamily|null $stockFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockFamilyTimeSeries> $timeSeries
@@ -109,11 +108,6 @@ class OrgStockFamily extends Model
     public function intervals(): HasOne
     {
         return $this->hasOne(OrgStockFamilyIntervals::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(OrgStockFamilySalesIntervals::class);
     }
 
     public function stockFamily(): BelongsTo

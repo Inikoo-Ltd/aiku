@@ -41,7 +41,6 @@ class ShowIrisWebpagesList
                 $query = DB::table('webpages')
                     ->leftJoin('products', 'webpages.model_id', '=', 'products.id')
                     ->leftJoin('assets', 'products.asset_id', '=', 'assets.id')
-                    ->leftJoin('asset_sales_intervals', 'assets.id', '=', 'asset_sales_intervals.asset_id')
                     ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url','sales_1q'])
                     ->where('webpages.website_id', $website->id)
                     ->whereNull('webpages.deleted_at')
@@ -53,7 +52,6 @@ class ShowIrisWebpagesList
             } elseif ($mode == 'families') {
                 $query = DB::table('webpages')
                     ->leftJoin('product_categories', 'webpages.model_id', '=', 'product_categories.id')
-                    ->leftJoin('product_category_sales_intervals', 'product_categories.id', '=', 'product_category_sales_intervals.product_category_id')
                     ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url','sales_1q'])
                     ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE->value)
                     ->where('webpages.website_id', $website->id)
@@ -71,10 +69,6 @@ class ShowIrisWebpagesList
             // Iterate using a cursor (no chunkById)
             foreach ($query->get() as $row) {
                 print "$row->canonical_url\n";
-                //                $url = $domain . $row->url;
-                //                if ($url != $row->canonical_url) {
-                //                    print $url . "\n";
-                //                }
                 // Flush output buffers periodically to stream to the client
                 if (function_exists('flush')) {
                     @flush();

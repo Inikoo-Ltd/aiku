@@ -9,41 +9,72 @@
 namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\Ses\SendSesEmail;
+use App\Models\Comms\ChatEmailRecipient;
 use App\Models\Comms\DispatchedEmail;
-use App\Models\Comms\OutBoxHasSubscriber;
+use App\Models\Comms\ExternalSubscriberEmailRecipient;
+use App\Models\Comms\TestEmailRecipient;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 trait WithSendBulkEmails
 {
     use WithProcessEmailStyles;
 
-    public function sendEmailWithMergeTags(DispatchedEmail $dispatchedEmail, string $sender, string $subject, string $emailHtmlBody, ?string $unsubscribeUrl = null, ?string $passwordToken = null, ?string $invoiceUrl = null, array $additionalData = [], ?string $senderName = null, bool $isTest = false): DispatchedEmail
-    {
+    public function sendEmailWithMergeTags(
+        DispatchedEmail $dispatchedEmail,
+        string $sender,
+        string $subject,
+        string $emailHtmlBody,
+        ?string $unsubscribeUrl = null,
+        ?string $passwordToken = null,
+        ?string $invoiceUrl = null,
+        array $additionalData = [],
+        ?string $senderName = null,
+        bool $isTest = false,
+        bool $debug = false
+    ): DispatchedEmail {
+
+
         $html = $emailHtmlBody;
-
         $html = $this->processStyles($html);
-        if (preg_match_all("/{{(.*?)}}/", $html, $matches)) {
-            foreach ($matches[1] as $i => $placeholder) {
-                $placeholder = $this->replaceMergeTags($placeholder, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
-                $html        = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
-            }
-        }
 
-        if (preg_match_all("/\[(.*?)]/", $html, $matches)) {
-            foreach ($matches[1] as $i => $tag) {
-                $placeholder = $this->replaceMergeTags($tag, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
-                $html        = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
+        // Remove MSO conditional comments temporarily
+        $msoComments = [];
+        $html        = preg_replace_callback('/<!--\[if mso\]>.*?<!\[endif\]-->/s', function ($matches) use (&$msoComments) {
+            $placeholder               = '___MSO_COMMENT_'.count($msoComments).'___';
+            $msoComments[$placeholder] = $matches[0];
+
+            return $placeholder;
+        }, $html);
+
+        $mergeTagCache = [];
+        $callback      = function ($matches) use ($dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData, &$mergeTagCache) {
+            $fullTag    = $matches[0];
+            $tagContent = $matches[1];
+
+            if (! array_key_exists($fullTag, $mergeTagCache)) {
+                $mergeTagCache[$fullTag] = (string) $this->replaceMergeTags($tagContent, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
             }
+
+            return $mergeTagCache[$fullTag];
+        };
+
+        $html = preg_replace_callback('/{{(.*?)}}/', $callback, $html);
+
+
+        $html = preg_replace_callback('/\[(.*?)]/', $callback, $html);
+
+        // Restore MSO conditional comments
+        if ($msoComments) {
+            $html = str_replace(array_keys($msoComments), array_values($msoComments), $html);
         }
 
         $html = preg_replace('/\R+/', '', $html);
-
-
 
         return SendSesEmail::run(
             subject: $subject,
@@ -52,7 +83,8 @@ trait WithSendBulkEmails
             sender: $sender,
             unsubscribeUrl: $unsubscribeUrl,
             senderName: $senderName,
-            isTest: $isTest
+            isTest: $isTest,
+            debug: $debug
         );
     }
 
@@ -61,18 +93,34 @@ trait WithSendBulkEmails
         $originalPlaceholder = $placeholder;
         $placeholder         = Str::kebab(trim($placeholder));
 
-        if ($dispatchedEmail->recipient instanceof WebUser) {
-            $customerName = $dispatchedEmail->recipient->customer->name;
-        } elseif ($dispatchedEmail->recipient instanceof OutBoxHasSubscriber || $dispatchedEmail->recipient instanceof User) {
-            $customerName = Arr::get($additionalData, 'customer_name');
-        } else {
-            $customerName = $dispatchedEmail->recipient->name ?? 'Customer name undefined';
+        if ($placeholder === 'customer-name') {
+            if (Arr::get($additionalData, 'customer_name')) {
+                return Arr::get($additionalData, 'customer_name');
+            }
+
+            if ($webUserHasDispatchedEmail = $this->getWebUserDispatch($dispatchedEmail->id)) {
+                $customerName = WebUser::find($webUserHasDispatchedEmail->web_user_id)?->customer?->name ?? '';
+            } elseif ($userHasDispatchedEmail = $this->getUserDispatch($dispatchedEmail->id)) {
+                $customerName = Arr::get($additionalData, 'customer_name') ?? User::find($userHasDispatchedEmail->user_id)?->contact_name ?? '';
+            } elseif ($customerHasDispatchedEmail = $this->getCustomerDispatch($dispatchedEmail->id)) {
+                $customerName = Customer::find($customerHasDispatchedEmail->customer_id)?->name ?? '';
+            } elseif ($externalSubscriberHasDispatchedEmail = $this->getExternalSubscriberDispatch($dispatchedEmail->id)) {
+                $customerName = ExternalSubscriberEmailRecipient::find($externalSubscriberHasDispatchedEmail->external_subscriber_email_recipient_id)?->name ?? '';
+            } elseif ($testEmailRecipientHasDispatchedEmail = $this->getTestEmailRecipientDispatch($dispatchedEmail->id)) {
+                $customerName = TestEmailRecipient::find($testEmailRecipientHasDispatchedEmail->test_email_recipient_id)?->name ?? '';
+            } elseif ($chatEmailRecipientHasDispatchedEmail = $this->getChatEmailRecipientDispatch($dispatchedEmail->id)) {
+                $customerName = ChatEmailRecipient::find($chatEmailRecipientHasDispatchedEmail->chat_email_recipient_id)?->name ?? '';
+            } else {
+                $customerName = Arr::get($additionalData, 'customer_name') ?? 'Customer name undefined';
+            }
+
+            return $customerName;
         }
+
 
         /** @noinspection HtmlUnknownAttribute */
         return match ($placeholder) {
-            'username' => $this->getUsername($dispatchedEmail->recipient),
-            'customer-name' => $customerName,
+            'username' => $this->getUsername($dispatchedEmail->id),
             'rejected-notes' => Arr::get($additionalData, 'rejected_notes'),
             'invoice_-url' => $invoiceUrl,
             'reset_-password_-u-r-l' => $passwordToken,
@@ -145,10 +193,14 @@ trait WithSendBulkEmails
         };
     }
 
-    public function getUsername(WebUser|Customer|Prospect|User $recipient): string
+    public function getUsername($dispatchedEmailId): string
     {
-        if ($recipient instanceof WebUser || $recipient instanceof User) {
-            return $recipient->username;
+        if ($webUserDispatch = $this->getWebUserDispatch($dispatchedEmailId)) {
+            return WebUser::find($webUserDispatch->web_user_id)?->username ?? '';
+        }
+
+        if ($userDispatch = $this->getUserDispatch($dispatchedEmailId)) {
+            return User::find($userDispatch->user_id)?->username ?? '';
         }
 
         return '';
@@ -163,5 +215,47 @@ trait WithSendBulkEmails
         } else {
             return $recipient->company_name ?? $recipient->username;
         }
+    }
+
+    private function getWebUserDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('web_user_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getUserDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('user_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getCustomerDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('customer_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getExternalSubscriberDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('external_subscriber_email_recipient_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getTestEmailRecipientDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('test_email_recipient_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
+    }
+
+    private function getChatEmailRecipientDispatch(int $dispatchedEmailId): ?object
+    {
+        return DB::table('chat_email_recipient_has_dispatched_emails')
+            ->where('dispatched_email_id', $dispatchedEmailId)
+            ->first();
     }
 }

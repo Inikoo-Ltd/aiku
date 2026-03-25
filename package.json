@@ -103,7 +103,7 @@
         "html2canvas": "^1.4.1",
         "js-cookie": "^3.0.5",
         "jsbarcode": "^3.11.6",
-        "jspdf": "^3.0.1",
+        "jspdf": "4.2.1",
         "jsvat-next": "^3.0.4",
         "laravel-echo": "^1.15.3",
         "laravel-vue-i18n": "^2.8.0",

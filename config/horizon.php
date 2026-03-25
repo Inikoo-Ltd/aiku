@@ -42,7 +42,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This is the name of the Redis connection where Horizon will store the
-    | meta information required for it to function. It includes the list
+    | meta-information required for it to function. It includes the list
     | of supervisors, failed jobs, job metrics, and other information.
     |
     */
@@ -278,7 +278,7 @@ return [
         ],
         'dropshipping'     => [
             'connection'          => 'redis',
-            'queue'               => ['shopify', 'woo', 'ebay', 'ds'],
+            'queue'               => ['ds', 'shopify', 'ebay', 'woo'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
@@ -308,9 +308,9 @@ return [
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
         ],
-        'ses'           => [
+        'ses'              => [
             'connection'      => 'redis',
-            'queue'           => ['ses'],
+            'queue'           => ['ses-analytics','ses-send', 'ses'],
             'balance'         => 'auto',
             'maxProcesses'    => 2,
             'maxTime'         => 0,
@@ -356,7 +356,7 @@ return [
             'long-running'     => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 16),
             ],
-            'ses'     => [
+            'ses'              => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
 
@@ -386,7 +386,7 @@ return [
             'long-running'     => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 2),
             ],
-            'ses'     => [
+            'ses'              => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
 
@@ -408,16 +408,16 @@ return [
             'urgent'           => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 5),
             ],
-            'low-priority' => [
+            'low-priority'     => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
             ],
-            'dropshipping' => [
+            'dropshipping'     => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
             ],
-            'long-running' => [
+            'long-running'     => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 10),
             ],
-            'ses'     => [
+            'ses'              => [
                 'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
             ],
 

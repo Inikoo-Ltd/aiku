@@ -10,6 +10,7 @@ namespace App\Models\Comms;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\InShop;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -20,6 +21,7 @@ use App\Models\Traits\InShop;
  * @property string $email
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
@@ -37,4 +39,10 @@ class ChatEmailRecipient extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'chat_email_recipient_has_dispatched_emails');
+    }
+
 }

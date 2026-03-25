@@ -41,7 +41,6 @@ class WebpageRecordSearch
             'sections'          => ['web'],
             'haystack_tier_1'   => trim($webpage->code.' '.$webpage->url),
             'result'            => [
-                'xx'          => $webpage,
                 'route'       => match ($webpage->website->type) {
                     WebsiteTypeEnum::FULFILMENT => [
                         'name'       => 'grp.org.fulfilments.show.web.webpages.show',

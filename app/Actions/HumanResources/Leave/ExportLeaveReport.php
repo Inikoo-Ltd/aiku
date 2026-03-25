@@ -10,6 +10,7 @@ use App\Models\HumanResources\Leave;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -25,7 +26,13 @@ class ExportLeaveReport extends OrgAction
         return [
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
-            'type' => ['nullable', 'string'],
+            'type' => [
+                'nullable',
+                'string',
+                Rule::exists('leave_types', 'code')->where(function ($query) {
+                    $query->where('organisation_id', $this->organisation->id);
+                }),
+            ],
             'status' => ['nullable', 'string'],
             'department' => ['nullable', 'string', 'max:255'],
             'team' => ['nullable', 'string', 'max:255'],
@@ -52,7 +59,7 @@ class ExportLeaveReport extends OrgAction
 
         $query = Leave::query()
             ->where('organisation_id', $this->organisation->id)
-            ->with(['employee', 'approver']);
+            ->with(['employee', 'approver', 'leaveType']);
 
         $this->applyFilters($query, $filters);
 

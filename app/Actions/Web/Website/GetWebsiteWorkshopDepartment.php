@@ -23,10 +23,13 @@ class GetWebsiteWorkshopDepartment
 {
     use AsObject;
 
-    public function handle(Website $website): array
+    public function handle(Website $website, $type = null): array
     {
-        $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::SUB_DEPARTMENT->value)->whereJsonContains('website_type', $website->shop->type)->get();
-        ;
+        if ($type == 'families_overview') {
+            $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILIES_OVERVIEW->value)->whereJsonContains('website_type', $website->shop->type)->get();
+        } else {
+            $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::SUB_DEPARTMENT->value)->whereJsonContains('website_type', $website->shop->type)->get();
+        }
 
         // $webBlockTypes->each(function ($blockType) use ($website, $department) {
         //     $data = $blockType->data ?? [];

@@ -81,7 +81,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Shop> $parentShops
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $parentSubDepartments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $products
- * @property-read \App\Models\Catalogue\CollectionSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
@@ -145,11 +144,6 @@ class Collection extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(CollectionStats::class);
-    }
-
-    public function salesIntervals(): HasOne
-    {
-        return $this->hasOne(CollectionSalesIntervals::class);
     }
 
     public function orderingIntervals(): HasOne

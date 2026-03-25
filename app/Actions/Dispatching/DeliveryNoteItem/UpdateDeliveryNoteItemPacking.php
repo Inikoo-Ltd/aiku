@@ -10,9 +10,10 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\Packing\StorePacking;
-use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -35,17 +36,16 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): DeliveryNoteItem
     {
         $deliveryNote = $deliveryNoteItem->deliveryNote;
-        $oldState = $deliveryNote->state;
+        $oldState     = $deliveryNote->state;
 
         StorePacking::make()->action($deliveryNoteItem, $this->user, []);
 
         $siblingDeliveryNoteItems = $deliveryNote->deliveryNoteItems()->with('packings')->get();
 
         // Ignore deliveryNoteItem with quantity_not_picked
-        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => empty((float) $item->quantity_not_picked) && $item->packings->count() == 0);
+        $hasUnfinishedPackings = $siblingDeliveryNoteItems->filter(fn ($item) => empty((float)$item->quantity_not_picked) && $item->packings->count() == 0);
 
         if ($oldState != DeliveryNoteStateEnum::PACKED && $hasUnfinishedPackings->count() == 0) {
-
             foreach ($deliveryNote->trolleys as $trolley) {
                 DB::table('delivery_note_has_trolleys')
                     ->where('delivery_note_id', $deliveryNote->id)->where('trolley_id', $trolley->id)->delete();
@@ -60,15 +60,16 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
             ] : $deliveryNote->parcels;
 
             UpdateDeliveryNote::make()->action($deliveryNote, [
-                'packed_at' => now(),
+                'packed_at'      => now(),
                 'packer_user_id' => $this->user->id,
-                'state' => DeliveryNoteStateEnum::PACKED->value,
-                'parcels'   => $defaultParcel
+                'state'          => DeliveryNoteStateEnum::PACKED->value,
+                'parcels'        => $defaultParcel
             ]);
 
+            DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
+                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first());
             }
             $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
             $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKED);

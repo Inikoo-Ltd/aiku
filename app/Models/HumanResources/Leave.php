@@ -3,7 +3,6 @@
 namespace App\Models\HumanResources;
 
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +17,6 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int $organisation_id
  * @property int $employee_id
  * @property string $employee_name
- * @property LeaveTypeEnum $type
  * @property \Illuminate\Support\Carbon $start_date
  * @property \Illuminate\Support\Carbon $end_date
  * @property int $duration_days
@@ -31,9 +29,14 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property bool $is_half_day
+ * @property string $session
+ * @property string $type
+ * @property int|null $leave_type_id
  * @property-read User|null $approver
  * @property-read \App\Models\HumanResources\Employee $employee
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\HumanResources\LeaveType|null $leaveType
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Leave newModelQuery()
@@ -54,9 +57,9 @@ class Leave extends Model implements HasMedia
         'start_date'   => 'date',
         'end_date'     => 'date',
         'approved_at'  => 'datetime',
-        'type'         => LeaveTypeEnum::class,
         'status'       => LeaveStatusEnum::class,
         'data'         => 'array',
+        'is_half_day'  => 'boolean',
     ];
 
     protected $guarded = [];
@@ -69,6 +72,11 @@ class Leave extends Model implements HasMedia
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function leaveType(): BelongsTo
+    {
+        return $this->belongsTo(LeaveType::class);
     }
 
     public function registerMediaCollections(): void

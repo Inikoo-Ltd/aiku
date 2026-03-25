@@ -56,9 +56,6 @@ class DispatchOrder extends OrgAction
                 ];
                 if ($transaction->quantity_picked > 0) {
                     data_set($dataToUpdate, 'dispatched_at', $date);
-                    if ($transaction->asset) {
-                        $transaction->asset->orderingStats()->update(['last_order_dispatched_at' => $date]);
-                    }
                 }
                 $transaction->update($dataToUpdate);
             }

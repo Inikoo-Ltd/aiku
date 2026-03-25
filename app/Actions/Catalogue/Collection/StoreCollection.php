@@ -55,7 +55,6 @@ class StoreCollection extends OrgAction
         $collection = Collection::create($modelData);
 
         $collection->stats()->create();
-        $collection->salesIntervals()->create();
         $collection->orderingIntervals()->create();
         $collection->orderingStats()->create();
 

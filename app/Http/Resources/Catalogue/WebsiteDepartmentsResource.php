@@ -63,6 +63,12 @@ class WebsiteDepartmentsResource extends JsonResource
             'invoices'                => $this->invoices_all,
             'organisation_name'       => $this->organisation_name,
             'organisation_slug'       => $this->organisation_slug,
+            'families_route'          => [
+                'name' => 'grp.json.workshop.families_under_department.index',
+                'parameters' => [
+                    'department'   => $this->slug
+                ]
+            ],
             'sub_departments_route'   => [
                 'name' => 'grp.json.workshop.sub_departments.index',
                 'parameters' => [

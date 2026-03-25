@@ -8,6 +8,7 @@
 
 namespace App\Actions\Maintenance\Ordering;
 
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -47,22 +48,24 @@ class RepairOrderAmountsAfterMigration
             }
 
 
-            if ($oldHistoricAssetId != $newHistoricAssetId) {
-                $currentGross = $transaction->gross_amount;
+            //   if ($oldHistoricAssetId != $newHistoricAssetId) {
+            $currentGross = $transaction->gross_amount;
 
-                $newGrossAmount = $product->currentHistoricProduct->price * $transaction->quantity_ordered;
+            $newGrossAmount = $product->currentHistoricProduct->price * $transaction->quantity_ordered;
 
-                $diff = abs($currentGross - $newGrossAmount);
-                if ($diff > 0.00001) {
-                    $command->error("Product: $product->slug - old net amount: $currentGross - new net amount: $newGrossAmount");
-                } else {
-                    $command->info("Product: $product->slug - old historic asset id: $oldHistoricAssetId - new historic asset id: $newHistoricAssetId");
-                    $transaction->update([
-                        'historic_asset_id' => $newHistoricAssetId,
-                    ]);
-                }
-            }
+            $diff = abs($currentGross - $newGrossAmount);
+            // if ($diff < 0.00001) {
+            //     $command->error("Product: $product->slug - old net amount: $currentGross - new net amount: $newGrossAmount");
+            //  } else {
+            $command->info("Product: $product->slug - old historic asset id: $oldHistoricAssetId - new historic asset id: $newHistoricAssetId");
+            $transaction->update([
+                'historic_asset_id' => $newHistoricAssetId,
+                'gross_amount'      => $newGrossAmount
+            ]);
+            //   }
+            //    }
         }
+        CalculateOrderTotalAmounts::run(order: $order, forceRecalculate: true);
     }
 
 

@@ -28,7 +28,7 @@ class HydrateEmailBulkRuns
     public function handle(EmailBulkRun $emailBulkRun): void
     {
         EmailBulkRunHydrateCumulativeDispatchedEmails::run($emailBulkRun, DispatchedEmailStateEnum::SENT);
-        EmailBulkRunHydrateDispatchedEmails::run($emailBulkRun);
+        EmailBulkRunHydrateDispatchedEmails::run($emailBulkRun->id);
     }
 
 }
