@@ -25,6 +25,9 @@ class SendCustomerApprovedEmail extends OrgAction
 
     public function handle(Customer $customer): ?DispatchedEmail
     {
-        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::REGISTRATION_APPROVED);
+        $additionalData = [
+            "customer_name" => $customer->name
+        ];
+        return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::REGISTRATION_APPROVED, additionalData: $additionalData);
     }
 }

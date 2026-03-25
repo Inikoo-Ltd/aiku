@@ -25,6 +25,7 @@ class SendBackToStockToCustomerEmail implements ShouldQueue
 
     public function handle(Customer $customer, OutboxCodeEnum $outboxCodeEnum, array $additionalData = [], EmailBulkRun $emailBulkRun): DispatchedEmail
     {
+        data_set($additionalData, "customer_name", $customer->name);
         return $this->sendCustomerOutboxEmail($customer, $outboxCodeEnum, $additionalData, '', null, null, $emailBulkRun);
     }
 }

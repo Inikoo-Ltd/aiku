@@ -1,10 +1,11 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 26 Jul 2025 23:10:11 Central European Summer Time, Trnava, Slovakia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * author Louis Perez
+ * created on 25-03-2026-08h-50m
+ * github: https://github.com/louis-perez
+ * copyright 2026
+*/
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
@@ -13,7 +14,7 @@ use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
 use Sentry;
 
-class RejectShopifyCancellationRequest extends OrgAction
+class AcceptShopifyCancellationRequest extends OrgAction
 {
     use WithShopifyApi;
 
@@ -24,12 +25,13 @@ class RejectShopifyCancellationRequest extends OrgAction
     {
         try {
             $mutation = <<<'MUTATION'
-                    mutation rejectCancellationRequest($id: ID!, $message: String!) {
-                        fulfillmentOrderRejectCancellationRequest(
-                            id: $id
+                    mutation acceptCancellationRequest($id: ID!, $message: String!) {
+                        fulfillmentOrderAcceptCancellationRequest(
+                            id: $id, 
                             message: $message
                         ) {
                             fulfillmentOrder {
+                                id
                                 status
                                 requestStatus
                             }
