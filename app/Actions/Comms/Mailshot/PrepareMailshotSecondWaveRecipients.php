@@ -49,7 +49,7 @@ class PrepareMailshotSecondWaveRecipients
 
         $baseQuery = DB::table('customers');
         $baseQuery->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
-        $baseQuery->join('mailshot_recipients', 'customers.id', '=', 'mailshot_recipients.customer_id');
+        $baseQuery->join('mailshot_recipients', 'customers.id', '=', 'mailshot_recipients.recipient_id');
         $baseQuery->join('dispatched_emails', 'mailshot_recipients.dispatched_email_id', '=', 'dispatched_emails.id');
         $baseQuery->where('mailshot_recipients.mailshot_id', $parentMailshot->id);
 
@@ -57,6 +57,7 @@ class PrepareMailshotSecondWaveRecipients
         $baseQuery->whereNotNull('dispatched_emails.sent_at');
 
         $baseQuery->where('customers.shop_id', $mailshot->shop_id);
+        $baseQuery->where('mailshot_recipients.recipient_type', 'Customer');
         $baseQuery->whereNotNull('customers.email');
 
         switch ($mailshot->type) {
@@ -72,7 +73,7 @@ class PrepareMailshotSecondWaveRecipients
                 break;
         }
         $baseQuery->groupBy('customers.id');
-
+        $baseQuery->orderBy('customers.id');
 
 
         $mailshotId = $mailshot->id;
@@ -101,9 +102,6 @@ class PrepareMailshotSecondWaveRecipients
         OrganisationHydrateMailshots::dispatch($mailshot->organisation);
         OutboxHydrateMailshots::dispatch($mailshot->outbox);
         ShopHydrateMailshots::dispatch($mailshot->shop);
-
-
-
     }
 
     public string $commandSignature = 'send:mailshot-second-wave {mailshot}';

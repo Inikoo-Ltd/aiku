@@ -59,7 +59,6 @@ use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
-use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Purge\HydratePurges;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
@@ -513,14 +512,6 @@ test('update order state to Handling', function (Order $order) {
     return $order;
 })->depends('update order state to in warehouse');
 
-test('update order state to Packed ', function (Order $order) {
-    $order = UpdateOrderStateToPacked::make()->action($order, false);
-    $order->refresh();
-    expect($order)->toBeInstanceOf(Order::class)
-        ->and($order->state)->toEqual(OrderStateEnum::PACKED);
-
-    return $order;
-})->depends('update order state to Handling');
 
 test('update order state to Finalised ', function (Order $order) {
     $shipper = StoreShipper::make()->action($order->organisation, [

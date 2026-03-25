@@ -57,7 +57,7 @@ class StartPackingDeliveryNote extends OrgAction
             $deliveryNote = UpdateDeliveryNote::run($deliveryNote, $modelData);
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first(), true);
+                UpdateOrderStateToPacking::make()->action($deliveryNote->orders->first());
             }
 
             DB::table('delivery_note_items')

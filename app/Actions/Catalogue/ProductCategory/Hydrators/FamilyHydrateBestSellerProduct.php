@@ -60,26 +60,28 @@ class FamilyHydrateBestSellerProduct implements ShouldBeUnique
             return;
         }
 
-        //todo: implement this using TimeSeries, top sellers (last 3 months)
-        // Get top-selling products directly with a query
-        //        $topProducts = Product::query()
-        //            ->where('family_id', $family->id)
-        //            ->where('products.is_main', true)
-        //            ->whereNull('products.exclusive_for_customer_id')
-        //            ->join('assets', 'products.asset_id', '=', 'assets.id')
-        //            ->join('asset_sales_intervals', 'assets.id', '=', 'asset_sales_intervals.asset_id')
-        //            ->whereNotNull('asset_sales_intervals.sales_all')
-        //            ->where('asset_sales_intervals.sales_all', '>', 0)
-        //            ->orderBy('asset_sales_intervals.sales_all', 'desc')
-        //            ->select('products.id')
-        //            ->limit($topCount)
-        //            ->get();
-        //
-        //        // Update top products with their ranking
-        //        foreach ($topProducts as $index => $product) {
-        //            Product::where('id', $product->id)
-        //                ->update(['top_seller' => $index + 1]);
-        //        }
+        $threeMonthsAgo = now()->subMonths(3)->format('Y-m');
+
+        $topProducts = Product::query()
+            ->where('products.family_id', $family->id)
+            ->where('products.is_main', true)
+            ->whereNull('products.exclusive_for_customer_id')
+            ->join('assets', 'products.asset_id', '=', 'assets.id')
+            ->join('asset_time_series', 'assets.id', '=', 'asset_time_series.asset_id')
+            ->join('asset_time_series_records', 'asset_time_series.id', '=', 'asset_time_series_records.asset_time_series_id')
+            ->where('asset_time_series_records.frequency', 'M')
+            ->where('asset_time_series_records.period', '>=', $threeMonthsAgo)
+            ->groupBy('products.id')
+            ->havingRaw('SUM(COALESCE(asset_time_series_records.sales_external, 0) + COALESCE(asset_time_series_records.sales_internal, 0)) > 0')
+            ->orderByRaw('SUM(COALESCE(asset_time_series_records.sales_external, 0) + COALESCE(asset_time_series_records.sales_internal, 0)) DESC')
+            ->select('products.id')
+            ->limit($topCount)
+            ->get();
+
+        foreach ($topProducts as $index => $product) {
+            Product::where('id', $product->id)
+                ->update(['top_seller' => $index + 1]);
+        }
     }
 
 }

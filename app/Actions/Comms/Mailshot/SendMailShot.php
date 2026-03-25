@@ -25,14 +25,12 @@ class SendMailShot extends OrgAction
             abort(400, 'Cannot send second wave mailshot');
         }
 
-
         if ($mailshot->state == MailshotStateEnum::SCHEDULED && $mailshot->scheduled_at !== null && $mailshot->scheduled_at->lte(now())) {
             $mailshot = UpdateMailshot::run($mailshot, [
                 'state' => MailshotStateEnum::READY,
                 'ready_at' => now(),
             ]);
         }
-
 
         if ($mailshot->state != MailshotStateEnum::READY) {
             return $mailshot;

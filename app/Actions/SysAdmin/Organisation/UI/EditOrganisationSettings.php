@@ -227,11 +227,27 @@ class EditOrganisationSettings extends OrgAction
                                 'working_hours' => [
                                     'type'          => 'working-hours',
                                     'value'        => [
-                                         'metadata' => $metadata,
-                                         'data'     => (object) $scheduleData,
-                                    ]
+'metadata' => $metadata,
+                                          'data'     => (object) $scheduleData,
+                                     ]
 
-                                ]
+                                 ]
+                             ],
+                        ],
+                        [
+                            'label'  => __('Leave Quota'),
+                            'icon'   => 'fa-light fa-calendar-clock',
+                            'fields' => [
+                                'hr_annual_leave_days' => [
+                                    'type'          => 'input',
+                                    'label'         => __('Default Annual Leave Days'),
+                                    'value'         => $organisation->getDefaultAnnualLeaveDays(),
+                                ],
+                                'hr_probation_period_days' => [
+                                    'type'          => 'input',
+                                    'label'         => __('Probation Period (Days)'),
+                                    'value'         => $organisation->getDefaultProbationDays(),
+                                ],
                             ],
                         ],
                     ],

@@ -220,6 +220,16 @@ class Kernel extends ConsoleKernel
             scheduledAt: now()->format('H:i')
         );
 
+
+        $this->logSchedule(
+            $schedule->command('fetch:stock_movements aroma -N -D 2')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'FetchAuroraStockMovements',
+            ),
+            name: 'FetchAuroraStockMovements',
+            type: 'command',
+            scheduledAt: now()->format('H:i')
+        );
+
         $this->logSchedule(
             $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'FetchDispatchedEmails',

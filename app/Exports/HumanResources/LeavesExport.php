@@ -3,7 +3,6 @@
 namespace App\Exports\HumanResources;
 
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
-use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Models\HumanResources\Leave;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -26,7 +25,7 @@ class LeavesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadin
     public function query(): Relation|Builder|Leave
     {
         $query = Leave::query()
-            ->with(['employee', 'approver']);
+            ->with(['employee', 'approver', 'leaveType']);
 
         if ($this->organisationId) {
             $query->where('organisation_id', $this->organisationId);
@@ -67,13 +66,13 @@ class LeavesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadin
     {
         $employee = $row->employee;
         $approver = $row->approver;
-        $typeValue = $row->type?->value ?? $row->type;
+        $typeValue = (string) $row->type;
         $statusValue = $row->status?->value ?? $row->status;
 
         return [
             $employee?->contact_name ?? $row->employee_name,
             $employee?->department ?? '-',
-            LeaveTypeEnum::labels()[$typeValue] ?? (string) $typeValue,
+            $row->leaveType?->name ?? $typeValue,
             $row->start_date->format('Y-m-d'),
             $row->end_date->format('Y-m-d'),
             $row->duration_days,

@@ -43,14 +43,20 @@ class SendResetPasswordEmail extends OrgAction
 
         $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
 
+        $additionalData = [
+            'username'      => $webUser->email ?? $webUser->username,
+            'customer_name' => ($webUser->customer?->name ?? $webUser->username),
+        ];
+
         return $this->sendEmailWithMergeTags(
-            $dispatchedEmail,
-            $outbox->emailOngoingRun->sender(),
-            $outbox->emailOngoingRun?->email?->subject,
-            $emailHtmlBody,
-            '',
+            dispatchedEmail: $dispatchedEmail,
+            sender: $outbox->emailOngoingRun->sender(),
+            subject: $outbox->emailOngoingRun?->email?->subject,
+            emailHtmlBody: $emailHtmlBody,
+            unsubscribeUrl: '',
             passwordToken: $modelData['url'],
-            senderName: $outbox->emailOngoingRun->senderName(),
+            additionalData: $additionalData,
+            senderName: $outbox->emailOngoingRun->senderName()
         );
     }
 

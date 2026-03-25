@@ -234,7 +234,7 @@ return [
         ],
         'urgent'           => [
             'connection'      => 'redis',
-            'queue'           => ['urgent','ses-first-class'],
+            'queue'           => ['urgent'],
             'balance'         => 'auto',
             'maxProcesses'    => 20,
             'maxTime'         => 0,
@@ -262,7 +262,7 @@ return [
         ],
         'low-priority'     => [
             'connection'          => 'redis',
-            'queue'               => ['low-priority', 'super-low-priority'],
+            'queue'               => ['low-priority'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
@@ -278,7 +278,7 @@ return [
         ],
         'dropshipping'     => [
             'connection'          => 'redis',
-            'queue'               => ['ds', 'shopify', 'ebay', 'woo',],
+            'queue'               => ['ds', 'shopify', 'ebay', 'woo'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
@@ -310,7 +310,7 @@ return [
         ],
         'ses'              => [
             'connection'      => 'redis',
-            'queue'           => ['ses-priority','ses-analytics','ses-send', 'ses'],
+            'queue'           => ['ses-analytics','ses-send', 'ses'],
             'balance'         => 'auto',
             'maxProcesses'    => 2,
             'maxTime'         => 0,

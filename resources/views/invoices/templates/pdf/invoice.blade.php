@@ -190,7 +190,7 @@
             </div>
         </td>
         <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
-            @if($deliveryNote->getNumberParcels())
+            @if($deliveryNote && $deliveryNote->getNumberParcels())
                 <div style="text-align: right">{{__('Boxes')}}: <b>{{ $deliveryNote->getNumberParcels() }}</b></div>
             @endif
             @if($deliveryNote)

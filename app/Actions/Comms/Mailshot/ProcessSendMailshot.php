@@ -65,6 +65,7 @@ class ProcessSendMailshot
                         'dispatched_email_id' => $dispatchedEmail->id,
                         'recipient_type'      => class_basename($customer),
                         'recipient_id'        => $customer->id,
+                        'recipient_name'      => $customer->name,
                         'channel'             => $emailDeliveryChannel->id,
                     ]
                 );

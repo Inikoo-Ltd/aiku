@@ -127,7 +127,7 @@ class GetRetinaEcomNavigation
 
         if (app()->environment('local')) {
             $groupNavigation['back-in-stocks'] = [
-                'label'   => __('Back In Stocks'),
+                'label'   => __('Back In Stocks Reminders'),
                 'icon'    => ['fas', 'fa-envelope-circle-check'],
                 'root'    => 'retina.ecom.back_in_stock.',
                 'route'   => [

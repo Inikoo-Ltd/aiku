@@ -15,8 +15,11 @@ use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrganisationSource;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\HistoricAsset;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -54,7 +57,7 @@ class RepairOrderAmountsAfterMigrationAfterInvoicing
             if ($sourceID) {
                 $sourceID = explode(':', $sourceID);
 
-                if (is_array($sourceID) and count($sourceID) == 2) {
+                if (is_array($sourceID) && count($sourceID) == 2) {
                     $auData = DB::connection('aurora')->table('Order Transaction Fact')
                         ->where('Order Transaction Fact Key', $sourceID[1])->first();
 
@@ -98,8 +101,12 @@ class RepairOrderAmountsAfterMigrationAfterInvoicing
 
 
             if ($invoiceTransaction) {
+                /** @var DeliveryNote $deliveryNote */
+                $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->first();
+
+
                 $updateInvoice = true;
-                $dataToUpdate  = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction);
+                $dataToUpdate  = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNote);
 
                 $transaction->update([
                     'gross_amount' => $dataToUpdate['gross_amount'],
